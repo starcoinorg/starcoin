@@ -26,6 +26,7 @@ use std::sync::Arc;
 use tokio::time::timeout;
 
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
+use starcoin_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use tokio::time::Duration;
 
@@ -48,6 +49,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
             0,
             10000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            ChainId::test(),
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -172,6 +174,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,
+            ChainId::test(),
         );
         txn.as_signed_user_txn()?.clone()
     };

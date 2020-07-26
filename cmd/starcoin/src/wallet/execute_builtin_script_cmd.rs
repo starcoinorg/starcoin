@@ -13,6 +13,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
@@ -115,6 +116,7 @@ impl CommandAction for ExecuteBuildInCommand {
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,
+            ChainId::new(ctx.state().net().chain_id()),
         );
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;

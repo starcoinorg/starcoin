@@ -16,6 +16,7 @@ use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::chain_config::ChainId;
 use structopt::StructOpt;
 
 //TODO this command should be a wallet sub command?
@@ -139,6 +140,7 @@ impl CommandAction for TransferCommand {
             opt.max_gas_amount,
             token_code,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            ChainId::new(ctx.state().net().chain_id()),
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         let succ = client.submit_transaction(txn.clone())?;

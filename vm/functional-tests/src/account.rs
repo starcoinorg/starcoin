@@ -20,6 +20,7 @@ use starcoin_types::{
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
@@ -163,6 +164,7 @@ impl Account {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> SignedUserTransaction {
         self.create_signed_txn_impl(
             *self.address(),
@@ -171,6 +173,7 @@ impl Account {
             max_gas_amount,
             gas_unit_price,
             expiration_timestamp_secs,
+            chain_id,
         )
     }
 
@@ -185,6 +188,7 @@ impl Account {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> SignedUserTransaction {
         Self::create_raw_txn_impl(
             sender,
@@ -193,6 +197,7 @@ impl Account {
             max_gas_amount,
             gas_unit_price,
             expiration_timestamp_secs,
+            chain_id,
         )
         .sign(&self.privkey, self.pubkey.clone())
         .unwrap()
@@ -207,6 +212,7 @@ impl Account {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> RawUserTransaction {
         RawUserTransaction::new(
             sender,
@@ -215,6 +221,7 @@ impl Account {
             max_gas_amount,
             gas_unit_price,
             expiration_timestamp_secs,
+            chain_id,
         )
     }
 
@@ -638,6 +645,7 @@ pub fn peer_to_peer_txn(
     seq_num: u64,
     transfer_amount: u128,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
@@ -653,6 +661,7 @@ pub fn peer_to_peer_txn(
         DEFAULT_MAX_GAS_AMOUNT, // this is a default for gas
         1,                      // this is a default for gas
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -662,6 +671,7 @@ pub fn create_account_txn_sent_as_association(
     seq_num: u64,
     initial_amount: u128,
     expiration_timstamp_secs: u64,
+    chain_id: ChainId,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
@@ -678,5 +688,6 @@ pub fn create_account_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timstamp_secs,
+        chain_id,
     )
 }

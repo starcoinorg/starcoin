@@ -7,6 +7,7 @@ use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, Private
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
@@ -135,7 +136,7 @@ async fn test_block_chain_forks() {
 ///             
 async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
+    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let header = block_chain.current_header();
     let miner_account = WalletAccount::random();
 
@@ -164,6 +165,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             0,
             10000,
             get_current_timestamp() + 40000,
+            ChainId::new(config.net().chain_id()),
         );
         txn.as_signed_user_txn()?.clone()
     };

@@ -16,6 +16,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{Storage, Store};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
+use starcoin_types::chain_config::ChainId;
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{block::Block, transaction::Transaction};
@@ -143,6 +144,7 @@ impl Genesis {
             0,
             0,
             1, // init to 1 to pass time check
+            ChainId::new(net.chain_id()),
         );
         let (genesis_private_key, genesis_public_key) = genesis_key_pair();
         let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;

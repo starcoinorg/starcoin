@@ -4,6 +4,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_config::ChainId;
 use crate::contract_event::ContractEventHasher;
 use crate::transaction::authenticator::TransactionAuthenticator;
 use crate::{
@@ -78,6 +79,7 @@ pub struct RawUserTransaction {
     // A transaction that doesn't expire is represented by a very large value like
     // u64::max_value().
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 }
 
 impl RawUserTransaction {
@@ -92,6 +94,7 @@ impl RawUserTransaction {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -101,6 +104,7 @@ impl RawUserTransaction {
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
+            chain_id,
         }
     }
 
@@ -114,6 +118,7 @@ impl RawUserTransaction {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -123,6 +128,7 @@ impl RawUserTransaction {
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
+            chain_id,
         }
     }
 
@@ -137,6 +143,7 @@ impl RawUserTransaction {
         max_gas_amount: u64,
         gas_unit_price: u64,
         expiration_timestamp_secs: u64,
+        chain_id: ChainId,
     ) -> Self {
         RawUserTransaction {
             sender,
@@ -149,6 +156,7 @@ impl RawUserTransaction {
             gas_unit_price,
             gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
+            chain_id,
         }
     }
 
@@ -188,6 +196,7 @@ impl RawUserTransaction {
             0,
             0,
             u64::max_value(),
+            ChainId::test(),
         )
     }
 
@@ -199,6 +208,7 @@ impl RawUserTransaction {
             600,
             0,
             u64::max_value(),
+            ChainId::test(),
         )
     }
 }
@@ -344,6 +354,10 @@ impl SignedUserTransaction {
 
     pub fn sequence_number(&self) -> u64 {
         self.raw_txn.sequence_number
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.raw_txn.chain_id
     }
 
     pub fn payload(&self) -> &TransactionPayload {

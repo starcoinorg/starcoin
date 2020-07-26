@@ -7,15 +7,17 @@ use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
 use types::{account_address, account_config, transaction::authenticator::AuthenticationKey};
+
 #[stest::test]
 pub fn test_open_block() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
+    let chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let header = chain.current_header();
     let block_gas_limit = 10000;
 
@@ -43,6 +45,7 @@ pub fn test_open_block() -> Result<()> {
         association_sequence_num,
         50_000_000,
         get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        ChainId::new(config.clone().net().chain_id()),
     )
     .try_into()?;
     let excluded = opened_block.push_txns(vec![txn1])?;
@@ -74,6 +77,7 @@ pub fn test_open_block() -> Result<()> {
             1,
             1_000_000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            ChainId::new(config.net().chain_id()),
         )
         .sign(&sender_prikey, sender_pubkey.clone())
         .unwrap()
