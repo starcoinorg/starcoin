@@ -2,31 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::map_err;
-use anyhow::Result;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use starcoin_crypto::HashValue;
-use starcoin_executor::execute_transactions;
+use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::dev::DevApi;
 use starcoin_rpc_api::FutureResult;
-use starcoin_state_api::{ChainStateAsyncService, StateNodeStore};
-use starcoin_statedb::ChainStateDB;
+use starcoin_state_api::ChainStateAsyncService;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
-use std::sync::Arc;
+use starcoin_vm_types::vm_status::VMStatus;
 
 pub struct DevRpcImpl<S>
 where
     S: ChainStateAsyncService + 'static,
 {
     service: S,
-    playground: DevPlaygroudService,
+    playground: PlaygroudService,
 }
 
 impl<S> DevRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    pub fn new(service: S, playground: DevPlaygroudService) -> Self {
+    pub fn new(service: S, playground: PlaygroudService) -> Self {
         Self {
             service,
             playground,
@@ -38,7 +35,7 @@ impl<S> DevApi for DevRpcImpl<S>
 where
     S: ChainStateAsyncService,
 {
-    fn dry_run(&self, txn: SignedUserTransaction) -> FutureResult<TransactionOutput> {
+    fn dry_run(&self, txn: SignedUserTransaction) -> FutureResult<(VMStatus, TransactionOutput)> {
         let service = self.service.clone();
         let playground = self.playground.clone();
         let f = async move {
@@ -48,23 +45,5 @@ where
         }
         .map_err(map_err);
         Box::new(f.boxed().compat())
-    }
-}
-
-#[derive(Clone)]
-pub struct DevPlaygroudService {
-    pub state: Arc<dyn StateNodeStore>,
-}
-
-impl DevPlaygroudService {
-    pub fn new(state_store: Arc<dyn StateNodeStore>) -> Self {
-        Self { state: state_store }
-    }
-}
-
-impl DevPlaygroudService {
-    pub fn dry_run(&self, state_root: HashValue, txn: Transaction) -> Result<TransactionOutput> {
-        let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
-        execute_transactions(&state_view, vec![txn]).map(|mut r| r.pop().unwrap())
     }
 }

@@ -15,7 +15,7 @@ mod txpool_rpc;
 mod wallet_rpc;
 pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
-pub use self::dev_rpc::{DevPlaygroudService, DevRpcImpl};
+pub use self::dev_rpc::DevRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;

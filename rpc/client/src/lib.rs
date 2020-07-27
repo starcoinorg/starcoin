@@ -48,6 +48,7 @@ mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::vm_status::VMStatus;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -503,7 +504,10 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn dry_run(&self, txn: SignedUserTransaction) -> anyhow::Result<TransactionOutput> {
+    pub fn dry_run(
+        &self,
+        txn: SignedUserTransaction,
+    ) -> anyhow::Result<(VMStatus, TransactionOutput)> {
         self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
             .map_err(map_err)
     }
