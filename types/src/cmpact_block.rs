@@ -8,6 +8,7 @@ pub struct CompactBlock {
     pub header: BlockHeader,
     pub short_ids: Vec<ShortId>,
     pub prefilled_txn: Vec<PrefiledTxn>,
+    pub uncles: Option<Vec<BlockHeader>>,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -30,10 +31,12 @@ impl CompactBlock {
             .map(|tx| Transaction::UserTransaction(tx.clone()).id())
             .map(ShortId)
             .collect();
+        let uncles = block.uncles().map(|b| b.to_vec());
         CompactBlock {
             header,
             short_ids,
             prefilled_txn,
+            uncles,
         }
     }
 }
