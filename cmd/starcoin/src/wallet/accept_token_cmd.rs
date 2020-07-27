@@ -11,8 +11,8 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]

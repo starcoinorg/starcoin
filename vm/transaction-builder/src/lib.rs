@@ -7,9 +7,9 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,

@@ -19,8 +19,8 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,

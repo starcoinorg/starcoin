@@ -14,9 +14,9 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::get_current_timestamp;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::chain_config::ChainId;
 use structopt::StructOpt;
 
 //TODO this command should be a wallet sub command?
