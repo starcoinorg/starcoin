@@ -7,10 +7,9 @@ use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
-use starcoin_types::{block::BlockDetail, cmpact_block::CompactBlock, U256};
+use starcoin_types::{cmpact_block::CompactBlock, U256};
 
 use std::borrow::Cow;
-use std::sync::Arc;
 
 #[derive(Message)]
 #[rtype(result = "u64")]
@@ -21,7 +20,6 @@ pub struct GetCounterMessage {}
 #[derive(Debug, Serialize, Deserialize, Message)]
 #[allow(clippy::large_enum_variant)]
 pub enum PeerMessage {
-    Block(Arc<BlockDetail>),
     CompactBlock(CompactBlock, U256),
     RawRPCRequest(u128, String, Vec<u8>),
     RawRPCResponse(u128, Vec<u8>),
