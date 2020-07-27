@@ -148,6 +148,7 @@ mod tests {
     use rand::SeedableRng;
 
     use tx_pool::Listener;
+    use types::chain_config::ChainId;
     use types::{
         account_address::AccountAddress,
         transaction,

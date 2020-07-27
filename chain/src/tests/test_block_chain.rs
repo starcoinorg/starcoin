@@ -7,7 +7,6 @@ use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, Private
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis as StarcoinGenesis;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
