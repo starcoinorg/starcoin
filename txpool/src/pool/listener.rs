@@ -188,7 +188,7 @@ mod tests {
             100_000,
             10,
             get_current_timestamp() + 60,
-            ChainId::test(),
+            ChainId::dev(),
         );
         let mut rng = rand::rngs::StdRng::from_seed([0; 32]);
         let private_key = ed25519::Ed25519PrivateKey::generate(&mut rng);

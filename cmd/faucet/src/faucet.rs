@@ -4,7 +4,6 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::chain_config::ChainId;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 
@@ -50,8 +49,7 @@ impl Faucet {
             DEFAULT_GAS_PRICE,
             MAX_GAS,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            // TODO: should include other network? guangyuz double check
-            ChainId::id(self.client.node_info().unwrap().net),
+            self.client.node_info().unwrap().net.chain_id(),
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;

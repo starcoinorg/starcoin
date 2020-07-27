@@ -11,7 +11,6 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
@@ -89,7 +88,7 @@ impl CommandAction for AcceptTokenCommand {
             opt.max_gas_amount,
             opt.token_code.clone(),
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::id(ctx.state().net()),
+            ctx.state().net().chain_id(),
         );
 
         let signed_txn = client.wallet_sign_txn(accept_token_txn)?;

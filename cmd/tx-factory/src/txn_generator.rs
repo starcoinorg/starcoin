@@ -40,7 +40,7 @@ impl MockTxnGenerator {
             1,
             10000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::test(),
+            ChainId::dev(),
         );
         Ok(transfer_txn)
     }

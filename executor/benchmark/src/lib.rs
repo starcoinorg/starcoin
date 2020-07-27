@@ -283,7 +283,7 @@ fn create_transaction(
         400_000,
         1,
         expiration_timestamp_secs,
-        ChainId::test(),
+        ChainId::dev(),
     );
     Transaction::UserTransaction(signed_txn)
 }

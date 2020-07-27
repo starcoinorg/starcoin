@@ -14,7 +14,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
@@ -140,7 +139,7 @@ impl CommandAction for TransferCommand {
             opt.max_gas_amount,
             token_code,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::id(ctx.state().net()),
+            ctx.state().net().chain_id(),
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         let succ = client.submit_transaction(txn.clone())?;

@@ -424,7 +424,7 @@ impl StarcoinVM {
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let txn_expiration_time = txn_data.expiration_time_secs();
-        let chain_id = txn_data.chain_id().into_inner();
+        let chain_id = txn_data.chain_id().id();
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
             TransactionPayloadMetadata::Script(hash) => {
                 (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)

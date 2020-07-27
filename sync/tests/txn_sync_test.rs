@@ -218,7 +218,7 @@ fn gen_user_txn() -> SignedUserTransaction {
         0,
         10000,
         get_current_timestamp() + 40000,
-        ChainId::test(),
+        ChainId::dev(),
     );
     txn.as_signed_user_txn().unwrap().clone()
 }

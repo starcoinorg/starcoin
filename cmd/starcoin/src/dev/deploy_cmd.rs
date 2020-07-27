@@ -9,7 +9,6 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{Module, RawUserTransaction};
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
@@ -103,7 +102,7 @@ impl CommandAction for DeployCommand {
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,
-            ChainId::id(ctx.state().net()),
+            ctx.state().net().chain_id(),
         );
 
         let signed_txn = client.wallet_sign_txn(deploy_txn)?;

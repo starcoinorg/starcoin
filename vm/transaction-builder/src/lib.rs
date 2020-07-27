@@ -270,7 +270,7 @@ pub fn build_stdlib_package(
     )?;
     if with_init_script {
         let chain_config = net.get_config();
-        let chain_id = net.chain_id();
+        let chain_id = net.chain_id().id();
 
         let genesis_auth_key = chain_config
             .genesis_key_pair

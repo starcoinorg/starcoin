@@ -19,7 +19,6 @@ use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -173,7 +172,7 @@ impl CommandAction for ExecuteCommand {
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
-                ChainId::id(ctx.state().net()),
+                ctx.state().net().chain_id(),
             )
         } else {
             RawUserTransaction::new_module(
@@ -183,7 +182,7 @@ impl CommandAction for ExecuteCommand {
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
-                ChainId::id(ctx.state().net()),
+                ctx.state().net().chain_id(),
             )
         };
 

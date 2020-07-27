@@ -12,7 +12,6 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::{account_config, transaction::authenticator::AuthenticationKey};
-use starcoin_vm_types::chain_config::ChainId;
 use structopt::StructOpt;
 use tokio::time::Duration;
 
@@ -81,7 +80,7 @@ impl CommandAction for GetCoinCommand {
             1,
             DEFAULT_MAX_GAS_AMOUNT,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::id(ctx.state().net()),
+            ctx.state().net().chain_id(),
         );
         client.wallet_unlock(
             association_address,

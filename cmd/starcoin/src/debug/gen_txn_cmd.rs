@@ -12,7 +12,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -124,7 +123,7 @@ impl CommandAction for GenTxnCommand {
                 1,
                 DEFAULT_MAX_GAS_AMOUNT,
                 get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-                ChainId::id(net),
+                net.chain_id(),
             );
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;

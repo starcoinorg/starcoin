@@ -196,7 +196,7 @@ impl RawUserTransaction {
             0,
             0,
             u64::max_value(),
-            ChainId::test(),
+            ChainId::dev(),
         )
     }
 
@@ -208,7 +208,7 @@ impl RawUserTransaction {
             600,
             0,
             u64::max_value(),
-            ChainId::test(),
+            ChainId::dev(),
         )
     }
 }

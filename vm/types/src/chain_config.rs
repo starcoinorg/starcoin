@@ -77,8 +77,8 @@ impl FromStr for ChainNetwork {
 }
 
 impl ChainNetwork {
-    pub fn chain_id(self) -> u8 {
-        self.into()
+    pub fn chain_id(self) -> ChainId {
+        ChainId(self.into())
     }
 
     pub fn is_dev(self) -> bool {
@@ -153,16 +153,12 @@ impl Default for ChainNetwork {
 pub struct ChainId(u8);
 
 impl ChainId {
-    pub fn id(net: ChainNetwork) -> Self {
-        ChainId(net.chain_id())
-    }
-
-    pub fn into_inner(self) -> u8 {
+    pub fn id(self) -> u8 {
         self.0
     }
 
-    pub fn test() -> Self {
-        Self::id(ChainNetwork::Dev)
+    pub fn dev() -> Self {
+        ChainNetwork::Dev.chain_id()
     }
 }
 
