@@ -1,5 +1,5 @@
 // Test the gas check flow
-//! account: alice, 1000STC
+//! account: alice, 1000 0x1::STC::STC
 
 //! sender: alice
 //! gas-price: 1

@@ -776,22 +776,21 @@
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
     <b>if</b> (block_height == epoch_ref.start_number) {
         epoch_data.total_reward = reward;
+        <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
+            &<b>mut</b> epoch_ref.new_epoch_events,
+            <a href="#0x1_Consensus_NewEpochEvent">NewEpochEvent</a> {
+                epoch_number: epoch_ref.epoch_number,
+                epoch_start_time: epoch_ref.epoch_start_time,
+                start_number: epoch_ref.start_number,
+                end_number: epoch_ref.end_number,
+                block_time_target: epoch_ref.block_time_target,
+                reward_per_epoch: epoch_ref.reward_per_epoch,
+                reward_per_block: epoch_ref.reward_per_block,
+            }
+        );
     } <b>else</b> {
         epoch_data.total_reward = epoch_data.total_reward + reward;
     };
-
-    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
-        &<b>mut</b> epoch_ref.new_epoch_events,
-        <a href="#0x1_Consensus_NewEpochEvent">NewEpochEvent</a> {
-            epoch_number: epoch_ref.epoch_number,
-            epoch_start_time: epoch_ref.epoch_start_time,
-            start_number: epoch_ref.start_number,
-            end_number: epoch_ref.end_number,
-            block_time_target: epoch_ref.block_time_target,
-            reward_per_epoch: epoch_ref.reward_per_epoch,
-            reward_per_block: epoch_ref.reward_per_block,
-        }
-    );
 
     reward
 }

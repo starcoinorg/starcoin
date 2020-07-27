@@ -282,8 +282,9 @@ Register the type
     scaling_factor: u128,
     fractional_part: u128,
 ) {
-    <b>let</b> (token_address, _, _) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> (token_address, module_name, token_name) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, 401);
+    <b>assert</b>(module_name == token_name, 402);
     move_to(account, <a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
     move_to(

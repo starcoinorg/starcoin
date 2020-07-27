@@ -15,9 +15,9 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::STC_NAME;
+use starcoin_vm_types::account_config::{STC_NAME, STC_TOKEN_CODE};
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
-    account_config::stc_type_tag,
     move_resource::MoveResource,
     on_chain_config::{ConfigStorage, OnChainConfig},
     state_view::StateView,
@@ -250,20 +250,20 @@ impl<'a> AccountStateReader<'a> {
     }
 
     pub fn get_balance(&self, address: &AccountAddress) -> Result<Option<u128>> {
-        self.get_balance_by_type(address, &stc_type_tag())
+        self.get_balance_by_token_code(address, STC_TOKEN_CODE.clone())
     }
 
     /// Get balance by address and coin type
     pub fn get_balance_by_type(
         &self,
         address: &AccountAddress,
-        type_tag: &TypeTag,
+        type_tag: TypeTag,
     ) -> Result<Option<u128>> {
         Ok(self
             .reader
             .get(&AccessPath::new(
                 *address,
-                BalanceResource::access_path_for(type_tag.clone()),
+                BalanceResource::access_path_for(type_tag),
             ))
             .and_then(|bytes| match bytes {
                 Some(bytes) => Ok(Some(scs::from_bytes::<BalanceResource>(bytes.as_slice())?)),
@@ -272,13 +272,21 @@ impl<'a> AccountStateReader<'a> {
             .map(|resource| resource.token()))
     }
 
+    pub fn get_balance_by_token_code(
+        &self,
+        address: &AccountAddress,
+        token_code: TokenCode,
+    ) -> Result<Option<u128>> {
+        self.get_balance_by_type(address, token_code.into())
+    }
+
     /// Get all balance of account
     /// TODO: rename to get_balance.
     /// For now, we only return STC.
     pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u128>> {
         let mut result = HashMap::new();
         let balance = self
-            .get_balance_by_type(&address, &stc_type_tag())
+            .get_balance_by_token_code(&address, STC_TOKEN_CODE.clone())
             .ok()
             .flatten();
         if let Some(balance) = balance {

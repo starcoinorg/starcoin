@@ -11,7 +11,7 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
+use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -38,11 +38,10 @@ pub struct AcceptTokenOpt {
     gas_price: u64,
 
     #[structopt(
-    name = "token-type",
-    help = "token's type tag, for example: 0x0::STC::STC, default is STC",
-    parse(try_from_str = parse_type_tag)
+        name = "token-code",
+        help = "token's code, for example: 0x1::STC::STC, default is STC"
     )]
-    token_type: TypeTag,
+    token_code: TokenCode,
 
     #[structopt(
         short = "b",
@@ -87,7 +86,7 @@ impl CommandAction for AcceptTokenCommand {
             account_resource.sequence_number(),
             opt.gas_price,
             opt.max_gas_amount,
-            opt.token_type.clone(),
+            opt.token_code.clone(),
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
 

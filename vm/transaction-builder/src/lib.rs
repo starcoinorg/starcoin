@@ -7,8 +7,8 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::stc_type_tag;
-use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
@@ -26,14 +26,14 @@ pub fn build_transfer_from_association(
     auth_key_prefix: Vec<u8>,
     association_sequence_num: u64,
     amount: u128,
-    expiration_timstamp_secs: u64,
+    expiration_timestamp_secs: u64,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
         auth_key_prefix,
         association_sequence_num,
         amount,
-        expiration_timstamp_secs,
+        expiration_timestamp_secs,
     ))
 }
 
@@ -45,7 +45,7 @@ pub fn build_transfer_txn(
     amount: u128,
     gas_price: u64,
     max_gas: u64,
-    expiration_timstamp_secs: u64,
+    expiration_timestamp_secs: u64,
 ) -> RawUserTransaction {
     build_transfer_txn_by_token_type(
         sender,
@@ -55,8 +55,8 @@ pub fn build_transfer_txn(
         amount,
         gas_price,
         max_gas,
-        stc_type_tag(),
-        expiration_timstamp_secs,
+        STC_TOKEN_CODE.clone(),
+        expiration_timestamp_secs,
     )
 }
 
@@ -68,8 +68,8 @@ pub fn build_transfer_txn_by_token_type(
     amount: u128,
     gas_price: u64,
     max_gas: u64,
-    token_type: TypeTag,
-    expiration_timstamp_secs: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
 ) -> RawUserTransaction {
     raw_peer_to_peer_txn(
         sender,
@@ -79,8 +79,8 @@ pub fn build_transfer_txn_by_token_type(
         seq_num,
         gas_price,
         max_gas,
-        token_type,
-        expiration_timstamp_secs,
+        token_code,
+        expiration_timestamp_secs,
     )
 }
 
@@ -89,16 +89,16 @@ pub fn build_accept_token_txn(
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    token_type: TypeTag,
-    expiration_timstamp_secs: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
 ) -> RawUserTransaction {
     raw_accept_token_txn(
         sender,
         seq_num,
         gas_price,
         max_gas,
-        token_type,
-        expiration_timstamp_secs,
+        token_code,
+        expiration_timestamp_secs,
     )
 }
 
@@ -110,25 +110,21 @@ pub fn raw_peer_to_peer_txn(
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    token_type: TypeTag,
-    expiration_timstamp_secs: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
 ) -> RawUserTransaction {
-    let mut args: Vec<TransactionArgument> = Vec::new();
-    args.push(TransactionArgument::Address(receiver));
-    args.push(TransactionArgument::U8Vector(receiver_auth_key_prefix));
-    args.push(TransactionArgument::U128(transfer_amount));
-
     RawUserTransaction::new(
         sender,
         seq_num,
-        TransactionPayload::Script(Script::new(
-            StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
-            vec![token_type],
-            args,
+        TransactionPayload::Script(encode_transfer_script_by_token_code(
+            receiver,
+            receiver_auth_key_prefix,
+            transfer_amount,
+            token_code,
         )),
         max_gas,
         gas_price,
-        expiration_timstamp_secs,
+        expiration_timestamp_secs,
     )
 }
 
@@ -137,20 +133,20 @@ pub fn raw_accept_token_txn(
     seq_num: u64,
     gas_price: u64,
     max_gas: u64,
-    token_type: TypeTag,
-    expiration_timstamp_secs: u64,
+    token_code: TokenCode,
+    expiration_timestamp_secs: u64,
 ) -> RawUserTransaction {
     RawUserTransaction::new(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
             StdlibScript::AcceptToken.compiled_bytes().into_vec(),
-            vec![token_type],
+            vec![token_code.into()],
             vec![],
         )),
         max_gas,
         gas_price,
-        expiration_timstamp_secs,
+        expiration_timestamp_secs,
     )
 }
 
@@ -171,15 +167,24 @@ pub fn encode_create_account_script(
 }
 
 pub fn encode_transfer_script(
-    recipient: &AccountAddress,
+    recipient: AccountAddress,
     auth_key_prefix: Vec<u8>,
     amount: u128,
 ) -> Script {
+    encode_transfer_script_by_token_code(recipient, auth_key_prefix, amount, STC_TOKEN_CODE.clone())
+}
+
+pub fn encode_transfer_script_by_token_code(
+    recipient: AccountAddress,
+    auth_key_prefix: Vec<u8>,
+    amount: u128,
+    token_code: TokenCode,
+) -> Script {
     Script::new(
         StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
-        vec![stc_type_tag()],
+        vec![token_code.into()],
         vec![
-            TransactionArgument::Address(*recipient),
+            TransactionArgument::Address(recipient),
             TransactionArgument::U8Vector(auth_key_prefix),
             TransactionArgument::U128(amount),
         ],
@@ -191,14 +196,14 @@ pub fn peer_to_peer_txn_sent_as_association(
     auth_key_prefix: Vec<u8>,
     seq_num: u64,
     amount: u128,
-    expiration_timstamp_secs: u64,
+    expiration_timestamp_secs: u64,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(&recipient, auth_key_prefix, amount)),
+        TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
-        expiration_timstamp_secs,
+        expiration_timestamp_secs,
     )
 }
 
@@ -208,7 +213,7 @@ pub fn create_signed_txn_with_association_account(
     sequence_number: u64,
     max_gas_amount: u64,
     gas_unit_price: u64,
-    expiration_timstamp_secs: u64,
+    expiration_timestamp_secs: u64,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -216,7 +221,7 @@ pub fn create_signed_txn_with_association_account(
         payload,
         max_gas_amount,
         gas_unit_price,
-        expiration_timstamp_secs,
+        expiration_timestamp_secs,
     );
     ChainNetwork::Dev
         .sign_with_association(raw_txn)

@@ -123,3 +123,4 @@ pub mod account_config;
 pub mod block_metadata;
 pub mod event;
 pub mod on_chain_config;
+pub mod token;

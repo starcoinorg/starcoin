@@ -18,27 +18,22 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
+use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
-    account_config::{
-        self, from_currency_code_string, type_tag_for_currency_code, AccountResource,
-        BalanceResource, STC_NAME,
-    },
-    identifier::{IdentStr, Identifier},
+    account_config::{self, AccountResource, BalanceResource},
     language_storage::{ResourceKey, StructTag, TypeTag},
     move_resource::MoveResource,
     values::{Struct, Value},
 };
 use std::collections::BTreeMap;
+use std::str::FromStr;
 use stdlib::transaction_scripts::StdlibScript;
 
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
-
-pub fn stc_currency_code() -> Identifier {
-    from_currency_code_string(STC_NAME).unwrap()
-}
 
 /// Details about a Libra account.
 ///
@@ -125,10 +120,11 @@ impl Account {
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account balance blob.
-    pub fn make_balance_access_path(&self, balance_currency_code: Identifier) -> AccessPath {
-        let type_tag = type_tag_for_currency_code(None, balance_currency_code);
+    pub fn make_balance_access_path(&self, token_code_str: &str) -> AccessPath {
+        let token_code =
+            TokenCode::from_str(token_code_str).expect("token code str should been valid.");
         // TODO/XXX: Convert this to BalanceResource::struct_tag once that takes type args
-        self.make_access_path(BalanceResource::struct_tag_for_currency(type_tag))
+        self.make_access_path(BalanceResource::struct_tag_for_token_code(token_code))
     }
 
     // TODO: plug in the account type
@@ -311,7 +307,7 @@ pub struct AccountData {
     withdrawal_capability: Option<WithdrawCapability>,
     sent_events: EventHandle,
     received_events: EventHandle,
-    balances: BTreeMap<Identifier, Balance>,
+    balances: BTreeMap<String, Balance>,
     event_generator: EventHandleGenerator,
 }
 
@@ -324,29 +320,24 @@ impl AccountData {
     ///
     /// Most tests will want to use this constructor.
     pub fn new(balance: u128, sequence_number: u64) -> Self {
-        Self::with_account(
-            Account::new(),
-            balance,
-            stc_currency_code(),
-            sequence_number,
-        )
+        Self::with_account(Account::new(), balance, STC_TOKEN_CODE_STR, sequence_number)
     }
 
     pub fn new_empty() -> Self {
-        Self::with_account(Account::new(), 0, stc_currency_code(), 0)
+        Self::with_account(Account::new(), 0, STC_TOKEN_CODE_STR, 0)
     }
 
     /// Creates a new `AccountData` with the provided account.
     pub fn with_account(
         account: Account,
         balance: u128,
-        balance_currency_code: Identifier,
+        balance_token_code: &str,
         sequence_number: u64,
     ) -> Self {
         Self::with_account_and_event_counts(
             account,
             balance,
-            balance_currency_code,
+            balance_token_code,
             sequence_number,
             0,
             0,
@@ -360,18 +351,18 @@ impl AccountData {
         privkey: Ed25519PrivateKey,
         pubkey: Ed25519PublicKey,
         balance: u128,
-        balance_currency_code: Identifier,
+        balance_token_code: &str,
         sequence_number: u64,
     ) -> Self {
         let account = Account::with_keypair(privkey, pubkey);
-        Self::with_account(account, balance, balance_currency_code, sequence_number)
+        Self::with_account(account, balance, balance_token_code, sequence_number)
     }
 
     /// Creates a new `AccountData` with custom parameters.
     pub fn with_account_and_event_counts(
         account: Account,
         balance: u128,
-        balance_currency_code: Identifier,
+        balance_token_code: &str,
         sequence_number: u64,
         sent_events_count: u64,
         received_events_count: u64,
@@ -379,7 +370,7 @@ impl AccountData {
         delegated_withdrawal_capability: bool,
     ) -> Self {
         let mut balances = BTreeMap::new();
-        balances.insert(balance_currency_code, Balance::new(balance));
+        balances.insert(balance_token_code.to_string(), Balance::new(balance));
 
         let key_rotation_capability = if delegated_key_rotation_capability {
             None
@@ -403,9 +394,10 @@ impl AccountData {
         }
     }
 
-    /// Adds the balance held by this account to the one represented as balance_currency_code
-    pub fn add_balance_currency(&mut self, balance_currency_code: Identifier) {
-        self.balances.insert(balance_currency_code, Balance::new(0));
+    /// Adds the balance held by this account to the one represented as balance_token_code
+    pub fn add_balance(&mut self, balance_token_code: &str) {
+        self.balances
+            .insert(balance_token_code.to_string(), Balance::new(0));
     }
 
     /// Changes the keys for this account to the provided ones.
@@ -452,7 +444,7 @@ impl AccountData {
     }
 
     /// Creates and returns the top-level resources to be published under the account
-    pub fn to_value(&self) -> (Value, Vec<(Identifier, Value)>, Value) {
+    pub fn to_value(&self) -> (Value, Vec<(String, Value)>, Value) {
         // TODO: publish some concept of Account
         let balances: Vec<_> = self
             .balances
@@ -497,8 +489,8 @@ impl AccountData {
     /// Returns the AccessPath that describes the Account balance resource instance.
     ///
     /// Use this to retrieve or publish the Account blob.
-    pub fn make_balance_access_path(&self, code: Identifier) -> AccessPath {
-        self.account.make_balance_access_path(code)
+    pub fn make_balance_access_path(&self, token_code: &str) -> AccessPath {
+        self.account.make_balance_access_path(token_code)
     }
 
     /// Returns the AccessPath that describes the EventHandleGenerator resource instance.
@@ -526,7 +518,10 @@ impl AccountData {
                 .unwrap()
                 .simple_serialize(&Balance::layout())
                 .unwrap();
-            write_set.push((self.make_balance_access_path(code), WriteOp::Value(balance)));
+            write_set.push((
+                self.make_balance_access_path(code.as_str()),
+                WriteOp::Value(balance),
+            ));
         }
 
         let event_generator = event_generator_blob
@@ -560,9 +555,9 @@ impl AccountData {
     }
 
     /// Returns the initial balance.
-    pub fn balance(&self, currency_code: &IdentStr) -> u128 {
+    pub fn balance(&self, token_code: &str) -> u128 {
         self.balances
-            .get(currency_code)
+            .get(token_code)
             .expect("get balance by currency_code fail")
             .token()
     }

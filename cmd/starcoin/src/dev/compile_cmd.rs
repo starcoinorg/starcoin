@@ -67,9 +67,7 @@ impl CommandAction for CompileCommand {
         // add extra deps
         deps.append(&mut ctx.opt().deps.clone());
         let (sources, compile_result) = compile_source_string_no_report(
-            std::fs::read_to_string(source_file_path)
-                .expect("read file error")
-                .as_str(),
+            std::fs::read_to_string(source_file_path)?.as_str(),
             &deps,
             AccountAddress::new(sender.to_u8()),
         )?;

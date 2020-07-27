@@ -16,11 +16,10 @@ use starcoin_types::{
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::account_config::STC_IDENTIFIER;
+use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::{
     account_config::{association_address, AccountResource, BalanceResource},
     file_format::CompiledModule,
-    identifier::Identifier,
     language_storage::ModuleId,
     state_view::StateView,
     vm_status::VMStatus,
@@ -128,12 +127,12 @@ impl FakeExecutor {
 
     // Reads the balance resource value for an account from this executor's data store with the
     // given balance currency_code.
-    fn read_balance_resource_from_currency_code(
+    fn read_balance_resource_from_token_code(
         &self,
         account: &Account,
-        balance_currency_code: Identifier,
+        balance_token_code: &str,
     ) -> Option<BalanceResource> {
-        let ap = account.make_balance_access_path(balance_currency_code);
+        let ap = account.make_balance_access_path(balance_token_code);
         let data_blob = self
             .data_store
             .get(&ap)
@@ -148,7 +147,7 @@ impl FakeExecutor {
         account: &Account,
     ) -> Option<(AccountResource, BalanceResource)> {
         self.read_account_resource(account).and_then(|ar| {
-            self.read_balance_resource_from_currency_code(account, STC_IDENTIFIER.clone())
+            self.read_balance_resource_from_token_code(account, STC_TOKEN_CODE_STR)
                 .map(|br| (ar, br))
         })
     }

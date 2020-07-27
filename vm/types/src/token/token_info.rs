@@ -1,17 +1,12 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::token::token_code::TokenCode;
 use crate::{
-    access_path::AccessPath,
-    account_config::constants::{
-        association_address, type_tag_for_currency_code, CORE_CODE_ADDRESS,
-    },
-    event::EventHandle,
+    access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
 };
 use anyhow::Result;
-use move_core_types::account_address::AccountAddress;
 use move_core_types::{
-    identifier::Identifier,
     language_storage::{ResourceKey, StructTag},
     move_resource::MoveResource,
 };
@@ -41,45 +36,25 @@ impl TokenInfoResource {
         self.fractional_part
     }
 
-    pub fn struct_tag_for(
-        token_module_address: AccountAddress,
-        token_name: Identifier,
-    ) -> StructTag {
+    pub fn struct_tag_for(token_code: TokenCode) -> StructTag {
         StructTag {
             address: CORE_CODE_ADDRESS,
             module: TokenInfoResource::module_identifier(),
             name: TokenInfoResource::struct_identifier(),
-            type_params: vec![type_tag_for_currency_code(
-                Some(token_module_address),
-                token_name,
-            )],
+            type_params: vec![token_code.into()],
         }
     }
 
-    pub fn resource_path_for(
-        currency_module_address: AccountAddress,
-        currency_code: Identifier,
-    ) -> AccessPath {
-        let resource_address = if currency_module_address == CORE_CODE_ADDRESS {
-            association_address()
-        } else {
-            currency_module_address
-        };
+    pub fn resource_path_for(token_code: TokenCode) -> AccessPath {
         let resource_key = ResourceKey::new(
-            resource_address,
-            TokenInfoResource::struct_tag_for(currency_module_address, currency_code),
+            token_code.address,
+            TokenInfoResource::struct_tag_for(token_code),
         );
         AccessPath::resource_access_path(&resource_key)
     }
 
-    pub fn access_path_for(
-        currency_module_address: AccountAddress,
-        currency_code: Identifier,
-    ) -> Vec<u8> {
-        AccessPath::resource_access_vec(&TokenInfoResource::struct_tag_for(
-            currency_module_address,
-            currency_code,
-        ))
+    pub fn access_path_for(token_code: TokenCode) -> Vec<u8> {
+        AccessPath::resource_access_vec(&TokenInfoResource::struct_tag_for(token_code))
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {

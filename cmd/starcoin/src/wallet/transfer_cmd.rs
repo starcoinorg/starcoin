@@ -12,11 +12,10 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_vm_types::account_config::stc_type_tag;
-use starcoin_vm_types::parser::parse_type_tag;
+use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
 //TODO this command should be a wallet sub command?
@@ -52,13 +51,12 @@ pub struct TransferOpt {
     gas_price: u64,
 
     #[structopt(
-    short = "t",
-    long = "token-type",
-    name = "token-type",
-    help = "token's type tag, for example: 0x0::STC::STC, default is STC",
-    parse(try_from_str = parse_type_tag)
+        short = "t",
+        long = "token-code",
+        name = "token-code",
+        help = "token's code, for example: 0x1::STC::STC, default is STC"
     )]
-    token_type: Option<TypeTag>,
+    token_code: Option<TokenCode>,
 
     #[structopt(
         short = "b",
@@ -127,7 +125,10 @@ impl CommandAction for TransferCommand {
                     sender.address()
                 )
             })?;
-        let token_type = opt.token_type.clone().unwrap_or_else(stc_type_tag);
+        let token_code = opt
+            .token_code
+            .clone()
+            .unwrap_or_else(|| STC_TOKEN_CODE.clone());
         let raw_txn = starcoin_executor::build_transfer_txn_by_token_type(
             sender.address,
             receiver,
@@ -136,7 +137,7 @@ impl CommandAction for TransferCommand {
             opt.amount,
             opt.gas_price,
             opt.max_gas_amount,
-            token_type,
+            token_code,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
         );
         let txn = client.wallet_sign_txn(raw_txn)?;

@@ -318,10 +318,32 @@ mod tests {
             Some(genesis_block.header().state_root()),
         );
         let account_state_reader = AccountStateReader::new(&state_db);
-        let account_resource = account_state_reader.get_account_resource(&association_address())?;
+
+        let genesis_account_resource =
+            account_state_reader.get_account_resource(&genesis_address())?;
         assert!(
-            account_resource.is_some(),
+            genesis_account_resource.is_some(),
+            "genesis account must exist in genesis state."
+        );
+
+        let genesis_balance = account_state_reader.get_balance(&genesis_address())?;
+        assert!(
+            genesis_balance.is_some(),
+            "genesis account balance must exist in genesis state."
+        );
+
+        let association_account_resource =
+            account_state_reader.get_account_resource(&association_address())?;
+        assert!(
+            association_account_resource.is_some(),
             "association account must exist in genesis state."
+        );
+
+        let association_balance = account_state_reader.get_balance(&association_address())?;
+
+        assert!(
+            association_balance.is_some(),
+            "association account balance must exist in genesis state."
         );
 
         let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;

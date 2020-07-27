@@ -8,7 +8,6 @@ use crate::contract_event::ContractEventHasher;
 use crate::transaction::authenticator::TransactionAuthenticator;
 use crate::{
     account_address::AccountAddress,
-    account_config::stc_type_tag,
     block_metadata::BlockMetadata,
     contract_event::ContractEvent,
     vm_status::{DiscardedVMStatus, KeptVMStatus},
@@ -35,6 +34,7 @@ pub mod authenticator {
     };
 }
 
+use crate::account_config::STC_TOKEN_CODE_STR;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use libra_types::transaction::{Module, Script};
@@ -68,7 +68,8 @@ pub struct RawUserTransaction {
     max_gas_amount: u64,
     // Maximal price can be paid per gas.
     gas_unit_price: u64,
-
+    // The token code for pay transaction gas, Default is STC token code.
+    gas_token_code: String,
     // Expiration timestamp for this transaction. timestamp is represented
     // as u64 in seconds from Unix Epoch. If storage is queried and
     // the time returned is greater than or equal to this time and this
@@ -98,6 +99,7 @@ impl RawUserTransaction {
             payload,
             max_gas_amount,
             gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
         }
     }
@@ -119,6 +121,7 @@ impl RawUserTransaction {
             payload: TransactionPayload::Script(script),
             max_gas_amount,
             gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
         }
     }
@@ -144,6 +147,7 @@ impl RawUserTransaction {
             ),
             max_gas_amount,
             gas_unit_price,
+            gas_token_code: STC_TOKEN_CODE_STR.to_string(),
             expiration_timestamp_secs,
         }
     }
@@ -191,7 +195,7 @@ impl RawUserTransaction {
         Self::new(
             AccountAddress::ZERO,
             0,
-            TransactionPayload::Script(Script::new(compiled_script, vec![stc_type_tag()], vec![])),
+            TransactionPayload::Script(Script::new(compiled_script, vec![], vec![])),
             600,
             0,
             u64::max_value(),
@@ -352,6 +356,10 @@ impl SignedUserTransaction {
 
     pub fn gas_unit_price(&self) -> u64 {
         self.raw_txn.gas_unit_price
+    }
+
+    pub fn gas_token_code(&self) -> &str {
+        self.raw_txn.gas_token_code.as_str()
     }
 
     pub fn expiration_timestamp_secs(&self) -> u64 {

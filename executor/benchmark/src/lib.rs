@@ -159,7 +159,7 @@ impl TransactionGenerator {
                 let txn = create_transaction(
                     self.sequence,
                     encode_transfer_script(
-                        &receiver.address,
+                        receiver.address,
                         receiver.auth_key_prefix(),
                         1, /* amount */
                     ),

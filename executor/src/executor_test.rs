@@ -8,7 +8,7 @@ use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
 };
 use starcoin_genesis::Genesis;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateWriter};
 use starcoin_transaction_builder::{
     build_stdlib_package, create_signed_txn_with_association_account, StdlibScript,
     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
@@ -24,7 +24,7 @@ use starcoin_types::{
     transaction::{Module, TransactionPayload},
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{parser, transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use statedb::ChainStateDB;
 use std::time::{SystemTime, UNIX_EPOCH};
 use stdlib::{stdlib_files, StdLibOptions};
@@ -544,10 +544,6 @@ fn test_block_metadata() -> Result<()> {
 
     assert!(balance > 0);
 
-    let token = String::from("0x1::STC::STC");
-    let token_balance = get_token_balance(*account1.address(), &chain_state, token)?.unwrap();
-    assert_eq!(balance, token_balance);
-
     Ok(())
 }
 
@@ -578,15 +574,4 @@ fn test_stdlib_upgrade() -> Result<()> {
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
 
     Ok(())
-}
-
-fn get_token_balance(
-    address: AccountAddress,
-    state_db: &dyn ChainStateReader,
-    token: String,
-) -> Result<Option<u128>> {
-    let account_state_reader = AccountStateReader::new(state_db);
-    let type_tag = parser::parse_type_tags(token.as_ref())?[0].clone();
-    debug!("type_tag= {:?}", type_tag);
-    account_state_reader.get_balance_by_type(&address, &type_tag)
 }
