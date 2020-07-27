@@ -270,6 +270,7 @@ pub fn build_stdlib_package(
     )?;
     if with_init_script {
         let chain_config = net.get_config();
+        let chain_id = net.chain_id();
 
         let genesis_auth_key = chain_config
             .genesis_key_pair
@@ -311,6 +312,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
+                TransactionArgument::U8(chain_id),
             ],
         ));
     }

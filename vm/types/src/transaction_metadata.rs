@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::STC_TOKEN_CODE;
+use crate::chain_config::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::{
     account_address::AccountAddress,
@@ -39,6 +40,7 @@ pub struct TransactionMetadata {
     pub gas_token_code: TokenCode,
     pub transaction_size: AbstractMemorySize<GasCarrier>,
     pub expiration_timestamp_secs: u64,
+    pub chain_id: ChainId,
     pub payload: TransactionPayloadMetadata,
 }
 
@@ -57,6 +59,7 @@ impl TransactionMetadata {
                 .expect("Transaction's gas_token_code must been verified at TransactionBuilder."),
             transaction_size: AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64),
             expiration_timestamp_secs: txn.expiration_timestamp_secs(),
+            chain_id: txn.chain_id(),
             payload: match txn.payload() {
                 TransactionPayload::Script(script) => {
                     TransactionPayloadMetadata::Script(HashValue::sha3_256_of(script.code()))
@@ -101,6 +104,10 @@ impl TransactionMetadata {
         self.expiration_timestamp_secs
     }
 
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
+
     pub fn payload_type(&self) -> TransactionPayloadType {
         self.payload.payload_type()
     }
@@ -125,6 +132,7 @@ impl Default for TransactionMetadata {
             gas_token_code: STC_TOKEN_CODE.clone(),
             transaction_size: AbstractMemorySize::new(0),
             expiration_timestamp_secs: 0,
+            chain_id: ChainId::test(),
             payload: TransactionPayloadMetadata::Script(HashValue::zero()),
         }
     }

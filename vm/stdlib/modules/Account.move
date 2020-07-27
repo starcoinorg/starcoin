@@ -13,6 +13,7 @@ module Account {
     use 0x1::SignedInteger64::{Self};
     use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
+    use 0x1::ChainId;
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -442,8 +443,13 @@ module Account {
         txn_public_key: vector<u8>,
         txn_gas_price: u64,
         txn_max_gas_units: u64,
+        chain_id: u8
     ) acquires Account, Balance {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+
+        // Check that the chain ID stored on-chain matches the chain ID
+        // specified by the transaction
+        assert(ChainId::get() == chain_id, 7);
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists

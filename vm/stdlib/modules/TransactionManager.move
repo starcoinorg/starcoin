@@ -31,6 +31,7 @@ module TransactionManager {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
+        chain_id: u8,
         txn_payload_type: u8,
         txn_script_or_package_hash: vector<u8>,
         txn_package_address: address,
@@ -38,7 +39,7 @@ module TransactionManager {
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
 
-        Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
+        Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units, chain_id);
         assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), EPROLOGUE_TRANSACTION_EXPIRED);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
             PackageTxnManager::package_txn_prologue(account, txn_sender, txn_package_address, txn_script_or_package_hash);

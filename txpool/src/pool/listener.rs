@@ -8,7 +8,6 @@ use common_crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use transaction_pool as tx_pool;
 use tx_pool::VerifiedTransaction;
-use types::chain_config::ChainId;
 
 /// Transaction pool logger.
 #[derive(Default, Debug)]

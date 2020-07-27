@@ -157,6 +157,10 @@ impl ChainId {
         ChainId(net.chain_id())
     }
 
+    pub fn into_inner(self) -> u8 {
+        self.0
+    }
+
     pub fn test() -> Self {
         Self::id(ChainNetwork::Dev)
     }
