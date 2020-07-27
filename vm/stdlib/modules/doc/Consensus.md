@@ -656,7 +656,7 @@
 
 
 <pre><code><b>fun</b> <a href="#0x1_Consensus_reward_per_block">reward_per_block</a>(blocks:u64, reward_per_epoch: u128): u128 {
-    <b>let</b> max_uncles = (blocks * <a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() * <a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>()) / (1000 * 100);
+    <b>let</b> max_uncles = (blocks * <a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() * <a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>()) / (THOUSAND * HUNDRED);
     <b>let</b> reward = reward_per_epoch / ((max_uncles <b>as</b> u128) + (blocks <b>as</b> u128));
     reward
 }
@@ -731,8 +731,8 @@
             <b>let</b> total_uncles = epoch_data.uncles;
             <b>let</b> blocks = epoch_ref.end_number - epoch_ref.start_number;
             <b>let</b> avg_block_time = total_time / blocks;
-            <b>let</b> uncles_rate = total_uncles * 1000 / blocks;
-            <b>let</b> new_epoch_block_time_target = (1000 + uncles_rate) * avg_block_time / (<a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() + 1000);
+            <b>let</b> uncles_rate = total_uncles * THOUSAND / blocks;
+            <b>let</b> new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time / (<a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() + THOUSAND);
             <b>let</b> total_reward = epoch_data.total_reward;
 
             <b>if</b> (new_epoch_block_time_target &lt; <a href="#0x1_Consensus_min_time_target">Self::min_time_target</a>()) {

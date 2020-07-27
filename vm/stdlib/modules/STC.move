@@ -7,6 +7,8 @@ module STC {
 
     struct STC { }
 
+    const SCALING_FACTOR : u128 = 1000000;
+    const FRACTIONAL_PART: u128 = 1000;
     resource struct SharedBurnCapability{
         cap: Token::BurnCapability<STC>,
     }
@@ -16,8 +18,8 @@ module STC {
 
         Token::register_token<STC>(
             account,
-            1000000, // scaling_factor = 10^6
-            1000,    // fractional_part = 10^3
+            SCALING_FACTOR, // scaling_factor = 10^6
+            FRACTIONAL_PART,    // fractional_part = 10^3
         );
 
         let burn_cap = Token::remove_burn_capability<STC>(account);

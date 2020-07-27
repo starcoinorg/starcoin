@@ -6,6 +6,9 @@ module Consensus {
     use 0x1::CoreAddresses;
     use 0x1::Event;
 
+    const THOUSAND : u64 =1000;
+    const HUNDRED : u64 =100;
+
     struct Consensus {
         uncle_rate_target: u64,
         epoch_time_target: u64,
@@ -157,7 +160,7 @@ module Consensus {
     }
 
     fun reward_per_block(blocks:u64, reward_per_epoch: u128): u128 {
-        let max_uncles = (blocks * Self::uncle_rate_target() * Self::reward_per_uncle_percent()) / (1000 * 100);
+        let max_uncles = (blocks * Self::uncle_rate_target() * Self::reward_per_uncle_percent()) / (THOUSAND * HUNDRED);
         let reward = reward_per_epoch / ((max_uncles as u128) + (blocks as u128));
         reward
     }
@@ -192,8 +195,8 @@ module Consensus {
                 let total_uncles = epoch_data.uncles;
                 let blocks = epoch_ref.end_number - epoch_ref.start_number;
                 let avg_block_time = total_time / blocks;
-                let uncles_rate = total_uncles * 1000 / blocks;
-                let new_epoch_block_time_target = (1000 + uncles_rate) * avg_block_time / (Self::uncle_rate_target() + 1000);
+                let uncles_rate = total_uncles * THOUSAND / blocks;
+                let new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time / (Self::uncle_rate_target() + THOUSAND);
                 let total_reward = epoch_data.total_reward;
 
                 if (new_epoch_block_time_target < Self::min_time_target()) {

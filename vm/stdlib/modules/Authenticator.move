@@ -8,6 +8,9 @@ module Authenticator {
     use 0x1::LCS;
     use 0x1::Vector;
 
+    const ED25519_SCHEME_ID: u8 = 0;
+    const MULTI_ED25519_SCHEME_ID: u8 = 1;
+
     // A multi-ed25519 public key
     struct MultiEd25519PublicKey {
         // vector of ed25519 public keys
@@ -39,7 +42,7 @@ module Authenticator {
     // Compute an authentication key for the ed25519 public key `public_key`
     public fun ed25519_authentication_key(public_key: vector<u8>): vector<u8> {
         // TODO: add constant ED25519_SCHEME_ID = 0u8
-        Vector::push_back(&mut public_key, 0u8);
+        Vector::push_back(&mut public_key, ED25519_SCHEME_ID);
         Hash::sha3_256(public_key)
     }
 

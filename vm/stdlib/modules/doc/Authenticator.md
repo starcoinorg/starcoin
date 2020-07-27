@@ -101,7 +101,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt; {
     // TODO: add constant ED25519_SCHEME_ID = 0u8
-    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> public_key, 0u8);
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> public_key, ED25519_SCHEME_ID);
     <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(public_key)
 }
 </code></pre>
