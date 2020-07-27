@@ -1,6 +1,6 @@
-//! account: admin,100_000_000
-//! account: liquidier,100_000_000
-//! account: exchanger, 10_000_000
+//! account: admin
+//! account: liquidier
+//! account: exchanger
 
 
 // check: EXECUTED
@@ -36,12 +36,18 @@ module TokenSwapHelper {
 
 //! new-transaction
 //! sender: admin
+module LiquidityToken {
+    struct LiquidityToken<X, Y> {}
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: admin
 module TokenSwap {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Math;
-
-    struct LiquidityToken<X, Y> {}
+    use {{admin}}::LiquidityToken::LiquidityToken;
 
     // Liquidity Token
     // TODO: token should be generic on <X, Y>
@@ -262,7 +268,8 @@ fun main(signer: &signer) {
 script{
     use 0x1::STC;
     use {{admin}}::Token1;
-    use {{admin}}::TokenSwap::{Self, LiquidityToken};
+    use {{admin}}::TokenSwap;
+    use {{admin}}::LiquidityToken::LiquidityToken;
     use 0x1::Account;
 
 
@@ -314,8 +321,8 @@ script{
     use 0x1::Account;
     use 0x1::Signer;
     use {{admin}}::Token1;
-    use {{admin}}::TokenSwap::{Self, LiquidityToken};
-
+    use {{admin}}::TokenSwap;
+    use {{admin}}::LiquidityToken::LiquidityToken;
 
     // use 0x1::Debug;
 
