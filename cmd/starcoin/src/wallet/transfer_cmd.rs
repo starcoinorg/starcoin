@@ -140,7 +140,7 @@ impl CommandAction for TransferCommand {
             opt.max_gas_amount,
             token_code,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::new(ctx.state().net().chain_id()),
+            ChainId::id(ctx.state().net()),
         );
         let txn = client.wallet_sign_txn(raw_txn)?;
         let succ = client.submit_transaction(txn.clone())?;

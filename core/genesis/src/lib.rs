@@ -144,7 +144,7 @@ impl Genesis {
             0,
             0,
             1, // init to 1 to pass time check
-            ChainId::new(net.chain_id()),
+            ChainId::id(net),
         );
         let (genesis_private_key, genesis_public_key) = genesis_key_pair();
         let sign_txn = txn.sign(&genesis_private_key, genesis_public_key)?;

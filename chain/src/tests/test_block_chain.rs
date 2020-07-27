@@ -165,7 +165,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             0,
             10000,
             get_current_timestamp() + 40000,
-            ChainId::new(config.net().chain_id()),
+            ChainId::id(config.net()),
         );
         txn.as_signed_user_txn()?.clone()
     };

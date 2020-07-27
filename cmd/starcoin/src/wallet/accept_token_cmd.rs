@@ -89,7 +89,7 @@ impl CommandAction for AcceptTokenCommand {
             opt.max_gas_amount,
             opt.token_code.clone(),
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::new(ctx.state().net().chain_id()),
+            ChainId::id(ctx.state().net()),
         );
 
         let signed_txn = client.wallet_sign_txn(accept_token_txn)?;

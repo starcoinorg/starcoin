@@ -153,17 +153,12 @@ impl Default for ChainNetwork {
 pub struct ChainId(u8);
 
 impl ChainId {
-    pub fn new(id: u8) -> Self {
-        assert!(id > 0, "cannot have chain ID with 0");
-        Self(id)
-    }
-
-    pub fn id(&self) -> u8 {
-        self.0
+    pub fn id(net: ChainNetwork) -> Self {
+        ChainId(net.chain_id())
     }
 
     pub fn test() -> Self {
-        ChainId::new(ChainNetwork::Dev.chain_id())
+        Self::id(ChainNetwork::Dev)
     }
 }
 

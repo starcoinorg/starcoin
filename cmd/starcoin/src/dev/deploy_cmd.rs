@@ -103,7 +103,7 @@ impl CommandAction for DeployCommand {
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,
-            ChainId::new(ctx.state().net().chain_id()),
+            ChainId::id(ctx.state().net()),
         );
 
         let signed_txn = client.wallet_sign_txn(deploy_txn)?;

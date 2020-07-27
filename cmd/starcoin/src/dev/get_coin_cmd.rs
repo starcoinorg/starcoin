@@ -81,7 +81,7 @@ impl CommandAction for GetCoinCommand {
             1,
             DEFAULT_MAX_GAS_AMOUNT,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::new(ctx.state().net().chain_id()),
+            ChainId::id(ctx.state().net()),
         );
         client.wallet_unlock(
             association_address,

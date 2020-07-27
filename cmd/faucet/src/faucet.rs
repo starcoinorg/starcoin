@@ -51,7 +51,7 @@ impl Faucet {
             MAX_GAS,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
             // TODO: should include other network? guangyuz double check
-            ChainId::test(),
+            ChainId::id(self.client.node_info().unwrap().net),
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;

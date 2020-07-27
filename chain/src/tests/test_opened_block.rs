@@ -45,7 +45,7 @@ pub fn test_open_block() -> Result<()> {
         association_sequence_num,
         50_000_000,
         get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-        ChainId::new(config.clone().net().chain_id()),
+        ChainId::id(config.clone().net()),
     )
     .try_into()?;
     let excluded = opened_block.push_txns(vec![txn1])?;
@@ -77,7 +77,7 @@ pub fn test_open_block() -> Result<()> {
             1,
             1_000_000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::new(config.net().chain_id()),
+            ChainId::id(config.net()),
         )
         .sign(&sender_prikey, sender_pubkey.clone())
         .unwrap()
