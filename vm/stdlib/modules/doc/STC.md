@@ -90,8 +90,8 @@
 
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
         account,
-        1000000, // scaling_factor = 10^6
-        1000,    // fractional_part = 10^3
+        SCALING_FACTOR, // scaling_factor = 10^6
+        FRACTIONAL_PART,    // fractional_part = 10^3
     );
 
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);

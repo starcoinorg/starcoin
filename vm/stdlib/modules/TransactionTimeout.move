@@ -9,6 +9,7 @@ module TransactionTimeout {
       pragma verify = false;
   }
 
+  const ONE_DAY :u64 = 86400;
   resource struct TTL {
     // Only transactions with timestamp in between block time and block time + duration would be accepted.
     duration_seconds: u64,
@@ -19,12 +20,12 @@ module TransactionTimeout {
     assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
     // Currently set to 1day.
     //TODO set by onchain config.
-    move_to(account, TTL {duration_seconds: 86400});
+    move_to(account, TTL {duration_seconds: ONE_DAY});
   }
   spec fun initialize {
     aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ACCOUNT();
     aborts_if exists<TTL>(Signer::spec_address_of(account));
-    ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == 86400;
+    ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == ONE_DAY;
   }
 
   public fun set_timeout(account: &signer, new_duration: u64) acquires TTL {

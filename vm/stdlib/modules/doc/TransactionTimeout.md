@@ -63,7 +63,7 @@
   <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
   // Currently set <b>to</b> 1day.
   //TODO set by onchain config.
-  move_to(account, <a href="#0x1_TransactionTimeout_TTL">TTL</a> {duration_seconds: 86400});
+  move_to(account, <a href="#0x1_TransactionTimeout_TTL">TTL</a> {duration_seconds: ONE_DAY});
 }
 </code></pre>
 
@@ -155,7 +155,7 @@
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ACCOUNT">CoreAddresses::SPEC_GENESIS_ACCOUNT</a>();
 <b>aborts_if</b> exists&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).duration_seconds == 86400;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).duration_seconds == ONE_DAY;
 </code></pre>
 
 
