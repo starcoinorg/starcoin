@@ -26,7 +26,6 @@ use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
-use starcoin_sync_api::PeerNewBlock;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -93,13 +92,6 @@ impl PeerInfoNet {
     }
 }
 
-#[rtype(result = "()")]
-#[derive(Message)]
-struct BlockMessage {
-    protocol_name: Cow<'static, [u8]>,
-    event: NewHeadBlock,
-}
-
 #[async_trait]
 impl NetworkService for NetworkAsyncService {
     async fn send_peer_message(
@@ -117,16 +109,10 @@ impl NetworkService for NetworkAsyncService {
     }
     async fn broadcast_new_head_block(
         &self,
-        protocol_name: Cow<'static, [u8]>,
-        event: NewHeadBlock,
+        _protocol_name: Cow<'static, [u8]>,
+        _event: NewHeadBlock,
     ) -> Result<()> {
-        self.addr
-            .send(BlockMessage {
-                protocol_name,
-                event,
-            })
-            .await?;
-        Ok(())
+        unimplemented!()
     }
 
     fn identify(&self) -> &PeerId {
@@ -450,32 +436,6 @@ impl Inner {
 
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
-            PeerMessage::Block(block) => {
-                debug!(
-                    "receive new block from {:?} with hash {:?}",
-                    peer_id,
-                    block.header().id()
-                );
-                let block_header = block.header().clone();
-                let total_difficulty = block.get_total_difficulty();
-
-                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-                    debug!(
-                        "total_difficulty is {},peer_info is {:?}",
-                        total_difficulty, peer_info
-                    );
-                    if total_difficulty > peer_info.peer_info.total_difficulty {
-                        peer_info.peer_info.latest_header = block_header;
-                        peer_info.peer_info.total_difficulty = total_difficulty;
-                    }
-                }
-                self.bus
-                    .send(Broadcast {
-                        msg: PeerNewBlock::new(peer_id.into(), block.get_block().clone()),
-                    })
-                    .await?;
-            }
-
             PeerMessage::CompactBlock(compact_block, total_diff) => {
                 //TODO: Check total difficulty
                 let block_header = compact_block.header.clone();
@@ -718,62 +678,6 @@ impl Handler<NetCmpctBlockMessage> for NetworkActor {
                     .expect("send message failed ,check network service please");
             }
         })
-    }
-}
-
-/// handler system events.
-impl Handler<BlockMessage> for NetworkActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: BlockMessage, _ctx: &mut Self::Context) -> Self::Result {
-        let protocol_name = msg.protocol_name;
-        let NewHeadBlock(block) = msg.event;
-        debug!("broadcast a new block {:?}", block.header().id());
-
-        let id = block.header().id();
-        let peers = self.peers.clone();
-
-        let network_service = self.network_service.clone();
-        let block_header = block.header().clone();
-        let total_difficulty = block.get_total_difficulty();
-        let msg = PeerMessage::Block(block);
-        let bytes = msg.encode().expect("should encode succ");
-
-        let self_id = self.peer_id.clone();
-        Arbiter::spawn(async move {
-            if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
-                debug!(
-                    "total_difficulty is {},peer_info is {:?}",
-                    total_difficulty, peer_info
-                );
-                if total_difficulty > peer_info.peer_info.total_difficulty {
-                    peer_info.peer_info.latest_header = block_header;
-                    peer_info.peer_info.total_difficulty = total_difficulty;
-                }
-
-                // update self peer info
-                let self_info = PeerInfo::new_with_peer_info(
-                    self_id.clone().into(),
-                    peer_info.peer_info.total_difficulty,
-                    peer_info.peer_info.latest_header.clone(),
-                    peer_info.get_peer_info(),
-                );
-                network_service.update_self_info(self_info);
-            }
-
-            for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                if !peer_info.known_blocks.contains(&id) {
-                    peer_info.known_blocks.put(id, ());
-                } else {
-                    continue;
-                }
-
-                network_service
-                    .send_message(peer_id.clone(), protocol_name.clone(), bytes.clone())
-                    .await
-                    .expect("send message failed ,check network service please");
-            }
-        });
     }
 }
 
