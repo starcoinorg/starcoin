@@ -116,7 +116,7 @@ where
                 .map(|txn| txn.clone().unwrap())
                 .collect()
         };
-        let body = BlockBody::new(txns, None);
+        let body = BlockBody::new(txns, compact_block.uncles);
         let block = Block::new(compact_block.header, body);
         Ok(block)
     }
