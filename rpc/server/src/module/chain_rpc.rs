@@ -155,25 +155,67 @@ where
         author: AccountAddress,
         auth_key_prefix: Vec<u8>,
         parent_id: Option<HashValue>,
+        head: bool,
     ) -> FutureResult<HashValue> {
         let service = self.service.clone();
         let fut = async move {
+            let old_head = service
+                .clone()
+                .master_head_header()
+                .await?
+                .expect("head is none.");
+
             let p_id = match parent_id {
                 Some(id) => id,
-                None => service
+                None => old_head.parent_hash(),
+            };
+
+            let parent_number = service
+                .clone()
+                .get_block_by_hash(p_id)
+                .await?
+                .header()
+                .number();
+            let brother_txns = if old_head.number() > parent_number {
+                service
                     .clone()
-                    .master_head_header()
+                    .master_block_by_number(parent_number + 1)
                     .await?
-                    .expect("head is none.")
-                    .parent_hash(),
+                    .body
+                    .into()
+            } else {
+                Vec::new()
             };
 
             let block_template = service
                 .clone()
-                .create_block_template(author, Some(auth_key_prefix), Some(p_id), Vec::new())
+                .create_block_template(author, Some(auth_key_prefix), Some(p_id), brother_txns)
                 .await?;
 
-            let block = block_template.into_block(0, 1.into());
+            let difficulty = if head {
+                let head_difficulty = service
+                    .clone()
+                    .get_block_info_by_hash(&old_head.id())
+                    .await?
+                    .expect("head block info is none.")
+                    .get_total_difficulty();
+                let parent_difficulty = service
+                    .clone()
+                    .get_block_info_by_hash(&p_id)
+                    .await?
+                    .expect("parent block info is none.")
+                    .get_total_difficulty();
+
+                if head_difficulty > parent_difficulty {
+                    (head_difficulty - parent_difficulty) * 2
+                } else {
+                    1.into()
+                }
+            } else {
+                1.into()
+            };
+
+            let block = block_template.into_block(0, difficulty);
             let block_id = block.id();
 
             let _ = service.clone().try_connect(block).await?;

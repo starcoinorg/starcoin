@@ -521,11 +521,12 @@ impl RpcClient {
         author: AccountAddress,
         auth_key_prefix: Vec<u8>,
         parent_id: Option<HashValue>,
+        head: bool,
     ) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
-                .create_dev_block(author, auth_key_prefix, parent_id)
+                .create_dev_block(author, auth_key_prefix, parent_id, head)
                 .compat()
                 .await
         })
