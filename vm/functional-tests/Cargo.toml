@@ -27,7 +27,8 @@ starcoin-statedb = { path = "../../state/statedb" }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-move-compiler = { path = "../../vm/compiler"}
 executor = { package="starcoin-executor", path = "../../executor"}
-starcoin-genesis = { path = "../../core/genesis"}
+starcoin-genesis = { path = "../../core/genesis" }
+starcoin-consensus = { path = "../../consensus" }
 
 [[test]]
 name = "testsuite"

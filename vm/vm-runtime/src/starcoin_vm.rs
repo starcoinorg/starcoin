@@ -203,7 +203,6 @@ impl StarcoinVM {
         match transaction.payload() {
             TransactionPayload::Script(script) => {
                 self.is_allowed_script(script)?;
-                self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
             }
             TransactionPayload::Package(_package) => {
                 //TODO move to prologue
@@ -212,9 +211,9 @@ impl StarcoinVM {
                     return Err(VMStatus::Error(StatusCode::UNKNOWN_MODULE));
                 };
                 //TODO verify module compat.
-                self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
             }
         }
+        self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
     }
 
     pub fn verify_transaction(

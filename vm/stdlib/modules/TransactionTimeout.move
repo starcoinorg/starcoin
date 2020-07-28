@@ -5,6 +5,7 @@ module TransactionTimeout {
   use 0x1::CoreAddresses;
   use 0x1::Timestamp;
   use 0x1::ErrorCode;
+  use 0x1::Block;
 
   spec module {
       pragma verify = false;
@@ -44,10 +45,10 @@ module TransactionTimeout {
 
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool acquires TTL {
     let current_block_time = Timestamp::now_seconds();
-    // if now is genesis, just return true.
-    // TODO: need to figure out a better way to handle this.
-    if (current_block_time == 0) {
-      return txn_timestamp > 0
+    let block_height = Block::get_current_block_height();
+    // before first block, just require txn_timestamp > genesis timestamp.
+    if (block_height == 0) {
+      return txn_timestamp > current_block_time
     };
     let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ACCOUNT()).duration_seconds;
     let max_txn_time = current_block_time + timeout;

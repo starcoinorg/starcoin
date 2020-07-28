@@ -17,15 +17,15 @@ impl tx_pool::Listener<Transaction> for Logger {
     fn added(&mut self, tx: &Arc<Transaction>, old: Option<&Arc<Transaction>>) {
         debug!(
             target: "txqueue",
-            "Txn added. [{hash:?}] Sender: {sender}, nonce: {nonce}, gasPrice: {gas_price}, gas: {gas}, dataLen: {data:?}))",
+            "Txn added. [{hash:?}] Sender: {sender}, nonce: {nonce}, gasPrice: {gas_price}, gas: {gas}, expiration_timestamp_secs: {expiration_timestamp_secs}, dataLen: {data:?}))",
             hash = tx.hash(),
             sender = tx.sender(),
             nonce = tx.signed().sequence_number(),
             gas_price = tx.signed().gas_unit_price(),
             gas = tx.signed().max_gas_amount(),
+            expiration_timestamp_secs = tx.signed().expiration_timestamp_secs(),
             data = tx.signed().payload(),
         );
-
         if let Some(old) = old {
             debug!(target: "txqueue", "[{:?}] Dropped. Replaced by [{:?}]", old.hash(), tx.hash());
         }

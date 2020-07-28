@@ -31,3 +31,4 @@ starcoin-move-compiler = { path = "../vm/compiler"}
 starcoin-functional-tests = { path = "../vm/functional-tests"}
 starcoin-genesis = { path = "../core/genesis"}
 tempfile = "3.1.0"
+starcoin-consensus = { path = "../consensus" }
