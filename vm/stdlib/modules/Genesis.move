@@ -76,7 +76,7 @@ module Genesis {
         Account::rotate_authentication_key(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
 
-        ChainId::initialize(&association, chain_id);
+        ChainId::initialize(&genesis_account, chain_id);
 
         //Set global time, and Timestamp::is_genesis() will return false.
         Timestamp::initialize(&genesis_account);

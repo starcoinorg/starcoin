@@ -43,10 +43,10 @@
 
 ## Function `initialize`
 
-Publish the chain ID under the Root account
+Publish the chain ID under the genesis account
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(lr_account: &signer, id: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(account: &signer, id: u8)
 </code></pre>
 
 
@@ -55,14 +55,14 @@ Publish the chain ID under the Root account
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(lr_account: &signer, id: u8) {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(account: &signer, id: u8) {
     <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), ENOT_GENESIS);
     <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(lr_account) == <a href="CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>(),
-        ENOT_ASSOCIATION_ROOT
+        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(),
+        ENOT_GENESIS_ACCOUNT
     );
 
-    move_to(lr_account, <a href="#0x1_ChainId">ChainId</a> { id })
+    move_to(account, <a href="#0x1_ChainId">ChainId</a> { id })
 }
 </code></pre>
 
@@ -87,7 +87,7 @@ Return the chain ID of this Libra instance
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_get">get</a>(): u8 <b>acquires</b> <a href="#0x1_ChainId">ChainId</a> {
-    borrow_global&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>()).id
+    borrow_global&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>()).id
 }
 </code></pre>
 
