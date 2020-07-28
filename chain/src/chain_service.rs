@@ -67,7 +67,7 @@ where
         })
     }
 
-    pub fn find_or_fork(&mut self, header: &BlockHeader) -> Result<(bool, Option<BlockChain<C>>)> {
+    pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain<C>>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if !block_exist {
@@ -598,8 +598,8 @@ where
         };
 
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
-            //TODO ensure is need create a new chain?
-            let block_chain = self.get_master().new_chain(block_id)?;
+            let block_chain =
+                BlockChain::<C>::new(self.config.clone(), block.id(), self.storage.clone())?;
             let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
             let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
             let epoch_start_number = if let Some(epoch) = epoch {
