@@ -7,6 +7,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_dev::playground;
 use starcoin_move_compiler::shared::Address;
 use starcoin_move_compiler::{
     command_line::parse_address, compile_source_string_no_report, errors, load_bytecode_file,
@@ -18,7 +19,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -188,17 +188,12 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        //TODO show VMStatus in dry run
-        let output = if opt.local_mode {
-            let mut vm = StarcoinVM::new();
+        let (vm_status, output) = if opt.local_mode {
             let state_view = RemoteStateReader::new(client);
-            vm.execute_transactions(
+            playground::dry_run(
                 &state_view,
-                vec![Transaction::UserTransaction(signed_txn.clone())],
+                Transaction::UserTransaction(signed_txn.clone()),
             )?
-            .pop()
-            .expect("at least one txn output")
-            .1
         } else {
             client.dry_run(signed_txn.clone())?
         };
@@ -206,11 +201,15 @@ impl CommandAction for ExecuteCommand {
             format_err!("TransactionStatus is discard: {:?}", status_code)
         })?;
         if keep_status != KeptVMStatus::Executed {
-            bail!("move file pre-run failed, {:?}", keep_status);
+            bail!(
+                "move file pre-run failed, {:?}, vm_status: {:?}",
+                keep_status,
+                vm_status
+            );
         }
         if !opt.dry_run {
-            let succ = client.submit_transaction(signed_txn)?;
-            if let Err(e) = succ {
+            let success = client.submit_transaction(signed_txn)?;
+            if let Err(e) = success {
                 bail!("execute-txn is reject by node, reason: {}", &e)
             }
             println!("txn {:#x} submitted.", txn_hash);

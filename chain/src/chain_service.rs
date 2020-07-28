@@ -302,21 +302,14 @@ where
         epoch_start_number: BlockNumber,
         master_block_headers: &HashSet<BlockHeader>,
     ) -> Result<bool> {
-        let mut id = header_id;
-
         let mut result = false;
-        loop {
-            let block_header = self.storage.get_block_header_by_hash(id)?;
+        let block_header = self.storage.get_block_header_by_hash(header_id)?;
 
-            if let Some(block_header) = block_header {
-                id = block_header.parent_hash;
-                if block_header.number <= epoch_start_number {
-                    break;
-                }
-                if master_block_headers.contains(&block_header) {
-                    result = true;
-                    break;
-                }
+        if let Some(block_header) = block_header {
+            if master_block_headers.contains(&block_header)
+                && block_header.number < epoch_start_number
+            {
+                result = true;
             }
         }
         Ok(result)
@@ -439,7 +432,11 @@ where
 
         let master_block_headers = self.master_blocks_since(epoch_start_number)?;
         for uncle in uncles {
-            if !self.check_common_ancestor(uncle.id(), epoch_start_number, &master_block_headers)? {
+            if !self.check_common_ancestor(
+                uncle.parent_hash,
+                epoch_start_number,
+                &master_block_headers,
+            )? {
                 debug!(
                     "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
                     uncle.id(),
