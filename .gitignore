@@ -30,3 +30,6 @@ Temporary Items
 .idea
 .vscode
 *iml
+
+# Github action's files
+packages-microsoft-prod.deb
