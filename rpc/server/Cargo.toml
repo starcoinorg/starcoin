@@ -53,7 +53,8 @@ starcoin-storage = {path = "../../storage"}
 starcoin-executor = {path = "../../executor"}
 starcoin-vm-types = { path = "../../vm/types"}
 starcoin-consensus= {path = "../../consensus"}
-network-api = {package="network-api", path="../../network/api"}
+starcoin-dev= {path = "../../vm/dev"}
+network-api = {path="../../network/api"}
 
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}

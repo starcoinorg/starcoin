@@ -1,0 +1,18 @@
+[package]
+name = "starcoin-dev"
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+starcoin-crypto = { path = "../../commons/crypto"}
+starcoin-vm-types = { path = "../types" }
+starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"]}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-state-api = { path = "../../state/api"}
+starcoin-state-service = { path = "../../state/service"}
+starcoin-statedb = { path = "../../state/statedb"}

@@ -302,7 +302,7 @@ where
                         .map(str::trim)
                         .filter(|s| !s.is_empty())
                         .collect();
-                    let cmd_name = params[0];
+                    let cmd_name = if params.is_empty() { "" } else { params[0] };
                     match cmd_name {
                         "quit" | "exit" | "q!" => {
                             let global_opt = Arc::try_unwrap(global_opt)

@@ -3,14 +3,15 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, DevPlaygroudService, DevRpcImpl, NodeRpcImpl, PubSubImpl,
-    PubSubService, StateRpcImpl, TxPoolRpcImpl, WalletRpcImpl,
+    ChainRpcImpl, DebugRpcImpl, DevRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl,
+    TxPoolRpcImpl, WalletRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
 use jsonrpc_core::{MetaIoHandler, RemoteProcedure};
 use starcoin_config::NodeConfig;
+use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_network::NetworkAsyncService;
@@ -40,7 +41,7 @@ impl RpcActor {
         chain_service: CS,
         account_service: AS,
         state_service: SS,
-        dev_playground_service: Option<DevPlaygroudService>,
+        dev_playground_service: Option<PlaygroudService>,
         pubsub_service: Option<PubSubService>,
         //TODO after network async service provide trait, remove Option.
         network_service: Option<NetworkAsyncService>,
@@ -191,7 +192,7 @@ mod tests {
         let account_service = MockWalletService::new().unwrap();
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
-        let playground_service = DevPlaygroudService::new(Arc::new(MockStateNodeStore::new()));
+        let playground_service = PlaygroudService::new(Arc::new(MockStateNodeStore::new()));
         let _rpc_actor = RpcActor::launch(
             config,
             txpool,

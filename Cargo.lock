@@ -6412,6 +6412,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dev",
  "starcoin-executor",
  "starcoin-logger",
  "starcoin-move-compiler",
@@ -6518,6 +6519,21 @@ dependencies = [
  "rand 0.7.3",
  "rand_core 0.5.1",
  "sha2 0.8.2",
+]
+
+[[package]]
+name = "starcoin-dev"
+version = "0.3.1"
+dependencies = [
+ "anyhow",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-state-service",
+ "starcoin-statedb",
+ "starcoin-vm-runtime",
+ "starcoin-vm-types",
+ "thiserror",
 ]
 
 [[package]]
@@ -6868,6 +6884,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dev",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
@@ -7025,6 +7042,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
+ "starcoin-dev",
  "starcoin-executor",
  "starcoin-genesis",
  "starcoin-logger",
