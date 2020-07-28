@@ -80,6 +80,7 @@ impl FutureBlockPool {
 
         if let Some(set) = lock.get(parent_id) {
             set.iter().for_each(|id| {
+                child.push(id.clone());
                 let mut new_child = self.descendants(id);
                 if !new_child.is_empty() {
                     child.append(&mut new_child);
@@ -178,6 +179,11 @@ where
     }
 
     async fn do_block_connect(&self, block: Block) -> bool {
+        debug!(
+            "connect begin block {:?} : {:?}",
+            block.header().number(),
+            block.id()
+        );
         let pivot = self.get_pivot();
         let mut _state_sync_address = None;
         let current_block_id = block.id();
@@ -239,6 +245,11 @@ where
             Ok(connect) => {
                 match connect {
                     ConnectBlockResult::SUCCESS | ConnectBlockResult::DuplicateConn => {
+                        debug!(
+                            "connect succ block {:?} : {:?}",
+                            block.header().number(),
+                            block.id()
+                        );
                         return true;
                     }
                     ConnectBlockResult::FutureBlock => self.future_blocks.add_future_block(block),
@@ -284,5 +295,32 @@ where
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FutureBlockPool;
+    use types::block::{Block, BlockBody, BlockHeader};
+
+    #[test]
+    fn test_future_block_pool() {
+        let parent_header = BlockHeader::random();
+        let parent_id = parent_header.id();
+        let parent_number = parent_header.number();
+        let body = BlockBody::new(Vec::new(), None);
+        let parent = Block::new(parent_header, body.clone());
+
+        let mut son_header = BlockHeader::random();
+        son_header.parent_hash = parent_id;
+        son_header.number = parent_number + 1;
+        let son = Block::new(son_header, body);
+
+        let pool = FutureBlockPool::new();
+        pool.add_future_block(son);
+        let descendants = pool.descendants(&parent.id());
+        assert_eq!(descendants.len(), 1, "descendants length mismatch.");
+        let son_blocks = pool.take_child(&parent.id());
+        assert_eq!(son_blocks.unwrap().len(), 1, "son_blocks length mismatch.");
     }
 }

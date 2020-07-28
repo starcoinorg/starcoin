@@ -122,6 +122,7 @@ where
             if !download.ready.load(Ordering::Relaxed) {
                 return;
             }
+            debug!("Send sync event.");
             if download.sync_task.is_finish() {
                 if let Err(e) = download.sync_event_sender.try_send(SyncEvent::DoSync) {
                     error!("{:?}", e);
@@ -157,6 +158,7 @@ where
 
     fn handle(&mut self, _msg: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
         self.ready.store(true, Ordering::Relaxed);
+        info!("Sync Ready.");
     }
 }
 
@@ -640,7 +642,7 @@ where
     }
 
     pub async fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>) {
-        assert_eq!(headers.len(), bodies.len());
+        ensure!(headers.len(), bodies.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
