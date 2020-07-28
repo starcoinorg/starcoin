@@ -244,6 +244,7 @@ where
         rpc_rx,
         chain.clone(),
         storage.clone(),
+        chain_state_service.clone(),
         txpool_service.clone(),
     )?;
 

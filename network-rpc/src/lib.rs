@@ -10,8 +10,7 @@ use network_api::messages::RawRpcRequestMessage;
 use network_rpc_core::server::NetworkRpcServer;
 use rpc::gen_server::NetworkRpc;
 use serde::{Deserialize, Serialize};
-use state_api::StateWithProof;
-use state_service::ChainStateServiceImpl;
+use state_api::{ChainStateAsyncService, StateWithProof};
 use std::sync::Arc;
 use storage::Store;
 use traits::Consensus;
@@ -27,17 +26,17 @@ mod tests;
 
 pub use rpc::gen_client;
 
-pub fn start_network_rpc_server<C>(
+pub fn start_network_rpc_server<C, S>(
     rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     chain: ChainActorRef<C>,
     storage: Arc<dyn Store>,
+    state_service: S,
     txpool: TxPoolService,
 ) -> Result<Addr<NetworkRpcServer>>
 where
     C: Consensus + Sync + Send + 'static + Clone,
+    S: ChainStateAsyncService + 'static,
 {
-    let state_node_store = storage.clone().into_super_arc();
-    let state_service = ChainStateServiceImpl::new(state_node_store, None);
     let rpc_impl = NetworkRpcImpl::new(chain, txpool, state_service, storage);
     NetworkRpcServer::start(rpc_rx, rpc_impl.to_delegate())
 }

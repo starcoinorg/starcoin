@@ -14,6 +14,7 @@ use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_network_api::NetworkService;
+use starcoin_state_service::ChainStateActor;
 use starcoin_sync::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
 use starcoin_sync::Downloader;
 use starcoin_txpool::{TxPool, TxPoolService};
@@ -202,11 +203,13 @@ async fn create_node(
             .unwrap()
         })
         .await?;
+    let state_service = ChainStateActor::launch(bus.clone(), storage.clone(), None).unwrap();
     // network rpc server
     let _ = network_rpc::start_network_rpc_server(
         rpc_rx,
         chain.clone(),
         storage.clone(),
+        state_service,
         txpool_service.clone(),
     )?;
 

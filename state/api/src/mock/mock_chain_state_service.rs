@@ -35,4 +35,12 @@ impl ChainStateAsyncService for MockChainStateService {
     async fn state_root(self) -> Result<HashValue> {
         unimplemented!()
     }
+
+    async fn get_with_proof_by_root(
+        self,
+        _access_path: AccessPath,
+        _state_root: HashValue,
+    ) -> Result<StateWithProof> {
+        unimplemented!()
+    }
 }

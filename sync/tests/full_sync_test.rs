@@ -14,6 +14,7 @@ use miner::{MinerActor, MinerClientActor};
 use network_api::NetworkService;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
+use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
@@ -83,10 +84,14 @@ fn test_network_actor_rpc() {
         .unwrap();
 
         // network rpc server
+        let state_service_1 =
+            ChainStateActor::launch(bus_1.clone(), storage_1.clone(), None).unwrap();
+
         network_rpc::start_network_rpc_server(
             rx_1,
             first_chain.clone(),
             storage_1.clone(),
+            state_service_1,
             tx_pool_service.clone(),
         )
         .unwrap();
@@ -192,11 +197,13 @@ fn test_network_actor_rpc() {
         )
         .unwrap();
         // network rpc server
-
+        let state_service_2 =
+            ChainStateActor::launch(bus_2.clone(), storage_2.clone(), None).unwrap();
         network_rpc::start_network_rpc_server(
             rx_2,
             second_chain.clone(),
             storage_2.clone(),
+            state_service_2,
             txpool_2.get_service(),
         )
         .unwrap();

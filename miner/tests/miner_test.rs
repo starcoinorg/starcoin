@@ -11,6 +11,7 @@ use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
+use starcoin_state_service::ChainStateActor;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -79,11 +80,14 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool_service.clone(),
         )
         .unwrap();
+
+        let state_service = ChainStateActor::launch(bus.clone(), storage.clone(), None).unwrap();
         // network rpc server
         network_rpc::start_network_rpc_server(
             rx,
             chain.clone(),
             storage.clone(),
+            state_service,
             txpool_service.clone(),
         )
         .unwrap();
