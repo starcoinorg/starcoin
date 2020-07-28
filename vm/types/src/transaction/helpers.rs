@@ -1,6 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::chain_config::ChainId;
 use crate::{
     account_address::AccountAddress,
     transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload},
@@ -27,6 +28,7 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> Result<SignedUserTransaction> {
     let raw_txn = RawUserTransaction::new(
         sender_address,
@@ -35,6 +37,7 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
+        chain_id,
     );
     signer.sign_txn(raw_txn)
 }

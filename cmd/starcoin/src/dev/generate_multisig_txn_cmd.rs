@@ -173,6 +173,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,
+            ctx.state().net().chain_id(),
         );
         let txn = MultisigTransaction::new(
             script_txn.clone(),

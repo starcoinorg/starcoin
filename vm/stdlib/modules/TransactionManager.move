@@ -12,6 +12,7 @@ module TransactionManager {
     use 0x1::STC::{STC};
     use 0x1::TransactionFee;
     use 0x1::Timestamp;
+    use 0x1::ChainId;
 
     const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 6;
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 =0;
@@ -31,12 +32,17 @@ module TransactionManager {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         txn_expiration_time: u64,
+        chain_id: u8,
         txn_payload_type: u8,
         txn_script_or_package_hash: vector<u8>,
         txn_package_address: address,
     ) {
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+
+        // Check that the chain ID stored on-chain matches the chain ID
+        // specified by the transaction
+        assert(ChainId::get() == chain_id, 7);
 
         Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
         assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), EPROLOGUE_TRANSACTION_EXPIRED);

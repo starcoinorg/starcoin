@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::chain_config::ChainId;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_wallet_api::WalletAccount;
@@ -39,6 +40,7 @@ impl MockTxnGenerator {
             1,
             10000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            ChainId::dev(),
         );
         Ok(transfer_txn)
     }

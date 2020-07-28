@@ -15,6 +15,7 @@ module Genesis {
    use 0x1::Block;
    use 0x1::TransactionFee;
    use 0x1::BlockReward;
+   use 0x1::ChainId;
 
    //TODO refactor when move support ABI, and pass struct by argument
    public fun initialize(publishing_option: vector<u8>, instruction_schedule: vector<u8>,
@@ -25,6 +26,7 @@ module Genesis {
                          reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u128,
                          pre_mine_percent:u64, parent_hash: vector<u8>,
                          association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
+                         chain_id: u8
    ){
         assert(Timestamp::is_genesis(), 1);
 
@@ -73,6 +75,8 @@ module Genesis {
         let assoc_rotate_key_cap = Account::extract_key_rotation_capability(&association);
         Account::rotate_authentication_key(&assoc_rotate_key_cap, association_auth_key);
         Account::restore_key_rotation_capability(assoc_rotate_key_cap);
+
+        ChainId::initialize(&genesis_account, chain_id);
 
         //Set global time, and Timestamp::is_genesis() will return false.
         Timestamp::initialize(&genesis_account);

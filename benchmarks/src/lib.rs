@@ -3,6 +3,7 @@
 
 use starcoin_executor::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
@@ -20,5 +21,6 @@ pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
         seq_num,
         1000,
         get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        ChainId::dev(),
     )
 }

@@ -8,6 +8,7 @@ use common_crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use transaction_pool as tx_pool;
 use tx_pool::VerifiedTransaction;
+
 /// Transaction pool logger.
 #[derive(Default, Debug)]
 pub struct Logger;
@@ -147,6 +148,7 @@ mod tests {
     use rand::SeedableRng;
 
     use tx_pool::Listener;
+    use types::chain_config::ChainId;
     use types::{
         account_address::AccountAddress,
         transaction,
@@ -187,6 +189,7 @@ mod tests {
             100_000,
             10,
             get_current_timestamp() + 60,
+            ChainId::dev(),
         );
         let mut rng = rand::rngs::StdRng::from_seed([0; 32]);
         let private_key = ed25519::Ed25519PrivateKey::generate(&mut rng);

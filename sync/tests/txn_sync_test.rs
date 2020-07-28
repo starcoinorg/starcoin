@@ -20,6 +20,7 @@ use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::{sync::Arc, time::Duration};
 use txpool::TxPool;
+use types::chain_config::ChainId;
 use types::{
     account_address,
     transaction::helpers::get_current_timestamp,
@@ -217,6 +218,7 @@ fn gen_user_txn() -> SignedUserTransaction {
         0,
         10000,
         get_current_timestamp() + 40000,
+        ChainId::dev(),
     );
     txn.as_signed_user_txn().unwrap().clone()
 }

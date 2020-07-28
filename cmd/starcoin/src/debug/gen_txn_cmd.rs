@@ -123,6 +123,7 @@ impl CommandAction for GenTxnCommand {
                 1,
                 DEFAULT_MAX_GAS_AMOUNT,
                 get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+                net.chain_id(),
             );
             gen_result.total_amount += opt.amount;
             let txn = client.wallet_sign_txn(raw_txn)?;

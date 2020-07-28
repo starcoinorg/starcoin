@@ -9,6 +9,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
                  min_time_target:u64, max_uncles_per_block:u64,
                  total_supply: u128, pre_mine_percent:u64, parent_hash: vector<u8>,
                  association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
+                 chain_id: u8,
                  ) {
     Genesis::initialize(publishing_option, instruction_schedule,
                         native_schedule, reward_delay,
@@ -17,6 +18,6 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
                         min_time_target, max_uncles_per_block,
                         reward_per_uncle_percent, total_supply,
                         pre_mine_percent, parent_hash ,
-                        association_auth_key, genesis_auth_key);
+                        association_auth_key, genesis_auth_key, chain_id);
 }
 }

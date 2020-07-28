@@ -25,7 +25,6 @@ use structopt::StructOpt;
 
 mod account_vault_config;
 mod available_port;
-mod chain_config;
 mod logger_config;
 mod metrics_config;
 mod miner_config;
@@ -39,16 +38,16 @@ pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
 
-pub use chain_config::{
-    genesis_key_pair, ChainConfig, ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
-    MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
-};
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{ConsensusStrategy, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+pub use starcoin_vm_types::chain_config::{
+    genesis_key_pair, ChainConfig, ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
+    MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+};
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;

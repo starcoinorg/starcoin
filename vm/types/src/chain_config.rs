@@ -1,19 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::on_chain_config::{VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE};
+use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, format_err, Result};
+use ethereum_types::U256;
 use libp2p::Multiaddr;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
-use starcoin_types::{
-    transaction::{RawUserTransaction, SignedUserTransaction},
-    U256,
-};
-use starcoin_vm_types::on_chain_config::{
-    VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
-};
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
@@ -38,11 +34,11 @@ pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
     Deserialize,
     Serialize,
 )]
-#[repr(u64)]
+#[repr(u8)]
 #[serde(tag = "net")]
 pub enum ChainNetwork {
     /// A ephemeral network just for developer test.
-    Dev = 1024,
+    Dev = 255,
     /// Starcoin test network,
     /// The data on the chain will be cleaned up periodically。
     /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
@@ -81,8 +77,8 @@ impl FromStr for ChainNetwork {
 }
 
 impl ChainNetwork {
-    pub fn chain_id(self) -> u64 {
-        self.into()
+    pub fn chain_id(self) -> ChainId {
+        ChainId(self.into())
     }
 
     pub fn is_dev(self) -> bool {
@@ -150,6 +146,23 @@ impl ChainNetwork {
 impl Default for ChainNetwork {
     fn default() -> Self {
         ChainNetwork::Dev
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
+pub struct ChainId(u8);
+
+impl ChainId {
+    pub fn new(id: u8) -> Self {
+        ChainId(id)
+    }
+
+    pub fn id(self) -> u8 {
+        self.0
+    }
+
+    pub fn dev() -> Self {
+        ChainNetwork::Dev.chain_id()
     }
 }
 
