@@ -9,21 +9,24 @@ use starcoin_crypto::HashValue;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
-///Generate Uncle block with dev consensus
+///Generate block with dev consensus
 #[derive(Debug, StructOpt)]
-#[structopt(name = "gen_dev_uncle")]
-pub struct GenDevUncleOpt {
+#[structopt(name = "gen_dev_block")]
+pub struct GenDevBlockOpt {
     ///Parent hash
     #[structopt(short = "p")]
     parent: Option<HashValue>,
+    ///Become master head
+    #[structopt(short = "h")]
+    head: bool,
 }
 
-pub struct GenDevUncleCommand;
+pub struct GenDevBlockCommand;
 
-impl CommandAction for GenDevUncleCommand {
+impl CommandAction for GenDevBlockCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GenDevUncleOpt;
+    type Opt = GenDevBlockOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -42,6 +45,7 @@ impl CommandAction for GenDevUncleCommand {
             auth_key.derived_address(),
             auth_key.prefix().to_vec(),
             opt.parent,
+            opt.head,
         )?;
 
         Ok(new_block_id)
