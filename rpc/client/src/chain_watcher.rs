@@ -1,8 +1,8 @@
 use crate::pubsub_client::PubSubClient;
 use actix::prelude::*;
 use actix::AsyncContext;
-use futures::channel::oneshot;
-use futures::compat::Stream01CompatExt;
+use futures03::channel::oneshot;
+use futures03::compat::Stream01CompatExt;
 use jsonrpc_core_client::RpcError;
 pub use pubsub::ThinBlock;
 use starcoin_crypto::HashValue;

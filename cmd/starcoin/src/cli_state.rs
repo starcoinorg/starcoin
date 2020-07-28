@@ -12,6 +12,7 @@ use starcoin_wallet_api::WalletAccount;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio_compat::runtime::Runtime;
 
 static HISTORY_FILE_NAME: &str = "history";
 
@@ -22,6 +23,7 @@ pub struct CliState {
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
+    _rt: Option<Runtime>,
 }
 
 impl CliState {
@@ -30,6 +32,7 @@ impl CliState {
         net: ChainNetwork,
         client: Arc<RpcClient>,
         join_handle: Option<NodeHandle>,
+        rt: Option<Runtime>,
     ) -> CliState {
         let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
             .clone()
@@ -52,6 +55,7 @@ impl CliState {
             join_handle,
             data_dir,
             temp_dir,
+            _rt: rt,
         }
     }
 
