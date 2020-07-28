@@ -69,7 +69,6 @@ impl StateCache {
 }
 
 //TODO remove the Lock.
-//#[derive(Clone)]
 pub struct StateTree {
     storage: Arc<dyn StateNodeStore>,
     storage_root_hash: RwLock<HashValue>,

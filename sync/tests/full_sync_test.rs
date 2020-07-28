@@ -81,6 +81,7 @@ fn test_network_actor_rpc() {
             tx_pool_service.clone(),
         )
         .unwrap();
+
         // network rpc server
         network_rpc::start_network_rpc_server(
             rx_1,

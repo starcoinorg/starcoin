@@ -1,6 +1,6 @@
 use crate::{
-    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber, GetTxns,
-    TransactionsData, DELAY_TIME,
+    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber,
+    GetStateWithProof, GetTxns, TransactionsData, DELAY_TIME,
 };
 use accumulator::AccumulatorNode;
 use actix::prelude::*;
@@ -9,7 +9,8 @@ use crypto::HashValue;
 use futures::future::BoxFuture;
 use logger::prelude::*;
 use netowrk_rpc_derive::*;
-use starcoin_state_tree::StateNode;
+use state_api::StateWithProof;
+use state_tree::StateNode;
 use types::{
     block::{BlockHeader, BlockInfo},
     peer_info::PeerId,
@@ -61,4 +62,10 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         request: GetAccumulatorNodeByNodeHash,
     ) -> BoxFuture<Result<AccumulatorNode>>;
+
+    fn get_state_with_proof(
+        &self,
+        peer_id: PeerId,
+        req: GetStateWithProof,
+    ) -> BoxFuture<Result<StateWithProof>>;
 }

@@ -218,7 +218,6 @@ where
         .expect("Head block must exist.");
     let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
     let chain_state_service = ChainStateActor::launch(
-        config.clone(),
         bus.clone(),
         storage.clone(),
         Some(head_block.header().state_root()),

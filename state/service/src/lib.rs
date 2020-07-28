@@ -6,3 +6,4 @@ mod message;
 mod service;
 
 pub use actor::*;
+pub use service::ChainStateServiceImpl;
