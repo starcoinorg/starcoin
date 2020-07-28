@@ -25,6 +25,15 @@ impl ChainStateServiceImpl {
             reader: ChainStateDB::new(store, root_hash),
         }
     }
+
+    pub(crate) fn get_with_proof_by_root(
+        &self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> Result<StateWithProof> {
+        let reader = self.reader.change_root(state_root);
+        reader.get_with_proof(&access_path)
+    }
 }
 
 impl ChainStateService for ChainStateServiceImpl {

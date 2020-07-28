@@ -3,14 +3,12 @@ use crate::{
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
 };
 use accumulator::AccumulatorNode;
-use actix::{Actor, Addr, Context, Handler};
 use anyhow::*;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use futures::future::BoxFuture;
 use logger::prelude::*;
-use state_api::{ChainStateReader, ChainStateService, StateWithProof};
-use state_service::ChainStateServiceImpl;
+use state_api::{ChainStateAsyncService, StateWithProof};
 use state_tree::StateNode;
 use std::sync::Arc;
 use storage::Store;
@@ -23,39 +21,41 @@ use types::{
     transaction::TransactionInfo,
 };
 
-pub struct NetworkRpcImpl<C>
+pub struct NetworkRpcImpl<C, S>
 where
     C: Consensus + Sync + Send + 'static + Clone,
+    S: ChainStateAsyncService + 'static,
 {
     chain_reader: ChainActorRef<C>,
     txpool: TxPoolService,
     storage: Arc<dyn Store>,
-    state_actor: Addr<StateActor>,
+    state_service: S,
 }
 
-impl<C> NetworkRpcImpl<C>
+impl<C, S> NetworkRpcImpl<C, S>
 where
     C: Consensus + Sync + Send + 'static + Clone,
+    S: ChainStateAsyncService + 'static,
 {
     pub fn new(
         chain_reader: ChainActorRef<C>,
         txpool: TxPoolService,
-        state_service: ChainStateServiceImpl,
+        state_service: S,
         storage: Arc<dyn Store>,
     ) -> Self {
-        let state_actor = StateActor::new(state_service).start();
         Self {
             chain_reader,
             txpool,
             storage,
-            state_actor,
+            state_service,
         }
     }
 }
 
-impl<C> NetworkRpc for NetworkRpcImpl<C>
+impl<C, S> NetworkRpc for NetworkRpcImpl<C, S>
 where
     C: Consensus + Sync + Send + 'static + Clone,
+    S: ChainStateAsyncService + 'static,
 {
     fn get_txns(&self, _peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>> {
         let txpool = self.txpool.clone();
@@ -313,39 +313,12 @@ where
         _peer_id: PeerId,
         req: GetStateWithProof,
     ) -> BoxFuture<Result<StateWithProof>> {
-        let addr = self.state_actor.clone();
+        let state_service = self.state_service.clone();
         let fut = async move {
-            match addr.send(req).await {
-                Err(e) => Err(anyhow!("{:?}", e)),
-                Ok(sf) => sf,
-            }
+            state_service
+                .get_with_proof_by_root(req.access_path, req.state_root)
+                .await
         };
         Box::pin(fut)
-    }
-}
-
-// Sadly, the ChainStateActor only support to change root when NewHeadBlock event comes automatically,
-// and ChainStateDB do not support clone, So I can't move it to the async future repeatedly.
-// here implement a poor one for supporting change_root then get_with_proof.
-struct StateActor {
-    inner: ChainStateServiceImpl,
-}
-impl StateActor {
-    fn new(inner: ChainStateServiceImpl) -> Self {
-        Self { inner }
-    }
-}
-impl Actor for StateActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, _ctx: &mut Self::Context) {}
-}
-
-impl Handler<GetStateWithProof> for StateActor {
-    type Result = Result<StateWithProof>;
-
-    fn handle(&mut self, msg: GetStateWithProof, _ctx: &mut Self::Context) -> Self::Result {
-        self.inner.change_root(msg.state_root);
-        self.inner.get_with_proof(&msg.access_path)
     }
 }

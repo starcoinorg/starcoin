@@ -32,4 +32,10 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>>;
 
     async fn state_root(self) -> Result<HashValue>;
+
+    async fn get_with_proof_by_root(
+        self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> Result<StateWithProof>;
 }

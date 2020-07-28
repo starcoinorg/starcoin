@@ -12,6 +12,7 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_genesis::Genesis;
+use starcoin_state_service::ChainStateActor;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
@@ -82,12 +83,14 @@ fn test_txn_sync_actor() {
             txpool_1.get_service(),
         )
         .unwrap();
-
+        let state_service_1 =
+            ChainStateActor::launch(bus_1.clone(), storage_1.clone(), None).unwrap();
         // network rpc server
         network_rpc::start_network_rpc_server(
             rpc_rx,
             first_chain.clone(),
             storage_1.clone(),
+            state_service_1,
             txpool_1.get_service(),
         )
         .unwrap();
@@ -168,11 +171,14 @@ fn test_txn_sync_actor() {
         )
         .unwrap();
 
+        let state_service_2 =
+            ChainStateActor::launch(bus_2.clone(), storage_2.clone(), None).unwrap();
         // network rpc server
         network_rpc::start_network_rpc_server(
             rpc_rx_2,
             second_chain.clone(),
             storage_2.clone(),
+            state_service_2,
             txpool_2.get_service(),
         )
         .unwrap();

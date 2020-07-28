@@ -15,6 +15,7 @@ use network::{NetworkActor, NetworkAsyncService};
 use network_api::messages::RawRpcRequestMessage;
 use network_api::{Multiaddr, NetworkService};
 use state_api::StateWithProof;
+use state_service::ChainStateActor;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::cache_storage::CacheStorage;
@@ -131,17 +132,19 @@ fn gen_chain_env(
     MinerClientActor::new(node_config.miner.clone()).start();
     MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
         node_config,
-        bus,
+        bus.clone(),
         storage.clone(),
         tx_pool_service.clone(),
         chain.clone(),
         miner_account,
     )
     .unwrap();
+    let state_service = ChainStateActor::launch(bus, storage.clone(), None).unwrap();
     start_network_rpc_server(
         rpc_rx,
         chain.clone(),
         storage.clone(),
+        state_service,
         tx_pool_service.clone(),
     )
     .unwrap();

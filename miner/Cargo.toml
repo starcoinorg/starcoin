@@ -42,3 +42,4 @@ starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 stest = { path = "../commons/stest" }
 network-rpc = {path="../network-rpc", package = "starcoin-network-rpc"}
+starcoin-state-service = {path="../state/service"}

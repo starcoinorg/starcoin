@@ -41,6 +41,7 @@ executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor
 futures = "0.3"
 logger = {path = "../commons/logger",package="starcoin-logger"}
 network-rpc = {path ="../network-rpc", package = "starcoin-network-rpc"}
+starcoin-state-service = {path="../state/service"}
 [dev-dependencies]
 
 [[bench]]

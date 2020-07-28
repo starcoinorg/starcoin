@@ -70,6 +70,12 @@ impl Handler<StateRequest> for ChainStateActor {
                 StateResponse::AccountState(self.service.get_account_state(&address)?)
             }
             StateRequest::StateRoot() => StateResponse::StateRoot(self.service.state_root()),
+            StateRequest::GetWithProofByRoot(access_path, state_root) => {
+                StateResponse::StateWithProof(Box::new(
+                    self.service
+                        .get_with_proof_by_root(access_path, state_root)?,
+                ))
+            }
         };
         Ok(response)
     }
@@ -151,6 +157,23 @@ impl ChainStateAsyncService for ChainStateActorRef {
             .map_err(Into::<Error>::into)??;
         if let StateResponse::StateRoot(root) = response {
             Ok(root)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn get_with_proof_by_root(
+        self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> Result<StateWithProof> {
+        let response = self
+            .0
+            .send(StateRequest::GetWithProofByRoot(access_path, state_root))
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let StateResponse::StateWithProof(state) = response {
+            Ok(*state)
         } else {
             panic!("Unexpect response type.")
         }

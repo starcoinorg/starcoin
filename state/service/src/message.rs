@@ -13,6 +13,7 @@ use starcoin_types::{
 pub enum StateRequest {
     Get(AccessPath),
     GetWithProof(AccessPath),
+    GetWithProofByRoot(AccessPath, HashValue),
     GetAccountState(AccountAddress),
     StateRoot(),
 }
