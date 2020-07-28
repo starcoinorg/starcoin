@@ -243,7 +243,10 @@ fn test_validate_txn_chain_id() -> Result<()> {
         ChainId::new(ChainId::dev().id() - 1), //wrong chain id
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
-    assert_eq!(TransactionStatus::Discard(StatusCode::BAD_CHAIN_ID), *output1.status());
+    assert_eq!(
+        TransactionStatus::Discard(StatusCode::BAD_CHAIN_ID),
+        *output1.status()
+    );
 
     Ok(())
 }
