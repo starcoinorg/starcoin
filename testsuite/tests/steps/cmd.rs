@@ -17,7 +17,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("[cmd] node info", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None);
+            let state = CliState::new(node_info.net, client.clone(), None, None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
             let result = add_command(context)
@@ -28,7 +28,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("[cmd] node peers", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None);
+            let state = CliState::new(node_info.net, client.clone(), None, None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // let context = world.context.as_mut().take().unwrap( );
             let result = add_command(context)
@@ -39,7 +39,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("[cmd] wallet list", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None);
+            let state = CliState::new(node_info.net, client.clone(), None, None);
             // let state = world.cli_state.take().unwrap();
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let mut list_result = add_command(context)
@@ -51,7 +51,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("[cmd] wallet show", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None);
+            let state = CliState::new(node_info.net, client.clone(), None, None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let show_result = add_command(context)
                 .exec_with_args::<AccountWithStateView>(vec!["starcoin", "wallet", "show"])
@@ -64,7 +64,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let amount = args[1].as_str();
                 let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
-                let state = CliState::new(node_info.net, client.clone(), None);
+                let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let get_result = add_command(context)
                     .exec_with_args::<TransactionView>(vec![
@@ -80,7 +80,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let password = args[1].as_str();
                 let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
-                let state = CliState::new(node_info.net, client.clone(), None);
+                let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let create_result = add_command(context)
                     .exec_with_args::<WalletAccount>(vec![
@@ -97,7 +97,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let password = args[1].as_str();
                 let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
-                let state = CliState::new(node_info.net, client.clone(), None);
+                let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let unlock_result = add_command(context)
                     .exec_with_args::<String>(vec![
@@ -116,7 +116,7 @@ pub fn steps() -> Steps<MyWorld> {
             let client = world.rpc_client.as_ref().take().unwrap();
 
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None);
+            let state = CliState::new(node_info.net, client.clone(), None, None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // get last cmd result as current parameter
             let mut vec = vec!["starcoin"];
@@ -151,7 +151,7 @@ pub fn steps() -> Steps<MyWorld> {
             |world: &mut MyWorld, args, _step| {
                 let client = world.rpc_client.as_ref().take().unwrap();
                 let node_info = client.clone().node_info().unwrap();
-                let state = CliState::new(node_info.net, client.clone(), None);
+                let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 // world.context = Some(context);
                 let mut vec = vec![];

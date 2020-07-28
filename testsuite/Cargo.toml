@@ -49,7 +49,9 @@ cucumber = { package = "cucumber_rust", version = "^0.6.0" }
 gherkin_rust ="0.8.0"
 jsonpath = "0.1.1"
 
+
 [dev-dependencies]
+tokio-compat = "0.1.5"
 
 
 [[test]]

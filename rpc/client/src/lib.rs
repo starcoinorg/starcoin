@@ -5,9 +5,11 @@ use crate::chain_watcher::{ChainWatcher, WatchBlock, WatchTxn};
 use crate::pubsub_client::PubSubClient;
 use actix::{Addr, System};
 use failure::Fail;
-use futures::channel::oneshot;
-use futures::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
-use futures01::future::Future as Future01;
+use futures::future::Future as Future01;
+use futures03::channel::oneshot;
+use futures03::{
+    future::FutureExt, select, stream::StreamExt, TryFutureExt, TryStream, TryStreamExt,
+};
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
 use starcoin_crypto::HashValue;
@@ -59,7 +61,6 @@ enum ConnSource {
 
 pub struct RpcClient {
     inner: RefCell<Option<RpcClientInner>>,
-    rt: RefCell<Runtime>,
     conn_source: ConnSource,
     chain_watcher: Addr<ChainWatcher>,
 }
@@ -90,7 +91,7 @@ impl ConnectionProvider {
 }
 
 impl RpcClient {
-    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, mut rt: Runtime) -> Self {
+    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, rt: &mut Runtime) -> Self {
         let (tx, rx) = oneshot::channel();
         let pubsub_client = inner.pubsub_client.clone();
         std::thread::spawn(move || {
@@ -104,14 +105,11 @@ impl RpcClient {
 
         Self {
             inner: RefCell::new(Some(inner)),
-            rt: RefCell::new(rt),
             conn_source,
             chain_watcher: watcher,
         }
     }
-    pub fn connect_websocket(url: &str) -> anyhow::Result<Self> {
-        let mut rt = Runtime::new().unwrap();
-
+    pub fn connect_websocket(url: &str, rt: &mut Runtime) -> anyhow::Result<Self> {
         let conn = ws::try_connect(url).map_err(|e| anyhow::Error::new(e.compat()))?;
         let client = rt.block_on(conn.map_err(map_err))?;
         Ok(Self::new(
@@ -121,12 +119,11 @@ impl RpcClient {
         ))
     }
 
-    pub fn connect_local<THandler, TMetadata>(handler: THandler) -> Self
+    pub fn connect_local<THandler, TMetadata>(handler: THandler, rt: &mut Runtime) -> Self
     where
         THandler: Deref<Target = MetaIoHandler<TMetadata>> + std::marker::Send + 'static,
         TMetadata: Metadata + Default,
     {
-        let rt = Runtime::new().unwrap();
         let (client, future) = local::connect(handler);
         // process server event interval.
         // TODO use more graceful method.
@@ -149,8 +146,7 @@ impl RpcClient {
         Self::new(ConnSource::Local, client, rt)
     }
 
-    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P) -> anyhow::Result<Self> {
-        let mut rt = Runtime::new().unwrap();
+    pub fn connect_ipc<P: AsRef<Path>>(sock_path: P, rt: &mut Runtime) -> anyhow::Result<Self> {
         let reactor = Reactor::new().unwrap();
         let path = sock_path.as_ref().to_path_buf();
         let fut = ipc::connect(sock_path, &reactor.handle())?;
@@ -168,21 +164,29 @@ impl RpcClient {
         txn_hash: HashValue,
         timeout: Option<Duration>,
     ) -> anyhow::Result<ThinBlock> {
+        let chain_watcher = self.chain_watcher.clone();
         let f = async move {
-            let r = self.chain_watcher.send(WatchTxn { txn_hash }).await?;
+            let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
             match timeout {
                 Some(t) => tokio::time::timeout(t, r).await??,
                 None => r.await?,
             }
         };
-        self.rt.borrow_mut().block_on_std(f)
+        match f.boxed().unit_error().compat().wait() {
+            Ok(t) => t,
+            Err(_) => anyhow::bail!("watch txn fail"),
+        }
     }
     pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {
+        let chain_watcher = self.chain_watcher.clone();
         let f = async move {
-            let r = self.chain_watcher.send(WatchBlock(block_number)).await?;
+            let r = chain_watcher.send(WatchBlock(block_number)).await?;
             r.await?
         };
-        self.rt.borrow_mut().block_on_std(f)
+        match f.boxed().unit_error().compat().wait() {
+            Ok(t) => t,
+            Err(_) => anyhow::bail!("watch block fail"),
+        }
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
@@ -559,26 +563,31 @@ impl RpcClient {
 
     fn call_rpc_blocking<F, T>(
         &self,
-        f: impl FnOnce(RpcClientInner) -> F,
+        f: impl FnOnce(RpcClientInner) -> F + Send,
     ) -> Result<T, jsonrpc_client_transports::RpcError>
     where
-        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>>,
+        F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
     {
         let inner_opt = self.inner.borrow().as_ref().cloned();
         let inner = match inner_opt {
             Some(inner) => inner,
             None => {
-                let new_inner: RpcClientInner = self.rt.borrow_mut().block_on_std(async {
-                    Self::get_rpc_channel(self.conn_source.clone())
-                        .await
-                        .map(|c| c.into())
-                })?;
+                let conn_source = self.conn_source.clone();
+                let f = async { Self::get_rpc_channel(conn_source).await.map(|c| c.into()) };
+                let new_inner: RpcClientInner = match f.boxed().unit_error().compat().wait() {
+                    Ok(t) => t,
+                    Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
+                }?;
                 *self.inner.borrow_mut() = Some(new_inner.clone());
                 new_inner
             }
         };
 
-        let result = self.rt.borrow_mut().block_on_std(async { f(inner).await });
+        let f = async { f(inner).await };
+        let result = match f.boxed().unit_error().compat().wait() {
+            Ok(t) => t,
+            Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
+        };
 
         if let Err(rpc_error) = &result {
             if let jsonrpc_client_transports::RpcError::Other(e) = rpc_error {

@@ -14,12 +14,13 @@ fn run() -> Result<()> {
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
+            let mut rt = tokio_compat::runtime::Runtime::new()?;
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
             let (client, node_handle) = match connect {
                 Connect::IPC(ipc_file) => {
                     if let Some(ipc_file) = ipc_file {
                         info!("Try to connect node by ipc: {:?}", ipc_file);
-                        let client = RpcClient::connect_ipc(ipc_file)?;
+                        let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
                         (client, None)
                     } else {
                         info!("Start starcoin node...");
@@ -38,19 +39,19 @@ fn run() -> Result<()> {
                         }
                         info!("Starcoin node started.");
                         info!("Try to connect node by ipc: {:?}", ipc_file);
-                        let client = RpcClient::connect_ipc(ipc_file)?;
+                        let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
                         (client, node_handle)
                     }
                 }
                 Connect::WebSocket(address) => {
                     info!("Try to connect node by websocket: {:?}", address);
-                    let client = RpcClient::connect_websocket(address)?;
+                    let client = RpcClient::connect_websocket(address, &mut rt)?;
                     (client, None)
                 }
             };
 
             let node_info = client.node_info()?;
-            let state = CliState::new(node_info.net, Arc::new(client), node_handle);
+            let state = CliState::new(node_info.net, Arc::new(client), node_handle, Some(rt));
             Ok(state)
         },
         |_, _, state| {

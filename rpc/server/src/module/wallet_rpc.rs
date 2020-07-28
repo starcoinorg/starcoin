@@ -122,13 +122,15 @@ mod tests {
     use jsonrpc_core::IoHandler;
     use starcoin_rpc_client::RpcClient;
     use starcoin_wallet_api::mock::MockWalletService;
+    use tokio_compat::runtime::Runtime;
 
     #[test]
     fn test_account() {
         let mut io = IoHandler::new();
+        let mut runtime = Runtime::new().unwrap();
         let wallet_service = MockWalletService::new().unwrap();
         io.extend_with(WalletRpcImpl::new(wallet_service).to_delegate());
-        let client = RpcClient::connect_local(io);
+        let client = RpcClient::connect_local(io, &mut runtime);
         let account = client.wallet_create("passwd".to_string()).unwrap();
         let accounts = client.wallet_list().unwrap();
         assert!(!accounts.is_empty());

@@ -84,13 +84,14 @@ fn get_wallet_account(
 
 fn main() {
     let _logger_handler = starcoin_logger::init();
+    let mut runtime = tokio_compat::runtime::Runtime::new().unwrap();
     let opts: TxFactoryOpt = TxFactoryOpt::from_args();
 
     let account_address = opts.account_address;
     let interval = Duration::from_millis(opts.interval);
     let account_password = opts.account_password.clone();
 
-    let client = RpcClient::connect_ipc(opts.ipc_path).expect("ipc connect success");
+    let client = RpcClient::connect_ipc(opts.ipc_path, &mut runtime).expect("ipc connect success");
     let account = get_wallet_account(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
