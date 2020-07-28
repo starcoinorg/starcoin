@@ -1,4 +1,4 @@
-use futures::compat::Future01CompatExt;
+use futures03::compat::Future01CompatExt;
 use jsonrpc_core_client::*;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::{event::Event, pubsub::EventFilter, pubsub::Kind, pubsub::ThinBlock};

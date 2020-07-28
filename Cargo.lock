@@ -6428,6 +6428,7 @@ dependencies = [
  "stdlib",
  "structopt 0.3.15",
  "tokio 0.2.22",
+ "tokio-compat",
 ]
 
 [[package]]
@@ -6606,6 +6607,7 @@ dependencies = [
  "structopt 0.3.15",
  "tiny_http",
  "tokio 0.2.22",
+ "tokio-compat",
  "tokio-executor 0.2.0-alpha.6",
 ]
 
@@ -6967,8 +6969,8 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "failure",
+ "futures 0.1.29",
  "futures 0.3.5",
- "futures01",
  "jsonrpc-client-transports",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -7068,6 +7070,7 @@ dependencies = [
  "thiserror",
  "tokio 0.1.22",
  "tokio 0.2.22",
+ "tokio-compat",
 ]
 
 [[package]]
@@ -7294,6 +7297,7 @@ dependencies = [
  "starcoin-wallet-api",
  "structopt 0.3.15",
  "tokio 0.2.22",
+ "tokio-compat",
 ]
 
 [[package]]
@@ -7842,6 +7846,7 @@ dependencies = [
  "starcoin-wallet-api",
  "static_assertions 1.1.0",
  "structopt 0.3.15",
+ "tokio-compat",
 ]
 
 [[package]]

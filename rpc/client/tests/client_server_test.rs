@@ -3,7 +3,7 @@
 
 use actix::prelude::*;
 use anyhow::Result;
-use futures::channel::oneshot;
+use futures03::channel::oneshot;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::node::NodeApi;
@@ -25,6 +25,7 @@ fn test_multi_client() -> Result<()> {
     let url = format!("ws://{}", ws_address.to_string());
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
+    let mut rt = tokio_compat::runtime::Runtime::new()?;
 
     system.block_on(async {
         let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
@@ -39,12 +40,12 @@ fn test_multi_client() -> Result<()> {
             info!("client thread start.");
             std::thread::sleep(Duration::from_millis(300));
 
-            let ws_client = RpcClient::connect_websocket(url.as_str()).unwrap();
+            let ws_client = RpcClient::connect_websocket(url.as_str(), &mut rt).unwrap();
             let status = ws_client.node_status().unwrap();
             info!("http_client status: {}", status);
             assert!(status);
 
-            let ipc_client = RpcClient::connect_ipc(ipc_file).unwrap();
+            let ipc_client = RpcClient::connect_ipc(ipc_file, &mut rt).unwrap();
             let status1 = ipc_client.node_status().unwrap();
             info!("ipc_client status: {}", status1);
             assert_eq!(status, status1);

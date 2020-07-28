@@ -16,6 +16,7 @@ use std::env;
 use std::sync::Arc;
 use std::time::Duration;
 use steps::{cmd as steps_cmd, node as steps_node, state as steps_state, sync, transaction};
+use tokio_compat::runtime::Runtime;
 
 mod steps;
 
@@ -30,6 +31,7 @@ pub struct MyWorld {
     node_handle: Option<NodeHandle>,
     default_address: Option<AccountAddress>,
     cmd_value: Option<Vec<String>>,
+    rt: Option<Runtime>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -58,15 +60,24 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("remote rpc client", |world: &mut MyWorld, _step| {
             let rpc_addr = env::var("STARCOIN_WS").unwrap_or_else(|_| "".to_string());
-            let client = RpcClient::connect_websocket(rpc_addr.as_ref()).unwrap();
-            info!("rpc client created!");
-            world.rpc_client = Some(Arc::new(client))
+            let rt = Runtime::new().unwrap();
+            world.rt = Some(rt);
+            if let Some(rt) = &mut world.rt {
+                let client = RpcClient::connect_websocket(rpc_addr.as_ref(), rt).unwrap();
+                info!("rpc client created!");
+                world.rpc_client = Some(Arc::new(client))
+            }
         })
         .given("dev rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
-            info!("dev node local rpc client created!");
-            world.rpc_client = Some(Arc::new(client))
+            let rt = Runtime::new().unwrap();
+            world.rt = Some(rt);
+            if let Some(rt) = &mut world.rt {
+                let client =
+                    RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file(), rt).unwrap();
+                info!("dev node local rpc client created!");
+                world.rpc_client = Some(Arc::new(client))
+            }
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();

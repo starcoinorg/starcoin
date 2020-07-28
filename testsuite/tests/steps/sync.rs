@@ -11,9 +11,12 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .given("sync rpc client", |world: &mut MyWorld, _step| {
+            let mut rt = tokio_compat::runtime::Runtime::new().unwrap();
             let node_config = world.node_config.as_ref().take().unwrap();
-            let client = RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file()).unwrap();
+            let client =
+                RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file(), &mut rt).unwrap();
             info!("node local rpc client created!");
+            world.rt = Some(rt);
             world.local_rpc_client = Some(client)
         })
         .then("basic check", |world: &mut MyWorld, _step| {
