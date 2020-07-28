@@ -231,6 +231,24 @@ fn test_validate_txn() -> Result<()> {
 }
 
 #[stest::test]
+fn test_validate_txn_chain_id() -> Result<()> {
+    let chain_state = prepare_genesis();
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1,
+        0,
+        50_000_000,
+        1,
+        ChainId::new(ChainId::dev().id() - 1), //wrong chain id
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(TransactionStatus::Discard(StatusCode::BAD_CHAIN_ID), *output1.status());
+
+    Ok(())
+}
+
+#[stest::test]
 fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
     let chain_state = prepare_genesis();
 

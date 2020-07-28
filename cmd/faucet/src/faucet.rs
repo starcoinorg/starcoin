@@ -49,7 +49,7 @@ impl Faucet {
             DEFAULT_GAS_PRICE,
             MAX_GAS,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            self.client.node_info().unwrap().net.chain_id(),
+            self.client.node_info()?.net.chain_id(),
         );
         let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;

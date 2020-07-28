@@ -153,6 +153,10 @@ impl Default for ChainNetwork {
 pub struct ChainId(u8);
 
 impl ChainId {
+    pub fn new(id: u8) -> Self {
+        ChainId(id)
+    }
+
     pub fn id(self) -> u8 {
         self.0
     }
