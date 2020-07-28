@@ -42,7 +42,7 @@ use starcoin_vm_types::{
     state_view::StateView,
     transaction_metadata::TransactionMetadata,
     values::Value,
-    vm_status::{convert_prologue_runtime_error, StatusCode, VMStatus},
+    vm_status::{StatusCode, VMStatus},
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -921,4 +921,36 @@ pub fn txn_effects_to_writeset_and_events(
 pub enum VerifiedTransactionPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
     Package(Package),
+}
+
+//should be consistent with ErrorCode.move
+const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+const PROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
+const PROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
+const PROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
+const PROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
+const PROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
+const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
+
+fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
+    match status {
+        VMStatus::MoveAbort(location, code) => {
+            let new_major_status = match code {
+                PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
+                PROLOGUE_INVALID_ACCOUNT_AUTH_KEY => StatusCode::INVALID_AUTH_KEY,
+                PROLOGUE_SEQUENCE_NUMBER_TOO_OLD => StatusCode::SEQUENCE_NUMBER_TOO_OLD,
+                PROLOGUE_SEQUENCE_NUMBER_TOO_NEW => StatusCode::SEQUENCE_NUMBER_TOO_NEW,
+                PROLOGUE_CANT_PAY_GAS_DEPOSIT => {
+                    StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE
+                }
+                PROLOGUE_TRANSACTION_EXPIRED => StatusCode::TRANSACTION_EXPIRED,
+                PROLOGUE_BAD_CHAIN_ID => StatusCode::BAD_CHAIN_ID,
+                code => return VMStatus::MoveAbort(location, code),
+            };
+            VMStatus::Error(new_major_status)
+        }
+        status @ VMStatus::ExecutionFailure { .. }
+        | status @ VMStatus::Error(_)
+        | status @ VMStatus::Executed => status,
+    }
 }
