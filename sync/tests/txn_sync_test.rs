@@ -4,7 +4,6 @@ use actix_rt::System;
 use bus::{Bus, BusActor};
 use chain::ChainActor;
 use config::{get_random_available_port, NodeConfig};
-use consensus::dev::DevConsensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use futures_timer::Delay;
 use gen_network::gen_network;
@@ -53,9 +52,7 @@ fn test_txn_sync_actor() {
         // genesis
         let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1
-            .execute_genesis_block(node_config_1.net(), storage_1.clone())
-            .unwrap();
+        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -75,7 +72,7 @@ fn test_txn_sync_actor() {
         );
         debug!("addr_1 : {:?}", addr_1);
         // chain
-        let first_chain = ChainActor::<DevConsensus>::launch(
+        let first_chain = ChainActor::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -139,9 +136,7 @@ fn test_txn_sync_actor() {
 
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2
-            .execute_genesis_block(node_config_2.net(), storage_2.clone())
-            .unwrap();
+        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -162,7 +157,7 @@ fn test_txn_sync_actor() {
         debug!("addr_2 : {:?}", addr_2);
 
         // chain
-        let second_chain = ChainActor::<DevConsensus>::launch(
+        let second_chain = ChainActor::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -185,7 +180,7 @@ fn test_txn_sync_actor() {
 
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
+        let _second_sync_actor = SyncActor::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),
@@ -224,7 +219,7 @@ fn gen_user_txn() -> SignedUserTransaction {
         0,
         10000,
         get_current_timestamp() + 40000,
-        ChainId::dev(),
+        ChainId::test(),
     );
     txn.as_signed_user_txn().unwrap().clone()
 }

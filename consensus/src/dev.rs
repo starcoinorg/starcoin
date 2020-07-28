@@ -1,14 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::consensus::Consensus;
 use anyhow::Result;
 use logger::prelude::*;
 use rand::prelude::*;
+use starcoin_traits::ChainReader;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::U256;
 use std::thread;
 use std::time::{Duration, SystemTime};
-use traits::{ChainReader, Consensus};
-use types::block::BlockHeader;
-use types::U256;
 
 #[derive(Clone)]
 pub struct DevConsensus {}

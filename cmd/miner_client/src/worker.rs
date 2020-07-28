@@ -2,27 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{nonce_generator, partition_nonce};
-use config::{ConsensusStrategy, MinerConfig};
-use consensus::{argon, dev, difficulty::difficult_to_target, dummy};
+use consensus::{argon, difficulty::difficult_to_target};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
+use starcoin_config::{ConsensusStrategy, MinerConfig};
 use std::thread;
 use std::time::{Duration, Instant};
-use traits::Consensus;
 use types::U256;
 
 const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
 pub fn start_worker(
     config: &MinerConfig,
+    consensus_strategy: ConsensusStrategy,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     mp: Option<&MultiProgress>,
 ) -> WorkerController {
-    match config.consensus_strategy {
-        ConsensusStrategy::Argon(thread_num) => {
+    match consensus_strategy {
+        ConsensusStrategy::Argon => {
+            let thread_num = config.thread_num;
             let worker_txs = (0..thread_num)
                 .map(|i| {
                     let (worker_tx, worker_rx) = mpsc::unbounded();
@@ -68,10 +69,12 @@ pub fn start_worker(
                     None
                 };
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
-            let solver = match strategy {
-                ConsensusStrategy::Dev => dev_solver,
-                ConsensusStrategy::Dummy => dummy_solver,
-                _ => unreachable!("Unsupported consensus {:?}", strategy),
+            let solver = move |pow_header: &[u8],
+                               nonce: u64,
+                               diff: U256,
+                               nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>|
+                  -> bool {
+                strategy_solver(strategy, pow_header, nonce, diff, nonce_tx)
             };
             thread::Builder::new()
                 .name(worker_name)
@@ -220,27 +223,14 @@ fn argon_solver(
     false
 }
 
-fn dev_solver(
+fn strategy_solver(
+    strategy: ConsensusStrategy,
     pow_header: &[u8],
-    nonce: u64,
+    _nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    dev::DevConsensus::solve_consensus_nonce(pow_header, diff);
-    if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
-        error!("Failed to send nonce: {:?}", e);
-        return false;
-    };
-    true
-}
-
-fn dummy_solver(
-    pow_header: &[u8],
-    nonce: u64,
-    diff: U256,
-    mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
-) -> bool {
-    dummy::DummyConsensus::solve_consensus_nonce(pow_header, diff);
+    let nonce = consensus::solve_consensus_nonce(strategy, pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;

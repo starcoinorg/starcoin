@@ -3,7 +3,7 @@
 
 use actix::clock::Duration;
 use starcoin_config::NodeConfig;
-use starcoin_node::run_dev_node;
+use starcoin_node::run_node;
 use std::sync::Arc;
 use std::thread;
 
@@ -12,7 +12,7 @@ fn test_run_node() {
     let mut node_config = NodeConfig::random_for_test();
     node_config.network.disable_seed = true;
     let config = Arc::new(node_config);
-    let handle = run_dev_node(config);
+    let handle = run_node(config);
     thread::sleep(Duration::from_secs(5));
     handle.stop().unwrap()
 }

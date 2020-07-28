@@ -5,7 +5,6 @@ use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_random_available_port, NodeConfig};
-use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -50,9 +49,7 @@ fn test_network_actor_rpc() {
         // genesis
         let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1
-            .execute_genesis_block(node_config_1.net(), storage_1.clone())
-            .unwrap();
+        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -116,12 +113,7 @@ fn test_network_actor_rpc() {
 
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 = MinerActor::<
-            DevConsensus,
-            TxPoolService,
-            ChainActorRef<DevConsensus>,
-            Storage,
-        >::launch(
+        let _miner_1 = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
             node_config_1.clone(),
             bus_1.clone(),
             storage_1.clone(),
@@ -129,7 +121,11 @@ fn test_network_actor_rpc() {
             first_chain.clone(),
             miner_account,
         );
-        MinerClientActor::new(node_config_1.miner.clone()).start();
+        MinerClientActor::new(
+            node_config_1.miner.clone(),
+            node_config_1.net().get_config().consensus_strategy,
+        )
+        .start();
         Delay::new(Duration::from_secs(60)).await;
         let block_1 = first_chain
             .clone()
@@ -165,9 +161,7 @@ fn test_network_actor_rpc() {
 
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2
-            .execute_genesis_block(node_config_2.net(), storage_2.clone())
-            .unwrap();
+        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -188,7 +182,7 @@ fn test_network_actor_rpc() {
         debug!("addr_2 : {:?}", addr_2);
 
         // chain
-        let second_chain = ChainActor::<DevConsensus>::launch(
+        let second_chain = ChainActor::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -209,7 +203,7 @@ fn test_network_actor_rpc() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
+        let _second_sync_actor = SyncActor::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),
@@ -228,7 +222,7 @@ fn test_network_actor_rpc() {
             error!("error: {:?}", e);
         }
 
-        Delay::new(Duration::from_secs(60)).await;
+        Delay::new(Duration::from_secs(20)).await;
 
         for i in 0..5 as usize {
             Delay::new(Duration::from_secs(2)).await;
@@ -282,9 +276,7 @@ fn test_network_actor_rpc_2() {
         let node_config_1 = Arc::new(config_1);
         let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1
-            .execute_genesis_block(node_config_1.net(), storage_1.clone())
-            .unwrap();
+        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -305,7 +297,7 @@ fn test_network_actor_rpc_2() {
         info!("addr_1 : {:?}", addr_1);
         BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
         // chain
-        let first_chain = ChainActor::<DevConsensus>::launch(
+        let first_chain = ChainActor::launch(
             node_config_1.clone(),
             startup_info_1.clone(),
             storage_1.clone(),
@@ -362,9 +354,7 @@ fn test_network_actor_rpc_2() {
         let node_config_2 = Arc::new(config_2);
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2
-            .execute_genesis_block(node_config_2.net(), storage_2.clone())
-            .unwrap();
+        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -391,7 +381,7 @@ fn test_network_actor_rpc_2() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
+        let _second_sync_actor = SyncActor::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),

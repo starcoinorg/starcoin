@@ -103,9 +103,13 @@ fn main() {
             AuthenticationKey::ed25519(&k).prefix().to_vec()
         })
         .unwrap_or_default();
-
-    let txn_generator =
-        MockTxnGenerator::new(account.clone(), receiver_address, receiver_auth_key_prefix);
+    let net = client.node_info().unwrap().net;
+    let txn_generator = MockTxnGenerator::new(
+        net.chain_id(),
+        account.clone(),
+        receiver_address,
+        receiver_auth_key_prefix,
+    );
     let tx_mocker = TxnMocker::new(
         client,
         txn_generator,

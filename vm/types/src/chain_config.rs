@@ -10,8 +10,46 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
-use std::fmt::{Display, Formatter};
+use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[repr(u8)]
+#[serde(tag = "type")]
+pub enum ConsensusStrategy {
+    Dummy = 0,
+    Dev = 1,
+    Argon = 2,
+}
+
+impl Default for ConsensusStrategy {
+    fn default() -> Self {
+        ConsensusStrategy::Dummy
+    }
+}
+
+impl fmt::Display for ConsensusStrategy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConsensusStrategy::Dummy => write!(f, "dummy"),
+            ConsensusStrategy::Dev => write!(f, "dev"),
+            ConsensusStrategy::Argon => write!(f, "argon"),
+        }
+    }
+}
+
+impl FromStr for ConsensusStrategy {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "dummy" => Ok(ConsensusStrategy::Dummy),
+            "dev" => Ok(ConsensusStrategy::Dev),
+            "argon" => Ok(ConsensusStrategy::Argon),
+            s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
+        }
+    }
+}
 
 /// A static key pair to sign genesis txn
 pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
@@ -37,8 +75,10 @@ pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
 #[repr(u8)]
 #[serde(tag = "net")]
 pub enum ChainNetwork {
+    /// A ephemeral network just for unit test.
+    Test = 255,
     /// A ephemeral network just for developer test.
-    Dev = 255,
+    Dev = 254,
     /// Starcoin test network,
     /// The data on the chain will be cleaned up periodically。
     /// Comet Halley, officially designated 1P/Halley, is a short-period comet visible from Earth every 75–76 years.
@@ -55,6 +95,7 @@ pub enum ChainNetwork {
 impl Display for ChainNetwork {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
+            ChainNetwork::Test => write!(f, "test"),
             ChainNetwork::Dev => write!(f, "dev"),
             ChainNetwork::Halley => write!(f, "halley"),
             ChainNetwork::Proxima => write!(f, "proxima"),
@@ -68,10 +109,11 @@ impl FromStr for ChainNetwork {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "test" => Ok(ChainNetwork::Test),
             "dev" => Ok(ChainNetwork::Dev),
             "halley" => Ok(ChainNetwork::Halley),
             "proxima" => Ok(ChainNetwork::Proxima),
-            _ => Err(format_err!("")),
+            s => Err(format_err!("Unknown network: {}", s)),
         }
     }
 }
@@ -79,6 +121,13 @@ impl FromStr for ChainNetwork {
 impl ChainNetwork {
     pub fn chain_id(self) -> ChainId {
         ChainId(self.into())
+    }
+
+    pub fn is_test(self) -> bool {
+        match self {
+            ChainNetwork::Test => true,
+            _ => false,
+        }
     }
 
     pub fn is_dev(self) -> bool {
@@ -104,6 +153,7 @@ impl ChainNetwork {
 
     pub fn get_config(self) -> &'static ChainConfig {
         match self {
+            ChainNetwork::Test => &TEST_CHAIN_CONFIG,
             ChainNetwork::Dev => &DEV_CHAIN_CONFIG,
             ChainNetwork::Halley => &HALLEY_CHAIN_CONFIG,
             ChainNetwork::Proxima => &PROXIMA_CHAIN_CONFIG,
@@ -135,6 +185,7 @@ impl ChainNetwork {
 
     pub fn networks() -> Vec<ChainNetwork> {
         vec![
+            ChainNetwork::Test,
             ChainNetwork::Dev,
             ChainNetwork::Halley,
             ChainNetwork::Proxima,
@@ -159,6 +210,10 @@ impl ChainId {
 
     pub fn id(self) -> u8 {
         self.0
+    }
+
+    pub fn test() -> Self {
+        ChainNetwork::Test.chain_id()
     }
 
     pub fn dev() -> Self {
@@ -209,6 +264,8 @@ pub struct ChainConfig {
     pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
     /// genesis account's key pair
     pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
+    /// consensus strategy for chain
+    pub consensus_strategy: ConsensusStrategy,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u128 = 2_100_000_000 * 1_000_000;
@@ -222,6 +279,38 @@ pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static DEV_EPOCH_TIME_TARGET: u64 = 60;
 pub static DEV_MIN_TIME_TARGET: u64 = 1;
+
+pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+    let (association_private_key, association_public_key) = genesis_key_pair();
+    let (genesis_private_key, genesis_public_key) = genesis_key_pair();
+
+    ChainConfig {
+        version: Version { major: 1 },
+        parent_hash: HashValue::zero(),
+        timestamp: 0,
+        total_supply: STARCOIN_TOTAL_SUPPLY,
+        reward_delay: 1,
+        difficulty: 1.into(),
+        nonce: 0,
+        pre_mine_percent: 20,
+        vm_config: VMConfig {
+            publishing_option: VMPublishingOption::Open,
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
+        boot_nodes: vec![],
+        uncle_rate_target: 80,
+        epoch_time_target: DEV_EPOCH_TIME_TARGET,
+        reward_half_epoch: DEV_EPOCH_TIME_TARGET * 2 / DEV_EPOCH_TIME_TARGET,
+        init_block_time_target: 5,
+        block_difficulty_window: BLOCK_DIFF_WINDOW,
+        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+        min_time_target: DEV_MIN_TIME_TARGET,
+        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+        association_key_pair: (Some(association_private_key), association_public_key),
+        genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
+        consensus_strategy: ConsensusStrategy::Dummy,
+    }
+});
 
 pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -251,6 +340,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
+        consensus_strategy: ConsensusStrategy::Dev,
     }
 });
 
@@ -284,6 +374,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         )
             .expect("decode public key must success.")),
         genesis_key_pair: None,
+        consensus_strategy: ConsensusStrategy::Argon,
     }
 });
 
@@ -317,6 +408,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         )
             .expect("decode public key must success.")),
         genesis_key_pair: None,
+        consensus_strategy: ConsensusStrategy::Argon,
     }
 });
 
@@ -350,4 +442,5 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
         .expect("decode public key must success."),
     ),
     genesis_key_pair: None,
+    consensus_strategy: ConsensusStrategy::Argon,
 });

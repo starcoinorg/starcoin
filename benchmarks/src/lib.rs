@@ -21,6 +21,6 @@ pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
         seq_num,
         1000,
         get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-        ChainId::dev(),
+        ChainId::test(),
     )
 }

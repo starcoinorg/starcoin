@@ -19,7 +19,7 @@ use std::collections::HashSet;
 use std::iter::Iterator;
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult, Consensus};
+use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult};
 use types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -31,22 +31,20 @@ use types::{
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
-pub struct ChainServiceImpl<C, P>
+pub struct ChainServiceImpl<P>
 where
-    C: Consensus,
     P: TxPoolSyncService + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    master: BlockChain<C>,
+    master: BlockChain,
     storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
 }
 
-impl<C, P> ChainServiceImpl<C, P>
+impl<P> ChainServiceImpl<P>
 where
-    C: Consensus,
     P: TxPoolSyncService + 'static,
 {
     pub fn new(
@@ -67,7 +65,7 @@ where
         })
     }
 
-    pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain<C>>)> {
+    pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if !block_exist {
@@ -98,11 +96,11 @@ where
         unimplemented!()
     }
 
-    pub fn get_master(&self) -> &BlockChain<C> {
+    pub fn get_master(&self) -> &BlockChain {
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain<C>) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
@@ -132,7 +130,7 @@ where
         self.save_startup()
     }
 
-    fn update_master(&mut self, new_master: BlockChain<C>) {
+    fn update_master(&mut self, new_master: BlockChain) {
         let header = new_master.current_header();
         self.master = new_master;
         self.startup_info.update_master(&header);
@@ -155,7 +153,7 @@ where
 
     fn find_ancestors_from_accumulator(
         &self,
-        new_branch: &BlockChain<C>,
+        new_branch: &BlockChain,
     ) -> Result<(Vec<Block>, Vec<Block>)> {
         let new_header_number = new_branch.current_header().number();
         let master_header_number = self.get_master().current_header().number();
@@ -494,9 +492,8 @@ where
     }
 }
 
-impl<C, P> ChainService for ChainServiceImpl<C, P>
+impl<P> ChainService for ChainServiceImpl<P>
 where
-    C: Consensus,
     P: TxPoolSyncService,
 {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
@@ -599,7 +596,7 @@ where
 
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             let block_chain =
-                BlockChain::<C>::new(self.config.clone(), block.id(), self.storage.clone())?;
+                BlockChain::new(self.config.clone(), block.id(), self.storage.clone())?;
             let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
             let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
             let epoch_start_number = if let Some(epoch) = epoch {

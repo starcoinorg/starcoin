@@ -3,7 +3,6 @@
 
 use anyhow::{anyhow, ensure, format_err, Result};
 use async_std::{io::BufReader, net::TcpStream, prelude::*, task};
-use config::MinerConfig;
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
 pub use jsonrpc_core::types::{
@@ -13,6 +12,7 @@ use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
+use starcoin_config::MinerConfig;
 use std::sync::Arc;
 use thiserror::Error;
 use types::U256;

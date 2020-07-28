@@ -8,9 +8,9 @@ edition = "2018"
 anyhow = "1.0"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
-futures = { version = "0.3"}
-config = {path = "../../config", package="starcoin-config"}
-types = {path = "../../types", package="starcoin-types" }
+futures = { version = "0.3" }
+starcoin-config = { path = "../../config" }
+types = { path = "../../types", package = "starcoin-types" }
 traits = {path = "../../core/traits", package="starcoin-traits" }
 consensus = {path = "../../consensus", package="starcoin-consensus" }
 bus = {path = "../../bus", package="starcoin-bus" }

@@ -242,7 +242,7 @@ pub fn run_benchmark(
 
     let chain_state = ChainStateDB::new(storage, None);
 
-    let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Dev).unwrap();
+    let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Test).unwrap();
     let _txn_info = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
@@ -283,7 +283,7 @@ fn create_transaction(
         400_000,
         1,
         expiration_timestamp_secs,
-        ChainId::dev(),
+        ChainId::test(),
     );
     Transaction::UserTransaction(signed_txn)
 }

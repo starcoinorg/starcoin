@@ -10,6 +10,7 @@ use starcoin_types::transaction::RawUserTransaction;
 use starcoin_wallet_api::WalletAccount;
 
 pub struct MockTxnGenerator {
+    chain_id: ChainId,
     receiver_address: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
     account: WalletAccount,
@@ -17,11 +18,13 @@ pub struct MockTxnGenerator {
 
 impl MockTxnGenerator {
     pub fn new(
+        chain_id: ChainId,
         account: WalletAccount,
         receiver_address: AccountAddress,
         receiver_auth_key_prefix: Vec<u8>,
     ) -> Self {
         MockTxnGenerator {
+            chain_id,
             receiver_address,
             receiver_auth_key_prefix,
             account,
@@ -40,7 +43,7 @@ impl MockTxnGenerator {
             1,
             10000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::dev(),
+            self.chain_id,
         );
         Ok(transfer_txn)
     }

@@ -5,11 +5,11 @@ use crate::stratum::StratumClient;
 use crate::worker::{start_worker, WorkerController, WorkerMessage};
 use actix::{Actor, Arbiter, Context, System};
 use anyhow::Result;
-use config::MinerConfig;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
+use starcoin_config::{ConsensusStrategy, MinerConfig};
 use std::thread;
 use types::U256;
 
@@ -23,7 +23,7 @@ pub struct Miner {
 }
 
 impl Miner {
-    pub async fn new(config: MinerConfig) -> Result<Self> {
+    pub async fn new(config: MinerConfig, consensus_strategy: ConsensusStrategy) -> Result<Self> {
         let mut stratum_client = StratumClient::new(&config)?;
         let job_rx = stratum_client.subscribe().await?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
@@ -31,13 +31,13 @@ impl Miner {
             let mp = MultiProgress::new();
             let pb = mp.add(ProgressBar::new(10));
             pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
-            let worker_controller = start_worker(&config, nonce_tx, Some(&mp));
+            let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, Some(&mp));
             thread::spawn(move || {
                 mp.join().expect("MultiProgress join failed");
             });
             (worker_controller, Some(pb))
         } else {
-            let worker_controller = start_worker(&config, nonce_tx, None);
+            let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, None);
             (worker_controller, None)
         };
 
@@ -104,11 +104,15 @@ impl Miner {
 
 pub struct MinerClientActor {
     config: MinerConfig,
+    consensus_strategy: ConsensusStrategy,
 }
 
 impl MinerClientActor {
-    pub fn new(config: MinerConfig) -> Self {
-        MinerClientActor { config }
+    pub fn new(config: MinerConfig, consensus_strategy: ConsensusStrategy) -> Self {
+        MinerClientActor {
+            config,
+            consensus_strategy,
+        }
     }
 }
 
@@ -116,9 +120,10 @@ impl Actor for MinerClientActor {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         let config = self.config.clone();
+        let consensus_strategy = self.consensus_strategy;
         let arbiter = Arbiter::new();
         let fut = async move {
-            let miner_cli = Miner::new(config).await;
+            let miner_cli = Miner::new(config, consensus_strategy).await;
             match miner_cli {
                 Err(e) => {
                     error!("Start miner client failed: {:?}", e);

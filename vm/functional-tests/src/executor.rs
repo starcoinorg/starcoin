@@ -39,7 +39,7 @@ impl Default for FakeExecutor {
 
 impl FakeExecutor {
     pub fn new() -> Self {
-        let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Dev).unwrap();
+        let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Test).unwrap();
         let data_store = ChainStateDB::mock();
         Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
         Self {

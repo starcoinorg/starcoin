@@ -28,12 +28,12 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("node dev handle", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
-            let handle = starcoin_node::run_dev_node(Arc::new(node_config.clone()));
+            let handle = starcoin_node::run_node(Arc::new(node_config.clone()));
             world.node_handle = Some(handle)
         })
         .given("node handle", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
-            let handle = starcoin_node::run_normal_node(Arc::new(node_config.clone()));
+            let handle = starcoin_node::run_node(Arc::new(node_config.clone()));
             world.node_handle = Some(handle)
         })
         .then("node handle stop", |world: &mut MyWorld, _step| {

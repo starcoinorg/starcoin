@@ -158,12 +158,17 @@ impl BlockHeader {
     pub fn nonce(&self) -> u64 {
         self.nonce
     }
+
     pub fn difficulty(&self) -> U256 {
         self.difficulty
     }
 
     pub fn parent_block_accumulator_root(&self) -> HashValue {
         self.parent_block_accumulator_root
+    }
+
+    pub fn is_genesis(&self) -> bool {
+        self.number == 0
     }
 
     pub fn genesis_block_header(

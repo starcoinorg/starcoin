@@ -317,7 +317,7 @@ fn make_script_transaction(
         params.max_gas_amount,
         params.gas_unit_price,
         params.expiration_timestamp_secs,
-        ChainId::dev(),
+        ChainId::test(),
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())
@@ -341,7 +341,7 @@ fn make_module_transaction(
         params.max_gas_amount,
         params.gas_unit_price,
         params.expiration_timestamp_secs,
-        ChainId::dev(),
+        ChainId::test(),
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())

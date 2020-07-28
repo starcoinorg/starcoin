@@ -6475,7 +6475,6 @@ dependencies = [
  "rand 0.7.3",
  "rand_core 0.5.1",
  "rust-argon2 0.8.2",
- "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",

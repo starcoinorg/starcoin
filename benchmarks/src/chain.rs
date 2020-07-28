@@ -7,20 +7,20 @@ use rand::{RngCore, SeedableRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
-use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_txpool::{TxPool, TxPoolService};
+use starcoin_vm_types::chain_config::ConsensusStrategy;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use traits::{ChainReader, ChainService, Consensus};
+use traits::{ChainReader, ChainService};
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {
-    chain: Arc<RwLock<ChainServiceImpl<DummyConsensus, TxPoolService>>>,
+    chain: Arc<RwLock<ChainServiceImpl<TxPoolService>>>,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     block_num: u64,
@@ -36,9 +36,7 @@ impl ChainBencher {
             Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
         );
         let genesis = Genesis::load(node_config.net()).unwrap();
-        let startup_info = genesis
-            .execute_genesis_block(node_config.net(), storage.clone())
-            .unwrap();
+        let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
 
         let txpool = {
             let best_block_id = *startup_info.get_master();
@@ -49,7 +47,7 @@ impl ChainBencher {
                 bus.clone(),
             )
         };
-        let chain = ChainServiceImpl::<DummyConsensus, TxPoolService>::new(
+        let chain = ChainServiceImpl::<TxPoolService>::new(
             node_config.clone(),
             startup_info,
             storage.clone(),
@@ -76,7 +74,7 @@ impl ChainBencher {
         let mut latest_id = None;
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
-            let block_chain = BlockChain::<DummyConsensus>::new(
+            let block_chain = BlockChain::new(
                 self.config.clone(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
@@ -108,7 +106,12 @@ impl ChainBencher {
                     txn_vec,
                 )
                 .unwrap();
-            let block = DummyConsensus::create_block(&block_chain, block_template).unwrap();
+            let block = starcoin_consensus::create_block(
+                ConsensusStrategy::Dummy,
+                &block_chain,
+                block_template,
+            )
+            .unwrap();
             latest_id = Some(block.header().parent_hash());
             self.chain.write().try_connect(block).unwrap();
         }
