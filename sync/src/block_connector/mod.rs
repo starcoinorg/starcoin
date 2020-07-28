@@ -80,7 +80,7 @@ impl FutureBlockPool {
 
         if let Some(set) = lock.get(parent_id) {
             set.iter().for_each(|id| {
-                child.push(id.clone());
+                child.push(*id);
                 let mut new_child = self.descendants(id);
                 if !new_child.is_empty() {
                     child.append(&mut new_child);
