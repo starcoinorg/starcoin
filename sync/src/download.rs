@@ -642,7 +642,7 @@ where
     }
 
     pub async fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>) {
-        ensure!(headers.len(), bodies.len());
+        debug_assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
