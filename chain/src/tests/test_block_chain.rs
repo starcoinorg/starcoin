@@ -135,7 +135,7 @@ async fn test_block_chain_forks() {
 ///             
 async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
+    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
     let header = block_chain.current_header();
     let miner_account = WalletAccount::random();
 
@@ -164,6 +164,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             0,
             10000,
             get_current_timestamp() + 40000,
+            config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
     };

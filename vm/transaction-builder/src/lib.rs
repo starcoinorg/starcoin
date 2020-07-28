@@ -7,6 +7,7 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -27,6 +28,7 @@ pub fn build_transfer_from_association(
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
@@ -34,6 +36,7 @@ pub fn build_transfer_from_association(
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
+        chain_id,
     ))
 }
 
@@ -46,6 +49,7 @@ pub fn build_transfer_txn(
     gas_price: u64,
     max_gas: u64,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> RawUserTransaction {
     build_transfer_txn_by_token_type(
         sender,
@@ -57,6 +61,7 @@ pub fn build_transfer_txn(
         max_gas,
         STC_TOKEN_CODE.clone(),
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -70,6 +75,7 @@ pub fn build_transfer_txn_by_token_type(
     max_gas: u64,
     token_code: TokenCode,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> RawUserTransaction {
     raw_peer_to_peer_txn(
         sender,
@@ -81,6 +87,7 @@ pub fn build_transfer_txn_by_token_type(
         max_gas,
         token_code,
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -91,6 +98,7 @@ pub fn build_accept_token_txn(
     max_gas: u64,
     token_code: TokenCode,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> RawUserTransaction {
     raw_accept_token_txn(
         sender,
@@ -99,6 +107,7 @@ pub fn build_accept_token_txn(
         max_gas,
         token_code,
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -112,6 +121,7 @@ pub fn raw_peer_to_peer_txn(
     max_gas: u64,
     token_code: TokenCode,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> RawUserTransaction {
     RawUserTransaction::new(
         sender,
@@ -125,6 +135,7 @@ pub fn raw_peer_to_peer_txn(
         max_gas,
         gas_price,
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -135,6 +146,7 @@ pub fn raw_accept_token_txn(
     max_gas: u64,
     token_code: TokenCode,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> RawUserTransaction {
     RawUserTransaction::new(
         sender,
@@ -147,6 +159,7 @@ pub fn raw_accept_token_txn(
         max_gas,
         gas_price,
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -197,6 +210,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
@@ -204,6 +218,7 @@ pub fn peer_to_peer_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
+        chain_id,
     )
 }
 
@@ -214,6 +229,7 @@ pub fn create_signed_txn_with_association_account(
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_timestamp_secs: u64,
+    chain_id: ChainId,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -222,6 +238,7 @@ pub fn create_signed_txn_with_association_account(
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
+        chain_id,
     );
     ChainNetwork::Dev
         .sign_with_association(raw_txn)
@@ -253,6 +270,7 @@ pub fn build_stdlib_package(
     )?;
     if with_init_script {
         let chain_config = net.get_config();
+        let chain_id = net.chain_id().id();
 
         let genesis_auth_key = chain_config
             .genesis_key_pair
@@ -294,6 +312,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
+                TransactionArgument::U8(chain_id),
             ],
         ));
     }

@@ -115,6 +115,7 @@ impl CommandAction for ExecuteBuildInCommand {
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,
+            ctx.state().net().chain_id(),
         );
 
         let signed_txn = client.wallet_sign_txn(script_txn)?;

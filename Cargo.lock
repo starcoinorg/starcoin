@@ -7437,6 +7437,8 @@ dependencies = [
  "anyhow",
  "bytecode-verifier",
  "chrono",
+ "ethereum-types 0.2.3",
+ "libp2p",
  "libra-state-view",
  "libra-types",
  "move-core-types",

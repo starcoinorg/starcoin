@@ -19,6 +19,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
+use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
@@ -316,6 +317,7 @@ fn make_script_transaction(
         params.max_gas_amount,
         params.gas_unit_price,
         params.expiration_timestamp_secs,
+        ChainId::dev(),
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())
@@ -339,6 +341,7 @@ fn make_module_transaction(
         params.max_gas_amount,
         params.gas_unit_price,
         params.expiration_timestamp_secs,
+        ChainId::dev(),
     )
     .sign(params.privkey, params.pubkey.clone())?
     .into_inner())

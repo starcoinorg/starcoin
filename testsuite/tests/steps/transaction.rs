@@ -70,6 +70,7 @@ fn transfer_txn(
         1,
         DEFAULT_MAX_GAS_AMOUNT,
         get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        client.node_info()?.net.chain_id(),
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();

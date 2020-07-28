@@ -13,6 +13,7 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::{collections::HashMap, sync::Arc};
 use storage::BlockStore;
+use types::chain_config::ChainId;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
@@ -62,6 +63,7 @@ async fn test_txn_expire() -> Result<()> {
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         2,
+        ChainId::dev(),
     );
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
@@ -86,6 +88,7 @@ async fn test_tx_pool() -> Result<()> {
         0,
         10000,
         1,
+        ChainId::dev(),
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
@@ -120,6 +123,7 @@ async fn test_rollback() -> Result<()> {
             0,
             10000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
+            ChainId::dev(),
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -135,6 +139,7 @@ async fn test_rollback() -> Result<()> {
             0,
             20000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
+            ChainId::dev(),
         );
         txn.as_signed_user_txn()?.clone()
     };

@@ -80,6 +80,7 @@ impl CommandAction for GetCoinCommand {
             1,
             DEFAULT_MAX_GAS_AMOUNT,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            ctx.state().net().chain_id(),
         );
         client.wallet_unlock(
             association_address,

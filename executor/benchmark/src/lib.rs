@@ -18,6 +18,7 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
+use types::chain_config::ChainId;
 use types::{
     account_address,
     account_address::AccountAddress,
@@ -282,6 +283,7 @@ fn create_transaction(
         400_000,
         1,
         expiration_timestamp_secs,
+        ChainId::dev(),
     );
     Transaction::UserTransaction(signed_txn)
 }

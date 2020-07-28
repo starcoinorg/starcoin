@@ -172,6 +172,7 @@ impl CommandAction for ExecuteCommand {
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
+                ctx.state().net().chain_id(),
             )
         } else {
             RawUserTransaction::new_module(
@@ -181,6 +182,7 @@ impl CommandAction for ExecuteCommand {
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,
+                ctx.state().net().chain_id(),
             )
         };
 
