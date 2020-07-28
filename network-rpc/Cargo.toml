@@ -31,14 +31,15 @@ scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
 block-relayer-api = { path = "../block-relayer/api/", package = "starcoin-block-relayer-api" }
 types = { path = "../types", package = "starcoin-types" }
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
-starcoin-state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
+state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 txpool = { path = "../txpool", package = "starcoin-txpool" }
 chain = { path = "../chain",package = "starcoin-chain" }
 traits = { path = "../core/traits", package = "starcoin-traits" }
 storage = { path = "../storage", package = "starcoin-storage" }
 genesis = { path = "../core/genesis", package = "starcoin-genesis" }
 txpool-api = {path = "../txpool/api", package = "starcoin-txpool-api"}
-
+state_api = { path="../state/api", package = "starcoin-state-api" }
+state-service = { path = "../state/service", package = "starcoin-state-service"}
 [dev-dependencies]
 network = {path = "../network", package = "starcoin-network" }
 consensus = { path = "../consensus", package = "starcoin-consensus" }
@@ -46,3 +47,5 @@ wallet-api = { path = "../wallet/api", package = "starcoin-wallet-api"}
 miner = {path = "../miner", package="starcoin-miner" }
 block-relayer = { path = "../block-relayer", package = "starcoin-block-relayer"}
 futures-timer = "3.0"
+statedb = {path = "../state/statedb", package = "starcoin-statedb"}
+vm_types ={path = "../vm/types", package = "starcoin-vm-types"}

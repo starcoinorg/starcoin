@@ -1,4 +1,4 @@
-use crate::gen_client;
+use crate::{gen_client, GetStateWithProof};
 use crate::{start_network_rpc_server, GetBlockHeadersByNumber};
 use actix::{Actor, Addr, System};
 use block_relayer::BlockRelayer;
@@ -14,6 +14,7 @@ use miner::{MinerActor, MinerClientActor};
 use network::{NetworkActor, NetworkAsyncService};
 use network_api::messages::RawRpcRequestMessage;
 use network_api::{Multiaddr, NetworkService};
+use state_api::StateWithProof;
 use std::sync::Arc;
 use std::time::Duration;
 use storage::cache_storage::CacheStorage;
@@ -21,37 +22,61 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 use txpool::{TxPool, TxPoolService};
 use types::{
+    access_path,
+    account_config::genesis_address,
     block::BlockHeader,
     peer_info::{PeerId, PeerInfo},
+    startup_info::StartupInfo,
 };
+use vm_types::move_resource::MoveResource;
+use vm_types::on_chain_config::EpochResource;
 use wallet_api::WalletAccount;
 
 #[test]
 fn test_network_rpc() {
-    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let mut system = System::new("test");
-    let (.., network_1, net_addr_1) = {
+    let (.., network_1, _, net_addr_1) = {
         let config_1 = NodeConfig::random_for_test();
         gen_chain_env(config_1)
     };
-    let (.., network_2, _) = {
+    let (.., network_2, _, _) = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
         gen_chain_env(config_2)
     };
-
     // network rpc client for chain 1
     let peer_id_2 = network_2.identify().clone();
     let client = gen_client::NetworkRpcClient::new(network_1);
+
+    let access_path =
+        access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
+
     let fut = async move {
         Delay::new(Duration::from_secs(15)).await;
         let req = GetBlockHeadersByNumber::new(1, 1, 1);
         let resp: Vec<BlockHeader> = client
-            .get_headers_by_number(peer_id_2.into(), req)
+            .get_headers_by_number(peer_id_2.clone().into(), req)
             .await
             .unwrap();
         assert!(!resp.is_empty());
+        let state_root = resp[0].state_root;
+
+        let state_req = GetStateWithProof {
+            state_root,
+            access_path: access_path.clone(),
+        };
+        let state_with_proof: StateWithProof = client
+            .get_state_with_proof(peer_id_2.clone().into(), state_req)
+            .await
+            .unwrap();
+        let state = state_with_proof.state.unwrap();
+        let epoch = scs::from_bytes::<EpochResource>(state.as_slice()).unwrap();
+        state_with_proof
+            .proof
+            .verify(state_root, access_path, Some(&state))
+            .unwrap();
+        println!("{:?}", epoch);
     };
     system.block_on(fut);
     drop(rt);
@@ -64,6 +89,7 @@ fn gen_chain_env(
     Arc<Storage>,
     TxPoolService,
     NetworkAsyncService,
+    StartupInfo,
     Multiaddr,
 ) {
     let bus = BusActor::launch();
@@ -94,7 +120,7 @@ fn gen_chain_env(
     BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone()).unwrap();
     let chain = ChainActor::<DevConsensus>::launch(
         node_config.clone(),
-        startup_info,
+        startup_info.clone(),
         storage.clone(),
         bus.clone(),
         tx_pool_service.clone(),
@@ -119,7 +145,14 @@ fn gen_chain_env(
         tx_pool_service.clone(),
     )
     .unwrap();
-    (chain, storage, tx_pool_service, network, net_addr)
+    (
+        chain,
+        storage,
+        tx_pool_service,
+        network,
+        startup_info,
+        net_addr,
+    )
 }
 
 fn gen_network(

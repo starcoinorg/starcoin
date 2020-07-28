@@ -6,7 +6,6 @@ use crate::service::ChainStateServiceImpl;
 use actix::prelude::*;
 use anyhow::{Error, Result};
 use starcoin_bus::{Bus, BusActor};
-use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::{
@@ -26,7 +25,6 @@ pub struct ChainStateActor {
 
 impl ChainStateActor {
     pub fn launch(
-        _config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         store: Arc<dyn StateNodeStore>,
         root_hash: Option<HashValue>,
@@ -167,10 +165,9 @@ mod tests {
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
-        let config = Arc::new(NodeConfig::random_for_test());
         let mock_store = Arc::new(MockStateNodeStore::new());
         let bus_actor = BusActor::launch();
-        let actor = ChainStateActor::launch(config, bus_actor, mock_store, None)?;
+        let actor = ChainStateActor::launch(bus_actor, mock_store, None)?;
         let _state_root = actor.state_root().await?;
         //assert!(account.is_some());
         Ok(())
