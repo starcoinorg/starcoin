@@ -36,7 +36,8 @@ starcoin-accumulator = {package="starcoin-accumulator", path = "../core/accumula
 starcoin-metrics = {path = "../commons/metrics"}
 once_cell = "1.4.0"
 dyn-clone = "1.0.1"
-network-rpc = { path = "../network-rpc", package = "starcoin-network-rpc" }
+starcoin-network-rpc-api = { path = "../network-rpc/api" }
+starcoin-network-rpc = { path = "../network-rpc/", package = "starcoin-network-rpc" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

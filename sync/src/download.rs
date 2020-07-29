@@ -19,7 +19,7 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use network_rpc::{gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncNotify;
 use std::sync::atomic::{AtomicBool, Ordering};

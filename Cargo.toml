@@ -49,6 +49,7 @@ members = [
     "network-rpc",
     "network-rpc/derive",
     "network-rpc/core",
+    "network-rpc/api",
     "wallet/api",
     "wallet/lib",
     "wallet/service",
