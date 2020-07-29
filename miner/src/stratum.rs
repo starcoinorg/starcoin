@@ -3,6 +3,7 @@
 
 use crate::miner::{MineCtx, Miner};
 use config::ConsensusStrategy;
+use consensus::Consensus;
 use logger::prelude::*;
 use sc_stratum::*;
 use std::sync::Arc;
@@ -34,7 +35,7 @@ pub fn mint(
     chain: &dyn ChainReader,
     block_template: BlockTemplate,
 ) -> anyhow::Result<()> {
-    let difficulty = consensus::calculate_next_difficulty(strategy, chain)?;
+    let difficulty = strategy.calculate_next_difficulty(chain)?;
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
     debug!("Push job to worker {}", job);

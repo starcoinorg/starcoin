@@ -23,7 +23,6 @@ use starcoin_vm_types::transaction::{
     RawUserTransaction, SignedUserTransaction, TransactionPayload,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
@@ -39,16 +38,29 @@ const HALLEY_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/halley/gen
 const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/genesis");
 const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
 
-pub static FRESH_GENESIS: Lazy<HashMap<ChainNetwork, Genesis>> = Lazy::new(|| {
-    let mut genesis = HashMap::new();
-    for net in ChainNetwork::networks() {
-        genesis.insert(
-            net,
-            Genesis::build(net)
-                .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", net, e)),
-        );
-    }
-    genesis
+static FRESH_TEST_GENESIS: Lazy<Genesis> = Lazy::new(|| {
+    Genesis::build(ChainNetwork::Test)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Test, e))
+});
+
+static FRESH_DEV_GENESIS: Lazy<Genesis> = Lazy::new(|| {
+    Genesis::build(ChainNetwork::Dev)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Dev, e))
+});
+
+static FRESH_HALLEY_GENESIS: Lazy<Genesis> = Lazy::new(|| {
+    Genesis::build(ChainNetwork::Halley)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Halley, e))
+});
+
+static FRESH_PROXIMA_GENESIS: Lazy<Genesis> = Lazy::new(|| {
+    Genesis::build(ChainNetwork::Proxima)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Proxima, e))
+});
+
+static FRESH_MAIN_GENESIS: Lazy<Genesis> = Lazy::new(|| {
+    Genesis::build(ChainNetwork::Main)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Main, e))
 });
 
 pub enum GenesisOpt {
@@ -76,10 +88,13 @@ impl Genesis {
     pub fn load_by_opt(option: GenesisOpt, net: ChainNetwork) -> Result<Self> {
         match option {
             GenesisOpt::Generated => Self::load_generated(net),
-            GenesisOpt::Fresh => (&FRESH_GENESIS)
-                .get(&net)
-                .cloned()
-                .ok_or_else(|| format_err!("Can not find genesis by net{:?}", net)),
+            GenesisOpt::Fresh => match net {
+                ChainNetwork::Test => Ok(FRESH_TEST_GENESIS.clone()),
+                ChainNetwork::Dev => Ok(FRESH_DEV_GENESIS.clone()),
+                ChainNetwork::Halley => Ok(FRESH_HALLEY_GENESIS.clone()),
+                ChainNetwork::Proxima => Ok(FRESH_PROXIMA_GENESIS.clone()),
+                ChainNetwork::Main => Ok(FRESH_MAIN_GENESIS.clone()),
+            },
         }
     }
 
@@ -94,7 +109,7 @@ impl Genesis {
 
     /// Build fresh genesis
     pub(crate) fn build(net: ChainNetwork) -> Result<Self> {
-        debug!("Init genesis");
+        debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
         debug!("Genesis block id : {:?}", block.header().id());

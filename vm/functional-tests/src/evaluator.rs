@@ -8,6 +8,7 @@ use crate::{
     executor::FakeExecutor,
 };
 use mirai_annotations::checked_verify;
+use starcoin_consensus::Consensus;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_types::{
     access_path::AccessPath,
@@ -19,7 +20,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
-use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::chain_config::{ChainId, ChainNetwork};
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
@@ -295,7 +296,8 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        expiration_timestamp_secs: config.expiration_time.unwrap_or(40000),
+        expiration_timestamp_secs: ChainNetwork::Test.consensus().now()
+            + config.expiration_time.unwrap_or(3600),
     }
 }
 

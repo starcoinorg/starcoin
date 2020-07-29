@@ -97,11 +97,7 @@ fn test_miner_with_ondemand_pacemaker() {
             chain.clone(),
             miner_account,
         );
-        MinerClientActor::new(
-            config.miner.clone(),
-            config.net().get_config().consensus_strategy,
-        )
-        .start();
+        MinerClientActor::new(config.miner.clone(), config.net().consensus()).start();
         let _sync = SyncActor::launch(
             config.clone(),
             bus,

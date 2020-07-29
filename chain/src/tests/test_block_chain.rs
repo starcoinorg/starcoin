@@ -2,20 +2,19 @@ use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncServic
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
+use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
-use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_genesis::Genesis as StarcoinGenesis;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
 use types::account_address;
 use types::transaction::authenticator::AuthenticationKey;
 
-async fn gen_master_chain(times: u64, delay: bool) -> (ChainActorRef, Arc<NodeConfig>) {
+async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<Storage>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
     let storage =
@@ -42,6 +41,7 @@ async fn gen_master_chain(times: u64, delay: bool) -> (ChainActorRef, Arc<NodeCo
     )
     .unwrap();
     let miner_account = WalletAccount::random();
+    let consensus_strategy = node_config.net().consensus();
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
@@ -56,28 +56,23 @@ async fn gen_master_chain(times: u64, delay: bool) -> (ChainActorRef, Arc<NodeCo
                     vec![],
                 )
                 .unwrap();
-            let block = consensus::create_block(
-                node_config.net().get_config().consensus_strategy,
-                &block_chain,
-                block_template,
-            )
-            .unwrap();
+            let block = consensus_strategy
+                .create_block(&block_chain, block_template)
+                .unwrap();
+
             let connect_result = chain.clone().try_connect(block).await.unwrap();
             assert_eq!(connect_result, ConnectBlockResult::SUCCESS);
-            if delay {
-                Delay::new(Duration::from_millis(1000)).await;
-            }
         }
     }
 
-    (chain, node_config)
+    (chain, node_config, storage)
 }
 
 #[stest::test(timeout = 480)]
 async fn test_block_chain_head() {
     ::logger::init_for_test();
     let times = 10;
-    let (chain, _) = gen_master_chain(times, false).await;
+    let (chain, _, _) = gen_master_chain(times).await;
     assert_eq!(
         chain.master_head_header().await.unwrap().unwrap().number(),
         times
@@ -88,25 +83,35 @@ async fn test_block_chain_head() {
 async fn test_block_chain_forks() {
     ::logger::init_for_test();
     let times = 5;
-    let (chain, _conf) = gen_master_chain(times, true).await;
-    let mut parent_hash = chain.clone().master_block_by_number(0).await.unwrap().id();
+    let (chain_service, config, storage) = gen_master_chain(times).await;
+    let mut parent_hash = chain_service
+        .clone()
+        .master_block_by_number(0)
+        .await
+        .unwrap()
+        .id();
     let miner_account = WalletAccount::random();
     if times > 0 {
         for i in 0..(times + 1) {
-            Delay::new(Duration::from_millis(1000)).await;
-            //TODO optimize this logic, use a more clear method to simulate chain difficulty and fork.
-            let block = chain
-                .clone()
+            //Delay::new(Duration::from_millis(1000)).await;
+
+            let chain = BlockChain::new(config.clone(), parent_hash, storage.clone()).unwrap();
+            let (block_template, _) = chain
                 .create_block_template(
                     *miner_account.address(),
                     Some(miner_account.get_auth_key().prefix().to_vec()),
                     Some(parent_hash),
                     Vec::new(),
+                    Vec::new(),
                 )
-                .await
-                .unwrap()
-                .into_block(0, 10000.into());
-            info!(
+                .unwrap();
+            let block = config
+                .net()
+                .consensus()
+                .create_block(&chain, block_template)
+                .unwrap();
+            // .into_block(0, 10000.into());
+            debug!(
                 "{}:{:?}:{:?}:{:?}",
                 i,
                 parent_hash,
@@ -114,12 +119,17 @@ async fn test_block_chain_forks() {
                 block.header().parent_hash()
             );
             parent_hash = block.header().id();
-            let _ = chain.clone().try_connect(block).await.unwrap();
+            let _ = chain_service.clone().try_connect(block).await.unwrap();
         }
     }
 
     assert_eq!(
-        chain.master_head_header().await.unwrap().unwrap().id(),
+        chain_service
+            .master_head_header()
+            .await
+            .unwrap()
+            .unwrap()
+            .id(),
         parent_hash
     )
 }
@@ -142,11 +152,10 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
     )?;
 
-    let block_b1 = consensus::create_block(
-        config.net().get_config().consensus_strategy,
-        &block_chain,
-        template_b1,
-    )?;
+    let block_b1 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, template_b1)?;
     block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
@@ -162,7 +171,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             auth_prefix,
             0,
             10000,
-            get_current_timestamp() + 40000,
+            config.net().consensus().now() + 40000,
             config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -175,11 +184,10 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
     )?;
-    let block_b2 = consensus::create_block(
-        config.net().get_config().consensus_strategy,
-        &block_chain,
-        template_b2,
-    )?;
+    let block_b2 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, template_b2)?;
 
     block_chain.apply(block_b2)?;
     let (template_b3, _) = block_chain2.create_block_template(
@@ -189,11 +197,10 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2],
         vec![],
     )?;
-    let block_b3 = consensus::create_block(
-        config.net().get_config().consensus_strategy,
-        &block_chain2,
-        template_b3,
-    )?;
+    let block_b3 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain2, template_b3)?;
     block_chain2.apply(block_b3)?;
 
     let vec_txn = block_chain2
@@ -223,11 +230,10 @@ async fn test_chain_apply() -> Result<()> {
         vec![],
     )?;
 
-    let new_block = consensus::create_block(
-        config.net().get_config().consensus_strategy,
-        &block_chain,
-        block_template,
-    )?;
+    let new_block = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, block_template)?;
 
     // block_chain.txn_accumulator.append(&[HashValue::random()])?;
     // block_chain.txn_accumulator.flush()?;

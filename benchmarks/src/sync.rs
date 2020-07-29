@@ -10,6 +10,7 @@ use network_rpc::gen_client::NetworkRpcClient;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_random_available_port, NodeConfig};
+use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_network_api::NetworkService;
@@ -234,12 +235,11 @@ async fn create_node(
                 )
                 .await
                 .unwrap();
-            let block = starcoin_consensus::create_block(
-                node_config.net().get_config().consensus_strategy,
-                &block_chain,
-                block_template,
-            )
-            .unwrap();
+            let block = node_config
+                .net()
+                .consensus()
+                .create_block(&block_chain, block_template)
+                .unwrap();
             chain.clone().try_connect(block).await.unwrap();
         }
     }

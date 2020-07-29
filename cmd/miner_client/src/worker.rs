@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{nonce_generator, partition_nonce};
-use consensus::{argon, difficulty::difficult_to_target};
+use consensus::{argon, difficulty::difficult_to_target, Consensus};
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -230,7 +230,7 @@ fn strategy_solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let nonce = consensus::solve_consensus_nonce(strategy, pow_header, diff);
+    let nonce = strategy.solve_consensus_nonce(pow_header, diff);
     if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;

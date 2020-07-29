@@ -1,12 +1,12 @@
 use crate::test_helper;
 use anyhow::Result;
 use config::NodeConfig;
+use consensus::Consensus;
 use crypto::keygen::KeyGen;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
@@ -27,7 +27,7 @@ pub fn test_open_block() -> Result<()> {
             block_gas_limit,
             miner_account.address,
             Some(miner_account.get_auth_key().prefix().to_vec()),
-            get_current_timestamp(),
+            config.net().consensus().now(),
             vec![],
         )?
     };
@@ -42,7 +42,7 @@ pub fn test_open_block() -> Result<()> {
         AuthenticationKey::ed25519(&sender_pubkey).prefix().to_vec(),
         association_sequence_num,
         50_000_000,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
         config.net().chain_id(),
     )
     .try_into()?;
@@ -74,7 +74,7 @@ pub fn test_open_block() -> Result<()> {
             10_000,
             1,
             1_000_000,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id(),
         )
         .sign(&sender_prikey, sender_pubkey.clone())

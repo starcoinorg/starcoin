@@ -161,6 +161,10 @@ impl ChainNetwork {
         }
     }
 
+    pub fn consensus(self) -> ConsensusStrategy {
+        self.get_config().consensus_strategy
+    }
+
     pub fn sign_with_association(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         if let (Some(private_key), public_key) = &self.get_config().association_key_pair {
             Ok(txn.sign(private_key, public_key.clone())?.into_inner())
@@ -286,7 +290,8 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
     ChainConfig {
         version: Version { major: 1 },
-        parent_hash: HashValue::zero(),
+        parent_hash: HashValue::random(),
+        //Test timestamp set to 0 for mock time.
         timestamp: 0,
         total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 1,
@@ -318,9 +323,14 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
     ChainConfig {
         version: Version { major: 1 },
-        parent_hash: HashValue::zero(),
-        timestamp: 0,
-        total_supply: STARCOIN_TOTAL_SUPPLY, //420_000_000 * 1_000_000 + 1_680_000_000 * 1_000_000 // 840_000_000 * 1_000_000 * 2 = (70_000_000 * 1_000_000 * 12) * 2 = (840_000_000 * 1_000_000 / 116) * 2
+        //use latest git commit version's hash
+        parent_hash: HashValue::sha3_256_of(
+            hex::decode("4df939777a8560668a7bb23bf7305e62bdb116f2")
+                .expect("invalid hex")
+                .as_slice(),
+        ),
+        timestamp: 1595924170,
+        total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 1,
         difficulty: 1.into(),
         nonce: 0,
@@ -347,8 +357,9 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     ChainConfig {
         version: Version { major: 1 },
-        parent_hash: HashValue::zero(),
-        timestamp: 0,
+        //use latest git commit hash
+        parent_hash: HashValue::sha3_256_of(hex::decode("4df939777a8560668a7bb23bf7305e62bdb116f2").expect("invalid hex").as_slice()),
+        timestamp: 1595924170,
         total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 3,
         difficulty: 10.into(),
@@ -381,6 +392,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     ChainConfig {
         version: Version { major: 1 },
+        //TODO set parent_hash and timestamp
         parent_hash: HashValue::zero(),
         timestamp: 0,
         total_supply: STARCOIN_TOTAL_SUPPLY,
@@ -414,6 +426,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
 pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     version: Version { major: 1 },
+    //TODO set parent_hash and timestamp
     parent_hash: HashValue::zero(),
     timestamp: 0,
     total_supply: STARCOIN_TOTAL_SUPPLY,
