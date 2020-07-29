@@ -100,7 +100,7 @@ where
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain, exist: bool) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
@@ -109,8 +109,6 @@ where
                 if block.header().parent_hash() == self.startup_info.master {
                     (vec![block.clone()], vec![])
                 } else {
-                    // TODO: After review the impl of find_common_ancestor in storage.
-                    // we can just let find_ancestors do it work, no matter whether fork or not.
                     self.find_ancestors_from_accumulator(&new_branch)?
                 };
 
@@ -121,7 +119,7 @@ where
             CHAIN_METRICS.broadcast_head_count.inc();
             self.broadcast_2_bus(BlockDetail::new(block, total_difficulty));
         } else {
-            self.insert_branch(block_header);
+            self.insert_branch(block_header, exist);
         }
 
         CHAIN_METRICS
@@ -136,8 +134,8 @@ where
         self.startup_info.update_master(&header);
     }
 
-    fn insert_branch(&mut self, new_block_header: &BlockHeader) {
-        self.startup_info.insert_branch(new_block_header);
+    fn insert_branch(&mut self, new_block_header: &BlockHeader, exist: bool) {
+        self.startup_info.insert_branch(new_block_header, exist);
     }
 
     fn save_startup(&self) -> Result<()> {
@@ -460,6 +458,7 @@ where
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         if block_exist {
             CHAIN_METRICS.duplicate_conn_count.inc();
+            self.select_head(fork.expect("Branch not exist."), block_exist)?;
             Ok(ConnectBlockResult::DuplicateConn)
         } else if let Some(mut branch) = fork {
             let timer = CHAIN_METRICS
@@ -483,7 +482,7 @@ where
                 debug!("connected failed {:?}", block.header().id());
                 CHAIN_METRICS.verify_fail_count.inc();
             } else {
-                self.select_head(branch)?;
+                self.select_head(branch, block_exist)?;
             }
             Ok(connected)
         } else {

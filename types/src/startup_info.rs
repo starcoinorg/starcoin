@@ -47,15 +47,30 @@ impl StartupInfo {
         Self { master, branches }
     }
 
-    pub fn insert_branch(&mut self, new_block_header: &BlockHeader) {
-        self.branches
-            .retain(|head| head != &new_block_header.parent_hash());
-        self.branches.push(new_block_header.id())
+    pub fn insert_branch(&mut self, new_block_header: &BlockHeader, exist: bool) {
+        if exist {
+            if self.branches.contains(&new_block_header.parent_hash()) {
+                //insert only when parent branch exist
+                self.insert_branch_inner(&new_block_header.parent_hash(), new_block_header.id())
+            } else {
+                //do nothing
+            }
+        } else {
+            self.insert_branch_inner(&new_block_header.parent_hash(), new_block_header.id())
+        }
+    }
+
+    fn insert_branch_inner(&mut self, remove_branch_head: &HashValue, new_branch_head: HashValue) {
+        self.branches.retain(|head| head != remove_branch_head);
+        self.branches.retain(|head| head != &new_branch_head);
+        self.branches.push(new_branch_head)
     }
 
     pub fn update_master(&mut self, new_block_header: &BlockHeader) {
         if self.master != new_block_header.parent_hash() {
-            self.branches.push(self.master)
+            let old_master = self.master;
+            self.branches.retain(|head| head != &old_master);
+            self.branches.push(old_master)
         }
         self.master = new_block_header.id();
     }

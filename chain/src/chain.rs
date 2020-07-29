@@ -661,11 +661,11 @@ impl ChainWriter for BlockChain {
         let block_id = block.id();
         self.save_block(&block, block_state);
         self.head = Some(block);
-        self.save_block_info(block_info);
         self.chain_state = ChainStateDB::new(
             self.storage.clone().into_super_arc(),
             Some(self.head_block().header().state_root()),
         );
+        self.save_block_info(block_info);
         debug!("save block {:?} succ.", block_id);
         Ok(())
     }
