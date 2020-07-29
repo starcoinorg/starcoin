@@ -71,7 +71,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
     }
     if let (Some(t), Some(addr)) = (timestamp, proposer) {
         // TODO: Add parser for hash value and vote maps.
-        Ok(BlockMetadata::new(HashValue::zero(), *t, addr, None, 0))
+        Ok(BlockMetadata::new(HashValue::zero(), *t, addr, None, 0, 0))
     } else {
         Err(ErrorKind::Other("Cannot generate block metadata".to_string()).into())
     }

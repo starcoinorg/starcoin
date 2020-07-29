@@ -8,9 +8,11 @@ module Block {
     use 0x1::Consensus;
     use 0x1::ErrorCode;
 
+    fun BLOCK_NUMBER_MISMATCH(): u64 { 100 }
+
      resource struct BlockMetadata {
-          // Height of the current block
-          height: u64,
+          // number of the current block
+          number: u64,
           // Hash of the parent block.
           parent_hash: vector<u8>,
           // Author of the current block.
@@ -20,7 +22,7 @@ module Block {
     }
 
     struct NewBlockEvent {
-          height: u64,
+          number: u64,
           author: address,
           timestamp: u64,
     }
@@ -33,16 +35,16 @@ module Block {
       move_to<BlockMetadata>(
           account,
       BlockMetadata {
-        height: 0,
+        number: 0,
         parent_hash: parent_hash,
         author: CoreAddresses::GENESIS_ACCOUNT(),
         new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
       });
     }
 
-    // Get the current block height
-    public fun get_current_block_height(): u64 acquires BlockMetadata {
-      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).height
+    // Get the current block number
+    public fun get_current_block_number(): u64 acquires BlockMetadata {
+      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).number
     }
 
     // Get the hash of the parent block.
@@ -56,26 +58,26 @@ module Block {
     }
 
     // Call at block prologue
-    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64): (u64, u128) acquires BlockMetadata{
+    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64): u128 acquires BlockMetadata{
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
-        let new_height = block_metadata_ref.height + 1;
-        block_metadata_ref.height = new_height;
+        assert(number == (block_metadata_ref.number + 1), BLOCK_NUMBER_MISMATCH());
+        block_metadata_ref.number = number;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
 
-        let reward = Consensus::adjust_epoch(account, new_height, timestamp, uncles);
+        let reward = Consensus::adjust_epoch(account, number, timestamp, uncles);
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,
           NewBlockEvent {
-            height: new_height,
+            number: number,
             author: author,
             timestamp: timestamp,
           }
         );
-        (new_height, reward)
+        reward
     }
 }
 }

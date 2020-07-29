@@ -387,6 +387,7 @@ impl Block {
             self.header.author,
             self.header.auth_key_prefix,
             uncles,
+            self.header.number,
         )
     }
 }

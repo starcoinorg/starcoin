@@ -53,7 +53,7 @@ fun main(account: &signer) {
 // check: EXECUTED
 
 
-// package txn must wait after plan's active_after_height
+// package txn must wait after plan's active_after_number
 //! new-transaction
 //! sender: alice
 script {

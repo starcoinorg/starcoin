@@ -879,7 +879,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_height: u64, block_time: u64)
+<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_number: u64, block_time: u64)
 </code></pre>
 
 
@@ -888,8 +888,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_height: u64, block_time: u64) <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>assert</b>(block_height == 1, 333);
+<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_number: u64, block_time: u64) <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
+    <b>assert</b>(block_number == 1, 333);
     <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
     <b>let</b> count = <a href="#0x1_Consensus_epoch_time_target">Self::epoch_time_target</a>() / epoch_ref.block_time_target;
     <b>assert</b>(count &gt; 1, 336);
@@ -911,7 +911,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_height: u64, block_time: u64, uncles: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128
 </code></pre>
 
 
@@ -920,16 +920,16 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_height: u64, block_time: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(<a href="#0x1_Consensus_max_uncles_per_block">Self::max_uncles_per_block</a>() &gt;= uncles, 339);
-    <b>if</b> (block_height == 1) {
+    <b>if</b> (block_number == 1) {
         <b>assert</b>(uncles == 0, 334);
-        <a href="#0x1_Consensus_first_epoch">Self::first_epoch</a>(block_height, block_time);
+        <a href="#0x1_Consensus_first_epoch">Self::first_epoch</a>(block_number, block_time);
     } <b>else</b> {
         <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
         <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-        <b>if</b> (block_height &lt; epoch_ref.end_number) {
+        <b>if</b> (block_number &lt; epoch_ref.end_number) {
             epoch_data.uncles = epoch_data.uncles + uncles;
         } <b>else</b> {
             <b>assert</b>(uncles == 0, 334);
@@ -955,8 +955,8 @@
 
             epoch_ref.epoch_start_time = block_time;
             epoch_data.uncles = uncles;
-            epoch_ref.start_number = block_height;
-            epoch_ref.end_number = block_height + new_epoch_blocks;
+            epoch_ref.start_number = block_number;
+            epoch_ref.end_number = block_number + new_epoch_blocks;
             epoch_ref.block_time_target = new_epoch_block_time_target;
             epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
 
@@ -981,7 +981,7 @@
     <b>let</b> reward = epoch_ref.reward_per_block + (epoch_ref.reward_per_block * (<a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>() <b>as</b> u128) * (uncles <b>as</b> u128) / 100);
 
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-    <b>if</b> (block_height == epoch_ref.start_number) {
+    <b>if</b> (block_number == epoch_ref.start_number) {
         epoch_data.total_reward = reward;
         <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
             &<b>mut</b> epoch_ref.new_epoch_events,

@@ -7,8 +7,9 @@
 
 -  [Resource `BlockMetadata`](#0x1_Block_BlockMetadata)
 -  [Struct `NewBlockEvent`](#0x1_Block_NewBlockEvent)
+-  [Function `BLOCK_NUMBER_MISMATCH`](#0x1_Block_BLOCK_NUMBER_MISMATCH)
 -  [Function `initialize`](#0x1_Block_initialize)
--  [Function `get_current_block_height`](#0x1_Block_get_current_block_height)
+-  [Function `get_current_block_number`](#0x1_Block_get_current_block_number)
 -  [Function `get_parent_hash`](#0x1_Block_get_parent_hash)
 -  [Function `get_current_author`](#0x1_Block_get_current_author)
 -  [Function `process_block_metadata`](#0x1_Block_process_block_metadata)
@@ -33,7 +34,7 @@
 <dl>
 <dt>
 
-<code>height: u64</code>
+<code>number: u64</code>
 </dt>
 <dd>
 
@@ -82,7 +83,7 @@
 <dl>
 <dt>
 
-<code>height: u64</code>
+<code>number: u64</code>
 </dt>
 <dd>
 
@@ -102,6 +103,28 @@
 
 </dd>
 </dl>
+
+
+</details>
+
+<a name="0x1_Block_BLOCK_NUMBER_MISMATCH"></a>
+
+## Function `BLOCK_NUMBER_MISMATCH`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>(): u64 { 100 }
+</code></pre>
+
 
 
 </details>
@@ -128,7 +151,7 @@
   move_to&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(
       account,
   <a href="#0x1_Block_BlockMetadata">BlockMetadata</a> {
-    height: 0,
+    number: 0,
     parent_hash: parent_hash,
     author: <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(),
     new_block_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Block_NewBlockEvent">Self::NewBlockEvent</a>&gt;(account),
@@ -140,13 +163,13 @@
 
 </details>
 
-<a name="0x1_Block_get_current_block_height"></a>
+<a name="0x1_Block_get_current_block_number"></a>
 
-## Function `get_current_block_height`
+## Function `get_current_block_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_block_height">get_current_block_height</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_block_number">get_current_block_number</a>(): u64
 </code></pre>
 
 
@@ -155,8 +178,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_block_height">get_current_block_height</a>(): u64 <b>acquires</b> <a href="#0x1_Block_BlockMetadata">BlockMetadata</a> {
-  borrow_global&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>()).height
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_block_number">get_current_block_number</a>(): u64 <b>acquires</b> <a href="#0x1_Block_BlockMetadata">BlockMetadata</a> {
+  borrow_global&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>()).number
 }
 </code></pre>
 
@@ -218,7 +241,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64): (u64, u128)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64): u128
 </code></pre>
 
 
@@ -227,26 +250,26 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64): (u64, u128) <b>acquires</b> <a href="#0x1_Block_BlockMetadata">BlockMetadata</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64): u128 <b>acquires</b> <a href="#0x1_Block_BlockMetadata">BlockMetadata</a>{
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>let</b> block_metadata_ref = borrow_global_mut&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-    <b>let</b> new_height = block_metadata_ref.height + 1;
-    block_metadata_ref.height = new_height;
+    <b>assert</b>(number == (block_metadata_ref.number + 1), <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>());
+    block_metadata_ref.number = number;
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;
 
-    <b>let</b> reward = <a href="Consensus.md#0x1_Consensus_adjust_epoch">Consensus::adjust_epoch</a>(account, new_height, timestamp, uncles);
+    <b>let</b> reward = <a href="Consensus.md#0x1_Consensus_adjust_epoch">Consensus::adjust_epoch</a>(account, number, timestamp, uncles);
 
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="#0x1_Block_NewBlockEvent">NewBlockEvent</a>&gt;(
       &<b>mut</b> block_metadata_ref.new_block_events,
       <a href="#0x1_Block_NewBlockEvent">NewBlockEvent</a> {
-        height: new_height,
+        number: number,
         author: author,
         timestamp: timestamp,
       }
     );
-    (new_height, reward)
+    reward
 }
 </code></pre>
 

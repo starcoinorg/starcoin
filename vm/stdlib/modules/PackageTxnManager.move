@@ -8,7 +8,7 @@ address 0x1 {
 
         struct UpgradePlan {
             package_hash: vector<u8>,
-            active_after_height: u64,
+            active_after_number: u64,
         }
 
         // The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
@@ -87,20 +87,20 @@ address 0x1 {
             move_from<UpgradePlanCapability>(account_address)
         }
 
-        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, active_after_height: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
-            submit_upgrade_plan_with_cap(cap, package_hash, active_after_height);
+            submit_upgrade_plan_with_cap(cap, package_hash, active_after_number);
         }
 
-        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_height: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             //FIXME
-            //assert(active_after_height >= Block::get_current_block_height(), 1005);
+            //assert(active_after_number >= Block::get_current_block_number(), 1005);
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), 1006);
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
             assert(Option::is_none(&tpu.plan), 1007);
-            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_height});
+            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
         }
 
         public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
@@ -154,7 +154,7 @@ address 0x1 {
                 assert(Option::is_some(&plan_opt), 1001);
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, 1002);
-                assert(plan.active_after_height <= Block::get_current_block_height(), 1003);
+                assert(plan.active_after_number <= Block::get_current_block_number(), 1003);
             }else if(strategy == STRATEGY_NEW_MODULE()){
                 //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE()){
