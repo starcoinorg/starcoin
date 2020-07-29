@@ -7,9 +7,7 @@ use actix::{Addr, System};
 use failure::Fail;
 use futures::future::Future as Future01;
 use futures03::channel::oneshot;
-use futures03::{
-    future::FutureExt, select, stream::StreamExt, TryFutureExt, TryStream, TryStreamExt,
-};
+use futures03::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
 use starcoin_crypto::HashValue;
@@ -169,25 +167,20 @@ impl RpcClient {
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
             match timeout {
-                Some(t) => tokio::time::timeout(t, r).await??,
+                Some(t) => async_std::future::timeout(t, r).await??,
                 None => r.await?,
             }
         };
-        match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => anyhow::bail!("watch txn fail"),
-        }
+        futures03::executor::block_on(f)
     }
+
     pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
             r.await?
         };
-        match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => anyhow::bail!("watch block fail"),
-        }
+        futures03::executor::block_on(f)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
@@ -581,20 +574,14 @@ impl RpcClient {
             None => {
                 let conn_source = self.conn_source.clone();
                 let f = async { Self::get_rpc_channel(conn_source).await.map(|c| c.into()) };
-                let new_inner: RpcClientInner = match f.boxed().unit_error().compat().wait() {
-                    Ok(t) => t,
-                    Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
-                }?;
+                let new_inner: RpcClientInner = futures03::executor::block_on(f)?;
                 *self.inner.borrow_mut() = Some(new_inner.clone());
                 new_inner
             }
         };
 
         let f = async { f(inner).await };
-        let result = match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
-        };
+        let result = futures03::executor::block_on(f);
 
         if let Err(rpc_error) = &result {
             if let jsonrpc_client_transports::RpcError::Other(e) = rpc_error {
