@@ -7,9 +7,7 @@ use actix::{Addr, System};
 use failure::Fail;
 use futures::future::Future as Future01;
 use futures03::channel::oneshot;
-use futures03::{
-    future::FutureExt, select, stream::StreamExt, TryFutureExt, TryStream, TryStreamExt,
-};
+use futures03::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
 use starcoin_crypto::HashValue;
@@ -570,10 +568,7 @@ impl RpcClient {
             None => {
                 let conn_source = self.conn_source.clone();
                 let f = async { Self::get_rpc_channel(conn_source).await.map(|c| c.into()) };
-                let new_inner: RpcClientInner = match f.boxed().unit_error().compat().wait() {
-                    Ok(t) => t,
-                    Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
-                }?;
+                let new_inner: RpcClientInner = futures03::executor::block_on(f)?;
                 *self.inner.borrow_mut() = Some(new_inner.clone());
                 new_inner
             }
