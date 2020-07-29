@@ -1,9 +1,9 @@
 Feature: cmd integration test
   Background:
-#    Given a dev node config
-#    And node dev handle
-#    And dev rpc client
-    Given remote rpc client
+    Given a dev node config
+    And node dev handle
+    And dev rpc client
+#    Given remote rpc client
 
     #  1. node info
   Scenario: [cmd] node info
@@ -17,13 +17,13 @@ Feature: cmd integration test
 #    Then node handle stop
 
   #  3. dev get coin
-  Scenario Outline: [cmd] dev get coin
-    Then dev get_coin -v "<amount>"
+#  Scenario Outline: [cmd] dev get coin
+#    Then dev get_coin -v "<amount>"
 #    Then node handle stop
 
-    Examples:
-      | amount |
-      | 200000 |
+#    Examples:
+#      | amount |
+#      | 200000 |
 
   #  4. wallet create
   Scenario Outline: [cmd] wallet create
@@ -80,25 +80,28 @@ Feature: cmd integration test
   Scenario Outline: [cmd]  cli continuous 5
 #    Then cmd: "wallet list "
     Then cmd: "wallet unlock $.None"
-    Then cmd: "dev get_coin -v 20000 $.None"
+    Then cmd: "dev get_coin $.None"
     Then cmd: "dev compile ../examples/my_counter/module/MyCounter.move -o ../examples $.result"
     Then cmd: "dev execute --blocking $.txn_hash"
-    Then cmd: "chain get_txn $.txn_info_id"
-
-    Examples:
-      |  |
-
-  Scenario Outline: [cmd]  cli continuous 6
-    Then cmd: "wallet unlock $.None"
-    Then cmd: "dev get_coin -v 20000 $.None"
-    Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples $.result"
-    Then cmd: "dev deploy $.None"
-    Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
-    Then cmd: "dev execute --blocking $.txn_hash"
-    Then cmd: "chain get_txn $.None"
-    Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
-    Then cmd: "dev execute --arg 1000000u128 --blocking $.txn_hash"
     Then cmd: "chain get_txn $.None"
 
     Examples:
       |  |
+
+#  Scenario Outline: [cmd]  cli continuous 6
+#    Then cmd: "wallet create -p continuous $.address"
+#    Then cmd: "wallet show $.account.address"
+#    Then cmd: "wallet unlock -p continuous $.None"
+#    Then cmd: "dev get_coin $.None"
+#    Then cmd: "wallet show $.None"
+#    Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples $.result"
+#    Then cmd: "dev deploy $.None"
+#    Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
+#    Then cmd: "dev execute --blocking $.txn_hash"
+#    Then cmd: "chain get_txn $.None"
+#    Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
+#    Then cmd: "dev execute --arg 1000000u128 --blocking $.txn_hash"
+#    Then cmd: "chain get_txn $.None"
+#
+#    Examples:
+#      |  |
