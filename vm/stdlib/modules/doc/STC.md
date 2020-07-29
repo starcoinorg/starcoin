@@ -86,7 +86,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="#0x1_STC_token_address">token_address</a>(), 0);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="#0x1_STC_token_address">token_address</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
         account,

@@ -13,8 +13,8 @@ module TransactionManager {
     use 0x1::TransactionFee;
     use 0x1::Timestamp;
     use 0x1::ChainId;
+    use 0x1::ErrorCode;
 
-    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 6;
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 =0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
 
@@ -38,14 +38,14 @@ module TransactionManager {
         txn_package_address: address,
     ) {
         // Can only be invoked by genesis account
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
 
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
-        assert(ChainId::get() == chain_id, 7);
+        assert(ChainId::get() == chain_id, ErrorCode::PROLOGUE_BAD_CHAIN_ID());
 
         Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
-        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), EPROLOGUE_TRANSACTION_EXPIRED);
+        assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), ErrorCode::PROLOGUE_TRANSACTION_EXPIRED());
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
             PackageTxnManager::package_txn_prologue(account, txn_sender, txn_package_address, txn_script_or_package_hash);
         }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){

@@ -11,6 +11,10 @@
 -  [Resource `KeyRotationCapability`](#0x1_Account_KeyRotationCapability)
 -  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
 -  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
+-  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_Account_ECOIN_DEPOSIT_IS_ZERO)
+-  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
+-  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
+-  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `deposit`](#0x1_Account_deposit)
 -  [Function `deposit_to_sender`](#0x1_Account_deposit_to_sender)
 -  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
@@ -296,6 +300,94 @@
 
 </details>
 
+<a name="0x1_Account_ECOIN_DEPOSIT_IS_ZERO"></a>
+
+## Function `ECOIN_DEPOSIT_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 0 }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
+
+## Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_EMALFORMED_AUTHENTICATION_KEY"></a>
+
+## Function `EMALFORMED_AUTHENTICATION_KEY`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED"></a>
+
+## Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Account_deposit"></a>
 
 ## Function `deposit`
@@ -407,7 +499,7 @@
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, 7);
+    <b>assert</b>(deposit_value &gt; 0, <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>());
 
     //TODO check signature
     //<b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&metadata_signature) == 64, 9001);
@@ -531,7 +623,7 @@
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
-    <b>assert</b>(!<a href="#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), 11);
+    <b>assert</b>(!<a href="#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>());
     // The sender_addr has retained her withdrawal privileges--proceed.
     <a href="#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_addr, sender_balance, amount)
 }
@@ -588,7 +680,7 @@
 ): <a href="#0x1_Account_WithdrawCapability">WithdrawCapability</a> <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
     // Abort <b>if</b> we already extracted the unique withdraw capability for this account.
-    <b>assert</b>(!<a href="#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), 11);
+    <b>assert</b>(!<a href="#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>());
     <b>let</b> account = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(sender_addr);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.withdrawal_capability)
 }
@@ -741,7 +833,7 @@
 
 <pre><code><b>fun</b> <a href="#0x1_Account_rotate_authentication_key_for_account">rotate_authentication_key_for_account</a>(account: &<b>mut</b> <a href="#0x1_Account">Account</a>, new_authentication_key: vector&lt;u8&gt;) {
   // Don't allow rotating <b>to</b> clearly invalid key
-  <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, 12);
+  <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
   account.authentication_key = new_authentication_key;
 }
 </code></pre>
@@ -771,7 +863,7 @@
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>  {
     <b>let</b> sender_account_resource = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address);
     // Don't allow rotating <b>to</b> clearly invalid key
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, 12);
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
     sender_account_resource.authentication_key = new_authentication_key;
 }
 </code></pre>
@@ -799,7 +891,7 @@
 <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     // Abort <b>if</b> we already extracted the unique key rotation capability for this account.
-    <b>assert</b>(!<a href="#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), 11);
+    <b>assert</b>(!<a href="#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), <a href="#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>());
     <b>let</b> account = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(account_address);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.key_rotation_capability)
 }
@@ -857,7 +949,7 @@
     new_account_address: address,
     auth_key_prefix: vector&lt;u8&gt;
 ) :signer {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), 1);
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_account_address);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(&new_account);
     <a href="#0x1_Account_make_account">make_account</a>(&new_account, auth_key_prefix);
@@ -943,7 +1035,7 @@
     <b>let</b> authentication_key = auth_key_prefix;
     <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
     <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key, <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&new_account_addr));
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, 12);
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
     move_to(new_account, <a href="#0x1_Account">Account</a> {
           authentication_key,
           withdrawal_capability: <a href="Option.md#0x1_Option_some">Option::some</a>(
@@ -1322,11 +1414,11 @@
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 33);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
 
     // FUTURE: Make these error codes sequential
     // Verify that the transaction sender's account exists
-    <b>assert</b>(<a href="#0x1_Account_exists_at">exists_at</a>(txn_sender), 4);
+    <b>assert</b>(<a href="#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
 
     // Load the transaction sender's account
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);
@@ -1334,17 +1426,17 @@
     // Check that the hash of the transaction's <b>public</b> key matches the account's auth key
     <b>assert</b>(
         <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) == *&sender_account.authentication_key,
-        2
+        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">ErrorCode::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>()
     );
 
     // Check that the account has enough balance for all of the gas
     <b>let</b> max_transaction_fee = txn_gas_price * txn_max_gas_units;
     <b>let</b> balance_amount = <a href="#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);
-    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), 6);
+    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">ErrorCode::PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>());
 
     // Check that the transaction sequence number matches the sequence number of the account
-    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, 2);
-    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, 3);
+    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>());
+    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>());
 }
 </code></pre>
 
@@ -1377,7 +1469,7 @@
     state_cost_amount: u64,
     cost_is_negative: bool,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 33);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     // Load the transaction sender's account and balance resources
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);

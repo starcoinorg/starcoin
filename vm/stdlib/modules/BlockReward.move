@@ -8,6 +8,7 @@ module BlockReward {
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::ErrorCode;
 
     resource struct BlockReward{
         balance: Token<STC>,
@@ -26,8 +27,8 @@ module BlockReward {
     }
 
     public fun initialize(account: &signer, reward_balance: u128, reward_delay: u64) {
-        assert(Timestamp::is_genesis(), 1);
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(reward_delay > 0, 4);
         move_to<RewardQueue>(account, RewardQueue {
             reward_height: 0,
@@ -52,7 +53,7 @@ module BlockReward {
 
     public fun process_block_reward(account: &signer, current_height: u64, current_reward: u128,
         current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue, BlockReward {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         if (current_height > 0) {
             let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ACCOUNT());

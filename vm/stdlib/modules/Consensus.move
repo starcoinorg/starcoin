@@ -5,6 +5,7 @@ module Consensus {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::Event;
+    use 0x1::ErrorCode;
 
     const THOUSAND : u64 =1000;
     const HUNDRED : u64 =100;
@@ -45,20 +46,30 @@ module Consensus {
         total_reward: u128,
     }
 
+    fun UNCLE_RATE_TARGET_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 0}
+    fun EPOCH_TIME_TARGET_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 1}
+    fun REWARD_HALF_EPOCH_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 2}
+    fun INIT_BLOCK_TIME_TARGET_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 3}
+    fun BLOCK_DIFFICULTY_WINDOW_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 4}
+    fun INIT_REWARD_PER_EPOCH_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 5}
+    fun REWARD_PER_UNCLE_PERCENT_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 6}
+    fun MIN_TIME_TARGET_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 7}
+    fun MAX_UNCLES_PER_BLOCK_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 8}
+
     public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,
         reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
         init_reward_per_epoch: u128, reward_per_uncle_percent: u64,
         min_time_target:u64, max_uncles_per_block:u64) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
-        assert(uncle_rate_target > 0, 2);
-        assert(epoch_time_target > 0, 3);
-        assert(reward_half_epoch > 0, 4);
-        assert(init_block_time_target > 0, 5);
-        assert(block_difficulty_window > 0, 6);
-        assert(init_reward_per_epoch > 0, 7);
-        assert(reward_per_uncle_percent > 0, 8);
-        assert(min_time_target > 0, 9);
-        assert(max_uncles_per_block >= 0, 10);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(uncle_rate_target > 0, UNCLE_RATE_TARGET_IS_ZERO());
+        assert(epoch_time_target > 0, EPOCH_TIME_TARGET_IS_ZERO());
+        assert(reward_half_epoch > 0, REWARD_HALF_EPOCH_IS_ZERO());
+        assert(init_block_time_target > 0, INIT_BLOCK_TIME_TARGET_IS_ZERO());
+        assert(block_difficulty_window > 0, BLOCK_DIFFICULTY_WINDOW_IS_ZERO());
+        assert(init_reward_per_epoch > 0, INIT_REWARD_PER_EPOCH_IS_ZERO());
+        assert(reward_per_uncle_percent > 0, REWARD_PER_UNCLE_PERCENT_IS_ZERO());
+        assert(min_time_target > 0, MIN_TIME_TARGET_IS_ZERO());
+        assert(max_uncles_per_block >= 0, MAX_UNCLES_PER_BLOCK_IS_ZERO());
 
         move_to<Epoch>(account, Epoch {
             epoch_number:0,
@@ -178,7 +189,7 @@ module Consensus {
     }
 
     public fun adjust_epoch(account: &signer, block_height: u64, block_time: u64, uncles: u64): u128 acquires Epoch, EpochData {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(Self::max_uncles_per_block() >= uncles, 339);
         if (block_height == 1) {
             assert(uncles == 0, 334);
