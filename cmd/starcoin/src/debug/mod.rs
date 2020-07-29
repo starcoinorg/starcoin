@@ -6,9 +6,11 @@ mod gen_txn_cmd;
 mod get_block_by_uncle;
 mod log_cmd;
 mod panic_cmd;
+mod txpool_status;
 
 pub use gen_dev_block_cmd::*;
 pub use gen_txn_cmd::*;
 pub use get_block_by_uncle::*;
 pub use log_cmd::*;
 pub use panic_cmd::*;
+pub use txpool_status::*;

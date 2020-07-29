@@ -16,7 +16,7 @@ use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::TxPoolConfig;
-use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
 use storage::Store;
 use types::{
@@ -140,6 +140,10 @@ impl TxPoolSyncService for TxPoolService {
             .with_label_values(&["rollback"])
             .start_timer();
         self.inner.chain_new_block(enacted, retracted)
+    }
+
+    fn status(&self) -> TxPoolStatus {
+        self.inner.queue.status().into()
     }
 }
 

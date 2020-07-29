@@ -6,6 +6,7 @@ use jsonrpc_derive::rpc;
 use starcoin_types::transaction::SignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
+use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
 
 #[rpc]
@@ -17,4 +18,8 @@ pub trait TxPoolApi {
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.next_sequence_number")]
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>>;
+
+    /// or `None` if there are no pending transactions from that sender in txpool.
+    #[rpc(name = "txpool.state")]
+    fn state(&self) -> FutureResult<TxPoolStatus>;
 }
