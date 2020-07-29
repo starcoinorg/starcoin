@@ -142,8 +142,8 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_initialize">initialize</a>(account: &signer, reward_balance: u128, reward_delay: u64) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), 1);
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(reward_delay &gt; 0, 4);
     move_to&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(account, <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a> {
         reward_height: 0,
@@ -208,7 +208,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_height: u64, current_reward: u128,
     current_author: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>, <a href="#0x1_BlockReward">BlockReward</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>if</b> (current_height &gt; 0) {
         <b>let</b> rewards = borrow_global_mut&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());

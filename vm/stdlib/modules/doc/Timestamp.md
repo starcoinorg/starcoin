@@ -63,7 +63,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Timestamp_initialize">initialize</a>(account: &signer) {
     // Only callable by the <a href="Genesis.md#0x1_Genesis">Genesis</a> address
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     // TODO: Pass the initialized value be passed in <b>to</b> genesis?
     <b>let</b> timer = <a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a> {seconds: 0};
     move_to&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(account, timer);
@@ -90,7 +90,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Timestamp_update_global_time">update_global_time</a>(account: &signer, timestamp: u64) <b>acquires</b> <a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>let</b> global_timer = borrow_global_mut&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
     //TODO should support '=' ?
     <b>assert</b>(global_timer.seconds &lt;= timestamp, 5001);

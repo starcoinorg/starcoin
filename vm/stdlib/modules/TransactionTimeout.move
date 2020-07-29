@@ -4,6 +4,7 @@ module TransactionTimeout {
   use 0x1::Signer;
   use 0x1::CoreAddresses;
   use 0x1::Timestamp;
+  use 0x1::ErrorCode;
 
   spec module {
       pragma verify = false;
@@ -17,7 +18,7 @@ module TransactionTimeout {
 
   public fun initialize(account: &signer) {
     // Only callable by the Genesis address
-    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
     // Currently set to 1day.
     //TODO set by onchain config.
     move_to(account, TTL {duration_seconds: ONE_DAY});
@@ -30,7 +31,7 @@ module TransactionTimeout {
 
   public fun set_timeout(account: &signer, new_duration: u64) acquires TTL {
     // Only callable by the Genesis address
-    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
     let timeout = borrow_global_mut<TTL>(CoreAddresses::GENESIS_ACCOUNT());
     timeout.duration_seconds = new_duration;

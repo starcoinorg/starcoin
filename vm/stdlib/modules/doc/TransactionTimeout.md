@@ -60,7 +60,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionTimeout_initialize">initialize</a>(account: &signer) {
   // Only callable by the <a href="Genesis.md#0x1_Genesis">Genesis</a> address
-  <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+  <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
   // Currently set <b>to</b> 1day.
   //TODO set by onchain config.
   move_to(account, <a href="#0x1_TransactionTimeout_TTL">TTL</a> {duration_seconds: ONE_DAY});
@@ -88,7 +88,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionTimeout_set_timeout">set_timeout</a>(account: &signer, new_duration: u64) <b>acquires</b> <a href="#0x1_TransactionTimeout_TTL">TTL</a> {
   // Only callable by the <a href="Genesis.md#0x1_Genesis">Genesis</a> address
-  <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+  <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
   <b>let</b> timeout = borrow_global_mut&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
   timeout.duration_seconds = new_duration;
