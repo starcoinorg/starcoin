@@ -68,16 +68,12 @@ where
     pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
         CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
-        let block_chain = if !block_exist {
-            if self.block_exist(header.parent_hash()) {
-                Some(BlockChain::new(
-                    self.config.clone(),
-                    header.parent_hash(),
-                    self.storage.clone(),
-                )?)
-            } else {
-                None
-            }
+        let block_chain = if self.block_exist(header.parent_hash()) {
+            Some(BlockChain::new(
+                self.config.clone(),
+                header.parent_hash(),
+                self.storage.clone(),
+            )?)
         } else {
             None
         };
