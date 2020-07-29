@@ -18,7 +18,7 @@ Feature: cmd integration test
 
   #  3. dev get coin
   Scenario Outline: [cmd] dev get coin
-    Then dev get_coin "<amount>"
+    Then dev get_coin -v "<amount>"
 #    Then node handle stop
 
     Examples:
@@ -64,18 +64,10 @@ Feature: cmd integration test
   Scenario Outline: [cmd]  cli continuous 2
     Then cmd: "chain show $.head_block"
     Then cmd: "chain get_block $.author"
-    Then cmd: "wallet show $.account.address"
 
     Examples:
       |  |
 
-  Scenario Outline: [cmd]  cli continuous 3
-    Then cmd: "chain show $.head_block"
-    Then cmd: "chain get_block $.author"
-    Then cmd: "wallet show $.account.address"
-
-    Examples:
-      |  |
 
   Scenario Outline: [cmd]  cli continuous 4
     Then cmd: "chain branches $[0].head_block"
@@ -88,6 +80,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd]  cli continuous 5
 #    Then cmd: "wallet list "
     Then cmd: "wallet unlock $.None"
+    Then cmd: "dev get_coin -v 20000 $.None"
     Then cmd: "dev compile ../examples/my_counter/module/MyCounter.move -o ../examples $.result"
     Then cmd: "dev execute --blocking $.txn_hash"
     Then cmd: "chain get_txn $.txn_info_id"
@@ -97,14 +90,15 @@ Feature: cmd integration test
 
   Scenario Outline: [cmd]  cli continuous 6
     Then cmd: "wallet unlock $.None"
+    Then cmd: "dev get_coin -v 20000 $.None"
     Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples $.result"
     Then cmd: "dev deploy $.None"
     Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
     Then cmd: "dev execute --blocking $.txn_hash"
-    Then cmd: "chain get_txn $.txn_info_id"
+    Then cmd: "chain get_txn $.None"
     Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples $.result"
     Then cmd: "dev execute --arg 1000000u128 --blocking $.txn_hash"
-    Then cmd: "chain get_txn $.txn_info_id"
+    Then cmd: "chain get_txn $.None"
 
     Examples:
       |  |
