@@ -4,7 +4,7 @@
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
-use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::{
     iter::Iterator,
     sync::{Arc, Mutex},
@@ -84,6 +84,10 @@ impl TxPoolSyncService for MockTxPoolService {
 
     fn chain_new_block(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
         todo!()
+    }
+
+    fn status(&self) -> TxPoolStatus {
+        unimplemented!()
     }
 }
 

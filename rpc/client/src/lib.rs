@@ -46,6 +46,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 use starcoin_vm_types::vm_status::VMStatus;
@@ -524,6 +525,11 @@ impl RpcClient {
                 .await
         })
         .map_err(map_err)
+    }
+
+    pub fn txpool_status(&self) -> anyhow::Result<TxPoolStatus> {
+        self.call_rpc_blocking(|inner| async move { inner.txpool_client.state().compat().await })
+            .map_err(map_err)
     }
 
     pub fn subscribe_events(

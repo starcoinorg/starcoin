@@ -36,6 +36,8 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-wallet-api = { path = "../../wallet/api"}
 starcoin-state-api = { path = "../../state/api"}
 async-std = "1.5"
+starcoin-txpool-api = {path = "../../txpool/api"}
+
 
 [dev-dependencies]
 starcoin-rpc-server = { path = "../server" }
