@@ -131,7 +131,7 @@ where
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let f = async move {
             let txns = txpool.get_pending_txns(Some(max_txns), None);
-            let startup_info = chain.clone().master_startup_info().await?;
+            let startup_info = chain.master_startup_info().await?;
             debug!(
                 "On GenerateBlockEvent, master: {:?}, txn len: {}",
                 startup_info.master,
