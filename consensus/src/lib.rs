@@ -8,16 +8,19 @@ mod consensus_test;
 pub mod dev;
 pub mod difficulty;
 pub mod dummy;
+mod time;
+
+pub use consensus::Consensus;
+pub use time::TimeService;
 
 use crate::argon::ArgonConsensus;
-use crate::consensus::Consensus;
 use crate::dev::DevConsensus;
 use crate::dummy::DummyConsensus;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
-use starcoin_crypto::hash::PlainCryptoHash;
+use once_cell::sync::Lazy;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::{Block, BlockHeader, BlockTemplate};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::chain_config::ConsensusStrategy;
 
@@ -35,51 +38,40 @@ pub fn u64_to_vec(u: u64) -> Vec<u8> {
     wtr
 }
 
-pub fn calculate_next_difficulty(
-    strategy: ConsensusStrategy,
-    reader: &dyn ChainReader,
-) -> Result<U256> {
-    match strategy {
-        ConsensusStrategy::Dummy => DummyConsensus::calculate_next_difficulty(reader),
-        ConsensusStrategy::Dev => DevConsensus::calculate_next_difficulty(reader),
-        ConsensusStrategy::Argon => ArgonConsensus::calculate_next_difficulty(reader),
-    }
-}
+static DUMMY: Lazy<DummyConsensus> = Lazy::new(DummyConsensus::new);
+static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
+static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 
-/// Calculate new block consensus header
-// TODO use &HashValue to replace &[u8] for header_hash
-pub fn solve_consensus_nonce(
-    strategy: ConsensusStrategy,
-    header_hash: &[u8],
-    difficulty: U256,
-) -> u64 {
-    match strategy {
-        ConsensusStrategy::Dummy => DummyConsensus::solve_consensus_nonce(header_hash, difficulty),
-        ConsensusStrategy::Dev => DevConsensus::solve_consensus_nonce(header_hash, difficulty),
-        ConsensusStrategy::Argon => ArgonConsensus::solve_consensus_nonce(header_hash, difficulty),
+impl Consensus for ConsensusStrategy {
+    fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader),
+            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader),
+            ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader),
+        }
     }
-}
 
-pub fn verify(
-    strategy: ConsensusStrategy,
-    reader: &dyn ChainReader,
-    header: &BlockHeader,
-) -> Result<()> {
-    match strategy {
-        ConsensusStrategy::Dummy => DummyConsensus::verify(reader, header),
-        ConsensusStrategy::Dev => DevConsensus::verify(reader, header),
-        ConsensusStrategy::Argon => ArgonConsensus::verify(reader, header),
+    fn solve_consensus_nonce(&self, header_hash: &[u8], difficulty: U256) -> u64 {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(header_hash, difficulty),
+            ConsensusStrategy::Dev => DEV.solve_consensus_nonce(header_hash, difficulty),
+            ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(header_hash, difficulty),
+        }
     }
-}
 
-/// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
-pub fn create_block(
-    strategy: ConsensusStrategy,
-    reader: &dyn ChainReader,
-    block_template: BlockTemplate,
-) -> Result<Block> {
-    let difficulty = calculate_next_difficulty(strategy, reader)?;
-    let raw_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
-    let consensus_nonce = solve_consensus_nonce(strategy, raw_hash.to_vec().as_slice(), difficulty);
-    Ok(block_template.into_block(consensus_nonce, difficulty))
+    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.verify(reader, header),
+            ConsensusStrategy::Dev => DEV.verify(reader, header),
+            ConsensusStrategy::Argon => ARGON.verify(reader, header),
+        }
+    }
+
+    fn time(&self) -> &dyn TimeService {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.time(),
+            ConsensusStrategy::Dev => DEV.time(),
+            ConsensusStrategy::Argon => ARGON.time(),
+        }
+    }
 }

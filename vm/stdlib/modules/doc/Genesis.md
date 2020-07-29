@@ -15,7 +15,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Genesis_initialize">initialize</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_time_target: u64, reward_half_epoch: u64, init_block_time_target: u64, block_difficulty_window: u64, min_time_target: u64, reward_per_uncle_percent: u64, max_uncles_per_block: u64, total_supply: u128, pre_mine_percent: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Genesis_initialize">initialize</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_time_target: u64, reward_half_epoch: u64, init_block_time_target: u64, block_difficulty_window: u64, min_time_target: u64, reward_per_uncle_percent: u64, max_uncles_per_block: u64, total_supply: u128, pre_mine_percent: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, genesis_timestamp: u64)
 </code></pre>
 
 
@@ -32,7 +32,7 @@
                       reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u128,
                       pre_mine_percent:u64, parent_hash: vector&lt;u8&gt;,
                       association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;,
-                      chain_id: u8
+                      chain_id: u8,genesis_timestamp: u64,
 ){
      <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), 1);
 
@@ -40,6 +40,9 @@
 
      // create genesis account
      <b>let</b> genesis_account = <a href="Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(),<b>copy</b> dummy_auth_key_prefix);
+
+     //Init <b>global</b> time
+     <a href="Timestamp.md#0x1_Timestamp_initialize">Timestamp::initialize</a>(&genesis_account, genesis_timestamp);
 
      <a href="Block.md#0x1_Block_initialize">Block::initialize</a>(&genesis_account, parent_hash);
 
@@ -84,11 +87,11 @@
 
      <a href="ChainId.md#0x1_ChainId_initialize">ChainId::initialize</a>(&genesis_account, chain_id);
 
-     //Set <b>global</b> time, and <a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>() will <b>return</b> <b>false</b>.
-     <a href="Timestamp.md#0x1_Timestamp_initialize">Timestamp::initialize</a>(&genesis_account);
-
+     //Start time, <a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>() will <b>return</b> <b>false</b>. this call should at the end of genesis init.
+     <a href="Timestamp.md#0x1_Timestamp_set_time_has_started">Timestamp::set_time_has_started</a>(&genesis_account);
      <a href="Account.md#0x1_Account_release_genesis_signer">Account::release_genesis_signer</a>(genesis_account);
      <a href="Account.md#0x1_Account_release_genesis_signer">Account::release_genesis_signer</a>(association);
+
 }
 </code></pre>
 

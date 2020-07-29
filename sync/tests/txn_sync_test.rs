@@ -4,6 +4,7 @@ use actix_rt::System;
 use bus::{Bus, BusActor};
 use chain::ChainActor;
 use config::{get_random_available_port, NodeConfig};
+use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use futures_timer::Delay;
 use gen_network::gen_network;
@@ -20,10 +21,8 @@ use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::{sync::Arc, time::Duration};
 use txpool::TxPool;
-use types::chain_config::ChainId;
 use types::{
     account_address,
-    transaction::helpers::get_current_timestamp,
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
 };
 
@@ -105,7 +104,7 @@ fn test_txn_sync_actor() {
         .unwrap();
 
         // add txn to node1
-        let user_txn = gen_user_txn();
+        let user_txn = gen_user_txn(&node_config_1);
         let import_result = txpool_1
             .get_service()
             .add_txns(vec![user_txn.clone()])
@@ -197,10 +196,12 @@ fn test_txn_sync_actor() {
         bus_2.clone().broadcast(StartSyncTxnEvent).await.unwrap();
         // wait 10s to sync done
         Delay::new(Duration::from_secs(10)).await;
-
+        let current_timestamp = node_config_2.net().consensus().now();
         // check txn
-        let mut txns = txpool_2.get_service().get_pending_txns(None, None);
-        assert!(txns.len() == 1);
+        let mut txns = txpool_2
+            .get_service()
+            .get_pending_txns(None, Some(current_timestamp));
+        assert_eq!(txns.len(), 1);
         let txn = txns.pop().unwrap();
         assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
     };
@@ -209,7 +210,7 @@ fn test_txn_sync_actor() {
     drop(rt);
 }
 
-fn gen_user_txn() -> SignedUserTransaction {
+fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
@@ -218,8 +219,10 @@ fn gen_user_txn() -> SignedUserTransaction {
         auth_prefix,
         0,
         10000,
-        get_current_timestamp() + 40000,
-        ChainId::test(),
+        //TODO should use consensus().now() as current_timestamp.
+        types::transaction::helpers::get_current_timestamp() + 40000,
+        //config.net().consensus().now() + 40000,
+        config.net().chain_id(),
     );
     txn.as_signed_user_txn().unwrap().clone()
 }

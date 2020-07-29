@@ -153,7 +153,7 @@ where
                     )
                     .await?;
 
-                mint(stratum, miner, config.net().get_config().consensus_strategy, &block_chain, block_template)?;
+                mint(stratum, miner, config.net().consensus(), &block_chain, block_template)?;
                 Ok(())
             }
         }

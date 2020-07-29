@@ -13,6 +13,6 @@ module ErrorCode {
     public fun ENOT_GENESIS(): u64 {12}
     public fun ECONFIG_VALUE_DOES_NOT_EXIST(): u64 {13}
 
-    public fun ECODE_BASE(): u64 {20}
+    public fun ECODE_BASE(): u64 {100}
 }
 }

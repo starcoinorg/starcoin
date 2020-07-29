@@ -121,11 +121,7 @@ fn test_network_actor_rpc() {
             first_chain.clone(),
             miner_account,
         );
-        MinerClientActor::new(
-            node_config_1.miner.clone(),
-            node_config_1.net().get_config().consensus_strategy,
-        )
-        .start();
+        MinerClientActor::new(node_config_1.miner.clone(), node_config_1.net().consensus()).start();
         Delay::new(Duration::from_secs(60)).await;
         let block_1 = first_chain
             .clone()

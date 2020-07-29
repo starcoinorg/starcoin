@@ -7,6 +7,7 @@ use rand::{RngCore, SeedableRng};
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_vm_types::chain_config::ConsensusStrategy;
@@ -106,12 +107,9 @@ impl ChainBencher {
                     txn_vec,
                 )
                 .unwrap();
-            let block = starcoin_consensus::create_block(
-                ConsensusStrategy::Dummy,
-                &block_chain,
-                block_template,
-            )
-            .unwrap();
+            let block = ConsensusStrategy::Dummy
+                .create_block(&block_chain, block_template)
+                .unwrap();
             latest_id = Some(block.header().parent_hash());
             self.chain.write().try_connect(block).unwrap();
         }

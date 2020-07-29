@@ -254,7 +254,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64 {20}
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64 {100}
 </code></pre>
 
 

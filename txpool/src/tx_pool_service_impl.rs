@@ -108,6 +108,7 @@ impl TxPoolSyncService for TxPoolService {
             .with_label_values(&["get_pending_txns"])
             .start_timer();
         // should we expose the timestamp to let caller specify the time?
+        //TODO should use ConsensusStrategy time.
         let current_timestamp_secs = current_timestamp_secs.unwrap_or_else(get_current_timestamp);
         let r = self
             .inner
