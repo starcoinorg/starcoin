@@ -13,7 +13,6 @@ use serde::{Deserialize, Serialize};
 use state_api::{ChainStateAsyncService, StateWithProof};
 use std::sync::Arc;
 use storage::Store;
-use traits::Consensus;
 use txpool::TxPoolService;
 use types::access_path::AccessPath;
 use types::block::{BlockHeader, BlockNumber};
@@ -26,15 +25,14 @@ mod tests;
 
 pub use rpc::gen_client;
 
-pub fn start_network_rpc_server<C, S>(
+pub fn start_network_rpc_server<S>(
     rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
-    chain: ChainActorRef<C>,
+    chain: ChainActorRef,
     storage: Arc<dyn Store>,
     state_service: S,
     txpool: TxPoolService,
 ) -> Result<Addr<NetworkRpcServer>>
 where
-    C: Consensus + Sync + Send + 'static + Clone,
     S: ChainStateAsyncService + 'static,
 {
     let rpc_impl = NetworkRpcImpl::new(chain, txpool, state_service, storage);

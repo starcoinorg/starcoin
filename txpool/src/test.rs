@@ -13,7 +13,6 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::{collections::HashMap, sync::Arc};
 use storage::BlockStore;
-use types::chain_config::ChainId;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
@@ -51,7 +50,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
-    let (pool, _storage) = test_helper::start_txpool();
+    let (pool, _storage, config) = test_helper::start_txpool();
     let txpool_service = pool.get_service();
 
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -63,7 +62,7 @@ async fn test_txn_expire() -> Result<()> {
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         2,
-        ChainId::dev(),
+        config.net().chain_id(),
     );
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
@@ -77,7 +76,7 @@ async fn test_txn_expire() -> Result<()> {
 
 #[stest::test]
 async fn test_tx_pool() -> Result<()> {
-    let (pool, _storage) = test_helper::start_txpool();
+    let (pool, _storage, config) = test_helper::start_txpool();
     let txpool_service = pool.get_service();
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
@@ -88,7 +87,7 @@ async fn test_tx_pool() -> Result<()> {
         0,
         10000,
         1,
-        ChainId::dev(),
+        config.net().chain_id(),
     );
     let txn = txn.as_signed_user_txn()?.clone();
     let txn_hash = txn.crypto_hash();
@@ -105,13 +104,13 @@ async fn test_tx_pool() -> Result<()> {
 
 #[stest::test]
 async fn test_subscribe_txns() {
-    let (pool, _storage) = test_helper::start_txpool();
+    let (pool, _storage, _config) = test_helper::start_txpool();
     let _ = pool.get_service().subscribe_txns();
 }
 
 #[stest::test]
 async fn test_rollback() -> Result<()> {
-    let (pool, storage) = test_helper::start_txpool();
+    let (pool, storage, config) = test_helper::start_txpool();
     let start_timestamp = 0;
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -123,7 +122,7 @@ async fn test_rollback() -> Result<()> {
             0,
             10000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
-            ChainId::dev(),
+            config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -139,7 +138,7 @@ async fn test_rollback() -> Result<()> {
             0,
             20000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
-            ChainId::dev(),
+            config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
     };

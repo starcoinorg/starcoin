@@ -1,7 +1,7 @@
-use crypto::hash::PlainCryptoHash;
-use starcoin_consensus::argon::{verify, ArgonConsensus};
-use traits::Consensus;
-use types::block::{BlockHeader, RawBlockHeader};
+use crate::argon::{verify, ArgonConsensus};
+use crate::consensus::Consensus;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_types::block::{BlockHeader, RawBlockHeader};
 
 #[stest::test]
 fn raw_hash_test() {

@@ -23,7 +23,6 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::SyncActor;
-use starcoin_traits::Consensus;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::association_address;
@@ -38,12 +37,9 @@ use std::time::Duration;
 /// Node start script can do auto task when meet this exist code.
 static EXIT_CODE_NEED_HELP: i32 = 120;
 
-pub struct NodeStartHandle<C>
-where
-    C: Consensus + 'static,
-{
-    _miner_actor: Addr<MinerActor<C, TxPoolService, ChainActorRef<C>, Storage>>,
-    _sync_actor: Addr<SyncActor<C>>,
+pub struct NodeStartHandle {
+    _miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
+    _sync_actor: Addr<SyncActor>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Option<Addr<MinerClientActor>>,
 }
@@ -78,13 +74,10 @@ fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
     Ok(genesis)
 }
 
-pub async fn start<C>(
+pub async fn start(
     config: Arc<NodeConfig>,
     logger_handle: Arc<LoggerHandle>,
-) -> Result<NodeStartHandle<C>>
-where
-    C: Consensus + 'static,
-{
+) -> Result<NodeStartHandle> {
     let bus = BusActor::launch();
 
     let sync_event_receiver_future = bus.clone().channel::<SyncDone>();
@@ -120,7 +113,7 @@ where
         Ok(None) => {
             let genesis = load_and_check_genesis(&config, true)?;
             let genesis_hash = genesis.block().header().id();
-            let startup_info = genesis.execute_genesis_block(config.net(), storage.clone())?;
+            let startup_info = genesis.execute_genesis_block(storage.clone())?;
             (startup_info, genesis_hash)
         }
         Err(e) => {
@@ -229,7 +222,7 @@ where
     let chain_txpool_service = txpool_service.clone();
 
     let chain = Arbiter::new()
-        .exec(move || -> Result<ChainActorRef<C>> {
+        .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
                 chain_config,
                 startup_info,
@@ -265,7 +258,7 @@ where
     let sync_network = network.clone();
     let sync_storage = storage.clone();
     let sync = Arbiter::new()
-        .exec(move || -> Result<Addr<SyncActor<C>>> {
+        .exec(move || -> Result<Addr<SyncActor>> {
             SyncActor::launch(
                 sync_config,
                 sync_bus,
@@ -294,7 +287,7 @@ where
         info!("Waiting sync finished.");
     }
 
-    let miner = MinerActor::<C, TxPoolService, ChainActorRef<C>, Storage>::launch(
+    let miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
         config.clone(),
         bus.clone(),
         storage.clone(),
@@ -303,7 +296,13 @@ where
         default_account,
     )?;
     let miner_client = if config.miner.enable_miner_client {
-        Some(MinerClientActor::new(config.miner.clone()).start())
+        Some(
+            MinerClientActor::new(
+                config.miner.clone(),
+                config.net().get_config().consensus_strategy,
+            )
+            .start(),
+        )
     } else {
         None
     };

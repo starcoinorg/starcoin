@@ -8,29 +8,23 @@ use starcoin_storage::Store;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use traits::{ChainAsyncService, ConnectBlockResult, Consensus};
+use traits::{ChainAsyncService, ConnectBlockResult};
 use types::block::{Block, BlockInfo, BlockNumber};
 
 #[derive(Clone)]
-pub struct PivotBlock<C>
-where
-    C: Consensus + 'static,
-{
+pub struct PivotBlock {
     number: BlockNumber,
     block_info: BlockInfo,
-    state_sync_task_ref: StateSyncTaskRef<C>,
+    state_sync_task_ref: StateSyncTaskRef,
     block_accumulator: Option<Arc<MerkleAccumulator>>,
     storage: Arc<dyn Store>,
 }
 
-impl<C> PivotBlock<C>
-where
-    C: Consensus,
-{
+impl PivotBlock {
     pub fn new(
         number: BlockNumber,
         block_info: BlockInfo,
-        state_sync_task_ref: StateSyncTaskRef<C>,
+        state_sync_task_ref: StateSyncTaskRef,
         storage: Arc<dyn Store>,
     ) -> Self {
         Self {
@@ -110,21 +104,15 @@ impl FutureBlockPool {
     }
 }
 
-pub struct BlockConnector<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    chain_reader: ChainActorRef<C>,
+pub struct BlockConnector {
+    chain_reader: ChainActorRef,
     future_blocks: FutureBlockPool,
-    pivot: Arc<RwLock<Option<PivotBlock<C>>>>,
+    pivot: Arc<RwLock<Option<PivotBlock>>>,
 }
 
-impl<C> BlockConnector<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    pub fn new(chain_reader: ChainActorRef<C>) -> Self {
-        let pivot: Option<PivotBlock<C>> = None;
+impl BlockConnector {
+    pub fn new(chain_reader: ChainActorRef) -> Self {
+        let pivot: Option<PivotBlock> = None;
         BlockConnector {
             chain_reader,
             future_blocks: FutureBlockPool::new(),
@@ -132,14 +120,14 @@ where
         }
     }
 
-    pub fn update_pivot(&self, pivot: Option<PivotBlock<C>>) {
+    pub fn update_pivot(&self, pivot: Option<PivotBlock>) {
         match pivot {
             Some(p) => self.pivot.write().replace(p),
             None => self.pivot.write().take(),
         };
     }
 
-    fn get_pivot(&self) -> Option<PivotBlock<C>> {
+    fn get_pivot(&self) -> Option<PivotBlock> {
         (*self.pivot.read()).clone()
     }
 

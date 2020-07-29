@@ -8,7 +8,6 @@ use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_H
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_config::{genesis_key_pair, ChainNetwork};
-use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -30,7 +29,7 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use traits::{ChainReader, ConnectBlockResult, Consensus};
+use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -86,7 +85,11 @@ impl Genesis {
 
     /// Load pre generated genesis.
     pub fn load(net: ChainNetwork) -> Result<Self> {
-        Self::load_by_opt(GenesisOpt::Generated, net)
+        if net.is_test() {
+            Self::load_by_opt(GenesisOpt::Fresh, net)
+        } else {
+            Self::load_by_opt(GenesisOpt::Generated, net)
+        }
     }
 
     /// Build fresh genesis
@@ -135,7 +138,15 @@ impl Genesis {
     }
 
     pub fn build_genesis_transaction(net: ChainNetwork) -> Result<SignedUserTransaction> {
-        let package = build_stdlib_package(net, StdLibOptions::Staged, true)?;
+        let package = build_stdlib_package(
+            net,
+            if net.is_test() {
+                StdLibOptions::Fresh
+            } else {
+                StdLibOptions::Staged
+            },
+            true,
+        )?;
         let txn = RawUserTransaction::new(
             CORE_CODE_ADDRESS,
             0,
@@ -203,6 +214,7 @@ impl Genesis {
 
     fn genesis_bytes(net: ChainNetwork) -> &'static [u8] {
         match net {
+            ChainNetwork::Test => unreachable!(),
             ChainNetwork::Dev => DEV_GENESIS_BYTES,
             ChainNetwork::Halley => HALLEY_GENESIS_BYTES,
             ChainNetwork::Proxima => PROXIMA_GENESIS_BYTES,
@@ -215,25 +227,10 @@ impl Genesis {
         scs::from_bytes(bytes)
     }
 
-    pub fn execute_genesis_block(
-        self,
-        net: ChainNetwork,
-        storage: Arc<dyn Store>,
-    ) -> Result<StartupInfo> {
-        if net.is_dev() {
-            self.execute_genesis_block_inner::<DevConsensus>(storage)
-        } else {
-            self.execute_genesis_block_inner::<ArgonConsensus>(storage)
-        }
-    }
-
-    pub fn execute_genesis_block_inner<C>(self, storage: Arc<dyn Store>) -> Result<StartupInfo>
-    where
-        C: Consensus + 'static,
-    {
+    pub fn execute_genesis_block(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
         let Genesis { block } = self;
-        let mut genesis_chain = BlockChain::<C>::init_empty_chain(storage.clone())?;
-        if let ConnectBlockResult::SUCCESS = genesis_chain.apply_inner(block, true)? {
+        let mut genesis_chain = BlockChain::init_empty_chain(storage.clone())?;
+        if let ConnectBlockResult::SUCCESS = genesis_chain.apply(block)? {
             let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
             storage.save_startup_info(startup_info.clone())?;
             Ok(startup_info)
@@ -300,12 +297,12 @@ mod tests {
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
+        let startup_info = genesis.execute_genesis_block(storage.clone())?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance(
             CacheStorage::new(),
         ))?);
-        let startup_info2 = genesis2.execute_genesis_block(net, storage2)?;
+        let startup_info2 = genesis2.execute_genesis_block(storage2)?;
 
         assert_eq!(
             startup_info, startup_info2,

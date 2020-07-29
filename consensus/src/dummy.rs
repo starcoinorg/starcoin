@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::consensus::Consensus;
 use anyhow::Result;
-use traits::ChainReader;
-use traits::Consensus;
-use types::block::BlockHeader;
-use types::U256;
+use starcoin_traits::ChainReader;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::U256;
 
 #[derive(Clone)]
 pub struct DummyConsensus {}

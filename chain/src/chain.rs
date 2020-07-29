@@ -18,9 +18,9 @@ use starcoin_vm_types::on_chain_config::{
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{convert::TryInto, marker::PhantomData, sync::Arc};
+use std::{convert::TryInto, sync::Arc};
 use storage::Store;
-use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus, ExcludedTxns};
+use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
 use types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
@@ -34,23 +34,16 @@ use types::{
     U256,
 };
 
-pub struct BlockChain<C>
-where
-    C: Consensus,
-{
+pub struct BlockChain {
     config: Arc<NodeConfig>,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
     storage: Arc<dyn Store>,
-    phantom: PhantomData<C>,
 }
 
-impl<C> BlockChain<C>
-where
-    C: Consensus,
-{
+impl BlockChain {
     pub fn new(
         config: Arc<NodeConfig>,
         head_block_hash: HashValue,
@@ -81,7 +74,6 @@ where
             head: Some(head),
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
             storage,
-            phantom: PhantomData,
         };
         Ok(chain)
     }
@@ -103,7 +95,6 @@ where
             head: None,
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
             storage,
-            phantom: PhantomData,
         };
         Ok(chain)
     }
@@ -191,10 +182,7 @@ where
     }
 }
 
-impl<C> ChainReader for BlockChain<C>
-where
-    C: Consensus,
-{
+impl ChainReader for BlockChain {
     fn head_block(&self) -> Block {
         self.head.clone().expect("head block is none.")
     }
@@ -379,10 +367,7 @@ where
     }
 }
 
-impl<C> BlockChain<C>
-where
-    C: Consensus,
-{
+impl BlockChain {
     fn save(
         &mut self,
         block_id: HashValue,
@@ -456,7 +441,11 @@ where
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(e) = C::verify(self, header) {
+            if let Err(e) = consensus::verify(
+                self.config.net().get_config().consensus_strategy,
+                self,
+                header,
+            ) {
                 error!("verify header:{:?} failed: {:?}", header.id(), e,);
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
@@ -464,8 +453,9 @@ where
         Ok(ConnectBlockResult::SUCCESS)
     }
 
-    pub fn apply_inner(&mut self, block: Block, is_genesis: bool) -> Result<ConnectBlockResult> {
+    fn apply_inner(&mut self, block: Block) -> Result<ConnectBlockResult> {
         let header = block.header();
+        let is_genesis = header.is_genesis();
         ensure!(
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
@@ -580,12 +570,9 @@ where
     }
 }
 
-impl<C> ChainWriter for BlockChain<C>
-where
-    C: Consensus,
-{
+impl ChainWriter for BlockChain {
     fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
-        self.apply_inner(block, false)
+        self.apply_inner(block)
     }
 
     fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {

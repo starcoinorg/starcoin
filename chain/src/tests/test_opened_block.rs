@@ -1,7 +1,6 @@
 use crate::test_helper;
 use anyhow::Result;
 use config::NodeConfig;
-use consensus::dev::DevConsensus;
 use crypto::keygen::KeyGen;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
@@ -16,7 +15,7 @@ use types::{account_address, account_config, transaction::authenticator::Authent
 #[stest::test]
 pub fn test_open_block() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
+    let chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let header = chain.current_header();
     let block_gas_limit = 10000;
 

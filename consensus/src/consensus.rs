@@ -2,34 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ChainReader;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::{
-    account_config::genesis_address,
-    on_chain_config::{Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource},
-};
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub trait Consensus: std::marker::Unpin + Clone + Sync + Send {
     fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
-        let epoch = account_reader
-            .get_resource::<EpochResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
-
-        let epoch_data = account_reader
-            .get_resource::<EpochDataResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
-
-        let consensus_conf = account_reader
-            .get_on_chain_config::<ConsensusConfig>()?
-            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
-
-        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+        account_reader.epoch()
     }
 
     fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256>;

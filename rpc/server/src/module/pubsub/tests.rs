@@ -10,12 +10,11 @@ use crate::module::test_helper;
 use futures::{compat::Stream01CompatExt, StreamExt};
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::NodeConfig;
-use starcoin_consensus::dev::DevConsensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_state_api::AccountStateReader;
-use starcoin_traits::{ChainReader, ChainWriter, Consensus};
+use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address;
 use starcoin_types::{
@@ -26,7 +25,6 @@ use std::sync::Arc;
 use tokio::time::timeout;
 
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::chain_config::ChainId;
 use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use tokio::time::Duration;
 
@@ -35,7 +33,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     starcoin_logger::init_for_test();
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let miner_account = WalletAccount::random();
 
     let pri_key = Ed25519PrivateKey::genesis();
@@ -49,7 +47,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
             0,
             10000,
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-            ChainId::dev(),
+            config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
     };
@@ -64,7 +62,11 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         "block_template: gas_used: {}, gas_limit: {}",
         block_template.gas_used, block_template.gas_limit
     );
-    let new_block = DevConsensus::create_block(&block_chain, block_template)?;
+    let new_block = starcoin_consensus::create_block(
+        config.net().get_config().consensus_strategy,
+        &block_chain,
+        block_template,
+    )?;
     block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());
@@ -133,7 +135,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let (txpool, _) = test_helper::start_txpool();
+    let (txpool, _, config) = test_helper::start_txpool();
     let txpool_service = txpool.get_service();
     let service = PubSubService::new();
     let txn_receiver = txpool_service.subscribe_txns();
@@ -174,7 +176,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,
-            ChainId::dev(),
+            config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
     };

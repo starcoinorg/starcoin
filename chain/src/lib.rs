@@ -25,7 +25,7 @@ use message::ChainRequest;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainAsyncService, ChainService, ConnectBlockResult, Consensus};
+use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
 use txpool::TxPoolService;
 use types::{
     account_address::AccountAddress,
@@ -37,25 +37,19 @@ use types::{
 };
 
 /// actor for block chain.
-pub struct ChainActor<C>
-where
-    C: Consensus,
-{
-    service: ChainServiceImpl<C, TxPoolService>,
+pub struct ChainActor {
+    service: ChainServiceImpl<TxPoolService>,
     bus: Addr<BusActor>,
 }
 
-impl<C> ChainActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl ChainActor {
     pub fn launch(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
-    ) -> Result<ChainActorRef<C>> {
+    ) -> Result<ChainActorRef> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(config, startup_info, storage, txpool, bus.clone())?,
             bus,
@@ -65,10 +59,7 @@ where
     }
 }
 
-impl<C> Actor for ChainActor<C>
-where
-    C: Consensus + Sync + Send + 'static,
-{
+impl Actor for ChainActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -82,10 +73,7 @@ where
     }
 }
 
-impl<C> Handler<ChainRequest> for ChainActor<C>
-where
-    C: Consensus + Sync + Send + 'static,
-{
+impl Handler<ChainRequest> for ChainActor {
     type Result = Result<ChainResponse>;
 
     fn handle(&mut self, msg: ChainRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -194,10 +182,7 @@ where
     }
 }
 
-impl<C> Handler<MinedBlock> for ChainActor<C>
-where
-    C: Consensus + Sync + Send + 'static,
-{
+impl Handler<MinedBlock> for ChainActor {
     type Result = ();
 
     fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
@@ -213,36 +198,24 @@ where
 }
 
 #[derive(Clone)]
-pub struct ChainActorRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    pub address: Addr<ChainActor<C>>,
+pub struct ChainActorRef {
+    pub address: Addr<ChainActor>,
 }
 
-impl<C> Into<Addr<ChainActor<C>>> for ChainActorRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    fn into(self) -> Addr<ChainActor<C>> {
+impl Into<Addr<ChainActor>> for ChainActorRef {
+    fn into(self) -> Addr<ChainActor> {
         self.address
     }
 }
 
-impl<C> Into<ChainActorRef<C>> for Addr<ChainActor<C>>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    fn into(self) -> ChainActorRef<C> {
+impl Into<ChainActorRef> for Addr<ChainActor> {
+    fn into(self) -> ChainActorRef {
         ChainActorRef { address: self }
     }
 }
 
 #[async_trait::async_trait]
-impl<C> ChainAsyncService for ChainActorRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl ChainAsyncService for ChainActorRef {
     async fn try_connect(self, block: Block) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
@@ -291,21 +264,6 @@ where
             match block {
                 Some(b) => Ok(*b),
                 None => bail!("get block by hash is none: {:?}", hash),
-            }
-        } else {
-            bail!("get block by hash error.")
-        }
-    }
-
-    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        if let ChainResponse::OptionBlock(block) = self
-            .address
-            .send(ChainRequest::GetBlockByUncle(uncle_id))
-            .await??
-        {
-            match block {
-                Some(b) => Ok(Some(*b)),
-                None => Ok(None),
             }
         } else {
             bail!("get block by hash error.")
@@ -376,6 +334,7 @@ where
             bail!("get block's transaction_info error.")
         }
     }
+
     async fn get_txn_info_by_block_and_index(
         self,
         block_id: HashValue,
@@ -395,7 +354,6 @@ where
             bail!("get txn info by block and idx error.")
         }
     }
-
     async fn get_events_by_txn_info_id(
         self,
         txn_info_id: HashValue,
@@ -439,6 +397,21 @@ where
             Ok(*block)
         } else {
             bail!("Get chain block by number response error.")
+        }
+    }
+
+    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        if let ChainResponse::OptionBlock(block) = self
+            .address
+            .send(ChainRequest::GetBlockByUncle(uncle_id))
+            .await??
+        {
+            match block {
+                Some(b) => Ok(Some(*b)),
+                None => Ok(None),
+            }
+        } else {
+            bail!("get block by hash error.")
         }
     }
 

@@ -16,9 +16,9 @@ use sc_stratum::Stratum;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_wallet_api::WalletAccount;
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 use storage::Store;
-use traits::{ChainAsyncService, Consensus};
+use traits::ChainAsyncService;
 use types::transaction::TxStatus;
 
 mod headblock_pacemaker;
@@ -32,9 +32,8 @@ pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 #[rtype(result = "Result<()>")]
 pub struct GenerateBlockEvent {}
 
-pub struct MinerActor<C, P, CS, S>
+pub struct MinerActor<P, CS, S>
 where
-    C: Consensus + Sync + Send + 'static,
     P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
@@ -42,17 +41,15 @@ where
     config: Arc<NodeConfig>,
     txpool: P,
     storage: Arc<S>,
-    phantom_c: PhantomData<C>,
     chain: CS,
-    miner: miner::Miner<C>,
+    miner: miner::Miner,
     stratum: Arc<Stratum>,
     miner_account: WalletAccount,
     arbiter: Arbiter,
 }
 
-impl<C, P, CS, S> MinerActor<C, P, CS, S>
+impl<P, CS, S> MinerActor<P, CS, S>
 where
-    C: Consensus + Sync + Send + 'static,
     P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
@@ -89,7 +86,6 @@ where
                 config,
                 txpool,
                 storage,
-                phantom_c: PhantomData,
                 chain,
                 miner,
                 stratum,
@@ -101,9 +97,8 @@ where
     }
 }
 
-impl<C, P, CS, S> Actor for MinerActor<C, P, CS, S>
+impl<P, CS, S> Actor for MinerActor<P, CS, S>
 where
-    C: Consensus + Sync + Send + 'static,
     P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
@@ -115,9 +110,8 @@ where
     }
 }
 
-impl<C, P, CS, S> Handler<GenerateBlockEvent> for MinerActor<C, P, CS, S>
+impl<P, CS, S> Handler<GenerateBlockEvent> for MinerActor<P, CS, S>
 where
-    C: Consensus + Sync + Send + 'static,
     P: TxPoolSyncService + Sync + Send + 'static,
     CS: ChainAsyncService + Sync + Send + 'static,
     S: Store + Sync + Send + 'static,
@@ -149,7 +143,7 @@ where
                 Ok(())
             } else {
                 let master = *startup_info.get_master();
-                let block_chain = BlockChain::<C>::new(config.clone(), master, storage.clone())?;
+                let block_chain = BlockChain::new(config.clone(), master, storage.clone())?;
                 let block_template = chain
                     .create_block_template(
                         *miner_account.address(),
@@ -159,7 +153,7 @@ where
                     )
                     .await?;
 
-                mint::<C>(stratum, miner, &block_chain, block_template)?;
+                mint(stratum, miner, config.net().get_config().consensus_strategy, &block_chain, block_template)?;
                 Ok(())
             }
         }

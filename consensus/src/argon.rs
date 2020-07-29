@@ -1,17 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::consensus::Consensus;
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
 use crate::{difficulty, set_header_nonce};
 use anyhow::{anyhow, Result};
 use argon2::{self, Config};
 use byteorder::{ByteOrder, LittleEndian};
-use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use rand::Rng;
-use traits::{ChainReader, Consensus};
-use types::block::{BlockHeader, RawBlockHeader};
-use types::{H256, U256};
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_traits::ChainReader;
+use starcoin_types::block::{BlockHeader, RawBlockHeader};
+use starcoin_types::{H256, U256};
 
 #[derive(Clone)]
 pub struct ArgonConsensus {}

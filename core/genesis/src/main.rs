@@ -23,6 +23,10 @@ fn main() {
         None => ChainNetwork::networks(),
     };
     for net in networks {
+        // skip test network generate.
+        if net.is_test() {
+            continue;
+        }
         let new_genesis =
             Genesis::load_by_opt(GenesisOpt::Fresh, net).expect("build genesis fail.");
         let generated_genesis = Genesis::load(net);

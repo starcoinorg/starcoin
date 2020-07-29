@@ -5,7 +5,6 @@ use actix_rt::System;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::NodeConfig;
-use consensus::dev::DevConsensus;
 use logger::prelude::*;
 use network::network::NetworkActor;
 use starcoin_genesis::Genesis;
@@ -47,9 +46,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let genesis = Genesis::load(config.net()).unwrap();
         let genesis_hash = genesis.block().header().id();
-        let startup_info = genesis
-            .execute_genesis_block(config.net(), storage.clone())
-            .unwrap();
+        let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
 
         let txpool = {
             let best_block_id = *startup_info.get_master();
@@ -92,16 +89,19 @@ fn test_miner_with_ondemand_pacemaker() {
         )
         .unwrap();
         let miner_account = WalletAccount::random();
-        let _miner =
-            MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
-                config.clone(),
-                bus.clone(),
-                storage.clone(),
-                txpool_service.clone(),
-                chain.clone(),
-                miner_account,
-            );
-        MinerClientActor::new(config.miner.clone()).start();
+        let _miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+            config.clone(),
+            bus.clone(),
+            storage.clone(),
+            txpool_service.clone(),
+            chain.clone(),
+            miner_account,
+        );
+        MinerClientActor::new(
+            config.miner.clone(),
+            config.net().get_config().consensus_strategy,
+        )
+        .start();
         let _sync = SyncActor::launch(
             config.clone(),
             bus,

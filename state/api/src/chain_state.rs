@@ -15,7 +15,10 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{STC_NAME, STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{genesis_address, STC_NAME, STC_TOKEN_CODE};
+use starcoin_vm_types::on_chain_config::{
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource,
@@ -294,5 +297,21 @@ impl<'a> AccountStateReader<'a> {
         }
 
         Ok(result)
+    }
+
+    pub fn epoch(&self) -> Result<EpochInfo> {
+        let epoch = self
+            .get_resource::<EpochResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let epoch_data = self
+            .get_resource::<EpochDataResource>(genesis_address())?
+            .ok_or_else(|| format_err!("Epoch is none."))?;
+
+        let consensus_conf = self
+            .get_on_chain_config::<ConsensusConfig>()?
+            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
     }
 }

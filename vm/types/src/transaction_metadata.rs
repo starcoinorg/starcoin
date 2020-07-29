@@ -132,7 +132,7 @@ impl Default for TransactionMetadata {
             gas_token_code: STC_TOKEN_CODE.clone(),
             transaction_size: AbstractMemorySize::new(0),
             expiration_timestamp_secs: 0,
-            chain_id: ChainId::dev(),
+            chain_id: ChainId::test(),
             payload: TransactionPayloadMetadata::Script(HashValue::zero()),
         }
     }

@@ -17,7 +17,6 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 use std::time::Duration;
-use traits::Consensus;
 use types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 
 const MAX_LEN: usize = 100;
@@ -113,26 +112,20 @@ impl BlockSyncTask {
     }
 }
 
-pub struct BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+pub struct BlockSyncTaskActor {
     ancestor_number: BlockNumber,
     target_number: BlockNumber,
     next: (HashValue, BlockNumber),
     headers: HashMap<HashValue, BlockHeader>,
     body_task: BlockSyncTask,
-    downloader: Arc<Downloader<C>>,
+    downloader: Arc<Downloader>,
     network: NetworkAsyncService,
     rpc_client: NetworkRpcClient<NetworkAsyncService>,
     state: SyncTaskState,
-    download_address: Addr<DownloadActor<C>>,
+    download_address: Addr<DownloadActor>,
 }
 
-impl<C> Debug for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Debug for BlockSyncTaskActor {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_tuple("BlockSyncTask")
             .field(&self.ancestor_number)
@@ -144,18 +137,15 @@ where
     }
 }
 
-impl<C> BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl BlockSyncTaskActor {
     pub fn launch(
         ancestor_header: &BlockHeader,
         target_number: BlockNumber,
-        downloader: Arc<Downloader<C>>,
+        downloader: Arc<Downloader>,
         network: NetworkAsyncService,
         start: bool,
-        download_address: Addr<DownloadActor<C>>,
-    ) -> BlockSyncTaskRef<C> {
+        download_address: Addr<DownloadActor>,
+    ) -> BlockSyncTaskRef {
         debug_assert!(ancestor_header.number() < target_number);
         let address = BlockSyncTaskActor::create(move |_ctx| Self {
             ancestor_number: ancestor_header.number(),
@@ -191,7 +181,7 @@ where
         self.state.is_finish()
     }
 
-    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor>) {
         let sync_header_flag =
             !(self.body_task.len() > MAX_LEN || self.next.1 >= self.target_number);
 
@@ -246,7 +236,7 @@ where
         });
     }
 
-    fn _sync_headers(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn _sync_headers(&mut self, address: Addr<BlockSyncTaskActor>) {
         if self.body_task.len() > MAX_LEN || self.next.1 >= self.target_number {
             return;
         }
@@ -289,7 +279,7 @@ where
         }
     }
 
-    fn _sync_bodies(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn _sync_bodies(&mut self, address: Addr<BlockSyncTaskActor>) {
         if let Some(hashs) = self.body_task.take_hashs() {
             let network = self.network.clone();
             let rpc_client = self.rpc_client.clone();
@@ -358,13 +348,13 @@ where
         Box::new(fut)
     }
 
-    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor>) {
         // self.sync_headers(address.clone());
         // self.sync_bodies(address);
         self.sync_blocks(address);
     }
 
-    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<C>>) {
+    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor>) {
         self.state = SyncTaskState::Syncing;
         if let Err(err) = address.try_send(NextTimeEvent {}) {
             error!("Send NextTimeEvent failed when start : {:?}", err);
@@ -372,10 +362,7 @@ where
     }
 }
 
-impl<C> Actor for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Actor for BlockSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -385,10 +372,7 @@ where
     }
 }
 
-impl<C> Handler<SyncDataEvent> for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<SyncDataEvent> for BlockSyncTaskActor {
     type Result = ();
 
     fn handle(&mut self, data: SyncDataEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -408,10 +392,7 @@ where
     }
 }
 
-impl<C> Handler<NextTimeEvent> for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<NextTimeEvent> for BlockSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, _event: NextTimeEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -427,10 +408,7 @@ where
     }
 }
 
-impl<C> Handler<BlockSyncBeginEvent> for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<BlockSyncBeginEvent> for BlockSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, _event: BlockSyncBeginEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -443,10 +421,7 @@ where
     }
 }
 
-impl<C> Handler<SyncTaskRequest> for BlockSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<SyncTaskRequest> for BlockSyncTaskActor {
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -457,17 +432,11 @@ where
 }
 
 #[derive(Clone)]
-pub struct BlockSyncTaskRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    address: Addr<BlockSyncTaskActor<C>>,
+pub struct BlockSyncTaskRef {
+    address: Addr<BlockSyncTaskActor>,
 }
 
-impl<C> BlockSyncTaskRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl BlockSyncTaskRef {
     pub fn start(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -476,4 +445,4 @@ where
     }
 }
 
-impl<C> SyncTaskAction for BlockSyncTaskRef<C> where C: Consensus + Sync + Send + 'static + Clone {}
+impl SyncTaskAction for BlockSyncTaskRef {}

@@ -5,7 +5,6 @@ use actix_rt::System;
 use bus::{Broadcast, BusActor};
 use chain::{ChainActor, ChainActorRef};
 use config::{get_random_available_port, NodeConfig};
-use consensus::dev::DevConsensus;
 use futures_timer::Delay;
 use gen_network::gen_network;
 use libp2p::multiaddr::Multiaddr;
@@ -51,9 +50,7 @@ fn test_state_sync() {
         // genesis
         let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
         let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1
-            .execute_genesis_block(node_config_1.net(), storage_1.clone())
-            .unwrap();
+        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
 
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
@@ -111,12 +108,7 @@ fn test_state_sync() {
         let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
         let miner_account = WalletAccount::random();
         // miner
-        let _miner_1 = MinerActor::<
-            DevConsensus,
-            TxPoolService,
-            ChainActorRef<DevConsensus>,
-            Storage,
-        >::launch(
+        let _miner_1 = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
             node_config_1.clone(),
             bus_1.clone(),
             storage_1.clone(),
@@ -124,8 +116,12 @@ fn test_state_sync() {
             first_chain.clone(),
             miner_account,
         );
-        MinerClientActor::new(node_config_1.miner.clone()).start();
-        Delay::new(Duration::from_secs(60)).await;
+        MinerClientActor::new(
+            node_config_1.miner.clone(),
+            node_config_1.net().get_config().consensus_strategy,
+        )
+        .start();
+        Delay::new(Duration::from_secs(20)).await;
         let mut block_1 = first_chain
             .clone()
             .master_head_block()
@@ -172,9 +168,7 @@ fn test_state_sync() {
 
         let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
         let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2
-            .execute_genesis_block(node_config_2.net(), storage_2.clone())
-            .unwrap();
+        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -195,7 +189,7 @@ fn test_state_sync() {
         debug!("addr_2 : {:?}", addr_2);
         BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
         // chain
-        let second_chain = ChainActor::<DevConsensus>::launch(
+        let second_chain = ChainActor::launch(
             node_config_2.clone(),
             startup_info_2.clone(),
             storage_2.clone(),
@@ -216,7 +210,7 @@ fn test_state_sync() {
         .unwrap();
         // sync
         let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::<DevConsensus>::launch(
+        let _second_sync_actor = SyncActor::launch(
             node_config_2.clone(),
             bus_2.clone(),
             Arc::clone(&second_p),
@@ -229,7 +223,7 @@ fn test_state_sync() {
         Delay::new(Duration::from_secs(5)).await;
         let _ = bus_2.clone().send(Broadcast { msg: SyncBegin }).await;
 
-        Delay::new(Duration::from_secs(30)).await;
+        //Delay::new(Duration::from_secs(10)).await;
         //TODO:
     };
 

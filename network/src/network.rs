@@ -12,9 +12,6 @@ use async_trait::async_trait;
 use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
-use config::{
-    ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
-};
 use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
@@ -267,12 +264,7 @@ impl NetworkActor {
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
-            let seeds = match node_config.base.net() {
-                ChainNetwork::Dev => DEV_CHAIN_CONFIG.boot_nodes.clone(),
-                ChainNetwork::Halley => HALLEY_CHAIN_CONFIG.boot_nodes.clone(),
-                ChainNetwork::Main => MAIN_CHAIN_CONFIG.boot_nodes.clone(),
-                ChainNetwork::Proxima => PROXIMA_CHAIN_CONFIG.boot_nodes.clone(),
-            };
+            let seeds = node_config.base.net().get_config().boot_nodes.clone();
             config.seeds.extend(seeds);
         }
         let has_seed = !config.seeds.is_empty();

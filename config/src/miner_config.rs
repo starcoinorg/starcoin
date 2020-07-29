@@ -7,7 +7,6 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 use std::net::SocketAddr;
 
 pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
@@ -22,8 +21,6 @@ pub struct MinerConfig {
     #[serde(skip)]
     pub enable_stderr: bool,
     pub block_gas_limit: u64,
-    #[serde(skip)]
-    pub consensus_strategy: ConsensusStrategy,
 }
 
 impl Default for MinerConfig {
@@ -32,30 +29,8 @@ impl Default for MinerConfig {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(tag = "type")]
-pub enum ConsensusStrategy {
-    Argon(u16),
-    Dev,
-    Dummy,
-}
-
-impl fmt::Display for ConsensusStrategy {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ConsensusStrategy::Dummy => write!(f, "dummy"),
-            ConsensusStrategy::Dev => write!(f, "dev"),
-            ConsensusStrategy::Argon(_) => write!(f, "argon"),
-        }
-    }
-}
-
 impl ConfigModule for MinerConfig {
     fn default_with_net(net: ChainNetwork) -> Self {
-        let consensus_strategy = match net {
-            ChainNetwork::Dev => ConsensusStrategy::Dev,
-            _ => ConsensusStrategy::Argon(1),
-        };
         let port = match net {
             ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
             _ => DEFAULT_STRATUM_SERVER_PORT,
@@ -73,7 +48,6 @@ impl ConfigModule for MinerConfig {
             enable_mint_empty_block: true,
             enable_stderr: false,
             block_gas_limit,
-            consensus_strategy,
         }
     }
 
@@ -81,7 +55,6 @@ impl ConfigModule for MinerConfig {
         self.stratum_server = format!("127.0.0.1:{}", get_random_available_port())
             .parse::<SocketAddr>()
             .unwrap();
-        self.consensus_strategy = ConsensusStrategy::Dummy;
         self.enable_mint_empty_block = true;
     }
 
@@ -91,13 +64,9 @@ impl ConfigModule for MinerConfig {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
-        if base.net.is_dev() {
-            self.consensus_strategy = ConsensusStrategy::Dev;
-        } else {
-            if let Some(thread_num) = opt.miner_thread {
-                self.thread_num = thread_num;
-            }
-            self.consensus_strategy = ConsensusStrategy::Argon(self.thread_num);
+
+        if let Some(thread_num) = opt.miner_thread {
+            self.thread_num = thread_num;
         }
 
         if opt.disable_miner_client {

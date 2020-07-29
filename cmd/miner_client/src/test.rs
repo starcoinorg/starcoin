@@ -6,12 +6,10 @@ use crate::stratum::{parse_response, process_request};
 use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
-use config::MinerConfig;
-use config::NodeConfig;
-use consensus::argon::ArgonConsensus;
 use futures_timer::Delay;
 use logger::prelude::*;
 use sc_stratum::{PushWorkHandler, Stratum};
+use starcoin_config::NodeConfig;
 use starcoin_miner::{
     miner::{MineCtx, Miner},
     stratum::StratumManager,
@@ -26,10 +24,9 @@ fn test_stratum_client() {
     ::logger::init_for_test();
     let mut system = System::new("test");
     system.block_on(async {
-        let mut miner_config = MinerConfig::default();
-        miner_config.consensus_strategy = config::ConsensusStrategy::Argon(4);
         let conf = Arc::new(NodeConfig::random_for_test());
-        let mut miner = Miner::<ArgonConsensus>::new(BusActor::launch(), conf);
+        let miner_config = conf.miner.clone();
+        let mut miner = Miner::new(BusActor::launch(), conf.clone());
         let stratum = {
             let dispatcher = Arc::new(StratumManager::new(miner.clone()));
             Stratum::start(&miner_config.stratum_server, dispatcher, None).unwrap()
@@ -44,11 +41,12 @@ fn test_stratum_client() {
             let difficulty: U256 = 1.into();
             MineCtx::new(block_template, difficulty)
         };
-        let _addr = MinerClientActor::new(miner_config).start();
+        let _addr =
+            MinerClientActor::new(miner_config, conf.net().get_config().consensus_strategy).start();
         miner.set_mint_job(mine_ctx);
         for _ in 1..10 {
             stratum.push_work_all(miner.get_mint_job()).unwrap();
-            Delay::new(Duration::from_millis(2000)).await;
+            Delay::new(Duration::from_millis(200)).await;
         }
     });
 }

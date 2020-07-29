@@ -4,20 +4,15 @@
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
-use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
-use starcoin_consensus::{argon::ArgonConsensus, dev::DevConsensus};
+use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
-use starcoin_traits::Consensus;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
-mod actor;
 pub mod message;
 mod node;
-
-pub use actor::{NodeActor, NodeRef};
 
 pub struct NodeHandle {
     runtime: Runtime,
@@ -94,10 +89,7 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
     let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
     let ipc_file = config.rpc.get_ipc_file();
     let node_handle = if !ipc_file.exists() {
-        let node_handle = match config.net() {
-            ChainNetwork::Dev => run_dev_node(config.clone()),
-            _ => run_normal_node(config.clone()),
-        };
+        let node_handle = run_node(config.clone());
         Some(node_handle)
     } else {
         //TODO check ipc file is available.
@@ -107,19 +99,8 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
     Ok((node_handle, config))
 }
 
-pub fn run_dev_node(config: Arc<NodeConfig>) -> NodeHandle {
-    run_node::<DevConsensus>(config)
-}
-
-pub fn run_normal_node(config: Arc<NodeConfig>) -> NodeHandle {
-    run_node::<ArgonConsensus>(config)
-}
-
 /// Run node in a new Thread, and return a NodeHandle.
-pub fn run_node<C>(config: Arc<NodeConfig>) -> NodeHandle
-where
-    C: Consensus + 'static,
-{
+pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
     let logger_handle = starcoin_logger::init();
     info!("Final data-dir is : {:?}", config.data_dir());
     if config.logger.enable_file() {
@@ -154,7 +135,7 @@ where
             //let node_actor = NodeActor::<C, H>::new(config, handle);
             //let _node_ref = node_actor.start();
             //TODO fix me, this just a work around method.
-            let _handle = match node::start::<C>(config, logger_handle).await {
+            let _handle = match node::start(config, logger_handle).await {
                 Err(e) => {
                     error!("Node start fail: {:?}, exit.", e);
                     System::current().stop();

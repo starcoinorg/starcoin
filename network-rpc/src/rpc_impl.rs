@@ -12,7 +12,7 @@ use state_api::{ChainStateAsyncService, StateWithProof};
 use state_tree::StateNode;
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainAsyncService, Consensus};
+use traits::ChainAsyncService;
 use txpool::TxPoolService;
 use txpool_api::TxPoolSyncService;
 use types::{
@@ -21,24 +21,22 @@ use types::{
     transaction::TransactionInfo,
 };
 
-pub struct NetworkRpcImpl<C, S>
+pub struct NetworkRpcImpl<S>
 where
-    C: Consensus + Sync + Send + 'static + Clone,
     S: ChainStateAsyncService + 'static,
 {
-    chain_reader: ChainActorRef<C>,
+    chain_reader: ChainActorRef,
     txpool: TxPoolService,
     storage: Arc<dyn Store>,
     state_service: S,
 }
 
-impl<C, S> NetworkRpcImpl<C, S>
+impl<S> NetworkRpcImpl<S>
 where
-    C: Consensus + Sync + Send + 'static + Clone,
     S: ChainStateAsyncService + 'static,
 {
     pub fn new(
-        chain_reader: ChainActorRef<C>,
+        chain_reader: ChainActorRef,
         txpool: TxPoolService,
         state_service: S,
         storage: Arc<dyn Store>,
@@ -52,9 +50,8 @@ where
     }
 }
 
-impl<C, S> NetworkRpc for NetworkRpcImpl<C, S>
+impl<S> NetworkRpc for NetworkRpcImpl<S>
 where
-    C: Consensus + Sync + Send + 'static + Clone,
     S: ChainStateAsyncService + 'static,
 {
     fn get_txns(&self, _peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>> {

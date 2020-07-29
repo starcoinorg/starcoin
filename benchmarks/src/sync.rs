@@ -10,7 +10,6 @@ use network_rpc::gen_client::NetworkRpcClient;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_random_available_port, NodeConfig};
-use starcoin_consensus::dummy::DummyConsensus;
 use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_network_api::NetworkService;
@@ -23,7 +22,7 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use traits::{ChainAsyncService, Consensus};
+use traits::ChainAsyncService;
 use types::peer_info::{PeerId, PeerInfo};
 
 /// Benchmarking support for sync.
@@ -73,7 +72,7 @@ impl SyncBencher {
     }
 
     async fn sync_block_inner(
-        downloader: Arc<Downloader<DummyConsensus>>,
+        downloader: Arc<Downloader>,
         rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
     ) -> Result<()> {
@@ -128,7 +127,7 @@ async fn create_node(
     Addr<BusActor>,
     Multiaddr,
     NetworkAsyncService,
-    ChainActorRef<DummyConsensus>,
+    ChainActorRef,
     TxPoolService,
     Arc<Storage>,
 )> {
@@ -154,9 +153,7 @@ async fn create_node(
     let genesis = Genesis::load(node_config.net()).unwrap();
     let genesis_hash = genesis.block().header().id();
 
-    let genesis_startup_info = genesis
-        .execute_genesis_block(node_config.net(), storage.clone())
-        .unwrap();
+    let genesis_startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let txpool = {
         let best_block_id = *genesis_startup_info.get_master();
         TxPool::start(
@@ -192,7 +189,7 @@ async fn create_node(
     let storage_clone = storage.clone();
     let bus_clone = bus.clone();
     let chain = Arbiter::new()
-        .exec(move || -> ChainActorRef<DummyConsensus> {
+        .exec(move || -> ChainActorRef {
             ChainActor::launch(
                 node_config_clone,
                 genesis_startup_info_clone,
@@ -222,12 +219,8 @@ async fn create_node(
             );
             let startup_info = chain.clone().master_startup_info().await?;
 
-            let block_chain = BlockChain::<DummyConsensus>::new(
-                node_config.clone(),
-                startup_info.master,
-                storage.clone(),
-            )
-            .unwrap();
+            let block_chain =
+                BlockChain::new(node_config.clone(), startup_info.master, storage.clone()).unwrap();
 
             let mut txn_vec = Vec::new();
             txn_vec.push(random_txn(i + 1));
@@ -241,7 +234,12 @@ async fn create_node(
                 )
                 .await
                 .unwrap();
-            let block = DummyConsensus::create_block(&block_chain, block_template).unwrap();
+            let block = starcoin_consensus::create_block(
+                node_config.net().get_config().consensus_strategy,
+                &block_chain,
+                block_template,
+            )
+            .unwrap();
             chain.clone().try_connect(block).await.unwrap();
         }
     }

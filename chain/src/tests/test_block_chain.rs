@@ -2,7 +2,6 @@ use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncServic
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
-use consensus::dev::DevConsensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -11,23 +10,18 @@ use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
-use traits::{ChainReader, ChainWriter, ConnectBlockResult, Consensus};
+use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
 use types::account_address;
 use types::transaction::authenticator::AuthenticationKey;
 
-async fn gen_master_chain(
-    times: u64,
-    delay: bool,
-) -> (ChainActorRef<DevConsensus>, Arc<NodeConfig>) {
+async fn gen_master_chain(times: u64, delay: bool) -> (ChainActorRef, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
     let genesis = StarcoinGenesis::load(node_config.net()).unwrap();
-    let startup_info = genesis
-        .execute_genesis_block(node_config.net(), storage.clone())
-        .unwrap();
+    let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let bus = BusActor::launch();
     let txpool_service = {
         let best_block_id = *startup_info.get_master();
@@ -39,7 +33,7 @@ async fn gen_master_chain(
         )
         .get_service()
     };
-    let chain = ChainActor::<DevConsensus>::launch(
+    let chain = ChainActor::launch(
         node_config.clone(),
         startup_info.clone(),
         storage.clone(),
@@ -51,12 +45,8 @@ async fn gen_master_chain(
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            let block_chain = BlockChain::<DevConsensus>::new(
-                node_config.clone(),
-                startup_info.master,
-                storage.clone(),
-            )
-            .unwrap();
+            let block_chain =
+                BlockChain::new(node_config.clone(), startup_info.master, storage.clone()).unwrap();
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
@@ -66,7 +56,12 @@ async fn gen_master_chain(
                     vec![],
                 )
                 .unwrap();
-            let block = DevConsensus::create_block(&block_chain, block_template).unwrap();
+            let block = consensus::create_block(
+                node_config.net().get_config().consensus_strategy,
+                &block_chain,
+                block_template,
+            )
+            .unwrap();
             let connect_result = chain.clone().try_connect(block).await.unwrap();
             assert_eq!(connect_result, ConnectBlockResult::SUCCESS);
             if delay {
@@ -135,7 +130,7 @@ async fn test_block_chain_forks() {
 ///             
 async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let header = block_chain.current_header();
     let miner_account = WalletAccount::random();
 
@@ -147,7 +142,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
     )?;
 
-    let block_b1 = DevConsensus::create_block(&block_chain, template_b1)?;
+    let block_b1 = consensus::create_block(
+        config.net().get_config().consensus_strategy,
+        &block_chain,
+        template_b1,
+    )?;
     block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
@@ -176,7 +175,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2.clone()],
         vec![],
     )?;
-    let block_b2 = DevConsensus::create_block(&block_chain, template_b2)?;
+    let block_b2 = consensus::create_block(
+        config.net().get_config().consensus_strategy,
+        &block_chain,
+        template_b2,
+    )?;
 
     block_chain.apply(block_b2)?;
     let (template_b3, _) = block_chain2.create_block_template(
@@ -186,7 +189,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![signed_txn_t2],
         vec![],
     )?;
-    let block_b3 = DevConsensus::create_block(&block_chain2, template_b3)?;
+    let block_b3 = consensus::create_block(
+        config.net().get_config().consensus_strategy,
+        &block_chain2,
+        template_b3,
+    )?;
     block_chain2.apply(block_b3)?;
 
     let vec_txn = block_chain2
@@ -203,7 +210,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 #[stest::test(timeout = 480)]
 async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test::<DevConsensus>(config)?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
 
@@ -216,7 +223,11 @@ async fn test_chain_apply() -> Result<()> {
         vec![],
     )?;
 
-    let new_block = DevConsensus::create_block(&block_chain, block_template)?;
+    let new_block = consensus::create_block(
+        config.net().get_config().consensus_strategy,
+        &block_chain,
+        block_template,
+    )?;
 
     // block_chain.txn_accumulator.append(&[HashValue::random()])?;
     // block_chain.txn_accumulator.flush()?;

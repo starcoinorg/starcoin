@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use types::U256;
+use starcoin_types::U256;
 
 use crate::argon::ArgonConsensus;
+use crate::consensus::Consensus;
 use anyhow::Result;
 use logger::prelude::*;
-use traits::{ChainReader, Consensus};
+use starcoin_traits::ChainReader;
 
 pub fn difficult_1_target() -> U256 {
     U256::max_value()

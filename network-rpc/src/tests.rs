@@ -5,7 +5,6 @@ use block_relayer::BlockRelayer;
 use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::*;
-use consensus::dev::DevConsensus;
 use crypto::HashValue;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures_timer::Delay;
@@ -86,7 +85,7 @@ fn test_network_rpc() {
 fn gen_chain_env(
     mut config: NodeConfig,
 ) -> (
-    ChainActorRef<DevConsensus>,
+    ChainActorRef,
     Arc<Storage>,
     TxPoolService,
     NetworkAsyncService,
@@ -105,9 +104,7 @@ fn gen_chain_env(
 
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let startup_info = genesis
-        .execute_genesis_block(node_config.net(), storage.clone())
-        .unwrap();
+    let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let txpool = {
         let best_block_id = *startup_info.get_master();
         TxPool::start(
@@ -119,7 +116,7 @@ fn gen_chain_env(
     };
     let tx_pool_service = txpool.get_service();
     BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone()).unwrap();
-    let chain = ChainActor::<DevConsensus>::launch(
+    let chain = ChainActor::launch(
         node_config.clone(),
         startup_info.clone(),
         storage.clone(),
@@ -129,8 +126,12 @@ fn gen_chain_env(
     .unwrap();
 
     let miner_account = WalletAccount::random();
-    MinerClientActor::new(node_config.miner.clone()).start();
-    MinerActor::<DevConsensus, TxPoolService, ChainActorRef<DevConsensus>, Storage>::launch(
+    MinerClientActor::new(
+        node_config.miner.clone(),
+        node_config.net().get_config().consensus_strategy,
+    )
+    .start();
+    MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
         node_config,
         bus.clone(),
         storage.clone(),

@@ -11,33 +11,26 @@ use network::PeerEvent;
 use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
-use traits::Consensus;
 use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
-pub struct SyncActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    download_address: Addr<DownloadActor<C>>,
+pub struct SyncActor {
+    download_address: Addr<DownloadActor>,
     #[allow(dead_code)]
     txn_sync_address: Addr<TxnSyncActor>,
     bus: Addr<BusActor>,
 }
 
-impl<C> SyncActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl SyncActor {
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
-        chain: ChainActorRef<C>,
+        chain: ChainActorRef,
         txpool: TxPoolService,
         network: NetworkAsyncService,
         storage: Arc<dyn Store>,
-    ) -> Result<Addr<SyncActor<C>>> {
+    ) -> Result<Addr<SyncActor>> {
         let txn_sync_addr = TxnSyncActor::launch(txpool, network.clone(), bus.clone());
         let download_address = DownloadActor::launch(
             node_config,
@@ -57,10 +50,7 @@ where
     }
 }
 
-impl<C> Actor for SyncActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Actor for SyncActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -84,10 +74,7 @@ where
     }
 }
 
-impl<C> Handler<PeerNewBlock> for SyncActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<PeerNewBlock> for SyncActor {
     type Result = ();
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
         let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
@@ -99,10 +86,7 @@ where
     }
 }
 
-impl<C> Handler<PeerEvent> for SyncActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<PeerEvent> for SyncActor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {

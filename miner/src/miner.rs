@@ -10,21 +10,15 @@ use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_metrics::HistogramTimer;
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::Mutex;
-use traits::Consensus;
 use types::{block::BlockTemplate, system_events::MinedBlock, U256};
 
 #[derive(Clone)]
-pub struct Miner<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
     bus: Addr<BusActor>,
     config: Arc<NodeConfig>,
-    phantom: PhantomData<C>,
 }
 
 pub struct MineCtx {
@@ -52,16 +46,12 @@ impl MineCtx {
     }
 }
 
-impl<C> Miner<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner<C> {
+impl Miner {
+    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner {
         Self {
             state: Arc::new(Mutex::new(None)),
             bus,
             config,
-            phantom: PhantomData,
         }
     }
     pub fn set_mint_job(&mut self, t: MineCtx) {

@@ -41,12 +41,12 @@ pub use available_port::{
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
-pub use miner_config::{ConsensusStrategy, MinerConfig};
+pub use miner_config::MinerConfig;
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use starcoin_vm_types::chain_config::{
-    genesis_key_pair, ChainConfig, ChainNetwork, DEV_CHAIN_CONFIG, HALLEY_CHAIN_CONFIG,
-    MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+    genesis_key_pair, ChainConfig, ChainNetwork, ConsensusStrategy, DEV_CHAIN_CONFIG,
+    HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
 };
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
@@ -211,7 +211,7 @@ impl BaseConfig {
         let base_data_dir = match base_data_dir {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
-                if net.is_dev() {
+                if net.is_dev() || net.is_test() {
                     temp_path()
                 } else {
                     DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
@@ -240,7 +240,7 @@ impl BaseConfig {
         self.base_data_dir.as_ref()
     }
     pub fn random_for_test() -> Self {
-        Self::new(ChainNetwork::Dev, None)
+        Self::new(ChainNetwork::Test, None)
     }
 }
 
@@ -290,7 +290,7 @@ pub struct NodeConfig {
 
 impl NodeConfig {
     pub fn random_for_test() -> Self {
-        let mut config = NodeConfig::default_with_net(ChainNetwork::Dev);
+        let mut config = NodeConfig::default_with_net(ChainNetwork::Test);
         let base = BaseConfig::random_for_test();
         config.random(&base);
         config

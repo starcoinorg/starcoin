@@ -27,7 +27,6 @@ use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use traits::Consensus;
 use types::{
     account_state::AccountState,
     peer_info::{PeerId, PeerInfo},
@@ -66,14 +65,12 @@ impl Roots {
     }
 }
 
-async fn sync_accumulator_node<C>(
+async fn sync_accumulator_node(
     node_key: HashValue,
     peer_id: PeerId,
     rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor<C>>,
-) where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+    address: Addr<StateSyncTaskActor>,
+) {
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_ACCUMULATOR])
@@ -126,14 +123,12 @@ async fn sync_accumulator_node<C>(
     };
 }
 
-async fn sync_state_node<C>(
+async fn sync_state_node(
     node_key: HashValue,
     peer_id: PeerId,
     rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor<C>>,
-) where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+    address: Addr<StateSyncTaskActor>,
+) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
@@ -177,14 +172,12 @@ async fn sync_state_node<C>(
     };
 }
 
-async fn sync_txn_info<C>(
+async fn sync_txn_info(
     block_id: HashValue,
     peer_id: PeerId,
     rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor<C>>,
-) where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+    address: Addr<StateSyncTaskActor>,
+) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
@@ -216,17 +209,11 @@ async fn sync_txn_info<C>(
 }
 
 #[derive(Clone)]
-pub struct StateSyncTaskRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
-    address: Addr<StateSyncTaskActor<C>>,
+pub struct StateSyncTaskRef {
+    address: Addr<StateSyncTaskActor>,
 }
 
-impl<C> SyncTaskAction for StateSyncTaskRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl SyncTaskAction for StateSyncTaskRef {
     fn activate(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -236,10 +223,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<C> StateSyncReset for StateSyncTaskRef<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl StateSyncReset for StateSyncTaskRef {
     async fn reset(
         &self,
         state_root: HashValue,
@@ -321,10 +305,7 @@ impl StateSyncTaskEvent {
     }
 }
 
-pub struct StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+pub struct StateSyncTaskActor {
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
@@ -333,9 +314,9 @@ where
     state_sync_task: StateSyncTask<(HashValue, bool)>,
     txn_info_sync_task: StateSyncTask<HashValue>,
     block_accumulator_sync_task: StateSyncTask<HashValue>,
-    block_sync_address: BlockSyncTaskRef<C>,
+    block_sync_address: BlockSyncTaskRef,
     state: SyncTaskState,
-    download_address: Addr<DownloadActor<C>>,
+    download_address: Addr<DownloadActor>,
     total_txn_info_task: AtomicU64,
 }
 
@@ -397,18 +378,15 @@ impl<T> StateSyncTask<T> {
     }
 }
 
-impl<C> StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
         root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
         network_service: NetworkAsyncService,
-        block_sync_address: BlockSyncTaskRef<C>,
-        download_address: Addr<DownloadActor<C>>,
-    ) -> StateSyncTaskRef<C> {
+        block_sync_address: BlockSyncTaskRef,
+        download_address: Addr<DownloadActor>,
+    ) -> StateSyncTaskRef {
         let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = StateSyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
@@ -457,7 +435,7 @@ where
         self.block_accumulator_sync_task.is_empty() && self.txn_info_sync_task.is_empty()
     }
 
-    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
+    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let value = self.state_sync_task.pop_front();
         if let Some((node_key, is_global)) = value {
             SYNC_METRICS
@@ -559,7 +537,7 @@ where
         }
     }
 
-    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
+    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let value = self.block_accumulator_sync_task.pop_front();
         if let Some(node_key) = value {
             SYNC_METRICS
@@ -611,7 +589,7 @@ where
     fn handle_accumulator_sync(
         &mut self,
         task_event: StateSyncTaskEvent,
-        address: Addr<StateSyncTaskActor<C>>,
+        address: Addr<StateSyncTaskActor>,
     ) {
         if let Some(accumulator_node_hash) =
             self.block_accumulator_sync_task.get(&task_event.peer_id)
@@ -663,7 +641,7 @@ where
         }
     }
 
-    fn exe_txn_info_sync_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
+    fn exe_txn_info_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
         let value = self.txn_info_sync_task.pop_front();
         if let Some(block_id) = value {
             SYNC_METRICS
@@ -708,7 +686,7 @@ where
     fn handle_txn_info_sync(
         &mut self,
         task_event: StateSyncTaskEvent,
-        address: Addr<StateSyncTaskActor<C>>,
+        address: Addr<StateSyncTaskActor>,
     ) {
         // if let Some(block_id) = self.txn_info_sync_task.get(&task_event.peer_id) {
         //1. push back
@@ -751,7 +729,7 @@ where
         state_root: &HashValue,
         block_accumulator_root: &HashValue,
         pivot_id: &HashValue,
-        address: Addr<StateSyncTaskActor<C>>,
+        address: Addr<StateSyncTaskActor>,
     ) {
         debug!(
             "reset state sync task with state root : {:?}, block accumulator root : {:?}.",
@@ -784,7 +762,7 @@ where
         }
     }
 
-    fn activation_task(&mut self, address: Addr<StateSyncTaskActor<C>>) {
+    fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
         if self.state.is_failed() {
             debug!("activation state sync task.");
             self.state = SyncTaskState::Syncing;
@@ -795,10 +773,7 @@ where
     }
 }
 
-impl<C> Actor for StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Actor for StateSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -808,10 +783,7 @@ where
     }
 }
 
-impl<C> Handler<TxnInfoEvent> for StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<TxnInfoEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -824,10 +796,7 @@ where
     }
 }
 
-impl<C> Handler<StateSyncTaskEvent> for StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -871,10 +840,7 @@ struct ResetRoots {
     pivot_id: HashValue,
 }
 
-impl<C> Handler<StateSyncEvent> for StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<StateSyncEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.
@@ -893,10 +859,7 @@ where
     }
 }
 
-impl<C> Handler<SyncTaskRequest> for StateSyncTaskActor<C>
-where
-    C: Consensus + Sync + Send + 'static + Clone,
-{
+impl Handler<SyncTaskRequest> for StateSyncTaskActor {
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, ctx: &mut Self::Context) -> Self::Result {
