@@ -11,7 +11,7 @@ anyhow = "1.0"
 thiserror = "1.0"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
-types = {path = "../types", package="starcoin-types"}
+starcoin-types = {path = "../types", package="starcoin-types"}
 config = {path = "../config", package="starcoin-config"}
 state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
 executor = {path = "../executor", package="starcoin-executor"}

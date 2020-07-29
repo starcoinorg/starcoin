@@ -9,6 +9,9 @@ use rand::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use starcoin_vm_types::on_chain_config::EpochInfo;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 #[derive(Default)]
 pub struct DevConsensus {
@@ -24,7 +27,7 @@ impl DevConsensus {
 }
 
 impl Consensus for DevConsensus {
-    fn calculate_next_difficulty(&self, chain: &dyn ChainReader) -> Result<U256> {
+    fn calculate_next_difficulty(&self, chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
         let epoch = Self::epoch(chain)?;
         info!("epoch: {:?}", epoch);
         let current_header = chain.current_header();
@@ -51,7 +54,7 @@ impl Consensus for DevConsensus {
         time
     }
 
-    fn verify(&self, _reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
+    fn verify(&self, _reader: &dyn ChainReader, _epoch: &EpochInfo, _header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 

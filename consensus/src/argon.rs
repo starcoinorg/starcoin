@@ -14,6 +14,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::{H256, U256};
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
 pub struct ArgonConsensus {
@@ -29,8 +30,8 @@ impl ArgonConsensus {
 }
 
 impl Consensus for ArgonConsensus {
-    fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
-        let target = difficulty::get_next_work_required(reader)?;
+    fn calculate_next_difficulty(&self, reader: &dyn ChainReader,epch: &EpochInfo) -> Result<U256> {
+        let target = difficulty::get_next_work_required(reader, epoch)?;
         Ok(target_to_difficulty(target))
     }
 
@@ -50,8 +51,8 @@ impl Consensus for ArgonConsensus {
         nonce
     }
 
-    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
-        let difficulty = self.calculate_next_difficulty(reader)?;
+    fn verify(&self,reader: &dyn ChainReader, epoch: &EpochInfo, header: &BlockHeader) -> Result<()> {
+        let difficulty = self.calculate_next_difficulty(reader, epoch)?;
         if header.difficulty() != difficulty {
             return Err(anyhow!(
                 "Difficulty mismatch: {:?}, {:?}",

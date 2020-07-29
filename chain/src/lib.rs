@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
-
 pub use chain::BlockChain;
 
 mod chain_metrics;
@@ -27,7 +26,7 @@ use std::sync::Arc;
 use storage::Store;
 use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
 use txpool::TxPoolService;
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,

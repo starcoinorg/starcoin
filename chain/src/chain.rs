@@ -10,18 +10,18 @@ use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateView};
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+    Consensus as ConsensusConfig, Consensus, EpochDataResource, EpochInfo, EpochResource,
 };
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, sync::Arc};
 use storage::Store;
 use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
     block::{
@@ -33,6 +33,8 @@ use types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
+use starcoin_types::peer_info::PeerId;
+use starcoin_vm_types::access_path::AccessPath;
 
 pub struct BlockChain {
     config: Arc<NodeConfig>,
@@ -343,7 +345,6 @@ impl ChainReader for BlockChain {
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
         &self.chain_state
     }
-
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
         let id = match block_id {
             Some(hash) => hash,
@@ -410,6 +411,7 @@ impl BlockChain {
         &self,
         header: &BlockHeader,
         verify_head_id: bool,
+        epoch: &EpochInfo,
     ) -> Result<ConnectBlockResult> {
         let pre_hash = header.parent_hash();
         if verify_head_id {
@@ -441,7 +443,7 @@ impl BlockChain {
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(e) = self.config.net().consensus().verify(self, header) {
+            if let Err(e) = self.config.net().consensus().verify(self, header,epoch) {
                 error!("verify header:{:?} failed: {:?}", header.id(), e,);
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
@@ -456,15 +458,16 @@ impl BlockChain {
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
-
         if !is_genesis {
-            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true)? {
+            let account_reader = AccountStateReader::new(&self.chain_state);
+            let epoch = account_reader.epoch()?;
+            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true, epoch)? {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
                     if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header, false)?
+                        self.verify_header(uncle_header, false, &epoch)?
                     {
                         return Ok(ConnectBlockResult::VerifyConsensusFailed);
                     }

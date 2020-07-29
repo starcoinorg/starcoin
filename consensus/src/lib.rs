@@ -23,6 +23,7 @@ use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::chain_config::ConsensusStrategy;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
     let len = header.len();
@@ -45,9 +46,9 @@ static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 impl Consensus for ConsensusStrategy {
     fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader),
-            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader),
-            ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader),
+            ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader, &DummyConsensus::epoch(reader)?),
+            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader,&DevConsensus::epoch(reader)?),
+            ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader,&ArgonConsensus::epoch(reader)?),
         }
     }
 
@@ -59,11 +60,11 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader, epoch: &EpochInfo) -> Result<()> {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.verify(reader, header),
-            ConsensusStrategy::Dev => DEV.verify(reader, header),
-            ConsensusStrategy::Argon => ARGON.verify(reader, header),
+            ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch,header),
+            ConsensusStrategy::Dev => DEV.verify(reader, epoch,header),
+            ConsensusStrategy::Argon => ARGON.verify(reader, epoch,header),
         }
     }
 

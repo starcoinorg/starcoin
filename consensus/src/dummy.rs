@@ -9,6 +9,7 @@ use rand::Rng;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
 pub struct DummyConsensus {
@@ -27,7 +28,7 @@ impl DummyConsensus {
 }
 
 impl Consensus for DummyConsensus {
-    fn calculate_next_difficulty(&self, chain: &dyn ChainReader) -> Result<U256> {
+    fn calculate_next_difficulty(&self, chain: &dyn ChainReader,epoch: &EpochInfo) -> Result<U256> {
         let epoch = Self::epoch(chain)?;
         Ok(epoch.block_time_target().into())
     }
@@ -44,7 +45,7 @@ impl Consensus for DummyConsensus {
         time
     }
 
-    fn verify(&self, _reader: &dyn ChainReader, _header: &BlockHeader) -> Result<()> {
+    fn verify(&self, _reader: &dyn ChainReader, _epoch: &EpochInfo, _header: &BlockHeader) -> Result<()> {
         Ok(())
     }
 

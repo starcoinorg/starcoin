@@ -20,7 +20,7 @@ use std::iter::Iterator;
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult};
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,

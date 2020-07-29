@@ -11,8 +11,8 @@ use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
-use types::account_address;
-use types::transaction::authenticator::AuthenticationKey;
+use starcoin_types::account_address;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 
 async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<Storage>) {
     let node_config = NodeConfig::random_for_test();

@@ -5,7 +5,7 @@ use crate::{ChainAsyncService, ConnectBlockResult};
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use starcoin_vm_types::on_chain_config::EpochInfo;
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,

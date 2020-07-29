@@ -8,18 +8,18 @@ use crate::consensus::Consensus;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub fn difficult_1_target() -> U256 {
     U256::max_value()
 }
 
 /// Get the target of next pow work
-pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
+pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
     let mut current_header = chain.current_header();
     if current_header.number <= 1 {
         return Ok(difficult_to_target(current_header.difficulty));
     }
-    let epoch = ArgonConsensus::epoch(chain)?;
     let blocks = {
         let mut blocks: Vec<BlockDiffInfo> = vec![];
 
