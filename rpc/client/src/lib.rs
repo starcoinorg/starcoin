@@ -164,16 +164,18 @@ impl RpcClient {
         txn_hash: HashValue,
         timeout: Option<Duration>,
     ) -> anyhow::Result<ThinBlock> {
-        let mut rt = tokio_compat::runtime::Runtime::new()?;
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
             match timeout {
-                Some(t) => tokio::time::timeout(t, r).await??,
+                Some(t) => async_std::future::timeout(t, r).await??,
                 None => r.await?,
             }
         };
-        rt.block_on_std(f)
+        match f.boxed().unit_error().compat().wait() {
+            Ok(t) => t,
+            Err(_) => anyhow::bail!("watch txn fail"),
+        }
     }
 
     pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {

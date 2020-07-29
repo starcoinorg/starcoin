@@ -6973,6 +6973,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "failure",
  "futures 0.1.29",
  "futures 0.3.5",
