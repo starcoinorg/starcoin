@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use futures_channel::mpsc;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::HashValue;
 use starcoin_types::{
     account_address::AccountAddress, block::Block, transaction, transaction::SignedUserTransaction,
@@ -10,6 +11,12 @@ use starcoin_types::{
 use std::sync::Arc;
 
 pub type TxnStatusFullEvent = Arc<Vec<(HashValue, transaction::TxStatus)>>;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TxPoolStatus {
+    pub txn_count: usize,
+    pub senders: usize,
+}
 
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn add_txns(
@@ -43,4 +50,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// `enacted` is the blocks which enter the main chain.
     /// `retracted` is the blocks which belongs to previous main chain.
     fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()>;
+
+    /// Tx Pool status
+    fn status(&self) -> TxPoolStatus;
 }
