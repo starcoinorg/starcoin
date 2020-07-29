@@ -11,33 +11,33 @@ macro_rules! define_storage {
     ($storage_type: ident, $key_type: ty, $value_type: ty, $prefix_name: expr) => {
         #[derive(Clone)]
         pub struct $storage_type {
-            store: CodecStorage<$key_type, $value_type>,
+            store: $crate::storage::CodecStorage<$key_type, $value_type>,
         }
 
         impl $storage_type {
-            const PREFIX_NAME: $crate::ColumnFamilyName = $prefix_name;
-            pub fn new(instance: crate::storage::StorageInstance) -> Self {
-                let inner_storage = crate::storage::InnerStorage::new(instance, Self::PREFIX_NAME);
+            const PREFIX_NAME: $crate::storage::ColumnFamilyName = $prefix_name;
+            pub fn new(instance: $crate::storage::StorageInstance) -> Self {
+                let inner_storage = $crate::storage::InnerStorage::new(instance, Self::PREFIX_NAME);
                 Self {
-                    store: CodecStorage::new(Arc::new(inner_storage)),
+                    store: CodecStorage::new(std::sync::Arc::new(inner_storage)),
                 }
             }
-            pub fn put(&self, key: $key_type, value: $value_type) -> Result<()> {
+            pub fn put(&self, key: $key_type, value: $value_type) -> anyhow::Result<()> {
                 self.store.put(key, value)
             }
-            pub fn get(&self, key: $key_type) -> Result<Option<$value_type>> {
+            pub fn get(&self, key: $key_type) -> anyhow::Result<Option<$value_type>> {
                 self.store.get(key)
             }
-            pub fn remove(&self, key: $key_type) -> Result<()> {
+            pub fn remove(&self, key: $key_type) -> anyhow::Result<()> {
                 self.store.remove(key)
             }
-            pub fn write_batch(&self, batch: WriteBatch) -> Result<()> {
+            pub fn write_batch(&self, batch: WriteBatch) -> anyhow::Result<()> {
                 self.store.write_batch(batch)
             }
-            pub fn get_len(&self) -> Result<u64> {
+            pub fn get_len(&self) -> anyhow::Result<u64> {
                 self.store.get_len()
             }
-            pub fn keys(&self) -> Result<Vec<Vec<u8>>> {
+            pub fn keys(&self) -> anyhow::Result<Vec<Vec<u8>>> {
                 self.store.keys()
             }
         }

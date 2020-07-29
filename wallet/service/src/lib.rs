@@ -3,6 +3,7 @@
 
 mod actor;
 mod message;
-mod service;
+mod rich_wallet;
+mod wallet_manager;
 
 pub use actor::*;

@@ -13,15 +13,23 @@ use std::path::Path;
 
 pub struct DBStorage {
     db: DB,
+    cfs: Vec<ColumnFamilyName>,
 }
 
 impl DBStorage {
     pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Self {
         let path = db_root_path.as_ref().join("starcoindb");
-        Self::open(path, false).expect("Unable to open StarcoinDB")
+        Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false)
+            .expect("Unable to open StarcoinDB")
     }
-    pub fn open(path: impl AsRef<Path>, readonly: bool) -> Result<Self> {
-        let column_families = VEC_PREFIX_NAME.to_vec();
+
+    pub fn open_with_cfs(
+        root_path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+        readonly: bool,
+    ) -> Result<Self> {
+        let path = root_path.as_ref();
+
         let cfs_set: HashSet<_> = column_families.iter().collect();
         {
             ensure!(
@@ -29,14 +37,13 @@ impl DBStorage {
                 "Duplicate column family name found.",
             );
         }
-        if Self::db_exists(path.as_ref()) {
-            let cf_vec = Self::list_cf(path.as_ref())?;
+        if Self::db_exists(path) {
+            let cf_vec = Self::list_cf(path)?;
             for cf in cf_vec {
                 if cf != DEFAULT_PREFIX_NAME && cfs_set.get(&cf.as_str()).is_none() {
                     error!(
                         "db path cf: {:?} is not equal,please clear dir: {:?}",
-                        path.as_ref(),
-                        cf
+                        path, cf
                     );
                     std::process::exit(100);
                 }
@@ -44,7 +51,7 @@ impl DBStorage {
         }
 
         let db = if readonly {
-            Self::open_readonly(path.as_ref(), column_families)?
+            Self::open_readonly(path, column_families.clone())?
         } else {
             let mut db_opts = rocksdb::Options::default();
             db_opts.create_if_missing(true);
@@ -52,10 +59,13 @@ impl DBStorage {
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.
             db_opts.set_max_total_wal_size(1 << 30);
-            Self::open_inner(&db_opts, path.as_ref(), column_families)?
+            Self::open_inner(&db_opts, path, column_families.clone())?
         };
 
-        Ok(DBStorage { db })
+        Ok(DBStorage {
+            db,
+            cfs: column_families,
+        })
     }
 
     fn open_inner(
@@ -88,7 +98,7 @@ impl DBStorage {
     }
 
     pub fn drop_cf(&mut self) -> Result<(), Error> {
-        for cf in &VEC_PREFIX_NAME.to_vec() {
+        for cf in self.cfs.clone() {
             self.db.drop_cf(cf)?;
         }
         Ok(())
@@ -97,7 +107,7 @@ impl DBStorage {
     /// Flushes all memtable data. This is only used for testing `get_approximate_sizes_cf` in unit
     /// tests.
     pub fn flush_all(&self) -> Result<()> {
-        for cf_name in VEC_PREFIX_NAME.to_vec() {
+        for cf_name in &self.cfs {
             let cf_handle = self.get_cf_handle(cf_name)?;
             self.db.flush_cf(cf_handle)?;
         }

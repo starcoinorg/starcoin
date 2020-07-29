@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod error;
+mod rich_wallet;
 mod service;
 mod store;
 mod types;
 mod wallet;
-
+pub use rich_wallet::*;
 pub use service::*;
 pub use store::*;
 pub use types::*;
