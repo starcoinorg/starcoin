@@ -216,7 +216,7 @@ impl Into<ChainActorRef> for Addr<ChainActor> {
 
 #[async_trait::async_trait]
 impl ChainAsyncService for ChainActorRef {
-    async fn try_connect(self, block: Block) -> Result<ConnectBlockResult> {
+    async fn try_connect(&self, block: Block) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
             .send(ChainRequest::ConnectBlock(Box::new(block)))
@@ -242,7 +242,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>> {
+    async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>> {
         if let ChainResponse::BlockHeader(header) = self
             .address
             .send(ChainRequest::GetHeaderByHash(*hash))
@@ -255,7 +255,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(None)
     }
 
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block> {
+    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block> {
         if let ChainResponse::OptionBlock(block) = self
             .address
             .send(ChainRequest::GetBlockByHash(hash))
@@ -270,7 +270,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>> {
+    async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>> {
         if let ChainResponse::BlockState(Some(block_state)) = self
             .address
             .send(ChainRequest::GetBlockStateByHash(*hash))
@@ -281,7 +281,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(None)
     }
 
-    async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>> {
+    async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>> {
         debug!("hash: {:?}", hash);
         if let ChainResponse::OptionBlockInfo(block_info) = self
             .address
@@ -293,7 +293,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(None)
     }
 
-    async fn get_transaction(self, txn_hash: HashValue) -> Result<Transaction, Error> {
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction, Error> {
         let response = self
             .address
             .send(ChainRequest::GetTransaction(txn_hash))
@@ -307,7 +307,7 @@ impl ChainAsyncService for ChainActorRef {
     }
 
     async fn get_transaction_info(
-        self,
+        &self,
         txn_hash: HashValue,
     ) -> Result<Option<TransactionInfo>, Error> {
         let response = self
@@ -322,7 +322,10 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn get_block_txn_infos(self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
+    async fn get_block_txn_infos(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Vec<TransactionInfo>, Error> {
         let response = self
             .address
             .send(ChainRequest::GetBlockTransactionInfos(block_id))
@@ -336,7 +339,7 @@ impl ChainAsyncService for ChainActorRef {
     }
 
     async fn get_txn_info_by_block_and_index(
-        self,
+        &self,
         block_id: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>> {
@@ -355,7 +358,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
     async fn get_events_by_txn_info_id(
-        self,
+        &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>> {
         let response = self
@@ -370,7 +373,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn master_head_header(self) -> Result<Option<BlockHeader>> {
+    async fn master_head_header(&self) -> Result<Option<BlockHeader>> {
         if let Ok(ChainResponse::BlockHeader(header)) =
             self.address.send(ChainRequest::CurrentHeader()).await?
         {
@@ -379,7 +382,7 @@ impl ChainAsyncService for ChainActorRef {
         Ok(None)
     }
 
-    async fn master_head_block(self) -> Result<Option<Block>> {
+    async fn master_head_block(&self) -> Result<Option<Block>> {
         if let ChainResponse::Block(block) = self.address.send(ChainRequest::HeadBlock()).await?? {
             Ok(Some(*block))
         } else {
@@ -387,7 +390,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn master_block_by_number(self, number: BlockNumber) -> Result<Block> {
+    async fn master_block_by_number(&self, number: BlockNumber) -> Result<Block> {
         if let ChainResponse::Block(block) = self
             .address
             .send(ChainRequest::GetBlockByNumber(number))
@@ -416,7 +419,7 @@ impl ChainAsyncService for ChainActorRef {
     }
 
     async fn master_blocks_by_number(
-        self,
+        &self,
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>> {
@@ -432,7 +435,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader> {
+    async fn master_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader> {
         if let ChainResponse::BlockHeader(header) = self
             .address
             .send(ChainRequest::GetBlockHeaderByNumber(number))
@@ -446,7 +449,7 @@ impl ChainAsyncService for ChainActorRef {
         bail!("Get chain block header by number response error.")
     }
 
-    async fn master_startup_info(self) -> Result<StartupInfo> {
+    async fn master_startup_info(&self) -> Result<StartupInfo> {
         let response = self
             .address
             .send(ChainRequest::GetStartupInfo())
@@ -459,7 +462,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn master_head(self) -> Result<ChainInfo> {
+    async fn master_head(&self) -> Result<ChainInfo> {
         let response = self
             .address
             .send(ChainRequest::GetHeadChainInfo())
@@ -472,7 +475,7 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn epoch_info(self) -> Result<EpochInfo> {
+    async fn epoch_info(&self) -> Result<EpochInfo> {
         let response = self
             .address
             .send(ChainRequest::GetEpochInfo())
@@ -486,14 +489,13 @@ impl ChainAsyncService for ChainActorRef {
     }
 
     async fn create_block_template(
-        self,
+        &self,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let address = self.address.clone();
-        drop(self);
         if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplate(
                 author,

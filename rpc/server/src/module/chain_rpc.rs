@@ -35,32 +35,39 @@ where
     S: ChainAsyncService,
 {
     fn head(&self) -> FutureResult<ChainInfo> {
-        let fut = self.service.clone().master_head();
-        Box::new(fut.map_err(map_err).compat())
+        let service = self.service.clone();
+        let fut = async move { service.master_head().await };
+        Box::new(fut.boxed().map_err(map_err).compat())
     }
 
     fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Block> {
-        let fut = self
-            .service
-            .clone()
-            .get_block_by_hash(hash)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service.get_block_by_hash(hash).await?;
+            Ok(result)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 
     fn get_block_by_number(&self, number: u64) -> FutureResult<Block> {
-        let fut = self
-            .service
-            .clone()
-            .master_block_by_number(number)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+
+        let fut = async move {
+            let result = service.master_block_by_number(number).await?;
+            Ok(result)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 
     fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.clone().master_block_by_uncle(uncle_id).await?;
+            let block = service.master_block_by_uncle(uncle_id).await?;
             Ok(block)
         }
         .map_err(map_err);
@@ -73,81 +80,95 @@ where
         number: Option<BlockNumber>,
         count: u64,
     ) -> FutureResult<Vec<Block>> {
-        let fut = self
-            .service
-            .clone()
-            .master_blocks_by_number(number, count)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.master_blocks_by_number(number, count).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 
     fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<Transaction> {
-        let fut = self
-            .service
-            .clone()
-            .get_transaction(transaction_hash)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.get_transaction(transaction_hash).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
     ) -> FutureResult<Option<TransactionInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_transaction_info(transaction_hash)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.get_transaction_info(transaction_hash).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 
     fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_block_txn_infos(block_id)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.get_block_txn_infos(block_id).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
         idx: u64,
     ) -> FutureResult<Option<TransactionInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_txn_info_by_block_and_index(block_id, idx)
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service
+                .get_txn_info_by_block_and_index(block_id, idx)
+                .await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
     fn get_events_by_txn_info_id(
         &self,
         txn_info_id: HashValue,
     ) -> FutureResult<Vec<ContractEvent>> {
-        let fut = self
-            .service
-            .clone()
-            .get_events_by_txn_info_id(txn_info_id)
+        let service = self.service.clone();
+        let fut = async move { service.get_events_by_txn_info_id(txn_info_id).await }
             .map_ok(|d| d.unwrap_or_default())
             .map_err(map_err);
-        Box::new(fut.compat())
+
+        Box::new(fut.boxed().compat())
     }
     fn branches(&self) -> FutureResult<Vec<ChainInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .master_startup_info()
-            .map(|result| Ok(Into::<Vec<ChainInfo>>::into(result?)))
-            .map_err(map_err);
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move { service.master_startup_info().await };
+
+        Box::new(
+            fut.boxed()
+                .map(|result| Ok(Into::<Vec<ChainInfo>>::into(result?)))
+                .map_err(map_err)
+                .compat(),
+        )
     }
 
     fn current_epoch(&self) -> FutureResult<EpochInfo> {
-        let fut = self.service.clone().epoch_info().map_err(map_err);
+        let service = self.service.clone();
+        let fut = async move { service.epoch_info().await };
 
-        Box::new(fut.compat())
+        Box::new(fut.boxed().map_err(map_err).compat())
     }
 
     fn create_dev_block(

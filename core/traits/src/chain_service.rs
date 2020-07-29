@@ -68,42 +68,42 @@ pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
     /// chain service
-    async fn try_connect(self, block: Block) -> Result<ConnectBlockResult>;
+    async fn try_connect(&self, block: Block) -> Result<ConnectBlockResult>;
     async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
-    async fn get_header_by_hash(self, hash: &HashValue) -> Result<Option<BlockHeader>>;
-    async fn get_block_by_hash(self, hash: HashValue) -> Result<Block>;
-    async fn get_block_state_by_hash(self, hash: &HashValue) -> Result<Option<BlockState>>;
-    async fn get_block_info_by_hash(self, hash: &HashValue) -> Result<Option<BlockInfo>>;
-    async fn get_transaction(self, txn_hash: HashValue) -> Result<Transaction>;
-    async fn get_transaction_info(self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    async fn get_block_txn_infos(self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
+    async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
+    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
+    async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
+    async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
+    async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    async fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
-        self,
+        &self,
         block_id: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>>;
     async fn get_events_by_txn_info_id(
-        self,
+        &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
     /// for master
-    async fn master_head_header(self) -> Result<Option<BlockHeader>>;
-    async fn master_head_block(self) -> Result<Option<Block>>;
-    async fn master_block_by_number(self, number: BlockNumber) -> Result<Block>;
+    async fn master_head_header(&self) -> Result<Option<BlockHeader>>;
+    async fn master_head_block(&self) -> Result<Option<Block>>;
+    async fn master_block_by_number(&self, number: BlockNumber) -> Result<Block>;
     async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
     async fn master_blocks_by_number(
-        self,
+        &self,
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
-    async fn master_block_header_by_number(self, number: BlockNumber) -> Result<BlockHeader>;
-    async fn master_startup_info(self) -> Result<StartupInfo>;
-    async fn master_head(self) -> Result<ChainInfo>;
-    async fn epoch_info(self) -> Result<EpochInfo>;
+    async fn master_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader>;
+    async fn master_startup_info(&self) -> Result<StartupInfo>;
+    async fn master_head(&self) -> Result<ChainInfo>;
+    async fn epoch_info(&self) -> Result<EpochInfo>;
 
     /// just for test
     async fn create_block_template(
-        self,
+        &self,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         parent_hash: Option<HashValue>,
