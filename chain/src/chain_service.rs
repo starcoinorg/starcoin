@@ -96,7 +96,7 @@ where
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain, exist: bool) -> Result<()> {
+    fn select_head(&mut self, new_branch: BlockChain, repeat_apply: bool) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header();
         let total_difficulty = new_branch.get_total_difficulty()?;
@@ -115,7 +115,7 @@ where
             CHAIN_METRICS.broadcast_head_count.inc();
             self.broadcast_2_bus(BlockDetail::new(block, total_difficulty));
         } else {
-            self.insert_branch(block_header, exist);
+            self.insert_branch(block_header, repeat_apply);
         }
 
         CHAIN_METRICS
@@ -130,8 +130,14 @@ where
         self.startup_info.update_master(&header);
     }
 
-    fn insert_branch(&mut self, new_block_header: &BlockHeader, exist: bool) {
-        self.startup_info.insert_branch(new_block_header, exist);
+    fn insert_branch(&mut self, new_block_header: &BlockHeader, repeat_apply: bool) {
+        if !repeat_apply
+            || self
+                .startup_info
+                .branch_exist_exclude(&new_block_header.parent_hash())
+        {
+            self.startup_info.insert_branch(new_block_header);
+        }
     }
 
     fn save_startup(&self) -> Result<()> {
