@@ -172,10 +172,7 @@ impl RpcClient {
                 None => r.await?,
             }
         };
-        match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => anyhow::bail!("watch txn fail"),
-        }
+        futures03::executor::block_on(f)
     }
 
     pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {
@@ -184,10 +181,7 @@ impl RpcClient {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
             r.await?
         };
-        match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => anyhow::bail!("watch block fail"),
-        }
+        futures03::executor::block_on(f)
     }
 
     pub fn node_status(&self) -> anyhow::Result<bool> {
@@ -586,10 +580,7 @@ impl RpcClient {
         };
 
         let f = async { f(inner).await };
-        let result = match f.boxed().unit_error().compat().wait() {
-            Ok(t) => t,
-            Err(_) => Err(jsonrpc_client_transports::RpcError::Timeout),
-        };
+        let result = futures03::executor::block_on(f);
 
         if let Err(rpc_error) = &result {
             if let jsonrpc_client_transports::RpcError::Other(e) = rpc_error {
