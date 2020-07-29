@@ -3,7 +3,7 @@
 
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
-use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::transaction::SignedUserTransaction;
 
 /// Re-export the API
@@ -43,6 +43,11 @@ where
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
         let result = self.service.next_sequence_number(address);
         Box::new(futures::future::ok(result).compat())
+    }
+
+    fn state(&self) -> FutureResult<TxPoolStatus> {
+        let state = self.service.status();
+        Box::new(futures::future::ok(state).compat())
     }
 }
 

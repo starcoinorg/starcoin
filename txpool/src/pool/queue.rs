@@ -11,6 +11,7 @@ use crate::{pool, pool::PoolTransaction};
 use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
+use starcoin_txpool_api::TxPoolStatus;
 use std::{
     cmp,
     collections::{BTreeMap, HashMap},
@@ -69,6 +70,15 @@ impl fmt::Display for Status {
             gp = self.options.minimal_gas_price,
             max_gas = cmp::min(self.options.block_gas_limit, self.options.tx_gas_limit),
         )
+    }
+}
+
+impl Into<TxPoolStatus> for Status {
+    fn into(self) -> TxPoolStatus {
+        TxPoolStatus {
+            txn_count: self.status.transaction_count,
+            senders: self.status.senders,
+        }
     }
 }
 

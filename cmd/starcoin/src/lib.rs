@@ -12,6 +12,7 @@ pub mod node;
 pub mod state;
 pub mod view;
 pub mod wallet;
+use crate::debug::TxPoolStatusCommand;
 pub use cli_state::CliState;
 use scmd::{CmdContext, Command};
 pub use starcoin_config::StarcoinOpt;
@@ -86,6 +87,7 @@ pub fn add_command(
                 .subcommand(debug::GenTxnCommand)
                 .subcommand(debug::PanicCommand)
                 .subcommand(debug::GetBlockByUncleCommand)
-                .subcommand(debug::GenDevBlockCommand),
+                .subcommand(debug::GenDevBlockCommand)
+                .subcommand(TxPoolStatusCommand),
         )
 }
