@@ -3,6 +3,7 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{difficult_to_target, target_to_difficulty};
+use crate::time::{RealTimeService, TimeService};
 use crate::{difficulty, set_header_nonce};
 use anyhow::{anyhow, Result};
 use argon2::{self, Config};
@@ -14,16 +15,26 @@ use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::{H256, U256};
 
-#[derive(Clone)]
-pub struct ArgonConsensus {}
+#[derive(Default)]
+pub struct ArgonConsensus {
+    time_service: RealTimeService,
+}
+
+impl ArgonConsensus {
+    pub fn new() -> Self {
+        Self {
+            time_service: RealTimeService::new(),
+        }
+    }
+}
 
 impl Consensus for ArgonConsensus {
-    fn calculate_next_difficulty(reader: &dyn ChainReader) -> Result<U256> {
+    fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader)?;
         Ok(target_to_difficulty(target))
     }
 
-    fn solve_consensus_nonce(header_hash: &[u8], difficulty: U256) -> u64 {
+    fn solve_consensus_nonce(&self, header_hash: &[u8], difficulty: U256) -> u64 {
         let mut nonce = generate_nonce();
         loop {
             let pow_hash: U256 = calculate_hash(&set_header_nonce(&header_hash, nonce))
@@ -39,8 +50,8 @@ impl Consensus for ArgonConsensus {
         nonce
     }
 
-    fn verify(reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
-        let difficulty = ArgonConsensus::calculate_next_difficulty(reader)?;
+    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
+        let difficulty = self.calculate_next_difficulty(reader)?;
         if header.difficulty() != difficulty {
             return Err(anyhow!(
                 "Difficulty mismatch: {:?}, {:?}",
@@ -59,6 +70,10 @@ impl Consensus for ArgonConsensus {
         } else {
             Err(anyhow::Error::msg("Invalid header"))
         }
+    }
+
+    fn time(&self) -> &dyn TimeService {
+        &self.time_service
     }
 }
 

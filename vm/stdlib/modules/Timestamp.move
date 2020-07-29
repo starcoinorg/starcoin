@@ -5,17 +5,22 @@ module Timestamp {
     use 0x1::Signer;
     use 0x1::ErrorCode;
 
+    const EINVALID_TIMESTAMP: u64 = 100;
+
     // A singleton resource holding the current Unix time in seconds
     resource struct CurrentTimeSeconds {
         seconds: u64,
     }
 
+    /// A singleton resource used to determine whether time has started. This
+    /// is called at the end of genesis.
+    resource struct TimeHasStarted {}
+
     // Initialize the global wall clock time resource.
-    public fun initialize(account: &signer) {
+    public fun initialize(account: &signer, genesis_timestamp: u64) {
         // Only callable by the Genesis address
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-        // TODO: Pass the initialized value be passed in to genesis?
-        let timer = CurrentTimeSeconds {seconds: 0};
+        let timer = CurrentTimeSeconds {seconds: genesis_timestamp};
         move_to<CurrentTimeSeconds>(account, timer);
     }
     spec fun initialize {
@@ -28,9 +33,9 @@ module Timestamp {
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(account: &signer, timestamp: u64) acquires CurrentTimeSeconds {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        //Do not update time before time start.
         let global_timer = borrow_global_mut<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
-        //TODO should support '=' ?
-        assert(global_timer.seconds <= timestamp, 5001);
+        assert(timestamp > global_timer.seconds, EINVALID_TIMESTAMP);
         global_timer.seconds = timestamp;
     }
     spec fun update_global_time {
@@ -47,13 +52,26 @@ module Timestamp {
         ensures result == global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT()).seconds;
     }
 
-    // Helper function to determine if the blockchain is at genesis state.
-    public fun is_genesis(): bool {
-        !exists<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT())
+    /// Marks that time has started and genesis has finished. This can only be called from genesis.
+    public fun set_time_has_started(account: &signer) {
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+
+        // Current time must have been initialized.
+        assert(
+            exists<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT()),
+            1
+        );
+        move_to(account, TimeHasStarted{});
     }
+
+    /// Helper function to determine if the blockchain is in genesis state.
+    public fun is_genesis(): bool {
+        !exists<TimeHasStarted>(CoreAddresses::GENESIS_ACCOUNT())
+    }
+
     spec fun is_genesis {
         aborts_if false;
-        ensures result == !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
+        ensures result == !exists<TimeHasStarted>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
     }
 }
 }

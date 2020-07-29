@@ -3,15 +3,14 @@
 
 use starcoin_executor::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 
-use starcoin_vm_types::chain_config::ChainId;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
+use starcoin_consensus::Consensus;
+use starcoin_vm_types::chain_config::{ChainId, ChainNetwork};
 use types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
 pub mod chain;
 pub mod helper;
 pub mod storage;
 pub mod sync;
-pub mod transactions;
 
 pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
     let auth_key = AuthenticationKey::random();
@@ -20,7 +19,7 @@ pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
         auth_key.prefix().to_vec(),
         seq_num,
         1000,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+        ChainNetwork::Test.consensus().now() + DEFAULT_EXPIRATION_TIME,
         ChainId::test(),
     )
 }

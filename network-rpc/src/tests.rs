@@ -126,11 +126,7 @@ fn gen_chain_env(
     .unwrap();
 
     let miner_account = WalletAccount::random();
-    MinerClientActor::new(
-        node_config.miner.clone(),
-        node_config.net().get_config().consensus_strategy,
-    )
-    .start();
+    MinerClientActor::new(node_config.miner.clone(), node_config.net().consensus()).start();
     MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
         node_config,
         bus.clone(),

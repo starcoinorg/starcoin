@@ -26,7 +26,7 @@ module Genesis {
                          reward_per_uncle_percent: u64, max_uncles_per_block:u64, total_supply: u128,
                          pre_mine_percent:u64, parent_hash: vector<u8>,
                          association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
-                         chain_id: u8
+                         chain_id: u8,genesis_timestamp: u64,
    ){
         assert(Timestamp::is_genesis(), 1);
 
@@ -34,6 +34,9 @@ module Genesis {
 
         // create genesis account
         let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ACCOUNT(),copy dummy_auth_key_prefix);
+
+        //Init global time
+        Timestamp::initialize(&genesis_account, genesis_timestamp);
 
         Block::initialize(&genesis_account, parent_hash);
 
@@ -78,11 +81,11 @@ module Genesis {
 
         ChainId::initialize(&genesis_account, chain_id);
 
-        //Set global time, and Timestamp::is_genesis() will return false.
-        Timestamp::initialize(&genesis_account);
-
+        //Start time, Timestamp::is_genesis() will return false. this call should at the end of genesis init.
+        Timestamp::set_time_has_started(&genesis_account);
         Account::release_genesis_signer(genesis_account);
         Account::release_genesis_signer(association);
+
    }
 }
 

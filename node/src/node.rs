@@ -296,13 +296,7 @@ pub async fn start(
         default_account,
     )?;
     let miner_client = if config.miner.enable_miner_client {
-        Some(
-            MinerClientActor::new(
-                config.miner.clone(),
-                config.net().get_config().consensus_strategy,
-            )
-            .start(),
-        )
+        Some(MinerClientActor::new(config.miner.clone(), config.net().consensus()).start())
     } else {
         None
     };

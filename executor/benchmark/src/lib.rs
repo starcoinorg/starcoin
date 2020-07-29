@@ -9,10 +9,10 @@ use executor::{encode_create_account_script, encode_transfer_script};
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
+use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -63,7 +63,8 @@ struct TransactionGenerator {
     block_sender: Option<mpsc::SyncSender<Vec<Transaction>>>,
 
     sequence: u64,
-    time: MockTimeService,
+
+    net: ChainNetwork,
 }
 
 impl TransactionGenerator {
@@ -88,7 +89,7 @@ impl TransactionGenerator {
             rng,
             block_sender: Some(block_sender),
             sequence: 0,
-            time: MockTimeService::new(),
+            net: ChainNetwork::Test,
         }
     }
 
@@ -100,13 +101,13 @@ impl TransactionGenerator {
     /// Generates transactions that allocate `init_account_balance` to every account.
     fn gen_mint_transactions(&mut self, init_account_balance: u64, block_size: usize) {
         for (_i, block) in self.accounts.chunks(block_size).enumerate() {
-            self.time.increment();
+            self.net.consensus().time().sleep(1);
 
             let mut transactions = Vec::with_capacity(block_size + 1);
             let minter_account = AccountData::random();
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
-                self.time.now(),
+                self.net.consensus().now(),
                 minter_account.address,
                 Some(minter_account.auth_key_prefix()),
                 0,
@@ -121,7 +122,7 @@ impl TransactionGenerator {
                         account.auth_key_prefix(),
                         init_account_balance,
                     ),
-                    self.time.now() + j as u64 + 1,
+                    self.net.consensus().now() + j as u64 + 1,
                 );
                 transactions.push(txn);
                 self.sequence += 1;
@@ -138,12 +139,12 @@ impl TransactionGenerator {
     /// Generates transactions for random pairs of accounts.
     fn gen_transfer_transactions(&mut self, block_size: usize, num_blocks: usize) {
         for _i in 0..num_blocks {
-            self.time.increment();
+            self.net.consensus().time().sleep(1);
             let mut transactions = Vec::with_capacity(block_size + 1);
             let minter_account = AccountData::random();
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
-                self.time.now(),
+                self.net.consensus().now(),
                 minter_account.address,
                 Some(minter_account.auth_key_prefix()),
                 0,
@@ -164,7 +165,7 @@ impl TransactionGenerator {
                         receiver.auth_key_prefix(),
                         1, /* amount */
                     ),
-                    self.time.now() + j as u64 + 1,
+                    self.net.consensus().now() + j as u64 + 1,
                 );
                 transactions.push(txn);
 
@@ -286,32 +287,6 @@ fn create_transaction(
         ChainId::test(),
     );
     Transaction::UserTransaction(signed_txn)
-}
-
-/// A mock-time TimeService
-#[derive(Clone, Default)]
-pub struct MockTimeService {
-    now: Arc<AtomicU64>,
-}
-
-impl MockTimeService {
-    pub fn new() -> Self {
-        Self {
-            now: Arc::new(AtomicU64::new(0)),
-        }
-    }
-
-    pub fn increment(&self) {
-        self.now.fetch_add(1, Ordering::Relaxed);
-    }
-
-    pub fn increment_by(&self, value: u64) {
-        self.now.fetch_add(value, Ordering::Relaxed);
-    }
-
-    pub fn now(&self) -> u64 {
-        self.now.load(Ordering::Relaxed)
-    }
 }
 
 #[cfg(test)]

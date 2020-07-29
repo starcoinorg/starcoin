@@ -10,7 +10,9 @@ use crate::module::test_helper;
 use futures::{compat::Stream01CompatExt, StreamExt};
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::NodeConfig;
+use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_state_api::AccountStateReader;
@@ -23,9 +25,6 @@ use starcoin_types::{
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use tokio::time::timeout;
-
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use tokio::time::Duration;
 
 #[actix_rt::test]
@@ -46,7 +45,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
             auth_prefix,
             0,
             10000,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -62,11 +61,10 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         "block_template: gas_used: {}, gas_limit: {}",
         block_template.gas_used, block_template.gas_limit
     );
-    let new_block = starcoin_consensus::create_block(
-        config.net().get_config().consensus_strategy,
-        &block_chain,
-        block_template,
-    )?;
+    let new_block = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, block_template)?;
     block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());

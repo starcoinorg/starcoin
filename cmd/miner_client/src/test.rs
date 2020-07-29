@@ -41,8 +41,7 @@ fn test_stratum_client() {
             let difficulty: U256 = 1.into();
             MineCtx::new(block_template, difficulty)
         };
-        let _addr =
-            MinerClientActor::new(miner_config, conf.net().get_config().consensus_strategy).start();
+        let _addr = MinerClientActor::new(miner_config, conf.net().consensus()).start();
         miner.set_mint_job(mine_ctx);
         for _ in 1..10 {
             stratum.push_work_all(miner.get_mint_job()).unwrap();
