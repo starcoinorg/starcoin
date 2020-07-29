@@ -56,10 +56,10 @@ Publish the chain ID under the genesis account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(account: &signer, id: u8) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), ENOT_GENESIS);
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(),
-        ENOT_GENESIS_ACCOUNT
+        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>()
     );
 
     move_to(account, <a href="#0x1_ChainId">ChainId</a> { id })

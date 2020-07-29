@@ -4,6 +4,7 @@ module STC {
     use 0x1::Token::{Self, Token};
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::ErrorCode;
 
     struct STC { }
 
@@ -14,7 +15,7 @@ module STC {
     }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == token_address(), 0);
+        assert(Signer::address_of(account) == token_address(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         Token::register_token<STC>(
             account,

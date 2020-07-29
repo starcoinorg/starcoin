@@ -6,6 +6,7 @@ module TransactionFee {
     use 0x1::Signer;
     use 0x1::STC::{STC};
     use 0x1::Timestamp;
+    use 0x1::ErrorCode;
 
     /// The `TransactionFee` resource holds a preburn resource for each
     /// fiat `TokenType` that can be collected as a transaction fee.
@@ -18,8 +19,8 @@ module TransactionFee {
     public fun initialize(
         account: &signer,
     ) {
-        assert(Timestamp::is_genesis(), 1);
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         // accept fees in all the currencies
         add_txn_fee_token<STC>(account);
@@ -52,7 +53,7 @@ module TransactionFee {
         account: &signer,
     ): Token<TokenType> acquires TransactionFee {
         let fee_address =  CoreAddresses::GENESIS_ACCOUNT();
-        assert(Signer::address_of(account) == fee_address, 1);
+        assert(Signer::address_of(account) == fee_address, ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);

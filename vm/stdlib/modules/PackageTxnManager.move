@@ -4,6 +4,7 @@ address 0x1 {
         use 0x1::Signer;
         use 0x1::CoreAddresses;
         use 0x1::Block;
+        use 0x1::ErrorCode;
 
         struct UpgradePlan {
             package_hash: vector<u8>,
@@ -168,14 +169,14 @@ address 0x1 {
 
         public fun package_txn_prologue(account: &signer, txn_sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
-            assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+            assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
             check_package_txn(txn_sender, package_address, package_hash);
         }
 
         /// Package txn finished, and clean UpgradePlan
         public fun package_txn_epilogue(account: &signer, _txn_sender: address, package_address: address, success: bool) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
-            assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+            assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
             let strategy = get_module_upgrade_strategy(package_address);
             if(strategy == STRATEGY_TWO_PHASE()){
                 if (success) {
