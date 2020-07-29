@@ -9,6 +9,15 @@
 -  [Resource `Epoch`](#0x1_Consensus_Epoch)
 -  [Struct `NewEpochEvent`](#0x1_Consensus_NewEpochEvent)
 -  [Resource `EpochData`](#0x1_Consensus_EpochData)
+-  [Function `UNCLE_RATE_TARGET_IS_ZERO`](#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO)
+-  [Function `EPOCH_TIME_TARGET_IS_ZERO`](#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO)
+-  [Function `REWARD_HALF_EPOCH_IS_ZERO`](#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO)
+-  [Function `INIT_BLOCK_TIME_TARGET_IS_ZERO`](#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO)
+-  [Function `BLOCK_DIFFICULTY_WINDOW_IS_ZERO`](#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO)
+-  [Function `INIT_REWARD_PER_EPOCH_IS_ZERO`](#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO)
+-  [Function `REWARD_PER_UNCLE_PERCENT_IS_ZERO`](#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO)
+-  [Function `MIN_TIME_TARGET_IS_ZERO`](#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO)
+-  [Function `MAX_UNCLES_PER_BLOCK_IS_ZERO`](#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO)
 -  [Function `initialize`](#0x1_Consensus_initialize)
 -  [Function `set_uncle_rate_target`](#0x1_Consensus_set_uncle_rate_target)
 -  [Function `set_epoch_time_target`](#0x1_Consensus_set_epoch_time_target)
@@ -286,6 +295,204 @@
 
 </details>
 
+<a name="0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO"></a>
+
+## Function `UNCLE_RATE_TARGET_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 0}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO"></a>
+
+## Function `EPOCH_TIME_TARGET_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO"></a>
+
+## Function `REWARD_HALF_EPOCH_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO"></a>
+
+## Function `INIT_BLOCK_TIME_TARGET_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO"></a>
+
+## Function `BLOCK_DIFFICULTY_WINDOW_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO"></a>
+
+## Function `INIT_REWARD_PER_EPOCH_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 5}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO"></a>
+
+## Function `REWARD_PER_UNCLE_PERCENT_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 6}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_MIN_TIME_TARGET_IS_ZERO"></a>
+
+## Function `MIN_TIME_TARGET_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 7}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO"></a>
+
+## Function `MAX_UNCLES_PER_BLOCK_IS_ZERO`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 8}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Consensus_initialize"></a>
 
 ## Function `initialize`
@@ -305,16 +512,16 @@
     reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
     init_reward_per_epoch: u128, reward_per_uncle_percent: u64,
     min_time_target:u64, max_uncles_per_block:u64) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
-    <b>assert</b>(uncle_rate_target &gt; 0, 2);
-    <b>assert</b>(epoch_time_target &gt; 0, 3);
-    <b>assert</b>(reward_half_epoch &gt; 0, 4);
-    <b>assert</b>(init_block_time_target &gt; 0, 5);
-    <b>assert</b>(block_difficulty_window &gt; 0, 6);
-    <b>assert</b>(init_reward_per_epoch &gt; 0, 7);
-    <b>assert</b>(reward_per_uncle_percent &gt; 0, 8);
-    <b>assert</b>(min_time_target &gt; 0, 9);
-    <b>assert</b>(max_uncles_per_block &gt;= 0, 10);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(uncle_rate_target &gt; 0, <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>());
+    <b>assert</b>(epoch_time_target &gt; 0, <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>());
+    <b>assert</b>(reward_half_epoch &gt; 0, <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>());
+    <b>assert</b>(init_block_time_target &gt; 0, <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>());
+    <b>assert</b>(block_difficulty_window &gt; 0, <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>());
+    <b>assert</b>(init_reward_per_epoch &gt; 0, <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>());
+    <b>assert</b>(reward_per_uncle_percent &gt; 0, <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>());
+    <b>assert</b>(min_time_target &gt; 0, <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>());
+    <b>assert</b>(max_uncles_per_block &gt;= 0, <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>());
 
     move_to&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(account, <a href="#0x1_Consensus_Epoch">Epoch</a> {
         epoch_number:0,
@@ -714,7 +921,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_height: u64, block_time: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 33);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(<a href="#0x1_Consensus_max_uncles_per_block">Self::max_uncles_per_block</a>() &gt;= uncles, 339);
     <b>if</b> (block_height == 1) {
         <b>assert</b>(uncles == 0, 334);

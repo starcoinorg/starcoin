@@ -165,7 +165,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get">get</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): ConfigValue <b>acquires</b> <a href="#0x1_Config">Config</a> {
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), 24);
+    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
     *&borrow_global&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
 }
 </code></pre>
@@ -190,7 +190,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue <b>acquires</b> <a href="#0x1_Config">Config</a> {
-    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), 24);
+    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
     *&borrow_global&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
 }
 </code></pre>
@@ -245,7 +245,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue) <b>acquires</b> <a href="#0x1_Config">Config</a>{
     <b>let</b> addr = cap.account_address;
-    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), 24);
+    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
     <b>let</b> config = borrow_global_mut&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
     config.payload = <b>copy</b> payload;
     <a href="#0x1_Config_emit_config_change_event">emit_config_change_event</a>(cap, payload);

@@ -6,6 +6,7 @@ module Block {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::Consensus;
+    use 0x1::ErrorCode;
 
      resource struct BlockMetadata {
           // Height of the current block
@@ -26,8 +27,8 @@ module Block {
 
     // This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
-      assert(Timestamp::is_genesis(), 1);
-      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+      assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
       move_to<BlockMetadata>(
           account,
@@ -56,7 +57,7 @@ module Block {
 
     // Call at block prologue
     public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64): (u64, u128) acquires BlockMetadata{
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
         let new_height = block_metadata_ref.height + 1;

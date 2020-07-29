@@ -3,6 +3,7 @@ address 0x1 {
 module Timestamp {
     use 0x1::CoreAddresses;
     use 0x1::Signer;
+    use 0x1::ErrorCode;
 
     // A singleton resource holding the current Unix time in seconds
     resource struct CurrentTimeSeconds {
@@ -12,7 +13,7 @@ module Timestamp {
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer) {
         // Only callable by the Genesis address
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         // TODO: Pass the initialized value be passed in to genesis?
         let timer = CurrentTimeSeconds {seconds: 0};
         move_to<CurrentTimeSeconds>(account, timer);
@@ -26,7 +27,7 @@ module Timestamp {
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(account: &signer, timestamp: u64) acquires CurrentTimeSeconds {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         let global_timer = borrow_global_mut<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
         //TODO should support '=' ?
         assert(global_timer.seconds <= timestamp, 5001);

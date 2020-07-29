@@ -4,6 +4,7 @@ module Version {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::ErrorCode;
 
 
     struct Version {
@@ -11,7 +12,7 @@ module Version {
     }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         Config::publish_new_config<Self::Version>(
             account,
@@ -25,7 +26,7 @@ module Version {
     }
 
     public fun set(account: &signer, major: u64) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         let old_config = Config::get<Self::Version>(account);
 
         assert(
