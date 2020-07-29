@@ -730,6 +730,10 @@ impl StarcoinVM {
     ) -> (VMStatus, TransactionOutput) {
         let mut cost_strategy = CostStrategy::system(gas_schedule, gas_left);
         let mut session = self.move_vm.new_session(remote_cache);
+
+        // init_script doesn't need run epilogue
+        if remote_cache.is_genesis() { return discard_error_vm_status(error_code); }
+
         match TransactionStatus::from(error_code.clone()) {
             TransactionStatus::Keep(status) => {
                 if let Err(e) = self.run_epilogue(&mut session, &mut cost_strategy, txn_data, false)
