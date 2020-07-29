@@ -19,6 +19,9 @@ pub struct GenDevBlockOpt {
     ///Become master head
     #[structopt(short = "h")]
     head: bool,
+    ///Make sure empty body.
+    #[structopt(short = "e")]
+    strict_empty_body: bool,
 }
 
 pub struct GenDevBlockCommand;
@@ -46,6 +49,7 @@ impl CommandAction for GenDevBlockCommand {
             auth_key.prefix().to_vec(),
             opt.parent,
             opt.head,
+            opt.strict_empty_body,
         )?;
 
         Ok(new_block_id)

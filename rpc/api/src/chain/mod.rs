@@ -73,6 +73,7 @@ pub trait ChainApi {
         auth_key_prefix: Vec<u8>,
         parent_id: Option<HashValue>,
         head: bool,
+        strict_empty_body: bool,
     ) -> FutureResult<HashValue>;
 
     /// Get chain blocks by number

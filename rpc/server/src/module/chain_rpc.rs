@@ -156,6 +156,7 @@ where
         auth_key_prefix: Vec<u8>,
         parent_id: Option<HashValue>,
         head: bool,
+        strict_empty_body: bool,
     ) -> FutureResult<HashValue> {
         let service = self.service.clone();
         let fut = async move {
@@ -176,7 +177,7 @@ where
                 .await?
                 .header()
                 .number();
-            let brother_txns = if old_head.number() > parent_number {
+            let brother_txns = if !strict_empty_body && old_head.number() > parent_number {
                 service
                     .clone()
                     .master_block_by_number(parent_number + 1)
@@ -206,11 +207,7 @@ where
                     .expect("parent block info is none.")
                     .get_total_difficulty();
 
-                if head_difficulty > parent_difficulty {
-                    (head_difficulty - parent_difficulty) * 2
-                } else {
-                    1.into()
-                }
+                head_difficulty - parent_difficulty + 1.into()
             } else {
                 1.into()
             };
