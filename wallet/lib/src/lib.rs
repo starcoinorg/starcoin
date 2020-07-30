@@ -3,13 +3,19 @@
 
 pub mod file_wallet_store;
 pub mod keystore_wallet;
+pub mod wallet;
+pub mod wallet_manager;
+pub mod wallet_storage;
+
+#[cfg(test)]
+mod wallet_test;
 
 #[cfg(test)]
 mod test {
     use crate::file_wallet_store::FileWalletStore;
     // use starcoin_types::account_address::AccountAddress;
+    use starcoin_wallet_api::{WalletAccount, WalletStore};
     use std::collections::HashMap;
-    use wallet_api::{WalletAccount, WalletStore};
 
     #[test]
     fn test_file_store() {

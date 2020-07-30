@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::rich_wallet::{Wallet, WalletStorage};
+use crate::wallet::Wallet;
+use crate::wallet_storage::WalletStorage;
+
 use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::{PrivateKey, Uniform};
-
 use starcoin_types::{
     account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},
@@ -70,7 +71,7 @@ impl WalletManager {
         Ok(manager)
     }
 
-    pub fn create_account(&self, password: &str) -> Result<Wallet> {
+    pub fn create_wallet(&self, password: &str) -> Result<Wallet> {
         let keypair = gen_keypair();
         let address = account_address::from_public_key(&keypair.public_key);
 
@@ -81,6 +82,12 @@ impl WalletManager {
             password.to_string(),
             self.store.clone(),
         )?;
+        self.store.add_address(*wallet.address())?;
+
+        // if it's the first address, set it default.
+        if self.store.list_addresses()?.len() == 1 {
+            self.set_default_wallet(address)?;
+        }
 
         Ok(wallet)
     }
@@ -100,7 +107,7 @@ impl WalletManager {
         Ok(())
     }
 
-    pub fn import_account(
+    pub fn import_wallet(
         &self,
         address: AccountAddress,
         private_key: Vec<u8>,
@@ -122,7 +129,7 @@ impl WalletManager {
         Ok(wallet)
     }
 
-    pub fn export_account(&self, address: AccountAddress, password: &str) -> Result<Vec<u8>> {
+    pub fn export_wallet(&self, address: AccountAddress, password: &str) -> Result<Vec<u8>> {
         let wallet = Wallet::load(address, password, self.store.clone())?
             .ok_or_else(|| WalletError::AccountNotExist(address))?;
         Ok(wallet.private_key().to_bytes().to_vec())
@@ -179,8 +186,8 @@ impl WalletManager {
 
     pub fn sign_txn(
         &self,
-        raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
+        raw_txn: RawUserTransaction,
     ) -> Result<SignedUserTransaction> {
         let pass = self.key_cache.write().get_key(&signer_address);
         match pass {
@@ -196,20 +203,20 @@ impl WalletManager {
     }
 
     #[allow(unused)]
-    pub fn set_default(&self, address: AccountAddress) -> Result<()> {
+    pub fn set_default_wallet(&self, address: AccountAddress) -> Result<()> {
         self.store
-            .set_default_address(address)
+            .set_default_address(Some(address))
             .map_err(WalletError::StoreError)
     }
 
     /// remove wallet need user password.
     #[allow(unused)]
-    pub fn remove_account(&self, address: AccountAddress, password: &str) -> Result<()> {
+    pub fn delete_wallet(&self, address: AccountAddress, password: &str) -> Result<()> {
         let wallet = Wallet::load(address, password, self.store.clone())?;
         match wallet {
             Some(wallet) => {
                 self.key_cache.write().remove_key(&address);
-                wallet.destory().map_err(WalletError::StoreError)
+                wallet.destroy().map_err(WalletError::StoreError)
             }
             None => Ok(()),
         }

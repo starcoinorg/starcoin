@@ -1,9 +1,8 @@
-use anyhow::{format_err, Error, Result};
+use anyhow::{Error, Result};
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::PrivateKey;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -13,11 +12,8 @@ use starcoin_storage::{
     define_storage,
     storage::{CodecStorage, ColumnFamilyName, StorageInstance},
 };
-use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::error::WalletError;
-use starcoin_wallet_api::{Setting, WalletAccount};
+use starcoin_wallet_api::Setting;
 use std::convert::TryFrom;
 use std::path::Path;
 use std::sync::Arc;
@@ -122,7 +118,7 @@ impl ValueCodec for SettingWrapper {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EncryptedPrivateKey(Vec<u8>);
+pub struct EncryptedPrivateKey(pub Vec<u8>);
 impl From<Vec<u8>> for EncryptedPrivateKey {
     fn from(s: Vec<u8>) -> Self {
         Self(s)
@@ -203,18 +199,39 @@ impl WalletStorage {
         Ok(value.and_then(|mut v| v.addresses.pop()))
     }
 
-    pub fn set_default_address(&self, address: AccountAddress) -> Result<()> {
-        self.global_value_store.put(
-            GlobalSettingKey::DefaultAddress,
-            GlobalValue {
-                addresses: vec![address],
-            },
-        )
+    /// Update or remove default address settings
+    pub fn set_default_address(&self, address: Option<AccountAddress>) -> Result<()> {
+        match address {
+            Some(addr) => self.global_value_store.put(
+                GlobalSettingKey::DefaultAddress,
+                GlobalValue {
+                    addresses: vec![addr],
+                },
+            ),
+            None => self
+                .global_value_store
+                .remove(GlobalSettingKey::DefaultAddress),
+        }
     }
     pub fn contain_address(&self, address: AccountAddress) -> Result<bool> {
         self.public_key_store
             .get(address.into())
             .map(|w| w.is_some())
+    }
+
+    /// FIXME: once storage support iter, we can remove this.
+    pub fn add_address(&self, address: AccountAddress) -> Result<()> {
+        let value = self
+            .global_value_store
+            .get(GlobalSettingKey::AllAddresses)?;
+        let mut addrs = value.map(|v| v.addresses).unwrap_or_default();
+        if !addrs.contains(&address) {
+            addrs.push(address);
+        }
+        self.global_value_store.put(
+            GlobalSettingKey::AllAddresses,
+            GlobalValue { addresses: addrs },
+        )
     }
 
     pub fn list_addresses(&self) -> Result<Vec<AccountAddress>> {
@@ -230,108 +247,54 @@ impl WalletStorage {
             .map(|w| w.map(|p| p.0))
     }
 
+    pub fn decrypt_private_key(
+        &self,
+        address: AccountAddress,
+        password: impl AsRef<str>,
+    ) -> Result<Option<Ed25519PrivateKey>> {
+        let encrypted_key = self.private_key_store.get(address.into())?;
+        if encrypted_key.is_none() {
+            return Ok(None);
+        }
+        let encrypted_key = encrypted_key.unwrap();
+
+        let plain_key_data = decrypt(password.as_ref().as_bytes(), &encrypted_key.0)?;
+
+        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice())?;
+        Ok(Some(private_key))
+    }
+
+    pub fn update_key(
+        &self,
+        address: AccountAddress,
+        public_key: Ed25519PublicKey,
+        private_key: &Ed25519PrivateKey,
+        password: impl AsRef<str>,
+    ) -> Result<()> {
+        let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
+        self.private_key_store
+            .put(address.into(), encrypted_prikey.into())?;
+        self.public_key_store
+            .put(address.into(), public_key.into())?;
+        Ok(())
+    }
+
     #[allow(unused)]
-    pub fn save_default_settings(
+    pub fn update_default_settings(
         &self,
         address: AccountAddress,
         setting: Setting,
     ) -> Result<(), Error> {
         self.setting_store.put(address.into(), setting.into())
     }
-    pub fn save_encrypted_private_key(
-        &self,
-        address: AccountAddress,
-        encrypted: Vec<u8>,
-    ) -> Result<(), Error> {
-        self.private_key_store.put(address.into(), encrypted.into())
-    }
-}
 
-pub struct Wallet {
-    addr: AccountAddress,
-    private_key: Ed25519PrivateKey,
-    store: WalletStorage,
-}
-
-pub type WalletResult<T> = std::result::Result<T, WalletError>;
-
-impl Wallet {
-    pub fn create(
-        public_key: Ed25519PublicKey,
-        private_key: Ed25519PrivateKey,
-        addr: Option<AccountAddress>,
-        password: String,
-        storage: WalletStorage,
-    ) -> WalletResult<Self> {
-        let address = addr.unwrap_or_else(|| account_address::from_public_key(&public_key));
-        let encrypted_prikey = encrypt(password.as_bytes(), &private_key.to_bytes());
-
-        storage
-            .public_key_store
-            .put(address.into(), public_key.into())?;
-        storage.save_encrypted_private_key(address, encrypted_prikey)?;
-
-        Ok(Self {
-            addr: address,
-            private_key,
-            store: storage,
-        })
-    }
-    pub fn load(
-        addr: AccountAddress,
-        password: &str,
-        store: WalletStorage,
-    ) -> WalletResult<Option<Self>> {
-        let encrypted_key = store.private_key_store.get(addr.into())?;
-        if encrypted_key.is_none() {
-            return Ok(None);
+    pub fn destroy_wallet(&self, address: AccountAddress) -> Result<()> {
+        if self.default_address()?.filter(|a| a == &address).is_some() {
+            self.set_default_address(None)?;
         }
-
-        let encrypted_key = encrypted_key.unwrap();
-        let plain_key_data = decrypt(password.as_bytes(), &encrypted_key.0)
-            .map_err(|_e| WalletError::InvalidPassword(addr))?;
-        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice()).map_err(|_e| {
-            WalletError::StoreError(format_err!("underline vault store corrupted"))
-        })?;
-        let saved_public_key = store.public_key_store.get(addr.into())?.map(|w| w.0);
-        let saved_public_key = saved_public_key.ok_or_else(|| {
-            WalletError::StoreError(format_err!("public key not found for address {}", addr))
-        })?;
-        if saved_public_key.to_bytes() != private_key.public_key().to_bytes() {
-            return Err(WalletError::StoreError(format_err!(
-                "invalid state of public key and private key"
-            )));
-        }
-
-        Ok(Some(Self {
-            addr,
-            private_key,
-            store,
-        }))
-    }
-
-    pub fn wallet_info(&self) -> WalletAccount {
-        // TODO: fix is_default
-        WalletAccount::new(self.addr, self.private_key.public_key(), false)
-    }
-
-    pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        raw_txn
-            .sign(&self.private_key, self.private_key.public_key())
-            .map(|t| t.into_inner())
-    }
-
-    pub fn destory(self) -> Result<()> {
-        self.store.private_key_store.remove(self.addr.into())?;
-        self.store.setting_store.remove(self.addr.into())?;
+        self.private_key_store.remove(address.into())?;
+        self.public_key_store.remove(address.into())?;
+        self.setting_store.remove(address.into())?;
         Ok(())
-    }
-
-    #[allow(unused)]
-    pub fn address(&self) -> &AccountAddress {
-        &self.addr
-    }
-    pub fn private_key(&self) -> &Ed25519PrivateKey {
-        &self.private_key
     }
 }
