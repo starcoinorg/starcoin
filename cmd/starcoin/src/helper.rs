@@ -12,7 +12,7 @@ pub fn wait_until_file_created(file_path: &Path) -> Result<()> {
     let mut count = 0;
     loop {
         if count >= 20 {
-            break;
+            return Err(anyhow::anyhow!("wait file created timeout > 10s"));
         }
         debug!("Wait file {:?} create.", file_path);
         if !file_path.exists() {
