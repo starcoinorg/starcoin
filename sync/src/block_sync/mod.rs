@@ -12,7 +12,7 @@ use crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
-use network_rpc::{gen_client::NetworkRpcClient, BlockBody};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;

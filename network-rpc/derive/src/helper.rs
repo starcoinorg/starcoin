@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 extern crate proc_macro2;
 
 use anyhow::{Error, Result};

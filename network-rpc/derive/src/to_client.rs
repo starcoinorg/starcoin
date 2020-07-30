@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::helper::{compute_arg_identifiers, compute_args, compute_returns};
 use anyhow::*;
 use proc_macro2::TokenStream;
@@ -53,12 +56,12 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
         use super::*;
         use std::time::Duration;
         use network_api::{NetworkService};
-        use types::peer_info::{PeerId, PeerInfo};
-        use types::CHAIN_PROTOCOL_NAME;
+        use starcoin_types::peer_info::{PeerId, PeerInfo};
+        use starcoin_types::CHAIN_PROTOCOL_NAME;
         use scs::{SCSCodec,from_bytes};
         use anyhow::{Result,format_err};
         use futures::prelude::*;
-        use logger::prelude::*;
+        use starcoin_logger::prelude::*;
         #[derive(Clone)]
         pub struct NetworkRpcClient<N>
         where
