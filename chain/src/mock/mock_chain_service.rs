@@ -4,7 +4,7 @@
 use crate::{ChainAsyncService, ConnectBlockResult};
 use anyhow::{Error, Result};
 use crypto::HashValue;
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -12,6 +12,7 @@ use starcoin_types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
 
 //TODO implement Mock service
 #[derive(Clone, Default)]
@@ -23,7 +24,11 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn try_connect_without_execute(&mut self, _block: Block) -> Result<ConnectBlockResult> {
+    async fn try_connect_without_execute(
+        &mut self,
+        _block: Block,
+        _peer_id: PeerId,
+    ) -> Result<ConnectBlockResult> {
         unimplemented!()
     }
 

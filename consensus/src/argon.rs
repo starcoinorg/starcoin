@@ -30,7 +30,11 @@ impl ArgonConsensus {
 }
 
 impl Consensus for ArgonConsensus {
-    fn calculate_next_difficulty(&self, reader: &dyn ChainReader,epch: &EpochInfo) -> Result<U256> {
+    fn calculate_next_difficulty(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+    ) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader, epoch)?;
         Ok(target_to_difficulty(target))
     }
@@ -51,7 +55,12 @@ impl Consensus for ArgonConsensus {
         nonce
     }
 
-    fn verify(&self,reader: &dyn ChainReader, epoch: &EpochInfo, header: &BlockHeader) -> Result<()> {
+    fn verify(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+        header: &BlockHeader,
+    ) -> Result<()> {
         let difficulty = self.calculate_next_difficulty(reader, epoch)?;
         if header.difficulty() != difficulty {
             return Err(anyhow!(

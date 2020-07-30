@@ -15,6 +15,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, RemoteChainStateReader};
 use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -221,6 +222,9 @@ pub async fn start(
     let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
 
+    let remote_state_reader = Some(RemoteChainStateReader::new(Arc::new(
+        NetworkRpcClient::new(network.clone()),
+    )));
     let chain = Arbiter::new()
         .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
@@ -229,7 +233,7 @@ pub async fn start(
                 chain_storage,
                 chain_bus,
                 chain_txpool_service,
-                None,
+                remote_state_reader,
             )
         })
         .await??;

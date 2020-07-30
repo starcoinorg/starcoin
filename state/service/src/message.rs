@@ -15,6 +15,7 @@ pub enum StateRequest {
     GetWithProof(AccessPath),
     GetWithProofByRoot(AccessPath, HashValue),
     GetAccountState(AccountAddress),
+    GetAccountStateByRoot(AccountAddress, HashValue),
     StateRoot(),
 }
 

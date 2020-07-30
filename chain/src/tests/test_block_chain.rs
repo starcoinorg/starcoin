@@ -6,13 +6,13 @@ use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use logger::prelude::*;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_types::account_address;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
-use starcoin_types::account_address;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 
 async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<Storage>) {
     let node_config = NodeConfig::random_for_test();
@@ -46,8 +46,13 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
     if times > 0 {
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
-            let block_chain =
-                BlockChain::new(node_config.clone(), startup_info.master, storage.clone(), None).unwrap();
+            let block_chain = BlockChain::new(
+                node_config.clone(),
+                startup_info.master,
+                storage.clone(),
+                None,
+            )
+            .unwrap();
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
@@ -96,7 +101,8 @@ async fn test_block_chain_forks() {
         for i in 0..(times + 1) {
             //Delay::new(Duration::from_millis(1000)).await;
 
-            let chain = BlockChain::new(config.clone(), parent_hash, storage.clone()).unwrap();
+            let chain =
+                BlockChain::new(config.clone(), parent_hash, storage.clone(), None).unwrap();
             let (block_template, _) = chain
                 .create_block_template(
                     *miner_account.address(),

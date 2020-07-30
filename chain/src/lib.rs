@@ -22,11 +22,8 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
-use starcoin_vm_types::on_chain_config::EpochInfo;
-use std::sync::Arc;
-use storage::Store;
-use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
-use txpool::TxPoolService;
+use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -35,7 +32,11 @@ use starcoin_types::{
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
-use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_vm_types::on_chain_config::EpochInfo;
+use std::sync::Arc;
+use storage::Store;
+use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
+use txpool::TxPoolService;
 
 /// actor for block chain.
 pub struct ChainActor {
@@ -53,10 +54,17 @@ impl ChainActor {
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, startup_info, storage, txpool, bus.clone(), remote_chain_state)?,
+            service: ChainServiceImpl::new(
+                config,
+                startup_info,
+                storage,
+                txpool,
+                bus.clone(),
+                remote_chain_state,
+            )?,
             bus,
         }
-            .start();
+        .start();
         Ok(actor.into())
     }
 }
@@ -144,8 +152,15 @@ impl Handler<ChainRequest> for ChainActor {
                 let conn_state = self.service.try_connect(*block)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
-            ChainRequest::ConnectBlockWithoutExe(block) => {
-                let conn_state = self.service.try_connect_without_execute(*block)?;
+            ChainRequest::ConnectBlockWithoutExe(block, peer_id) => {
+                let remote_chain_state = self
+                    .service
+                    .get_remote_chain_state()
+                    .expect("Remote chain state reader must set")
+                    .with(peer_id, block.header.state_root);
+                let conn_state = self
+                    .service
+                    .try_connect_without_execute(*block, &remote_chain_state)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
@@ -231,10 +246,17 @@ impl ChainAsyncService for ChainActorRef {
         }
     }
 
-    async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
+    async fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        peer_id: PeerId,
+    ) -> Result<ConnectBlockResult> {
         if let ChainResponse::Conn(conn_result) = self
             .address
-            .send(ChainRequest::ConnectBlockWithoutExe(Box::new(block)))
+            .send(ChainRequest::ConnectBlockWithoutExe(
+                Box::new(block),
+                peer_id,
+            ))
             .await
             .map_err(Into::<Error>::into)??
         {
@@ -377,7 +399,7 @@ impl ChainAsyncService for ChainActorRef {
 
     async fn master_head_header(&self) -> Result<Option<BlockHeader>> {
         if let Ok(ChainResponse::BlockHeader(header)) =
-        self.address.send(ChainRequest::CurrentHeader()).await?
+            self.address.send(ChainRequest::CurrentHeader()).await?
         {
             return Ok(*header);
         }

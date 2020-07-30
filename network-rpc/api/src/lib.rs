@@ -15,8 +15,13 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
+
 mod remote_chain_state;
+
 pub use remote_chain_state::RemoteChainStateReader;
+use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_state::AccountState;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {
     pub txns: Vec<SignedUserTransaction>,
@@ -82,6 +87,12 @@ pub struct GetStateWithProof {
     pub access_path: AccessPath,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetAccountState {
+    pub state_root: HashValue,
+    pub account_address: AccountAddress,
+}
+
 impl Message for GetStateWithProof {
     type Result = Result<StateWithProof>;
 }
@@ -145,4 +156,10 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         req: GetStateWithProof,
     ) -> BoxFuture<Result<StateWithProof>>;
+
+    fn get_account_state(
+        &self,
+        peer_id: PeerId,
+        req: GetAccountState,
+    ) -> BoxFuture<Result<Option<AccountState>>>;
 }

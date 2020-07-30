@@ -9,18 +9,10 @@ use logger::prelude::*;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
+use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
-};
-use std::iter::Extend;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::{convert::TryInto, sync::Arc};
-use storage::Store;
-use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
 use starcoin_types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
@@ -33,8 +25,15 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
-use starcoin_types::peer_info::PeerId;
-use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::on_chain_config::{
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+};
+use std::iter::Extend;
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::{convert::TryInto, sync::Arc};
+use storage::Store;
+use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
 
 pub struct BlockChain {
     config: Arc<NodeConfig>,
@@ -101,13 +100,17 @@ impl BlockChain {
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
             remote_chain_state: None,
             storage,
-
         };
         Ok(chain)
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        Self::new(self.config.clone(), head_block_hash, self.storage.clone(), self.remote_chain_state.clone())
+        Self::new(
+            self.config.clone(),
+            head_block_hash,
+            self.storage.clone(),
+            self.remote_chain_state.clone(),
+        )
     }
 
     pub fn save_block(&self, block: &Block, block_state: BlockState) {
@@ -448,7 +451,7 @@ impl BlockChain {
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(e) = self.config.net().consensus().verify(self, header,epoch) {
+            if let Err(e) = self.config.net().consensus().verify(self, epoch, header) {
                 error!("verify header:{:?} failed: {:?}", header.id(), e,);
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
@@ -463,10 +466,13 @@ impl BlockChain {
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
+
         if !is_genesis {
             let account_reader = AccountStateReader::new(&self.chain_state);
             let epoch = account_reader.epoch()?;
-            if let ConnectBlockResult::VerifyConsensusFailed = self.verify_header(header, true, epoch)? {
+            if let ConnectBlockResult::VerifyConsensusFailed =
+                self.verify_header(header, true, &epoch)?
+            {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
@@ -579,7 +585,11 @@ impl ChainWriter for BlockChain {
         self.apply_inner(block)
     }
 
-    fn apply_without_execute(&mut self, block: Block, remote_chain_state: &ChainStateReader) -> Result<ConnectBlockResult> {
+    fn apply_without_execute(
+        &mut self,
+        block: Block,
+        remote_chain_state: &dyn ChainStateReader,
+    ) -> Result<ConnectBlockResult> {
         // 1. verify txn info
         let block_id = block.id();
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
@@ -622,26 +632,26 @@ impl ChainWriter for BlockChain {
             return Ok(ConnectBlockResult::VerifyBodyFailed);
         }
 
-        // 3. verify block
+        // 3. verify block header
+        let header = block.header();
         let account_reader = AccountStateReader::new(remote_chain_state);
         let epoch = account_reader.epoch()?;
-        if !is_genesis {
+        if !header.is_genesis() {
             if let ConnectBlockResult::VerifyConsensusFailed =
-            self.verify_header(header, true, &epoch)?
+                self.verify_header(header, true, &epoch)?
             {
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
                     if let ConnectBlockResult::VerifyConsensusFailed =
-                    self.verify_header(uncle_header, false, &epoch)?
+                        self.verify_header(uncle_header, false, &epoch)?
                     {
                         return Ok(ConnectBlockResult::VerifyConsensusFailed);
                     }
                 }
             }
         }
-
 
         // 4. save all data
         let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
@@ -669,7 +679,7 @@ impl ChainWriter for BlockChain {
         self.save(block_id, txns, None)?;
         self.commit(block, block_info, BlockState::Verified)?;
         Ok(ConnectBlockResult::SUCCESS)
-    }                                             
+    }
 
     fn commit(
         &mut self,

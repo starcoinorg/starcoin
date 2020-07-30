@@ -10,6 +10,6 @@ pub fn gen_blockchain_for_test(config: Arc<NodeConfig>) -> Result<BlockChain> {
         Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
     let genesis = Genesis::load(config.net()).unwrap();
     let startup_info = genesis.execute_genesis_block(storage.clone())?;
-    let block_chain = BlockChain::new(config, *startup_info.get_master(), storage,None)?;
+    let block_chain = BlockChain::new(config, *startup_info.get_master(), storage, None)?;
     Ok(block_chain)
 }

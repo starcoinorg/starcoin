@@ -12,6 +12,7 @@ use crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
+use network_api::PeerId;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
@@ -43,24 +44,27 @@ struct SyncDataEvent {
     hashes: Vec<HashValue>,
     headers: Vec<BlockHeader>,
     bodies: Vec<BlockBody>,
+    peer_id: PeerId,
 }
 
 impl SyncDataEvent {
-    fn new_header_event(headers: Vec<BlockHeader>) -> Self {
+    fn new_header_event(headers: Vec<BlockHeader>, peer_id: PeerId) -> Self {
         SyncDataEvent {
             data_type: DataType::Header,
             hashes: Vec::new(),
             headers,
             bodies: Vec::new(),
+            peer_id,
         }
     }
 
-    fn new_body_event(bodies: Vec<BlockBody>, hashes: Vec<HashValue>) -> Self {
+    fn new_body_event(bodies: Vec<BlockBody>, hashes: Vec<HashValue>, peer_id: PeerId) -> Self {
         SyncDataEvent {
             data_type: DataType::Body,
             hashes,
             headers: Vec::new(),
             bodies,
+            peer_id,
         }
     }
 }
@@ -198,12 +202,15 @@ impl BlockSyncTaskActor {
                     .sync_done_time
                     .with_label_values(&[LABEL_HASH])
                     .start_timer();
+
                 let event = match get_headers(&network, &rpc_client, get_headers_req).await {
-                    Ok(headers) => SyncDataEvent::new_header_event(headers),
+                    Ok((headers, peer_id)) => {
+                        SyncDataEvent::new_header_event(headers, peer_id.into())
+                    }
                     Err(e) => {
                         error!("Sync headers err: {:?}", e);
                         Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_header_event(Vec::new())
+                        SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
                     }
                 };
 
@@ -218,11 +225,13 @@ impl BlockSyncTaskActor {
                     .with_label_values(&[LABEL_BLOCK_BODY])
                     .start_timer();
                 let event = match get_body_by_hash(&rpc_client, &network, hashes.clone()).await {
-                    Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
+                    Ok((bodies, peer_id)) => {
+                        SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id.into())
+                    }
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
                         Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_body_event(Vec::new(), hashes)
+                        SyncDataEvent::new_body_event(Vec::new(), hashes, PeerId::random())
                     }
                 };
 
@@ -251,11 +260,11 @@ impl BlockSyncTaskActor {
                 .with_label_values(&[LABEL_HASH])
                 .start_timer();
             let event = match get_headers(&network, &rpc_client, get_headers_req).await {
-                Ok(headers) => SyncDataEvent::new_header_event(headers),
+                Ok((headers, peer_id)) => SyncDataEvent::new_header_event(headers, peer_id.into()),
                 Err(e) => {
                     error!("Sync headers err: {:?}", e);
                     Delay::new(Duration::from_secs(1)).await;
-                    SyncDataEvent::new_header_event(Vec::new())
+                    SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
                 }
             };
 
@@ -289,11 +298,13 @@ impl BlockSyncTaskActor {
                     .with_label_values(&[LABEL_BLOCK_BODY])
                     .start_timer();
                 let event = match get_body_by_hash(&rpc_client, &network, hashes.clone()).await {
-                    Ok(bodies) => SyncDataEvent::new_body_event(bodies, Vec::new()),
+                    Ok((bodies, peer_id)) => {
+                        SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id.into())
+                    }
                     Err(e) => {
                         error!("Sync bodies err: {:?}", e);
                         Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_body_event(Vec::new(), hashes)
+                        SyncDataEvent::new_body_event(Vec::new(), hashes, PeerId::random())
                     }
                 };
 
@@ -307,6 +318,7 @@ impl BlockSyncTaskActor {
         &mut self,
         bodies: Vec<BlockBody>,
         hashes: Vec<HashValue>,
+        peer_id: PeerId,
     ) -> Option<Box<impl Future<Output = ()>>> {
         if !bodies.is_empty() {
             let len = bodies.len();
@@ -324,14 +336,14 @@ impl BlockSyncTaskActor {
                 .with_label_values(&[LABEL_BLOCK_BODY])
                 .inc_by(len as i64);
 
-            Some(self.connect_blocks(blocks))
+            Some(self.connect_blocks(blocks, peer_id))
         } else {
             self.body_task.push_hashes(hashes);
             None
         }
     }
 
-    fn connect_blocks(&self, blocks: Vec<Block>) -> Box<impl Future<Output = ()>> {
+    fn connect_blocks(&self, blocks: Vec<Block>, peer_id: PeerId) -> Box<impl Future<Output = ()>> {
         let downloader = self.downloader.clone();
         let fut = async move {
             let mut blocks = blocks;
@@ -339,7 +351,9 @@ impl BlockSyncTaskActor {
             loop {
                 let block = blocks.pop();
                 if let Some(b) = block {
-                    downloader.connect_block_and_child(b).await;
+                    downloader
+                        .connect_block_and_child(b, peer_id.clone().into())
+                        .await;
                 } else {
                     break;
                 }
@@ -381,7 +395,7 @@ impl Handler<SyncDataEvent> for BlockSyncTaskActor {
                 self.handle_headers(data.headers);
             }
             DataType::Body => {
-                if let Some(fut) = self.handle_bodies(data.bodies, data.hashes) {
+                if let Some(fut) = self.handle_bodies(data.bodies, data.hashes, data.peer_id) {
                     (*fut)
                         .into_actor(self)
                         .then(|_result, act, _ctx| async {}.into_actor(act))

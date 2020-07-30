@@ -2,6 +2,7 @@ use crate::state_sync::StateSyncTaskRef;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use logger::prelude::*;
+use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_storage::Store;
@@ -155,18 +156,18 @@ impl BlockConnector {
         })
     }
 
-    pub async fn do_block_and_child(&self, block: Block) {
+    pub async fn do_block_and_child(&self, block: Block, peer_id: PeerId) {
         let block_id = block.header().id();
-        if self.do_block_connect(block).await {
+        if self.do_block_connect(block, peer_id.clone()).await {
             if let Some(child) = self.future_blocks.take_child(&block_id) {
                 for son_block in child {
-                    let _ = self.do_block_connect(son_block).await;
+                    let _ = self.do_block_connect(son_block, peer_id.clone()).await;
                 }
             }
         }
     }
 
-    async fn do_block_connect(&self, block: Block) -> bool {
+    async fn do_block_connect(&self, block: Block, peer_id: PeerId) -> bool {
         debug!(
             "connect begin block {:?} : {:?}",
             block.header().number(),
@@ -193,7 +194,7 @@ impl BlockConnector {
                             if block_id == current_block_id {
                                 self.chain_reader
                                     .clone()
-                                    .try_connect_without_execute(block.clone())
+                                    .try_connect_without_execute(block.clone(), peer_id.into())
                                     .await
                             } else {
                                 error!(
@@ -215,7 +216,7 @@ impl BlockConnector {
                     if pivot_id == &parent_id {
                         self.chain_reader
                             .clone()
-                            .try_connect_without_execute(block.clone())
+                            .try_connect_without_execute(block.clone(), peer_id.into())
                             .await
                     } else {
                         error!(

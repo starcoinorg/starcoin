@@ -7,10 +7,12 @@ use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
+use starcoin_types::{
+    account_address, account_config, transaction::authenticator::AuthenticationKey,
+};
 use starcoin_wallet_api::WalletAccount;
 use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
-use starcoin_types::{account_address, account_config, transaction::authenticator::AuthenticationKey};
 
 #[stest::test]
 pub fn test_open_block() -> Result<()> {

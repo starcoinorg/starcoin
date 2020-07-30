@@ -43,4 +43,12 @@ impl ChainStateAsyncService for MockChainStateService {
     ) -> Result<StateWithProof> {
         unimplemented!()
     }
+
+    async fn get_account_state_by_root(
+        self,
+        _address: AccountAddress,
+        _state_root: HashValue,
+    ) -> Result<Option<AccountState>> {
+        unimplemented!()
+    }
 }

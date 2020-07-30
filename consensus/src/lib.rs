@@ -44,11 +44,15 @@ static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
 static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 
 impl Consensus for ConsensusStrategy {
-    fn calculate_next_difficulty(&self, reader: &dyn ChainReader) -> Result<U256> {
+    fn calculate_next_difficulty(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+    ) -> Result<U256> {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader, &DummyConsensus::epoch(reader)?),
-            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader,&DevConsensus::epoch(reader)?),
-            ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader,&ArgonConsensus::epoch(reader)?),
+            ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader, epoch),
+            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader, epoch),
+            ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader, epoch),
         }
     }
 
@@ -60,11 +64,16 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader, epoch: &EpochInfo) -> Result<()> {
+    fn verify(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+        header: &BlockHeader,
+    ) -> Result<()> {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch,header),
-            ConsensusStrategy::Dev => DEV.verify(reader, epoch,header),
-            ConsensusStrategy::Argon => ARGON.verify(reader, epoch,header),
+            ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch, header),
+            ConsensusStrategy::Dev => DEV.verify(reader, epoch, header),
+            ConsensusStrategy::Argon => ARGON.verify(reader, epoch, header),
         }
     }
 

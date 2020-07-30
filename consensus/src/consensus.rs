@@ -18,21 +18,30 @@ pub trait Consensus {
         account_reader.epoch()
     }
 
-    fn calculate_next_difficulty(&self, reader: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256>;
+    fn calculate_next_difficulty(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+    ) -> Result<U256>;
 
     /// Calculate new block consensus header
     fn solve_consensus_nonce(&self, header_hash: &[u8], difficulty: U256) -> u64;
 
-    fn verify(&self, reader: &dyn ChainReader, epoch:&EpochInfo, header: &BlockHeader) -> Result<()>;
+    fn verify(
+        &self,
+        reader: &dyn ChainReader,
+        epoch: &EpochInfo,
+        header: &BlockHeader,
+    ) -> Result<()>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
     fn create_block(
         &self,
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
-        epoch: &EpochInfo,
     ) -> Result<Block> {
-        let difficulty = self.calculate_next_difficulty(reader, epoch)?;
+        let epoch = Self::epoch(reader)?;
+        let difficulty = self.calculate_next_difficulty(reader, &epoch)?;
         let raw_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let consensus_nonce = self.solve_consensus_nonce(raw_hash.to_vec().as_slice(), difficulty);
         Ok(block_template.into_block(consensus_nonce, difficulty))
