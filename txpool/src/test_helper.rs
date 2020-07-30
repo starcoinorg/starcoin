@@ -1,6 +1,6 @@
 use crate::TxPool;
 use starcoin_bus::BusActor;
-use starcoin_config::{NodeConfig, TxPoolConfig};
+use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
@@ -16,7 +16,7 @@ pub fn start_txpool() -> (TxPool, Arc<Storage>, Arc<NodeConfig>) {
     let bus = BusActor::launch();
 
     let pool = TxPool::start(
-        TxPoolConfig::default(),
+        Arc::new(NodeConfig::default()),
         storage.clone(),
         *startup_info.get_master(),
         bus,

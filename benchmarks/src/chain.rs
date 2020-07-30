@@ -42,7 +42,7 @@ impl ChainBencher {
         let txpool = {
             let best_block_id = *startup_info.get_master();
             TxPool::start(
-                node_config.tx_pool.clone(),
+                node_config.clone(),
                 storage.clone(),
                 best_block_id,
                 bus.clone(),

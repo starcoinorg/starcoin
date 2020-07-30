@@ -53,7 +53,7 @@ fn test_network_actor_rpc() {
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
-                node_config_1.tx_pool.clone(),
+                node_config_1.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
@@ -163,7 +163,7 @@ fn test_network_actor_rpc() {
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
             TxPool::start(
-                node_config_2.tx_pool.clone(),
+                node_config_2.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
@@ -278,7 +278,7 @@ fn test_network_actor_rpc_2() {
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
-                node_config_1.tx_pool.clone(),
+                node_config_1.clone(),
                 storage_1.clone(),
                 best_block_id,
                 bus_1.clone(),
@@ -358,7 +358,7 @@ fn test_network_actor_rpc_2() {
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
             TxPool::start(
-                node_config_2.tx_pool.clone(),
+                node_config_2.clone(),
                 storage_2.clone(),
                 best_block_id,
                 bus_2.clone(),
