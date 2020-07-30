@@ -16,14 +16,14 @@ Feature: cmd integration test
     Then [cmd] wallet show
 #    Then node handle stop
 
-  #  3. dev get coin
-#  Scenario Outline: [cmd] dev get coin
-#    Then dev get_coin -v "<amount>"
+#    3. dev get coin
+  Scenario Outline: [cmd] dev get coin
+    Then dev get_coin "<amount>"
 #    Then node handle stop
 
-#    Examples:
-#      | amount |
-#      | 200000 |
+    Examples:
+      | amount |
+      |  |
 
   #  4. wallet create
   Scenario Outline: [cmd] wallet create
