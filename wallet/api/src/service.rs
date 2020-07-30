@@ -31,6 +31,7 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
         password: String,
         duration: std::time::Duration,
     ) -> ServiceResult<()>;
+    async fn lock_account(self, address: AccountAddress) -> ServiceResult<()>;
     async fn import_account(
         self,
         address: AccountAddress,

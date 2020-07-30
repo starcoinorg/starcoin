@@ -27,21 +27,21 @@ pub type Result<T> = std::result::Result<T, WalletError>;
 /// encrypt account's key by a password.
 pub struct WalletManager {
     store: WalletStorage,
-    key_cache: RwLock<KeyCache>,
+    key_cache: RwLock<PasswordCache>,
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
-struct KeyCache {
+struct PasswordCache {
     cache: HashMap<AccountAddress, (Instant, String)>,
 }
-impl KeyCache {
-    pub fn cache_key(&mut self, account: AccountAddress, pass: String, ttl: Instant) {
+impl PasswordCache {
+    pub fn cache_pass(&mut self, account: AccountAddress, pass: String, ttl: Instant) {
         self.cache.insert(account, (ttl, pass));
     }
-    pub fn remove_key(&mut self, account: &AccountAddress) {
+    pub fn remove_pass(&mut self, account: &AccountAddress) {
         self.cache.remove(account);
     }
-    pub fn get_key(&mut self, account: &AccountAddress) -> Option<String> {
+    pub fn get_pass(&mut self, account: &AccountAddress) -> Option<String> {
         match self.cache.remove(account) {
             None => None,
             Some((ttl, kp)) => {
@@ -66,7 +66,7 @@ impl WalletManager {
     pub fn new(storage: WalletStorage) -> Result<Self> {
         let manager = Self {
             store: storage,
-            key_cache: RwLock::new(KeyCache::default()),
+            key_cache: RwLock::new(PasswordCache::default()),
         };
         Ok(manager)
     }
@@ -103,7 +103,12 @@ impl WalletManager {
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
-            .cache_key(address, password.to_string(), ttl);
+            .cache_pass(address, password.to_string(), ttl);
+        Ok(())
+    }
+
+    pub fn lock_wallet(&self, address: AccountAddress) -> Result<()> {
+        self.key_cache.write().remove_pass(&address);
         Ok(())
     }
 
@@ -189,7 +194,7 @@ impl WalletManager {
         signer_address: AccountAddress,
         raw_txn: RawUserTransaction,
     ) -> Result<SignedUserTransaction> {
-        let pass = self.key_cache.write().get_key(&signer_address);
+        let pass = self.key_cache.write().get_pass(&signer_address);
         match pass {
             None => Err(WalletError::AccountLocked(signer_address)),
             Some(p) => {
@@ -215,7 +220,7 @@ impl WalletManager {
         let wallet = Wallet::load(address, password, self.store.clone())?;
         match wallet {
             Some(wallet) => {
-                self.key_cache.write().remove_key(&address);
+                self.key_cache.write().remove_pass(&address);
                 wallet.destroy().map_err(WalletError::StoreError)
             }
             None => Ok(()),

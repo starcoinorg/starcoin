@@ -57,6 +57,10 @@ impl Handler<WalletRequest> for WalletActor {
                     .unlock_wallet(address, password.as_str(), duration)?;
                 WalletResponse::UnlockAccountResponse
             }
+            WalletRequest::LockAccount(address) => {
+                self.service.lock_wallet(address)?;
+                WalletResponse::None
+            }
             WalletRequest::ExportAccount { address, password } => {
                 let data = self.service.export_wallet(address, password.as_str())?;
                 WalletResponse::ExportAccountResponse(data)
@@ -177,6 +181,19 @@ impl WalletAsyncService for WalletActorRef {
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::UnlockAccountResponse = response {
+            Ok(())
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn lock_account(self, address: AccountAddress) -> ServiceResult<()> {
+        let response = self
+            .0
+            .send(WalletRequest::LockAccount(address))
+            .await
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+        if let WalletResponse::None = response {
             Ok(())
         } else {
             panic!("Unexpect response type.")
