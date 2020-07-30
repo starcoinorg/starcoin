@@ -10,11 +10,11 @@ use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateView};
+use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, Consensus, EpochDataResource, EpochInfo, EpochResource,
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
 };
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -34,7 +34,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_types::peer_info::PeerId;
-use starcoin_vm_types::access_path::AccessPath;
+use starcoin_network_rpc_api::RemoteChainStateReader;
 
 pub struct BlockChain {
     config: Arc<NodeConfig>,
@@ -42,6 +42,7 @@ pub struct BlockChain {
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
+    remote_chain_state: Option<RemoteChainStateReader>,
     storage: Arc<dyn Store>,
 }
 
@@ -50,6 +51,7 @@ impl BlockChain {
         config: Arc<NodeConfig>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -75,6 +77,7 @@ impl BlockChain {
             )?,
             head: Some(head),
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
+            remote_chain_state,
             storage,
         };
         Ok(chain)
@@ -96,13 +99,15 @@ impl BlockChain {
             block_accumulator,
             head: None,
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
+            remote_chain_state: None,
             storage,
+
         };
         Ok(chain)
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        Self::new(self.config.clone(), head_block_hash, self.storage.clone())
+        Self::new(self.config.clone(), head_block_hash, self.storage.clone(), self.remote_chain_state.clone())
     }
 
     pub fn save_block(&self, block: &Block, block_state: BlockState) {
@@ -574,7 +579,7 @@ impl ChainWriter for BlockChain {
         self.apply_inner(block)
     }
 
-    fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
+    fn apply_without_execute(&mut self, block: Block, remote_chain_state: &ChainStateReader) -> Result<ConnectBlockResult> {
         // 1. verify txn info
         let block_id = block.id();
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
@@ -618,10 +623,25 @@ impl ChainWriter for BlockChain {
         }
 
         // 3. verify block
-        // if let Err(e) = C::verify(self, block.header()) {
-        //     error!("verify header failed : {:?}", e);
-        //     return Ok(ConnectBlockResult::VerifyConsensusFailed);
-        // }
+        let account_reader = AccountStateReader::new(remote_chain_state);
+        let epoch = account_reader.epoch()?;
+        if !is_genesis {
+            if let ConnectBlockResult::VerifyConsensusFailed =
+            self.verify_header(header, true, &epoch)?
+            {
+                return Ok(ConnectBlockResult::VerifyConsensusFailed);
+            }
+            if let Some(uncles) = block.uncles() {
+                for uncle_header in uncles {
+                    if let ConnectBlockResult::VerifyConsensusFailed =
+                    self.verify_header(uncle_header, false, &epoch)?
+                    {
+                        return Ok(ConnectBlockResult::VerifyConsensusFailed);
+                    }
+                }
+            }
+        }
+
 
         // 4. save all data
         let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
@@ -649,7 +669,7 @@ impl ChainWriter for BlockChain {
         self.save(block_id, txns, None)?;
         self.commit(block, block_info, BlockState::Verified)?;
         Ok(ConnectBlockResult::SUCCESS)
-    }
+    }                                             
 
     fn commit(
         &mut self,

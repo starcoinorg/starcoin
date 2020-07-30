@@ -28,8 +28,7 @@ impl DummyConsensus {
 }
 
 impl Consensus for DummyConsensus {
-    fn calculate_next_difficulty(&self, chain: &dyn ChainReader,epoch: &EpochInfo) -> Result<U256> {
-        let epoch = Self::epoch(chain)?;
+    fn calculate_next_difficulty(_chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
         Ok(epoch.block_time_target().into())
     }
 

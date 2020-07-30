@@ -15,7 +15,8 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
-
+mod remote_chain_state;
+pub use remote_chain_state::RemoteChainStateReader;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {
     pub txns: Vec<SignedUserTransaction>,

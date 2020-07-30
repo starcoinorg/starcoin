@@ -3,8 +3,6 @@
 
 use starcoin_types::U256;
 
-use crate::argon::ArgonConsensus;
-use crate::consensus::Consensus;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_traits::ChainReader;

@@ -198,6 +198,7 @@ async fn create_node(
                 storage_clone,
                 bus_clone,
                 txpool_service_clone,
+                None,
             )
             .unwrap()
         })
@@ -222,7 +223,7 @@ async fn create_node(
             let startup_info = chain.clone().master_startup_info().await?;
 
             let block_chain =
-                BlockChain::new(node_config.clone(), startup_info.master, storage.clone()).unwrap();
+                BlockChain::new(node_config.clone(), startup_info.master, storage.clone(), None).unwrap();
 
             let mut txn_vec = Vec::new();
             txn_vec.push(random_txn(i + 1));

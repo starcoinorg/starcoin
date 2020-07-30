@@ -149,14 +149,13 @@ pub trait IntoSuper<Super: ?Sized> {
 
 /// `ChainState` is a trait that defines chain's global state.
 pub trait ChainState:
-    ChainStateReader
-    + ChainStateWriter
-    + StateView
-    + IntoSuper<dyn StateView>
-    + IntoSuper<dyn ChainStateReader>
-    + IntoSuper<dyn ChainStateWriter>
-{
-}
+ChainStateReader
++ ChainStateWriter
++ StateView
++ IntoSuper<dyn StateView>
++ IntoSuper<dyn ChainStateReader>
++ IntoSuper<dyn ChainStateWriter>
+{}
 
 impl<'a, T: 'a + ChainStateReader> IntoSuper<dyn ChainStateReader + 'a> for T {
     fn as_super(&self) -> &(dyn ChainStateReader + 'a) {
@@ -225,8 +224,8 @@ impl<'a> AccountStateReader<'a> {
 
     /// Get Resource by type
     pub fn get_resource<R>(&self, address: AccountAddress) -> Result<Option<R>>
-    where
-        R: MoveResource + DeserializeOwned,
+        where
+            R: MoveResource + DeserializeOwned,
     {
         let access_path = AccessPath::new(address, R::resource_path());
         let r = self
@@ -246,8 +245,8 @@ impl<'a> AccountStateReader<'a> {
     }
 
     pub fn get_on_chain_config<C>(&self) -> Result<Option<C>>
-    where
-        C: OnChainConfig,
+        where
+            C: OnChainConfig,
     {
         C::fetch_config(self.reader)
     }

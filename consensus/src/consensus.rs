@@ -5,7 +5,7 @@ use crate::time::TimeService;
 use crate::ChainReader;
 use anyhow::Result;
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_state_api::{AccountStateReader, ChainStateReader};
+use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,

@@ -78,6 +78,7 @@ fn test_state_sync() {
             storage_1.clone(),
             bus_1.clone(),
             txpool_1.get_service(),
+            None,
         )
         .unwrap();
         let state_service_1 =
@@ -191,6 +192,7 @@ fn test_state_sync() {
             storage_2.clone(),
             bus_2.clone(),
             txpool_2.get_service(),
+            None,
         )
         .unwrap();
         let state_service_2 =

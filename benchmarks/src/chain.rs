@@ -54,6 +54,7 @@ impl ChainBencher {
             storage.clone(),
             txpool.get_service(),
             bus,
+            None,
         )
         .unwrap();
         let miner_account = WalletAccount::random();
@@ -79,6 +80,7 @@ impl ChainBencher {
                 self.config.clone(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
+                None,
             )
             .unwrap();
 

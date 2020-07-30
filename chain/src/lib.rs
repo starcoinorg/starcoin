@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
+
 pub use chain::BlockChain;
 
 mod chain_metrics;
@@ -34,6 +35,7 @@ use starcoin_types::{
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_network_rpc_api::RemoteChainStateReader;
 
 /// actor for block chain.
 pub struct ChainActor {
@@ -48,12 +50,13 @@ impl ChainActor {
         storage: Arc<dyn Store>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(config, startup_info, storage, txpool, bus.clone())?,
+            service: ChainServiceImpl::new(config, startup_info, storage, txpool, bus.clone(), remote_chain_state)?,
             bus,
         }
-        .start();
+            .start();
         Ok(actor.into())
     }
 }
@@ -374,7 +377,7 @@ impl ChainAsyncService for ChainActorRef {
 
     async fn master_head_header(&self) -> Result<Option<BlockHeader>> {
         if let Ok(ChainResponse::BlockHeader(header)) =
-            self.address.send(ChainRequest::CurrentHeader()).await?
+        self.address.send(ChainRequest::CurrentHeader()).await?
         {
             return Ok(*header);
         }

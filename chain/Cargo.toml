@@ -36,7 +36,8 @@ bus = {path = "../bus", package="starcoin-bus" }
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
-
+starcoin-network-rpc-api = {path = "../network-rpc/api"}
+starcoin-network = {path ="../network"}
 [dev-dependencies]
 starcoin-wallet-api = { path = "../wallet/api"}
 tokio = { version = "0.2", features = ["full"] }

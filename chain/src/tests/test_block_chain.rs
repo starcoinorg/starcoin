@@ -38,6 +38,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
         storage.clone(),
         bus.clone(),
         txpool_service,
+        None,
     )
     .unwrap();
     let miner_account = WalletAccount::random();
@@ -46,7 +47,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let block_chain =
-                BlockChain::new(node_config.clone(), startup_info.master, storage.clone()).unwrap();
+                BlockChain::new(node_config.clone(), startup_info.master, storage.clone(), None).unwrap();
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
