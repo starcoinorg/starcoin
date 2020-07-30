@@ -22,6 +22,7 @@ const GET_TXNS_STR: &str = "GetTxns";
 const GET_TXN_INFOS_STR: &str = "GetTxnInfos";
 const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";
 const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
+const GET_BLOCK_HEADER_BY_HASH_STR: &str = "GetBlockHeaderByHash";
 const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
 const GET_BLOCK_BODIES_STR: &str = "GetBlockBodies";
 const GET_STATE_NODE_BY_NODE_HASH_STR: &str = "GetStateNodeByNodeHash";
@@ -33,6 +34,7 @@ pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
     paths.push(GET_TXN_INFOS_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_BY_NUM_STR.to_string());
     paths.push(GET_BLOCK_HEADERS_STR.to_string());
+    paths.push(GET_BLOCK_HEADER_BY_HASH_STR.to_string());
     paths.push(GET_BLOCK_INFOS_STR.to_string());
     paths.push(GET_BLOCK_BODIES_STR.to_string());
     paths.push(GET_STATE_NODE_BY_NODE_HASH_STR.to_string());
@@ -80,6 +82,20 @@ pub async fn get_headers(
 ) -> Result<Vec<BlockHeader>> {
     if let Some(peer_info) = network.best_peer().await? {
         get_headers_with_peer(client, peer_info.get_peer_id(), req).await
+    } else {
+        Err(format_err!("Can not get peer when sync block header."))
+    }
+}
+
+pub async fn _get_header_by_hash(
+    network: &NetworkAsyncService,
+    client: &NetworkRpcClient<NetworkAsyncService>,
+    hashes: Vec<HashValue>,
+) -> Result<Vec<BlockHeader>> {
+    if let Some(peer_info) = network.best_peer().await? {
+        client
+            .get_header_by_hash(peer_info.get_peer_id(), hashes)
+            .await
     } else {
         Err(format_err!("Can not get peer when sync block header."))
     }

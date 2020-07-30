@@ -118,8 +118,14 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn get_body_by_hash(
         &self,
         peer_id: PeerId,
-        hashs: Vec<HashValue>,
+        hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<BlockBody>>>;
+
+    fn get_header_by_hash(
+        &self,
+        peer_id: PeerId,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockHeader>>>;
 
     fn get_state_node_by_node_hash(
         &self,

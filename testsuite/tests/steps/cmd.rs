@@ -66,10 +66,13 @@ pub fn steps() -> Steps<MyWorld> {
                 let node_info = client.clone().node_info().unwrap();
                 let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
+                let inter_args = if amount.eq("<amount>") {
+                    vec!["starcoin", "dev", "get_coin"]
+                } else {
+                    vec!["starcoin", "dev", "get_coin", "-v", amount]
+                };
                 let get_result = add_command(context)
-                    .exec_with_args::<TransactionView>(vec![
-                        "starcoin", "dev", "get_coin", "-v", amount,
-                    ])
+                    .exec_with_args::<TransactionView>(inter_args)
                     .unwrap();
                 info!("get coin result:{:?}", get_result);
             },
