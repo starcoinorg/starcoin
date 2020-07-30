@@ -1,5 +1,7 @@
-use crate::{gen_client, GetStateWithProof};
-use crate::{start_network_rpc_server, GetBlockHeadersByNumber};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::start_network_rpc_server;
 use actix::{Actor, Addr, System};
 use block_relayer::BlockRelayer;
 use bus::BusActor;
@@ -13,6 +15,7 @@ use miner::{MinerActor, MinerClientActor};
 use network::{NetworkActor, NetworkAsyncService};
 use network_api::messages::RawRpcRequestMessage;
 use network_api::{Multiaddr, NetworkService};
+use starcoin_network_rpc_api::{gen_client, GetBlockHeadersByNumber, GetStateWithProof};
 use state_api::StateWithProof;
 use state_service::ChainStateActor;
 use std::sync::Arc;

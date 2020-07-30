@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use syn::{parse_quote, ItemTrait, TraitItem, TraitItemMethod};

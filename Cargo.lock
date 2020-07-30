@@ -6338,7 +6338,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-metrics",
  "starcoin-network",
- "starcoin-network-rpc",
+ "starcoin-network-rpc-api",
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
@@ -6893,6 +6893,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-miner",
  "starcoin-network",
+ "starcoin-network-rpc-api",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
@@ -6906,6 +6907,27 @@ dependencies = [
  "starcoin-wallet-api",
  "stest",
  "tokio 0.2.22",
+]
+
+[[package]]
+name = "starcoin-network-rpc-api"
+version = "0.3.1"
+dependencies = [
+ "actix",
+ "anyhow",
+ "futures 0.3.5",
+ "network-api",
+ "network-rpc-core",
+ "network-rpc-derive",
+ "serde",
+ "starcoin-accumulator",
+ "starcoin-canonical-serialization",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-state-api",
+ "starcoin-state-tree",
+ "starcoin-txpool",
+ "starcoin-types",
 ]
 
 [[package]]
@@ -7263,6 +7285,7 @@ dependencies = [
  "starcoin-miner",
  "starcoin-network",
  "starcoin-network-rpc",
+ "starcoin-network-rpc-api",
  "starcoin-state-service",
  "starcoin-state-tree",
  "starcoin-statedb",

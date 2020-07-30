@@ -2,12 +2,12 @@ use anyhow::{format_err, Result};
 use crypto::hash::HashValue;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use network_rpc::{
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::AccumulatorNode;
+use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
 };
-use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::AccumulatorNode;
 use starcoin_state_tree::StateNode;
 use types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
