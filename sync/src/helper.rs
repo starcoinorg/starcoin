@@ -85,6 +85,20 @@ pub async fn get_headers(
     }
 }
 
+pub async fn _get_header_by_hash(
+    network: &NetworkAsyncService,
+    client: &NetworkRpcClient<NetworkAsyncService>,
+    hashes: Vec<HashValue>,
+) -> Result<Vec<BlockHeader>> {
+    if let Some(peer_info) = network.best_peer().await? {
+        client
+            .get_header_by_hash(peer_info.get_peer_id(), hashes)
+            .await
+    } else {
+        Err(format_err!("Can not get peer when sync block header."))
+    }
+}
+
 pub async fn get_body_by_hash(
     client: &NetworkRpcClient<NetworkAsyncService>,
     network: &NetworkAsyncService,
