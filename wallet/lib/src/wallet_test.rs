@@ -18,7 +18,7 @@ pub fn test_wallet() -> Result<()> {
     let wallet_address = wallet.address();
 
     // test reload
-    let loaded_wallet = Wallet::load(*wallet_address, "hello", storage.clone())?;
+    let loaded_wallet = Wallet::load(*wallet_address, "hello", storage)?;
     assert!(loaded_wallet.is_some());
     let reloaded_wallet = loaded_wallet.unwrap();
     assert_eq!(
@@ -43,7 +43,7 @@ pub fn test_wallet() -> Result<()> {
 pub fn test_wallet_unlock() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
     let storage = WalletStorage::create_from_path(tempdir.path())?;
-    let manager = WalletManager::new(storage.clone())?;
+    let manager = WalletManager::new(storage)?;
 
     let wallet = manager.create_wallet("hello")?;
 
