@@ -124,12 +124,13 @@ pub fn steps() -> Steps<MyWorld> {
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // get last cmd result as current parameter
             let mut vec = vec!["starcoin"];
-            let mut rex_parameter = "";
+            let mut rex_parameter = vec![];
             for parameter in args[1].as_str().split_whitespace() {
                 if !parameter.starts_with("$") {
                     vec.push(parameter);
+                } else {
+                    rex_parameter.push(parameter);
                 }
-                rex_parameter = parameter;
             }
 
             if world.cmd_value.as_ref().is_some() {
@@ -141,13 +142,26 @@ pub fn steps() -> Steps<MyWorld> {
             let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
             info!("cmd rex_parameter: {:?}", rex_parameter);
             // parse result
-            let selector = Selector::new(rex_parameter).unwrap();
-            let next_value: Vec<String> = selector
-                .find(&result)
-                .map(|t| t.as_str().unwrap().to_string())
-                .collect();
-            info!("next value: {:?}", next_value.clone());
-            world.cmd_value = Some(next_value);
+            let mut cmd_values: Vec<String> = vec![];
+            for rex_para in rex_parameter {
+                let com_str: Vec<_> = rex_para.split("$").collect();
+                let key = if com_str.len() == 3 {
+                    cmd_values.push(com_str[1].to_string());
+                    "$".to_owned() + com_str[2]
+                } else {
+                    "$".to_owned() + com_str[1]
+                };
+                let selector = Selector::new(key.as_str()).unwrap();
+                let next_value: Vec<String> = selector
+                    .find(&result)
+                    .map(|t| t.as_str().unwrap().to_string())
+                    .collect();
+                if !next_value.is_empty() {
+                    cmd_values.extend_from_slice(next_value.as_slice());
+                }
+            }
+            info!("next value: {:?}", cmd_values.clone());
+            world.cmd_value = Some(cmd_values);
             info!("cmd continuous: {:?}", result);
         })
         .then_regex(

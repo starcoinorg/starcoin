@@ -24,7 +24,8 @@ Feature: compat cmd integration test
     Then cmd: "chain show $.head_block"
     Then cmd: "debug gen_dev_block -p $.None"
     Then cmd: "wallet unlock $.None"
-#    Then cmd: "debug gen_txn -r -v 10 $.None"
+    Then cmd: "dev get_coin $.None"
+    Then cmd: "debug gen_txn -r -v 10 $.None"
     Then cmd: "debug log level Debug $.None"
 
     Examples:
@@ -55,6 +56,27 @@ Feature: compat cmd integration test
     Examples:
       |  |
 
+#wallet
+  Scenario Outline: [COMPAT] wallet test
+    Then cmd: "wallet show $.None"
+    Then cmd: "wallet unlock $.None"
+    Then cmd: "dev get_coin $.None"
+    Then cmd: "wallet create -p transfer $-r$.address $-k$.public_key"
+    Then cmd: "wallet transfer -v 10000 $.address"
+    Then cmd: "wallet create -p compat $.address"
+    Then cmd: "wallet unlock -p compat $.result"
+    Then cmd: "wallet show $.account.address"
+    Then cmd: "wallet export -p compat $.None"
+    Then cmd: "wallet list $.None"
+    Then cmd: "wallet show $.account.address"
+    Then cmd: "wallet execute-builtin --blocking --script empty_script -s $.None"
+    Then cmd: "wallet accept_token 0x1::STC::STC $.None"
+
+
+    Examples:
+      |  |
+
+
 #mytoken
   Scenario Outline: [COMPAT] my_token test
     Then cmd: "wallet show $.account.address"
@@ -62,7 +84,7 @@ Feature: compat cmd integration test
     Then cmd: "dev get_coin $.None"
     Then cmd: "wallet show $.account.address"
     Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples -s $.result"
-    Then cmd: "dev deploy $.None"
+    Then cmd: "dev deploy --blocking $.None"
     Then cmd: "wallet show $.account.address"
     Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples -s $.result"
     Then cmd: "dev execute --blocking $.txn_hash"
