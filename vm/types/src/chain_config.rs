@@ -202,6 +202,10 @@ impl ChainNetwork {
             ChainNetwork::Main,
         ]
     }
+
+    pub fn block_gas_limit(self) -> u64 {
+        self.get_config().vm_config.block_gas_limit
+    }
 }
 
 impl Default for ChainNetwork {
@@ -289,6 +293,8 @@ pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 pub static DEV_EPOCH_TIME_TARGET: u64 = 60;
 pub static DEV_MIN_TIME_TARGET: u64 = 1;
+pub static DEV_BLOCK_GAS_LIMIT: u64 = 1_000_000;
+pub static BLOCK_GAS_LIMIT: u64 = 1_000_000;
 
 pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -307,6 +313,7 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         boot_nodes: vec![],
         uncle_rate_target: 80,
@@ -344,6 +351,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            block_gas_limit: DEV_BLOCK_GAS_LIMIT,
         },
         boot_nodes: vec![],
         uncle_rate_target: 80,
@@ -374,6 +382,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
                          "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
@@ -409,6 +418,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
                          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
@@ -443,6 +453,7 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     vm_config: VMConfig {
         publishing_option: VMPublishingOption::Open,
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        block_gas_limit: BLOCK_GAS_LIMIT,
     },
     boot_nodes: vec![],
     uncle_rate_target: 80,

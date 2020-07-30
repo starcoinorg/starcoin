@@ -52,7 +52,7 @@ fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transactio
     output
 }
 
-#[stest::test]
+#[stest::test(timeout = 200)]
 fn test_block_execute_gas_limit() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
@@ -141,8 +141,12 @@ fn test_block_execute_gas_limit() -> Result<()> {
         2,
     );
 
+    let max_block_gas_limit = 1_000_000;
+    let max_txn_num: u64 = max_block_gas_limit / transfer_txn_gas;
+    let wrong_block_gas_limit = 2_000_000; //large than maxium_block_gas_limit
+    let wrong_include_txn_num: u64 = wrong_block_gas_limit / transfer_txn_gas;
     {
-        let mut txns: Vec<Transaction> = (0..max_include_txn_num * 2)
+        let mut txns: Vec<Transaction> = (0..wrong_include_txn_num)
             .map(|i| {
                 let seq_number = i + latest_seq_number;
                 Transaction::UserTransaction(peer_to_peer_txn(
@@ -156,13 +160,13 @@ fn test_block_execute_gas_limit() -> Result<()> {
             })
             .collect();
         txns.insert(0, Transaction::BlockMetadata(block_meta2));
-        let txn_infos = crate::block_execute(&chain_state, txns, block_gas_limit)?.txn_infos;
+        let txn_infos = crate::block_execute(&chain_state, txns, wrong_block_gas_limit)?.txn_infos;
 
         // not all user txns can be included
-        assert_eq!(txn_infos.len() as u64, max_include_txn_num + 1);
+        assert_eq!(txn_infos.len() as u64, max_txn_num + 1);
         let block_gas_used = txn_infos.iter().fold(0u64, |acc, i| acc + i.gas_used());
         assert!(
-            block_gas_used <= block_gas_limit,
+            block_gas_used <= max_block_gas_limit,
             "block_gas_used is bigger than block_gas_limit"
         );
     }

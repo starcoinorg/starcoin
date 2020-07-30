@@ -11,6 +11,7 @@ module VMConfig {
     struct VMConfig {
         publishing_option: vector<u8>,
         gas_schedule: GasSchedule,
+        block_gas_limit: u64,
     }
 
     // The gas schedule keeps two separate schedules for the gas:
@@ -86,6 +87,8 @@ module VMConfig {
             default_account_size: 800,
         };
 
+        let block_gas_limit = 1000000;
+
         Config::publish_new_config<VMConfig>(
             account,
             VMConfig {
@@ -94,7 +97,8 @@ module VMConfig {
                     instruction_schedule,
                     native_schedule,
                     gas_constants,
-                }
+                },
+                block_gas_limit
             },
         );
     }

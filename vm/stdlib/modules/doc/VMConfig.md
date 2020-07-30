@@ -43,6 +43,13 @@
 <dd>
 
 </dd>
+<dt>
+
+<code>block_gas_limit: u64</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -229,6 +236,8 @@
         default_account_size: 800,
     };
 
+    <b>let</b> block_gas_limit = 1000000;
+
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;(
         account,
         <a href="#0x1_VMConfig">VMConfig</a> {
@@ -237,7 +246,8 @@
                 instruction_schedule,
                 native_schedule,
                 gas_constants,
-            }
+            },
+            block_gas_limit
         },
     );
 }
