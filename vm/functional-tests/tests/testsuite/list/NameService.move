@@ -191,28 +191,34 @@ fun main(account: &signer) {
 
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1001
+//! block-number: 1
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1002
+//! block-number: 2
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1003
+//! block-number: 3
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1004
+//! block-number: 4
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1005
+//! block-number: 5
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1006
+//! block-number: 6
 
 //! new-transaction
 //! sender: nameservice

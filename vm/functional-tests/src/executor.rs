@@ -202,6 +202,7 @@ impl FakeExecutor {
     }
 
     pub fn new_block(&mut self) {
+        //TODO refactor block time.
         self.block_time += 1;
         let new_block = BlockMetadata::new(
             HashValue::zero(),
