@@ -28,7 +28,7 @@
   <a href="../../modules/doc/Account.md#0x1_Account_create_account">Account::create_account</a>&lt;TokenType&gt;(fresh_address, auth_key_prefix);
   <b>if</b> (initial_amount &gt; 0) <a href="../../modules/doc/Account.md#0x1_Account_deposit">Account::deposit</a>(account,
         fresh_address,
-        <a href="../../modules/doc/Account.md#0x1_Account_withdraw_from_sender">Account::withdraw_from_sender</a>&lt;TokenType&gt;(account, initial_amount)
+        <a href="../../modules/doc/Account.md#0x1_Account_withdraw_from">Account::withdraw_from</a>&lt;TokenType&gt;(account, initial_amount)
      );
 }
 </code></pre>

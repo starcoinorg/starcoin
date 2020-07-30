@@ -53,11 +53,12 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
         Account::accept_token<STC>(&association);
 
-        let association_balance = total_supply * (pre_mine_percent as u128) / 100;
-        if (association_balance > 0) {
-             Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), association_balance);
+        let pre_mine_balance = total_supply * (pre_mine_percent as u128) / 100;
+        if (pre_mine_balance > 0) {
+             Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), pre_mine_balance);
         };
-        let miner_reward_balance = total_supply - association_balance;
+
+        let miner_reward_balance = total_supply - pre_mine_balance;
         let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 as u128);
         Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
                                 init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);

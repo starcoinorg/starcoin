@@ -596,7 +596,6 @@ impl StarcoinVM {
                         p,
                     ),
                 };
-
                 match result {
                     Ok(status_and_output) => status_and_output,
                     Err(err) => {
@@ -641,6 +640,7 @@ impl StarcoinVM {
             match block {
                 TransactionBlock::UserTransaction(txns) => {
                     for transaction in txns {
+                        let gas_unit_price = transaction.gas_unit_price();
                         let (status, output) =
                             self.execute_user_transaction(transaction, &mut data_cache);
                         // only need to check for user transactions.
@@ -652,7 +652,7 @@ impl StarcoinVM {
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
-                            if !state_view.is_genesis() {
+                            if gas_unit_price > 0 {
                                 debug_assert_ne!(
                                     output.gas_used(),
                                     0,

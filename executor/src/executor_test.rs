@@ -288,7 +288,6 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
         net.chain_id(),
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
-    println!("output: {:?}", output2);
     //assert!(output3.status().vm_status().status_type());
     assert!(output2.gas_used() > 0, "gas used must not be zero.");
     Ok(())

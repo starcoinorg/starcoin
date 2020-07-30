@@ -61,11 +61,12 @@
         <b>let</b> association = <a href="../../modules/doc/Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(<a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>(), <b>copy</b> dummy_auth_key_prefix);
         <a href="../../modules/doc/Account.md#0x1_Account_accept_token">Account::accept_token</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&association);
 
-        <b>let</b> association_balance = total_supply * (pre_mine_percent <b>as</b> u128) / 100;
-        <b>if</b> (association_balance &gt; 0) {
-             <a href="../../modules/doc/Account.md#0x1_Account_mint_to_address">Account::mint_to_address</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), association_balance);
+        <b>let</b> pre_mine_balance = total_supply * (pre_mine_percent <b>as</b> u128) / 100;
+        <b>if</b> (pre_mine_balance &gt; 0) {
+             <a href="../../modules/doc/Account.md#0x1_Account_mint_to_address">Account::mint_to_address</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), pre_mine_balance);
         };
-        <b>let</b> miner_reward_balance = total_supply - association_balance;
+
+        <b>let</b> miner_reward_balance = total_supply - pre_mine_balance;
         <b>let</b> init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 <b>as</b> u128);
         <a href="../../modules/doc/Consensus.md#0x1_Consensus_initialize">Consensus::initialize</a>(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
                                 init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);

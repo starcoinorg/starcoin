@@ -7,11 +7,10 @@ fun main<TokenType>(
     auth_key_prefix: vector<u8>,
     amount: u128,
     metadata: vector<u8>,
-    metadata_signature: vector<u8>
 ) {
   if (!Account::exists_at(payee)) {
       Account::create_account<TokenType>(payee, auth_key_prefix);
   };
-  Account::pay_from_sender_with_metadata<TokenType>(account,payee, amount, metadata, metadata_signature)
+  Account::pay_from_with_metadata<TokenType>(account,payee, amount, metadata)
 }
 }
