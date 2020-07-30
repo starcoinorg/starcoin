@@ -13,13 +13,19 @@ use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMat
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, IntoPrimitive)]
 #[repr(u8)]
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
     Dummy = 0,
     Dev = 1,
     Argon = 2,
+}
+
+impl ConsensusStrategy {
+    pub fn value(self) -> u8 {
+        self.into()
+    }
 }
 
 impl Default for ConsensusStrategy {
