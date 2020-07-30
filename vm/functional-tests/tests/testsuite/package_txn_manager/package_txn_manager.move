@@ -53,7 +53,7 @@ fun main(account: &signer) {
 // check: EXECUTED
 
 
-// package txn must wait after plan's active_after_height
+// package txn must wait after plan's active_after_number
 //! new-transaction
 //! sender: alice
 script {
@@ -68,8 +68,9 @@ fun main(account: &signer) {
 // check: ABORTED
 
 //! block-prologue
-//! proposer: bob
+//! author: bob
 //! block-time: 100000000
+//! block-number: 1
 
 //! new-transaction
 //! sender: alice

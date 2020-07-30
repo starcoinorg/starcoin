@@ -65,6 +65,8 @@ struct TransactionGenerator {
     sequence: u64,
 
     net: ChainNetwork,
+
+    block_number: u64,
 }
 
 impl TransactionGenerator {
@@ -90,6 +92,7 @@ impl TransactionGenerator {
             block_sender: Some(block_sender),
             sequence: 0,
             net: ChainNetwork::Test,
+            block_number: 1,
         }
     }
 
@@ -111,7 +114,9 @@ impl TransactionGenerator {
                 minter_account.address,
                 Some(minter_account.auth_key_prefix()),
                 0,
+                self.block_number,
             );
+            self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
 
             for (j, account) in block.iter().enumerate() {
@@ -148,7 +153,9 @@ impl TransactionGenerator {
                 minter_account.address,
                 Some(minter_account.auth_key_prefix()),
                 0,
+                self.block_number,
             );
+            self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
 
             for j in 0..block_size {
