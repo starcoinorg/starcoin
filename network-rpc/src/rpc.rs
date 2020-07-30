@@ -24,6 +24,8 @@ use types::{
     transaction::TransactionInfo,
 };
 
+const MAX_SIZE: usize = 10;
+
 pub struct NetworkRpcImpl<S>
 where
     S: ChainStateAsyncService + 'static,
@@ -136,6 +138,28 @@ where
         Box::pin(fut)
     }
 
+    fn get_header_by_hash(
+        &self,
+        _peer_id: PeerId,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockHeader>>> {
+        let fut = async move {
+            let mut headers = Vec::new();
+            let chain_reader = self.chain_reader.clone();
+            for hash in hashes {
+                if headers.len() >= MAX_SIZE {
+                    break;
+                }
+                if let Ok(Some(block_header)) = chain_reader.clone().get_header_by_hash(&hash).await
+                {
+                    headers.push(block_header);
+                }
+            }
+            Ok(headers)
+        };
+        Box::pin(fut)
+    }
+
     fn get_headers_with_peer(
         &self,
         _peer_id: PeerId,
@@ -189,6 +213,9 @@ where
             let mut infos = Vec::new();
             let chain_reader = self.chain_reader.clone();
             for hash in hashes {
+                if infos.len() >= MAX_SIZE {
+                    break;
+                }
                 if let Ok(Some(block_info)) =
                     chain_reader.clone().get_block_info_by_hash(&hash).await
                 {
@@ -203,12 +230,15 @@ where
     fn get_body_by_hash(
         &self,
         _peer_id: PeerId,
-        hashs: Vec<HashValue>,
+        hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<BlockBody>>> {
         let chain_reader = self.chain_reader.clone();
         let fut = async move {
             let mut bodies = Vec::new();
-            for hash in hashs {
+            for hash in hashes {
+                if bodies.len() >= MAX_SIZE {
+                    break;
+                }
                 let (transactions, uncles) =
                     match chain_reader.clone().get_block_by_hash(hash).await {
                         Ok(block) => (

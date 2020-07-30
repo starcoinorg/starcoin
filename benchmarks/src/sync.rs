@@ -103,9 +103,10 @@ impl SyncBencher {
                         let latest_header = headers.last().expect("headers is empty.");
                         latest_block_id = latest_header.id();
                         latest_number = latest_header.number();
-                        let hashs: Vec<HashValue> =
+                        let hashes: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
-                        let bodies = get_body_by_hash(&rpc_client, &network, hashs.clone()).await?;
+                        let bodies =
+                            get_body_by_hash(&rpc_client, &network, hashes.clone()).await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,
