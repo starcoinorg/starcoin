@@ -17,6 +17,7 @@
 -  [Function `publish_new_config`](#0x1_Config_publish_new_config)
 -  [Function `extract_modify_config_capability`](#0x1_Config_extract_modify_config_capability)
 -  [Function `restore_modify_config_capability`](#0x1_Config_restore_modify_config_capability)
+-  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#0x1_Config_Specification)
 
@@ -354,6 +355,31 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_restore_modify_config_capability">restore_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) <b>acquires</b> <a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
     <a href="Option.md#0x1_Option_fill">Option::fill</a>(&<b>mut</b> cap_holder.cap, cap);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Config_destory_modify_config_capability"></a>
+
+## Function `destory_modify_config_capability`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) {
+    <b>let</b> <a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>{account_address:_, events} = cap;
+    <a href="Event.md#0x1_Event_destroy_handle">Event::destroy_handle</a>(events)
 }
 </code></pre>
 

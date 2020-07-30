@@ -16,11 +16,10 @@ module ChainId {
             Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(),
             ErrorCode::ENOT_GENESIS_ACCOUNT()
         );
-
-        move_to(account, ChainId { id })
+        move_to(account, ChainId { id });
     }
 
-    /// Return the chain ID of this Libra instance
+    /// Return the chain ID of this chain
     public fun get(): u8 acquires ChainId {
         borrow_global<ChainId>(CoreAddresses::GENESIS_ACCOUNT()).id
     }

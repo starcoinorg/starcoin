@@ -90,6 +90,11 @@ module Config {
         Option::fill(&mut cap_holder.cap, cap);
     }
 
+    public fun destory_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) {
+        let ModifyConfigCapability{account_address:_, events} = cap;
+        Event::destroy_handle(events)
+    }
+
     // Emit a config change event.
     fun emit_config_change_event<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, value: ConfigValue) {
         Event::emit_event<ConfigChangeEvent<ConfigValue>>(
