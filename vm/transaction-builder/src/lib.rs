@@ -271,6 +271,7 @@ pub fn build_stdlib_package(
     if with_init_script {
         let chain_config = net.get_config();
         let chain_id = net.chain_id().id();
+        let consensus_strategy = net.consensus();
         let genesis_timestamp = net.get_config().timestamp;
 
         let genesis_auth_key = chain_config
@@ -314,6 +315,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
                 TransactionArgument::U8(chain_id),
+                TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
             ],
         ));
