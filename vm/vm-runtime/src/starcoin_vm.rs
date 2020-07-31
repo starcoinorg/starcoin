@@ -644,7 +644,7 @@ impl StarcoinVM {
         let default_block_gas_limit = *self.get_block_gas_limit()?;
         let mut gas_left = default_block_gas_limit;
         if block_gas_limit.is_some() {
-            gas_left = std::cmp::min(default_block_gas_limit, block_gas_limit.unwrap());
+            gas_left = std::cmp::min(default_block_gas_limit, block_gas_limit.unwrap_or_default());
         }
 
         let blocks = chunk_block_transactions(transactions);
