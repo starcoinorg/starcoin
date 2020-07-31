@@ -9,7 +9,7 @@ use 0x1::Token;
 use 0x1::STC::{STC};
 use 0x1::TransactionFee;
 fun pay_fees(account: &signer) {
-    let coin = Account::withdraw_from_sender<STC>(account, 200);
+    let coin = Account::withdraw_from<STC>(account, 200);
     assert(Token::value<STC>(&coin) == 200, 8001);
     TransactionFee::pay_fee<STC>(coin);
  }

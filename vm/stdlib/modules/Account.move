@@ -85,7 +85,6 @@ module Account {
         metadata: vector<u8>,
     }
 
-    // ECODE_BASE = 20
     fun ECOIN_DEPOSIT_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 0 }
     fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
@@ -96,7 +95,7 @@ module Account {
     acquires Account, Balance {
         // Since we don't have vector<u8> literals in the source language at
         // the moment.
-        deposit_with_metadata(account, payee, to_deposit, x"", x"")
+        deposit_with_metadata(account, payee, to_deposit, x"")
     }
 
     // Deposits the `to_deposit` token into the sender's account balance
@@ -110,14 +109,12 @@ module Account {
         payee: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
-        metadata_signature: vector<u8>
     ) acquires Account, Balance {
         deposit_with_sender_and_metadata(
             payee,
             Signer::address_of(account),
             to_deposit,
             metadata,
-            metadata_signature
         );
     }
 
@@ -128,23 +125,10 @@ module Account {
         sender: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
-        _metadata_signature: vector<u8>
     ) acquires Account, Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
         assert(deposit_value > 0, ECOIN_DEPOSIT_IS_ZERO());
-
-        //TODO check signature
-        //assert(Vector::length(&metadata_signature) == 64, 9001);
-        // cryptographic check of signature validity
-        //assert(
-        //    Signature::ed25519_verify(
-        //        metadata_signature,
-        //        VASP::travel_rule_public_key(payee),
-        //        copy metadata
-        //    ),
-        //    9002, // TODO: proper error code
-        //);
 
         let token_code = Token::token_code<TokenType>();
 
@@ -197,7 +181,7 @@ module Account {
     }
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's account balance
-    public fun withdraw_from_sender<TokenType>(account: &signer, amount: u128): Token<TokenType>
+    public fun withdraw_from<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
@@ -240,45 +224,41 @@ module Account {
         cap: &WithdrawCapability,
         amount: u128,
         metadata: vector<u8>,
-        metadata_signature: vector<u8>
     ) acquires Account, Balance {
         deposit_with_sender_and_metadata<TokenType>(
             payee,
             *&cap.account_address,
             withdraw_with_capability(cap, amount),
             metadata,
-            metadata_signature
         );
     }
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's
     // account balance and send the token to the `payee` address with the
     // attached `metadata` Creates the `payee` account if it does not exist
-    public fun pay_from_sender_with_metadata<TokenType>(
+    public fun pay_from_with_metadata<TokenType>(
         account: &signer,
         payee: address,
         amount: u128,
         metadata: vector<u8>,
-        metadata_signature: vector<u8>
     ) acquires Account, Balance {
         deposit_with_metadata<TokenType>(
             account,
             payee,
-            withdraw_from_sender(account, amount),
+            withdraw_from(account, amount),
             metadata,
-            metadata_signature
         );
     }
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's
     // account balance  and send the token to the `payee` address
     // Creates the `payee` account if it does not exist
-    public fun pay_from_sender<TokenType>(
+    public fun pay_from<TokenType>(
         account: &signer,
         payee: address,
         amount: u128
     ) acquires Account, Balance {
-        pay_from_sender_with_metadata<TokenType>(account, payee, amount, x"", x"");
+        pay_from_with_metadata<TokenType>(account, payee, amount, x"");
     }
 
     fun rotate_authentication_key_for_account(account: &mut Account, new_authentication_key: vector<u8>) {
@@ -316,9 +296,7 @@ module Account {
     }
 
     // Create an account at `new_account_address` with authentication key
-    /// `auth_key_prefix` | `new_account_address`
-    // TODO: can we get rid of this? the main thing this does is create an account without an
-    // Token and return signer. (which is just needed to avoid circular dep issues in Genesis)
+    /// `auth_key_prefix` | `new_account_address` and return signer.
     public fun create_genesis_account(
         new_account_address: address,
         auth_key_prefix: vector<u8>

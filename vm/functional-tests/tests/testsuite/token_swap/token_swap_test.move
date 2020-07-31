@@ -278,8 +278,8 @@ script{
         // STC/Token1 = 1:10
         let stc_amount = 1000000;
         let token1_amount = 10000000;
-        let stc = Account::withdraw_from_sender<STC::STC>(signer, stc_amount);
-        let token1 = Account::withdraw_from_sender<Token1::Token1>(signer, token1_amount);
+        let stc = Account::withdraw_from<STC::STC>(signer, stc_amount);
+        let token1 = Account::withdraw_from<Token1::Token1>(signer, token1_amount);
         let liquidity_token = TokenSwap::mint<STC::STC, Token1::Token1>(stc, token1);
         Account::deposit_to_sender(signer, liquidity_token);
 
@@ -303,7 +303,7 @@ script {
         Account::accept_token<Token1::Token1>(signer);
 
         let stc_amount = 100000;
-        let stc = Account::withdraw_from_sender<STC::STC>(signer, stc_amount);
+        let stc = Account::withdraw_from<STC::STC>(signer, stc_amount);
         let amount_out = {
             let (x, y) = TokenSwap::get_reserves<STC::STC, Token1::Token1>();
             TokenSwapHelper::get_amount_out(stc_amount, x, y)
@@ -328,7 +328,7 @@ script{
 
     fun main(signer: &signer) {
         let liquidity_balance = Account::balance<LiquidityToken<STC::STC, Token1::Token1>>(Signer::address_of(signer));
-        let liquidity = Account::withdraw_from_sender<LiquidityToken<STC::STC, Token1::Token1>>(signer, liquidity_balance);
+        let liquidity = Account::withdraw_from<LiquidityToken<STC::STC, Token1::Token1>>(signer, liquidity_balance);
         let (stc, token1) = TokenSwap::burn<STC::STC, Token1::Token1>(liquidity);
         Account::deposit_to_sender(signer, stc);
         Account::deposit_to_sender(signer, token1);

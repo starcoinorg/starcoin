@@ -21,13 +21,13 @@
 -  [Function `deposit_with_sender_and_metadata`](#0x1_Account_deposit_with_sender_and_metadata)
 -  [Function `mint_to_address`](#0x1_Account_mint_to_address)
 -  [Function `withdraw_from_balance`](#0x1_Account_withdraw_from_balance)
--  [Function `withdraw_from_sender`](#0x1_Account_withdraw_from_sender)
+-  [Function `withdraw_from`](#0x1_Account_withdraw_from)
 -  [Function `withdraw_with_capability`](#0x1_Account_withdraw_with_capability)
 -  [Function `extract_withdraw_capability`](#0x1_Account_extract_withdraw_capability)
 -  [Function `restore_withdraw_capability`](#0x1_Account_restore_withdraw_capability)
 -  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
--  [Function `pay_from_sender_with_metadata`](#0x1_Account_pay_from_sender_with_metadata)
--  [Function `pay_from_sender`](#0x1_Account_pay_from_sender)
+-  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
+-  [Function `pay_from`](#0x1_Account_pay_from)
 -  [Function `rotate_authentication_key_for_account`](#0x1_Account_rotate_authentication_key_for_account)
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
 -  [Function `extract_key_rotation_capability`](#0x1_Account_extract_key_rotation_capability)
@@ -407,7 +407,7 @@
 <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     // Since we don't have vector&lt;u8&gt; literals in the source language at
     // the moment.
-    <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>(account, payee, to_deposit, x"", x"")
+    <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>(account, payee, to_deposit, x"")
 }
 </code></pre>
 
@@ -446,7 +446,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;, metadata_signature: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -459,14 +459,12 @@
     payee: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
-    metadata_signature: vector&lt;u8&gt;
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <a href="#0x1_Account_deposit_with_sender_and_metadata">deposit_with_sender_and_metadata</a>(
         payee,
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
         to_deposit,
         metadata,
-        metadata_signature
     );
 }
 </code></pre>
@@ -481,7 +479,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Account_deposit_with_sender_and_metadata">deposit_with_sender_and_metadata</a>&lt;TokenType&gt;(payee: address, sender: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;, _metadata_signature: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="#0x1_Account_deposit_with_sender_and_metadata">deposit_with_sender_and_metadata</a>&lt;TokenType&gt;(payee: address, sender: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -495,23 +493,10 @@
     sender: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
-    _metadata_signature: vector&lt;u8&gt;
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
     <b>assert</b>(deposit_value &gt; 0, <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>());
-
-    //TODO check signature
-    //<b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&metadata_signature) == 64, 9001);
-    // cryptographic check of signature validity
-    //<b>assert</b>(
-    //    <a href="Signature.md#0x1_Signature_ed25519_verify">Signature::ed25519_verify</a>(
-    //        metadata_signature,
-    //        VASP::travel_rule_public_key(payee),
-    //        <b>copy</b> metadata
-    //    ),
-    //    9002, // TODO: proper error code
-    //);
 
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
 
@@ -603,13 +588,13 @@
 
 </details>
 
-<a name="0x1_Account_withdraw_from_sender"></a>
+<a name="0x1_Account_withdraw_from"></a>
 
-## Function `withdraw_from_sender`
+## Function `withdraw_from`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_from_sender">withdraw_from_sender</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_from">withdraw_from</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -618,7 +603,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_from_sender">withdraw_from_sender</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_from">withdraw_from</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
@@ -722,7 +707,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(payee: address, cap: &<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;, metadata_signature: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(payee: address, cap: &<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -736,14 +721,12 @@
     cap: &<a href="#0x1_Account_WithdrawCapability">WithdrawCapability</a>,
     amount: u128,
     metadata: vector&lt;u8&gt;,
-    metadata_signature: vector&lt;u8&gt;
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <a href="#0x1_Account_deposit_with_sender_and_metadata">deposit_with_sender_and_metadata</a>&lt;TokenType&gt;(
         payee,
         *&cap.account_address,
         <a href="#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>(cap, amount),
         metadata,
-        metadata_signature
     );
 }
 </code></pre>
@@ -752,13 +735,13 @@
 
 </details>
 
-<a name="0x1_Account_pay_from_sender_with_metadata"></a>
+<a name="0x1_Account_pay_from_with_metadata"></a>
 
-## Function `pay_from_sender_with_metadata`
+## Function `pay_from_with_metadata`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_sender_with_metadata">pay_from_sender_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;, metadata_signature: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -767,19 +750,17 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_sender_with_metadata">pay_from_sender_with_metadata</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(
     account: &signer,
     payee: address,
     amount: u128,
     metadata: vector&lt;u8&gt;,
-    metadata_signature: vector&lt;u8&gt;
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
         account,
         payee,
-        <a href="#0x1_Account_withdraw_from_sender">withdraw_from_sender</a>(account, amount),
+        <a href="#0x1_Account_withdraw_from">withdraw_from</a>(account, amount),
         metadata,
-        metadata_signature
     );
 }
 </code></pre>
@@ -788,13 +769,13 @@
 
 </details>
 
-<a name="0x1_Account_pay_from_sender"></a>
+<a name="0x1_Account_pay_from"></a>
 
-## Function `pay_from_sender`
+## Function `pay_from`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_sender">pay_from_sender</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
 </code></pre>
 
 
@@ -803,12 +784,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_sender">pay_from_sender</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(
     account: &signer,
     payee: address,
     amount: u128
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
-    <a href="#0x1_Account_pay_from_sender_with_metadata">pay_from_sender_with_metadata</a>&lt;TokenType&gt;(account, payee, amount, x"", x"");
+    <a href="#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account, payee, amount, x"");
 }
 </code></pre>
 
@@ -933,7 +914,7 @@
 
 
 <code>auth_key_prefix</code> |
-<code>new_account_address</code>
+<code>new_account_address</code> and return signer.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(new_account_address: address, auth_key_prefix: vector&lt;u8&gt;): signer
