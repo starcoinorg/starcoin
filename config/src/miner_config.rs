@@ -35,10 +35,7 @@ impl ConfigModule for MinerConfig {
             ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
             _ => DEFAULT_STRATUM_SERVER_PORT,
         };
-        let block_gas_limit = match net {
-            ChainNetwork::Dev => 1_000_000, // 100w
-            _ => 10_000_000,                //1000w
-        };
+        let block_gas_limit = net.block_gas_limit();
         Self {
             stratum_server: format!("127.0.0.1:{}", port)
                 .parse::<SocketAddr>()

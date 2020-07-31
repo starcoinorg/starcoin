@@ -47,9 +47,9 @@ use starcoin_vm_types::{
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-// The value should be tuned carefully
-pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
-    Lazy::new(|| GasUnits::new(100_000_000));
+//// The value should be tuned carefully
+//pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
+//    Lazy::new(|| GasUnits::new(100_000_000));
 
 #[derive(Clone, Default)]
 /// Wrapper of MoveVM
@@ -77,6 +77,7 @@ impl StarcoinVM {
             self.vm_config = Some(VMConfig {
                 publishing_option: VMPublishingOption::Open,
                 gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+                block_gas_limit: u64::MAX, //no gas limitation on genesis
             });
             self.version = Some(Version { major: 0 });
             Ok(())
@@ -115,6 +116,13 @@ impl StarcoinVM {
     pub fn get_version(&self) -> Result<Version, VMStatus> {
         self.version
             .clone()
+            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+    }
+
+    pub fn get_block_gas_limit(&self) -> Result<&u64, VMStatus> {
+        self.vm_config
+            .as_ref()
+            .map(|config| &config.block_gas_limit)
             .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 
@@ -627,14 +635,17 @@ impl StarcoinVM {
         block_gas_limit: Option<u64>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         let mut data_cache = StateViewCache::new(state_view);
-
-        let check_gas = block_gas_limit.is_some();
-        // only used when check_gas
-        let mut gas_left = block_gas_limit.unwrap_or_default();
-
         let mut result = vec![];
         //TODO load config by config change event.
         self.load_configs(&data_cache)?;
+
+        // get_block_gas_limit should be called after load_configs()
+        let default_block_gas_limit = *self.get_block_gas_limit()?;
+        let mut gas_left = default_block_gas_limit;
+        if block_gas_limit.is_some() {
+            gas_left = std::cmp::min(default_block_gas_limit, block_gas_limit.unwrap_or_default());
+        }
+
         let blocks = chunk_block_transactions(transactions);
         'outer: for block in blocks {
             match block {
@@ -644,11 +655,9 @@ impl StarcoinVM {
                         let (status, output) =
                             self.execute_user_transaction(transaction, &mut data_cache);
                         // only need to check for user transactions.
-                        if check_gas {
-                            match gas_left.checked_sub(output.gas_used()) {
-                                Some(l) => gas_left = l,
-                                None => break 'outer,
-                            }
+                        match gas_left.checked_sub(output.gas_used()) {
+                            Some(l) => gas_left = l,
+                            None => break 'outer,
                         }
 
                         if let TransactionStatus::Keep(_) = output.status() {
