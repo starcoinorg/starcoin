@@ -18,6 +18,7 @@ starcoin-state-tree = { path = "../../state/state-tree" }
 network-rpc-derive = { path = "../derive" }
 scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
 starcoin-logger = {path = "../../commons/logger"}
+starcoin-network = { path="../../network" }
 
 serde = { version = "1.0", features = ["derive"] }
 actix = "0.10.0-alpha.3"

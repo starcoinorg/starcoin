@@ -15,7 +15,7 @@ use starcoin_genesis::Genesis;
 use starcoin_network::{NetworkActor, NetworkAsyncService};
 use starcoin_network_api::NetworkService;
 use starcoin_state_service::ChainStateActor;
-use starcoin_sync::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
+use starcoin_sync::helper::{get_body_by_hash, get_headers_msg_for_common, get_headers_with_peer};
 use starcoin_sync::Downloader;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_wallet_api::WalletAccount;
@@ -99,20 +99,28 @@ impl SyncBencher {
                             break;
                         }
                         let get_headers_req = get_headers_msg_for_common(latest_block_id);
-                        let headers = get_headers(&network, &rpc_client, get_headers_req).await?;
+                        let headers = get_headers_with_peer(
+                            &rpc_client,
+                            best_peer.get_peer_id(),
+                            get_headers_req,
+                        )
+                        .await?;
                         let latest_header = headers.last().expect("headers is empty.");
                         latest_block_id = latest_header.id();
                         latest_number = latest_header.number();
                         let hashes: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
-                        let bodies =
+                        //TODO: get_body_by_hash select a best peer again.which maybe different to best peer selected before.
+                        let (bodies, _) =
                             get_body_by_hash(&rpc_client, &network, hashes.clone()).await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,
                             best_peer.get_peer_id()
                         );
-                        downloader.do_blocks(headers, bodies).await;
+                        downloader
+                            .do_blocks(headers, bodies, best_peer.get_peer_id())
+                            .await;
                     }
                 }
             }
@@ -198,6 +206,7 @@ async fn create_node(
                 storage_clone,
                 bus_clone,
                 txpool_service_clone,
+                None,
             )
             .unwrap()
         })
@@ -221,8 +230,13 @@ async fn create_node(
             );
             let startup_info = chain.clone().master_startup_info().await?;
 
-            let block_chain =
-                BlockChain::new(node_config.clone(), startup_info.master, storage.clone()).unwrap();
+            let block_chain = BlockChain::new(
+                node_config.clone(),
+                startup_info.master,
+                storage.clone(),
+                None,
+            )
+            .unwrap();
 
             let mut txn_vec = Vec::new();
             txn_vec.push(random_txn(i + 1));

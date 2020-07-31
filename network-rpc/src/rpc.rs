@@ -8,8 +8,8 @@ use crypto::HashValue;
 use futures::future::BoxFuture;
 use logger::prelude::*;
 use starcoin_network_rpc_api::{
-    gen_server, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber,
-    GetStateWithProof, GetTxns, TransactionsData,
+    gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
+    GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
 };
 use state_api::{ChainStateAsyncService, StateWithProof};
 use state_tree::StateNode;
@@ -19,6 +19,7 @@ use traits::ChainAsyncService;
 use txpool::TxPoolService;
 use txpool_api::TxPoolSyncService;
 use types::{
+    account_state::AccountState,
     block::{BlockHeader, BlockInfo},
     peer_info::PeerId,
     transaction::TransactionInfo,
@@ -347,6 +348,20 @@ where
         let fut = async move {
             state_service
                 .get_with_proof_by_root(req.access_path, req.state_root)
+                .await
+        };
+        Box::pin(fut)
+    }
+
+    fn get_account_state(
+        &self,
+        _peer_id: PeerId,
+        req: GetAccountState,
+    ) -> BoxFuture<Result<Option<AccountState>>> {
+        let state_service = self.state_service.clone();
+        let fut = async move {
+            state_service
+                .get_account_state_by_root(req.account_address, req.state_root)
                 .await
         };
         Box::pin(fut)

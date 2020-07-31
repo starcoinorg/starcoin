@@ -34,6 +34,15 @@ impl ChainStateServiceImpl {
         let reader = self.reader.change_root(state_root);
         reader.get_with_proof(&access_path)
     }
+
+    pub(crate) fn get_account_state_by_root(
+        &self,
+        account: AccountAddress,
+        state_root: HashValue,
+    ) -> Result<Option<AccountState>> {
+        let reader = self.reader.change_root(state_root);
+        reader.get_account_state(&account)
+    }
 }
 
 impl ChainStateService for ChainStateServiceImpl {

@@ -194,7 +194,7 @@ impl Handler<SyncNotify> for DownloadActor {
                 self.sync_task.activate_tasks();
                 debug!("new peer: {:?}", peer_id);
             }
-            SyncNotify::NewHeadBlock(_peer_id, block) => self.do_block_and_child(*block),
+            SyncNotify::NewHeadBlock(peer_id, block) => self.do_block_and_child(*block, peer_id),
             SyncNotify::ClosePeerMsg(peer_id) => {
                 debug!("close peer: {:?}", peer_id);
             }
@@ -455,10 +455,10 @@ impl DownloadActor {
         }
     }
 
-    pub fn do_block_and_child(&self, block: Block) {
+    pub fn do_block_and_child(&self, block: Block, peer_id: PeerId) {
         let downloader = self.downloader.clone();
         Arbiter::spawn(async move {
-            downloader.connect_block_and_child(block).await;
+            downloader.connect_block_and_child(block, peer_id).await;
         });
     }
 }
@@ -610,20 +610,29 @@ impl Downloader {
         }
     }
 
-    pub async fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>) {
+    pub async fn do_blocks(
+        &self,
+        headers: Vec<BlockHeader>,
+        bodies: Vec<BlockBody>,
+        peer_id: PeerId,
+    ) {
+        let peer_id_clone = peer_id.clone();
         debug_assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
                     let block = Block::new(header.clone(), body.clone().transactions);
-                    self.connect_block_and_child(block).await;
+                    self.connect_block_and_child(block, peer_id_clone.clone())
+                        .await;
                 }
             }
         }
     }
 
-    pub async fn connect_block_and_child(&self, block: Block) {
-        self.block_connector.do_block_and_child(block).await;
+    pub async fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
+        self.block_connector
+            .do_block_and_child(block, peer_id.into())
+            .await;
     }
 
     fn set_pivot(&self, pivot: Option<PivotBlock>) {
