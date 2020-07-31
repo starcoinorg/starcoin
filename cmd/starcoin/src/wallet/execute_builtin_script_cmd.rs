@@ -37,7 +37,7 @@ pub struct ExecuteBuiltInScriptOpt {
     /// type tags for the script
     type_tags: Vec<TypeTag>,
 
-    #[structopt(name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
+    #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the script.
     args: Vec<TransactionArgument>,
 

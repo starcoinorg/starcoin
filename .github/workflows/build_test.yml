@@ -61,7 +61,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --test integration
+          args: --test integration -- -e cmd
       - name: deploy node
         # only deploy master branch build.
         if: github.ref == 'refs/heads/master'

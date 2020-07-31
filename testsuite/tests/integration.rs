@@ -16,7 +16,9 @@ use starcoin_wallet_api::WalletAccount;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
-use steps::{cmd as steps_cmd, node as steps_node, state as steps_state, sync, transaction};
+use steps::{
+    cmd as steps_cmd, compat, node as steps_node, state as steps_state, sync, transaction,
+};
 use tokio_compat::runtime::Runtime;
 
 mod steps;
@@ -135,6 +137,7 @@ cucumber! {
         sync::steps,
         steps_state::steps,
         steps_cmd::steps,
+        compat::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[
