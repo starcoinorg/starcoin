@@ -78,6 +78,14 @@ Feature: cmd integration test
     Examples:
       |  |
 
+# dev
+  Scenario Outline: [cmd] dev test
+    Then cmd: "wallet unlock -d 30000 0000000000000000000000000a550c18 $.None"
+    Then cmd: "dev upgrade_stdlib --blocking $.None"
+
+    Examples:
+      |  |
+
 #state
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root $.None"
