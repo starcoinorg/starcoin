@@ -13,7 +13,7 @@ extern crate transaction_pool as tx_pool;
 use actix::prelude::*;
 use common_crypto::hash::HashValue;
 use starcoin_bus::{Bus, BusActor};
-use starcoin_config::TxPoolConfig;
+use starcoin_config::NodeConfig;
 use starcoin_txpool_api::TxnStatusFullEvent;
 use std::{fmt::Debug, sync::Arc};
 use storage::Store;
@@ -42,7 +42,7 @@ pub struct TxPool {
 impl TxPool {
     // TODO: use static dispatching instead of dynamic dispatch for storage instance.
     pub fn start(
-        pool_config: TxPoolConfig,
+        node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
         best_block_hash: HashValue,
         bus: actix::Addr<BusActor>,
@@ -56,23 +56,7 @@ impl TxPool {
             Ok(Some(block)) => block,
         };
         let best_block_header = best_block.into_inner().0;
-        let service = TxPoolService::new(pool_config, storage, best_block_header);
-        let inner = service.get_inner();
-        let pool = TxPoolActor::new(inner.clone(), bus);
-        let pool_addr = pool.start();
-        Self {
-            inner,
-            addr: pool_addr,
-        }
-    }
-
-    #[cfg(test)]
-    pub fn start_with_best_block_header(
-        storage: Arc<dyn Store>,
-        best_block_header: types::block::BlockHeader,
-        bus: actix::Addr<BusActor>,
-    ) -> Self {
-        let service = TxPoolService::new(TxPoolConfig::default(), storage, best_block_header);
+        let service = TxPoolService::new(node_config, storage, best_block_header);
         let inner = service.get_inner();
         let pool = TxPoolActor::new(inner.clone(), bus);
         let pool_addr = pool.start();

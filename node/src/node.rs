@@ -165,7 +165,7 @@ pub async fn start(
     let head_block_hash = *startup_info.get_master();
 
     let txpool = TxPool::start(
-        config.tx_pool.clone(),
+        config.clone(),
         storage.clone(),
         head_block_hash,
         bus.clone(),

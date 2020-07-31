@@ -39,11 +39,11 @@ starcoin-statedb={ path="../state/statedb" }
 forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}
 starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
+starcoin-consensus = {path = "../consensus"}
 starcoin-config={path="../config"}
 tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}
 
 [dev-dependencies]
 tempfile="3"
-starcoin-consensus = {path = "../consensus"}
 starcoin-open-block = {path = "../chain/open-block"}
 starcoin-genesis = {path = "../core/genesis"}

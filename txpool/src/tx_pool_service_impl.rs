@@ -15,7 +15,8 @@ use anyhow::Result;
 use common_crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
-use starcoin_config::TxPoolConfig;
+use starcoin_config::NodeConfig;
+use starcoin_consensus::Consensus;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
 use storage::Store;
@@ -23,7 +24,6 @@ use types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader},
     transaction,
-    transaction::helpers::get_current_timestamp,
     transaction::SignedUserTransaction,
 };
 
@@ -33,10 +33,11 @@ pub struct TxPoolService {
 }
 impl TxPoolService {
     pub fn new(
-        pool_config: TxPoolConfig,
+        node_config: Arc<NodeConfig>,
         storage: Arc<dyn Store>,
         chain_header: BlockHeader,
     ) -> Self {
+        let pool_config = &node_config.tx_pool;
         let verifier_options = pool::VerifierOptions {
             minimal_gas_price: pool_config.minimal_gas_price,
             block_gas_limit: Gas::max_value(),
@@ -54,6 +55,7 @@ impl TxPoolService {
         );
         let queue = Arc::new(queue);
         let inner = Inner {
+            node_config,
             queue,
             storage,
             chain_header: Arc::new(RwLock::new(chain_header)),
@@ -107,9 +109,8 @@ impl TxPoolSyncService for TxPoolService {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["get_pending_txns"])
             .start_timer();
-        // should we expose the timestamp to let caller specify the time?
-        //TODO should use ConsensusStrategy time.
-        let current_timestamp_secs = current_timestamp_secs.unwrap_or_else(get_current_timestamp);
+        let current_timestamp_secs = current_timestamp_secs
+            .unwrap_or_else(|| self.inner.node_config.net().consensus().now());
         let r = self
             .inner
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);
@@ -151,6 +152,7 @@ impl TxPoolSyncService for TxPoolService {
 pub(crate) type TxnQueue = pool::TransactionQueue;
 #[derive(Clone)]
 pub(crate) struct Inner {
+    node_config: Arc<NodeConfig>,
     queue: Arc<TxnQueue>,
     chain_header: Arc<RwLock<BlockHeader>>,
     storage: Arc<dyn Store>,

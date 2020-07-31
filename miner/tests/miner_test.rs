@@ -50,12 +50,7 @@ fn test_miner_with_ondemand_pacemaker() {
 
         let txpool = {
             let best_block_id = *startup_info.get_master();
-            TxPool::start(
-                config.tx_pool.clone(),
-                storage.clone(),
-                best_block_id,
-                bus.clone(),
-            )
+            TxPool::start(config.clone(), storage.clone(), best_block_id, bus.clone())
         };
 
         let txpool_service = txpool.get_service();

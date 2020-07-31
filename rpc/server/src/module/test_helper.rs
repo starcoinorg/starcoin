@@ -1,7 +1,7 @@
 use anyhow::Result;
 use starcoin_bus::BusActor;
 use starcoin_chain::BlockChain;
-use starcoin_config::{NodeConfig, TxPoolConfig};
+use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -20,7 +20,7 @@ pub fn start_txpool() -> (TxPool, Arc<Storage>, Arc<NodeConfig>) {
     let bus = BusActor::launch();
 
     let pool = TxPool::start(
-        TxPoolConfig::default(),
+        Arc::new(NodeConfig::default()),
         storage.clone(),
         *startup_info.get_master(),
         bus,
