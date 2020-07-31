@@ -221,9 +221,7 @@ fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
         auth_prefix,
         0,
         10000,
-        //TODO should use consensus().now() as current_timestamp.
-        types::transaction::helpers::get_current_timestamp() + 40000,
-        //config.net().consensus().now() + 40000,
+        config.net().consensus().now() + 40000,
         config.net().chain_id(),
     );
     txn.as_signed_user_txn().unwrap().clone()
