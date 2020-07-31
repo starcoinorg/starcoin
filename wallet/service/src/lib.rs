@@ -3,6 +3,4 @@
 
 mod actor;
 mod message;
-mod service;
-
 pub use actor::*;

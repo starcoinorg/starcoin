@@ -6,7 +6,10 @@ extern crate chrono;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::{InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
-use crate::{Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME};
+use crate::{
+    Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
+    VEC_PREFIX_NAME,
+};
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
@@ -45,7 +48,7 @@ fn test_open_read_only() {
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_ok());
     let path = tmpdir.as_ref().join("starcoindb");
-    let db = DBStorage::open(path, true).unwrap();
+    let db = DBStorage::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), true).unwrap();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_err());
     let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();

@@ -10,7 +10,6 @@ use anyhow::{bail, Error, Result};
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::transaction::TransactionInfo;
-use std::sync::Arc;
 
 define_storage!(
     TransactionInfoStorage,

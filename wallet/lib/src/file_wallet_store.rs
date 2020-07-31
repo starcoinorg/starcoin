@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use scs::SCSCodec;
+use starcoin_canonical_serialization as scs;
+use starcoin_canonical_serialization::SCSCodec;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_wallet_api::{WalletAccount, WalletStore};
 use std::fs::OpenOptions;
 use std::path::Path;
 use std::{
@@ -12,8 +14,6 @@ use std::{
     io::{Read, Write},
     path::PathBuf,
 };
-use wallet_api::WalletAccount;
-use wallet_api::WalletStore;
 
 pub const DEFAULT_ACCOUNT_FILE_NAME: &str = "account";
 

@@ -58,6 +58,9 @@ impl WalletAsyncService for MockWalletService {
             .wallet
             .unlock_account(address, password.as_str(), duration)?)
     }
+    async fn lock_account(self, address: AccountAddress) -> ServiceResult<()> {
+        Ok(self.wallet.lock_account(address)?)
+    }
 
     async fn import_account(
         self,

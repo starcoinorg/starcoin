@@ -10,7 +10,6 @@ use crypto::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::BTreeMap;
-use std::sync::Arc;
 
 define_storage!(StateStorage, HashValue, StateNode, STATE_NODE_PREFIX_NAME);
 

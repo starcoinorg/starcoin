@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
 use std::io::Write;
 use std::mem::size_of;
-use std::sync::Arc;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StorageBlock {

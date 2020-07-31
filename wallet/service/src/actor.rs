@@ -2,30 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{WalletRequest, WalletResponse};
-use crate::service::WalletServiceImpl;
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_lib::{file_wallet_store::FileWalletStore, keystore_wallet::KeyStoreWallet};
-
 use starcoin_wallet_api::error::AccountServiceError;
-use starcoin_wallet_api::{ServiceResult, Wallet, WalletAccount, WalletAsyncService, WalletResult};
+use starcoin_wallet_api::{ServiceResult, WalletAccount, WalletAsyncService, WalletResult};
+use starcoin_wallet_lib::wallet_manager::WalletManager;
+use starcoin_wallet_lib::wallet_storage::WalletStorage;
 use std::sync::Arc;
 
 pub struct WalletActor {
-    service: WalletServiceImpl<KeyStoreWallet<FileWalletStore>>,
+    service: WalletManager,
 }
 
 impl WalletActor {
     pub fn launch(config: Arc<NodeConfig>) -> Result<WalletActorRef> {
         let vault_config = &config.vault;
-        let file_store = FileWalletStore::new(vault_config.dir());
-        let wallet = KeyStoreWallet::new(file_store)?;
-        let actor = WalletActor {
-            service: WalletServiceImpl::new(wallet),
-        };
+        let wallet_storage = WalletStorage::create_from_path(vault_config.dir())?;
+        let manager = WalletManager::new(wallet_storage)?;
+        let actor = WalletActor { service: manager };
         Ok(WalletActorRef(actor.start()))
     }
 }
@@ -40,28 +37,32 @@ impl Handler<WalletRequest> for WalletActor {
     fn handle(&mut self, msg: WalletRequest, _ctx: &mut Self::Context) -> Self::Result {
         let response = match msg {
             WalletRequest::CreateAccount(password) => WalletResponse::WalletAccount(Box::new(
-                self.service.create_account(password.as_str())?,
+                self.service.create_wallet(password.as_str())?.wallet_info(),
             )),
             WalletRequest::GetDefaultAccount() => {
-                WalletResponse::WalletAccountOption(Box::new(self.service.get_default_account()?))
+                WalletResponse::WalletAccountOption(Box::new(self.service.default_wallet_info()?))
             }
             WalletRequest::GetAccounts() => {
-                WalletResponse::AccountList(self.service.get_accounts()?)
+                WalletResponse::AccountList(self.service.list_wallet_infos()?)
             }
             WalletRequest::GetAccount(address) => {
-                WalletResponse::WalletAccountOption(Box::new(self.service.get_account(&address)?))
+                WalletResponse::WalletAccountOption(Box::new(self.service.wallet_info(address)?))
             }
             WalletRequest::SignTxn {
                 txn: raw_txn,
                 signer,
-            } => WalletResponse::SignedTxn(Box::new(self.service.sign_txn(*raw_txn, signer)?)),
+            } => WalletResponse::SignedTxn(Box::new(self.service.sign_txn(signer, *raw_txn)?)),
             WalletRequest::UnlockAccount(address, password, duration) => {
                 self.service
-                    .unlock_account(address, password.as_str(), duration)?;
+                    .unlock_wallet(address, password.as_str(), duration)?;
                 WalletResponse::UnlockAccountResponse
             }
+            WalletRequest::LockAccount(address) => {
+                self.service.lock_wallet(address)?;
+                WalletResponse::None
+            }
             WalletRequest::ExportAccount { address, password } => {
-                let data = self.service.export_account(&address, password.as_str())?;
+                let data = self.service.export_wallet(address, password.as_str())?;
                 WalletResponse::ExportAccountResponse(data)
             }
             WalletRequest::ImportAccount {
@@ -69,10 +70,10 @@ impl Handler<WalletRequest> for WalletActor {
                 password,
                 private_key,
             } => {
-                let account =
-                    self.service
-                        .import_account(address, private_key, password.as_str())?;
-                WalletResponse::WalletAccount(Box::new(account))
+                let wallet = self
+                    .service
+                    .import_wallet(address, private_key, password.as_str())?;
+                WalletResponse::WalletAccount(Box::new(wallet.wallet_info()))
             }
         };
         Ok(response)
@@ -180,6 +181,19 @@ impl WalletAsyncService for WalletActorRef {
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let WalletResponse::UnlockAccountResponse = response {
+            Ok(())
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn lock_account(self, address: AccountAddress) -> ServiceResult<()> {
+        let response = self
+            .0
+            .send(WalletRequest::LockAccount(address))
+            .await
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+        if let WalletResponse::None = response {
             Ok(())
         } else {
             panic!("Unexpect response type.")

@@ -18,7 +18,7 @@ starcoin-types = { path = "../../types"}
 starcoin-config = { path = "../../config"}
 starcoin-wallet-api = { path = "../api", features = ["mock"]}
 starcoin-wallet-lib = { path = "../lib"}
-
+starcoin-crypto = {path = "../../commons/crypto"}
 [dev-dependencies]
 tempfile="3"
 tokio = { version = "0.2", features = ["full"] }

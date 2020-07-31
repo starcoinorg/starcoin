@@ -9,7 +9,6 @@ use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::contract_event::ContractEvent;
-use std::sync::Arc;
 
 define_storage!(
     ContractEventStorage,

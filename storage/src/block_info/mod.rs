@@ -9,7 +9,6 @@ use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::block::BlockInfo;
-use std::sync::Arc;
 
 pub trait BlockInfoStore {
     fn save_block_info(&self, block_info: BlockInfo) -> Result<()>;

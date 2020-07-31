@@ -11,13 +11,13 @@ use starcoin_types::{
     account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
+use starcoin_wallet_api::{error::WalletError, Wallet, WalletAccount, WalletStore};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::ops::Add;
 use std::sync::{Mutex, RwLock};
 use std::time::Duration;
 use std::time::Instant;
-use wallet_api::{error::WalletError, Wallet, WalletAccount, WalletStore};
 
 type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 pub type Result<T> = std::result::Result<T, WalletError>;

@@ -18,6 +18,7 @@ pub enum WalletRequest {
         signer: AccountAddress,
     },
     UnlockAccount(AccountAddress, String, Duration),
+    LockAccount(AccountAddress),
     ImportAccount {
         address: AccountAddress,
         private_key: Vec<u8>,
