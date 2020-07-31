@@ -25,6 +25,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
                  total_supply: u128, pre_mine_percent:u64, parent_hash: vector<u8>,
                  association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
                  chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64,
+                 block_gas_limit: u64,
                  ) {
 
         assert(Timestamp::is_genesis(), 1);
@@ -42,7 +43,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         Block::initialize(&genesis_account, parent_hash);
 
         // init config
-        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule);
+        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule, block_gas_limit);
         Version::initialize(&genesis_account);
 
         TransactionTimeout::initialize(&genesis_account);

@@ -317,6 +317,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8(chain_id),
                 TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
+                TransactionArgument::U64(chain_config.vm_config.block_gas_limit),
             ],
         ));
     }

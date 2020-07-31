@@ -70,6 +70,7 @@ module VMConfig {
         publishing_option: vector<u8>,
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
+        block_gas_limit: u64,
     ) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
         //TODO pass gas_constants as init argument and onchain config.
@@ -86,8 +87,6 @@ module VMConfig {
             gas_unit_scaling_factor: 1000,
             default_account_size: 800,
         };
-
-        let block_gas_limit = 1000000;
 
         Config::publish_new_config<VMConfig>(
             account,
