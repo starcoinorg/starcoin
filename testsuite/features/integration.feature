@@ -11,7 +11,7 @@ Feature: integration
     Then get node info
     Then get node status
     Then get node peers
-    Given an account
+#    Given an account
     And default account
     Then charge money to account
     Then execute transfer transaction

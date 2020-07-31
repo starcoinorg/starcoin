@@ -17,9 +17,9 @@ use starcoin_types::block_metadata::BlockMetadata;
 #[test]
 fn parse_simple_positive() {
     for s in &[
-        "//! proposer: alice",
-        "//! proposer\t:\tfoobar42",
-        "//!\nproposer\n:\nfoobar42",
+        "//! author: alice",
+        "//! author\t:\tfoobar42",
+        "//!\nauthor\n:\nfoobar42",
     ] {
         s.parse::<Entry>().unwrap();
     }
@@ -27,7 +27,7 @@ fn parse_simple_positive() {
 
 #[test]
 fn parse_simple_negative() {
-    for s in &["//!", "//! ", "//! sender: alice", "//! proposer:"] {
+    for s in &["//!", "//! ", "//! sender: alice", "//! author:"] {
         s.parse::<Entry>().unwrap_err();
     }
 }
@@ -72,12 +72,13 @@ fn build_transaction_config_1() {
     ").unwrap();
 
     parse_and_build_config(&global, r"
-        //! proposer: alice
+        //! author: alice
         //! block-time: 6
+        //! block-number: 1
     ").unwrap();
 
     parse_and_build_config(&global, r"
-        //! proposer: alice
+        //! author: alice
     ").unwrap_err();
 
     parse_and_build_config(&global, r"
@@ -93,7 +94,7 @@ fn build_transaction_config_3() {
     ").unwrap();
 
     parse_and_build_config(&global, r"
-        //! proposer: bob
+        //! author: bob
         //! block-time: 6
     ").unwrap_err();
 }

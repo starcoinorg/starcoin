@@ -5,7 +5,7 @@ use bus::{Bus, BusActor};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::NetworkService;
-use network_rpc::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use txpool::TxPoolService;

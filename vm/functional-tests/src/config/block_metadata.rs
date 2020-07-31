@@ -8,8 +8,10 @@ use std::str::FromStr;
 
 #[derive(Debug)]
 pub enum Entry {
-    Proposer(String),
+    Author(String),
     Timestamp(u64),
+    Number(u64),
+    Uncles(u64),
 }
 
 impl FromStr for Entry {
@@ -21,15 +23,21 @@ impl FromStr for Entry {
             .ok_or_else(|| ErrorKind::Other("txn config entry must start with //!".to_string()))?
             .trim_start();
 
-        if let Some(s) = strip(s, "proposer:") {
+        if let Some(s) = strip(s, "author:") {
             if s.is_empty() {
                 return Err(ErrorKind::Other("sender cannot be empty".to_string()).into());
             }
-            return Ok(Entry::Proposer(s.to_string()));
+            return Ok(Entry::Author(s.to_string()));
         }
 
         if let Some(s) = strip(s, "block-time:") {
             return Ok(Entry::Timestamp(s.parse::<u64>()?));
+        }
+        if let Some(s) = strip(s, "block-number:") {
+            return Ok(Entry::Number(s.parse::<u64>()?));
+        }
+        if let Some(s) = strip(s, "block-uncles:") {
+            return Ok(Entry::Uncles(s.parse::<u64>()?));
         }
         Err(ErrorKind::Other(format!(
             "failed to parse '{}' as transaction config entry",
@@ -60,18 +68,32 @@ impl Entry {
 
 pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<BlockMetadata> {
     let mut timestamp = None;
-    let mut proposer = None;
+    let mut author = None;
+    let mut auth_key_prefix = None;
+    let mut number = None;
+    let mut uncles = 0u64;
+
     for entry in entries {
         match entry {
-            Entry::Proposer(s) => {
-                proposer = Some(*config.get_account_for_name(s)?.address());
+            Entry::Author(s) => {
+                let account = config.get_account_for_name(s)?;
+                author = Some(*account.address());
+                auth_key_prefix = Some(account.auth_key_prefix());
             }
             Entry::Timestamp(new_timestamp) => timestamp = Some(new_timestamp),
+            Entry::Number(new_number) => number = Some(new_number),
+            Entry::Uncles(new_uncles) => uncles = *new_uncles,
         }
     }
-    if let (Some(t), Some(addr)) = (timestamp, proposer) {
-        // TODO: Add parser for hash value and vote maps.
-        Ok(BlockMetadata::new(HashValue::zero(), *t, addr, None, 0))
+    if let (Some(t), Some(author), Some(number)) = (timestamp, author, number) {
+        Ok(BlockMetadata::new(
+            HashValue::random(),
+            *t,
+            author,
+            auth_key_prefix,
+            uncles,
+            *number,
+        ))
     } else {
         Err(ErrorKind::Other("Cannot generate block metadata".to_string()).into())
     }

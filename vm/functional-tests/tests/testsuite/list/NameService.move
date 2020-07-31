@@ -22,7 +22,7 @@ module NameService {
     const EXPIRE_AFTER: u64 = 5;
 
     resource struct Expiration {
-        expire_on_block_height: vector<u64>
+        expire_on_block_number: vector<u64>
     }
 
     public fun entry_handle(addr: address, index: u64): EntryHandle {
@@ -34,16 +34,16 @@ module NameService {
         assert(sender == {{nameservice}}, 8000);
 
         SortedLinkedList::create_new_list<vector<u8>>(account, Vector::empty());
-        move_to<Expiration>(account, Expiration { expire_on_block_height: Vector::singleton(0u64)});
+        move_to<Expiration>(account, Expiration { expire_on_block_number: Vector::singleton(0u64)});
     }
 
     fun add_expirtation(account: &signer) acquires Expiration {
         let sender = Signer::address_of(account);
-        let current_block = Block::get_current_block_height();
+        let current_block = Block::get_current_block_number();
         if (!exists<Expiration>(sender)) {
-            move_to<Expiration>(account, Expiration {expire_on_block_height: Vector::singleton(current_block + EXPIRE_AFTER)});
+            move_to<Expiration>(account, Expiration {expire_on_block_number: Vector::singleton(current_block + EXPIRE_AFTER)});
         } else {
-            let expire_vector_mut = &mut borrow_global_mut<Expiration>(sender).expire_on_block_height;
+            let expire_vector_mut = &mut borrow_global_mut<Expiration>(sender).expire_on_block_number;
             Vector::push_back<u64>(expire_vector_mut, current_block + EXPIRE_AFTER);
         };
     }
@@ -60,11 +60,11 @@ module NameService {
     fun remove_expiration(entry: EntryHandle) acquires Expiration {
         let account_address = SortedLinkedList::get_addr(copy entry);
         let index = SortedLinkedList::get_index(entry);
-        let expire_vector_mut = &mut borrow_global_mut<Expiration>(account_address).expire_on_block_height;
+        let expire_vector_mut = &mut borrow_global_mut<Expiration>(account_address).expire_on_block_number;
         Vector::remove<u64>(expire_vector_mut, index);
         if (Vector::is_empty<u64>(expire_vector_mut)) {
-            let Expiration { expire_on_block_height } = move_from<Expiration>(account_address);
-            Vector::destroy_empty(expire_on_block_height);
+            let Expiration { expire_on_block_number } = move_from<Expiration>(account_address);
+            Vector::destroy_empty(expire_on_block_number);
         }
     }
     public fun remove_entry_by_entry_owner(account: &signer, entry: EntryHandle) acquires Expiration {
@@ -90,16 +90,16 @@ module NameService {
 		SortedLinkedList::is_head_node<vector<u8>>(&entry)
     }
 
-    public fun expire_on_block_height(entry: EntryHandle): u64 acquires Expiration {
+    public fun expire_on_block_number(entry: EntryHandle): u64 acquires Expiration {
         let addr = SortedLinkedList::get_addr(copy entry);
         let index = SortedLinkedList::get_index(entry);
-        let expire_vector = *&borrow_global<Expiration>(addr).expire_on_block_height;
+        let expire_vector = *&borrow_global<Expiration>(addr).expire_on_block_number;
         *Vector::borrow<u64>(&expire_vector, index)
     }
 
     public fun is_expired(entry: EntryHandle): bool acquires Expiration {
-        let current_block_height = Block::get_current_block_height();
-        current_block_height > expire_on_block_height(entry)
+        let current_block_number = Block::get_current_block_number();
+        current_block_number > expire_on_block_number(entry)
     }
 
 }
@@ -191,28 +191,34 @@ fun main(account: &signer) {
 
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1001
+//! block-number: 1
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1002
+//! block-number: 2
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1003
+//! block-number: 3
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1004
+//! block-number: 4
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1005
+//! block-number: 5
 
 //! block-prologue
-//! proposer: vivian
+//! author: vivian
 //! block-time: 1006
+//! block-number: 6
 
 //! new-transaction
 //! sender: nameservice

@@ -61,8 +61,7 @@ Publish the chain ID under the genesis account
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(),
         <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>()
     );
-
-    move_to(account, <a href="#0x1_ChainId">ChainId</a> { id })
+    move_to(account, <a href="#0x1_ChainId">ChainId</a> { id });
 }
 </code></pre>
 
@@ -74,7 +73,7 @@ Publish the chain ID under the genesis account
 
 ## Function `get`
 
-Return the chain ID of this Libra instance
+Return the chain ID of this chain
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_get">get</a>(): u8

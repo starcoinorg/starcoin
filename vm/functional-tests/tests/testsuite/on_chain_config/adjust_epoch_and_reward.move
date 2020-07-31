@@ -4,11 +4,11 @@
 module TestAdjustEpoch {
 use 0x1::Consensus;
 
-public fun test(genesis_account: &signer, block_height: u64, block_time: u64) {
+public fun test(genesis_account: &signer, block_number: u64, block_time: u64) {
     let times = 0;
     while (times < 10) {
-        let reward = Consensus::adjust_epoch(genesis_account, block_height + times, block_time + times, 0);
-        if ((block_height + times) == 13) {
+        let reward = Consensus::adjust_epoch(genesis_account, block_number + times, block_time + times, 0);
+        if ((block_number + times) == 13) {
             assert(Consensus::start_number() == 13, 10000);
             assert(Consensus::epoch_start_time() == 13, 10001);
             assert(Consensus::end_number() == 121, 10002);
@@ -51,13 +51,13 @@ use 0x1::Consensus;
 
 fun main(genesis_account: &signer) {
     let times = 0;
-    let block_height = 1;
+    let block_number = 1;
     let block_time = 1;
 
     while (times < 3) {
-        TestAdjustEpoch::test(genesis_account, block_height, block_time);
+        TestAdjustEpoch::test(genesis_account, block_number, block_time);
 
-        block_height = block_height + (times + 1) * 10;
+        block_number = block_number + (times + 1) * 10;
         block_time = block_time + (times + 1) * 10;
         times = times + 1;
     };

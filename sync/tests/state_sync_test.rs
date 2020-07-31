@@ -83,7 +83,7 @@ fn test_state_sync() {
         let state_service_1 =
             ChainStateActor::launch(bus_1.clone(), storage_1.clone(), None).unwrap();
         // network rpc server
-        network_rpc::start_network_rpc_server(
+        starcoin_network_rpc::start_network_rpc_server(
             rx_1,
             first_chain.clone(),
             storage_1.clone(),
@@ -196,7 +196,7 @@ fn test_state_sync() {
         let state_service_2 =
             ChainStateActor::launch(bus_2.clone(), storage_2.clone(), None).unwrap();
         // network rpc server
-        network_rpc::start_network_rpc_server(
+        starcoin_network_rpc::start_network_rpc_server(
             rx_2,
             second_chain.clone(),
             storage_2.clone(),

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
+use starcoin_cmd::helper;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
@@ -75,8 +76,9 @@ pub fn steps() -> Steps<MyWorld> {
             let rt = Runtime::new().unwrap();
             world.rt = Some(rt);
             if let Some(rt) = &mut world.rt {
-                let client =
-                    RpcClient::connect_ipc(node_config.clone().rpc.get_ipc_file(), rt).unwrap();
+                let ipc_file = node_config.rpc.get_ipc_file();
+                helper::wait_until_file_created(ipc_file.clone()).expect("ipc file must exist");
+                let client = RpcClient::connect_ipc(ipc_file, rt).unwrap();
                 info!("dev node local rpc client created!");
                 world.rpc_client = Some(Arc::new(client))
             }

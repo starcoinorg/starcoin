@@ -176,8 +176,8 @@ module Consensus {
         reward
     }
 
-    fun first_epoch(block_height: u64, block_time: u64) acquires Epoch {
-        assert(block_height == 1, 333);
+    fun first_epoch(block_number: u64, block_time: u64) acquires Epoch {
+        assert(block_number == 1, 333);
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
         let count = Self::epoch_time_target() / epoch_ref.block_time_target;
         assert(count > 1, 336);
@@ -188,16 +188,16 @@ module Consensus {
         epoch_ref.reward_per_block = Self::reward_per_block(count, epoch_ref.reward_per_epoch);
     }
 
-    public fun adjust_epoch(account: &signer, block_height: u64, block_time: u64, uncles: u64): u128 acquires Epoch, EpochData {
+    public fun adjust_epoch(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 acquires Epoch, EpochData {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(Self::max_uncles_per_block() >= uncles, 339);
-        if (block_height == 1) {
+        if (block_number == 1) {
             assert(uncles == 0, 334);
-            Self::first_epoch(block_height, block_time);
+            Self::first_epoch(block_number, block_time);
         } else {
             let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
             let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
-            if (block_height < epoch_ref.end_number) {
+            if (block_number < epoch_ref.end_number) {
                 epoch_data.uncles = epoch_data.uncles + uncles;
             } else {
                 assert(uncles == 0, 334);
@@ -223,8 +223,8 @@ module Consensus {
 
                 epoch_ref.epoch_start_time = block_time;
                 epoch_data.uncles = uncles;
-                epoch_ref.start_number = block_height;
-                epoch_ref.end_number = block_height + new_epoch_blocks;
+                epoch_ref.start_number = block_number;
+                epoch_ref.end_number = block_number + new_epoch_blocks;
                 epoch_ref.block_time_target = new_epoch_block_time_target;
                 epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
 
@@ -249,7 +249,7 @@ module Consensus {
         let reward = epoch_ref.reward_per_block + (epoch_ref.reward_per_block * (Self::reward_per_uncle_percent() as u128) * (uncles as u128) / 100);
 
         let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
-        if (block_height == epoch_ref.start_number) {
+        if (block_number == epoch_ref.start_number) {
             epoch_data.total_reward = reward;
             Event::emit_event(
                 &mut epoch_ref.new_epoch_events,

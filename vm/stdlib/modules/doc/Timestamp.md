@@ -94,7 +94,7 @@ is called at the end of genesis.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Timestamp_initialize">initialize</a>(account: &signer, genesis_timestamp: u64) {
-    // Only callable by the <a href="Genesis.md#0x1_Genesis">Genesis</a> address
+    // Only callable by the Genesis address
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>let</b> timer = <a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a> {seconds: genesis_timestamp};
     move_to&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(account, timer);

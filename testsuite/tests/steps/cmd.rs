@@ -71,7 +71,7 @@ pub fn steps() -> Steps<MyWorld> {
                 } else {
                     vec!["starcoin", "dev", "get_coin", "-v", amount]
                 };
-                println!("inter {:?}", inter_args);
+
                 let get_result = add_command(context)
                     .exec_with_args::<TransactionView>(inter_args)
                     .unwrap();

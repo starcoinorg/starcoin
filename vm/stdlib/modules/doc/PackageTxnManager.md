@@ -57,7 +57,7 @@
 </dd>
 <dt>
 
-<code>active_after_height: u64</code>
+<code>active_after_number: u64</code>
 </dt>
 <dd>
 
@@ -398,7 +398,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, active_after_height: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, active_after_number: u64)
 </code></pre>
 
 
@@ -407,10 +407,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, active_after_height: u64) <b>acquires</b> <a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>,<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, active_after_number: u64) <b>acquires</b> <a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>,<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> cap = borrow_global&lt;<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(account_address);
-    <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap, package_hash, active_after_height);
+    <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap, package_hash, active_after_number);
 }
 </code></pre>
 
@@ -424,7 +424,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, active_after_height: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, active_after_number: u64)
 </code></pre>
 
 
@@ -433,14 +433,14 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, active_after_height: u64) <b>acquires</b> <a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, active_after_number: u64) <b>acquires</b> <a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
     //FIXME
-    //<b>assert</b>(active_after_height &gt;= <a href="Block.md#0x1_Block_get_current_block_height">Block::get_current_block_height</a>(), 1005);
+    //<b>assert</b>(active_after_number &gt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), 1005);
     <b>let</b> account_address = cap.account_address;
     <b>assert</b>(<a href="#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), 1006);
     <b>let</b> tpu = borrow_global_mut&lt;<a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account_address);
     <b>assert</b>(<a href="Option.md#0x1_Option_is_none">Option::is_none</a>(&tpu.plan), 1007);
-    tpu.plan = <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>{ package_hash, active_after_height});
+    tpu.plan = <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>{ package_hash, active_after_number});
 }
 </code></pre>
 
@@ -613,7 +613,7 @@
         <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&plan_opt), 1001);
         <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan_opt);
         <b>assert</b>(*&plan.package_hash == package_hash, 1002);
-        <b>assert</b>(plan.active_after_height &lt;= <a href="Block.md#0x1_Block_get_current_block_height">Block::get_current_block_height</a>(), 1003);
+        <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), 1003);
     }<b>else</b> <b>if</b>(strategy == <a href="#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>()){
         //do check at VM runtime.
     }<b>else</b> <b>if</b>(strategy == <a href="#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>()){

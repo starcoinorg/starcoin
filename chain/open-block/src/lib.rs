@@ -20,7 +20,6 @@ use storage::Store;
 use traits::ExcludedTxns;
 
 pub struct OpenedBlock {
-    previous_header: BlockHeader,
     previous_block_info: BlockInfo,
     block_meta: BlockMetadata,
     gas_limit: u64,
@@ -66,9 +65,9 @@ impl OpenedBlock {
             author,
             auth_key_prefix,
             uncles.len() as u64,
+            previous_header.number + 1,
         );
         let mut opened_block = Self {
-            previous_header,
             previous_block_info: block_info,
             block_meta,
             gas_limit: block_gas_limit,
@@ -111,7 +110,7 @@ impl OpenedBlock {
         &self.block_meta
     }
     pub fn block_number(&self) -> u64 {
-        self.previous_header.number() + 1
+        self.block_meta.number()
     }
 
     pub fn state_reader(&self) -> &impl ChainStateReader {
@@ -225,7 +224,8 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix, _uncles) = self.block_meta.into_inner();
+        let (parent_id, timestamp, author, auth_key_prefix, _uncles, number) =
+            self.block_meta.into_inner();
 
         let (uncle_hash, uncles) = if !self.uncles.is_empty() {
             (
@@ -242,7 +242,7 @@ impl OpenedBlock {
                 .block_accumulator_info
                 .accumulator_root,
             timestamp,
-            self.previous_header.number() + 1,
+            number,
             author,
             auth_key_prefix,
             accumulator_root,

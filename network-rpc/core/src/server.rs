@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::delegates::RpcMethod;
 use actix::{Actor, Addr, Arbiter, AsyncContext, Context, StreamHandler};
 use anyhow::{format_err, Result};

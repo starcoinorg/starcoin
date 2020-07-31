@@ -60,7 +60,7 @@
 <dl>
 <dt>
 
-<code>reward_height: u64</code>
+<code>reward_number: u64</code>
 </dt>
 <dd>
 
@@ -102,7 +102,7 @@
 <dl>
 <dt>
 
-<code>height: u64</code>
+<code>number: u64</code>
 </dt>
 <dd>
 
@@ -146,7 +146,7 @@
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(reward_delay &gt; 0, 4);
     move_to&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(account, <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a> {
-        reward_height: 0,
+        reward_number: 0,
         reward_delay: reward_delay,
         infos: <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>(),
     });
@@ -197,7 +197,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_height: u64, current_reward: u128, current_author: address, auth_key_prefix: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_prefix: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -206,22 +206,22 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_height: u64, current_reward: u128,
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128,
     current_author: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>, <a href="#0x1_BlockReward">BlockReward</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
-    <b>if</b> (current_height &gt; 0) {
+    <b>if</b> (current_number &gt; 0) {
         <b>let</b> rewards = borrow_global_mut&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
         <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&rewards.infos);
-        <b>assert</b>((current_height == (rewards.reward_height + len + 1)), 6002);
+        <b>assert</b>((current_number == (rewards.reward_number + len + 1)), 6002);
         <b>assert</b>(len &lt;= rewards.reward_delay, 6003);
 
         <b>if</b> (len == rewards.reward_delay) {//pay and remove
-            <b>let</b> reward_height = *&rewards.reward_height + 1;
+            <b>let</b> reward_number = *&rewards.reward_number + 1;
             <b>let</b> first_info = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&rewards.infos, 0);
-            <b>assert</b>((reward_height == first_info.height), 6005);
+            <b>assert</b>((reward_number == first_info.number), 6005);
 
-            rewards.reward_height = reward_height;
+            rewards.reward_number = reward_number;
             <b>if</b> (first_info.reward &gt; 0) {
                 <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), 6006);
                 <b>let</b> reward = <a href="#0x1_BlockReward_withdraw">Self::withdraw</a>(first_info.reward);
@@ -235,7 +235,7 @@
             <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(current_author, auth_key_prefix);
         };
         <b>let</b> current_info = <a href="#0x1_BlockReward_RewardInfo">RewardInfo</a> {
-            height: current_height,
+            number: current_number,
             reward: current_reward,
             miner: current_author,
         };
