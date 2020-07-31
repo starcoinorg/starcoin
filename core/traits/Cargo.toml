@@ -16,4 +16,3 @@ starcoin-state-api = { path = "../../state/api"}
 starcoin-config = { path = "../../config" }
 thiserror = "1.0.14"
 starcoin-vm-types = { path = "../../vm/types"}
-

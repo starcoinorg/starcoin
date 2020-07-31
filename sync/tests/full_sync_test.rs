@@ -77,6 +77,7 @@ fn test_network_actor_rpc() {
             storage_1.clone(),
             bus_1.clone(),
             tx_pool_service.clone(),
+            None,
         )
         .unwrap();
 
@@ -184,6 +185,7 @@ fn test_network_actor_rpc() {
             storage_2.clone(),
             bus_2.clone(),
             txpool_2.get_service(),
+            None,
         )
         .unwrap();
         // network rpc server
@@ -299,6 +301,7 @@ fn test_network_actor_rpc_2() {
             storage_1.clone(),
             bus_1.clone(),
             txpool_1.get_service(),
+            None,
         )
         .unwrap();
         // sync
@@ -373,6 +376,7 @@ fn test_network_actor_rpc_2() {
             storage_2.clone(),
             bus_2.clone(),
             txpool_2.get_service(),
+            None,
         )
         .unwrap();
         // sync

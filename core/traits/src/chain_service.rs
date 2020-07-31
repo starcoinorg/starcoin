@@ -4,8 +4,10 @@
 use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_state_api::ChainStateReader;
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
@@ -20,7 +22,11 @@ use starcoin_vm_types::on_chain_config::EpochInfo;
 pub trait ChainService {
     /// chain service
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult>;
-    fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
+    fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        remote_chain_state: &dyn ChainStateReader,
+    ) -> Result<ConnectBlockResult>;
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
@@ -69,7 +75,11 @@ pub trait ChainAsyncService:
 {
     /// chain service
     async fn try_connect(&self, block: Block) -> Result<ConnectBlockResult>;
-    async fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult>;
+    async fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        peer_id: PeerId,
+    ) -> Result<ConnectBlockResult>;
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;

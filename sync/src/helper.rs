@@ -79,9 +79,11 @@ pub async fn get_headers(
     network: &NetworkAsyncService,
     client: &NetworkRpcClient<NetworkAsyncService>,
     req: GetBlockHeaders,
-) -> Result<Vec<BlockHeader>> {
+) -> Result<(Vec<BlockHeader>, PeerId)> {
     if let Some(peer_info) = network.best_peer().await? {
-        get_headers_with_peer(client, peer_info.get_peer_id(), req).await
+        get_headers_with_peer(client, peer_info.get_peer_id(), req)
+            .await
+            .map(|headers| (headers, peer_info.get_peer_id()))
     } else {
         Err(format_err!("Can not get peer when sync block header."))
     }
@@ -105,11 +107,13 @@ pub async fn get_body_by_hash(
     client: &NetworkRpcClient<NetworkAsyncService>,
     network: &NetworkAsyncService,
     hashes: Vec<HashValue>,
-) -> Result<Vec<BlockBody>> {
+) -> Result<(Vec<BlockBody>, PeerId)> {
     if let Some(peer_info) = network.best_peer().await? {
+        let peer_id = peer_info.get_peer_id();
         client
-            .get_body_by_hash(peer_info.get_peer_id(), hashes)
+            .get_body_by_hash(peer_id.clone(), hashes)
             .await
+            .map(|b| (b, peer_id))
     } else {
         Err(format_err!("Can not get peer when sync block body."))
     }

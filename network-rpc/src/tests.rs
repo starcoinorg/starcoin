@@ -125,6 +125,7 @@ fn gen_chain_env(
         storage.clone(),
         bus.clone(),
         tx_pool_service.clone(),
+        None,
     )
     .unwrap();
 
