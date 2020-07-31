@@ -143,7 +143,7 @@ where
                 Ok(())
             } else {
                 let master = *startup_info.get_master();
-                let block_chain = BlockChain::new(config.clone(), master, storage.clone())?;
+                let block_chain = BlockChain::new(config.clone(), master, storage.clone(),None)?;
                 let block_template = chain
                     .create_block_template(
                         *miner_account.address(),

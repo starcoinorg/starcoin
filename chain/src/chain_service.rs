@@ -10,17 +10,11 @@ use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
+use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource};
-use std::collections::HashSet;
-use std::iter::Iterator;
-use std::sync::Arc;
-use storage::Store;
-use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult};
-use types::{
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
@@ -28,6 +22,13 @@ use types::{
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
+use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource};
+use std::collections::HashSet;
+use std::iter::Iterator;
+use std::sync::Arc;
+use storage::Store;
+use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult};
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
@@ -41,6 +42,7 @@ where
     storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
+    remote_chain_state: Option<RemoteChainStateReader>,
 }
 
 impl<P> ChainServiceImpl<P>
@@ -53,8 +55,14 @@ where
         storage: Arc<dyn Store>,
         txpool: P,
         bus: Addr<BusActor>,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
-        let master = BlockChain::new(config.clone(), startup_info.master, storage.clone())?;
+        let master = BlockChain::new(
+            config.clone(),
+            startup_info.master,
+            storage.clone(),
+            remote_chain_state.clone(),
+        )?;
         Ok(Self {
             config,
             startup_info,
@@ -62,6 +70,7 @@ where
             storage,
             txpool,
             bus,
+            remote_chain_state,
         })
     }
 
@@ -73,6 +82,7 @@ where
                 self.config.clone(),
                 header.parent_hash(),
                 self.storage.clone(),
+                self.remote_chain_state.clone(),
             )?)
         } else {
             None
@@ -90,6 +100,9 @@ where
 
     pub fn state_at(&self, _root: HashValue) -> ChainStateDB {
         unimplemented!()
+    }
+    pub fn get_remote_chain_state(&self) -> Option<RemoteChainStateReader> {
+        self.remote_chain_state.clone()
     }
 
     pub fn get_master(&self) -> &BlockChain {
@@ -399,7 +412,7 @@ where
 
         for uncle in uncles {
             if uncle.number >= header.number {
-                debug!("uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}",uncle.number,header.number);
+                debug!("uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number);
                 return Ok(ConnectBlockResult::UncleBlockIllegal);
             }
         }
@@ -456,7 +469,12 @@ where
         Ok(ConnectBlockResult::FutureBlock)
     }
 
-    fn connect_inner(&mut self, block: Block, execute: bool) -> Result<ConnectBlockResult> {
+    fn connect_inner(
+        &mut self,
+        block: Block,
+        execute: bool,
+        remote_chain_state: Option<&dyn ChainStateReader>,
+    ) -> Result<ConnectBlockResult> {
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         if block_exist {
             CHAIN_METRICS.duplicate_conn_count.inc();
@@ -477,7 +495,10 @@ where
             let connected = if execute {
                 branch.apply(block.clone())?
             } else {
-                branch.apply_without_execute(block.clone())?
+                branch.apply_without_execute(
+                    block.clone(),
+                    remote_chain_state.expect("remote chain state not set"),
+                )?
             };
             timer.observe_duration();
             if connected != ConnectBlockResult::SUCCESS {
@@ -498,11 +519,15 @@ where
     P: TxPoolSyncService,
 {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
-        self.connect_inner(block, true)
+        self.connect_inner(block, true, None)
     }
 
-    fn try_connect_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
-        self.connect_inner(block, false)
+    fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        remote_chain_state: &dyn ChainStateReader,
+    ) -> Result<ConnectBlockResult> {
+        self.connect_inner(block, false, Some(remote_chain_state))
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -596,8 +621,13 @@ where
         };
 
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
-            let block_chain =
-                BlockChain::new(self.config.clone(), block.id(), self.storage.clone())?;
+            let remote_chain_state = self.remote_chain_state.clone();
+            let block_chain = BlockChain::new(
+                self.config.clone(),
+                block.id(),
+                self.storage.clone(),
+                remote_chain_state,
+            )?;
             let account_reader = AccountStateReader::new(block_chain.chain_state_reader());
             let epoch = account_reader.get_resource::<EpochResource>(CORE_CODE_ADDRESS)?;
             let epoch_start_number = if let Some(epoch) = epoch {

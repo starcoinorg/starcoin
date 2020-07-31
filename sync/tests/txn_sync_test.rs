@@ -77,6 +77,7 @@ fn test_txn_sync_actor() {
             storage_1.clone(),
             bus_1.clone(),
             txpool_1.get_service(),
+            None,
         )
         .unwrap();
         let state_service_1 =
@@ -162,6 +163,7 @@ fn test_txn_sync_actor() {
             storage_2.clone(),
             bus_2.clone(),
             txpool_2.get_service(),
+            None,
         )
         .unwrap();
 
