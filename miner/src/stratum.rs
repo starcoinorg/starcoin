@@ -35,7 +35,8 @@ pub fn mint(
     chain: &dyn ChainReader,
     block_template: BlockTemplate,
 ) -> anyhow::Result<()> {
-    let difficulty = strategy.calculate_next_difficulty(chain)?;
+    let difficulty =
+        strategy.calculate_next_difficulty(chain, &ConsensusStrategy::epoch(chain)?)?;
     miner.set_mint_job(MineCtx::new(block_template, difficulty));
     let job = miner.get_mint_job();
     debug!("Push job to worker {}", job);

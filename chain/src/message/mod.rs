@@ -2,15 +2,16 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_vm_types::on_chain_config::EpochInfo;
-use traits::ConnectBlockResult;
-use types::{
+use starcoin_types::peer_info::PeerId;
+use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
+use starcoin_vm_types::on_chain_config::EpochInfo;
+use traits::ConnectBlockResult;
 
 #[derive(Clone)]
 pub enum ChainRequest {
@@ -30,7 +31,7 @@ pub enum ChainRequest {
     GetBlockByUncle(HashValue),
     GetBlockInfoByHash(HashValue),
     ConnectBlock(Box<Block>),
-    ConnectBlockWithoutExe(Box<Block>),
+    ConnectBlockWithoutExe(Box<Block>, PeerId),
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetEpochInfo(),
