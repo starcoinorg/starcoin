@@ -44,7 +44,6 @@ pub fn steps() -> Steps<MyWorld> {
         .then("get node info", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info();
-//             assert!(node_info.is_ok());
         })
         .then("get node status", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
@@ -55,7 +54,6 @@ pub fn steps() -> Steps<MyWorld> {
         .then("get node peers", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let peers = client.clone().node_peers();
-//             assert!(peers.is_ok());
         });
     builder.build()
 }
