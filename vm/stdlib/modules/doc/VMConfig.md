@@ -205,7 +205,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_VMConfig_initialize">initialize</a>(account: &signer, publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, block_gas_limit: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_VMConfig_initialize">initialize</a>(account: &signer, publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
 </code></pre>
 
 
@@ -220,21 +220,32 @@
     instruction_schedule: vector&lt;u8&gt;,
     native_schedule: vector&lt;u8&gt;,
     block_gas_limit: u64,
+    global_memory_per_byte_cost: u64,
+    global_memory_per_byte_write_cost: u64,
+    min_transaction_gas_units: u64,
+    large_transaction_cutoff: u64,
+    instrinsic_gas_per_byte: u64,
+    maximum_number_of_gas_units: u64,
+    min_price_per_gas_unit: u64,
+    max_price_per_gas_unit: u64,
+    max_transaction_size_in_bytes: u64,
+    gas_unit_scaling_factor: u64,
+    default_account_size: u64
 ) {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
     //TODO pass gas_constants <b>as</b> init argument and onchain config.
     <b>let</b> gas_constants = <a href="#0x1_VMConfig_GasConstants">GasConstants</a> {
-        global_memory_per_byte_cost: 4,
-        global_memory_per_byte_write_cost: 9,
-        min_transaction_gas_units: 600,
-        large_transaction_cutoff: 600,
-        instrinsic_gas_per_byte: 8,
-        maximum_number_of_gas_units: 4000000,
-        min_price_per_gas_unit: 0,
-        max_price_per_gas_unit: 10000,
-        max_transaction_size_in_bytes: 40960,
-        gas_unit_scaling_factor: 1000,
-        default_account_size: 800,
+        global_memory_per_byte_cost,
+        global_memory_per_byte_write_cost,
+        min_transaction_gas_units,
+        large_transaction_cutoff,
+        instrinsic_gas_per_byte,
+        maximum_number_of_gas_units,
+        min_price_per_gas_unit,
+        max_price_per_gas_unit,
+        max_transaction_size_in_bytes,
+        gas_unit_scaling_factor,
+        default_account_size
     };
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;(

@@ -318,6 +318,17 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
                 TransactionArgument::U64(chain_config.vm_config.block_gas_limit),
+                TransactionArgument::U64(chain_config.global_memory_per_byte_cost),
+                TransactionArgument::U64(chain_config.global_memory_per_byte_write_cost),
+                TransactionArgument::U64(chain_config.min_transaction_gas_units),
+                TransactionArgument::U64(chain_config.large_transaction_cutoff),
+                TransactionArgument::U64(chain_config.instrinsic_gas_per_byte),
+                TransactionArgument::U64(chain_config.maximum_number_of_gas_units),
+                TransactionArgument::U64(chain_config.min_price_per_gas_unit),
+                TransactionArgument::U64(chain_config.max_price_per_gas_unit),
+                TransactionArgument::U64(chain_config.max_transaction_size_in_bytes),
+                TransactionArgument::U64(chain_config.gas_unit_scaling_factor),
+                TransactionArgument::U64(chain_config.default_account_size),
             ],
         ));
     }

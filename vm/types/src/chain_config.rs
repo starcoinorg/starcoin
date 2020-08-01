@@ -280,6 +280,18 @@ pub struct ChainConfig {
     pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
     /// consensus strategy for chain
     pub consensus_strategy: ConsensusStrategy,
+
+    pub global_memory_per_byte_cost: u64,
+    pub global_memory_per_byte_write_cost: u64,
+    pub min_transaction_gas_units: u64,
+    pub large_transaction_cutoff: u64,
+    pub instrinsic_gas_per_byte: u64,
+    pub maximum_number_of_gas_units: u64,
+    pub min_price_per_gas_unit: u64,
+    pub max_price_per_gas_unit: u64,
+    pub max_transaction_size_in_bytes: u64,
+    pub gas_unit_scaling_factor: u64,
+    pub default_account_size: u64,
 }
 
 pub static STARCOIN_TOTAL_SUPPLY: u128 = 2_100_000_000 * 1_000_000;
@@ -295,6 +307,18 @@ pub static DEV_EPOCH_TIME_TARGET: u64 = 60;
 pub static DEV_MIN_TIME_TARGET: u64 = 1;
 pub static DEV_BLOCK_GAS_LIMIT: u64 = 1_000_000;
 pub static BLOCK_GAS_LIMIT: u64 = 1_000_000;
+
+pub static GLOBAL_MEMORY_PER_BYTE_COST: u64 = 2;
+pub static GLOBAL_MEMORY_PER_BYTE_WRITE_COST: u64 = 5;
+pub static MIN_TRANSACTION_GAS_UNITS: u64 = 600;
+pub static LARGE_TRANSACTION_CUTOFF: u64 = 600;
+pub static INSTRINSIC_GAS_PER_BYTE: u64 = 8;
+pub static MAXIMUM_NUMBER_OF_GAS_UNITS: u64 = 4_000_000;
+pub static MIN_PRICE_PER_GAS_UNIT: u64 = 1;
+pub static MAX_PRICE_PER_GAS_UNIT: u64 = 10_000;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096;
+pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
+pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
 pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -327,6 +351,17 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dummy,
+        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+        min_price_per_gas_unit: 0, // set to 0
+        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+        max_transaction_size_in_bytes: 4096 * 10, // to pass stdlib_upgrade
+        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+        default_account_size: DEFAULT_ACCOUNT_SIZE,
     }
 });
 
@@ -350,6 +385,7 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         pre_mine_percent: 20,
         vm_config: VMConfig {
             publishing_option: VMPublishingOption::Open,
+            // ToDo: remove gas_schedule
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: DEV_BLOCK_GAS_LIMIT,
         },
@@ -365,6 +401,17 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dev,
+        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
+        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
+        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+        default_account_size: DEFAULT_ACCOUNT_SIZE,
     }
 });
 
@@ -401,6 +448,17 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
             .expect("decode public key must success.")),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Argon,
+        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
+        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
+        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+        default_account_size: DEFAULT_ACCOUNT_SIZE,
     }
 });
 
@@ -437,6 +495,17 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
             .expect("decode public key must success.")),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Argon,
+        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
+        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
+        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+        default_account_size: DEFAULT_ACCOUNT_SIZE,
     }
 });
 
@@ -473,4 +542,15 @@ pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Argon,
+    global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+    global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+    min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+    large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+    instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+    maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+    min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
+    max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+    max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
+    gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+    default_account_size: DEFAULT_ACCOUNT_SIZE,
 });

@@ -26,6 +26,17 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
                  association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
                  chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64,
                  block_gas_limit: u64,
+                 global_memory_per_byte_cost: u64,
+                 global_memory_per_byte_write_cost: u64,
+                 min_transaction_gas_units: u64,
+                 large_transaction_cutoff: u64,
+                 instrinsic_gas_per_byte: u64,
+                 maximum_number_of_gas_units: u64,
+                 min_price_per_gas_unit: u64,
+                 max_price_per_gas_unit: u64,
+                 max_transaction_size_in_bytes: u64,
+                 gas_unit_scaling_factor: u64,
+                 default_account_size: u64,
                  ) {
 
         assert(Timestamp::is_genesis(), 1);
@@ -43,7 +54,20 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         Block::initialize(&genesis_account, parent_hash);
 
         // init config
-        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule, block_gas_limit);
+        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule,
+            block_gas_limit,
+            global_memory_per_byte_cost,
+            global_memory_per_byte_write_cost,
+            min_transaction_gas_units,
+            large_transaction_cutoff,
+            instrinsic_gas_per_byte,
+            maximum_number_of_gas_units,
+            min_price_per_gas_unit,
+            max_price_per_gas_unit,
+            max_transaction_size_in_bytes,
+            gas_unit_scaling_factor,
+            default_account_size
+            );
         Version::initialize(&genesis_account);
 
         TransactionTimeout::initialize(&genesis_account);
