@@ -81,7 +81,9 @@ impl TxPoolSyncService for MockTxPoolService {
     ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>> {
         todo!()
     }
-
+    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<Vec<HashValue>>> {
+        todo!()
+    }
     fn chain_new_block(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
         todo!()
     }

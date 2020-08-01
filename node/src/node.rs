@@ -1,12 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures::StreamExt;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
+use starcoin_chain_notify::ChainNotifyHandlerActor;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_genesis::Genesis;
@@ -25,7 +25,6 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_txpool::{TxPool, TxPoolService};
-use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::association_address;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::system_events::{SyncBegin, SyncDone};
@@ -43,6 +42,7 @@ pub struct NodeStartHandle {
     _sync_actor: Addr<SyncActor>,
     _rpc_actor: Addr<RpcActor>,
     _miner_client: Option<Addr<MinerClientActor>>,
+    _chain_notifier: Addr<ChainNotifyHandlerActor>,
 }
 
 //TODO this method should in Genesis.
@@ -237,6 +237,16 @@ pub async fn start(
             )
         })
         .await??;
+
+    // running in background
+    let chain_notify_handler = {
+        let bus = bus.clone();
+        let storage = storage.clone();
+        Actor::start_in_arbiter(&Arbiter::new(), |_ctx| {
+            ChainNotifyHandlerActor::new(bus, storage)
+        })
+    };
+
     // network rpc server
     let _network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
         rpc_rx,
@@ -306,22 +316,14 @@ pub async fn start(
         None
     };
 
-    let pubsub_service = {
-        let txn_receiver = txpool_service.subscribe_txns();
-        let service = PubSubService::new();
-        service.start_transaction_subscription_handler(txn_receiver);
-        service.start_chain_notify_handler(bus, storage.clone());
-        service
-    };
-
     let (json_rpc, _io_handler) = RpcActor::launch(
         config,
-        txpool_service,
+        txpool_service.clone(),
         chain,
         account_service,
         chain_state_service,
         Some(PlaygroudService::new(storage.clone())),
-        Some(pubsub_service),
+        Some(PubSubService::new(bus.clone(), txpool_service)),
         Some(network),
         Some(logger_handle),
     )?;
@@ -331,5 +333,6 @@ pub async fn start(
         _sync_actor: sync,
         _rpc_actor: json_rpc,
         _miner_client: miner_client,
+        _chain_notifier: chain_notify_handler,
     })
 }

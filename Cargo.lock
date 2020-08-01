@@ -239,6 +239,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
+dependencies = [
+ "const-random",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1346,6 +1355,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "3.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2f7a3766904c6f4734f2bbf8a037b6f84753d19fe65f54b0f4d97d8f62187bb"
+dependencies = [
+ "ahash 0.3.8",
+ "cfg-if",
+ "num_cpus",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2279,7 +2299,7 @@ version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e6073d0ca812575946eb5f35ff68dbe519907b25c42530389ff946dc84c6ead"
 dependencies = [
- "ahash",
+ "ahash 0.2.18",
  "autocfg 0.1.7",
 ]
 
@@ -6426,6 +6446,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-chain-notify"
+version = "0.3.1"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "starcoin-bus",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-cmd"
 version = "0.3.1"
 dependencies = [
@@ -6945,6 +6979,7 @@ dependencies = [
  "starcoin-block-relayer",
  "starcoin-bus",
  "starcoin-chain",
+ "starcoin-chain-notify",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7087,6 +7122,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "dashmap",
  "futures 0.3.5",
  "futures-channel",
  "hex",
@@ -7099,6 +7135,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
+ "log 0.4.11",
  "network-api",
  "num_cpus",
  "parking_lot 0.11.0",
@@ -7107,6 +7144,7 @@ dependencies = [
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
+ "starcoin-chain-notify",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7569,9 +7607,11 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.5",
+ "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-txpool",
  "starcoin-types",
  "starcoin-wallet-api",
  "starcoin-wallet-lib",

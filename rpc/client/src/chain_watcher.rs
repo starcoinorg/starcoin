@@ -4,7 +4,7 @@ use actix::AsyncContext;
 use futures03::channel::oneshot;
 use futures03::compat::Stream01CompatExt;
 use jsonrpc_core_client::RpcError;
-pub use pubsub::ThinBlock;
+pub use pubsub::ThinHeadBlock;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::pubsub;
@@ -51,7 +51,7 @@ impl Actor for ChainWatcher {
     }
 }
 
-pub type WatchResult = Result<pubsub::ThinBlock, anyhow::Error>;
+pub type WatchResult = Result<pubsub::ThinHeadBlock, anyhow::Error>;
 type Responder = oneshot::Sender<WatchResult>;
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -95,7 +95,7 @@ impl Handler<WatchTxn> for ChainWatcher {
     }
 }
 
-type BlockEvent = Result<pubsub::ThinBlock, RpcError>;
+type BlockEvent = Result<pubsub::ThinHeadBlock, RpcError>;
 impl actix::StreamHandler<BlockEvent> for ChainWatcher {
     fn handle(&mut self, item: BlockEvent, _ctx: &mut Self::Context) {
         match &item {

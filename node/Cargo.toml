@@ -21,6 +21,7 @@ starcoin-executor = {path = "../executor"}
 starcoin-network = {path = "../network"}
 starcoin-txpool = {path = "../txpool"}
 starcoin-chain = {path = "../chain"}
+starcoin-chain-notify = {path = "../chain/chain-notify"}
 starcoin-rpc-server = {path = "../rpc/server"}
 starcoin-storage = {path = "../storage"}
 starcoin-miner = {path = "../miner"}

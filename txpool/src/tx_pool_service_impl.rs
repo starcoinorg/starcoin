@@ -136,6 +136,13 @@ impl TxPoolSyncService for TxPoolService {
         self.inner.subscribe_txns()
     }
 
+    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<Vec<HashValue>>> {
+        let _timer = TXPOOL_SERVICE_HISTOGRAM
+            .with_label_values(&["subscribe_pending_txns"])
+            .start_timer();
+        self.inner.subscribe_pending_txns()
+    }
+
     /// rollback
     fn chain_new_block(&self, enacted: Vec<Block>, retracted: Vec<Block>) -> Result<()> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
