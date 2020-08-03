@@ -33,3 +33,5 @@ Temporary Items
 
 # Github action's files
 packages-microsoft-prod.deb
+
+examples/*.mv

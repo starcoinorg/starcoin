@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::crash_handler::setup_panic_handler;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
@@ -11,6 +12,7 @@ use std::thread::JoinHandle;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
+pub mod crash_handler;
 pub mod message;
 mod node;
 
@@ -129,6 +131,7 @@ pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
     let (start_sender, start_receiver) = oneshot::channel();
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
+        setup_panic_handler();
         //TODO actix and tokio use same runtime, and config thread pool.
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {

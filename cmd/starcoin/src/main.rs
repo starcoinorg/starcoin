@@ -6,6 +6,7 @@ use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::Connect;
 use starcoin_logger::prelude::*;
+use starcoin_node::crash_handler;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 

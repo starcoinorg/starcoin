@@ -3,7 +3,6 @@
 
 pub mod chain;
 pub mod cli_state;
-pub mod crash_handler;
 pub mod debug;
 pub mod dev;
 pub mod helper;

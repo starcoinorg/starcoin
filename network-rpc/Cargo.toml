@@ -24,7 +24,6 @@ config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-stest = { path = "../commons/stest" }
 prometheus = "0.8"
 network-api = { path="../network/api" }
 scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
@@ -51,3 +50,4 @@ block-relayer = { path = "../block-relayer", package = "starcoin-block-relayer"}
 futures-timer = "3.0"
 statedb = {path = "../state/statedb", package = "starcoin-statedb"}
 vm_types ={path = "../vm/types", package = "starcoin-vm-types"}
+stest = { path = "../commons/stest" }

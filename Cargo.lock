@@ -6464,7 +6464,6 @@ name = "starcoin-cmd"
 version = "0.3.1"
 dependencies = [
  "anyhow",
- "backtrace",
  "crossbeam-channel",
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
@@ -6975,6 +6974,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
+ "backtrace",
  "futures 0.3.5",
  "starcoin-block-relayer",
  "starcoin-bus",
@@ -7050,6 +7050,7 @@ dependencies = [
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-state-api",

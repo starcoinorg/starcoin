@@ -58,11 +58,11 @@ Feature: cmd integration test
 # debug
   Scenario Outline: [cmd] debug test
     Then cmd: "chain show $.head_block"
-    Then cmd: "debug gen_dev_block -p $.None"
-    Then cmd: "wallet unlock $.None"
-    Then cmd: "dev get_coin $.None"
-    Then cmd: "debug gen_txn -r -v 10 $.None"
-    Then cmd: "debug log level Debug $.None"
+    #Then cmd: "debug gen_dev_block -p $.None"
+    #Then cmd: "wallet unlock $.None"
+    #Then cmd: "dev get_coin $.None"
+    #Then cmd: "debug gen_txn -r -v 10 $.None"
+    #Then cmd: "debug log level Debug $.None"
 
     Examples:
       |  |
@@ -113,8 +113,8 @@ Feature: cmd integration test
     Then cmd: "wallet export -p compat $.None"
     Then cmd: "wallet list $.None"
     Then cmd: "wallet show $.account.address"
-    Then cmd: "wallet execute-builtin --blocking --script empty_script -s $.None"
-    Then cmd: "wallet accept_token 0x1::STC::STC $.None"
+    #Then cmd: "wallet execute-builtin --blocking --script empty_script -s $.None"
+    #Then cmd: "wallet accept_token 0x1::STC::STC $.None"
 
 
     Examples:

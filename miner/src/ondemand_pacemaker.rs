@@ -45,7 +45,11 @@ impl Actor for OndemandPacemaker {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         ctx.add_stream(self.transaction_receiver.take().unwrap());
-        info!("ondemand pacemaker started.");
+        info!("OndemandPacemaker started.");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("OndemandPacemaker stopped");
     }
 }
 

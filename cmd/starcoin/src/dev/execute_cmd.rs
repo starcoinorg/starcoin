@@ -19,7 +19,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -106,7 +105,6 @@ impl CommandAction for ExecuteCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
-
         let sender = if let Some(sender) = ctx.opt().sender {
             AccountAddress::new(sender.to_u8())
         } else {
@@ -154,6 +152,7 @@ impl CommandAction for ExecuteCommand {
         let args = opt.args.clone();
 
         let client = ctx.state().client();
+        let node_info = client.node_info()?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
@@ -163,7 +162,7 @@ impl CommandAction for ExecuteCommand {
         }
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = opt.expiration_time + get_current_timestamp();
+        let expiration_time = opt.expiration_time + node_info.now;
         let script_txn = if is_script {
             RawUserTransaction::new_script(
                 sender,

@@ -8,6 +8,7 @@ pub use self::gen_client::Client as NodeClient;
 use crate::FutureResult;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
+use starcoin_consensus::Consensus;
 use starcoin_types::peer_info::PeerInfo;
 use std::collections::HashMap;
 
@@ -17,6 +18,7 @@ pub struct NodeInfo {
     pub peer_info: PeerInfo,
     pub self_address: String,
     pub net: ChainNetwork,
+    pub now: u64,
 }
 
 impl NodeInfo {
@@ -25,6 +27,7 @@ impl NodeInfo {
             peer_info,
             self_address,
             net,
+            now: net.consensus().now(),
         }
     }
 }

@@ -192,7 +192,7 @@ fn test_txn_sync_actor() {
         )
         .unwrap();
 
-        Delay::new(Duration::from_secs(10)).await;
+        Delay::new(Duration::from_secs(5)).await;
 
         // make node2 to sync txn
         bus_2.clone().broadcast(StartSyncTxnEvent).await.unwrap();

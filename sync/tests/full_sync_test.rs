@@ -24,9 +24,8 @@ use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
 use types::system_events::SyncBegin;
 
-#[test]
+#[stest::test]
 fn test_network_actor_rpc() {
-    ::logger::init_for_test();
     let rt = tokio::runtime::Runtime::new().unwrap();
     let handle = rt.handle().clone();
     let mut system = System::new("test");
@@ -127,7 +126,7 @@ fn test_network_actor_rpc() {
             node_config_1.net().consensus(),
         )
         .start();
-        Delay::new(Duration::from_secs(60)).await;
+        Delay::new(Duration::from_secs(5)).await;
         let block_1 = first_chain
             .clone()
             .master_head_block()
@@ -224,10 +223,10 @@ fn test_network_actor_rpc() {
             error!("error: {:?}", e);
         }
 
-        Delay::new(Duration::from_secs(20)).await;
+        Delay::new(Duration::from_secs(5)).await;
 
         for i in 0..5 as usize {
-            Delay::new(Duration::from_secs(2)).await;
+            Delay::new(Duration::from_secs(1)).await;
             let block_1 = first_chain
                 .clone()
                 .master_head_block()

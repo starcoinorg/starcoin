@@ -71,6 +71,11 @@ impl Actor for SyncActor {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
+        info!("SyncActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("SyncActor stopped");
     }
 }
 

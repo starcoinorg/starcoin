@@ -12,7 +12,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_wallet_api::WalletAccount;
 use std::time::Duration;
 
@@ -59,6 +58,7 @@ fn transfer_txn(
         .get_account_resource(&from)
         .unwrap()
         .unwrap();
+    let node_info = client.node_info()?;
     let balance = account_state_reader.get_balance(&from).unwrap().unwrap();
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = starcoin_executor::build_transfer_txn(
@@ -69,8 +69,8 @@ fn transfer_txn(
         amount,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
-        client.node_info()?.net.chain_id(),
+        node_info.now + DEFAULT_EXPIRATION_TIME,
+        node_info.net.chain_id(),
     );
 
     let txn = sign_txn(client, raw_txn).unwrap();

@@ -74,13 +74,18 @@ impl Actor for ChainActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(1024);
         let recipient = ctx.address().recipient::<MinedBlock>();
         self.bus
             .send(Subscription { recipient })
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        info!("ChainActor actor started");
+        info!("ChainActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("ChainActor stopped");
     }
 }
 

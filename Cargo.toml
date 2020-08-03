@@ -72,3 +72,9 @@ members = [
     "vm/move-coverage",
     "vm/dev"
 ]
+
+[profile.dev]
+panic = "unwind"
+
+[profile.release]
+panic = "unwind"
