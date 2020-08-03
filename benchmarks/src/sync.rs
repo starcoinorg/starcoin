@@ -103,6 +103,7 @@ impl SyncBencher {
                             &rpc_client,
                             best_peer.get_peer_id(),
                             get_headers_req,
+                            latest_number,
                         )
                         .await?;
                         let latest_header = headers.last().expect("headers is empty.");
