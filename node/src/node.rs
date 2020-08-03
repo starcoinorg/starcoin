@@ -228,8 +228,8 @@ pub async fn start(
     let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
 
-    let remote_state_reader = Some(RemoteChainStateReader::new(Arc::new(
-        NetworkRpcClient::new(network.clone()),
+    let remote_state_reader = Some(RemoteChainStateReader::new(NetworkRpcClient::new(
+        network.clone(),
     )));
     let chain = Arbiter::new()
         .exec(move || -> Result<ChainActorRef> {

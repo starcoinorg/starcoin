@@ -9,6 +9,7 @@ use logger::prelude::*;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
+use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
@@ -41,7 +42,7 @@ pub struct BlockChain {
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
-    remote_chain_state: Option<RemoteChainStateReader>,
+    remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     storage: Arc<dyn Store>,
 }
 
@@ -50,7 +51,7 @@ impl BlockChain {
         config: Arc<NodeConfig>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        remote_chain_state: Option<RemoteChainStateReader>,
+        remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
