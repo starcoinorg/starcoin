@@ -314,6 +314,7 @@ pub struct AccountData {
     withdrawal_capability: Option<WithdrawCapability>,
     sent_events: EventHandle,
     received_events: EventHandle,
+    accept_token_events: EventHandle,
     balances: BTreeMap<String, Balance>,
     event_generator: EventHandleGenerator,
 }
@@ -348,6 +349,7 @@ impl AccountData {
             sequence_number,
             0,
             0,
+            0,
             false,
             false,
         )
@@ -373,6 +375,7 @@ impl AccountData {
         sequence_number: u64,
         sent_events_count: u64,
         received_events_count: u64,
+        accept_token_events_count: u64,
         delegated_key_rotation_capability: bool,
         delegated_withdrawal_capability: bool,
     ) -> Self {
@@ -398,6 +401,7 @@ impl AccountData {
             withdrawal_capability,
             sent_events: new_event_handle(sent_events_count),
             received_events: new_event_handle(received_events_count),
+            accept_token_events: new_event_handle(accept_token_events_count),
         }
     }
 
@@ -446,6 +450,7 @@ impl AccountData {
             T::Vector(Box::new(T::Struct(KeyRotationCapability::layout()))),
             T::Struct(Self::event_handle_layout()),
             T::Struct(Self::event_handle_layout()),
+            T::Struct(Self::event_handle_layout()),
             T::U64,
         ])
     }
@@ -476,6 +481,13 @@ impl AccountData {
                     vec![
                         Value::u64(self.sent_events.count()),
                         Value::vector_u8(self.sent_events.key().to_vec()),
+                    ],
+                    true,
+                )),
+                Value::struct_(Struct::pack(
+                    vec![
+                        Value::u64(self.accept_token_events.count()),
+                        Value::vector_u8(self.accept_token_events.key().to_vec()),
                     ],
                     true,
                 )),
@@ -592,6 +604,16 @@ impl AccountData {
     /// Returns the initial received events count.
     pub fn received_events_count(&self) -> u64 {
         self.received_events.count()
+    }
+
+    /// Returns the initial accept token events count.
+    pub fn accept_token_events_count(&self) -> u64 {
+        self.accept_token_events.count()
+    }
+
+    /// Returns the unique key for this accept_token events stream.
+    pub fn accept_token_events_key(&self) -> &[u8] {
+        self.accept_token_events.key().as_bytes()
     }
 }
 
