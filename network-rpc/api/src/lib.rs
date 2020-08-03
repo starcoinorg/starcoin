@@ -49,7 +49,6 @@ impl GetBlockHeaders {
             if numbers.len() >= self.max_size {
                 break;
             }
-            numbers.push(last_number);
 
             last_number = if self.reverse {
                 if last_number < self.step as u64 {
@@ -59,6 +58,7 @@ impl GetBlockHeaders {
             } else {
                 last_number + self.step as u64
             };
+            numbers.push(last_number);
         }
         numbers
     }

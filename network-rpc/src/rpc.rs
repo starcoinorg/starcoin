@@ -163,30 +163,15 @@ where
                 .get_header_by_hash(&request.block_id)
                 .await
             {
-                let mut last_number = header.number();
-                while headers.len() < request.max_size {
-                    let block_number = if request.reverse {
-                        if last_number > request.step as u64 {
-                            last_number - request.step as u64
-                        } else {
-                            0
-                        }
-                    } else {
-                        last_number + request.step as u64
-                    };
+                let numbers: Vec<BlockNumber> = request.into_numbers(header.number());
+                for number in numbers.into_iter() {
                     if let Ok(header) = chain_reader
                         .clone()
-                        .master_block_header_by_number(block_number)
+                        .master_block_header_by_number(number)
                         .await
                     {
                         headers.push(header);
-                    } else {
-                        break;
                     }
-                    if block_number == 0 {
-                        break;
-                    }
-                    last_number = block_number;
                 }
             }
             Ok(headers)

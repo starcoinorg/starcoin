@@ -102,14 +102,19 @@ pub async fn get_txns(
     peer_id: PeerId,
     req: GetTxns,
 ) -> Result<TransactionsData> {
-    let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
-    let data = client.get_txns(peer_id, req).await?;
-    let verified_txns = verify_condition.filter((*data.get_txns()).to_vec(), |txn| -> HashValue {
-        txn.crypto_hash()
-    });
-    Ok(TransactionsData {
-        txns: verified_txns,
-    })
+    let data = client.get_txns(peer_id, req.clone()).await?;
+    if req.ids.is_some() {
+        let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
+        let verified_txns = verify_condition
+            .filter((*data.get_txns()).to_vec(), |txn| -> HashValue {
+                txn.crypto_hash()
+            });
+        Ok(TransactionsData {
+            txns: verified_txns,
+        })
+    } else {
+        Ok(data)
+    }
 }
 
 pub async fn get_txn_infos(
