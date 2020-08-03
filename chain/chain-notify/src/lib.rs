@@ -1,37 +1,31 @@
-use super::notify;
-use super::pubsub;
-use super::EventSubscribers;
-use super::NewHeaderSubscribers;
+// Copyright (c) The Libra Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+pub mod message;
+
+use crate::message::{Event, Notification, ThinBlock};
 use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
-use anyhow::Result;
-use starcoin_bus::{Bus, BusActor, Subscription};
+use anyhow::{format_err, Result};
+use starcoin_bus::{Broadcast, Bus, BusActor, Subscription};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::types::event::Event;
 use starcoin_storage::Store;
 use starcoin_types::block::Block;
-use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::system_events::{NewHeadBlock, SyncBegin, SyncDone};
 use std::sync::Arc;
 
+/// ChainNotify watch `NewHeadBlock` message from bus,
+/// and then reproduce `Notification<ThinBlock>` and `Notification<Arc<Vec<Event>>>` message to bus.
+/// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerActor {
-    subscribers: EventSubscribers,
-    new_header_subscribers: NewHeaderSubscribers,
     bus: actix::Addr<BusActor>,
     store: Arc<dyn Store>,
     broadcast_txn: bool,
 }
 
 impl ChainNotifyHandlerActor {
-    pub fn new(
-        subscribers: EventSubscribers,
-        new_header_subscribers: NewHeaderSubscribers,
-        bus: actix::Addr<BusActor>,
-        store: Arc<dyn Store>,
-    ) -> Self {
+    pub fn new(bus: actix::Addr<BusActor>, store: Arc<dyn Store>) -> Self {
         Self {
-            subscribers,
-            new_header_subscribers,
             bus,
             store,
             broadcast_txn: true,
@@ -67,7 +61,7 @@ impl actix::Actor for ChainNotifyHandlerActor {
             .then(|res, act, ctx| {
                 match res {
                     Err(e) => {
-                        error!(target: "pubsub", "fail to start event subscription actor, err: {}", &e);
+                        error!(target: "chain-notify", "fail to start event subscription actor, err: {}", &e);
                         ctx.terminate();
                     }
                     Ok(r) => {
@@ -102,6 +96,7 @@ impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
             let block = block_detail.get_block();
             // notify header.
             self.notify_new_block(block);
+
             // notify events
             if let Err(e) = self.notify_events(block, self.store.clone()) {
                 error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
@@ -112,60 +107,41 @@ impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
 
 impl ChainNotifyHandlerActor {
     pub fn notify_new_block(&self, block: &Block) {
-        for subscriber in self.new_header_subscribers.read().values() {
-            let thin_block = pubsub::ThinBlock::new(
-                block.header().clone(),
-                block
-                    .transactions()
-                    .iter()
-                    .map(|t| t.crypto_hash())
-                    .collect(),
-            );
-            notify::notify(
-                subscriber,
-                pubsub::Result::Block(Box::new(thin_block.clone())),
-            );
-        }
+        let thin_block = ThinBlock::new(
+            block.header().clone(),
+            block
+                .transactions()
+                .iter()
+                .map(|t| t.crypto_hash())
+                .collect(),
+        );
+        self.bus.do_send(Broadcast {
+            msg: Notification(thin_block),
+        });
     }
 
     pub fn notify_events(&self, block: &Block, store: Arc<dyn Store>) -> Result<()> {
-        // let block = store.get_block(block_id)?;
-        // if block.is_none() {
-        //     return Ok(());
-        // }
-        // let block = block.unwrap();
-
         let block_number = block.header().number();
         let block_id = block.id();
         let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
-        // in reverse order to do limit
-        let mut all_events: Vec<ContractEvent> = vec![];
+        let mut all_events: Vec<Event> = vec![];
         for (_i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
+            let txn_hash = store
+                .get_transaction_info(txn_info_id)?
+                .map(|info| info.transaction_hash())
+                .ok_or_else(|| format_err!("cannot find txn info by it's id {}", &txn_info_id))?;
             // get events directly by txn_info_id
-            let mut events = store.get_contract_events(txn_info_id)?.unwrap_or_default();
-            events.reverse();
-            // .map(|e| Event::new(Some(block_id), None, Some(txn_hash), Some(i as u64), e));
-            all_events.extend(events);
-        }
-
-        for (id, (c, filter)) in self.subscribers.read().iter() {
-            let filtered_events = all_events
-                .iter()
-                .filter(|e| filter.matching(block_number, *e))
-                .take(filter.limit.unwrap_or(std::usize::MAX));
-            let mut to_send_events = Vec::new();
-            for evt in filtered_events {
-                let e = Event::new(Some(block_id), Some(block_number), None, None, evt);
-                to_send_events.push(pubsub::Result::Event(Box::new(e)));
-            }
-            to_send_events.reverse();
-            debug!(
-                "send {} events to subscriber {:?}",
-                to_send_events.len(),
-                id
+            let events = store.get_contract_events(txn_info_id)?.unwrap_or_default();
+            all_events.extend(
+                events
+                    .into_iter()
+                    .map(|evt| Event::new(block_id, block_number, txn_hash, None, evt)),
             );
-            notify::notify_many(c, to_send_events);
         }
+        let events = Arc::new(all_events);
+        self.bus.do_send(Broadcast {
+            msg: Notification(events),
+        });
         Ok(())
     }
 }

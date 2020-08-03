@@ -1,7 +1,9 @@
 use futures03::compat::Future01CompatExt;
 use jsonrpc_core_client::*;
 use starcoin_crypto::HashValue;
-use starcoin_rpc_api::types::{event::Event, pubsub::EventFilter, pubsub::Kind, pubsub::ThinBlock};
+use starcoin_rpc_api::types::{
+    pubsub::Event, pubsub::EventFilter, pubsub::Kind, pubsub::ThinHeadBlock,
+};
 
 const STARCOIN_SUBSCRIPTION: &str = "starcoin_subscription";
 const STARCOIN_SUBSCRIBE: &str = "starcoin_subscribe";
@@ -43,7 +45,7 @@ impl PubSubClient {
     }
     pub async fn subscribe_new_block(
         &self,
-    ) -> Result<TypedSubscriptionStream<ThinBlock>, RpcError> {
+    ) -> Result<TypedSubscriptionStream<ThinHeadBlock>, RpcError> {
         self.client
             .subscribe(
                 STARCOIN_SUBSCRIBE,

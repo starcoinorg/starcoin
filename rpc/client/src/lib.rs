@@ -13,9 +13,9 @@ use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, Rp
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
-use starcoin_rpc_api::types::event::Event;
+use starcoin_rpc_api::types::pubsub::Event;
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::pubsub::ThinBlock;
+use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::{
     chain::ChainClient, debug::DebugClient, dev::DevClient, node::NodeClient, state::StateClient,
     txpool::TxPoolClient, wallet::WalletClient,
@@ -162,7 +162,7 @@ impl RpcClient {
         &self,
         txn_hash: HashValue,
         timeout: Option<Duration>,
-    ) -> anyhow::Result<ThinBlock> {
+    ) -> anyhow::Result<ThinHeadBlock> {
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
@@ -174,7 +174,7 @@ impl RpcClient {
         futures03::executor::block_on(f)
     }
 
-    pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinBlock> {
+    pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinHeadBlock> {
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
@@ -544,7 +544,7 @@ impl RpcClient {
     }
     pub fn subscribe_new_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = ThinBlock, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = ThinHeadBlock, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
             res.map(|s| s.compat().map_err(map_err))

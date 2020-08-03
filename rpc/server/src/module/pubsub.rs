@@ -2,33 +2,31 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::Metadata;
-use crate::module::pubsub::event_subscription_actor::ChainNotifyHandlerActor;
-use crate::module::pubsub::notify::SubscriberNotifyActor;
 use actix::Addr;
 use futures::channel::mpsc;
+use futures::future::AbortHandle;
+use futures::{compat::Future01CompatExt, StreamExt};
 use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use starcoin_bus::BusActor;
-
-use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_bus::{Bus, BusActor};
+use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
+use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
-use starcoin_storage::Store;
-use starcoin_txpool_api::TxnStatusFullEvent;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
-
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::sync::{atomic, Arc};
-use subscribers::Subscribers;
-use txn_subscription_actor::TransactionSubscriptionActor;
+use txpool::TxPoolService;
 
-mod event_subscription_actor;
-mod notify;
-mod subscribers;
+use futures::compat::Sink01CompatExt;
+use starcoin_crypto::HashValue;
+use std::fmt::Debug;
+
 #[cfg(test)]
 pub mod tests;
-mod txn_subscription_actor;
 
 pub struct PubSubImpl {
     service: PubSubService,
@@ -65,8 +63,13 @@ impl StarcoinPubSub for PubSubImpl {
                 errors::invalid_params("newPendingTransactions", "Expected no parameters.")
             }
             (pubsub::Kind::Events, Some(pubsub::Params::Events(filter))) => {
-                self.service.add_event_subscription(subscriber, filter);
-                return;
+                match filter.try_into() {
+                    Ok(f) => {
+                        self.service.add_event_subscription(subscriber, f);
+                        return;
+                    }
+                    Err(e) => e,
+                }
             }
             (pubsub::Kind::Events, _) => {
                 errors::invalid_params("events", "Expected a filter object.")
@@ -81,91 +84,187 @@ impl StarcoinPubSub for PubSubImpl {
     }
 }
 
-type ClientNotifier = Addr<SubscriberNotifyActor<pubsub::Result>>;
-type TxnSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
-type EventSubscribers = Arc<RwLock<Subscribers<(ClientNotifier, Filter)>>>;
-type NewHeaderSubscribers = Arc<RwLock<Subscribers<ClientNotifier>>>;
-
+#[derive(Clone)]
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
+    bus: Addr<BusActor>,
+    subscribers: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
+    txpool: TxPoolService,
     spawner: actix_rt::Arbiter,
-    transactions_subscribers: TxnSubscribers,
-    events_subscribers: EventSubscribers,
-    new_header_subscribers: NewHeaderSubscribers,
-}
-
-impl Default for PubSubService {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl PubSubService {
-    pub fn new() -> Self {
+    pub fn new(bus: Addr<BusActor>, txpool: TxPoolService) -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
-        let transactions_subscribers =
-            Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
-        let events_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
-        let new_header_subscribers = Arc::new(RwLock::new(Subscribers::new(subscriber_id.clone())));
         Self {
             spawner: actix_rt::Arbiter::new(),
             subscriber_id,
-            transactions_subscribers,
-            events_subscribers,
-            new_header_subscribers,
+            bus,
+            subscribers: Arc::new(RwLock::new(HashMap::new())),
+            txpool,
         }
     }
 
-    pub fn start_chain_notify_handler(&self, bus: Addr<BusActor>, store: Arc<dyn Store>) {
-        let actor = ChainNotifyHandlerActor::new(
-            self.events_subscribers.clone(),
-            self.new_header_subscribers.clone(),
-            bus,
-            store,
-        );
-        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
-    }
-
-    pub fn start_transaction_subscription_handler(
+    fn start_subscription<M, Handler>(
         &self,
-        txn_receiver: mpsc::UnboundedReceiver<TxnStatusFullEvent>,
-    ) {
-        let actor =
-            TransactionSubscriptionActor::new(self.transactions_subscribers.clone(), txn_receiver);
+        msg_channel: mpsc::UnboundedReceiver<M>,
+        subscriber: Subscriber<pubsub::Result>,
+        event_handler: Handler,
+    ) where
+        M: Send + 'static,
+        Handler: EventHandler<M> + Send + 'static,
+    {
+        let subscriber_id = self.next_id();
 
-        actix::Actor::start_in_arbiter(&self.spawner, |_ctx| actor);
+        // TODO: should we use assgin_id_async?
+        if let Ok(sink) = subscriber.assign_id(subscriber_id.clone()) {
+            let subscribers = self.subscribers.clone();
+            let subscribers_clone = subscribers.clone();
+            let subscriber_id_clone = subscriber_id.clone();
+            let sink = sink.sink_compat();
+            let (f, abort_handle) = futures::future::abortable(async move {
+                let forward = msg_channel
+                    .flat_map(move |m| {
+                        let r = event_handler.handle(m);
+                        futures::stream::iter(
+                            r.into_iter().map(Ok::<_, jsonrpc_pubsub::TransportError>),
+                        )
+                    })
+                    .forward(sink)
+                    .await;
+                if let Err(e) = forward {
+                    log::warn!(target: "rpc", "Unable to send notification: {}", e);
+                    // if any error happen, we need to remove self from subscribers.
+                    subscribers_clone.write().remove(&subscriber_id_clone);
+                }
+            });
+
+            self.spawner.send(Box::pin(async move {
+                let _ = f.await;
+            }));
+            subscribers.write().insert(subscriber_id, abort_handle);
+        }
+    }
+    fn next_id(&self) -> SubscriptionId {
+        let id = self.subscriber_id.fetch_add(1, atomic::Ordering::SeqCst);
+        SubscriptionId::Number(id)
     }
 
     pub fn add_new_txn_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
-        self.transactions_subscribers
-            .write()
-            .add(&self.spawner, subscriber);
+        let txn_events = self.txpool.subscribe_pending_txn();
+        self.start_subscription(txn_events, subscriber, TxnEventHandler);
     }
+
     pub fn add_new_header_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
-        self.new_header_subscribers
-            .write()
-            .add(&self.spawner, subscriber);
+        let myself = self.clone();
+        self.spawner.send(Box::pin(async move {
+            let channel = myself.bus.clone().channel().await;
+            match channel {
+                Err(_e) => {
+                    let _ = subscriber
+                        .reject_async(jsonrpc_core::Error::internal_error())
+                        .compat()
+                        .await;
+                }
+                Ok(receiver) => {
+                    myself.start_subscription(receiver, subscriber, NewHeadHandler);
+                }
+            }
+        }));
     }
-    pub fn add_event_subscription(
-        &self,
-        subscriber: Subscriber<pubsub::Result>,
-        filter: EventFilter,
-    ) {
-        match filter.try_into() {
-            Ok(f) => {
-                self.events_subscribers
-                    .write()
-                    .add(&self.spawner, subscriber, f);
+
+    pub fn add_event_subscription(&self, subscriber: Subscriber<pubsub::Result>, filter: Filter) {
+        let myself = self.clone();
+        self.spawner.send(Box::pin(async move {
+            let channel = myself.bus.clone().channel().await;
+            match channel {
+                Err(_) => {
+                    let _ = subscriber
+                        .reject_async(jsonrpc_core::Error::internal_error())
+                        .compat()
+                        .await;
+                }
+                Ok(receiver) => {
+                    myself.start_subscription(
+                        receiver,
+                        subscriber,
+                        ContractEventHandler { filter },
+                    );
+                }
             }
-            Err(e) => {
-                let _ = subscriber.reject(e);
-            }
-        };
+        }));
     }
     pub fn unsubscribe(&self, id: SubscriptionId) -> Result<bool> {
-        let res1 = self.events_subscribers.write().remove(&id).is_some();
-        let res2 = self.transactions_subscribers.write().remove(&id).is_some();
-        let res3 = self.new_header_subscribers.write().remove(&id).is_some();
-        Ok(res1 || res2 || res3)
+        match self.subscribers.write().remove(&id) {
+            Some(handle) => {
+                handle.abort();
+                Ok(true)
+            }
+            None => Ok(false),
+        }
+    }
+}
+
+trait EventHandler<M> {
+    fn handle(&self, msg: M) -> Vec<jsonrpc_core::Result<pubsub::Result>>;
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct TxnEventHandler;
+
+impl EventHandler<Arc<Vec<HashValue>>> for TxnEventHandler {
+    fn handle(&self, msg: Arc<Vec<HashValue>>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+        vec![Ok(pubsub::Result::TransactionHash(msg.to_vec()))]
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct NewHeadHandler;
+impl EventHandler<Notification<ThinBlock>> for NewHeadHandler {
+    fn handle(&self, msg: Notification<ThinBlock>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+        let Notification(block) = msg;
+        vec![Ok(pubsub::Result::Block(Box::new(ThinHeadBlock::new(
+            block.header,
+            block.body,
+        ))))]
+    }
+}
+#[derive(Clone, Debug)]
+pub struct ContractEventHandler {
+    filter: Filter,
+}
+
+impl EventHandler<Notification<Arc<Vec<Event>>>> for ContractEventHandler {
+    fn handle(
+        &self,
+        msg: Notification<Arc<Vec<Event>>>,
+    ) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+        let Notification(events) = msg;
+        let filtered = events
+            .as_ref()
+            .iter()
+            .filter(|e| self.filter.matching(e.block_number, &e.contract_event));
+        let filtered_events: Vec<_> = match self.filter.limit {
+            None => filtered.collect(),
+            Some(l) => {
+                let mut evts: Vec<_> = filtered.rev().take(l).collect();
+                evts.reverse();
+                evts
+            }
+        };
+
+        filtered_events
+            .into_iter()
+            .map(|e| {
+                pubsub::Event::new(
+                    Some(e.block_hash),
+                    Some(e.block_number),
+                    Some(e.transaction_hash),
+                    e.transaction_index,
+                    &e.contract_event,
+                )
+            })
+            .map(|e| Ok(pubsub::Result::Event(Box::new(e))))
+            .collect()
     }
 }

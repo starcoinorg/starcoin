@@ -1,0 +1,17 @@
+[package]
+name = "starcoin-chain-notify"
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
+starcoin-types = {path = "../../types" }
+starcoin-bus = {path = "../../bus" }
+starcoin-crypto = {path = "../../commons/crypto"}
+starcoin-logger = {path = "../../commons/logger"}
+starcoin-storage = {path = "../../storage"}

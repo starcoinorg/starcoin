@@ -1,14 +1,14 @@
 use crate::{
     metadata::Metadata,
-    module::{PubSubImpl, PubSubService},
+    module::{test_helper, PubSubImpl, PubSubService},
 };
+use actix::Actor;
 use anyhow::Result;
+use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
-// use starcoin_crypto::hash::HashValue;
-use crate::module::test_helper;
-use futures::{compat::Stream01CompatExt, StreamExt};
 use starcoin_bus::{Bus, BusActor};
+use starcoin_chain_notify::ChainNotifyHandlerActor;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
@@ -73,9 +73,14 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // now block is applied, we can emit events.
 
-    let service = PubSubService::new();
     let bus = BusActor::launch();
-    service.start_chain_notify_handler(bus.clone(), block_chain.get_storage());
+    let (txpool, _, _config) = test_helper::start_txpool();
+    let txpool_service = txpool.get_service();
+    let _chain_notify_handler =
+        ChainNotifyHandlerActor::new(bus.clone(), block_chain.get_storage()).start();
+
+    let service = PubSubService::new(bus.clone(), txpool_service);
+
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 
@@ -90,19 +95,24 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let request =
         r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events", {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
-    assert_eq!(
-        io.handle_request_sync(request, metadata.clone()),
-        Some(response.to_owned())
-    );
+    let resp = io
+        .handle_request(request, metadata.clone())
+        .compat()
+        .await
+        .unwrap();
+    assert_eq!(resp, Some(response.to_owned()));
 
     // Subscribe error
     let request =
         r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events"], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: events","data":"\"Expected a filter object.\""},"id":1}"#;
-    assert_eq!(
-        io.handle_request_sync(request, metadata.clone()),
-        Some(response.to_owned())
-    );
+
+    let resp = io
+        .handle_request(request, metadata.clone())
+        .compat()
+        .await
+        .unwrap();
+    assert_eq!(resp, Some(response.to_owned()));
 
     // send block
     let block_detail = Arc::new(BlockDetail::new(new_block, 0.into()));
@@ -133,11 +143,10 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
+    let bus = BusActor::launch();
     let (txpool, _, config) = test_helper::start_txpool();
     let txpool_service = txpool.get_service();
-    let service = PubSubService::new();
-    let txn_receiver = txpool_service.subscribe_txns();
-    service.start_transaction_subscription_handler(txn_receiver);
+    let service = PubSubService::new(bus, txpool_service.clone());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 
@@ -151,18 +160,15 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // Fail if params are provided
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions", {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: newPendingTransactions","data":"\"Expected no parameters.\""},"id":1}"#;
-    assert_eq!(
-        io.handle_request_sync(request, metadata.clone()),
-        Some(response.to_owned())
-    );
+    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    assert_eq!(resp, Ok(Some(response.to_owned())));
 
     // Subscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions"], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
-    assert_eq!(
-        io.handle_request_sync(request, metadata.clone()),
-        Some(response.to_owned())
-    );
+    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    assert_eq!(resp, Ok(Some(response.to_owned())));
+
     // Send new transactions
     let txn = {
         let auth_key = AuthenticationKey::random();
@@ -189,16 +195,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;
-    assert_eq!(
-        io.handle_request_sync(request, metadata),
-        Some(response.to_owned())
-    );
+    let resp = io.handle_request(request, metadata).compat().await;
+    assert_eq!(resp, Ok(Some(response.to_owned())));
 
-    let res = timeout(Duration::from_secs(5), receiver.next())
+    let res = timeout(Duration::from_secs(1), receiver.next())
         .await?
-        .transpose()
-        .unwrap();
+        .transpose();
 
-    assert_eq!(res, None);
+    assert_eq!(res, Ok(None));
     Ok(())
 }
