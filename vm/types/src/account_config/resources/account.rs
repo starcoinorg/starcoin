@@ -19,6 +19,7 @@ pub struct AccountResource {
     key_rotation_capability: Option<KeyRotationCapabilityResource>,
     received_events: EventHandle,
     sent_events: EventHandle,
+    accept_token_events: EventHandle,
     sequence_number: u64,
 }
 
@@ -31,6 +32,7 @@ impl AccountResource {
         key_rotation_capability: Option<KeyRotationCapabilityResource>,
         sent_events: EventHandle,
         received_events: EventHandle,
+        accept_token_events: EventHandle,
     ) -> Self {
         AccountResource {
             sequence_number,
@@ -39,6 +41,7 @@ impl AccountResource {
             authentication_key,
             sent_events,
             received_events,
+            accept_token_events,
         }
     }
 
@@ -70,6 +73,11 @@ impl AccountResource {
     /// Return the received_events handle for the given AccountResource
     pub fn received_events(&self) -> &EventHandle {
         &self.received_events
+    }
+
+    /// Return the accept_token_events handle for the given AccountResource
+    pub fn accept_token_events(&self) -> &EventHandle {
+        &self.accept_token_events
     }
 }
 

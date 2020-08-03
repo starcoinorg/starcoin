@@ -49,6 +49,7 @@ pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::thread::JoinHandle;
 
@@ -320,6 +321,16 @@ impl RpcClient {
                 .import(address, private_key, password)
                 .compat()
                 .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn wallet_accepted_tokens(
+        &self,
+        address: AccountAddress,
+    ) -> anyhow::Result<Vec<TokenCode>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.wallet_client.accepted_tokens(address).compat().await
         })
         .map_err(map_err)
     }

@@ -7,6 +7,7 @@ pub use self::gen_client::Client as WalletClient;
 use crate::FutureResult;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_wallet_api::WalletAccount;
 
 #[rpc]
@@ -46,4 +47,7 @@ pub trait WalletApi {
     /// Return the private key as bytes for `address`
     #[rpc(name = "wallet.export")]
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>>;
+
+    #[rpc(name = "wallet.accepted_tokens")]
+    fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>>;
 }

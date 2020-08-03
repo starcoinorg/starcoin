@@ -4,6 +4,7 @@
 pub mod file_wallet_store;
 pub mod keystore_wallet;
 pub mod wallet;
+pub mod wallet_events;
 pub mod wallet_manager;
 pub mod wallet_storage;
 

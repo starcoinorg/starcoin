@@ -37,6 +37,8 @@ module Account {
         received_events: Event::EventHandle<ReceivedPaymentEvent>,
         // Event handle for sent event
         sent_events: Event::EventHandle<SentPaymentEvent>,
+        // Event handle for accept_token event
+        accept_token_events: Event::EventHandle<AcceptTokenEvent>,
         // The current sequence number.
         // Incremented by one each time a transaction is submitted
         sequence_number: u64,
@@ -83,6 +85,11 @@ module Account {
         payer: address,
         // Metadata associated with the payment
         metadata: vector<u8>,
+    }
+
+    /// Message for accept token events
+    struct AcceptTokenEvent {
+        token_code: vector<u8>,
     }
 
     fun ECOIN_DEPOSIT_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 0 }
@@ -317,7 +324,7 @@ module Account {
     // key `auth_key_prefix` | `fresh_address`.
     // Creating an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
-    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>){
+    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>) acquires Account {
         let new_account = create_signer(fresh_address);
         Event::publish_generator(&new_account);
         make_account(&new_account, auth_key_prefix);
@@ -345,6 +352,7 @@ module Account {
               }),
               received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
               sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
+              accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
               sequence_number: 0,
         });
     }
@@ -363,8 +371,18 @@ module Account {
     }
 
     // Add a balance of `Token` type to the sending account.
-    public fun accept_token<TokenType>(account: &signer) {
-        move_to(account, Balance<TokenType>{ token: Token::zero<TokenType>() })
+    public fun accept_token<TokenType>(account: &signer) acquires Account {
+        move_to(account, Balance<TokenType>{ token: Token::zero<TokenType>() });
+        let token_code = Token::token_code<TokenType>();
+        // Load the sender's account
+        let sender_account_ref = borrow_global_mut<Account>(Signer::address_of(account));
+        // Log a sent event
+        Event::emit_event<AcceptTokenEvent>(
+            &mut sender_account_ref.accept_token_events,
+            AcceptTokenEvent {
+                token_code:  token_code,
+            },
+        );
     }
 
     // Return whether the account at `addr` accepts `Token` type tokens

@@ -5,6 +5,7 @@ use crate::module::map_rpc_err;
 use futures::future::TryFutureExt;
 use starcoin_rpc_api::{wallet::WalletApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{WalletAccount, WalletAsyncService};
 
@@ -111,6 +112,15 @@ where
             .service
             .clone()
             .export_account(address, password)
+            .map_err(|e| map_rpc_err(e.into()));
+        Box::new(fut.compat())
+    }
+
+    fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>> {
+        let fut = self
+            .service
+            .clone()
+            .accepted_tokens(address)
             .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }

@@ -4,6 +4,7 @@
 use crate::error::AccountServiceError;
 use crate::{Wallet, WalletAccount};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 pub type ServiceResult<T> = std::result::Result<T, AccountServiceError>;
@@ -45,4 +46,6 @@ pub trait WalletAsyncService: Clone + std::marker::Unpin + Send + Sync {
         address: AccountAddress,
         password: String,
     ) -> ServiceResult<Vec<u8>>;
+
+    async fn accepted_tokens(self, address: AccountAddress) -> ServiceResult<Vec<TokenCode>>;
 }

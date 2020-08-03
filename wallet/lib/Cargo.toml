@@ -7,6 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
+dashmap = "3.11"
 anyhow = "1.0"
 futures = "0.3"
 actix = "0.10.0-alpha.3"
@@ -16,6 +17,7 @@ rand = "0.7.3"
 parking_lot = "0.9"
 serde = "1"
 rand_core = { version = "0.5.1", default-features = false }
+bstr = "0.2"
 
 starcoin-wallet-api = {path = "../api",package = "starcoin-wallet-api"}
 starcoin-canonical-serialization ={package= "starcoin-canonical-serialization", path = "../../commons/scs"}
@@ -23,5 +25,8 @@ starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-decrypt = {path = "../../commons/decrypt"}
 starcoin-storage = {path = "../../storage"}
+starcoin-bus = {path = "../../bus"}
+starcoin-chain-notify = {path = "../../chain/chain-notify"}
+starcoin-logger = {path = "../../commons/logger"}
 [dev-dependencies]
 tempfile="3"

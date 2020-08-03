@@ -10,6 +10,7 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use std::collections::HashMap;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
@@ -51,7 +52,16 @@ impl CommandAction for ShowCommand {
             .get_account_resource(account.address())?
             .map(|res| res.sequence_number());
 
-        let balances = account_state_reader.get_balances(account.address())?;
+        let accepted_tokens = client.wallet_accepted_tokens(account_address)?;
+        let mut balances = HashMap::with_capacity(accepted_tokens.len());
+        for token in accepted_tokens {
+            let token_name = token.name.clone();
+            let balance =
+                account_state_reader.get_balance_by_token_code(account.address(), token)?;
+            if let Some(b) = balance {
+                balances.insert(token_name, b);
+            }
+        }
 
         let auth_key_prefix = hex::encode(AuthenticationKey::ed25519(&account.public_key).prefix());
         Ok(AccountWithStateView {

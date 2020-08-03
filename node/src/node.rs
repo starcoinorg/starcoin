@@ -130,7 +130,7 @@ pub async fn start(
     };
     info!("Start chain with startup info: {}", startup_info);
 
-    let account_service = WalletActor::launch(config.clone())?;
+    let account_service = WalletActor::launch(config.clone(), bus.clone())?;
 
     //Init default account
     let default_account = match account_service.clone().get_default_account().await? {

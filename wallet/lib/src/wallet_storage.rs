@@ -13,6 +13,7 @@ use starcoin_storage::{
     storage::{CodecStorage, ColumnFamilyName, StorageInstance},
 };
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_wallet_api::Setting;
 use std::convert::TryFrom;
 use std::path::Path;
@@ -21,6 +22,7 @@ use std::sync::Arc;
 pub const SETTING_PREFIX_NAME: ColumnFamilyName = "account_settings";
 pub const ENCRYPTED_PRIVATE_KEY_PREFIX_NAME: ColumnFamilyName = "encrypted_private_key";
 pub const PUBLIC_KEY_PREFIX_NAME: ColumnFamilyName = "public_key";
+pub const ACCEPTED_TOKEN_PREFIX_NAME: ColumnFamilyName = "accepted_token";
 pub const GLOBAL_PREFIX_NAME: ColumnFamilyName = "global";
 
 define_storage!(
@@ -49,6 +51,26 @@ define_storage!(
     GlobalValue,
     GLOBAL_PREFIX_NAME
 );
+
+define_storage!(
+    AcceptedTokenStore,
+    AccountAddressWrapper,
+    AcceptedTokens,
+    ACCEPTED_TOKEN_PREFIX_NAME
+);
+
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct AcceptedTokens(pub Vec<TokenCode>);
+
+impl ValueCodec for AcceptedTokens {
+    fn encode_value(&self) -> Result<Vec<u8>, Error> {
+        self.0.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self, Error> {
+        <Vec<TokenCode>>::decode(data).map(AcceptedTokens)
+    }
+}
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum GlobalSettingKey {
@@ -160,6 +182,7 @@ pub struct WalletStorage {
     private_key_store: PrivateKeyStore,
     public_key_store: PublicKeyStore,
     global_value_store: GlobalSettingStore,
+    accepted_token_store: AcceptedTokenStore,
 }
 
 impl WalletStorage {
@@ -170,6 +193,7 @@ impl WalletStorage {
                 SETTING_PREFIX_NAME,
                 ENCRYPTED_PRIVATE_KEY_PREFIX_NAME,
                 PUBLIC_KEY_PREFIX_NAME,
+                ACCEPTED_TOKEN_PREFIX_NAME,
                 GLOBAL_PREFIX_NAME,
             ],
             false,
@@ -186,6 +210,7 @@ impl WalletStorage {
             setting_store: WalletSettingStore::new(store.clone()),
             private_key_store: PrivateKeyStore::new(store.clone()),
             public_key_store: PublicKeyStore::new(store.clone()),
+            accepted_token_store: AcceptedTokenStore::new(store.clone()),
             global_value_store: GlobalSettingStore::new(store),
         }
     }
@@ -295,6 +320,29 @@ impl WalletStorage {
         self.private_key_store.remove(address.into())?;
         self.public_key_store.remove(address.into())?;
         self.setting_store.remove(address.into())?;
+        Ok(())
+    }
+
+    pub fn get_accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>> {
+        let ts = self.accepted_token_store.get(address.into())?;
+        Ok(ts.map(|t| t.0).unwrap_or_default())
+    }
+
+    pub fn add_accepted_token(
+        &self,
+        address: AccountAddress,
+        token_code: TokenCode,
+    ) -> Result<(), Error> {
+        let mut tokens = self
+            .accepted_token_store
+            .get(address.into())?
+            .map(|l| l.0)
+            .unwrap_or_default();
+        if !tokens.contains(&token_code) {
+            tokens.push(token_code);
+            self.accepted_token_store
+                .put(address.into(), AcceptedTokens(tokens))?;
+        }
         Ok(())
     }
 }

@@ -8,6 +8,7 @@ use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::{
     account_address::{self, AccountAddress},
     transaction::{RawUserTransaction, SignedUserTransaction},
@@ -225,6 +226,12 @@ impl WalletManager {
             }
             None => Ok(()),
         }
+    }
+
+    pub fn accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>> {
+        self.store
+            .get_accepted_tokens(address)
+            .map_err(WalletError::StoreError)
     }
 }
 

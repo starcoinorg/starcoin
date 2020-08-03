@@ -4,25 +4,33 @@
 use crate::message::{WalletRequest, WalletResponse};
 use actix::{Actor, Addr, Context, Handler};
 use anyhow::Result;
+use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::error::AccountServiceError;
 use starcoin_wallet_api::{ServiceResult, WalletAccount, WalletAsyncService, WalletResult};
+use starcoin_wallet_lib::wallet_events::WalletEventActor;
 use starcoin_wallet_lib::wallet_manager::WalletManager;
 use starcoin_wallet_lib::wallet_storage::WalletStorage;
 use std::sync::Arc;
 
 pub struct WalletActor {
     service: WalletManager,
+    _events: Addr<WalletEventActor>,
 }
 
 impl WalletActor {
-    pub fn launch(config: Arc<NodeConfig>) -> Result<WalletActorRef> {
+    pub fn launch(config: Arc<NodeConfig>, bus: Addr<BusActor>) -> Result<WalletActorRef> {
         let vault_config = &config.vault;
         let wallet_storage = WalletStorage::create_from_path(vault_config.dir())?;
-        let manager = WalletManager::new(wallet_storage)?;
-        let actor = WalletActor { service: manager };
+        let manager = WalletManager::new(wallet_storage.clone())?;
+        let events = WalletEventActor::launch(bus, wallet_storage);
+        let actor = WalletActor {
+            service: manager,
+            _events: events,
+        };
         Ok(WalletActorRef(actor.start()))
     }
 }
@@ -74,6 +82,10 @@ impl Handler<WalletRequest> for WalletActor {
                     .service
                     .import_wallet(address, private_key, password.as_str())?;
                 WalletResponse::WalletAccount(Box::new(wallet.wallet_info()))
+            }
+            WalletRequest::AccountAcceptedTokens { address } => {
+                let tokens = self.service.accepted_tokens(address)?;
+                WalletResponse::AcceptedTokens(tokens)
             }
         };
         Ok(response)
@@ -238,6 +250,19 @@ impl WalletAsyncService for WalletActorRef {
             panic!("Unexpect response type.")
         }
     }
+
+    async fn accepted_tokens(self, address: AccountAddress) -> ServiceResult<Vec<TokenCode>> {
+        let response = self
+            .0
+            .send(WalletRequest::AccountAcceptedTokens { address })
+            .await
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+        if let WalletResponse::AcceptedTokens(data) = response {
+            Ok(data)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
 }
 
 #[cfg(test)]
@@ -247,7 +272,8 @@ mod tests {
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
         let config = Arc::new(NodeConfig::random_for_test());
-        let actor = WalletActor::launch(config)?;
+        let bus = BusActor::launch();
+        let actor = WalletActor::launch(config, bus)?;
         let account = actor.get_default_account().await?;
         assert!(account.is_none());
         Ok(())
