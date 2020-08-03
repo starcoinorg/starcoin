@@ -316,7 +316,7 @@ pub static INSTRINSIC_GAS_PER_BYTE: u64 = 8;
 pub static MAXIMUM_NUMBER_OF_GAS_UNITS: u64 = 4_000_000;
 pub static MIN_PRICE_PER_GAS_UNIT: u64 = 1;
 pub static MAX_PRICE_PER_GAS_UNIT: u64 = 10_000;
-pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096;
+pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
 pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
@@ -359,7 +359,7 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
         min_price_per_gas_unit: 0, // set to 0
         max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-        max_transaction_size_in_bytes: 4096 * 10, // to pass stdlib_upgrade
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
     }
