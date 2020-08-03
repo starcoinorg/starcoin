@@ -22,6 +22,7 @@ use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
+use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
@@ -51,7 +52,7 @@ impl ChainActor {
         storage: Arc<dyn Store>,
         bus: Addr<BusActor>,
         txpool: TxPoolService,
-        remote_chain_state: Option<RemoteChainStateReader>,
+        remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(

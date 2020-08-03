@@ -10,6 +10,7 @@ use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
+use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
@@ -42,7 +43,7 @@ where
     storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
-    remote_chain_state: Option<RemoteChainStateReader>,
+    remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
 }
 
 impl<P> ChainServiceImpl<P>
@@ -55,7 +56,7 @@ where
         storage: Arc<dyn Store>,
         txpool: P,
         bus: Addr<BusActor>,
-        remote_chain_state: Option<RemoteChainStateReader>,
+        remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<Self> {
         let master = BlockChain::new(
             config.clone(),
@@ -101,7 +102,7 @@ where
     pub fn state_at(&self, _root: HashValue) -> ChainStateDB {
         unimplemented!()
     }
-    pub fn get_remote_chain_state(&self) -> Option<RemoteChainStateReader> {
+    pub fn get_remote_chain_state(&self) -> Option<RemoteChainStateReader<NetworkAsyncService>> {
         self.remote_chain_state.clone()
     }
 

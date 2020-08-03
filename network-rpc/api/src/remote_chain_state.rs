@@ -1,24 +1,29 @@
 use crate::{gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof};
 use anyhow::{anyhow, Result};
+use network_api::NetworkService;
 use starcoin_crypto::HashValue;
-use starcoin_network::NetworkAsyncService;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::state_set::ChainStateSet;
-use std::sync::Arc;
-//todo: Not depend on NetworkAsyncService
+
 #[derive(Clone)]
-pub struct RemoteChainStateReader {
+pub struct RemoteChainStateReader<N>
+where
+    N: NetworkService,
+{
     peer_id: Option<PeerId>,
     state_root: Option<HashValue>,
-    client: Arc<NetworkRpcClient<NetworkAsyncService>>,
+    client: NetworkRpcClient<N>,
 }
 
-impl RemoteChainStateReader {
-    pub fn new(client: Arc<NetworkRpcClient<NetworkAsyncService>>) -> Self {
+impl<N> RemoteChainStateReader<N>
+where
+    N: NetworkService,
+{
+    pub fn new(client: NetworkRpcClient<N>) -> Self {
         Self {
             peer_id: None,
             state_root: None,
@@ -34,7 +39,10 @@ impl RemoteChainStateReader {
     }
 }
 
-impl ChainStateReader for RemoteChainStateReader {
+impl<N> ChainStateReader for RemoteChainStateReader<N>
+where
+    N: NetworkService,
+{
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         let peer_id = self
             .peer_id
@@ -89,7 +97,10 @@ impl ChainStateReader for RemoteChainStateReader {
     }
 }
 
-impl StateView for RemoteChainStateReader {
+impl<N> StateView for RemoteChainStateReader<N>
+where
+    N: NetworkService,
+{
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         let state_proof = self.get_with_proof(access_path)?;
         Ok(state_proof.state)
