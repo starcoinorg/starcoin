@@ -6749,6 +6749,7 @@ dependencies = [
  "starcoin-miner-client",
  "starcoin-network",
  "starcoin-network-rpc",
+ "starcoin-network-rpc-api",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",

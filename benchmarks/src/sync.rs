@@ -6,7 +6,7 @@ use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
-use network_rpc::gen_client::NetworkRpcClient;
+use network_rpc::gen_client::{get_rpc_info, NetworkRpcClient};
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_random_available_port, NodeConfig};
@@ -24,7 +24,7 @@ use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::ChainAsyncService;
-use types::peer_info::{PeerId, PeerInfo};
+use types::peer_info::{PeerId, PeerInfo, RpcInfo};
 
 /// Benchmarking support for sync.
 pub struct SyncBencher;
@@ -180,8 +180,11 @@ async fn create_node(
     let key_pair = node_config.clone().network.network_keypair();
     let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
     let mut rpc_proto_info = Vec::new();
-    let sync_rpc_proto_info = starcoin_sync::helper::sync_rpc_info();
-    rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
+    let chain_rpc_proto_info = get_rpc_info();
+    rpc_proto_info.push((
+        chain_rpc_proto_info.0.into(),
+        RpcInfo::new(chain_rpc_proto_info.1),
+    ));
     let node_config_clone = node_config.clone();
     let bus_clone = bus.clone();
     let addr_clone = addr.clone();

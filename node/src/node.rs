@@ -15,7 +15,10 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, RemoteChainStateReader};
+use starcoin_network_rpc_api::{
+    gen_client::{get_rpc_info, NetworkRpcClient},
+    RemoteChainStateReader,
+};
 use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -27,7 +30,7 @@ use starcoin_sync::SyncActor;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config::association_address;
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::{SyncBegin, SyncDone};
 use starcoin_wallet_api::WalletAsyncService;
 use starcoin_wallet_service::WalletActor;
@@ -186,8 +189,11 @@ pub async fn start(
         .clone()
         .expect("Self peer_id must has been set.");
     let mut rpc_proto_info = Vec::new();
-    let sync_rpc_proto_info = starcoin_sync::helper::sync_rpc_info();
-    rpc_proto_info.push((sync_rpc_proto_info.0.into(), sync_rpc_proto_info.1));
+    let chain_rpc_proto_info = get_rpc_info();
+    rpc_proto_info.push((
+        chain_rpc_proto_info.0.into(),
+        RpcInfo::new(chain_rpc_proto_info.1),
+    ));
     let self_info = PeerInfo::new_with_proto(
         peer_id.clone(),
         head_block_info.get_total_difficulty(),
