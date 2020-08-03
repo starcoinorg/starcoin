@@ -31,7 +31,7 @@ fn test_stratum_client() {
             let dispatcher = Arc::new(StratumManager::new(miner.clone()));
             Stratum::start(&miner_config.stratum_server, dispatcher, None).unwrap()
         };
-        Delay::new(Duration::from_millis(3000)).await;
+        Delay::new(Duration::from_millis(1000)).await;
         info!("started stratum server");
         let mine_ctx = {
             let header = BlockHeader::random();
@@ -41,7 +41,9 @@ fn test_stratum_client() {
             let difficulty: U256 = 1.into();
             MineCtx::new(block_template, difficulty)
         };
-        let _addr = MinerClientActor::new(miner_config, conf.net().consensus()).start();
+        let _addr =
+            MinerClientActor::new(miner_config.client_config.clone(), conf.net().consensus())
+                .start();
         miner.set_mint_job(mine_ctx);
         for _ in 1..10 {
             stratum.push_work_all(miner.get_mint_job()).unwrap();

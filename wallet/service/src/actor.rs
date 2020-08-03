@@ -243,17 +243,10 @@ impl WalletAsyncService for WalletActorRef {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_config::{BaseConfig, ChainNetwork, ConfigModule};
 
     #[stest::test]
     async fn test_actor_launch() -> Result<()> {
-        let temp_dir = tempfile::tempdir()?;
-        let base_config = BaseConfig::new(ChainNetwork::Dev, Some(temp_dir.path().to_path_buf()));
-        std::fs::create_dir_all(base_config.data_dir())?;
-
-        let mut node_config = NodeConfig::random_for_test();
-        node_config.vault.random(&base_config);
-        let config = Arc::new(node_config);
+        let config = Arc::new(NodeConfig::random_for_test());
         let actor = WalletActor::launch(config)?;
         let account = actor.get_default_account().await?;
         assert!(account.is_none());

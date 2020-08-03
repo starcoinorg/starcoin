@@ -12,64 +12,69 @@ use std::net::SocketAddr;
 pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct MinerConfig {
     pub stratum_server: SocketAddr,
-    pub thread_num: u16,
-    pub enable_miner_client: bool,
     pub enable_mint_empty_block: bool,
-    #[serde(skip)]
-    pub enable_stderr: bool,
     pub block_gas_limit: u64,
+    pub enable_miner_client: bool,
+    pub client_config: MinerClientConfig,
 }
 
-impl Default for MinerConfig {
-    fn default() -> Self {
-        Self::default_with_net(ChainNetwork::default())
-    }
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MinerClientConfig {
+    pub stratum_server: SocketAddr,
+    pub thread_num: u16,
+    #[serde(skip)]
+    pub enable_stderr: bool,
 }
 
 impl ConfigModule for MinerConfig {
-    fn default_with_net(net: ChainNetwork) -> Self {
-        let port = match net {
-            ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
-            _ => DEFAULT_STRATUM_SERVER_PORT,
-        };
-        let block_gas_limit = net.block_gas_limit();
-        Self {
-            stratum_server: format!("127.0.0.1:{}", port)
-                .parse::<SocketAddr>()
-                .expect("parse address must success."),
-            thread_num: 1,
-            enable_miner_client: true,
-            enable_mint_empty_block: true,
-            enable_stderr: false,
-            block_gas_limit,
-        }
-    }
-
-    fn random(&mut self, _base: &BaseConfig) {
-        self.stratum_server = format!("127.0.0.1:{}", get_random_available_port())
-            .parse::<SocketAddr>()
-            .unwrap();
-        self.enable_mint_empty_block = true;
-    }
-
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
+    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
+        // only dev network is on demand mine at default.
         let disable_mint_empty_block = opt
             .disable_mint_empty_block
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
 
-        if let Some(thread_num) = opt.miner_thread {
-            self.thread_num = thread_num;
-        }
+        let port = match base.net {
+            ChainNetwork::Test => get_random_available_port(),
+            ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
+            _ => DEFAULT_STRATUM_SERVER_PORT,
+        };
+        let stratum_server = format!("127.0.0.1:{}", port).parse::<SocketAddr>()?;
 
+        Ok(Self {
+            stratum_server,
+            enable_mint_empty_block: !disable_mint_empty_block,
+            block_gas_limit: base.net.block_gas_limit(),
+            enable_miner_client: !opt.disable_miner_client,
+            client_config: MinerClientConfig {
+                stratum_server,
+                thread_num: opt.miner_thread.unwrap_or(1),
+                enable_stderr: false,
+            },
+        })
+    }
+
+    fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
+        // only dev network is on demand mine at default.
+        let disable_mint_empty_block = opt
+            .disable_mint_empty_block
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| base.net.is_dev());
+
+        self.enable_mint_empty_block = !disable_mint_empty_block;
+
+        if let Some(thread) = opt.miner_thread {
+            self.client_config.thread_num = thread;
+        }
         if opt.disable_miner_client {
             self.enable_miner_client = false;
         }
-        self.enable_mint_empty_block = !disable_mint_empty_block;
         Ok(())
     }
 }

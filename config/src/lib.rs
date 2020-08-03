@@ -12,7 +12,6 @@ use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
 };
-use starcoin_logger::prelude::*;
 use std::convert::TryFrom;
 use std::fs::create_dir_all;
 use std::fs::File;
@@ -41,7 +40,7 @@ pub use available_port::{
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
-pub use miner_config::MinerConfig;
+pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use starcoin_vm_types::chain_config::{
@@ -132,9 +131,17 @@ pub struct StarcoinOpt {
     /// Node network private key file, only work for first init.
     pub node_key_file: Option<PathBuf>,
 
-    #[structopt(long = "sync-mode", short = "s", default_value = "fast")]
+    #[structopt(long = "sync-mode", short = "s")]
     /// Sync mode. Included value(full, fast, light).
-    pub sync_mode: SyncMode,
+    pub sync_mode: Option<SyncMode>,
+
+    #[structopt(long = "rpc-address")]
+    /// Rpc address, default is 127.0.0.1
+    pub rpc_address: Option<String>,
+
+    #[structopt(long = "miner-thread")]
+    /// Miner thread number, not work for dev network, default is 1
+    pub miner_thread: Option<u16>,
 
     #[structopt(long = "disable-std-log")]
     /// Disable std error log output.
@@ -152,21 +159,13 @@ pub struct StarcoinOpt {
     /// Don't start a miner client in node.
     pub disable_miner_client: bool,
 
-    #[structopt(long = "disable-mint-empty-block")]
-    /// Do not mint empty block, default is true in Dev network.
-    pub disable_mint_empty_block: Option<bool>,
-
-    #[structopt(long = "miner-thread")]
-    /// Miner thread number, not work for dev network, default is 1
-    pub miner_thread: Option<u16>,
-
     #[structopt(long = "disable-seed")]
     /// Disable seed for seed node.
     pub disable_seed: bool,
 
-    #[structopt(long = "rpc-address")]
-    /// Rpc address, default is 127.0.0.1
-    pub rpc_address: Option<String>,
+    #[structopt(long = "disable-mint-empty-block")]
+    /// Do not mint empty block, default is true in Dev network.
+    pub disable_mint_empty_block: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -239,9 +238,6 @@ impl BaseConfig {
     pub fn base_data_dir(&self) -> &Path {
         self.base_data_dir.as_ref()
     }
-    pub fn random_for_test() -> Self {
-        Self::new(ChainNetwork::Test, None)
-    }
 }
 
 impl Default for BaseConfig {
@@ -251,14 +247,12 @@ impl Default for BaseConfig {
     }
 }
 
-pub trait ConfigModule {
-    /// Generate default config by ChainNetWork
-    fn default_with_net(net: ChainNetwork) -> Self;
-    /// Init config with random for test, such as ports.
-    fn random(&mut self, _base: &BaseConfig) {}
-    /// Init config with load, read or generate additional config for file
-    /// and overwrite config by global command line option.
-    fn load(&mut self, _base: &BaseConfig, _opt: &StarcoinOpt) -> Result<()> {
+pub trait ConfigModule: Sized {
+    /// Generate default config by the global command line option.
+    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self>;
+    /// Init config after load config from file.
+    /// Init the skip files or load external config from file, or overwrite config by global command line option.
+    fn after_load(&mut self, _opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
         Ok(())
     }
 }
@@ -266,34 +260,24 @@ pub trait ConfigModule {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
-    #[serde(default)]
     pub base: BaseConfig,
-    #[serde(default)]
     pub network: NetworkConfig,
-    #[serde(default)]
     pub rpc: RpcConfig,
-    #[serde(default)]
     pub miner: MinerConfig,
-    #[serde(default)]
     pub storage: StorageConfig,
-    #[serde(default)]
     pub tx_pool: TxPoolConfig,
-    #[serde(default)]
     pub sync: SyncConfig,
-    #[serde(default)]
     pub vault: AccountVaultConfig,
-    #[serde(default)]
     pub metrics: MetricsConfig,
-    #[serde(default)]
     pub logger: LoggerConfig,
 }
 
 impl NodeConfig {
     pub fn random_for_test() -> Self {
-        let mut config = NodeConfig::default_with_net(ChainNetwork::Test);
-        let base = BaseConfig::random_for_test();
-        config.random(&base);
-        config
+        let mut opt = StarcoinOpt::default();
+        let net = ChainNetwork::Test;
+        opt.net = Some(net);
+        Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
@@ -302,25 +286,27 @@ impl NodeConfig {
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
         let config_file_path = data_dir.join(CONFIG_FILE_PATH);
-
-        let mut config: NodeConfig = if config_file_path.exists() {
-            match load_config(&config_file_path) {
-                Ok(config) => config,
-                Err(e) => match base.net {
-                    ChainNetwork::Dev | ChainNetwork::Halley => {
-                        error!("Load config error: {:?}, use default config.", e);
-                        NodeConfig::default_with_net(base.net)
-                    }
-                    _ => return Err(e),
-                },
-            }
-        } else {
-            NodeConfig::default_with_net(base.net)
-        };
-        if opt.disable_metrics {
-            config.metrics.enable_metrics = false;
+        if !config_file_path.exists() {
+            println!(
+                "Config file not exist, generate default config to: {:?}",
+                config_file_path
+            );
+            let config = NodeConfig::default_with_opt(opt, &base)?;
+            save_config(&config, &config_file_path)?;
         }
-        config.load(&base, opt)?;
+        println!("Load config from: {:?}", config_file_path);
+        let mut config: NodeConfig = match load_config(&config_file_path) {
+            Ok(config) => config,
+            Err(e) => match base.net {
+                ChainNetwork::Test | ChainNetwork::Dev | ChainNetwork::Halley => {
+                    println!("Load config error: {:?}, use default config.", e);
+                    NodeConfig::default_with_opt(opt, &base)?
+                }
+                _ => return Err(e),
+            },
+        };
+
+        config.after_load(opt, &base)?;
         save_config(&config, &config_file_path)?;
         Ok(config)
     }
@@ -334,58 +320,36 @@ impl NodeConfig {
     }
 }
 
-impl Default for NodeConfig {
-    fn default() -> Self {
-        Self::default_with_net(ChainNetwork::default())
-    }
-}
-
-impl ConfigModule for NodeConfig {
-    fn default_with_net(net: ChainNetwork) -> Self {
-        let base = BaseConfig::new(net, None);
-        Self {
-            base,
-            network: NetworkConfig::default_with_net(net),
-            rpc: RpcConfig::default_with_net(net),
-            miner: MinerConfig::default_with_net(net),
-            storage: StorageConfig::default_with_net(net),
-            tx_pool: TxPoolConfig::default_with_net(net),
-            sync: SyncConfig::default_with_net(net),
-            vault: AccountVaultConfig::default_with_net(net),
-            metrics: MetricsConfig::default_with_net(net),
-            logger: LoggerConfig::default_with_net(net),
-        }
+impl NodeConfig {
+    pub fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
+        Ok(Self {
+            base: base.clone(),
+            network: NetworkConfig::default_with_opt(opt, &base)?,
+            rpc: RpcConfig::default_with_opt(opt, &base)?,
+            miner: MinerConfig::default_with_opt(opt, &base)?,
+            storage: StorageConfig::default_with_opt(opt, &base)?,
+            tx_pool: TxPoolConfig::default_with_opt(opt, &base)?,
+            sync: SyncConfig::default_with_opt(opt, &base)?,
+            vault: AccountVaultConfig::default_with_opt(opt, &base)?,
+            metrics: MetricsConfig::default_with_opt(opt, &base)?,
+            logger: LoggerConfig::default_with_opt(opt, &base)?,
+        })
     }
 
-    fn random(&mut self, base: &BaseConfig) {
+    pub fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
         self.base = base.clone();
-        self.network.random(base);
-        self.rpc.random(base);
-        self.miner.random(base);
-        self.storage.random(base);
-        self.tx_pool.random(base);
-        self.sync.random(base);
-        self.vault.random(base);
-        self.metrics.random(base);
-        self.logger.random(base);
-    }
-
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
-        self.base = base.clone();
-        self.network.load(base, opt)?;
-        self.rpc.load(base, opt)?;
-        self.miner.load(base, opt)?;
-        self.storage.load(base, opt)?;
-        self.tx_pool.load(base, opt)?;
-        self.sync.load(base, opt)?;
-        self.vault.load(base, opt)?;
-        self.metrics.load(base, opt)?;
-        self.logger.load(base, opt)?;
+        self.network.after_load(opt, base)?;
+        self.rpc.after_load(opt, base)?;
+        self.miner.after_load(opt, base)?;
+        self.storage.after_load(opt, base)?;
+        self.tx_pool.after_load(opt, base)?;
+        self.sync.after_load(opt, base)?;
+        self.vault.after_load(opt, base)?;
+        self.metrics.after_load(opt, base)?;
+        self.logger.after_load(opt, base)?;
         Ok(())
     }
 }
-
-impl NodeConfig {}
 
 pub(crate) fn save_config<T, P>(c: &T, output_file: P) -> Result<()>
 where
@@ -454,13 +418,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_serialize() -> Result<()> {
-        let mut opt = StarcoinOpt::default();
-        let config = NodeConfig::load_with_opt(&opt)?;
-        opt.data_dir = Some(config.base.base_data_dir().to_path_buf());
-        let config2 = NodeConfig::load_with_opt(&opt)?;
-        let config3 = NodeConfig::load_with_opt(&opt)?;
-        assert_eq!(config2, config3);
+    fn test_generate_and_load() -> Result<()> {
+        for net in ChainNetwork::networks() {
+            let mut opt = StarcoinOpt::default();
+            let temp_path = temp_path();
+            opt.net = Some(net);
+            opt.data_dir = Some(temp_path.path().to_path_buf());
+
+            let config = NodeConfig::load_with_opt(&opt)?;
+            let config2 = NodeConfig::load_with_opt(&opt)?;
+            assert_eq!(config, config2, "test config for network {} fail.", net);
+        }
         Ok(())
     }
 }

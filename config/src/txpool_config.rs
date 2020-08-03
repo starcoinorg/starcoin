@@ -1,8 +1,12 @@
-use crate::{ChainNetwork, ConfigModule};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::{BaseConfig, ConfigModule, StarcoinOpt};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct TxPoolConfig {
     /// Maximal number of transactions in the pool.
     pub max_count: u64,
@@ -17,20 +21,14 @@ pub struct TxPoolConfig {
     pub tx_gas_limit: u64,
 }
 
-impl Default for TxPoolConfig {
-    fn default() -> Self {
-        Self::default_with_net(ChainNetwork::default())
-    }
-}
-
 impl ConfigModule for TxPoolConfig {
-    fn default_with_net(_net: ChainNetwork) -> Self {
-        Self {
+    fn default_with_opt(_opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
+        Ok(Self {
             max_count: 1024,
             max_per_sender: 16,
             max_mem_usage: 64 * 1024 * 1024, // 64M
             minimal_gas_price: 0,
             tx_gas_limit: u64::max_value(),
-        }
+        })
     }
 }

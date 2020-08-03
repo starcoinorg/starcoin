@@ -1,6 +1,6 @@
 Feature: cmd integration test
   Background:
-    Given a dev node config
+    Given a test node config
     And node dev handle
     And dev rpc client
 #    Given remote rpc client

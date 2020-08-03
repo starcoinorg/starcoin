@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
@@ -31,9 +31,7 @@ impl CommandAction for PanicCommand {
         let opt = ctx.opt();
         let client = ctx.state().client();
         let net = ctx.state().net();
-        if !net.is_dev() {
-            bail!("This command only work for dev network");
-        }
+        net.assert_test_or_dev()?;
         if opt.remote {
             client.debug_panic()?;
         } else {

@@ -129,6 +129,20 @@ impl ChainNetwork {
         ChainId(self.into())
     }
 
+    pub fn assert_test_or_dev(self) -> Result<()> {
+        if !self.is_test_or_dev() {
+            bail!("Only support test or dev network.")
+        }
+        Ok(())
+    }
+
+    pub fn is_test_or_dev(self) -> bool {
+        match self {
+            ChainNetwork::Test | ChainNetwork::Dev => true,
+            _ => false,
+        }
+    }
+
     pub fn is_test(self) -> bool {
         match self {
             ChainNetwork::Test => true,

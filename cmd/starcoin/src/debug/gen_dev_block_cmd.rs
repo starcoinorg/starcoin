@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
@@ -34,9 +34,7 @@ impl CommandAction for GenDevBlockCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let net = ctx.state().net();
-        if !net.is_dev() {
-            bail!("This command only work for dev network");
-        }
+        net.assert_test_or_dev()?;
 
         let client = ctx.state().client();
         let opt = ctx.opt();

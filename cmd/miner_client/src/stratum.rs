@@ -12,7 +12,7 @@ use jsonrpc_core::{Output, Response};
 use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
-use starcoin_config::MinerConfig;
+use starcoin_config::MinerClientConfig;
 use std::sync::Arc;
 use thiserror::Error;
 use types::U256;
@@ -23,7 +23,7 @@ pub struct StratumClient {
 }
 
 impl StratumClient {
-    pub fn new(config: &MinerConfig) -> Result<Self> {
+    pub fn new(config: &MinerClientConfig) -> Result<Self> {
         let tcp_stream =
             task::block_on(async { TcpStream::connect(&config.stratum_server).await })?;
         let tcp_stream = Arc::new(tcp_stream);

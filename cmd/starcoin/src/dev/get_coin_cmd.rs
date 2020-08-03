@@ -6,11 +6,11 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::{account_config, transaction::authenticator::AuthenticationKey};
 use structopt::StructOpt;
 use tokio::time::Duration;
@@ -23,6 +23,12 @@ pub struct GetCoinOpt {
     #[structopt(short = "v")]
     /// if amount absent, transfer 20% of association_address's balance.
     amount: Option<u128>,
+    #[structopt(
+        name = "no-blocking-mode",
+        long = "no-blocking",
+        help = "not blocking wait txn mined"
+    )]
+    no_blocking: bool,
 }
 
 pub struct GetCoinCommand;
@@ -39,9 +45,9 @@ impl CommandAction for GetCoinCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let net = ctx.state().net();
-        if !net.is_dev() {
+        if !net.is_test_or_dev() {
             bail!(
-                "This command only available in dev network, current network is: {}",
+                "This command only available in test or dev network, current network is: {}",
                 net
             );
         }
@@ -79,7 +85,7 @@ impl CommandAction for GetCoinCommand {
             amount,
             1,
             DEFAULT_MAX_GAS_AMOUNT,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            net.consensus().now() + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
         client.wallet_unlock(
@@ -93,7 +99,9 @@ impl CommandAction for GetCoinCommand {
         if let Err(e) = ret {
             bail!("execute-txn is reject by node, reason: {}", e)
         }
-        ctx.state().watch_txn(id)?;
+        if !opt.no_blocking {
+            ctx.state().watch_txn(id)?;
+        }
         Ok(txn.into())
     }
 }
