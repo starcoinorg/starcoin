@@ -9,7 +9,7 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::state_set::ChainStateSet;
 use std::sync::Arc;
-
+//todo: Not depend on NetworkAsyncService
 #[derive(Clone)]
 pub struct RemoteChainStateReader {
     peer_id: Option<PeerId>,
@@ -60,6 +60,7 @@ impl ChainStateReader for RemoteChainStateReader {
     }
 
     fn get_account_state(&self, account_address: &AccountAddress) -> Result<Option<AccountState>> {
+        //TODO: How to verify it
         let peer_id = self
             .peer_id
             .clone()

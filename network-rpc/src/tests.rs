@@ -80,6 +80,9 @@ fn test_network_rpc() {
             .verify(state_root, access_path, Some(&state))
             .unwrap();
         println!("{:?}", epoch);
+
+        let rpc_info = gen_client::get_rpc_info();
+        println!("{:?}", rpc_info);
     };
     system.block_on(fut);
     drop(rt);

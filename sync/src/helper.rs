@@ -11,37 +11,11 @@ use starcoin_network_rpc_api::{
 use starcoin_state_tree::StateNode;
 use types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
-    peer_info::{PeerId, RpcInfo},
+    peer_info::PeerId,
     transaction::TransactionInfo,
-    CHAIN_PROTOCOL_NAME,
 };
 
 const HEAD_CT: usize = 10;
-// TODO: those rpc info is not used in network layout. consider remove them.
-const GET_TXNS_STR: &str = "GetTxns";
-const GET_TXN_INFOS_STR: &str = "GetTxnInfos";
-const GET_BLOCK_HEADERS_BY_NUM_STR: &str = "GetBlockHeadersByNumber";
-const GET_BLOCK_HEADERS_STR: &str = "GetBlockHeaders";
-const GET_BLOCK_HEADER_BY_HASH_STR: &str = "GetBlockHeaderByHash";
-const GET_BLOCK_INFOS_STR: &str = "GetBlockInfos";
-const GET_BLOCK_BODIES_STR: &str = "GetBlockBodies";
-const GET_STATE_NODE_BY_NODE_HASH_STR: &str = "GetStateNodeByNodeHash";
-const GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR: &str = "GetAccumulatorNodeByNodeHash";
-
-pub fn sync_rpc_info() -> (&'static [u8], RpcInfo) {
-    let mut paths = Vec::new();
-    paths.push(GET_TXNS_STR.to_string());
-    paths.push(GET_TXN_INFOS_STR.to_string());
-    paths.push(GET_BLOCK_HEADERS_BY_NUM_STR.to_string());
-    paths.push(GET_BLOCK_HEADERS_STR.to_string());
-    paths.push(GET_BLOCK_HEADER_BY_HASH_STR.to_string());
-    paths.push(GET_BLOCK_INFOS_STR.to_string());
-    paths.push(GET_BLOCK_BODIES_STR.to_string());
-    paths.push(GET_STATE_NODE_BY_NODE_HASH_STR.to_string());
-    paths.push(GET_ACCUMULATOR_NODE_BY_NODE_HASH_STR.to_string());
-    let rpc_info = RpcInfo::new(paths);
-    (CHAIN_PROTOCOL_NAME, rpc_info)
-}
 
 pub async fn get_txns(
     client: &NetworkRpcClient<NetworkAsyncService>,

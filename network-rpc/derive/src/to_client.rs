@@ -7,6 +7,7 @@ use proc_macro2::TokenStream;
 use syn::ItemTrait;
 
 pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
+    let mut rpc_info = Vec::new();
     let client_methods: Vec<TokenStream> = rpc_trait
         .items
         .iter()
@@ -25,6 +26,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
                 let peer_id_indent = arg_names[0];
                 // TODO: Only support one user custom argument currently
                 let user_arg_indent = arg_names[1];
+                rpc_info.push(name.clone());
                 Some(quote! {
                     pub fn #name(&self, #args)-> impl Future<Output=Result<#returns>> {
                         let network = self.network.clone();
@@ -51,6 +53,12 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
             }
         })
         .collect();
+    let get_rpc_info_method = quote! {
+        pub fn get_rpc_info() -> (&'static [u8], Vec<String>) {
+           (CHAIN_PROTOCOL_NAME, vec![#(stringify!(#rpc_info).to_string()),*])
+        }
+    };
+
     let client_mod = quote! {
     pub mod gen_client{
         use super::*;
@@ -62,6 +70,9 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
         use anyhow::{Result,format_err};
         use futures::prelude::*;
         use starcoin_logger::prelude::*;
+        pub struct Data(Vec<String>);
+        #get_rpc_info_method
+
         #[derive(Clone)]
         pub struct NetworkRpcClient<N>
         where
