@@ -83,7 +83,7 @@ impl BlockChain {
     }
 
     pub fn init_empty_chain(storage: Arc<dyn Store>) -> Result<Self> {
-        let config = Arc::new(NodeConfig::default());
+        let config = Arc::new(NodeConfig::random_for_test());
         let txn_accumulator = MerkleAccumulator::new_empty(
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),

@@ -117,7 +117,11 @@ fn test_state_sync() {
             first_chain.clone(),
             miner_account,
         );
-        MinerClientActor::new(node_config_1.miner.clone(), node_config_1.net().consensus()).start();
+        MinerClientActor::new(
+            node_config_1.miner.client_config.clone(),
+            node_config_1.net().consensus(),
+        )
+        .start();
         Delay::new(Duration::from_secs(20)).await;
         let mut block_1 = first_chain
             .clone()

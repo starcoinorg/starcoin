@@ -122,7 +122,7 @@ pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
     if config.metrics.enable_metrics {
         starcoin_metrics::metric_server::start_server(
             config.metrics.address.clone(),
-            config.metrics.metrics_server_port,
+            config.metrics.port,
         );
     }
 

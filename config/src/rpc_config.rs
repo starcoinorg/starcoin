@@ -8,7 +8,7 @@ use crate::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 
 const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
@@ -19,7 +19,7 @@ const DEFAULT_TCP_PORT: u16 = 9860;
 const DEFAULT_WEB_SOCKET_PORT: u16 = 9870;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct RpcConfig {
     /// The address for http rpc.
     pub http_address: Option<SocketAddr>,
@@ -31,12 +31,6 @@ pub struct RpcConfig {
     pub threads: Option<usize>,
     #[serde(skip)]
     ipc_file_path: Option<PathBuf>,
-}
-
-impl Default for RpcConfig {
-    fn default() -> Self {
-        Self::default_with_net(ChainNetwork::default())
-    }
 }
 
 impl RpcConfig {
@@ -58,69 +52,56 @@ impl RpcConfig {
 }
 
 impl ConfigModule for RpcConfig {
-    fn default_with_net(net: ChainNetwork) -> Self {
-        let port = match net {
-            ChainNetwork::Dev => get_available_port_from(DEFAULT_HTTP_PORT),
-            _ => DEFAULT_HTTP_PORT,
+    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
+        let ports = match base.net {
+            ChainNetwork::Test => get_random_available_ports(3),
+            ChainNetwork::Dev => vec![
+                get_available_port_from(DEFAULT_HTTP_PORT),
+                get_available_port_from(DEFAULT_TCP_PORT),
+                get_available_port_from(DEFAULT_WEB_SOCKET_PORT),
+            ],
+            _ => vec![DEFAULT_HTTP_PORT, DEFAULT_TCP_PORT, DEFAULT_WEB_SOCKET_PORT],
         };
-        let http_address = format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap();
-        let tcp_address = {
-            let port = match net {
-                ChainNetwork::Dev => get_available_port_from(DEFAULT_TCP_PORT),
-                _ => DEFAULT_TCP_PORT,
-            };
-            format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap()
-        };
-        let ws_address = {
-            let port = match net {
-                ChainNetwork::Dev => get_available_port_from(DEFAULT_WEB_SOCKET_PORT),
-                _ => DEFAULT_WEB_SOCKET_PORT,
-            };
-            format!("127.0.0.1:{}", port).parse::<SocketAddr>().unwrap()
-        };
-        Self {
-            http_address: Some(http_address),
-            ws_address: Some(ws_address),
-            tcp_address: Some(tcp_address),
+        let rpc_address: IpAddr = opt
+            .rpc_address
+            .clone()
+            .unwrap_or_else(|| "127.0.0.1".to_string())
+            .parse()?;
+
+        let http_address = Some(
+            format!("{}:{}", rpc_address, ports[0])
+                .parse::<SocketAddr>()
+                .unwrap(),
+        );
+
+        let tcp_address = Some(
+            format!("{}:{}", rpc_address, ports[1])
+                .parse::<SocketAddr>()
+                .unwrap(),
+        );
+
+        let ws_address = Some(
+            format!("{}:{}", rpc_address, ports[2])
+                .parse::<SocketAddr>()
+                .unwrap(),
+        );
+
+        Ok(Self {
+            http_address,
+            ws_address,
+            tcp_address,
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
             ipc_file_path: None,
-        }
+        })
     }
 
-    fn random(&mut self, base: &BaseConfig) {
-        let ports = get_random_available_ports(3);
-        self.http_address = Some(
-            format!("127.0.0.1:{}", ports[0])
-                .parse::<SocketAddr>()
-                .unwrap(),
-        );
-        self.tcp_address = Some(
-            format!("127.0.0.1:{}", ports[1])
-                .parse::<SocketAddr>()
-                .unwrap(),
-        );
-        self.ws_address = Some(
-            format!("127.0.0.1:{}", ports[2])
-                .parse::<SocketAddr>()
-                .unwrap(),
-        );
-        self.ipc_file_path = Some(Self::get_ipc_file_by_base(base))
-    }
-
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
-        let ipc_file_path = Self::get_ipc_file_by_base(base);
-        info!("Ipc file path: {:?}", ipc_file_path);
-        info!("Http rpc address: {}", self.http_address.unwrap());
-        self.ipc_file_path = Some(ipc_file_path);
-        if let Some(rpc_address) = &opt.rpc_address {
-            self.ws_address =
-                Some(format!("{}:{}", rpc_address, DEFAULT_WEB_SOCKET_PORT).parse::<SocketAddr>()?);
-            self.http_address =
-                Some(format!("{}:{}", rpc_address, DEFAULT_HTTP_PORT).parse::<SocketAddr>()?);
-            self.tcp_address =
-                Some(format!("{}:{}", rpc_address, DEFAULT_TCP_PORT).parse::<SocketAddr>()?);
-        }
+    fn after_load(&mut self, _opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
+        self.ipc_file_path = Some(Self::get_ipc_file_by_base(base));
+        info!("Ipc file path: {:?}", self.ipc_file_path);
+        info!("Http rpc address: {:?}", self.http_address);
+        info!("TCP rpc address: {:?}", self.tcp_address);
+        info!("Websocket rpc address: {:?}", self.ws_address);
         Ok(())
     }
 }

@@ -291,17 +291,33 @@ pub async fn start(
         let _ = sync_event_receiver.next().await;
         info!("Waiting sync finished.");
     }
-
-    let miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
-        config.clone(),
-        bus.clone(),
-        storage.clone(),
-        txpool.get_service(),
-        chain.clone(),
-        default_account,
-    )?;
+    let miner_config = config.clone();
+    let miner_bus = bus.clone();
+    let miner_storage = storage.clone();
+    let miner_txpool = txpool.get_service();
+    let miner_chain = chain.clone();
+    let miner = Arbiter::new()
+        .exec(move || {
+            MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+                miner_config,
+                miner_bus,
+                miner_storage,
+                miner_txpool,
+                miner_chain,
+                default_account,
+            )
+        })
+        .await??;
+    let miner_client_config = config.miner.client_config.clone();
+    let consensus_strategy = config.net().consensus();
     let miner_client = if config.miner.enable_miner_client {
-        Some(MinerClientActor::new(config.miner.clone(), config.net().consensus()).start())
+        Some(
+            Arbiter::new()
+                .exec(move || {
+                    MinerClientActor::new(miner_client_config, consensus_strategy).start()
+                })
+                .await?,
+        )
     } else {
         None
     };

@@ -9,7 +9,7 @@ use futures::channel::mpsc;
 use futures::stream::StreamExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
-use starcoin_config::{ConsensusStrategy, MinerConfig};
+use starcoin_config::{ConsensusStrategy, MinerClientConfig};
 use std::thread;
 use types::U256;
 
@@ -23,7 +23,10 @@ pub struct Miner {
 }
 
 impl Miner {
-    pub async fn new(config: MinerConfig, consensus_strategy: ConsensusStrategy) -> Result<Self> {
+    pub async fn new(
+        config: MinerClientConfig,
+        consensus_strategy: ConsensusStrategy,
+    ) -> Result<Self> {
         let mut stratum_client = StratumClient::new(&config)?;
         let job_rx = stratum_client.subscribe().await?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
@@ -103,12 +106,12 @@ impl Miner {
 }
 
 pub struct MinerClientActor {
-    config: MinerConfig,
+    config: MinerClientConfig,
     consensus_strategy: ConsensusStrategy,
 }
 
 impl MinerClientActor {
-    pub fn new(config: MinerConfig, consensus_strategy: ConsensusStrategy) -> Self {
+    pub fn new(config: MinerClientConfig, consensus_strategy: ConsensusStrategy) -> Self {
         MinerClientActor {
             config,
             consensus_strategy,

@@ -1,3 +1,11 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
+static USED_PORTS: Lazy<Mutex<Vec<u16>>> = Lazy::new(|| Mutex::new(vec![]));
+
 pub fn get_available_port_from(start_port: u16) -> u16 {
     for i in 0..100 {
         let port_to_check = start_port + i;
@@ -11,17 +19,26 @@ pub fn get_available_port_from(start_port: u16) -> u16 {
 
 /// check if `port` is available.
 fn check_port_in_use(port: u16) -> bool {
+    if USED_PORTS.lock().unwrap().contains(&port) {
+        return true;
+    }
     use std::net::TcpStream;
-    match TcpStream::connect(("0.0.0.0", port)) {
+    let in_use = match TcpStream::connect(("0.0.0.0", port)) {
         Ok(_) => true,
         Err(_e) => false,
-    }
+    };
+    if !in_use {
+        USED_PORTS.lock().unwrap().push(port);
+    };
+    in_use
 }
 
 pub fn get_random_available_port() -> u16 {
     for _ in 0..3 {
         if let Ok(port) = get_ephemeral_port() {
-            return port;
+            if !check_port_in_use(port) {
+                return port;
+            }
         }
     }
     panic!("Error: could not find an available port");
@@ -55,6 +72,8 @@ fn get_ephemeral_port() -> ::std::io::Result<u16> {
 #[cfg(test)]
 mod tests {
     use super::check_port_in_use;
+    use crate::get_random_available_port;
+    use std::collections::HashSet;
     use std::net::TcpListener;
 
     #[test]
@@ -64,5 +83,19 @@ mod tests {
 
         assert!(check_port_in_use(port));
         Ok(())
+    }
+
+    #[test]
+    fn test_random_ports() {
+        let mut set = HashSet::new();
+        let count = 100;
+        for _i in 0..count {
+            set.insert(get_random_available_port());
+        }
+        assert_eq!(
+            count,
+            set.len(),
+            "get_random_available_port return repeat ports."
+        );
     }
 }

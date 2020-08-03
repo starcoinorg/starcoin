@@ -8,7 +8,7 @@ use futures::executor::block_on;
 use futures::SinkExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
-use starcoin_config::{ConsensusStrategy, MinerConfig};
+use starcoin_config::{ConsensusStrategy, MinerClientConfig};
 use std::thread;
 use std::time::{Duration, Instant};
 use types::U256;
@@ -16,7 +16,7 @@ use types::U256;
 const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
 pub fn start_worker(
-    config: &MinerConfig,
+    config: &MinerClientConfig,
     consensus_strategy: ConsensusStrategy,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     mp: Option<&MultiProgress>,

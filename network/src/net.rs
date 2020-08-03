@@ -17,6 +17,7 @@ use parity_codec::alloc::collections::HashSet;
 use std::borrow::Cow;
 use std::sync::Arc;
 use types::peer_info::PeerInfo;
+use types::PROTOCOLS;
 
 const PROTOCOL_ID: &[u8] = b"starcoin";
 
@@ -258,7 +259,7 @@ pub fn build_network_service(
             .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
-        protocols: cfg.protocols.clone(),
+        protocols: PROTOCOLS.clone(),
         genesis_hash,
         self_info,
         ..NetworkConfiguration::default()

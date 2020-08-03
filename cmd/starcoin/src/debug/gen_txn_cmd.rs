@@ -67,8 +67,8 @@ impl CommandAction for GenTxnCommand {
         let opt = ctx.opt();
         let client = ctx.state().client();
         let net = ctx.state().net();
-        if !net.is_dev() && !net.is_halley() {
-            bail!("This command only work for dev or halley network");
+        if !net.is_test() && !net.is_dev() && !net.is_halley() {
+            bail!("This command only work for test or dev or halley network");
         }
         let account_provider: Box<dyn Fn() -> (AccountAddress, Vec<u8>)> = if opt.random {
             Box::new(|| -> (AccountAddress, Vec<u8>) {

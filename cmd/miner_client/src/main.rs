@@ -3,7 +3,7 @@
 
 use futures::executor;
 use logger::{self, prelude::*};
-use starcoin_config::{ConsensusStrategy, MinerConfig};
+use starcoin_config::{ConsensusStrategy, MinerClientConfig};
 use starcoin_miner_client::miner::Miner;
 use structopt::StructOpt;
 
@@ -22,14 +22,14 @@ fn main() {
     let _logger_handle = logger::init();
     let opts: StarcoinOpt = StarcoinOpt::from_args();
     let config = {
-        let mut cfg = MinerConfig::default();
-        cfg.enable_stderr = true;
-        cfg.thread_num = opts.thread_num;
-        cfg.stratum_server = opts
-            .stratum_server
-            .parse()
-            .expect("Invalid stratum server address");
-        cfg
+        MinerClientConfig {
+            stratum_server: opts
+                .stratum_server
+                .parse()
+                .expect("Invalid stratum server address"),
+            thread_num: opts.thread_num,
+            enable_stderr: true,
+        }
     };
     executor::block_on(async move {
         match Miner::new(config, opts.consensus).await {

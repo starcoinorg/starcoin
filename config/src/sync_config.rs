@@ -1,12 +1,15 @@
-use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
-use anyhow::{format_err, Result};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::{BaseConfig, ConfigModule, StarcoinOpt};
+use anyhow::{bail, format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct SyncConfig {
     sync_mode: SyncMode,
 }
@@ -20,7 +23,6 @@ impl SyncConfig {
         self.sync_mode == SyncMode::LIGHT
     }
 
-    //just for test
     pub fn fast_sync_mode(&mut self) {
         self.sync_mode = SyncMode::FAST;
     }
@@ -31,31 +33,25 @@ impl SyncConfig {
 }
 
 impl ConfigModule for SyncConfig {
-    fn default_with_net(_net: ChainNetwork) -> Self {
-        SyncConfig {
-            sync_mode: SyncMode::FULL,
-        }
+    fn default_with_opt(opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
+        let sync_mode = opt.sync_mode.unwrap_or_else(|| SyncMode::FULL);
+        Ok(SyncConfig { sync_mode })
     }
 
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
-        self.sync_mode = if base.net.is_dev() {
-            SyncMode::FULL
-        } else {
-            opt.sync_mode.clone()
-        };
+    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+        if let Some(sync_mode) = opt.sync_mode {
+            self.sync_mode = sync_mode;
+        }
+        if self.sync_mode == SyncMode::LIGHT {
+            bail!("{} is not supported yet.", self.sync_mode);
+        }
         info!("sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
         Ok(())
     }
 }
 
-impl Default for SyncConfig {
-    fn default() -> Self {
-        SyncConfig::default_with_net(ChainNetwork::default())
-    }
-}
-
 #[allow(non_camel_case_types)]
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type")]
 pub enum SyncMode {
     LIGHT,

@@ -13,19 +13,19 @@ pub fn start_txpool() -> (TxPool, Arc<Storage>, Arc<NodeConfig>) {
     let cache_storage = CacheStorage::new();
     let storage =
         Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
-    let node_config = NodeConfig::random_for_test();
+    let node_config = Arc::new(NodeConfig::random_for_test());
 
     let genesis = Genesis::load(node_config.net()).unwrap();
     let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let bus = BusActor::launch();
 
     let pool = TxPool::start(
-        Arc::new(NodeConfig::default()),
+        node_config.clone(),
         storage.clone(),
         *startup_info.get_master(),
         bus,
     );
-    (pool, storage, Arc::new(node_config))
+    (pool, storage, node_config)
 }
 
 pub fn gen_blockchain_for_test(config: Arc<NodeConfig>) -> Result<BlockChain> {

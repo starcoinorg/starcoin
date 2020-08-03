@@ -3,19 +3,28 @@
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
+use starcoin_logger::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
+        .given("a test node config", |world: &mut MyWorld, _step| {
+            let mut opt = StarcoinOpt::default();
+            opt.net = Some(ChainNetwork::Test);
+            opt.disable_metrics = true;
+            opt.disable_seed = true;
+            let config = NodeConfig::load_with_opt(&opt).unwrap();
+            info!("config: {:?}", config);
+            world.node_config = Some(config)
+        })
         .given("a dev node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
             opt.net = Some(ChainNetwork::Dev);
             opt.disable_metrics = true;
-            opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
-            let mut config = NodeConfig::load_with_opt(&opt).unwrap();
-            config.network.disable_seed = true;
+            opt.disable_seed = true;
+            let config = NodeConfig::load_with_opt(&opt).unwrap();
             world.node_config = Some(config)
         })
         .given("halley node config", |world: &mut MyWorld, _step| {
@@ -44,6 +53,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("get node info", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info();
+            info!("node_info: {:?}", node_info);
         })
         .then("get node status", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
@@ -54,6 +64,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then("get node peers", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let peers = client.clone().node_peers();
+            info!("peers: {:?}", peers);
         });
     builder.build()
 }

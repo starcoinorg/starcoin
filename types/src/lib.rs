@@ -58,11 +58,22 @@ pub mod write_set {
 }
 
 pub use ethereum_types::{H256, U256};
+use once_cell::sync::Lazy;
+use std::borrow::Cow;
 
 pub mod chain_config {
     pub use starcoin_vm_types::chain_config::*;
 }
 
+//TODO should define at here?
 pub const CHAIN_PROTOCOL_NAME: &[u8] = b"/starcoin/chain/1";
 pub const TXN_PROTOCOL_NAME: &[u8] = b"/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &[u8] = b"/starcoin/block/1";
+
+pub static PROTOCOLS: Lazy<Vec<Cow<'static, [u8]>>> = Lazy::new(|| {
+    vec![
+        CHAIN_PROTOCOL_NAME.into(),
+        TXN_PROTOCOL_NAME.into(),
+        BLOCK_PROTOCOL_NAME.into(),
+    ]
+});

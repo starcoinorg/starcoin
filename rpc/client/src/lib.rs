@@ -50,6 +50,7 @@ use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 use starcoin_vm_types::vm_status::VMStatus;
+use std::thread::JoinHandle;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -62,6 +63,8 @@ pub struct RpcClient {
     inner: RefCell<Option<RpcClientInner>>,
     conn_source: ConnSource,
     chain_watcher: Addr<ChainWatcher>,
+    //hold the watch thread handle.
+    _handle: JoinHandle<()>,
 }
 
 struct ConnectionProvider {
@@ -93,7 +96,7 @@ impl RpcClient {
     pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, rt: &mut Runtime) -> Self {
         let (tx, rx) = oneshot::channel();
         let pubsub_client = inner.pubsub_client.clone();
-        std::thread::spawn(move || {
+        let handle = std::thread::spawn(move || {
             let sys = System::new("client-actix-system");
             let watcher = ChainWatcher::launch(pubsub_client);
 
@@ -106,6 +109,7 @@ impl RpcClient {
             inner: RefCell::new(Some(inner)),
             conn_source,
             chain_watcher: watcher,
+            _handle: handle,
         }
     }
     pub fn connect_websocket(url: &str, rt: &mut Runtime) -> anyhow::Result<Self> {

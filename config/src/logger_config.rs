@@ -9,7 +9,7 @@ use std::path::PathBuf;
 static LOGGER_FILE_NAME: &str = "starcoin.log";
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(default, deny_unknown_fields)]
+#[serde(deny_unknown_fields)]
 pub struct LoggerConfig {
     pub enable_stderr: bool,
     pub enable_file: bool,
@@ -32,33 +32,37 @@ impl LoggerConfig {
     }
 }
 
-impl Default for LoggerConfig {
-    fn default() -> Self {
-        Self::default_with_net(ChainNetwork::Dev)
-    }
-}
-
 impl ConfigModule for LoggerConfig {
-    fn default_with_net(net: ChainNetwork) -> Self {
-        match net {
+    fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
+        let enable_stderr = !opt.disable_std_log;
+        let enable_file = !opt.disable_file_log;
+
+        Ok(match base.net {
+            ChainNetwork::Test => Self {
+                enable_stderr,
+                enable_file,
+                max_file_size: 10 * 1024,
+                max_backup: 1,
+                log_path: None,
+            },
             ChainNetwork::Dev => Self {
-                enable_stderr: true,
-                enable_file: true,
+                enable_stderr,
+                enable_file,
                 max_file_size: 10 * 1024 * 1024,
                 max_backup: 2,
                 log_path: None,
             },
             _ => Self {
-                enable_stderr: true,
-                enable_file: true,
+                enable_stderr,
+                enable_file,
                 max_file_size: 1024 * 1024 * 1024,
                 max_backup: 7,
                 log_path: None,
             },
-        }
+        })
     }
 
-    fn load(&mut self, base: &BaseConfig, opt: &StarcoinOpt) -> Result<()> {
+    fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
         self.log_path = Some(base.data_dir.join(LOGGER_FILE_NAME));
         self.enable_stderr = !opt.disable_std_log;
         self.enable_file = !opt.disable_file_log;
