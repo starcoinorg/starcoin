@@ -4,7 +4,6 @@
 use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::ChainStateReader;
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
@@ -24,8 +23,8 @@ pub trait ChainService {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult>;
     fn try_connect_without_execute(
         &mut self,
+        peer_id: PeerId,
         block: Block,
-        remote_chain_state: &dyn ChainStateReader,
     ) -> Result<ConnectBlockResult>;
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
