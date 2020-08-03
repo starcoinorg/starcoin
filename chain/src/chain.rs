@@ -634,9 +634,9 @@ impl ChainWriter for BlockChain {
 
         // 3. verify block header
         let header = block.header();
-        let account_reader = AccountStateReader::new(remote_chain_state);
-        let epoch = account_reader.epoch()?;
         if !header.is_genesis() {
+            let account_reader = AccountStateReader::new(remote_chain_state);
+            let epoch = account_reader.epoch()?;
             if let ConnectBlockResult::VerifyConsensusFailed =
                 self.verify_header(header, true, &epoch)?
             {
