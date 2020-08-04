@@ -682,8 +682,8 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
     fn handle(&mut self, msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
-        let (protocol_name, txns) = match msg {
-            PropagateNewTransactions::V1(txns) => (TXN_PROTOCOL_NAME, txns),
+        let (protocol_name, txns) = {
+            (TXN_PROTOCOL_NAME, msg.propagate_transaction())
             // new version of txn message can come here
         };
         // false positive
@@ -856,7 +856,7 @@ mod tests {
 
             network1
                 .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
+                .send(PropagateNewTransactions::new(vec![
                     SignedUserTransaction::mock(),
                 ]))
                 .await
@@ -864,7 +864,7 @@ mod tests {
 
             network2
                 .network_actor_addr()
-                .send(PropagateNewTransactions::from(vec![
+                .send(PropagateNewTransactions::new(vec![
                     SignedUserTransaction::mock(),
                 ]))
                 .await

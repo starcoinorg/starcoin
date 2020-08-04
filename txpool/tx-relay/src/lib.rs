@@ -8,13 +8,17 @@ pub enum TxnRelayMessage {
 }
 
 #[derive(Clone, Debug)]
-pub enum PropagateNewTransactions {
-    V1(Vec<SignedUserTransaction>),
+pub struct PropagateNewTransactions {
+    txns: Vec<SignedUserTransaction>,
 }
 
-impl From<Vec<SignedUserTransaction>> for PropagateNewTransactions {
-    fn from(txns: Vec<SignedUserTransaction>) -> Self {
-        PropagateNewTransactions::V1(txns)
+impl PropagateNewTransactions {
+    pub fn propagate_transaction(self) -> Vec<SignedUserTransaction> {
+        self.txns
+    }
+
+    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+        Self { txns }
     }
 }
 
@@ -26,6 +30,7 @@ impl actix::Message for PropagateNewTransactions {
 pub struct PeerTransactions {
     txns: Vec<SignedUserTransaction>,
 }
+
 impl actix::Message for PeerTransactions {
     type Result = ();
 }
