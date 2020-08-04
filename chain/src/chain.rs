@@ -586,11 +586,7 @@ impl ChainWriter for BlockChain {
         self.apply_inner(block)
     }
 
-    fn apply_without_execute(
-        &mut self,
-        block: Block,
-        remote_chain_state: &dyn ChainStateReader,
-    ) -> Result<ConnectBlockResult> {
+    fn apply_without_execute(&mut self, block: Block) -> Result<ConnectBlockResult> {
         // 1. verify txn info
         let block_id = block.id();
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
@@ -636,6 +632,10 @@ impl ChainWriter for BlockChain {
         // 3. verify block header
         let header = block.header();
         if !header.is_genesis() {
+            let remote_chain_state = self
+                .remote_chain_state
+                .as_ref()
+                .expect("Remote chain state not set");
             let account_reader = AccountStateReader::new(remote_chain_state);
             let epoch = account_reader.epoch()?;
             if let ConnectBlockResult::VerifyConsensusFailed =
