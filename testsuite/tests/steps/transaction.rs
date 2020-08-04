@@ -4,6 +4,7 @@
 use crate::MyWorld;
 use anyhow::Error;
 use cucumber::{Steps, StepsBuilder};
+use starcoin_account_api::AccountInfo;
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
@@ -12,7 +13,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
-use starcoin_wallet_api::WalletAccount;
 use std::time::Duration;
 
 pub fn steps() -> Steps<MyWorld> {
@@ -47,7 +47,7 @@ pub fn steps() -> Steps<MyWorld> {
 
 fn transfer_txn(
     client: &RpcClient,
-    to: &WalletAccount,
+    to: &AccountInfo,
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<(), Error> {
@@ -80,6 +80,6 @@ fn sign_txn(
     client: &RpcClient,
     raw_txn: RawUserTransaction,
 ) -> Result<SignedUserTransaction, Error> {
-    client.wallet_unlock(raw_txn.sender(), "".to_string(), Duration::from_secs(300))?;
-    Ok(client.wallet_sign_txn(raw_txn).unwrap())
+    client.account_unlock(raw_txn.sender(), "".to_string(), Duration::from_secs(300))?;
+    Ok(client.account_sign_txn(raw_txn).unwrap())
 }

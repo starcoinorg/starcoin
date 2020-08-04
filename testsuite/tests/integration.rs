@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
+use starcoin_account_api::AccountInfo;
 use starcoin_cmd::helper;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
@@ -12,7 +13,6 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_wallet_api::WalletAccount;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -29,8 +29,8 @@ pub struct MyWorld {
     storage: Option<Storage>,
     rpc_client: Option<Arc<RpcClient>>,
     local_rpc_client: Option<RpcClient>,
-    default_account: Option<WalletAccount>,
-    txn_account: Option<WalletAccount>,
+    default_account: Option<AccountInfo>,
+    txn_account: Option<AccountInfo>,
     node_handle: Option<NodeHandle>,
     default_address: Option<AccountAddress>,
     cmd_value: Option<Vec<String>>,
@@ -85,10 +85,10 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
-            let default_account = client.clone().wallet_default().unwrap().unwrap();
+            let default_account = client.clone().account_default().unwrap().unwrap();
             info!("default account config success!");
             client
-                .wallet_unlock(
+                .account_unlock(
                     default_account.address,
                     "".parse().unwrap(),
                     Duration::from_secs(300 as u64),
@@ -101,10 +101,10 @@ pub fn steps() -> Steps<MyWorld> {
             let password = "integration";
             let account = client
                 .clone()
-                .wallet_create(password.clone().parse().unwrap())
+                .account_create(password.clone().parse().unwrap())
                 .unwrap();
             client
-                .wallet_unlock(
+                .account_unlock(
                     account.address,
                     password.clone().parse().unwrap(),
                     Duration::from_secs(300 as u64),

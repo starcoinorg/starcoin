@@ -1,22 +1,22 @@
 use anyhow::{format_err, Result};
 
+use starcoin_account_api::AccountInfo;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::helpers::get_current_timestamp;
-use starcoin_wallet_api::WalletAccount;
 
 pub struct Faucet {
     client: RpcClient,
-    faucet_account: WalletAccount,
+    faucet_account: AccountInfo,
 }
 
 const DEFAULT_GAS_PRICE: u64 = 1;
 const MAX_GAS: u64 = 10000;
 
 impl Faucet {
-    pub fn new(client: RpcClient, faucet_account: WalletAccount) -> Self {
+    pub fn new(client: RpcClient, faucet_account: AccountInfo) -> Self {
         Faucet {
             client,
             faucet_account,
@@ -51,7 +51,7 @@ impl Faucet {
             get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
             self.client.node_info()?.net.chain_id(),
         );
-        let signed_tx = self.client.wallet_sign_txn(raw_tx)?;
+        let signed_tx = self.client.account_sign_txn(raw_tx)?;
         let ret = self.client.submit_transaction(signed_tx)?;
         Ok(ret)
     }

@@ -7,12 +7,12 @@ use chain::{ChainActor, ChainActorRef};
 use config::NodeConfig;
 use logger::prelude::*;
 use network::network::NetworkActor;
+use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_state_service::ChainStateActor;
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
@@ -88,7 +88,7 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool_service.clone(),
         )
         .unwrap();
-        let miner_account = WalletAccount::random();
+        let miner_account = AccountInfo::random();
         let _miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
             config.clone(),
             bus.clone(),

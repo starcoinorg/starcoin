@@ -24,7 +24,7 @@ starcoin-config = { path = "../../config"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-types = {path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
-starcoin-wallet-api = {path = "../../wallet/api"}
+starcoin-account-api = {path = "../../account/api"}
 starcoin-executor = {path = "../../executor"}
 
 [[bin]]

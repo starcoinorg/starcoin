@@ -38,10 +38,10 @@ starcoin-logger = { path = "../../commons/logger"}
 stest = { path = "../../commons/stest"}
 starcoin-rpc-api = { path = "../api"}
 starcoin-rpc-middleware = { path = "../middleware"}
-starcoin-wallet-api = { path = "../../wallet/api"}
+starcoin-account-api = { path = "../../account/api"}
 starcoin-chain = {path ="../../chain"}
 starcoin-chain-notify = {path = "../../chain/chain-notify"}
-starcoin-wallet-service = { path = "../../wallet/service"}
+starcoin-account-service = { path = "../../account/service"}
 starcoin-statedb = { path = "../../state/statedb"}
 starcoin-traits = { path = "../../core/traits"}
 starcoin-state-tree = { path = "../../state/state-tree"}

@@ -11,6 +11,7 @@ use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use miner::{MinerActor, MinerClientActor};
 use network_api::NetworkService;
+use starcoin_account_api::AccountInfo;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
 use starcoin_state_service::ChainStateActor;
@@ -18,7 +19,6 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
-use starcoin_wallet_api::WalletAccount;
 use std::{sync::Arc, time::Duration};
 use traits::ChainAsyncService;
 use txpool::{TxPool, TxPoolService};
@@ -107,7 +107,7 @@ fn test_state_sync() {
         BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
         Delay::new(Duration::from_secs(1)).await;
         let _ = bus_1.clone().send(Broadcast { msg: SyncBegin }).await;
-        let miner_account = WalletAccount::random();
+        let miner_account = AccountInfo::random();
         // miner
         let _miner_1 = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
             node_config_1.clone(),

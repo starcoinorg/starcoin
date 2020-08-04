@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, ensure, Result};
-
+use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_logger::prelude::*;
@@ -13,7 +13,6 @@ use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_wallet_api::WalletAccount;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -58,22 +57,20 @@ pub struct TxFactoryOpt {
     pub receiver_public_key: Option<String>,
 }
 
-fn get_wallet_account(
+fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
-) -> Result<WalletAccount> {
+) -> Result<AccountInfo> {
     let account = match account_address {
         None => {
-            let all_account = client.wallet_list()?;
-            let default_account = all_account.into_iter().find(|w| w.is_default);
-
+            let default_account = client.account_default()?;
             ensure!(
                 default_account.is_some(),
                 "no default account exist in the starcoin node"
             );
             default_account.unwrap()
         }
-        Some(a) => match client.wallet_get(a)? {
+        Some(a) => match client.account_get(a)? {
             None => bail!("the specified account does not exists in the starcoin node"),
             Some(w) => w,
         },
@@ -92,7 +89,7 @@ fn main() {
     let account_password = opts.account_password.clone();
 
     let client = RpcClient::connect_ipc(opts.ipc_path, &mut runtime).expect("ipc connect success");
-    let account = get_wallet_account(&client, account_address).unwrap();
+    let account = get_account_or_default(&client, account_address).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
@@ -240,7 +237,7 @@ impl TxnMocker {
 
                 let new_unlock_time = Instant::now();
                 // try unlock account
-                self.client.wallet_unlock(
+                self.client.account_unlock(
                     self.account_address,
                     self.account_password.clone(),
                     self.unlock_duration,
@@ -250,7 +247,7 @@ impl TxnMocker {
             }
         }
 
-        let user_txn = match self.client.wallet_sign_txn(raw_txn) {
+        let user_txn = match self.client.account_sign_txn(raw_txn) {
             Err(e) => {
                 // sign txn fail, we should unlock again
                 self.account_unlock_time = None;

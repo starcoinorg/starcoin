@@ -32,8 +32,8 @@ starcoin-types = {path = "../types"}
 starcoin-sync = {path = "../sync"}
 starcoin-traits = {path = "../core/traits"}
 starcoin-genesis = { path = "../core/genesis"}
-starcoin-wallet-api = { path = "../wallet/api"}
-starcoin-wallet-service = { path = "../wallet/service"}
+starcoin-account-api = { path = "../account/api"}
+starcoin-account-service = { path = "../account/service"}
 starcoin-state-api = { path = "../state/api"}
 starcoin-state-service = { path = "../state/service"}
 starcoin-txpool-api = {path = "../txpool/api"}

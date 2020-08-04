@@ -52,7 +52,7 @@ impl CommandAction for GetCoinCommand {
         }
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        let to = client.wallet_default()?.ok_or_else(|| {
+        let to = client.account_default()?.ok_or_else(|| {
             format_err!("Can not find default account, Please create account first.")
         })?;
 
@@ -88,12 +88,12 @@ impl CommandAction for GetCoinCommand {
             node_info.now + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
-        client.wallet_unlock(
+        client.account_unlock(
             association_address,
             "".to_string(),
             Duration::from_secs(300),
         )?;
-        let txn = client.wallet_sign_txn(raw_txn)?;
+        let txn = client.account_sign_txn(raw_txn)?;
         let id = txn.crypto_hash();
         let ret = client.submit_transaction(txn.clone())?;
         if let Err(e) = ret {

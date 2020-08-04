@@ -7,6 +7,7 @@ use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
+use starcoin_account_api::AccountInfo;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::ChainNotifyHandlerActor;
 use starcoin_config::NodeConfig;
@@ -22,7 +23,6 @@ use starcoin_types::account_address;
 use starcoin_types::{
     block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
 };
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
@@ -33,7 +33,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
 
     let pri_key = Ed25519PrivateKey::genesis();
     let public_key = pri_key.public_key();

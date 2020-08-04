@@ -5,11 +5,11 @@ use cucumber::{Steps, StepsBuilder};
 use jsonpath::Selector;
 use scmd::CmdContext;
 use serde_json::Value;
+use starcoin_account_api::AccountInfo;
 use starcoin_cmd::add_command;
 use starcoin_cmd::view::{AccountWithStateView, NodeInfoView, PeerInfoView, TransactionView};
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_logger::prelude::*;
-use starcoin_wallet_api::WalletAccount;
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
@@ -36,27 +36,27 @@ pub fn steps() -> Steps<MyWorld> {
                 .unwrap();
             info!("result:{:?}", result);
         })
-        .then("[cmd] wallet list", |world: &mut MyWorld, _step| {
+        .then("[cmd] account list", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None, None);
             // let state = world.cli_state.take().unwrap();
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let mut list_result = add_command(context)
-                .exec_with_args::<Vec<WalletAccount>>(vec!["starcoin", "wallet", "list"])
+                .exec_with_args::<Vec<AccountInfo>>(vec!["starcoin", "account", "list"])
                 .unwrap();
-            info!("wallet list result:{:?}", list_result);
+            info!("account list result:{:?}", list_result);
             world.default_address = Some(list_result.pop().unwrap().address);
         })
-        .then("[cmd] wallet show", |world: &mut MyWorld, _step| {
+        .then("[cmd] account show", |world: &mut MyWorld, _step| {
             let client = world.rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None, None);
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let show_result = add_command(context)
-                .exec_with_args::<AccountWithStateView>(vec!["starcoin", "wallet", "show"])
+                .exec_with_args::<AccountWithStateView>(vec!["starcoin", "account", "show"])
                 .unwrap();
-            info!("wallet show result:{:?}", show_result);
+            info!("account show result:{:?}", show_result);
         })
         .then_regex(
             r#"dev get_coin "([^"]*)""#,
@@ -77,7 +77,7 @@ pub fn steps() -> Steps<MyWorld> {
             },
         )
         .then_regex(
-            r#"wallet create "([^"]*)""#,
+            r#"account create "([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
                 let client = world.rpc_client.as_ref().take().unwrap();
@@ -85,16 +85,16 @@ pub fn steps() -> Steps<MyWorld> {
                 let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let create_result = add_command(context)
-                    .exec_with_args::<WalletAccount>(vec![
-                        "starcoin", "wallet", "create", "-p", password,
+                    .exec_with_args::<AccountInfo>(vec![
+                        "starcoin", "account", "create", "-p", password,
                     ])
                     .unwrap();
                 world.txn_account = Some(create_result.clone());
-                info!("wallet create result:{:?}", create_result);
+                info!("account create result:{:?}", create_result);
             },
         )
         .then_regex(
-            r#"wallet unlock password:"([^"]*)""#,
+            r#"account unlock password:"([^"]*)""#,
             |world: &mut MyWorld, args, _step| {
                 let password = args[1].as_str();
                 let client = world.rpc_client.as_ref().take().unwrap();
@@ -104,14 +104,14 @@ pub fn steps() -> Steps<MyWorld> {
                 let unlock_result = add_command(context)
                     .exec_with_args::<String>(vec![
                         "starcoin",
-                        "wallet",
+                        "account",
                         "unlock",
                         "account_address",
                         "-p",
                         password,
                     ])
                     .unwrap();
-                info!("wallet unlock result:{:?}", unlock_result);
+                info!("account unlock result:{:?}", unlock_result);
             },
         )
         .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {

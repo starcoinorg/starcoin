@@ -1,0 +1,28 @@
+[package]
+name = "starcoin-account-service"
+version = "0.3.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+futures = "0.3"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
+async-trait = "0.1"
+starcoin-logger = {path = "../../commons/logger"}
+stest = {path = "../../commons/stest"}
+starcoin-types = { path = "../../types"}
+starcoin-config = { path = "../../config"}
+starcoin-account-api = { path = "../api", features = ["mock"]}
+starcoin-account-lib = { path = "../lib"}
+starcoin-crypto = {path = "../../commons/crypto"}
+starcoin-txpool = {path = "../../txpool"}
+starcoin-bus = {path = "../../bus"}
+
+[dev-dependencies]
+tempfile="3"
+tokio = { version = "0.2", features = ["full"] }
+

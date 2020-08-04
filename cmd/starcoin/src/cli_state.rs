@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{format_err, Result};
+use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetwork, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
@@ -8,7 +9,6 @@ use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
-use starcoin_wallet_api::WalletAccount;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -80,18 +80,18 @@ impl CliState {
         self.data_dir().join(HISTORY_FILE_NAME)
     }
 
-    pub fn default_account(&self) -> Result<WalletAccount> {
+    pub fn default_account(&self) -> Result<AccountInfo> {
         self.client
-            .wallet_default()?
+            .account_default()?
             .ok_or_else(|| format_err!("Can not find default account, Please input from account."))
     }
 
-    pub fn wallet_account_or_default(
+    pub fn get_account_or_default(
         &self,
         account_address: Option<AccountAddress>,
-    ) -> Result<WalletAccount> {
+    ) -> Result<AccountInfo> {
         if let Some(account_address) = account_address {
-            self.client.wallet_get(account_address)?.ok_or_else(|| {
+            self.client.account_get(account_address)?.ok_or_else(|| {
                 format_err!("Can not find WalletAccount by address: {}", account_address)
             })
         } else {
@@ -99,8 +99,8 @@ impl CliState {
         }
     }
 
-    pub fn association_account(&self) -> Result<Option<WalletAccount>> {
-        self.client.wallet_get(association_address())
+    pub fn association_account(&self) -> Result<Option<AccountInfo>> {
+        self.client.account_get(association_address())
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ThinHeadBlock> {

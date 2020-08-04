@@ -5,10 +5,10 @@ use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use logger::prelude::*;
+use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_types::account_address;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
@@ -41,7 +41,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
         None,
     )
     .unwrap();
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
     let consensus_strategy = node_config.net().consensus();
     if times > 0 {
         for _i in 0..times {
@@ -96,7 +96,7 @@ async fn test_block_chain_forks() {
         .await
         .unwrap()
         .id();
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
     if times > 0 {
         for i in 0..(times + 1) {
             //Delay::new(Duration::from_millis(1000)).await;
@@ -149,7 +149,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
     let header = block_chain.current_header();
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
 
     let (template_b1, _) = block_chain.create_block_template(
         *miner_account.address(),
@@ -228,7 +228,7 @@ async fn test_chain_apply() -> Result<()> {
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
 
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
     let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.get_auth_key().prefix().to_vec()),

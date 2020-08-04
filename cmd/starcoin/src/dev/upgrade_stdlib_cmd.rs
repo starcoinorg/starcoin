@@ -85,7 +85,7 @@ impl CommandAction for UpgradeStdlibCommand {
                 expiration_time,
                 ctx.state().net().chain_id(),
             );
-            let signed_txn = client.wallet_sign_txn(upgrade_txn)?;
+            let signed_txn = client.account_sign_txn(upgrade_txn)?;
             let txn_hash = signed_txn.crypto_hash();
             let success = client.submit_transaction(signed_txn)?;
             if let Err(e) = success {

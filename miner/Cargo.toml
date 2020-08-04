@@ -28,7 +28,7 @@ logger = {path = "../commons/logger", package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
-starcoin-wallet-api = { path = "../wallet/api"}
+starcoin-account-api = { path = "../account/api"}
 starcoin-txpool-api = {path = "../txpool/api"}
 hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"

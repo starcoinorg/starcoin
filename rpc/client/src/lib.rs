@@ -10,6 +10,7 @@ use futures03::channel::oneshot;
 use futures03::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
 use jsonrpc_core::{MetaIoHandler, Metadata};
 use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
+use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
@@ -17,8 +18,8 @@ use starcoin_rpc_api::types::pubsub::Event;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::{
-    chain::ChainClient, debug::DebugClient, dev::DevClient, node::NodeClient, state::StateClient,
-    txpool::TxPoolClient, wallet::WalletClient,
+    account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
+    node::NodeClient, state::StateClient, txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -30,7 +31,6 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
-use starcoin_wallet_api::WalletAccount;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -233,39 +233,39 @@ impl RpcClient {
     }
     //TODO should split client for different api ?
     // such as  RpcClient().account().default()
-    pub fn wallet_default(&self) -> anyhow::Result<Option<WalletAccount>> {
-        self.call_rpc_blocking(|inner| async move { inner.wallet_client.default().compat().await })
+    pub fn account_default(&self) -> anyhow::Result<Option<AccountInfo>> {
+        self.call_rpc_blocking(|inner| async move { inner.account_client.default().compat().await })
             .map_err(map_err)
     }
 
-    pub fn wallet_create(&self, password: String) -> anyhow::Result<WalletAccount> {
+    pub fn account_create(&self, password: String) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| async move {
-            inner.wallet_client.create(password).compat().await
+            inner.account_client.create(password).compat().await
         })
         .map_err(map_err)
     }
 
-    pub fn wallet_list(&self) -> anyhow::Result<Vec<WalletAccount>> {
-        self.call_rpc_blocking(|inner| async move { inner.wallet_client.list().compat().await })
+    pub fn account_list(&self) -> anyhow::Result<Vec<AccountInfo>> {
+        self.call_rpc_blocking(|inner| async move { inner.account_client.list().compat().await })
             .map_err(map_err)
     }
 
-    pub fn wallet_get(&self, address: AccountAddress) -> anyhow::Result<Option<WalletAccount>> {
+    pub fn account_get(&self, address: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
         self.call_rpc_blocking(
-            |inner| async move { inner.wallet_client.get(address).compat().await },
+            |inner| async move { inner.account_client.get(address).compat().await },
         )
         .map_err(map_err)
     }
 
     /// partial sign a multisig account's txn
-    pub fn wallet_sign_multisig_txn(
+    pub fn account_sign_multisig_txn(
         &self,
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
     ) -> anyhow::Result<SignedUserTransaction> {
         self.call_rpc_blocking(|inner| async move {
             inner
-                .wallet_client
+                .account_client
                 .sign_txn(raw_txn, signer_address)
                 .compat()
                 .await
@@ -273,18 +273,22 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn wallet_sign_txn(
+    pub fn account_sign_txn(
         &self,
         raw_txn: RawUserTransaction,
     ) -> anyhow::Result<SignedUserTransaction> {
         let signer = raw_txn.sender();
         self.call_rpc_blocking(|inner| async move {
-            inner.wallet_client.sign_txn(raw_txn, signer).compat().await
+            inner
+                .account_client
+                .sign_txn(raw_txn, signer)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
 
-    pub fn wallet_unlock(
+    pub fn account_unlock(
         &self,
         address: AccountAddress,
         password: String,
@@ -292,32 +296,36 @@ impl RpcClient {
     ) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
             inner
-                .wallet_client
+                .account_client
                 .unlock(address, password, duration)
                 .compat()
                 .await
         })
         .map_err(map_err)
     }
-    pub fn wallet_export(
+    pub fn account_export(
         &self,
         address: AccountAddress,
         password: String,
     ) -> anyhow::Result<Vec<u8>> {
         self.call_rpc_blocking(|inner| async move {
-            inner.wallet_client.export(address, password).compat().await
+            inner
+                .account_client
+                .export(address, password)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
-    pub fn wallet_import(
+    pub fn account_import(
         &self,
         address: AccountAddress,
         private_key: Vec<u8>,
         password: String,
-    ) -> anyhow::Result<WalletAccount> {
+    ) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| async move {
             inner
-                .wallet_client
+                .account_client
                 .import(address, private_key, password)
                 .compat()
                 .await
@@ -325,12 +333,12 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn wallet_accepted_tokens(
+    pub fn account_accepted_tokens(
         &self,
         address: AccountAddress,
     ) -> anyhow::Result<Vec<TokenCode>> {
         self.call_rpc_blocking(|inner| async move {
-            inner.wallet_client.accepted_tokens(address).compat().await
+            inner.account_client.accepted_tokens(address).compat().await
         })
         .map_err(map_err)
     }
@@ -626,7 +634,7 @@ impl RpcClient {
 pub(crate) struct RpcClientInner {
     node_client: NodeClient,
     txpool_client: TxPoolClient,
-    wallet_client: WalletClient,
+    account_client: AccountClient,
     state_client: StateClient,
     debug_client: DebugClient,
     chain_client: ChainClient,
@@ -639,7 +647,7 @@ impl RpcClientInner {
         Self {
             node_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
-            wallet_client: channel.clone().into(),
+            account_client: channel.clone().into(),
             state_client: channel.clone().into(),
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
