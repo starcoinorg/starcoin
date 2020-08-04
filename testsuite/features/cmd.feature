@@ -9,10 +9,10 @@ Feature: cmd integration test
   Scenario: [cmd] node info
     Then [cmd] node info
 
-    #  2. wallet list
-  Scenario: [cmd] wallet list
-    Then [cmd] wallet list
-    Then [cmd] wallet show
+    #  2. account list
+  Scenario: [cmd] account list
+    Then [cmd] account list
+    Then [cmd] account show
 
 #    3. dev get coin
   Scenario Outline: [cmd] dev get coin
@@ -22,10 +22,10 @@ Feature: cmd integration test
       | amount |
       |  |
 
-  #  4. wallet create
-  Scenario Outline: [cmd] wallet create
-    Then wallet create "<password>"
-    Then [cmd] wallet show
+  #  4. account create
+  Scenario Outline: [cmd] account create
+    Then account create "<password>"
+    Then [cmd] account show
 
     Examples:
       | password |
@@ -38,8 +38,8 @@ Feature: cmd integration test
 
     Examples:
       | cmd |
-      | wallet create -p dssss |
-      | wallet show |
+      | account create -p dssss |
+      | account show |
 
    #chain
   Scenario Outline: [cmd] cli chain test
@@ -59,7 +59,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] debug test
     Then cmd: "chain show $.head_block"
     #Then cmd: "debug gen_dev_block -p $.None"
-    #Then cmd: "wallet unlock $.None"
+    #Then cmd: "account unlock $.None"
     #Then cmd: "dev get_coin $.None"
     #Then cmd: "debug gen_txn -r -v 10 $.None"
     #Then cmd: "debug log level Debug $.None"
@@ -80,7 +80,7 @@ Feature: cmd integration test
 
 # dev
   Scenario Outline: [cmd] dev test
-    Then cmd: "wallet unlock -d 30000 0000000000000000000000000a550c18 $.None"
+    Then cmd: "account unlock -d 30000 0000000000000000000000000a550c18 $.None"
     Then cmd: "dev upgrade_stdlib --blocking $.None"
 
     Examples:
@@ -90,31 +90,31 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root $.None"
     Then cmd: "dev get_coin $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "state get_proof $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "state get_account $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "state get $.None"
 
     Examples:
       |  |
 
-#wallet
-  Scenario Outline: [cmd] wallet test
-    Then cmd: "wallet show $.None"
-    Then cmd: "wallet unlock $.None"
+#account
+  Scenario Outline: [cmd] account test
+    Then cmd: "account show $.None"
+    Then cmd: "account unlock $.None"
     Then cmd: "dev get_coin $.None"
-    Then cmd: "wallet create -p transfer $-r$.address $-k$.public_key"
-    Then cmd: "wallet transfer -v 10000 $.address"
-    Then cmd: "wallet create -p compat $.address"
-    Then cmd: "wallet unlock -p compat $.result"
-    Then cmd: "wallet show $.account.address"
-    Then cmd: "wallet export -p compat $.None"
-    Then cmd: "wallet list $.None"
-    Then cmd: "wallet show $.account.address"
-    #Then cmd: "wallet execute-builtin --blocking --script empty_script -s $.None"
-    #Then cmd: "wallet accept_token 0x1::STC::STC $.None"
+    Then cmd: "account create -p transfer $-r$.address $-k$.public_key"
+    Then cmd: "account transfer -v 10000 $.address"
+    Then cmd: "account create -p compat $.address"
+    Then cmd: "account unlock -p compat $.result"
+    Then cmd: "account show $.account.address"
+    Then cmd: "account export -p compat $.None"
+    Then cmd: "account list $.None"
+    Then cmd: "account show $.account.address"
+    #Then cmd: "account execute-builtin --blocking --script empty_script -s $.None"
+    #Then cmd: "account accept_token 0x1::STC::STC $.None"
 
 
     Examples:
@@ -123,17 +123,17 @@ Feature: cmd integration test
 
 #mytoken
   Scenario Outline: [cmd] my_token test
-    Then cmd: "wallet show $.account.address"
-    Then cmd: "wallet unlock $.None"
+    Then cmd: "account show $.account.address"
+    Then cmd: "account unlock $.None"
     Then cmd: "dev get_coin $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "dev compile ../examples/my_token/module/MyToken.move -o ../examples -s $.result"
     Then cmd: "dev deploy --blocking $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "dev compile ../examples/my_token/scripts/init.move -d ../examples/my_token/module/MyToken.move -o ../examples -s $.result"
     Then cmd: "dev execute --blocking $.txn_hash"
     Then cmd: "chain get_txn $.None"
-    Then cmd: "wallet show $.account.address"
+    Then cmd: "account show $.account.address"
     Then cmd: "dev compile ../examples/my_token/scripts/mint.move -d ../examples/my_token/module/MyToken.move -o ../examples -s $.result"
     Then cmd: "dev execute --arg 1000000u128 --blocking $.txn_hash"
     Then cmd: "chain get_txn $.None"

@@ -12,11 +12,12 @@ use starcoin_types::account_address::{self, AccountAddress};
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::convert::TryFrom;
+use std::sync::Arc;
 use std::time::Duration;
 
 #[derive(Clone)]
 pub struct MockAccountService {
-    accounts: DashMap<AccountAddress, MockAccountData>,
+    accounts: Arc<DashMap<AccountAddress, MockAccountData>>,
 }
 
 #[derive(Debug, Clone)]
@@ -30,7 +31,7 @@ struct MockAccountData {
 impl MockAccountService {
     pub fn new() -> Result<Self> {
         Ok(Self {
-            accounts: DashMap::default(),
+            accounts: Arc::new(DashMap::default()),
         })
     }
 
@@ -60,7 +61,7 @@ impl AccountAsyncService for MockAccountService {
     }
 
     async fn get_default_account(self) -> ServiceResult<Option<AccountInfo>> {
-        for r in &self.accounts {
+        for r in self.accounts.as_ref() {
             if r.is_default {
                 return Ok(Some(AccountInfo {
                     address: *r.key(),
