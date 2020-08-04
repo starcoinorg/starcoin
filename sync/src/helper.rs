@@ -215,16 +215,23 @@ pub async fn get_state_node_by_node_hash(
     peer_id: PeerId,
     node_key: HashValue,
 ) -> Result<StateNode> {
-    let state_node = client
+    if let Some(state_node) = client
         .get_state_node_by_node_hash(peer_id, node_key)
-        .await?;
-    let state_node_id = state_node.inner().hash();
-    if node_key == state_node_id {
-        Ok(state_node)
+        .await?
+    {
+        let state_node_id = state_node.inner().hash();
+        if node_key == state_node_id {
+            Ok(state_node)
+        } else {
+            Err(format_err!(
+                "State node hash {:?} and node key {:?} mismatch.",
+                state_node_id,
+                node_key
+            ))
+        }
     } else {
         Err(format_err!(
-            "State node hash {:?} and node key {:?} mismatch.",
-            state_node_id,
+            "State node is none by node key {:?}.",
             node_key
         ))
     }
@@ -236,7 +243,7 @@ pub async fn get_accumulator_node_by_node_hash(
     node_key: HashValue,
     accumulator_type: AccumulatorStoreType,
 ) -> Result<AccumulatorNode> {
-    let accumulator_node = client
+    if let Some(accumulator_node) = client
         .get_accumulator_node_by_node_hash(
             peer_id,
             GetAccumulatorNodeByNodeHash {
@@ -244,14 +251,21 @@ pub async fn get_accumulator_node_by_node_hash(
                 accumulator_storage_type: accumulator_type,
             },
         )
-        .await?;
-    let accumulator_node_id = accumulator_node.hash();
-    if node_key == accumulator_node_id {
-        Ok(accumulator_node)
+        .await?
+    {
+        let accumulator_node_id = accumulator_node.hash();
+        if node_key == accumulator_node_id {
+            Ok(accumulator_node)
+        } else {
+            Err(format_err!(
+                "Accumulator node hash {:?} and node key {:?} mismatch.",
+                accumulator_node_id,
+                node_key
+            ))
+        }
     } else {
         Err(format_err!(
-            "Accumulator node hash {:?} and node key {:?} mismatch.",
-            accumulator_node_id,
+            "Accumulator node is none by node key {:?}.",
             node_key
         ))
     }
