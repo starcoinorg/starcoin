@@ -39,6 +39,6 @@ starcoin-vm-types = { path = "../vm/types"}
 starcoin-network-rpc-api = {path = "../network-rpc/api"}
 starcoin-network = {path ="../network"}
 [dev-dependencies]
-starcoin-wallet-api = { path = "../wallet/api"}
+starcoin-account-api = { path = "../account/api"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../core/genesis"}

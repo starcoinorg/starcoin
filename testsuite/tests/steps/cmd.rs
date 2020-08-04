@@ -5,11 +5,11 @@ use cucumber::{Steps, StepsBuilder};
 use jsonpath::Selector;
 use scmd::CmdContext;
 use serde_json::Value;
+use starcoin_account_api::AccountInfo;
 use starcoin_cmd::add_command;
 use starcoin_cmd::view::{AccountWithStateView, NodeInfoView, PeerInfoView, TransactionView};
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_logger::prelude::*;
-use starcoin_wallet_api::WalletAccount;
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
@@ -43,7 +43,7 @@ pub fn steps() -> Steps<MyWorld> {
             // let state = world.cli_state.take().unwrap();
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             let mut list_result = add_command(context)
-                .exec_with_args::<Vec<WalletAccount>>(vec!["starcoin", "wallet", "list"])
+                .exec_with_args::<Vec<AccountInfo>>(vec!["starcoin", "wallet", "list"])
                 .unwrap();
             info!("wallet list result:{:?}", list_result);
             world.default_address = Some(list_result.pop().unwrap().address);
@@ -85,7 +85,7 @@ pub fn steps() -> Steps<MyWorld> {
                 let state = CliState::new(node_info.net, client.clone(), None, None);
                 let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
                 let create_result = add_command(context)
-                    .exec_with_args::<WalletAccount>(vec![
+                    .exec_with_args::<AccountInfo>(vec![
                         "starcoin", "wallet", "create", "-p", password,
                     ])
                     .unwrap();

@@ -7,6 +7,7 @@ use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
 use logger::prelude::*;
 use network_rpc::gen_client::{get_rpc_info, NetworkRpcClient};
+use starcoin_account_api::AccountInfo;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainActor, ChainActorRef};
 use starcoin_config::{get_random_available_port, NodeConfig};
@@ -18,7 +19,6 @@ use starcoin_state_service::ChainStateActor;
 use starcoin_sync::helper::{get_body_by_hash, get_headers_msg_for_common, get_headers_with_peer};
 use starcoin_sync::Downloader;
 use starcoin_txpool::{TxPool, TxPoolService};
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
@@ -226,7 +226,7 @@ async fn create_node(
     )?;
 
     if let Some(n) = num {
-        let miner_account = WalletAccount::random();
+        let miner_account = AccountInfo::random();
         for i in 0..n {
             info!(
                 "create block: {:?} : {:?}",

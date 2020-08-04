@@ -2,24 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use starcoin_account_api::AccountInfo;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::chain_config::ChainId;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::transaction::RawUserTransaction;
-use starcoin_wallet_api::WalletAccount;
 
 pub struct MockTxnGenerator {
     chain_id: ChainId,
     receiver_address: AccountAddress,
     receiver_auth_key_prefix: Vec<u8>,
-    account: WalletAccount,
+    account: AccountInfo,
 }
 
 impl MockTxnGenerator {
     pub fn new(
         chain_id: ChainId,
-        account: WalletAccount,
+        account: AccountInfo,
         receiver_address: AccountAddress,
         receiver_auth_key_prefix: Vec<u8>,
     ) -> Self {

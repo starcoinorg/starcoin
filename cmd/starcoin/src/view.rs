@@ -4,6 +4,7 @@
 use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize, Serializer};
+use starcoin_account_api::AccountInfo;
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
@@ -20,7 +21,6 @@ use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::WriteOp;
-use starcoin_wallet_api::WalletAccount;
 use std::collections::HashMap;
 
 //TODO add a derive to auto generate View Object
@@ -32,7 +32,7 @@ pub struct StringView {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AccountWithStateView {
-    pub account: WalletAccount,
+    pub account: AccountInfo,
     // hex encoded bytes
     pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,

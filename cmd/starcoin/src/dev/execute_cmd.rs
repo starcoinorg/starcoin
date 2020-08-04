@@ -185,7 +185,7 @@ impl CommandAction for ExecuteCommand {
             )
         };
 
-        let signed_txn = client.wallet_sign_txn(script_txn)?;
+        let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let (vm_status, output) = if opt.local_mode {
             let state_view = RemoteStateReader::new(client);

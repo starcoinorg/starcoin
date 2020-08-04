@@ -13,9 +13,9 @@ use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
 use sc_stratum::Stratum;
+use starcoin_account_api::AccountInfo;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_wallet_api::WalletAccount;
 use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
@@ -44,7 +44,7 @@ where
     chain: CS,
     miner: miner::Miner,
     stratum: Arc<Stratum>,
-    miner_account: WalletAccount,
+    miner_account: AccountInfo,
     arbiter: Arbiter,
 }
 
@@ -60,7 +60,7 @@ where
         storage: Arc<S>,
         txpool: P,
         chain: CS,
-        miner_account: WalletAccount,
+        miner_account: AccountInfo,
     ) -> Result<Addr<Self>> {
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);

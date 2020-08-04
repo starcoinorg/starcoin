@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod account;
 pub mod chain;
 pub mod cli_state;
 pub mod debug;
@@ -10,7 +11,6 @@ pub mod mutlisig_transaction;
 pub mod node;
 pub mod state;
 pub mod view;
-pub mod wallet;
 use crate::debug::TxPoolStatusCommand;
 pub use cli_state::CliState;
 use scmd::{CmdContext, Command};
@@ -21,17 +21,17 @@ pub fn add_command(
 ) -> CmdContext<CliState, StarcoinOpt> {
     context
         .command(
-            Command::with_name("wallet")
-                .subcommand(wallet::CreateCommand)
-                .subcommand(wallet::ShowCommand)
-                .subcommand(wallet::TransferCommand)
-                .subcommand(wallet::AcceptTokenCommand)
-                .subcommand(wallet::ListCommand)
-                .subcommand(wallet::PartialSignTxnCommand)
-                .subcommand(wallet::UnlockCommand)
-                .subcommand(wallet::ExportCommand)
-                .subcommand(wallet::ImportCommand)
-                .subcommand(wallet::ExecuteBuildInCommand),
+            Command::with_name("account")
+                .subcommand(account::CreateCommand)
+                .subcommand(account::ShowCommand)
+                .subcommand(account::TransferCommand)
+                .subcommand(account::AcceptTokenCommand)
+                .subcommand(account::ListCommand)
+                .subcommand(account::PartialSignTxnCommand)
+                .subcommand(account::UnlockCommand)
+                .subcommand(account::ExportCommand)
+                .subcommand(account::ImportCommand)
+                .subcommand(account::ExecuteBuildInCommand),
         )
         .command(
             Command::with_name("state")

@@ -5,12 +5,12 @@ use consensus::Consensus;
 use crypto::keygen::KeyGen;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
+use starcoin_account_api::AccountInfo;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::{
     account_address, account_config, transaction::authenticator::AuthenticationKey,
 };
-use starcoin_wallet_api::WalletAccount;
 use std::{convert::TryInto, sync::Arc};
 use traits::ChainReader;
 
@@ -22,7 +22,7 @@ pub fn test_open_block() -> Result<()> {
     let block_gas_limit = 10000;
 
     let mut opened_block = {
-        let miner_account = WalletAccount::random();
+        let miner_account = AccountInfo::random();
         OpenedBlock::new(
             chain.get_storage(),
             header,

@@ -3,6 +3,8 @@
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures::StreamExt;
+use starcoin_account_api::AccountAsyncService;
+use starcoin_account_service::AccountServiceActor;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::{ChainActor, ChainActorRef};
@@ -31,8 +33,6 @@ use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_types::account_config::association_address;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::{SyncBegin, SyncDone};
-use starcoin_wallet_api::WalletAsyncService;
-use starcoin_wallet_service::WalletActor;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -132,7 +132,7 @@ pub async fn start(
     };
     info!("Start chain with startup info: {}", startup_info);
 
-    let account_service = WalletActor::launch(config.clone(), bus.clone())?;
+    let account_service = AccountServiceActor::launch(config.clone(), bus.clone())?;
 
     //Init default account
     let default_account = match account_service.clone().get_default_account().await? {

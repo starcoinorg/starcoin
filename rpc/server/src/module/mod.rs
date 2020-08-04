@@ -3,6 +3,7 @@
 
 use starcoin_logger::prelude::*;
 
+mod account_rpc;
 mod chain_rpc;
 mod debug_rpc;
 mod dev_rpc;
@@ -12,7 +13,7 @@ mod state_rpc;
 #[cfg(test)]
 mod test_helper;
 mod txpool_rpc;
-mod wallet_rpc;
+pub use self::account_rpc::AccountRpcImpl;
 pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
 pub use self::dev_rpc::DevRpcImpl;
@@ -20,9 +21,8 @@ pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
-pub use self::wallet_rpc::WalletRpcImpl;
 
-use starcoin_wallet_api::error::AccountServiceError;
+use starcoin_account_api::error::AccountServiceError;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     //TODO error convert.

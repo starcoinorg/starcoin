@@ -29,7 +29,7 @@ fn main() {
     let client =
         RpcClient::connect_ipc(opts.ipc_path, &mut runtime).expect("Failed to connect ipc");
     let account = client
-        .wallet_get(account_address)
+        .account_get(account_address)
         .unwrap()
         .expect("Invalid faucet account address");
     let faucet = Faucet::new(client, account);

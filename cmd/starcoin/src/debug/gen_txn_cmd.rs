@@ -77,12 +77,12 @@ impl CommandAction for GenTxnCommand {
             })
         } else {
             let to_account = match opt.to {
-                Some(to) => client.wallet_get(to),
+                Some(to) => client.account_get(to),
                 None => Ok(None),
             }
             .and_then(|to| match to {
                 Some(to) => Ok(to),
-                None => client.wallet_create("".to_string()),
+                None => client.account_create("".to_string()),
             })?;
             let address = to_account.address;
             let auth_prefix = AuthenticationKey::ed25519(&to_account.public_key)
@@ -91,9 +91,9 @@ impl CommandAction for GenTxnCommand {
             Box::new(move || -> (AccountAddress, Vec<u8>) { (address, auth_prefix.clone()) })
         };
         let sender = client
-            .wallet_default()?
+            .account_default()?
             .expect("Default account should exist.");
-        client.wallet_unlock(
+        client.account_unlock(
             sender.address,
             opt.password.clone(),
             Duration::from_secs(3600),
@@ -126,7 +126,7 @@ impl CommandAction for GenTxnCommand {
                 net.chain_id(),
             );
             gen_result.total_amount += opt.amount;
-            let txn = client.wallet_sign_txn(raw_txn)?;
+            let txn = client.account_sign_txn(raw_txn)?;
             let result = client.submit_transaction(txn.clone())?;
             if result.is_ok() {
                 gen_result.submit_success += 1;

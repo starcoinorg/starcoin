@@ -3,21 +3,22 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    ChainRpcImpl, DebugRpcImpl, DevRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl,
-    TxPoolRpcImpl, WalletRpcImpl,
+    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService,
+    StateRpcImpl, TxPoolRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
 use jsonrpc_core::{MetaIoHandler, RemoteProcedure};
+use starcoin_account_api::AccountAsyncService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_network::NetworkAsyncService;
+use starcoin_rpc_api::account::AccountApi;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::debug::DebugApi;
-use starcoin_rpc_api::wallet::WalletApi;
 use starcoin_rpc_api::{
     dev::DevApi, node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
@@ -25,7 +26,6 @@ use starcoin_rpc_middleware::MetricMiddleware;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_wallet_api::WalletAsyncService;
 use std::sync::Arc;
 
 pub struct RpcActor {
@@ -50,7 +50,7 @@ impl RpcActor {
     where
         CS: ChainAsyncService + 'static,
         TS: TxPoolSyncService + 'static,
-        AS: WalletAsyncService + 'static,
+        AS: AccountAsyncService + 'static,
         SS: ChainStateAsyncService + 'static,
     {
         let config_clone = config.clone();
@@ -58,7 +58,7 @@ impl RpcActor {
             NodeRpcImpl::new(config.clone(), network_service),
             Some(ChainRpcImpl::new(chain_service)),
             Some(TxPoolRpcImpl::new(txpool_service)),
-            Some(WalletRpcImpl::new(account_service)),
+            Some(AccountRpcImpl::new(account_service)),
             Some(StateRpcImpl::new(state_service.clone())),
             pubsub_service.map(PubSubImpl::new),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
@@ -87,7 +87,7 @@ impl RpcActor {
         N: NodeApi,
         C: ChainApi,
         T: TxPoolApi,
-        A: WalletApi,
+        A: AccountApi,
         S: StateApi,
         P: StarcoinPubSub<Metadata = Metadata>,
         D: DebugApi,
@@ -102,7 +102,7 @@ impl RpcActor {
             io_handler.extend_with(TxPoolApi::to_delegate(txpool_api));
         }
         if let Some(account_api) = account_api {
-            io_handler.extend_with(WalletApi::to_delegate(account_api));
+            io_handler.extend_with(AccountApi::to_delegate(account_api));
         }
         if let Some(state_api) = state_api {
             io_handler.extend_with(StateApi::to_delegate(state_api));
@@ -179,17 +179,17 @@ impl Supervised for RpcActor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_account_api::mock::MockAccountService;
     use starcoin_chain::mock::mock_chain_service::MockChainService;
     use starcoin_state_api::mock::MockChainStateService;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_txpool_mock_service::MockTxPoolService;
-    use starcoin_wallet_api::mock::MockWalletService;
     #[stest::test]
     async fn test_start() {
         let logger_handle = starcoin_logger::init_for_test();
         let config = Arc::new(NodeConfig::random_for_test());
         let txpool = MockTxPoolService::new();
-        let account_service = MockWalletService::new().unwrap();
+        let account_service = MockAccountService::new().unwrap();
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
         let playground_service = PlaygroudService::new(Arc::new(MockStateNodeStore::new()));

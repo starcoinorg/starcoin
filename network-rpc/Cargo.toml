@@ -44,7 +44,7 @@ starcoin-network-rpc-api = { path= "api" }
 [dev-dependencies]
 network = {path = "../network", package = "starcoin-network" }
 consensus = { path = "../consensus", package = "starcoin-consensus" }
-wallet-api = { path = "../wallet/api", package = "starcoin-wallet-api"}
+account-api = { path = "../account/api", package = "starcoin-account-api"}
 miner = {path = "../miner", package="starcoin-miner" }
 block-relayer = { path = "../block-relayer", package = "starcoin-block-relayer"}
 futures-timer = "3.0"

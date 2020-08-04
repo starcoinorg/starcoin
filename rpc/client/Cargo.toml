@@ -33,7 +33,7 @@ starcoin-vm-types = { path = "../../vm/types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-rpc-api = {path = "../api"}
 starcoin-logger = { path = "../../commons/logger"}
-starcoin-wallet-api = { path = "../../wallet/api"}
+starcoin-account-api = { path = "../../account/api"}
 starcoin-state-api = { path = "../../state/api"}
 async-std = "1.5"
 starcoin-txpool-api = {path = "../../txpool/api"}

@@ -4,6 +4,7 @@ use criterion::{BatchSize, Bencher};
 use parking_lot::RwLock;
 use rand::prelude::*;
 use rand::{RngCore, SeedableRng};
+use starcoin_account_api::AccountInfo;
 use starcoin_bus::BusActor;
 use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
@@ -11,7 +12,6 @@ use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_vm_types::chain_config::ConsensusStrategy;
-use starcoin_wallet_api::WalletAccount;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
@@ -25,7 +25,7 @@ pub struct ChainBencher {
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
     block_num: u64,
-    account: WalletAccount,
+    account: AccountInfo,
     count: AtomicU64,
 }
 
@@ -57,7 +57,7 @@ impl ChainBencher {
             None,
         )
         .unwrap();
-        let miner_account = WalletAccount::random();
+        let miner_account = AccountInfo::random();
 
         ChainBencher {
             chain: Arc::new(RwLock::new(chain)),

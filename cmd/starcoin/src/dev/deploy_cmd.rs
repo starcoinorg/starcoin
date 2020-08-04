@@ -105,7 +105,7 @@ impl CommandAction for DeployCommand {
             ctx.state().net().chain_id(),
         );
 
-        let signed_txn = client.wallet_sign_txn(deploy_txn)?;
+        let signed_txn = client.account_sign_txn(deploy_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let succ = client.submit_transaction(signed_txn)?;
         if let Err(e) = succ {

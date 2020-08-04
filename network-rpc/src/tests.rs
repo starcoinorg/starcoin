@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::start_network_rpc_server;
+use account_api::AccountInfo;
 use actix::{Actor, Addr, System};
 use block_relayer::BlockRelayer;
 use bus::BusActor;
@@ -33,7 +34,6 @@ use types::{
 };
 use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;
-use wallet_api::WalletAccount;
 
 #[stest::test]
 fn test_network_rpc() {
@@ -132,7 +132,7 @@ fn gen_chain_env(
     )
     .unwrap();
 
-    let miner_account = WalletAccount::random();
+    let miner_account = AccountInfo::random();
     MinerClientActor::new(
         node_config.miner.client_config.clone(),
         node_config.net().consensus(),

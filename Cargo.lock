@@ -465,6 +465,7 @@ dependencies = [
  "proptest",
  "rand 0.7.3",
  "rand_core 0.5.1",
+ "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
@@ -488,7 +489,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "starcoin-wallet-api",
 ]
 
 [[package]]
@@ -6317,6 +6317,71 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-account-api"
+version = "0.3.1"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dashmap",
+ "futures 0.3.5",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "serde",
+ "starcoin-crypto",
+ "starcoin-types",
+ "thiserror",
+]
+
+[[package]]
+name = "starcoin-account-lib"
+version = "0.3.1"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "bstr",
+ "dashmap",
+ "futures 0.3.5",
+ "parking_lot 0.9.0",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "serde",
+ "starcoin-account-api",
+ "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-chain-notify",
+ "starcoin-crypto",
+ "starcoin-decrypt",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-types",
+ "tempfile",
+]
+
+[[package]]
+name = "starcoin-account-service"
+version = "0.3.1"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "futures 0.3.5",
+ "starcoin-account-api",
+ "starcoin-account-lib",
+ "starcoin-bus",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-txpool",
+ "starcoin-types",
+ "stest",
+ "tempfile",
+ "tokio 0.2.22",
+]
+
+[[package]]
 name = "starcoin-accumulator"
 version = "0.3.1"
 dependencies = [
@@ -6417,6 +6482,7 @@ dependencies = [
  "futures-timer",
  "once_cell",
  "parking_lot 0.11.0",
+ "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-canonical-serialization",
@@ -6439,7 +6505,6 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "stest",
  "thiserror",
  "tokio 0.2.22",
@@ -6471,6 +6536,7 @@ dependencies = [
  "scmd",
  "serde",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",
@@ -6488,7 +6554,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "stdlib",
  "structopt 0.3.15",
  "tokio 0.2.22",
@@ -6663,13 +6728,13 @@ dependencies = [
  "futures-timer",
  "hex",
  "rust-embed",
+ "starcoin-account-api",
  "starcoin-config",
  "starcoin-executor",
  "starcoin-logger",
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "starcoin-wallet-api",
  "structopt 0.3.15",
  "tiny_http",
  "tokio 0.2.22",
@@ -6769,6 +6834,7 @@ dependencies = [
  "futures 0.3.5",
  "hex",
  "once_cell",
+ "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
@@ -6796,7 +6862,6 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
- "starcoin-wallet-api",
  "stest",
  "thiserror",
  "tokio 0.2.22",
@@ -6916,6 +6981,7 @@ dependencies = [
  "prometheus 0.8.0",
  "serde",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-block-relayer-api",
@@ -6940,7 +7006,6 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "stest",
  "tokio 0.2.22",
 ]
@@ -6976,6 +7041,8 @@ dependencies = [
  "async-trait",
  "backtrace",
  "futures 0.3.5",
+ "starcoin-account-api",
+ "starcoin-account-service",
  "starcoin-block-relayer",
  "starcoin-bus",
  "starcoin-chain",
@@ -7002,8 +7069,6 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
- "starcoin-wallet-api",
- "starcoin-wallet-service",
  "stest",
  "tokio 0.2.22",
 ]
@@ -7048,6 +7113,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "serde",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-consensus",
@@ -7057,7 +7123,6 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "thiserror",
 ]
 
@@ -7080,6 +7145,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "serde",
  "serde_json",
+ "starcoin-account-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -7091,7 +7157,6 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "stest",
  "thiserror",
  "tokio 0.1.22",
@@ -7142,6 +7207,8 @@ dependencies = [
  "parking_lot 0.11.0",
  "serde",
  "serde_json",
+ "starcoin-account-api",
+ "starcoin-account-service",
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
@@ -7169,8 +7236,6 @@ dependencies = [
  "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-vm-types",
- "starcoin-wallet-api",
- "starcoin-wallet-service",
  "stest",
  "thiserror",
  "tokio 0.1.22",
@@ -7313,6 +7378,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.0",
  "rand 0.7.3",
+ "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-bus",
@@ -7338,7 +7404,6 @@ dependencies = [
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
- "starcoin-wallet-api",
  "stest",
  "tokio 0.2.22",
 ]
@@ -7394,6 +7459,7 @@ dependencies = [
  "anyhow",
  "ctrlc",
  "futures 0.3.5",
+ "starcoin-account-api",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-executor",
@@ -7401,7 +7467,6 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "starcoin-wallet-api",
  "structopt 0.3.15",
  "tokio 0.2.22",
  "tokio-compat",
@@ -7560,70 +7625,6 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "vm",
-]
-
-[[package]]
-name = "starcoin-wallet-api"
-version = "0.3.1"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures 0.3.5",
- "rand 0.7.3",
- "rand_core 0.5.1",
- "serde",
- "starcoin-crypto",
- "starcoin-types",
- "thiserror",
-]
-
-[[package]]
-name = "starcoin-wallet-lib"
-version = "0.3.1"
-dependencies = [
- "actix",
- "actix-rt",
- "anyhow",
- "async-trait",
- "bstr",
- "dashmap",
- "futures 0.3.5",
- "parking_lot 0.9.0",
- "rand 0.7.3",
- "rand_core 0.5.1",
- "serde",
- "starcoin-bus",
- "starcoin-canonical-serialization",
- "starcoin-chain-notify",
- "starcoin-crypto",
- "starcoin-decrypt",
- "starcoin-logger",
- "starcoin-storage",
- "starcoin-types",
- "starcoin-wallet-api",
- "tempfile",
-]
-
-[[package]]
-name = "starcoin-wallet-service"
-version = "0.3.1"
-dependencies = [
- "actix",
- "actix-rt",
- "anyhow",
- "async-trait",
- "futures 0.3.5",
- "starcoin-bus",
- "starcoin-config",
- "starcoin-crypto",
- "starcoin-logger",
- "starcoin-txpool",
- "starcoin-types",
- "starcoin-wallet-api",
- "starcoin-wallet-lib",
- "stest",
- "tempfile",
- "tokio 0.2.22",
 ]
 
 [[package]]
@@ -7948,6 +7949,7 @@ dependencies = [
  "serde_bytes",
  "serde_json",
  "sha2 0.9.1",
+ "starcoin-account-api",
  "starcoin-chain",
  "starcoin-cmd",
  "starcoin-config",
@@ -7966,7 +7968,6 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "starcoin-wallet-api",
  "static_assertions 1.1.0",
  "structopt 0.3.15",
  "tokio-compat",
