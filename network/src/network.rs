@@ -619,7 +619,11 @@ impl Actor for NetworkActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
-        info!("Network actor started");
+        info!("NetworkActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("NetworkActor stopped");
     }
 }
 

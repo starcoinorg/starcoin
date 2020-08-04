@@ -35,7 +35,7 @@ use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;
 use wallet_api::WalletAccount;
 
-#[test]
+#[stest::test]
 fn test_network_rpc() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let mut system = System::new("test");
@@ -56,7 +56,7 @@ fn test_network_rpc() {
         access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
 
     let fut = async move {
-        Delay::new(Duration::from_secs(15)).await;
+        Delay::new(Duration::from_secs(5)).await;
         let req = GetBlockHeadersByNumber::new(1, 1, 1);
         let resp: Vec<BlockHeader> = client
             .get_headers_by_number(peer_id_2.clone().into(), req)
@@ -138,15 +138,21 @@ fn gen_chain_env(
         node_config.net().consensus(),
     )
     .start();
-    MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+
+    let miner_bus = bus.clone();
+    let miner_storage = storage.clone();
+    let miner_tx_pool_service = tx_pool_service.clone();
+    let miner_chain = chain.clone();
+    let _miner_address = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
         node_config,
-        bus.clone(),
-        storage.clone(),
-        tx_pool_service.clone(),
-        chain.clone(),
+        miner_bus,
+        miner_storage,
+        miner_tx_pool_service,
+        miner_chain,
         miner_account,
     )
     .unwrap();
+
     let state_service = ChainStateActor::launch(bus, storage.clone(), None).unwrap();
     start_network_rpc_server(
         rpc_rx,

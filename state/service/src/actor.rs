@@ -54,6 +54,11 @@ impl Actor for ChainStateActor {
                 async {}.into_actor(act)
             })
             .wait(ctx);
+        info!("ChainStateActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("ChainStateActor stopped");
     }
 }
 

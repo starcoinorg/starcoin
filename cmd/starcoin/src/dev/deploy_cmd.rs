@@ -9,7 +9,6 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::{Module, RawUserTransaction};
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule};
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -81,6 +80,7 @@ impl CommandAction for DeployCommand {
         };
         let module_address = *compiled_module.address();
         let client = ctx.state().client();
+        let node_info = client.node_info()?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&module_address)?;
@@ -94,7 +94,7 @@ impl CommandAction for DeployCommand {
 
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = opt.expiration_time + get_current_timestamp();
+        let expiration_time = opt.expiration_time + node_info.now;
         let deploy_txn = RawUserTransaction::new_module(
             module_address,
             account_resource.sequence_number(),

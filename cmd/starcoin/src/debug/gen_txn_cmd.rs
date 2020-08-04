@@ -12,7 +12,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -70,6 +69,7 @@ impl CommandAction for GenTxnCommand {
         if !net.is_test() && !net.is_dev() && !net.is_halley() {
             bail!("This command only work for test or dev or halley network");
         }
+        let node_info = client.node_info()?;
         let account_provider: Box<dyn Fn() -> (AccountAddress, Vec<u8>)> = if opt.random {
             Box::new(|| -> (AccountAddress, Vec<u8>) {
                 let auth_key = AuthenticationKey::random();
@@ -122,7 +122,7 @@ impl CommandAction for GenTxnCommand {
                 opt.amount,
                 1,
                 DEFAULT_MAX_GAS_AMOUNT,
-                get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+                node_info.now + DEFAULT_EXPIRATION_TIME,
                 net.chain_id(),
             );
             gen_result.total_amount += opt.amount;

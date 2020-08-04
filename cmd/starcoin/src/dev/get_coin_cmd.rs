@@ -6,7 +6,6 @@ use crate::view::TransactionView;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_rpc_client::RemoteStateReader;
@@ -52,6 +51,7 @@ impl CommandAction for GetCoinCommand {
             );
         }
         let client = ctx.state().client();
+        let node_info = client.node_info()?;
         let to = client.wallet_default()?.ok_or_else(|| {
             format_err!("Can not find default account, Please create account first.")
         })?;
@@ -85,7 +85,7 @@ impl CommandAction for GetCoinCommand {
             amount,
             1,
             DEFAULT_MAX_GAS_AMOUNT,
-            net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+            node_info.now + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
         client.wallet_unlock(

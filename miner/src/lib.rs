@@ -68,7 +68,7 @@ where
             let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender.clone());
             pacemaker.start();
             //TODO should start OndemandPacemaker in other network?
-            if config.net().is_dev() {
+            if config.net().is_test_or_dev() {
                 let transaction_receiver = txpool.subscribe_txns();
                 OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
             }
@@ -106,7 +106,11 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, _ctx: &mut Self::Context) {
-        info!("Miner actor started");
+        info!("MinerActor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("MinerActor stopped");
     }
 }
 
@@ -119,6 +123,7 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, _event: GenerateBlockEvent, _ctx: &mut Self::Context) -> Self::Result {
+        debug!("Handle GenerateBlockEvent");
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
@@ -157,11 +162,11 @@ where
                 Ok(())
             }
         }
-        .map(|result: Result<()>| {
-            if let Err(err) = result {
-                error!("Failed to process generate block event:{:?}", err)
-            }
-        });
+            .map(|result: Result<()>| {
+                if let Err(err) = result {
+                    error!("Failed to process generate block event:{:?}", err)
+                }
+            });
         self.arbiter.send(Box::pin(f));
         Ok(())
     }

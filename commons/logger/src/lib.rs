@@ -24,7 +24,14 @@ use std::sync::{Arc, Once};
 
 /// Logger prelude which includes all logging macros.
 pub mod prelude {
+    pub use crate::stacktrace;
     pub use log::{debug, error, info, log_enabled, trace, warn, Level, LevelFilter};
+}
+
+pub fn stacktrace(err: anyhow::Error) {
+    for cause in err.chain() {
+        log::error!("{:?}", cause);
+    }
 }
 
 const LOG_PATTERN_WITH_LINE: &str = "{d} {l} {M}::{f}::{L} - {m}{n}";

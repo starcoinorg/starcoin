@@ -43,13 +43,18 @@ impl Actor for HeadBlockPacemaker {
         let mut sender = self.sender.clone();
         //TODO fire first GenerateBlock event when node is ready.
         Arbiter::spawn(async move {
-            delay_for(Duration::from_secs(5)).await;
+            delay_for(Duration::from_secs(2)).await;
             info!("{}", "head block pacemaker started.");
             info!("{}", "Fire first GenerateBlock event");
             if let Err(e) = sender.try_send(GenerateBlockEvent {}) {
                 error!("err : {:?}", e);
             }
         });
+        info!("HeadBlockPacemaker started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("HeadBlockPacemaker stopped");
     }
 }
 

@@ -13,7 +13,6 @@ use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
@@ -81,6 +80,7 @@ impl CommandAction for TransferCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
+        let node_info = client.node_info()?;
         let sender = match opt.sender {
             Some(from) => client
                 .wallet_get(from)?
@@ -138,7 +138,7 @@ impl CommandAction for TransferCommand {
             opt.gas_price,
             opt.max_gas_amount,
             token_code,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            node_info.now + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
         let txn = client.wallet_sign_txn(raw_txn)?;

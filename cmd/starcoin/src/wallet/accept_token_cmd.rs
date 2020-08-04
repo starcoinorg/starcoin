@@ -10,7 +10,6 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
@@ -66,7 +65,7 @@ impl CommandAction for AcceptTokenCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let client = ctx.state().client();
-
+        let node_info = client.node_info()?;
         let sender = ctx.state().wallet_account_or_default(opt.sender)?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
@@ -87,7 +86,7 @@ impl CommandAction for AcceptTokenCommand {
             opt.gas_price,
             opt.max_gas_amount,
             opt.token_code.clone(),
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            node_info.now + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
 

@@ -72,9 +72,7 @@ pub fn steps() -> Steps<MyWorld> {
                     vec!["starcoin", "dev", "get_coin", "-v", amount]
                 };
 
-                let get_result = add_command(context)
-                    .exec_with_args::<TransactionView>(inter_args)
-                    .unwrap();
+                let get_result = add_command(context).exec_with_args::<TransactionView>(inter_args);
                 info!("get coin result:{:?}", get_result);
             },
         )

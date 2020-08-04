@@ -41,6 +41,8 @@ use std::time::Duration;
 static EXIT_CODE_NEED_HELP: i32 = 120;
 
 pub struct NodeStartHandle {
+    _chain_arbiter: Arbiter,
+    _chain_actor: ChainActorRef,
     _miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
     _sync_actor: Addr<SyncActor>,
     _rpc_actor: Addr<RpcActor>,
@@ -231,7 +233,8 @@ pub async fn start(
     let remote_state_reader = Some(RemoteChainStateReader::new(NetworkRpcClient::new(
         network.clone(),
     )));
-    let chain = Arbiter::new()
+    let chain_arbiter = Arbiter::new();
+    let chain = chain_arbiter
         .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
                 chain_config,
@@ -312,18 +315,14 @@ pub async fn start(
     let miner_storage = storage.clone();
     let miner_txpool = txpool.get_service();
     let miner_chain = chain.clone();
-    let miner = Arbiter::new()
-        .exec(move || {
-            MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
-                miner_config,
-                miner_bus,
-                miner_storage,
-                miner_txpool,
-                miner_chain,
-                default_account,
-            )
-        })
-        .await??;
+    let miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+        miner_config,
+        miner_bus,
+        miner_storage,
+        miner_txpool,
+        miner_chain,
+        default_account,
+    )?;
     let miner_client_config = config.miner.client_config.clone();
     let consensus_strategy = config.net().consensus();
     let miner_client = if config.miner.enable_miner_client {
@@ -341,7 +340,7 @@ pub async fn start(
     let (json_rpc, _io_handler) = RpcActor::launch(
         config,
         txpool_service.clone(),
-        chain,
+        chain.clone(),
         account_service,
         chain_state_service,
         Some(PlaygroudService::new(storage.clone())),
@@ -351,6 +350,8 @@ pub async fn start(
     )?;
 
     Ok(NodeStartHandle {
+        _chain_arbiter: chain_arbiter,
+        _chain_actor: chain,
         _miner_actor: miner,
         _sync_actor: sync,
         _rpc_actor: json_rpc,

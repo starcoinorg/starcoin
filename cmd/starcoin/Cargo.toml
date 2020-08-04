@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
-backtrace = "0.3.46"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.4.3"

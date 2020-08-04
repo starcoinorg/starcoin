@@ -18,7 +18,6 @@ use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::transaction::helpers::get_current_timestamp;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
@@ -157,6 +156,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let args = opt.args.clone();
 
         let client = ctx.state().client();
+        let node_info = client.node_info()?;
         let chain_state_reader = RemoteStateReader::new(client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
@@ -165,7 +165,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             bail!("address {} not exists on chain", &sender);
         }
         let account_resource = account_resource.unwrap();
-        let expiration_time = opt.expiration_time + get_current_timestamp();
+        let expiration_time = opt.expiration_time + node_info.now;
         let script_txn = RawUserTransaction::new_script(
             sender,
             account_resource.sequence_number(),

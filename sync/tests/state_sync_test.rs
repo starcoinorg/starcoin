@@ -122,7 +122,7 @@ fn test_state_sync() {
             node_config_1.net().consensus(),
         )
         .start();
-        Delay::new(Duration::from_secs(20)).await;
+        Delay::new(Duration::from_secs(5)).await;
         let mut block_1 = first_chain
             .clone()
             .master_head_block()
@@ -130,7 +130,7 @@ fn test_state_sync() {
             .unwrap()
             .unwrap();
         while block_1.header().number() <= 11 {
-            Delay::new(Duration::from_secs(5)).await;
+            Delay::new(Duration::from_secs(2)).await;
             block_1 = first_chain
                 .clone()
                 .master_head_block()

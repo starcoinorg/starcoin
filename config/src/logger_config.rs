@@ -41,7 +41,7 @@ impl ConfigModule for LoggerConfig {
             ChainNetwork::Test => Self {
                 enable_stderr,
                 enable_file,
-                max_file_size: 10 * 1024,
+                max_file_size: 10 * 1024 * 1024,
                 max_backup: 1,
                 log_path: None,
             },
