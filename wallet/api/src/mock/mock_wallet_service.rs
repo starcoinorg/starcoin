@@ -5,6 +5,7 @@ use crate::mock::{KeyPairWallet, MemWalletStore};
 use crate::{ServiceResult, Wallet, WalletAccount, WalletAsyncService};
 use anyhow::Result;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
@@ -80,5 +81,9 @@ impl WalletAsyncService for MockWalletService {
         password: String,
     ) -> ServiceResult<Vec<u8>> {
         Ok(self.wallet.export_account(&address, password.as_str())?)
+    }
+
+    async fn accepted_tokens(self, _address: AccountAddress) -> ServiceResult<Vec<TokenCode>> {
+        Ok(vec![])
     }
 }

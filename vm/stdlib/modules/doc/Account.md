@@ -11,6 +11,7 @@
 -  [Resource `KeyRotationCapability`](#0x1_Account_KeyRotationCapability)
 -  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
 -  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
+-  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
 -  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_Account_ECOIN_DEPOSIT_IS_ZERO)
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
@@ -102,6 +103,13 @@
 <dt>
 
 <code>sent_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Account_SentPaymentEvent">Account::SentPaymentEvent</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+
+<code>accept_token_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">Account::AcceptTokenEvent</a>&gt;</code>
 </dt>
 <dd>
 
@@ -291,6 +299,35 @@
 <dt>
 
 <code>metadata: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Account_AcceptTokenEvent"></a>
+
+## Struct `AcceptTokenEvent`
+
+Message for accept token events
+
+
+<pre><code><b>struct</b> <a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+
+<code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
@@ -981,7 +1018,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;){
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(fresh_address);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(&new_account);
     <a href="#0x1_Account_make_account">make_account</a>(&new_account, auth_key_prefix);
@@ -1029,6 +1066,7 @@
           }),
           received_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(new_account),
           sent_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(new_account),
+          accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
           sequence_number: 0,
     });
 }
@@ -1145,8 +1183,18 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer) {
-    move_to(account, <a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;{ token: <a href="Token.md#0x1_Token_zero">Token::zero</a>&lt;TokenType&gt;() })
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer) <b>acquires</b> <a href="#0x1_Account">Account</a> {
+    move_to(account, <a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;{ token: <a href="Token.md#0x1_Token_zero">Token::zero</a>&lt;TokenType&gt;() });
+    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
+    // Load the sender's account
+    <b>let</b> sender_account_ref = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+    // Log a sent event
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(
+        &<b>mut</b> sender_account_ref.accept_token_events,
+        <a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a> {
+            token_code:  token_code,
+        },
+    );
 }
 </code></pre>
 

@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod accept_token_payment;
 pub mod burn;
 pub mod mint;
 pub mod received_payment;

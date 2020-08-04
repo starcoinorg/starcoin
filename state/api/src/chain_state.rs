@@ -15,7 +15,7 @@ use starcoin_types::{
     language_storage::TypeTag,
     state_set::ChainStateSet,
 };
-use starcoin_vm_types::account_config::{genesis_address, STC_NAME, STC_TOKEN_CODE};
+use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
 };
@@ -25,7 +25,6 @@ use starcoin_vm_types::{
     on_chain_config::{ConfigStorage, OnChainConfig},
     state_view::StateView,
 };
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -281,22 +280,6 @@ impl<'a> AccountStateReader<'a> {
         token_code: TokenCode,
     ) -> Result<Option<u128>> {
         self.get_balance_by_type(address, token_code.into())
-    }
-
-    /// Get all balance of account
-    /// TODO: rename to get_balance.
-    /// For now, we only return STC.
-    pub fn get_balances(&self, address: &AccountAddress) -> Result<HashMap<String, u128>> {
-        let mut result = HashMap::new();
-        let balance = self
-            .get_balance_by_token_code(&address, STC_TOKEN_CODE.clone())
-            .ok()
-            .flatten();
-        if let Some(balance) = balance {
-            result.insert(STC_NAME.to_string(), balance);
-        }
-
-        Ok(result)
     }
 
     pub fn epoch(&self) -> Result<EpochInfo> {

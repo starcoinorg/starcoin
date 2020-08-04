@@ -4,6 +4,7 @@
 use actix::clock::Duration;
 use actix::Message;
 use starcoin_types::account_address::AccountAddress;
+use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_wallet_api::{WalletAccount, WalletResult};
 
@@ -16,6 +17,9 @@ pub enum WalletRequest {
     SignTxn {
         txn: Box<RawUserTransaction>,
         signer: AccountAddress,
+    },
+    AccountAcceptedTokens {
+        address: AccountAddress,
     },
     UnlockAccount(AccountAddress, String, Duration),
     LockAccount(AccountAddress),
@@ -42,5 +46,6 @@ pub enum WalletResponse {
     SignedTxn(Box<SignedUserTransaction>),
     UnlockAccountResponse,
     ExportAccountResponse(Vec<u8>),
+    AcceptedTokens(Vec<TokenCode>),
     None,
 }
