@@ -86,8 +86,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="#0x1_STC_token_address">token_address</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
-
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
         account,
         SCALING_FACTOR, // scaling_factor = 10^6
@@ -122,7 +120,7 @@ Returns true if
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool {
-    <a href="Token.md#0x1_Token_is_registered_in">Token::is_registered_in</a>&lt;TokenType&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>())
+    <a href="Token.md#0x1_Token_is_same_token">Token::is_same_token</a>&lt;<a href="#0x1_STC">STC</a>, TokenType&gt;()
 }
 </code></pre>
 
@@ -171,7 +169,7 @@ Returns true if
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_token_address">token_address</a>(): address {
-    <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>()
+   <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;<a href="#0x1_STC">STC</a>&gt;()
 }
 </code></pre>
 

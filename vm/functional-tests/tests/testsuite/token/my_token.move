@@ -56,7 +56,7 @@ fun main(account: &signer) {
     let coin = Token::mint<MyToken>(account, 10000);
     assert(Token::value<MyToken>(&coin) == 10000, 8002);
     assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
-    Account::deposit_to_sender<MyToken>(account, coin)
+    Account::deposit<MyToken>(account, coin)
 }
 }
 

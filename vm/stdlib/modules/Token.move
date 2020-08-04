@@ -47,6 +47,13 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
+    /// Token register's address should same as TokenType's address.
+    const ETOKEN_REGISTER:u64 = 100;
+    /// TokenType's name should same as Token's Module name.
+    const ETOKEN_NAME:u64 = 101;
+    const EAMOUNT_EXCEEDS_COIN_VALUE:u64 = 102;
+    const EDESTRUCTION_OF_NONZERO_COIN:u64 = 103;
+
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
         account: &signer,
@@ -54,8 +61,8 @@ module Token {
         fractional_part: u128,
     ) {
         let (token_address, module_name, token_name) = name_of<TokenType>();
-        assert(Signer::address_of(account) == token_address, 401);
-        assert(module_name == token_name, 402);
+        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER);
+        assert(module_name == token_name, ETOKEN_NAME);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
         move_to(
@@ -190,7 +197,7 @@ module Token {
         amount: u128,
     ): Token<TokenType> {
         // Check that `amount` is less than the token's value
-        assert(token.value >= amount, 10);
+        assert(token.value >= amount, EAMOUNT_EXCEEDS_COIN_VALUE);
         token.value = token.value - amount;
         Token { value: amount }
     }
@@ -219,7 +226,7 @@ module Token {
     /// so you cannot "burn" any non-zero amount of Token
     public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token{ value: value } = token;
-        assert(value == 0, 5)
+        assert(value == 0, EDESTRUCTION_OF_NONZERO_COIN)
     }
 
     /// Returns the scaling factor for the `TokenType` token.
@@ -247,6 +254,17 @@ module Token {
         exists<TokenInfo<TokenType>>(token_address)
     }
 
+    /// Return true if the type `TokenType1` is same with `TokenType2`
+    public fun is_same_token<TokenType1,TokenType2>(): bool {
+        return token_code<TokenType1>() == token_code<TokenType2>()
+    }
+
+    /// Return the TokenType's address
+    public fun token_address<TokenType>():address {
+        let (addr, _, _) =name_of<TokenType>();
+        addr
+    }
+
     /// Return the token code for the registered token.
     public fun token_code<TokenType>(): vector<u8> {
         let (addr, module_name, name) =name_of<TokenType>();
@@ -263,15 +281,6 @@ module Token {
         Vector::append(&mut code, name);
 
         code
-    }
-
-    public fun assert_is_token<TokenType>() {
-        assert(is_token<TokenType>(), 400);
-    }
-
-    public fun is_token<TokenType>(): bool {
-        let (addr, _module_name, _name) =name_of<TokenType>();
-        is_registered_in<TokenType>(addr)
     }
 
     /// Return Token's module address, module name, and type name of `TokenType`.

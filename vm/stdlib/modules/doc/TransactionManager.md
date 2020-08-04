@@ -164,7 +164,7 @@
 <pre><code><b>fun</b> <a href="#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(account: &signer, txn_fee: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, author: address) {
     <b>let</b> value = <a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(&txn_fee);
     <b>if</b> (value &gt; 0) {
-        <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;TokenType&gt;(account, author, txn_fee);
+        <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>&lt;TokenType&gt;(account, author, txn_fee);
     }<b>else</b> {
         <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>&lt;TokenType&gt;(txn_fee);
     }
