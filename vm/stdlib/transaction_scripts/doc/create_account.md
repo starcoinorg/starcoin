@@ -26,9 +26,9 @@
 
 <pre><code><b>fun</b> <a href="#SCRIPT_main">main</a>&lt;TokenType&gt;(account: &signer, fresh_address: address, auth_key_prefix: vector&lt;u8&gt;, initial_amount: u128) {
   <a href="../../modules/doc/Account.md#0x1_Account_create_account">Account::create_account</a>&lt;TokenType&gt;(fresh_address, auth_key_prefix);
-  <b>if</b> (initial_amount &gt; 0) <a href="../../modules/doc/Account.md#0x1_Account_deposit">Account::deposit</a>(account,
+  <b>if</b> (initial_amount &gt; 0) <a href="../../modules/doc/Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(account,
         fresh_address,
-        <a href="../../modules/doc/Account.md#0x1_Account_withdraw_from">Account::withdraw_from</a>&lt;TokenType&gt;(account, initial_amount)
+        <a href="../../modules/doc/Account.md#0x1_Account_withdraw">Account::withdraw</a>&lt;TokenType&gt;(account, initial_amount)
      );
 }
 </code></pre>

@@ -225,7 +225,7 @@
             <b>if</b> (first_info.reward &gt; 0) {
                 <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), 6006);
                 <b>let</b> reward = <a href="#0x1_BlockReward_withdraw">Self::withdraw</a>(first_info.reward);
-                <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.miner, reward);
+                <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.miner, reward);
             };
             <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>(&<b>mut</b> rewards.infos, 0);
         };

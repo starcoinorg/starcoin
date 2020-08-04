@@ -33,10 +33,10 @@
 -  [Function `fractional_part`](#0x1_Token_fractional_part)
 -  [Function `market_cap`](#0x1_Token_market_cap)
 -  [Function `is_registered_in`](#0x1_Token_is_registered_in)
+-  [Function `is_same_token`](#0x1_Token_is_same_token)
+-  [Function `token_address`](#0x1_Token_token_address)
 -  [Function `token_code`](#0x1_Token_token_code)
 -  [Function `code_to_bytes`](#0x1_Token_code_to_bytes)
--  [Function `assert_is_token`](#0x1_Token_assert_is_token)
--  [Function `is_token`](#0x1_Token_is_token)
 -  [Function `name_of`](#0x1_Token_name_of)
 
 
@@ -283,8 +283,8 @@ Register the type
     fractional_part: u128,
 ) {
     <b>let</b> (token_address, module_name, token_name) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, 401);
-    <b>assert</b>(module_name == token_name, 402);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, ETOKEN_REGISTER);
+    <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
     move_to(
@@ -705,7 +705,7 @@ Fails if the tokens value is less than
     amount: u128,
 ): <a href="#0x1_Token">Token</a>&lt;TokenType&gt; {
     // Check that `amount` is less than the token's value
-    <b>assert</b>(token.value &gt;= amount, 10);
+    <b>assert</b>(token.value &gt;= amount, EAMOUNT_EXCEEDS_COIN_VALUE);
     token.value = token.value - amount;
     <a href="#0x1_Token">Token</a> { value: amount }
 }
@@ -795,7 +795,7 @@ so you cannot "burn" any non-zero amount of Token
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="#0x1_Token">Token</a>{ value: value } = token;
-    <b>assert</b>(value == 0, 5)
+    <b>assert</b>(value == 0, EDESTRUCTION_OF_NONZERO_COIN)
 }
 </code></pre>
 
@@ -913,6 +913,59 @@ Return true if the type
 
 </details>
 
+<a name="0x1_Token_is_same_token"></a>
+
+## Function `is_same_token`
+
+Return true if the type
+<code>TokenType1</code> is same with
+<code>TokenType2</code>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1,TokenType2&gt;(): bool {
+    <b>return</b> <a href="#0x1_Token_token_code">token_code</a>&lt;TokenType1&gt;() == <a href="#0x1_Token_token_code">token_code</a>&lt;TokenType2&gt;()
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_token_address"></a>
+
+## Function `token_address`
+
+Return the TokenType's address
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;(): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;():address {
+    <b>let</b> (addr, _, _) =<a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    addr
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Token_token_code"></a>
 
 ## Function `token_code`
@@ -964,55 +1017,6 @@ Return the token code for the registered token.
     <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, name);
 
     code
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_assert_is_token"></a>
-
-## Function `assert_is_token`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_assert_is_token">assert_is_token</a>&lt;TokenType&gt;()
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_assert_is_token">assert_is_token</a>&lt;TokenType&gt;() {
-    <b>assert</b>(<a href="#0x1_Token_is_token">is_token</a>&lt;TokenType&gt;(), 400);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_is_token"></a>
-
-## Function `is_token`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_token">is_token</a>&lt;TokenType&gt;(): bool
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_token">is_token</a>&lt;TokenType&gt;(): bool {
-    <b>let</b> (addr, _module_name, _name) =<a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
-    <a href="#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(addr)
 }
 </code></pre>
 

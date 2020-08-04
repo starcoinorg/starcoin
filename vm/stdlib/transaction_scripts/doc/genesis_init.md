@@ -81,6 +81,7 @@
         <a href="../../modules/doc/TransactionTimeout.md#0x1_TransactionTimeout_initialize">TransactionTimeout::initialize</a>(&genesis_account);
 
         <a href="../../modules/doc/STC.md#0x1_STC_initialize">STC::initialize</a>(&genesis_account);
+        <a href="../../modules/doc/DummyToken.md#0x1_DummyToken_initialize">DummyToken::initialize</a>(&genesis_account);
         <a href="../../modules/doc/Account.md#0x1_Account_accept_token">Account::accept_token</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account);
 
         <b>let</b> association = <a href="../../modules/doc/Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(<a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>(), <b>copy</b> dummy_auth_key_prefix);
@@ -88,7 +89,8 @@
 
         <b>let</b> pre_mine_balance = total_supply * (pre_mine_percent <b>as</b> u128) / 100;
         <b>if</b> (pre_mine_balance &gt; 0) {
-             <a href="../../modules/doc/Account.md#0x1_Account_mint_to_address">Account::mint_to_address</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), pre_mine_balance);
+            <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_balance);
+            <a href="../../modules/doc/Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
         };
 
         <b>let</b> miner_reward_balance = total_supply - pre_mine_balance;

@@ -4,7 +4,9 @@ script {
    use 0x1::Signer;
    use 0x1::TransactionTimeout;
    use 0x1::Timestamp;
+   use 0x1::Token;
    use 0x1::STC::{Self,STC};
+   use 0x1::DummyToken;
    use 0x1::PackageTxnManager;
    use 0x1::Consensus;
    use 0x1::Version;
@@ -73,6 +75,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         TransactionTimeout::initialize(&genesis_account);
 
         STC::initialize(&genesis_account);
+        DummyToken::initialize(&genesis_account);
         Account::accept_token<STC>(&genesis_account);
 
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
@@ -80,7 +83,8 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
 
         let pre_mine_balance = total_supply * (pre_mine_percent as u128) / 100;
         if (pre_mine_balance > 0) {
-             Account::mint_to_address<STC>(&genesis_account, Signer::address_of(&association), pre_mine_balance);
+            let stc = Token::mint<STC>(&genesis_account, pre_mine_balance);
+            Account::deposit_to(&genesis_account, Signer::address_of(&association), stc);
         };
 
         let miner_reward_balance = total_supply - pre_mine_balance;

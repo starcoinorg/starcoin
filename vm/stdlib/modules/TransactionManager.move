@@ -105,7 +105,7 @@ module TransactionManager {
     fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {
         let value = Token::value<TokenType>(&txn_fee);
         if (value > 0) {
-            Account::deposit<TokenType>(account, author, txn_fee);
+            Account::deposit_to<TokenType>(account, author, txn_fee);
         }else {
             Token::destroy_zero<TokenType>(txn_fee);
         }
