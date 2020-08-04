@@ -35,3 +35,6 @@ Temporary Items
 packages-microsoft-prod.deb
 
 examples/*.mv
+
+# Move trace file.
+*.mvcov

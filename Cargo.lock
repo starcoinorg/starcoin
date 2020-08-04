@@ -7940,6 +7940,7 @@ dependencies = [
  "jsonpath",
  "lazy_static",
  "rand 0.7.3",
+ "regex",
  "reqwest",
  "ring",
  "rmp",

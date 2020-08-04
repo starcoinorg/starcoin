@@ -1,22 +1,21 @@
 Feature: integration
-
   Background:
     Given a storage
 
 #
 #  1. node：
-#  Scenario: [cmd] node start and execute transfer
-#    Given a test node config
-#    And node dev handle
-#    And dev rpc client
-#    Then get node info
-#    Then get node status
-#    Then get node peers
-#    Given an account
-#    And default account
-#    Then charge money to account
-#    Then execute transfer transaction
-#    Then state proof
+  Scenario: [cmd] node start and execute transfer
+    Given a test node config
+    And node dev handle
+    And dev rpc client
+    Then get node info
+    Then get node status
+    Then get node peers
+    Given an account
+    And default account
+    Then charge money to account
+    Then execute transfer transaction
+    Then state proof
 
 #  Scenario: Node start and execute transfer
 #    Given remote rpc client
