@@ -171,7 +171,7 @@ impl StreamHandler<TxnStatusFullEvent> for TxPoolActor {
         }
         self.bus
             .clone()
-            .broadcast(PropagateNewTransactions::from(txns))
+            .broadcast(PropagateNewTransactions::new(txns))
             .into_actor(self)
             .then(|res, act, _ctx| {
                 if let Err(e) = res {
