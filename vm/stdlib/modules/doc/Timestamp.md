@@ -124,7 +124,7 @@ is called at the end of genesis.
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     //Do not <b>update</b> time before time start.
     <b>let</b> global_timer = borrow_global_mut&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-    <b>assert</b>(timestamp &gt; global_timer.seconds, EINVALID_TIMESTAMP);
+    <b>assert</b>(timestamp &gt; global_timer.seconds, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_TIMESTAMP">ErrorCode::EINVALID_TIMESTAMP</a>());
     global_timer.seconds = timestamp;
 }
 </code></pre>

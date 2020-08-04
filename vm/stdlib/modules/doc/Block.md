@@ -7,7 +7,6 @@
 
 -  [Resource `BlockMetadata`](#0x1_Block_BlockMetadata)
 -  [Struct `NewBlockEvent`](#0x1_Block_NewBlockEvent)
--  [Function `BLOCK_NUMBER_MISMATCH`](#0x1_Block_BLOCK_NUMBER_MISMATCH)
 -  [Function `initialize`](#0x1_Block_initialize)
 -  [Function `get_current_block_number`](#0x1_Block_get_current_block_number)
 -  [Function `get_parent_hash`](#0x1_Block_get_parent_hash)
@@ -103,28 +102,6 @@
 
 </dd>
 </dl>
-
-
-</details>
-
-<a name="0x1_Block_BLOCK_NUMBER_MISMATCH"></a>
-
-## Function `BLOCK_NUMBER_MISMATCH`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>(): u64 { 100 }
-</code></pre>
-
 
 
 </details>
@@ -254,7 +231,7 @@
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>let</b> block_metadata_ref = borrow_global_mut&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-    <b>assert</b>(number == (block_metadata_ref.number + 1), <a href="#0x1_Block_BLOCK_NUMBER_MISMATCH">BLOCK_NUMBER_MISMATCH</a>());
+    <b>assert</b>(number == (block_metadata_ref.number + 1), <a href="ErrorCode.md#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">ErrorCode::EBLOCK_NUMBER_MISMATCH</a>());
     block_metadata_ref.number = number;
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;

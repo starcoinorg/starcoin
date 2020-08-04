@@ -5,8 +5,6 @@ module Timestamp {
     use 0x1::Signer;
     use 0x1::ErrorCode;
 
-    const EINVALID_TIMESTAMP: u64 = 100;
-
     // A singleton resource holding the current Unix time in seconds
     resource struct CurrentTimeSeconds {
         seconds: u64,
@@ -35,7 +33,7 @@ module Timestamp {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         //Do not update time before time start.
         let global_timer = borrow_global_mut<CurrentTimeSeconds>(CoreAddresses::GENESIS_ACCOUNT());
-        assert(timestamp > global_timer.seconds, EINVALID_TIMESTAMP);
+        assert(timestamp > global_timer.seconds, ErrorCode::EINVALID_TIMESTAMP());
         global_timer.seconds = timestamp;
     }
     spec fun update_global_time {

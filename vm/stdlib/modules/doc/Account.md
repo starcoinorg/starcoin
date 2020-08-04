@@ -12,7 +12,6 @@
 -  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
 -  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
--  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_Account_ECOIN_DEPOSIT_IS_ZERO)
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
 -  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
@@ -336,28 +335,6 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_ECOIN_DEPOSIT_IS_ZERO"></a>
-
-## Function `ECOIN_DEPOSIT_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 0 }
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
 
 ## Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
@@ -534,7 +511,7 @@ Message for accept token events
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>());
+    <b>assert</b>(deposit_value &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ErrorCode::ECOIN_DEPOSIT_IS_ZERO</a>());
 
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
 

@@ -55,6 +55,12 @@ module Consensus {
     fun REWARD_PER_UNCLE_PERCENT_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 6}
     fun MIN_TIME_TARGET_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 7}
     fun MAX_UNCLES_PER_BLOCK_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 8}
+    fun EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE(): u64 { ErrorCode::ECODE_BASE() + 9}
+    fun EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE(): u64 { ErrorCode::ECODE_BASE() + 10}
+    fun MAX_UNCLES_PER_BLOCK_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 11}
+    fun UNCLES_IS_NOT_ZERO(): u64 { ErrorCode::ECODE_BASE() + 12}
+    fun BLOCK_TIME_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 13}
+    fun NEW_EPOCH_BLOCKS_LESS_THAN_ONE(): u64 { ErrorCode::ECODE_BASE() + 14}
 
     public fun initialize(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,
         reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
@@ -177,10 +183,10 @@ module Consensus {
     }
 
     fun first_epoch(block_number: u64, block_time: u64) acquires Epoch {
-        assert(block_number == 1, 333);
+        assert(block_number == 1, EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE());
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
         let count = Self::epoch_time_target() / epoch_ref.block_time_target;
-        assert(count > 1, 336);
+        assert(count > 1, EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE());
         epoch_ref.epoch_start_time = block_time;
         epoch_ref.start_number = 1;
         epoch_ref.end_number = epoch_ref.start_number + count;
@@ -190,9 +196,9 @@ module Consensus {
 
     public fun adjust_epoch(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 acquires Epoch, EpochData {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-        assert(Self::max_uncles_per_block() >= uncles, 339);
+        assert(Self::max_uncles_per_block() >= uncles, MAX_UNCLES_PER_BLOCK_IS_WRONG());
         if (block_number == 1) {
-            assert(uncles == 0, 334);
+            assert(uncles == 0, UNCLES_IS_NOT_ZERO());
             Self::first_epoch(block_number, block_time);
         } else {
             let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
@@ -200,8 +206,8 @@ module Consensus {
             if (block_number < epoch_ref.end_number) {
                 epoch_data.uncles = epoch_data.uncles + uncles;
             } else {
-                assert(uncles == 0, 334);
-                assert(block_time > epoch_ref.epoch_start_time, 335);
+                assert(uncles == 0, UNCLES_IS_NOT_ZERO());
+                assert(block_time > epoch_ref.epoch_start_time, BLOCK_TIME_IS_WRONG());
                 let total_time = block_time - epoch_ref.epoch_start_time;
                 let total_uncles = epoch_data.uncles;
                 let blocks = epoch_ref.end_number - epoch_ref.start_number;
@@ -219,7 +225,7 @@ module Consensus {
                 } else {
                     1
                 };
-                assert(new_epoch_blocks >= 1, 337);
+                assert(new_epoch_blocks >= 1, NEW_EPOCH_BLOCKS_LESS_THAN_ONE());
 
                 epoch_ref.epoch_start_time = block_time;
                 epoch_data.uncles = uncles;

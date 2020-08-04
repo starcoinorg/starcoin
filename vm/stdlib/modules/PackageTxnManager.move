@@ -22,6 +22,15 @@ address 0x1 {
         public fun STRATEGY_NEW_MODULE(): u8{2}
         public fun STRATEGY_FREEZE(): u8{3}
 
+        public fun ESENDER_IS_NOT_MAINTAINER(): u64 { ErrorCode::ECODE_BASE() + 1}
+        public fun EUPGRADE_PLAN_IS_NONE(): u64 { ErrorCode::ECODE_BASE() + 2}
+        public fun EPACKAGE_HASH_INCORRECT(): u64 { ErrorCode::ECODE_BASE() + 3}
+        public fun EACTIVE_TIME_INCORRECT(): u64 { ErrorCode::ECODE_BASE() + 4}
+        public fun ESTRATEGY_FREEZED(): u64 { ErrorCode::ECODE_BASE() + 5}
+        public fun ESTRATEGY_INCORRECT(): u64 { ErrorCode::ECODE_BASE() + 6}
+        public fun ESTRATEGY_NOT_TWO_PHASE(): u64 { ErrorCode::ECODE_BASE() + 7}
+        public fun EUPGRADE_PLAN_IS_NOT_NONE(): u64 { ErrorCode::ECODE_BASE() + 8}
+        public fun EUNKNOWN_STRATEGY(): u64 { ErrorCode::ECODE_BASE() + 9}
 
         resource struct ModuleUpgradeStrategy {
             // 0 arbitrary
@@ -52,10 +61,10 @@ address 0x1 {
 
         // Update account's ModuleUpgradeStrategy
         public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
-            assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), 1004);
+            assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), EUNKNOWN_STRATEGY());
             let account_address = Signer::address_of(account);
             let previous_strategy = get_module_upgrade_strategy(account_address);
-            assert(strategy > previous_strategy, 1005);
+            assert(strategy > previous_strategy, ESTRATEGY_INCORRECT());
             if (exists<ModuleUpgradeStrategy>(account_address)) {
                 borrow_global_mut<ModuleUpgradeStrategy>(account_address).strategy = strategy;
             }else{
@@ -83,7 +92,7 @@ address 0x1 {
 
         public fun extract_submit_upgrade_plan_cap(account: &signer): UpgradePlanCapability acquires ModuleUpgradeStrategy, UpgradePlanCapability{
             let account_address = Signer::address_of(account);
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), 1006);
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), ESTRATEGY_NOT_TWO_PHASE());
             move_from<UpgradePlanCapability>(account_address)
         }
 
@@ -95,11 +104,11 @@ address 0x1 {
 
         public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             //FIXME
-            //assert(active_after_number >= Block::get_current_block_number(), 1005);
+            //assert(active_after_number >= Block::get_current_block_number(), EACTIVE_TIME_INCORRECT());
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), 1006);
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), ESTRATEGY_NOT_TWO_PHASE());
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_none(&tpu.plan), 1007);
+            assert(Option::is_none(&tpu.plan), EUPGRADE_PLAN_IS_NOT_NONE());
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
         }
 
@@ -111,9 +120,9 @@ address 0x1 {
 
         public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), 1006);
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), ESTRATEGY_NOT_TWO_PHASE());
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_some(&tpu.plan), 1007);
+            assert(Option::is_some(&tpu.plan), EUPGRADE_PLAN_IS_NONE());
             tpu.plan = Option::none<UpgradePlan>();
         }
 
@@ -145,20 +154,20 @@ address 0x1 {
         public fun check_package_txn(sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy{
             let module_maintainer = get_module_maintainer(package_address);
             //TODO define error code.
-            assert(module_maintainer == sender, 1000);
+            assert(module_maintainer == sender, ESENDER_IS_NOT_MAINTAINER());
             let strategy = get_module_upgrade_strategy(package_address);
             if (strategy == STRATEGY_ARBITRARY()){
                 //do nothing
             }else if(strategy == STRATEGY_TWO_PHASE()){
                 let plan_opt = get_upgrade_plan(package_address);
-                assert(Option::is_some(&plan_opt), 1001);
+                assert(Option::is_some(&plan_opt), EUPGRADE_PLAN_IS_NONE());
                 let plan = Option::borrow(&plan_opt);
-                assert(*&plan.package_hash == package_hash, 1002);
-                assert(plan.active_after_number <= Block::get_current_block_number(), 1003);
+                assert(*&plan.package_hash == package_hash, EPACKAGE_HASH_INCORRECT());
+                assert(plan.active_after_number <= Block::get_current_block_number(), EACTIVE_TIME_INCORRECT());
             }else if(strategy == STRATEGY_NEW_MODULE()){
                 //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE()){
-                abort(1004)
+                abort(ESTRATEGY_FREEZED())
             };
         }
 

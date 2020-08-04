@@ -795,7 +795,7 @@ so you cannot "burn" any non-zero amount of Token
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="#0x1_Token">Token</a>{ value: value } = token;
-    <b>assert</b>(value == 0, EDESTRUCTION_OF_NONZERO_COIN)
+    <b>assert</b>(value == 0, <a href="ErrorCode.md#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">ErrorCode::EDESTORY_TOKEN_NON_ZERO</a>())
 }
 </code></pre>
 
