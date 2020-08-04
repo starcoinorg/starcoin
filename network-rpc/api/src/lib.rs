@@ -196,13 +196,13 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         &self,
         peer_id: PeerId,
         node_key: HashValue,
-    ) -> BoxFuture<Result<StateNode>>;
+    ) -> BoxFuture<Result<Option<StateNode>>>;
 
     fn get_accumulator_node_by_node_hash(
         &self,
         peer_id: PeerId,
         request: GetAccumulatorNodeByNodeHash,
-    ) -> BoxFuture<Result<AccumulatorNode>>;
+    ) -> BoxFuture<Result<Option<AccumulatorNode>>>;
 
     fn get_state_with_proof(
         &self,

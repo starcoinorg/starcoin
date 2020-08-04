@@ -6,7 +6,6 @@ use anyhow::*;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use futures::future::BoxFuture;
-use logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
@@ -115,6 +114,9 @@ where
             let mut headers = Vec::new();
             let numbers: Vec<BlockNumber> = request.into();
             for number in numbers.into_iter() {
+                if headers.len() >= MAX_SIZE {
+                    break;
+                }
                 if let Ok(header) = chain_reader
                     .clone()
                     .master_block_header_by_number(number)
@@ -165,6 +167,9 @@ where
             {
                 let numbers: Vec<BlockNumber> = request.into_numbers(header.number());
                 for number in numbers.into_iter() {
+                    if headers.len() >= MAX_SIZE {
+                        break;
+                    }
                     if let Ok(header) = chain_reader
                         .clone()
                         .master_block_header_by_number(number)
@@ -243,34 +248,9 @@ where
         &self,
         _peer_id: PeerId,
         state_node_key: HashValue,
-    ) -> BoxFuture<Result<StateNode>> {
+    ) -> BoxFuture<Result<Option<StateNode>>> {
         let storage = self.storage.clone();
-        let fut = async move {
-            let mut keys = Vec::new();
-            keys.push(state_node_key);
-            let mut state_nodes = {
-                let mut state_nodes = Vec::new();
-                keys.iter()
-                    .for_each(|node_key| match storage.get(node_key) {
-                        Ok(node) => state_nodes.push((*node_key, node)),
-                        Err(e) => error!("handle state_node {:?} err : {:?}", node_key, e),
-                    });
-                state_nodes
-            };
-            if let Some((_, state_node_res)) = state_nodes.pop() {
-                if let Some(state_node) = state_node_res {
-                    Ok(state_node)
-                } else {
-                    let err = format_err!("state_node is none");
-                    debug!("{:?}", err);
-                    Err(err)
-                }
-            } else {
-                let err = format_err!("state_nodes is none");
-                debug!("{:?}", err);
-                Err(err)
-            }
-        };
+        let fut = async move { storage.get(&state_node_key) };
         Box::pin(fut)
     }
 
@@ -278,38 +258,10 @@ where
         &self,
         _peer_id: PeerId,
         request: GetAccumulatorNodeByNodeHash,
-    ) -> BoxFuture<Result<AccumulatorNode>> {
+    ) -> BoxFuture<Result<Option<AccumulatorNode>>> {
         let storage = self.storage.clone();
-        let accumulator_node_key = request.node_hash;
-        let accumulator_type = request.accumulator_storage_type;
-        let fut = async move {
-            let mut keys = Vec::new();
-            keys.push(accumulator_node_key);
-            let mut accumulator_nodes = {
-                let mut accumulator_nodes = Vec::new();
-                keys.iter().for_each(|node_key| {
-                    match storage.get_node(accumulator_type.clone(), *node_key) {
-                        Ok(node) => accumulator_nodes.push((*node_key, node)),
-                        Err(e) => error!("handle accumulator_node {:?} err : {:?}", node_key, e),
-                    }
-                });
-                accumulator_nodes
-            };
-
-            if let Some((_, accumulator_node_res)) = accumulator_nodes.pop() {
-                if let Some(accumulator_node) = accumulator_node_res {
-                    Ok(accumulator_node)
-                } else {
-                    let err = format_err!("accumulator_node {:?} is none.", accumulator_node_key);
-                    debug!("{:?}", &err);
-                    Err(err)
-                }
-            } else {
-                let err = format_err!("accumulator_nodes is none.");
-                debug!("{:?}", err);
-                Err(err)
-            }
-        };
+        let fut =
+            async move { storage.get_node(request.accumulator_storage_type, request.node_hash) };
         Box::pin(fut)
     }
 
