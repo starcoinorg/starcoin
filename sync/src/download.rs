@@ -578,8 +578,13 @@ impl Downloader {
         step: usize,
     ) -> Result<(BlockHeader, BlockInfo)> {
         let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
-        let mut headers =
-            get_headers_with_peer(&rpc_client, peer_id.clone(), get_headers_req).await?;
+        let mut headers = get_headers_with_peer(
+            &rpc_client,
+            peer_id.clone(),
+            get_headers_req,
+            latest_block.1,
+        )
+        .await?;
         if let Some(pivot) = headers.pop() {
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {

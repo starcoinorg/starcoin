@@ -192,6 +192,7 @@ impl BlockSyncTaskActor {
         let body_hashes = self.body_task.take_hashes();
 
         let next = self.next.0;
+        let next_number = self.next.1;
         let network = self.network.clone();
         let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
@@ -203,16 +204,17 @@ impl BlockSyncTaskActor {
                     .with_label_values(&[LABEL_HASH])
                     .start_timer();
 
-                let event = match get_headers(&network, &rpc_client, get_headers_req).await {
-                    Ok((headers, peer_id)) => {
-                        SyncDataEvent::new_header_event(headers, peer_id.into())
-                    }
-                    Err(e) => {
-                        error!("Sync headers err: {:?}", e);
-                        Delay::new(Duration::from_secs(1)).await;
-                        SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
-                    }
-                };
+                let event =
+                    match get_headers(&network, &rpc_client, get_headers_req, next_number).await {
+                        Ok((headers, peer_id)) => {
+                            SyncDataEvent::new_header_event(headers, peer_id.into())
+                        }
+                        Err(e) => {
+                            error!("Sync headers err: {:?}", e);
+                            Delay::new(Duration::from_secs(1)).await;
+                            SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
+                        }
+                    };
 
                 address.clone().do_send(event);
                 hash_timer.observe_duration();
@@ -251,6 +253,7 @@ impl BlockSyncTaskActor {
         }
 
         let next = self.next.0;
+        let next_number = self.next.1;
         let network = self.network.clone();
         let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
@@ -259,7 +262,8 @@ impl BlockSyncTaskActor {
                 .sync_done_time
                 .with_label_values(&[LABEL_HASH])
                 .start_timer();
-            let event = match get_headers(&network, &rpc_client, get_headers_req).await {
+            let event = match get_headers(&network, &rpc_client, get_headers_req, next_number).await
+            {
                 Ok((headers, peer_id)) => SyncDataEvent::new_header_event(headers, peer_id.into()),
                 Err(e) => {
                     error!("Sync headers err: {:?}", e);

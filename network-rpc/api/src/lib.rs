@@ -27,12 +27,41 @@ pub struct TransactionsData {
     pub txns: Vec<SignedUserTransaction>,
 }
 
+impl TransactionsData {
+    pub fn get_txns(&self) -> &[SignedUserTransaction] {
+        self.txns.as_slice()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
     pub block_id: HashValue,
     pub max_size: usize,
     pub step: usize,
     pub reverse: bool,
+}
+
+impl GetBlockHeaders {
+    pub fn into_numbers(self, number: BlockNumber) -> Vec<BlockNumber> {
+        let mut numbers = Vec::new();
+        let mut last_number = number;
+        loop {
+            if numbers.len() >= self.max_size {
+                break;
+            }
+
+            last_number = if self.reverse {
+                if last_number < self.step as u64 {
+                    break;
+                }
+                last_number - self.step as u64
+            } else {
+                last_number + self.step as u64
+            };
+            numbers.push(last_number);
+        }
+        numbers
+    }
 }
 
 #[derive(Eq, Serialize, Deserialize, PartialEq, Clone, Debug)]
@@ -42,11 +71,35 @@ pub struct BlockBody {
     pub uncles: Option<Vec<BlockHeader>>,
 }
 
+impl BlockBody {
+    pub fn id(&self) -> HashValue {
+        self.hash
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeadersByNumber {
     pub number: BlockNumber,
     pub max_size: usize,
     pub step: usize,
+}
+
+impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
+    fn into(self) -> Vec<BlockNumber> {
+        let mut numbers = Vec::new();
+        let mut last_number = self.number;
+        loop {
+            if numbers.len() >= self.max_size {
+                break;
+            }
+            numbers.push(last_number);
+            if last_number < self.step as u64 {
+                break;
+            }
+            last_number -= self.step as u64
+        }
+        numbers
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
