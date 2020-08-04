@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{Message, NetworkMessage, PeerEvent};
+use crate::{NetworkMessage, PeerEvent};
 
 use anyhow::*;
 use bytes::Bytes;
@@ -120,24 +120,16 @@ impl SNetworkService {
         protocol_name: Cow<'static, [u8]>,
         message: Vec<u8>,
     ) -> Result<()> {
-        let protocol_msg = Message::new_payload(message);
-
-        debug!("Send message to {} with ack", peer_id);
+        debug!("Send message to {}", &peer_id);
         self.service
-            .write_notification(peer_id, protocol_name, protocol_msg.into_bytes());
+            .write_notification(peer_id, protocol_name, message);
 
         Ok(())
     }
 
     pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
         debug!("broadcast message, protocol: {:?}", protocol_name);
-        let protocol_msg = Message::new_payload(message);
-
-        let message_bytes = protocol_msg.into_bytes();
-
-        self.service
-            .broadcast_message(protocol_name, message_bytes)
-            .await;
+        self.service.broadcast_message(protocol_name, message).await;
     }
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
@@ -211,29 +203,21 @@ impl NetworkInner {
     ) -> Result<()> {
         debug!("Receive message with peer_id:{:?}", &peer_id);
         for message in messages {
-            let message = Message::from_bytes(message.as_ref())?;
-            match message {
-                Message::Payload(payload) => {
-                    //receive message
-                    let user_msg = NetworkMessage {
-                        peer_id: peer_id.clone(),
-                        protocol_name: protocol_name.clone(),
-                        data: payload.data,
-                    };
-                    net_tx.unbounded_send(user_msg)?;
-                }
-            }
+            //receive message
+            let network_msg = NetworkMessage {
+                peer_id: peer_id.clone(),
+                protocol_name: protocol_name.clone(),
+                data: message.to_vec(),
+            };
+            net_tx.unbounded_send(network_msg)?;
         }
         Ok(())
     }
 
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
         let account_addr = message.peer_id.clone();
-        self.service.write_notification(
-            account_addr,
-            PROTOCOL_NAME.into(),
-            Message::new_payload(message.data).into_bytes(),
-        );
+        self.service
+            .write_notification(account_addr, PROTOCOL_NAME.into(), message.data);
         Ok(())
     }
 }
