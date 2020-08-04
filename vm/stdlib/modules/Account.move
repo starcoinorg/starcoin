@@ -14,6 +14,7 @@ module Account {
     use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
     use 0x1::ErrorCode;
+    use 0x1::STC::{Self, STC};
 
     // Every account has a Account::Account resource
     resource struct Account {
@@ -98,17 +99,19 @@ module Account {
     fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
 
     // Deposits the `to_deposit` token into the `payee`'s account balance
-    public fun deposit<TokenType>(account: &signer, payee: address, to_deposit: Token<TokenType>)
+    public fun deposit_to<TokenType>(account: &signer, payee: address, to_deposit: Token<TokenType>)
     acquires Account, Balance {
-        // Since we don't have vector<u8> literals in the source language at
-        // the moment.
         deposit_with_metadata(account, payee, to_deposit, x"")
     }
 
-    // Deposits the `to_deposit` token into the sender's account balance
-    public fun deposit_to_sender<TokenType>(account: &signer, to_deposit: Token<TokenType>)
+    // Deposits the `to_deposit` token into the account balance
+    public fun deposit<TokenType>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
-        deposit(account, Signer::address_of(account), to_deposit)
+        let account_address = Signer::address_of(account);
+        if (!is_accepts_token<TokenType>(account_address)){
+            accept_token<TokenType>(account);
+        };
+        deposit_to(account, account_address, to_deposit)
     }
 
     // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata`
@@ -117,19 +120,19 @@ module Account {
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
     ) acquires Account, Balance {
-        deposit_with_sender_and_metadata(
-            payee,
+        deposit_with_payer_and_metadata(
             Signer::address_of(account),
+            payee,
             to_deposit,
             metadata,
         );
     }
 
     // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata` and
-    // sender address
-    fun deposit_with_sender_and_metadata<TokenType>(
+    // payer address
+    fun deposit_with_payer_and_metadata<TokenType>(
+        payer: address,
         payee: address,
-        sender: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
     ) acquires Account, Balance {
@@ -139,11 +142,11 @@ module Account {
 
         let token_code = Token::token_code<TokenType>();
 
-        // Load the sender's account
-        let sender_account_ref = borrow_global_mut<Account>(sender);
+        // Load the payer's account
+        let payer_account_ref = borrow_global_mut<Account>(payer);
         // Log a sent event
         Event::emit_event<SentPaymentEvent>(
-            &mut sender_account_ref.sent_events,
+            &mut payer_account_ref.sent_events,
             SentPaymentEvent {
                 amount: deposit_value,
                 token_code: (copy token_code),
@@ -163,23 +166,10 @@ module Account {
             ReceivedPaymentEvent {
                 amount: deposit_value,
                 token_code: token_code,
-                payer: sender,
+                payer: payer,
                 metadata: metadata
             }
         );
-    }
-
-    // mint_to_address can only be called by accounts with MintCapability
-    // and those accounts will be charged for gas. If those accounts don't have enough gas to pay
-    // for the transaction cost they will fail minting.
-    // However those account can also mint to themselves so that is a decent workaround
-    public fun mint_to_address<TokenType>(
-        account: &signer,
-        payee: address,
-        amount: u128
-    ) acquires Account, Balance {
-        // Mint and deposit the token
-        deposit(account, payee, Token::mint<TokenType>(account, amount));
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
@@ -187,8 +177,8 @@ module Account {
         Token::withdraw(&mut balance.token, amount)
     }
 
-    // Withdraw `amount` Token<TokenType> from the transaction sender's account balance
-    public fun withdraw_from<TokenType>(account: &signer, amount: u128): Token<TokenType>
+    // Withdraw `amount` Token<TokenType> from the account balance
+    public fun withdraw<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
@@ -227,14 +217,14 @@ module Account {
     // Withdraws `amount` Token<TokenType> using the passed in WithdrawCapability, and deposits it
     // into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
     public fun pay_from_capability<TokenType>(
-        payee: address,
         cap: &WithdrawCapability,
+        payee: address,
         amount: u128,
         metadata: vector<u8>,
     ) acquires Account, Balance {
-        deposit_with_sender_and_metadata<TokenType>(
-            payee,
+        deposit_with_payer_and_metadata<TokenType>(
             *&cap.account_address,
+            payee,
             withdraw_with_capability(cap, amount),
             metadata,
         );
@@ -252,7 +242,7 @@ module Account {
         deposit_with_metadata<TokenType>(
             account,
             payee,
-            withdraw_from(account, amount),
+            withdraw(account, amount),
             metadata,
         );
     }
@@ -328,7 +318,11 @@ module Account {
         let new_account = create_signer(fresh_address);
         Event::publish_generator(&new_account);
         make_account(&new_account, auth_key_prefix);
-        Self::accept_token<TokenType>(&new_account);
+        // Make sure all account accept STC.
+        if (!STC::is_stc<TokenType>()){
+            accept_token<STC>(&new_account);
+        };
+        accept_token<TokenType>(&new_account);
         destroy_signer(new_account);
     }
 

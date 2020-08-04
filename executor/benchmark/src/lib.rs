@@ -97,12 +97,12 @@ impl TransactionGenerator {
     }
 
     fn run(&mut self, init_account_balance: u64, block_size: usize, num_transfer_blocks: usize) {
-        self.gen_mint_transactions(init_account_balance, block_size);
+        self.gen_create_account_transactions(init_account_balance, block_size);
         self.gen_transfer_transactions(block_size, num_transfer_blocks);
     }
 
     /// Generates transactions that allocate `init_account_balance` to every account.
-    fn gen_mint_transactions(&mut self, init_account_balance: u64, block_size: usize) {
+    fn gen_create_account_transactions(&mut self, init_account_balance: u64, block_size: usize) {
         for (_i, block) in self.accounts.chunks(block_size).enumerate() {
             self.net.consensus().time().sleep(1);
 

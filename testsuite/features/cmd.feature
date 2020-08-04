@@ -56,8 +56,8 @@ Feature: cmd integration test
       |  |
 
 # debug
-  Scenario Outline: [cmd] debug test
-    Then cmd: "chain show $.head_block"
+#  Scenario Outline: [cmd] debug test
+    #Then cmd: "chain show $.head_block"
     #Then cmd: "debug gen_dev_block -p $.None"
     #Then cmd: "account unlock $.None"
     #Then cmd: "dev get_coin $.None"

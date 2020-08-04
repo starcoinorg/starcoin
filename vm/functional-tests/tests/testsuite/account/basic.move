@@ -27,7 +27,7 @@ script {
     use 0x1::Account;
     fun main(account: &signer) {
         let with_cap = Account::extract_withdraw_capability(account);
-        Account::pay_from_capability<STC>({{bob}}, &with_cap, 10, x"");
+        Account::pay_from_capability<STC>(&with_cap, {{bob}}, 10, x"");
         Account::restore_withdraw_capability(with_cap);
     }
 }
@@ -93,7 +93,7 @@ script {
     use 0x1::STC::STC;
     fun main(account: &signer) {
         let with_cap = Account::extract_withdraw_capability(account);
-        Account::pay_from_capability<STC>({{alice}}, &with_cap, 10000, x"");
+        Account::pay_from_capability<STC>(&with_cap, {{alice}}, 10000, x"");
         Account::restore_withdraw_capability(with_cap);
         assert(Account::balance<STC>({{alice}}) == 10000, 60)
     }

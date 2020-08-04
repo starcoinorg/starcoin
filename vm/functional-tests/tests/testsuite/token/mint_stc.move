@@ -16,7 +16,7 @@ fun main(account: &signer) {
     assert(Token::market_cap<STC>() == old_market_cap + 100, 8001);
 
     // get rid of the coin
-    Account::deposit(account, {{alice}}, coin);
+    Account::deposit_to(account, {{alice}}, coin);
 }
 }
 
@@ -30,7 +30,7 @@ use 0x1::Token;
 use 0x1::Account;
 fun main(account: &signer) {
     let coin = Token::mint<STC>(account, 100);
-    Account::deposit_to_sender<STC>(account, coin)
+    Account::deposit<STC>(account, coin)
 }
 }
 

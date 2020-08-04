@@ -2,9 +2,6 @@ address 0x1{
 
 module STC {
     use 0x1::Token::{Self, Token};
-    use 0x1::Signer;
-    use 0x1::CoreAddresses;
-    use 0x1::ErrorCode;
 
     struct STC { }
 
@@ -15,8 +12,6 @@ module STC {
     }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == token_address(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-
         Token::register_token<STC>(
             account,
             SCALING_FACTOR, // scaling_factor = 10^6
@@ -29,7 +24,7 @@ module STC {
 
     /// Returns true if `TokenType` is `STC::STC`
     public fun is_stc<TokenType>(): bool {
-        Token::is_registered_in<TokenType>(CoreAddresses::GENESIS_ACCOUNT())
+        Token::is_same_token<STC, TokenType>()
     }
 
     public fun burn(token: Token<STC>) acquires SharedBurnCapability{
@@ -38,7 +33,7 @@ module STC {
     }
 
     public fun token_address(): address {
-        CoreAddresses::GENESIS_ACCOUNT()
+       Token::token_address<STC>()
     }
 }
 }

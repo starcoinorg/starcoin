@@ -70,7 +70,7 @@ module BlockReward {
                 if (first_info.reward > 0) {
                     assert(Account::exists_at(first_info.miner), 6006);
                     let reward = Self::withdraw(first_info.reward);
-                    Account::deposit<STC>(account, first_info.miner, reward);
+                    Account::deposit_to<STC>(account, first_info.miner, reward);
                 };
                 Vector::remove(&mut rewards.infos, 0);
             };
