@@ -159,7 +159,14 @@ impl Handler<ChainRequest> for ChainActor {
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::ConnectBlockWithoutExe(block, peer_id) => {
-                let conn_state = self.service.try_connect_without_execute(peer_id, *block)?;
+                let remote_chain_state = self
+                    .service
+                    .get_remote_chain_state()
+                    .expect("Remote chain state reader must set")
+                    .with(peer_id, block.header.state_root);
+                let conn_state = self
+                    .service
+                    .try_connect_without_execute(*block, &remote_chain_state)?;
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(

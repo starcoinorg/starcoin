@@ -15,7 +15,6 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -102,6 +101,9 @@ where
 
     pub fn state_at(&self, _root: HashValue) -> ChainStateDB {
         unimplemented!()
+    }
+    pub fn get_remote_chain_state(&self) -> Option<RemoteChainStateReader<NetworkAsyncService>> {
+        self.remote_chain_state.clone()
     }
 
     pub fn get_master(&self) -> &BlockChain {
@@ -468,7 +470,12 @@ where
         Ok(ConnectBlockResult::FutureBlock)
     }
 
-    fn connect_inner(&mut self, block: Block, execute: bool) -> Result<ConnectBlockResult> {
+    fn connect_inner(
+        &mut self,
+        block: Block,
+        execute: bool,
+        remote_chain_state: Option<&dyn ChainStateReader>,
+    ) -> Result<ConnectBlockResult> {
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         if block_exist {
             CHAIN_METRICS.duplicate_conn_count.inc();
@@ -480,7 +487,6 @@ where
                 .with_label_values(&["time"])
                 .start_timer();
             if let Some(uncles) = block.uncles() {
-                //TODO: if on fast sync, not executed, verify failed?
                 if let ConnectBlockResult::VerifyConsensusFailed =
                     self.verify_uncles(uncles, &block.header, branch.chain_state_reader())?
                 {
@@ -490,7 +496,10 @@ where
             let connected = if execute {
                 branch.apply(block.clone())?
             } else {
-                branch.apply_without_execute(block.clone())?
+                branch.apply_without_execute(
+                    block.clone(),
+                    remote_chain_state.expect("remote chain state not set"),
+                )?
             };
             timer.observe_duration();
             if connected != ConnectBlockResult::SUCCESS {
@@ -511,19 +520,15 @@ where
     P: TxPoolSyncService,
 {
     fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
-        self.connect_inner(block, true)
+        self.connect_inner(block, true, None)
     }
 
     fn try_connect_without_execute(
         &mut self,
-        peer_id: PeerId,
         block: Block,
+        remote_chain_state: &dyn ChainStateReader,
     ) -> Result<ConnectBlockResult> {
-        self.remote_chain_state = self
-            .remote_chain_state
-            .as_ref()
-            .map(|r| r.with(peer_id, block.header.state_root));
-        self.connect_inner(block, false)
+        self.connect_inner(block, false, Some(remote_chain_state))
     }
 
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
