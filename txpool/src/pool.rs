@@ -19,6 +19,7 @@ use types::{account_address::AccountAddress, transaction};
 pub use verifier::Options as VerifierOptions;
 
 pub type SeqNumber = u64;
+//TODO gas and gas price should use MoveVM types.
 pub type GasPrice = u64;
 pub type Gas = u64;
 
