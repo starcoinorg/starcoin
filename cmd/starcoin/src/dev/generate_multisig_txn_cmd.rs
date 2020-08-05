@@ -63,7 +63,7 @@ pub struct GenerateMultisigTxnOpt {
     )]
     type_tags: Vec<TypeTag>,
 
-    #[structopt(name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
+    #[structopt(long = "arg", name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
     /// transaction arguments
     args: Vec<TransactionArgument>,
 
