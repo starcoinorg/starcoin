@@ -25,26 +25,55 @@ fn extract_selector_str(input: &str) -> HashSet<&str> {
 
 pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
-    builder.then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
-        let client = world.rpc_client.as_ref().take().unwrap();
+    builder
+        .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
+            let client = world.rpc_client.as_ref().take().unwrap();
 
-        let node_info = client.clone().node_info().unwrap();
-        let state = CliState::new(node_info.net, client.clone(), None, None);
-        let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
-        // get last cmd result as current parameter
-        let mut vec = vec!["starcoin"];
-        dbg!(args);
-        let parameters = get_command_args(world, (*args[1]).parse().unwrap());
-        for parameter in parameters.as_str().split_whitespace() {
-            vec.push(parameter);
-        }
-        info!("parameter: {:?}", vec.clone());
-        let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
+            let node_info = client.clone().node_info().unwrap();
+            let state = CliState::new(node_info.net, client.clone(), None, None);
+            let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
+            // get last cmd result as current parameter
+            let mut vec = vec!["starcoin"];
+            let parameters = get_command_args(world, (*args[1]).parse().unwrap());
+            for parameter in parameters.as_str().split_whitespace() {
+                vec.push(parameter);
+            }
+            info!("parameter: {:?}", vec.clone());
+            let result = add_command(context).exec_with_args::<Value>(vec).unwrap();
 
-        info!("cmd execute result: {:?}", result);
+            info!("cmd execute result: {:?}", result);
 
-        world.value = Some(result);
-    });
+            world.value = Some(result);
+        })
+        .then_regex(
+            r#"assert: "([^"]*)""#,
+            |world: &mut MyWorld, args, _step| {
+                //get field_name from args
+                let mut args_vec = vec![];
+                for parameter in args[1].as_str().split_whitespace() {
+                    args_vec.push(parameter);
+                }
+                let mut args_map = HashMap::new();
+                for (i, v) in args_vec.iter().enumerate() {
+                    if (i % 2) == 1 {
+                        continue;
+                    }
+                    if i + 1 <= args_vec.len() {
+                        args_map.insert(*v, args_vec.get(i + 1).unwrap());
+                    }
+                }
+                for (arg_key, arg_val) in args_map {
+                    if let Some(value) = &world.value {
+                        let selector = Selector::new(arg_key).unwrap();
+                        let mut next_value: Vec<&str> =
+                            selector.find(&value).map(|t| t.as_str().unwrap()).collect();
+                        info!("assert value: {:?},expect: {:?}", next_value, *arg_val);
+                        assert_eq!(next_value.pop().unwrap(), *arg_val);
+                    }
+                }
+                info!("assert ok!");
+            },
+        );
     builder.build()
 }
 

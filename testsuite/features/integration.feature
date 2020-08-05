@@ -16,6 +16,7 @@ Feature: integration
     Then charge money to account
     Then execute transfer transaction
     Then state proof
+    Then node handle stop
 
 #  Scenario: Node start and execute transfer
 #    Given remote rpc client
