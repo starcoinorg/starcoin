@@ -1,6 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::debug::TxPoolStatusCommand;
+use scmd::{CmdContext, Command};
+
 pub mod account;
 pub mod chain;
 pub mod cli_state;
@@ -11,10 +14,10 @@ pub mod mutlisig_transaction;
 pub mod node;
 pub mod state;
 pub mod view;
-use crate::debug::TxPoolStatusCommand;
+
 pub use cli_state::CliState;
-use scmd::{CmdContext, Command};
 pub use starcoin_config::StarcoinOpt;
+pub use starcoin_node::crash_handler;
 
 pub fn add_command(
     context: CmdContext<CliState, StarcoinOpt>,

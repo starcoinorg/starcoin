@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use cucumber::{after, before, cucumber, Steps, StepsBuilder};
+use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_cmd::helper;
 use starcoin_config::NodeConfig;
@@ -12,7 +13,6 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_types::account_address::AccountAddress;
 use std::env;
 use std::sync::Arc;
 use std::time::Duration;
@@ -32,8 +32,7 @@ pub struct MyWorld {
     default_account: Option<AccountInfo>,
     txn_account: Option<AccountInfo>,
     node_handle: Option<NodeHandle>,
-    default_address: Option<AccountAddress>,
-    cmd_value: Option<Vec<String>>,
+    value: Option<Value>,
     rt: Option<Runtime>,
 }
 impl MyWorld {
@@ -125,7 +124,9 @@ after!(an_after_fn => |_scenario| {
 });
 
 // A setup function to be called before everything else
-fn setup() {}
+fn setup() {
+    starcoin_cmd::crash_handler::setup_panic_handler();
+}
 
 cucumber! {
     features: "./features", // Path to our feature files
