@@ -141,14 +141,15 @@ pub async fn get_headers_with_peer(
     client: &NetworkRpcClient<NetworkAsyncService>,
     peer_id: PeerId,
     req: GetBlockHeaders,
-    number: BlockNumber,
+    _number: BlockNumber,
 ) -> Result<Vec<BlockHeader>> {
-    let mut verify_condition: RpcEntryVerify<BlockNumber> =
-        (&req.clone().into_numbers(number)).into();
-    let data = client.get_headers_with_peer(peer_id, req).await?;
-    let verified_headers =
-        verify_condition.filter(data, |header| -> BlockNumber { header.number() });
-    Ok(verified_headers)
+    // let mut verify_condition: RpcEntryVerify<BlockNumber> =
+    //     (&req.clone().into_numbers(number)).into();
+    // let data = client.get_headers_with_peer(peer_id, req).await?;
+    // let verified_headers =
+    //     verify_condition.filter(data, |header| -> BlockNumber { header.number() });
+    // Ok(verified_headers)
+    client.get_headers_with_peer(peer_id, req).await?
 }
 
 pub async fn get_headers(
