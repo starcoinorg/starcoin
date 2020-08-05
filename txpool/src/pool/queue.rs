@@ -5,7 +5,7 @@
 
 use super::{
     client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
-    GasPrice, PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
+    PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
 use crate::{pool, pool::PoolTransaction};
 use common_crypto::hash::HashValue;
@@ -61,14 +61,12 @@ impl fmt::Display for Status {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             fmt,
-            "Pool: {current}/{max} ({senders} senders; {mem}/{mem_max} kB) [minGasPrice: {gp}, maxGas: {max_gas}]",
+            "Pool: {current}/{max} ({senders} senders; {mem}/{mem_max} kB)]",
             current = self.status.transaction_count,
             max = self.limits.max_count,
             senders = self.status.senders,
             mem = self.status.mem_usage / 1024,
             mem_max = self.limits.max_mem_usage / 1024,
-            gp = self.options.minimal_gas_price,
-            max_gas = cmp::min(self.options.block_gas_limit, self.options.tx_gas_limit),
         )
     }
 }
@@ -527,14 +525,6 @@ impl TransactionQueue {
     pub fn penalize<'a, T: IntoIterator<Item = &'a Address>>(&self, senders: T) {
         for sender in senders {
             self.pool.write().update_scores(sender, ());
-        }
-    }
-
-    /// Returns gas price of currently the worst transaction in the pool.
-    pub fn current_worst_gas_price(&self) -> GasPrice {
-        match self.pool.read().worst_transaction() {
-            Some(tx) => tx.signed().gas_unit_price(),
-            None => self.options.read().minimal_gas_price,
         }
     }
 

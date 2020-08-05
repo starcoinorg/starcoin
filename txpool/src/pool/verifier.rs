@@ -9,7 +9,7 @@
 //! May have some overlap with `Readiness` since we don't want to keep around
 //! stalled transactions.
 use crate::pool::{
-    client::Client, scoring, Gas, GasPrice, PoolTransaction, Priority, UnverifiedUserTransaction,
+    client::Client, scoring, PoolTransaction, Priority, UnverifiedUserTransaction,
     VerifiedTransaction,
 };
 use std::sync::{atomic::AtomicUsize, Arc};
@@ -18,12 +18,6 @@ use types::transaction;
 /// Verification options.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Options {
-    /// Minimal allowed gas price.
-    pub minimal_gas_price: GasPrice,
-    /// Current block gas limit.
-    pub block_gas_limit: Gas,
-    /// Maximal gas limit for a single transaction.
-    pub tx_gas_limit: Gas,
     /// Skip checks for early rejection, to make sure that local transactions are always imported.
     pub no_early_reject: bool,
 }
@@ -32,9 +26,6 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Options {
-            minimal_gas_price: 0,
-            block_gas_limit: Gas::max_value(),
-            tx_gas_limit: Gas::max_value(),
             no_early_reject: false,
         }
     }

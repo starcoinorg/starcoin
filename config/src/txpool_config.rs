@@ -14,11 +14,6 @@ pub struct TxPoolConfig {
     pub max_per_sender: u64,
     /// Maximal memory usage.
     pub max_mem_usage: u64,
-    /// Minimal allowed gas price.
-    pub minimal_gas_price: u64,
-    /// Maximal gas limit for a single transaction.
-    #[serde(skip)]
-    pub tx_gas_limit: u64,
 }
 
 impl ConfigModule for TxPoolConfig {
@@ -27,8 +22,6 @@ impl ConfigModule for TxPoolConfig {
             max_count: 1024,
             max_per_sender: 16,
             max_mem_usage: 64 * 1024 * 1024, // 64M
-            minimal_gas_price: 0,
-            tx_gas_limit: u64::max_value(),
         })
     }
 }

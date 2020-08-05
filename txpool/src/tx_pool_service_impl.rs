@@ -5,7 +5,7 @@ use crate::{
     counters::TXPOOL_SERVICE_HISTOGRAM,
     pool,
     pool::{
-        Gas, PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
+        PendingOrdering, PendingSettings, PoolTransaction, PrioritizationStrategy, Status,
         TxStatus, UnverifiedUserTransaction, VerifiedTransaction,
     },
     pool_client::{NonceCache, PoolClient},
@@ -39,9 +39,6 @@ impl TxPoolService {
     ) -> Self {
         let pool_config = &node_config.tx_pool;
         let verifier_options = pool::VerifierOptions {
-            minimal_gas_price: pool_config.minimal_gas_price,
-            block_gas_limit: Gas::max_value(),
-            tx_gas_limit: pool_config.tx_gas_limit,
             no_early_reject: false,
         };
         let queue = TxnQueue::new(
