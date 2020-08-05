@@ -149,7 +149,7 @@ pub async fn get_headers_with_peer(
     // let verified_headers =
     //     verify_condition.filter(data, |header| -> BlockNumber { header.number() });
     // Ok(verified_headers)
-    client.get_headers_with_peer(peer_id, req).await?
+    client.get_headers_with_peer(peer_id, req).await
 }
 
 pub async fn get_headers(

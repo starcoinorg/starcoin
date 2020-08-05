@@ -20,7 +20,7 @@ module TransactionFee {
         account: &signer,
     ) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         // accept fees in all the currencies
         add_txn_fee_token<STC>(account);
@@ -41,7 +41,7 @@ module TransactionFee {
     /// Deposit `token` into the transaction fees bucket
     public fun pay_fee<TokenType>(token: Token<TokenType>) acquires TransactionFee {
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
-            CoreAddresses::GENESIS_ACCOUNT()
+            CoreAddresses::GENESIS_ADDRESS()
         );
         Token::deposit(&mut txn_fees.fee, token)
     }
@@ -52,7 +52,7 @@ module TransactionFee {
     public fun distribute_transaction_fees<TokenType>(
         account: &signer,
     ): Token<TokenType> acquires TransactionFee {
-        let fee_address =  CoreAddresses::GENESIS_ACCOUNT();
+        let fee_address =  CoreAddresses::GENESIS_ADDRESS();
         assert(Signer::address_of(account) == fee_address, ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         // extract fees

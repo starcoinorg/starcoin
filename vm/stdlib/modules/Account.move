@@ -97,6 +97,70 @@ module Account {
     fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
 
+    const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
+
+    // Create an genesis account at `new_account_address` and return signer.
+    // Genesis authentication_key is zero bytes.
+    public fun create_genesis_account(
+        new_account_address: address,
+    ) :signer {
+        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+        let new_account = create_signer(new_account_address);
+        make_account(&new_account, DUMMY_AUTH_KEY);
+        new_account
+    }
+
+    // Release genesis account signer
+    public fun release_genesis_signer(genesis_account: signer){
+        destroy_signer(genesis_account);
+    }
+
+    // Creates a new account at `fresh_address` with a balance of zero and authentication
+    // key `auth_key_prefix` | `fresh_address`.
+    // Creating an account at address 0x1 will cause runtime failure as it is a
+    // reserved address for the MoveVM.
+    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>) acquires Account {
+        let new_account = create_signer(fresh_address);
+
+        let authentication_key = auth_key_prefix;
+        Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
+
+        make_account(&new_account, authentication_key);
+        // Make sure all account accept STC.
+        if (!STC::is_stc<TokenType>()){
+            accept_token<STC>(&new_account);
+        };
+        accept_token<TokenType>(&new_account);
+        destroy_signer(new_account);
+    }
+
+    fun make_account(
+        new_account: &signer,
+        authentication_key: vector<u8>,
+    ) {
+        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
+        let new_account_addr = Signer::address_of(new_account);
+        Event::publish_generator(new_account);
+        move_to(new_account, Account {
+              authentication_key,
+              withdrawal_capability: Option::some(
+                  WithdrawCapability {
+                      account_address: new_account_addr
+              }),
+              key_rotation_capability: Option::some(
+                  KeyRotationCapability {
+                      account_address: new_account_addr
+              }),
+              received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
+              sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
+              accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
+              sequence_number: 0,
+        });
+    }
+
+    native fun create_signer(addr: address): signer;
+    native fun destroy_signer(sig: signer);
+
     // Deposits the `to_deposit` token into the `payee`'s account balance
     public fun deposit_to<TokenType>(account: &signer, payee: address, to_deposit: Token<TokenType>)
     acquires Account, Balance {
@@ -291,68 +355,6 @@ module Account {
         Option::fill(&mut account.key_rotation_capability, cap)
     }
 
-    // Create an account at `new_account_address` with authentication key
-    /// `auth_key_prefix` | `new_account_address` and return signer.
-    public fun create_genesis_account(
-        new_account_address: address,
-        auth_key_prefix: vector<u8>
-    ) :signer {
-        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-        let new_account = create_signer(new_account_address);
-        Event::publish_generator(&new_account);
-        make_account(&new_account, auth_key_prefix);
-        new_account
-    }
-
-    // Release genesis account signer
-    public fun release_genesis_signer(genesis_account: signer){
-        destroy_signer(genesis_account);
-    }
-
-    // Creates a new account at `fresh_address` with a balance of zero and authentication
-    // key `auth_key_prefix` | `fresh_address`.
-    // Creating an account at address 0x1 will cause runtime failure as it is a
-    // reserved address for the MoveVM.
-    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>) acquires Account {
-        let new_account = create_signer(fresh_address);
-        Event::publish_generator(&new_account);
-        make_account(&new_account, auth_key_prefix);
-        // Make sure all account accept STC.
-        if (!STC::is_stc<TokenType>()){
-            accept_token<STC>(&new_account);
-        };
-        accept_token<TokenType>(&new_account);
-        destroy_signer(new_account);
-    }
-
-    fun make_account(
-        new_account: &signer,
-        auth_key_prefix: vector<u8>,
-    ) {
-        let authentication_key = auth_key_prefix;
-        let new_account_addr = Signer::address_of(new_account);
-        Vector::append(&mut authentication_key, LCS::to_bytes(&new_account_addr));
-        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
-        move_to(new_account, Account {
-              authentication_key,
-              withdrawal_capability: Option::some(
-                  WithdrawCapability {
-                      account_address: new_account_addr
-              }),
-              key_rotation_capability: Option::some(
-                  KeyRotationCapability {
-                      account_address: new_account_addr
-              }),
-              received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
-              sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
-              accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
-              sequence_number: 0,
-        });
-    }
-
-    native fun create_signer(addr: address): signer;
-    native fun destroy_signer(sig: signer);
-
     // Helper to return the u128 value of the `balance` for `account`
     fun balance_for<TokenType>(balance: &Balance<TokenType>): u128 {
         Token::value<TokenType>(&balance.token)
@@ -439,7 +441,7 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
@@ -476,7 +478,7 @@ module Account {
         state_cost_amount: u64,
         cost_is_negative: bool,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<Account>(txn_sender);

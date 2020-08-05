@@ -37,7 +37,7 @@ use 0x1::CoreAddresses;
 use 0x1::STC::{STC};
 
 fun main(association_account: &signer) {
-    Account::pay_from<STC>(association_account, CoreAddresses::GENESIS_ACCOUNT(), 400000000000000);
+    Account::pay_from<STC>(association_account, CoreAddresses::GENESIS_ADDRESS(), 400000000000000);
 }
 }
 

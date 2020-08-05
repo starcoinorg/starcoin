@@ -15,6 +15,12 @@
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
 -  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
+-  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
+-  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
+-  [Function `create_account`](#0x1_Account_create_account)
+-  [Function `make_account`](#0x1_Account_make_account)
+-  [Function `create_signer`](#0x1_Account_create_signer)
+-  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `deposit_to`](#0x1_Account_deposit_to)
 -  [Function `deposit`](#0x1_Account_deposit)
 -  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
@@ -31,12 +37,6 @@
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
 -  [Function `extract_key_rotation_capability`](#0x1_Account_extract_key_rotation_capability)
 -  [Function `restore_key_rotation_capability`](#0x1_Account_restore_key_rotation_capability)
--  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
--  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
--  [Function `create_account`](#0x1_Account_create_account)
--  [Function `make_account`](#0x1_Account_make_account)
--  [Function `create_signer`](#0x1_Account_create_signer)
--  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `balance_for`](#0x1_Account_balance_for)
 -  [Function `balance`](#0x1_Account_balance)
 -  [Function `accept_token`](#0x1_Account_accept_token)
@@ -395,6 +395,182 @@ Message for accept token events
 
 
 <pre><code><b>fun</b> <a href="#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_genesis_account"></a>
+
+## Function `create_genesis_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(new_account_address: address): signer
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(
+    new_account_address: address,
+) :signer {
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
+    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_account_address);
+    <a href="#0x1_Account_make_account">make_account</a>(&new_account, DUMMY_AUTH_KEY);
+    new_account
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_release_genesis_signer"></a>
+
+## Function `release_genesis_signer`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer){
+    <a href="#0x1_Account_destroy_signer">destroy_signer</a>(genesis_account);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_account"></a>
+
+## Function `create_account`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
+    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(fresh_address);
+
+    <b>let</b> authentication_key = auth_key_prefix;
+    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key, <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&fresh_address));
+
+    <a href="#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
+    // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
+    <b>if</b> (!<a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;()){
+        <a href="#0x1_Account_accept_token">accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
+    };
+    <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(&new_account);
+    <a href="#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_make_account"></a>
+
+## Function `make_account`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_make_account">make_account</a>(new_account: &signer, authentication_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_make_account">make_account</a>(
+    new_account: &signer,
+    authentication_key: vector&lt;u8&gt;,
+) {
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
+    <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
+    <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(new_account);
+    move_to(new_account, <a href="#0x1_Account">Account</a> {
+          authentication_key,
+          withdrawal_capability: <a href="Option.md#0x1_Option_some">Option::some</a>(
+              <a href="#0x1_Account_WithdrawCapability">WithdrawCapability</a> {
+                  account_address: new_account_addr
+          }),
+          key_rotation_capability: <a href="Option.md#0x1_Option_some">Option::some</a>(
+              <a href="#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> {
+                  account_address: new_account_addr
+          }),
+          received_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(new_account),
+          sent_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(new_account),
+          accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
+          sequence_number: 0,
+    });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_create_signer"></a>
+
+## Function `create_signer`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_create_signer">create_signer</a>(addr: address): signer
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="#0x1_Account_create_signer">create_signer</a>(addr: address): signer;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_destroy_signer"></a>
+
+## Function `destroy_signer`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>fun</b> <a href="#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer);
 </code></pre>
 
 
@@ -894,185 +1070,6 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_create_genesis_account"></a>
-
-## Function `create_genesis_account`
-
-
-<code>auth_key_prefix</code> |
-<code>new_account_address</code> and return signer.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(new_account_address: address, auth_key_prefix: vector&lt;u8&gt;): signer
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(
-    new_account_address: address,
-    auth_key_prefix: vector&lt;u8&gt;
-) :signer {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
-    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_account_address);
-    <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(&new_account);
-    <a href="#0x1_Account_make_account">make_account</a>(&new_account, auth_key_prefix);
-    new_account
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_release_genesis_signer"></a>
-
-## Function `release_genesis_signer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer){
-    <a href="#0x1_Account_destroy_signer">destroy_signer</a>(genesis_account);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_create_account"></a>
-
-## Function `create_account`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
-    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(fresh_address);
-    <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(&new_account);
-    <a href="#0x1_Account_make_account">make_account</a>(&new_account, auth_key_prefix);
-    // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
-    <b>if</b> (!<a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;()){
-        <a href="#0x1_Account_accept_token">accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
-    };
-    <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(&new_account);
-    <a href="#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_make_account"></a>
-
-## Function `make_account`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_make_account">make_account</a>(new_account: &signer, auth_key_prefix: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_make_account">make_account</a>(
-    new_account: &signer,
-    auth_key_prefix: vector&lt;u8&gt;,
-) {
-    <b>let</b> authentication_key = auth_key_prefix;
-    <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key, <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&new_account_addr));
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
-    move_to(new_account, <a href="#0x1_Account">Account</a> {
-          authentication_key,
-          withdrawal_capability: <a href="Option.md#0x1_Option_some">Option::some</a>(
-              <a href="#0x1_Account_WithdrawCapability">WithdrawCapability</a> {
-                  account_address: new_account_addr
-          }),
-          key_rotation_capability: <a href="Option.md#0x1_Option_some">Option::some</a>(
-              <a href="#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> {
-                  account_address: new_account_addr
-          }),
-          received_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(new_account),
-          sent_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(new_account),
-          accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
-          sequence_number: 0,
-    });
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_create_signer"></a>
-
-## Function `create_signer`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_create_signer">create_signer</a>(addr: address): signer
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>fun</b> <a href="#0x1_Account_create_signer">create_signer</a>(addr: address): signer;
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_destroy_signer"></a>
-
-## Function `destroy_signer`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>native</b> <b>fun</b> <a href="#0x1_Account_destroy_signer">destroy_signer</a>(sig: signer);
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Account_balance_for"></a>
 
 ## Function `balance_for`
@@ -1396,7 +1393,7 @@ Message for accept token events
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
 
     // FUTURE: Make these error codes sequential
     // Verify that the transaction sender's account exists
@@ -1451,7 +1448,7 @@ Message for accept token events
     state_cost_amount: u64,
     cost_is_negative: bool,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     // Load the transaction sender's account and balance resources
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);

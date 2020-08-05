@@ -258,7 +258,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_initialize">initialize</a>(account: &signer, reward_balance: u128, reward_delay: u64) {
     <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(reward_delay &gt; 0, 4);
     move_to&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(account, <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a> {
         reward_number: 0,
@@ -292,7 +292,7 @@
 
 
 <pre><code><b>fun</b> <a href="#0x1_BlockReward_withdraw">withdraw</a>(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt; <b>acquires</b> <a href="#0x1_BlockReward">BlockReward</a> {
-    <b>let</b> block_reward = borrow_global_mut&lt;<a href="#0x1_BlockReward">BlockReward</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> block_reward = borrow_global_mut&lt;<a href="#0x1_BlockReward">BlockReward</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> real_amount = <b>if</b> (<a href="Token.md#0x1_Token_value">Token::value</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&block_reward.balance) &lt; amount) {
         <a href="Token.md#0x1_Token_value">Token::value</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&block_reward.balance)
     } <b>else</b> {
@@ -323,10 +323,10 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128,
     current_author: address, auth_key_prefix: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>, <a href="#0x1_BlockReward">BlockReward</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>if</b> (current_number &gt; 0) {
-        <b>let</b> rewards = borrow_global_mut&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+        <b>let</b> rewards = borrow_global_mut&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
         <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&rewards.infos);
         <b>assert</b>((current_number == (rewards.reward_number + len + 1)), <a href="#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG">CURRENT_NUMBER_IS_WRONG</a>());
         <b>assert</b>(len &lt;= rewards.reward_delay, <a href="#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG">LEN_OF_REWARD_INFO_IS_WRONG</a>());

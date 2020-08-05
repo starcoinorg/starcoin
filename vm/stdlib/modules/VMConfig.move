@@ -83,7 +83,7 @@ module VMConfig {
         gas_unit_scaling_factor: u64,
         default_account_size: u64
     ) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), 1);
         //TODO pass gas_constants as init argument and onchain config.
         let gas_constants = GasConstants {
             global_memory_per_byte_cost,

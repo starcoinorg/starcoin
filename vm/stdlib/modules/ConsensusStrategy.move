@@ -14,7 +14,7 @@ module ConsensusStrategy {
     public fun initialize(account: &signer, consensus_strategy: u8) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(),
+            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             ErrorCode::ENOT_GENESIS_ACCOUNT()
         );
         let cap = Config::publish_new_config_with_capability<ConsensusStrategy>(
@@ -27,7 +27,7 @@ module ConsensusStrategy {
 
     /// Return the consensus strategy type of this chain
     public fun get(): u8 {
-        Config::get_by_address<ConsensusStrategy>(CoreAddresses::GENESIS_ACCOUNT()).value
+        Config::get_by_address<ConsensusStrategy>(CoreAddresses::GENESIS_ADDRESS()).value
     }
 }
 }
