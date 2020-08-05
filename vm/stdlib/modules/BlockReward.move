@@ -26,6 +26,12 @@ module BlockReward {
         miner: address,
     }
 
+    fun AUTH_KEY_PREFIX_IS_NOT_EMPTY(): u64 { ErrorCode::ECODE_BASE() + 1}
+    fun CURRENT_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 2}
+    fun LEN_OF_REWARD_INFO_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 3}
+    fun REWARD_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 4}
+    fun MINER_EXIST(): u64 { ErrorCode::ECODE_BASE() + 5}
+
     public fun initialize(account: &signer, reward_balance: u128, reward_delay: u64) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
@@ -58,17 +64,17 @@ module BlockReward {
         if (current_number > 0) {
             let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ACCOUNT());
             let len = Vector::length(&rewards.infos);
-            assert((current_number == (rewards.reward_number + len + 1)), 6002);
-            assert(len <= rewards.reward_delay, 6003);
+            assert((current_number == (rewards.reward_number + len + 1)), CURRENT_NUMBER_IS_WRONG());
+            assert(len <= rewards.reward_delay, LEN_OF_REWARD_INFO_IS_WRONG());
 
             if (len == rewards.reward_delay) {//pay and remove
                 let reward_number = *&rewards.reward_number + 1;
                 let first_info = *Vector::borrow(&rewards.infos, 0);
-                assert((reward_number == first_info.number), 6005);
+                assert((reward_number == first_info.number), REWARD_NUMBER_IS_WRONG());
 
                 rewards.reward_number = reward_number;
                 if (first_info.reward > 0) {
-                    assert(Account::exists_at(first_info.miner), 6006);
+                    assert(Account::exists_at(first_info.miner), MINER_EXIST());
                     let reward = Self::withdraw(first_info.reward);
                     Account::deposit_to<STC>(account, first_info.miner, reward);
                 };
@@ -76,7 +82,7 @@ module BlockReward {
             };
 
             if (!Account::exists_at(current_author)) {
-                assert(!Vector::is_empty(&auth_key_prefix), 6007);
+                assert(!Vector::is_empty(&auth_key_prefix), AUTH_KEY_PREFIX_IS_NOT_EMPTY());
                 Account::create_account<STC>(current_author, auth_key_prefix);
             };
             let current_info = RewardInfo {

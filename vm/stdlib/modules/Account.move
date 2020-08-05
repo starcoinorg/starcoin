@@ -93,7 +93,6 @@ module Account {
         token_code: vector<u8>,
     }
 
-    fun ECOIN_DEPOSIT_IS_ZERO(): u64 { ErrorCode::ECODE_BASE() + 0 }
     fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
@@ -138,7 +137,7 @@ module Account {
     ) acquires Account, Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, ECOIN_DEPOSIT_IS_ZERO());
+        assert(deposit_value > 0, ErrorCode::ECOIN_DEPOSIT_IS_ZERO());
 
         let token_code = Token::token_code<TokenType>();
 

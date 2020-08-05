@@ -8,6 +8,11 @@
 -  [Resource `BlockReward`](#0x1_BlockReward_BlockReward)
 -  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
 -  [Struct `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Function `AUTH_KEY_PREFIX_IS_NOT_EMPTY`](#0x1_BlockReward_AUTH_KEY_PREFIX_IS_NOT_EMPTY)
+-  [Function `CURRENT_NUMBER_IS_WRONG`](#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG)
+-  [Function `LEN_OF_REWARD_INFO_IS_WRONG`](#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG)
+-  [Function `REWARD_NUMBER_IS_WRONG`](#0x1_BlockReward_REWARD_NUMBER_IS_WRONG)
+-  [Function `MINER_EXIST`](#0x1_BlockReward_MINER_EXIST)
 -  [Function `initialize`](#0x1_BlockReward_initialize)
 -  [Function `withdraw`](#0x1_BlockReward_withdraw)
 -  [Function `process_block_reward`](#0x1_BlockReward_process_block_reward)
@@ -126,6 +131,116 @@
 
 </details>
 
+<a name="0x1_BlockReward_AUTH_KEY_PREFIX_IS_NOT_EMPTY"></a>
+
+## Function `AUTH_KEY_PREFIX_IS_NOT_EMPTY`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_AUTH_KEY_PREFIX_IS_NOT_EMPTY">AUTH_KEY_PREFIX_IS_NOT_EMPTY</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_AUTH_KEY_PREFIX_IS_NOT_EMPTY">AUTH_KEY_PREFIX_IS_NOT_EMPTY</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_BlockReward_CURRENT_NUMBER_IS_WRONG"></a>
+
+## Function `CURRENT_NUMBER_IS_WRONG`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG">CURRENT_NUMBER_IS_WRONG</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG">CURRENT_NUMBER_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG"></a>
+
+## Function `LEN_OF_REWARD_INFO_IS_WRONG`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG">LEN_OF_REWARD_INFO_IS_WRONG</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG">LEN_OF_REWARD_INFO_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_BlockReward_REWARD_NUMBER_IS_WRONG"></a>
+
+## Function `REWARD_NUMBER_IS_WRONG`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_REWARD_NUMBER_IS_WRONG">REWARD_NUMBER_IS_WRONG</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_REWARD_NUMBER_IS_WRONG">REWARD_NUMBER_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_BlockReward_MINER_EXIST"></a>
+
+## Function `MINER_EXIST`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_MINER_EXIST">MINER_EXIST</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_MINER_EXIST">MINER_EXIST</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 5}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_BlockReward_initialize"></a>
 
 ## Function `initialize`
@@ -213,17 +328,17 @@
     <b>if</b> (current_number &gt; 0) {
         <b>let</b> rewards = borrow_global_mut&lt;<a href="#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
         <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&rewards.infos);
-        <b>assert</b>((current_number == (rewards.reward_number + len + 1)), 6002);
-        <b>assert</b>(len &lt;= rewards.reward_delay, 6003);
+        <b>assert</b>((current_number == (rewards.reward_number + len + 1)), <a href="#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG">CURRENT_NUMBER_IS_WRONG</a>());
+        <b>assert</b>(len &lt;= rewards.reward_delay, <a href="#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG">LEN_OF_REWARD_INFO_IS_WRONG</a>());
 
         <b>if</b> (len == rewards.reward_delay) {//pay and remove
             <b>let</b> reward_number = *&rewards.reward_number + 1;
             <b>let</b> first_info = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&rewards.infos, 0);
-            <b>assert</b>((reward_number == first_info.number), 6005);
+            <b>assert</b>((reward_number == first_info.number), <a href="#0x1_BlockReward_REWARD_NUMBER_IS_WRONG">REWARD_NUMBER_IS_WRONG</a>());
 
             rewards.reward_number = reward_number;
             <b>if</b> (first_info.reward &gt; 0) {
-                <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), 6006);
+                <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), <a href="#0x1_BlockReward_MINER_EXIST">MINER_EXIST</a>());
                 <b>let</b> reward = <a href="#0x1_BlockReward_withdraw">Self::withdraw</a>(first_info.reward);
                 <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.miner, reward);
             };
@@ -231,7 +346,7 @@
         };
 
         <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
-            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_prefix), 6007);
+            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_prefix), <a href="#0x1_BlockReward_AUTH_KEY_PREFIX_IS_NOT_EMPTY">AUTH_KEY_PREFIX_IS_NOT_EMPTY</a>());
             <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(current_author, auth_key_prefix);
         };
         <b>let</b> current_info = <a href="#0x1_BlockReward_RewardInfo">RewardInfo</a> {

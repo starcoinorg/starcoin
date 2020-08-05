@@ -12,6 +12,11 @@ module ErrorCode {
     public fun ENOT_GENESIS_ACCOUNT(): u64 {11}
     public fun ENOT_GENESIS(): u64 {12}
     public fun ECONFIG_VALUE_DOES_NOT_EXIST(): u64 {13}
+    public fun EINVALID_TIMESTAMP(): u64 {14}
+    public fun ECOIN_DEPOSIT_IS_ZERO(): u64 {15}
+    public fun EDESTORY_TOKEN_NON_ZERO(): u64 {16}
+    public fun EBLOCK_NUMBER_MISMATCH(): u64 {17}
+
 
     public fun ECODE_BASE(): u64 {100}
 }

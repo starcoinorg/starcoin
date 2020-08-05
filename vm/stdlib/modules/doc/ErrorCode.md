@@ -15,6 +15,10 @@
 -  [Function `ENOT_GENESIS_ACCOUNT`](#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT)
 -  [Function `ENOT_GENESIS`](#0x1_ErrorCode_ENOT_GENESIS)
 -  [Function `ECONFIG_VALUE_DOES_NOT_EXIST`](#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST)
+-  [Function `EINVALID_TIMESTAMP`](#0x1_ErrorCode_EINVALID_TIMESTAMP)
+-  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO)
+-  [Function `EDESTORY_TOKEN_NON_ZERO`](#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO)
+-  [Function `EBLOCK_NUMBER_MISMATCH`](#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH)
 -  [Function `ECODE_BASE`](#0x1_ErrorCode_ECODE_BASE)
 
 
@@ -233,6 +237,94 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>(): u64 {13}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_EINVALID_TIMESTAMP"></a>
+
+## Function `EINVALID_TIMESTAMP`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64 {14}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO"></a>
+
+## Function `ECOIN_DEPOSIT_IS_ZERO`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64 {15}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO"></a>
+
+## Function `EDESTORY_TOKEN_NON_ZERO`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64 {16}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH"></a>
+
+## Function `EBLOCK_NUMBER_MISMATCH`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64 {17}
 </code></pre>
 
 

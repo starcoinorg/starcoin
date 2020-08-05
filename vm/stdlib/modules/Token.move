@@ -4,6 +4,7 @@ module Token {
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::LCS;
+    use 0x1::ErrorCode;
 
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
@@ -52,7 +53,6 @@ module Token {
     /// TokenType's name should same as Token's Module name.
     const ETOKEN_NAME:u64 = 101;
     const EAMOUNT_EXCEEDS_COIN_VALUE:u64 = 102;
-    const EDESTRUCTION_OF_NONZERO_COIN:u64 = 103;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
@@ -226,7 +226,7 @@ module Token {
     /// so you cannot "burn" any non-zero amount of Token
     public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token{ value: value } = token;
-        assert(value == 0, EDESTRUCTION_OF_NONZERO_COIN)
+        assert(value == 0, ErrorCode::EDESTORY_TOKEN_NON_ZERO())
     }
 
     /// Returns the scaling factor for the `TokenType` token.

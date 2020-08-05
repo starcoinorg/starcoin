@@ -8,8 +8,6 @@ module Block {
     use 0x1::Consensus;
     use 0x1::ErrorCode;
 
-    fun BLOCK_NUMBER_MISMATCH(): u64 { 100 }
-
      resource struct BlockMetadata {
           // number of the current block
           number: u64,
@@ -62,7 +60,7 @@ module Block {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
-        assert(number == (block_metadata_ref.number + 1), BLOCK_NUMBER_MISMATCH());
+        assert(number == (block_metadata_ref.number + 1), ErrorCode::EBLOCK_NUMBER_MISMATCH());
         block_metadata_ref.number = number;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;

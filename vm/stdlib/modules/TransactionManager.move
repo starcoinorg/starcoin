@@ -70,7 +70,7 @@ module TransactionManager {
         // txn execute success or fail.
         success: bool,
     ){
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
@@ -90,7 +90,7 @@ module TransactionManager {
         number: u64,
     ){
         // Can only be invoked by genesis account
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), 33);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         Timestamp::update_global_time(account, timestamp);
 
         //get previous author for distribute txn_fee

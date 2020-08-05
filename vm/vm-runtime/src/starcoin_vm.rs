@@ -553,7 +553,7 @@ impl StarcoinVM {
                 txn_data.sender(),
                 &mut cost_strategy,
             )
-            .map_err(|err| err.into_vm_status())?;
+            .map_err(|err| convert_prologue_runtime_error(err.into_vm_status()))?;
         Ok(get_transaction_output(
             &mut (),
             session,
@@ -947,9 +947,18 @@ const PROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
 const PROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
 const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
 
+const ENOT_GENESIS_ACCOUNT: u64 = 11;
+// Todo: haven't found proper StatusCode for below Error Code
+const ENOT_GENESIS: u64 = 12;
+const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
+const EINVALID_TIMESTAMP: u64 = 14;
+const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
+const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
+const EBLOCK_NUMBER_MISMATCH: u64 = 17;
+
 fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
     match status {
-        VMStatus::MoveAbort(location, code) => {
+        VMStatus::MoveAbort(_location, code) => {
             let new_major_status = match code {
                 PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
                 PROLOGUE_INVALID_ACCOUNT_AUTH_KEY => StatusCode::INVALID_AUTH_KEY,
@@ -960,12 +969,22 @@ fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
                 }
                 PROLOGUE_TRANSACTION_EXPIRED => StatusCode::TRANSACTION_EXPIRED,
                 PROLOGUE_BAD_CHAIN_ID => StatusCode::BAD_CHAIN_ID,
-                code => return VMStatus::MoveAbort(location, code),
+                ENOT_GENESIS_ACCOUNT => StatusCode::NO_ACCOUNT_ROLE,
+                ENOT_GENESIS => StatusCode::ABORTED,
+                ECONFIG_VALUE_DOES_NOT_EXIST => StatusCode::ABORTED,
+                EINVALID_TIMESTAMP => StatusCode::ABORTED,
+                ECOIN_DEPOSIT_IS_ZERO => StatusCode::ABORTED,
+                EDESTORY_TOKEN_NON_ZERO => StatusCode::ABORTED,
+                EBLOCK_NUMBER_MISMATCH => StatusCode::ABORTED,
+                // ToDo add corresponding error code into StatusCode
+                _ => StatusCode::ABORTED,
             };
             VMStatus::Error(new_major_status)
         }
-        status @ VMStatus::ExecutionFailure { .. }
-        | status @ VMStatus::Error(_)
-        | status @ VMStatus::Executed => status,
+        status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Executed => status,
+        VMStatus::Error(code) => {
+            warn!("[libra_vm] Unexpected prologue error: {:?}", code);
+            VMStatus::Error(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR) //ToDo: replace with UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+        }
     }
 }
