@@ -74,21 +74,12 @@ impl AccountManager {
         let keypair = gen_keypair();
         let address = account_address::from_public_key(&keypair.public_key);
 
-        let account = Account::create(
+        self.save_account(
+            address,
             keypair.public_key.clone(),
             keypair.private_key,
-            Some(address),
             password.to_string(),
-            self.store.clone(),
-        )?;
-        self.store.add_address(*account.address())?;
-
-        // if it's the first address, set it default.
-        if self.store.list_addresses()?.len() == 1 {
-            self.set_default_account(address)?;
-        }
-
-        Ok(account)
+        )
     }
 
     pub fn unlock_account(
@@ -117,19 +108,39 @@ impl AccountManager {
         private_key: Vec<u8>,
         password: &str,
     ) -> AccountResult<Account> {
+        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
+            .map_err(|_| AccountError::InvalidPrivateKey)?;
+        self.save_account(
+            address,
+            private_key.public_key(),
+            private_key,
+            password.to_string(),
+        )
+    }
+
+    fn save_account(
+        &self,
+        address: AccountAddress,
+        public_key: Ed25519PublicKey,
+        private_key: Ed25519PrivateKey,
+        password: String,
+    ) -> AccountResult<Account> {
         if self.contains(&address)? {
             return Err(AccountError::AccountAlreadyExist(address));
         }
-        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
-            .map_err(|_| AccountError::InvalidPrivateKey)?;
-        // let key_pair = KeyPair::from(private_key);
         let account = Account::create(
-            private_key.public_key(),
+            public_key,
             private_key,
             Some(address),
-            password.to_string(),
+            password,
             self.store.clone(),
         )?;
+        self.store.add_address(*account.address())?;
+
+        // if it's the first address, set it default.
+        if self.store.list_addresses()?.len() == 1 {
+            self.set_default_account(address)?;
+        }
         Ok(account)
     }
 
@@ -237,7 +248,7 @@ impl AccountManager {
     }
 }
 
-fn gen_keypair() -> KeyPair {
+pub(crate) fn gen_keypair() -> KeyPair {
     let mut seed_rng = rand::rngs::OsRng;
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
