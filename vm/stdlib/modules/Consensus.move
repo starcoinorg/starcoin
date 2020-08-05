@@ -66,7 +66,7 @@ module Consensus {
         reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
         init_reward_per_epoch: u128, reward_per_uncle_percent: u64,
         min_time_target:u64, max_uncles_per_block:u64) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(uncle_rate_target > 0, UNCLE_RATE_TARGET_IS_ZERO());
         assert(epoch_time_target > 0, EPOCH_TIME_TARGET_IS_ZERO());
         assert(reward_half_epoch > 0, REWARD_HALF_EPOCH_IS_ZERO());
@@ -138,7 +138,7 @@ module Consensus {
     }
     
     public fun get_config(): Consensus{
-        Config::get_by_address<Consensus>(CoreAddresses::GENESIS_ACCOUNT())
+        Config::get_by_address<Consensus>(CoreAddresses::GENESIS_ADDRESS())
     }
 
     public fun uncle_rate_target(): u64  {
@@ -184,7 +184,7 @@ module Consensus {
 
     fun first_epoch(block_number: u64, block_time: u64) acquires Epoch {
         assert(block_number == 1, EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE());
-        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         let count = Self::epoch_time_target() / epoch_ref.block_time_target;
         assert(count > 1, EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE());
         epoch_ref.epoch_start_time = block_time;
@@ -195,14 +195,14 @@ module Consensus {
     }
 
     public fun adjust_epoch(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 acquires Epoch, EpochData {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(Self::max_uncles_per_block() >= uncles, MAX_UNCLES_PER_BLOCK_IS_WRONG());
         if (block_number == 1) {
             assert(uncles == 0, UNCLES_IS_NOT_ZERO());
             Self::first_epoch(block_number, block_time);
         } else {
-            let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
-            let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
+            let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
+            let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ADDRESS());
             if (block_number < epoch_ref.end_number) {
                 epoch_data.uncles = epoch_data.uncles + uncles;
             } else {
@@ -251,10 +251,10 @@ module Consensus {
             }
         };
 
-        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         let reward = epoch_ref.reward_per_block + (epoch_ref.reward_per_block * (Self::reward_per_uncle_percent() as u128) * (uncles as u128) / 100);
 
-        let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         if (block_number == epoch_ref.start_number) {
             epoch_data.total_reward = reward;
             Event::emit_event(
@@ -277,37 +277,37 @@ module Consensus {
     }
 
     public fun epoch_start_time(): u64 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.epoch_start_time
     }
 
     public fun uncles(): u64 acquires EpochData {
-        let epoch_data = borrow_global<EpochData>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_data = borrow_global<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         epoch_data.uncles
     }
 
     public fun start_number(): u64 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.start_number
     }
 
     public fun end_number(): u64 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.end_number
     }
 
     public fun epoch_number(): u64 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.epoch_number
     }
 
     public fun block_time_target(): u64 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.block_time_target
     }
 
     public fun reward_per_epoch(): u128 acquires Epoch {
-        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ACCOUNT());
+        let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.reward_per_epoch
     }
 }

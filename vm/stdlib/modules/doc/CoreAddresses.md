@@ -5,21 +5,21 @@
 
 ### Table of Contents
 
--  [Function `GENESIS_ACCOUNT`](#0x1_CoreAddresses_GENESIS_ACCOUNT)
+-  [Function `GENESIS_ADDRESS`](#0x1_CoreAddresses_GENESIS_ADDRESS)
 -  [Function `ASSOCIATION_ROOT_ADDRESS`](#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS)
 -  [Function `VM_RESERVED_ADDRESS`](#0x1_CoreAddresses_VM_RESERVED_ADDRESS)
 -  [Specification](#0x1_CoreAddresses_Specification)
 
 
 
-<a name="0x1_CoreAddresses_GENESIS_ACCOUNT"></a>
+<a name="0x1_CoreAddresses_GENESIS_ADDRESS"></a>
 
-## Function `GENESIS_ACCOUNT`
+## Function `GENESIS_ADDRESS`
 
 The address of the genesis
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_CoreAddresses_GENESIS_ACCOUNT">GENESIS_ACCOUNT</a>(): address
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_CoreAddresses_GENESIS_ADDRESS">GENESIS_ADDRESS</a>(): address
 </code></pre>
 
 
@@ -28,7 +28,7 @@ The address of the genesis
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_CoreAddresses_GENESIS_ACCOUNT">GENESIS_ACCOUNT</a>(): address {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_CoreAddresses_GENESIS_ADDRESS">GENESIS_ADDRESS</a>(): address {
     0x1
 }
 </code></pre>
@@ -99,13 +99,13 @@ is no signer for the transaction.
 ## Specification
 
 Specification version of
-<code><a href="#0x1_CoreAddresses_GENESIS_ACCOUNT">Self::GENESIS_ACCOUNT</a></code>.
+<code>Self::GENESIS_ACCOUNT</code>.
 
 
-<a name="0x1_CoreAddresses_SPEC_GENESIS_ACCOUNT"></a>
+<a name="0x1_CoreAddresses_SPEC_GENESIS_ADDRESS"></a>
 
 
-<pre><code><b>define</b> <a href="#0x1_CoreAddresses_SPEC_GENESIS_ACCOUNT">SPEC_GENESIS_ACCOUNT</a>(): address {
+<pre><code><b>define</b> <a href="#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">SPEC_GENESIS_ADDRESS</a>(): address {
     0x1
 }
 </code></pre>

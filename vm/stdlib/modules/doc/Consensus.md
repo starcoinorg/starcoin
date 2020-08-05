@@ -650,7 +650,7 @@
     reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
     init_reward_per_epoch: u128, reward_per_uncle_percent: u64,
     min_time_target:u64, max_uncles_per_block:u64) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(uncle_rate_target &gt; 0, <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>());
     <b>assert</b>(epoch_time_target &gt; 0, <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>());
     <b>assert</b>(reward_half_epoch &gt; 0, <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>());
@@ -802,7 +802,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_get_config">get_config</a>(): <a href="#0x1_Consensus">Consensus</a>{
-    <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="#0x1_Consensus">Consensus</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>())
+    <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="#0x1_Consensus">Consensus</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>())
 }
 </code></pre>
 
@@ -1028,7 +1028,7 @@
 
 <pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_number: u64, block_time: u64) <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
     <b>assert</b>(block_number == 1, <a href="#0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE">EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE</a>());
-    <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> count = <a href="#0x1_Consensus_epoch_time_target">Self::epoch_time_target</a>() / epoch_ref.block_time_target;
     <b>assert</b>(count &gt; 1, <a href="#0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE">EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE</a>());
     epoch_ref.epoch_start_time = block_time;
@@ -1059,14 +1059,14 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(<a href="#0x1_Consensus_max_uncles_per_block">Self::max_uncles_per_block</a>() &gt;= uncles, <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>());
     <b>if</b> (block_number == 1) {
         <b>assert</b>(uncles == 0, <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
         <a href="#0x1_Consensus_first_epoch">Self::first_epoch</a>(block_number, block_time);
     } <b>else</b> {
-        <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
-        <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+        <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+        <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
         <b>if</b> (block_number &lt; epoch_ref.end_number) {
             epoch_data.uncles = epoch_data.uncles + uncles;
         } <b>else</b> {
@@ -1115,10 +1115,10 @@
         }
     };
 
-    <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> reward = epoch_ref.reward_per_block + (epoch_ref.reward_per_block * (<a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>() <b>as</b> u128) * (uncles <b>as</b> u128) / 100);
 
-    <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>if</b> (block_number == epoch_ref.start_number) {
         epoch_data.total_reward = reward;
         <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
@@ -1161,7 +1161,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_start_time">epoch_start_time</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.epoch_start_time
 }
 </code></pre>
@@ -1186,7 +1186,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_uncles">uncles</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_EpochData">EpochData</a> {
-    <b>let</b> epoch_data = borrow_global&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_data = borrow_global&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_data.uncles
 }
 </code></pre>
@@ -1211,7 +1211,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_start_number">start_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.start_number
 }
 </code></pre>
@@ -1236,7 +1236,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_end_number">end_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.end_number
 }
 </code></pre>
@@ -1261,7 +1261,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_number">epoch_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.epoch_number
 }
 </code></pre>
@@ -1286,7 +1286,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_block_time_target">block_time_target</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.block_time_target
 }
 </code></pre>
@@ -1311,7 +1311,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_reward_per_epoch">reward_per_epoch</a>(): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>());
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.reward_per_epoch
 }
 </code></pre>

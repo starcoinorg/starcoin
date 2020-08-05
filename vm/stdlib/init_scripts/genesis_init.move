@@ -43,10 +43,8 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
 
         assert(Timestamp::is_genesis(), 1);
 
-        let dummy_auth_key_prefix = x"00000000000000000000000000000000";
-
         // create genesis account
-        let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ACCOUNT(),copy dummy_auth_key_prefix);
+        let genesis_account = Account::create_genesis_account(CoreAddresses::GENESIS_ADDRESS());
 
         //Init global time
         Timestamp::initialize(&genesis_account, genesis_timestamp);
@@ -78,7 +76,7 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         DummyToken::initialize(&genesis_account);
         Account::accept_token<STC>(&genesis_account);
 
-        let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS(), copy dummy_auth_key_prefix);
+        let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS());
         Account::accept_token<STC>(&association);
 
         let pre_mine_balance = total_supply * (pre_mine_percent as u128) / 100;

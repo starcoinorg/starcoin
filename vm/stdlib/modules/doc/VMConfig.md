@@ -232,7 +232,7 @@
     gas_unit_scaling_factor: u64,
     default_account_size: u64
 ) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ACCOUNT">CoreAddresses::GENESIS_ACCOUNT</a>(), 1);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), 1);
     //TODO pass gas_constants <b>as</b> init argument and onchain config.
     <b>let</b> gas_constants = <a href="#0x1_VMConfig_GasConstants">GasConstants</a> {
         global_memory_per_byte_cost,

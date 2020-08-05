@@ -2,13 +2,13 @@ address 0x1 {
 module CoreAddresses {
 
     /// The address of the genesis
-    public fun GENESIS_ACCOUNT(): address {
+    public fun GENESIS_ADDRESS(): address {
         0x1
     }
 
     /// Specification version of `Self::GENESIS_ACCOUNT`.
     spec module {
-        define SPEC_GENESIS_ACCOUNT(): address {
+        define SPEC_GENESIS_ADDRESS(): address {
             0x1
         }
     }

@@ -34,7 +34,7 @@ module BlockReward {
 
     public fun initialize(account: &signer, reward_balance: u128, reward_delay: u64) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         assert(reward_delay > 0, 4);
         move_to<RewardQueue>(account, RewardQueue {
             reward_number: 0,
@@ -48,7 +48,7 @@ module BlockReward {
     }
 
     fun withdraw(amount: u128): Token<STC> acquires BlockReward {
-        let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ACCOUNT());
+        let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ADDRESS());
         let real_amount = if (Token::value<STC>(&block_reward.balance) < amount) {
             Token::value<STC>(&block_reward.balance)
         } else {
@@ -59,10 +59,10 @@ module BlockReward {
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
         current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue, BlockReward {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         if (current_number > 0) {
-            let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ACCOUNT());
+            let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
             let len = Vector::length(&rewards.infos);
             assert((current_number == (rewards.reward_number + len + 1)), CURRENT_NUMBER_IS_WRONG());
             assert(len <= rewards.reward_delay, LEN_OF_REWARD_INFO_IS_WRONG());

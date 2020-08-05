@@ -19,27 +19,27 @@ module TransactionTimeout {
 
   public fun initialize(account: &signer) {
     // Only callable by the Genesis address
-    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
     // Currently set to 1day.
     //TODO set by onchain config.
     move_to(account, TTL {duration_seconds: ONE_DAY});
   }
   spec fun initialize {
-    aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ACCOUNT();
+    aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
     aborts_if exists<TTL>(Signer::spec_address_of(account));
     ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == ONE_DAY;
   }
 
   public fun set_timeout(account: &signer, new_duration: u64) acquires TTL {
     // Only callable by the Genesis address
-    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+    assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
-    let timeout = borrow_global_mut<TTL>(CoreAddresses::GENESIS_ACCOUNT());
+    let timeout = borrow_global_mut<TTL>(CoreAddresses::GENESIS_ADDRESS());
     timeout.duration_seconds = new_duration;
   }
   spec fun set_timeout {
-    aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ACCOUNT();
-    aborts_if !exists<TTL>(CoreAddresses::SPEC_GENESIS_ACCOUNT());
+    aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+    aborts_if !exists<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == new_duration;
   }
 
@@ -50,7 +50,7 @@ module TransactionTimeout {
     if (block_number == 0) {
       return txn_timestamp > current_block_time
     };
-    let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ACCOUNT()).duration_seconds;
+    let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ADDRESS()).duration_seconds;
     let max_txn_time = current_block_time + timeout;
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time
   }

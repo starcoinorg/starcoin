@@ -13,7 +13,7 @@ module ChainId {
     public fun initialize(account: &signer, id: u8) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(),
+            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             ErrorCode::ENOT_GENESIS_ACCOUNT()
         );
         move_to(account, ChainId { id });
@@ -21,7 +21,7 @@ module ChainId {
 
     /// Return the chain ID of this chain
     public fun get(): u8 acquires ChainId {
-        borrow_global<ChainId>(CoreAddresses::GENESIS_ACCOUNT()).id
+        borrow_global<ChainId>(CoreAddresses::GENESIS_ADDRESS()).id
     }
 }
 }

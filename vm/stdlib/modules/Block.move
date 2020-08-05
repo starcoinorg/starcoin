@@ -28,38 +28,38 @@ module Block {
     // This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
       assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
       move_to<BlockMetadata>(
           account,
       BlockMetadata {
         number: 0,
         parent_hash: parent_hash,
-        author: CoreAddresses::GENESIS_ACCOUNT(),
+        author: CoreAddresses::GENESIS_ADDRESS(),
         new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
       });
     }
 
     // Get the current block number
     public fun get_current_block_number(): u64 acquires BlockMetadata {
-      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).number
+      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number
     }
 
     // Get the hash of the parent block.
     public fun get_parent_hash(): vector<u8> acquires BlockMetadata {
-      *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).parent_hash
+      *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).parent_hash
     }
 
     // Gets the address of the author of the current block
     public fun get_current_author(): address acquires BlockMetadata {
-      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT()).author
+      borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).author
     }
 
     // Call at block prologue
     public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64): u128 acquires BlockMetadata{
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ACCOUNT(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
-        let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ACCOUNT());
+        let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
         assert(number == (block_metadata_ref.number + 1), ErrorCode::EBLOCK_NUMBER_MISMATCH());
         block_metadata_ref.number = number;
         block_metadata_ref.author= author;
