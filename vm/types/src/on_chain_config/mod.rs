@@ -31,8 +31,6 @@ pub use self::{
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct ConfigID(&'static str, &'static str);
 
-pub use crate::account_config::config_address;
-
 impl ConfigID {
     pub fn access_path(self) -> AccessPath {
         access_path_for_config(

@@ -8,17 +8,15 @@ use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_dev::playground;
-use starcoin_move_compiler::shared::Address;
 use starcoin_move_compiler::{
-    command_line::parse_address, compile_source_string_no_report, errors, load_bytecode_file,
-    CompiledUnit, MOVE_EXTENSION,
+    compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
 };
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -30,7 +28,7 @@ use structopt::StructOpt;
 pub struct ExecuteOpt {
     #[structopt(short = "s", long, parse(try_from_str = parse_address))]
     /// hex encoded string, like 0x1, 0x12
-    sender: Option<Address>,
+    sender: Option<AccountAddress>,
 
     #[structopt(
     short = "t",
@@ -106,7 +104,7 @@ impl CommandAction for ExecuteCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let sender = if let Some(sender) = ctx.opt().sender {
-            AccountAddress::new(sender.to_u8())
+            sender
         } else {
             ctx.state().default_account()?.address
         };

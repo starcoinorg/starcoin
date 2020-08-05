@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::{PrivateKey, ValidCryptoMaterialStringExt};
-use starcoin_types::account_address::{self, AccountAddress};
+use starcoin_vm_types::account_address::{self, parse_address, AccountAddress};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -30,7 +30,7 @@ pub struct ImportOpt {
     from_file: Option<PathBuf>,
 
     /// if account_address is absent, generate address by public_key.
-    #[structopt(name = "account_address")]
+    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
     account_address: Option<AccountAddress>,
 }
 

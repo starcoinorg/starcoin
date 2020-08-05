@@ -9,7 +9,7 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::transaction;
-use starcoin_vm_types::account_address::AccountAddress;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::env::current_dir;
 use std::fs::File;
 use std::io::Read;
@@ -33,7 +33,7 @@ pub struct PartialSignTxnOpt {
     /// txn output dir
     output_dir: Option<PathBuf>,
 
-    #[structopt(short = "s", long)]
+    #[structopt(short = "s", parse(try_from_str = parse_address))]
     /// if empty, use default account
     signer: Option<AccountAddress>,
 }

@@ -9,14 +9,14 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "accept_token")]
 pub struct AcceptTokenOpt {
-    #[structopt(short = "s")]
+    #[structopt(short = "s", parse(try_from_str = parse_address))]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 

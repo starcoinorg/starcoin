@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_types::access_path::AccessPath;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::move_resource::MoveResource;
 use structopt::StructOpt;
@@ -15,7 +15,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get")]
 pub struct GetOpt {
-    #[structopt(name = "account_address")]
+    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
     account_address: AccountAddress,
 }
 

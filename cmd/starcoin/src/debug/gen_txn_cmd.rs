@@ -10,8 +10,8 @@ use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -30,7 +30,7 @@ pub struct GenTxnOpt {
 
     ///Transfer to the address that must already be in the wallet.
     ///If absent, a new account is generated.
-    #[structopt(short = "t", conflicts_with("random"))]
+    #[structopt(short = "t", conflicts_with("random"), parse(try_from_str = parse_address))]
     to: Option<AccountAddress>,
 
     ///Random generate new account, those accounts will be discarded.

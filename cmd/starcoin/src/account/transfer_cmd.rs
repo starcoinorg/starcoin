@@ -11,8 +11,8 @@ use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use structopt::StructOpt;
@@ -20,10 +20,10 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "transfer")]
 pub struct TransferOpt {
-    #[structopt(short = "s")]
+    #[structopt(short = "s", parse(try_from_str = parse_address))]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
-    #[structopt(short = "r")]
+    #[structopt(short = "r", parse(try_from_str = parse_address))]
     receiver: AccountAddress,
     #[structopt(short = "k")]
     /// if `to` account not exist on chain, must provide public_key of the account.
