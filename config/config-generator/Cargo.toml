@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 starcoin-config = {path="../../config"}
-structopt = "0.3.2"
+structopt = "0.3.16"
