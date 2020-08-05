@@ -9,17 +9,17 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::StdlibScript;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute-builtin")]
 pub struct ExecuteBuiltInScriptOpt {
-    #[structopt(short = "s", long = "sender")]
+    #[structopt(short = "s", parse(try_from_str = parse_address))]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 

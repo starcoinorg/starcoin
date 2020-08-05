@@ -5,10 +5,21 @@ pub mod account_address {
     pub use move_core_types::account_address::AccountAddress;
 
     use crate::transaction::authenticator::AuthenticationKey;
+    use anyhow::Result;
     use starcoin_crypto::ed25519::Ed25519PublicKey;
+    use std::str::FromStr;
 
     pub fn from_public_key(public_key: &Ed25519PublicKey) -> AccountAddress {
         AuthenticationKey::ed25519(public_key).derived_address()
+    }
+
+    /// Try parse hex literal or hex str to AccountAddress
+    pub fn parse_address(s: &str) -> Result<AccountAddress> {
+        if s.starts_with("0x") {
+            AccountAddress::from_hex_literal(s)
+        } else {
+            AccountAddress::from_str(s)
+        }
     }
 }
 

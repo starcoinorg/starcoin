@@ -6,10 +6,8 @@ use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_move_compiler::command_line::parse_address;
-use starcoin_move_compiler::shared::Address;
 use starcoin_move_compiler::{compile_source_string_no_report, errors};
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -19,7 +17,7 @@ use structopt::StructOpt;
 #[structopt(name = "compile")]
 pub struct CompileOpt {
     #[structopt(short = "s", long = "sender", name = "sender address", help = "hex encoded string, like 0x0, 0x1", parse(try_from_str = parse_address))]
-    sender: Option<Address>,
+    sender: Option<AccountAddress>,
 
     #[structopt(
         short = "d",
@@ -51,7 +49,7 @@ impl CommandAction for CompileCommand {
         let sender = if let Some(sender) = ctx.opt().sender {
             sender
         } else {
-            Address::new(ctx.state().default_account()?.address.into())
+            ctx.state().default_account()?.address
         };
         let source_file = ctx.opt().source_file.as_str();
         let source_file_path = Path::new(source_file);
@@ -69,7 +67,7 @@ impl CommandAction for CompileCommand {
         let (sources, compile_result) = compile_source_string_no_report(
             std::fs::read_to_string(source_file_path)?.as_str(),
             &deps,
-            AccountAddress::new(sender.to_u8()),
+            sender,
         )?;
         let compile_unit = match compile_result {
             Ok(c) => c,

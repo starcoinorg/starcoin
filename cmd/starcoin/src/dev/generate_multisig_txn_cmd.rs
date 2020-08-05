@@ -13,11 +13,11 @@ use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::StdlibScript;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
@@ -30,7 +30,7 @@ use structopt::StructOpt;
 /// Generate multisig txn running stdlib script or custom script.
 /// And output the txn to file, waiting for other signers to sign the txn.
 pub struct GenerateMultisigTxnOpt {
-    #[structopt(name = "sender", short = "s")]
+    #[structopt(short = "s", parse(try_from_str = parse_address))]
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 

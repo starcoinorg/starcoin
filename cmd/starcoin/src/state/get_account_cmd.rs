@@ -8,13 +8,13 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_account")]
 pub struct GetOpt {
-    #[structopt(name = "account_address")]
+    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
     account_address: AccountAddress,
 }
 

@@ -8,15 +8,15 @@ use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::collections::HashMap;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
-    #[structopt(name = "account_address")]
+    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
     account_address: Option<AccountAddress>,
 }
 
