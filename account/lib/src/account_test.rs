@@ -3,8 +3,34 @@ use crate::Account;
 use crate::AccountManager;
 use actix::clock::Duration;
 use anyhow::Result;
+use starcoin_account_api::error::AccountError;
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::chain_config::ChainId;
 use starcoin_types::transaction::{RawUserTransaction, Script, TransactionPayload};
+
+#[test]
+pub fn test_import_account() -> Result<()> {
+    let tempdir = tempfile::tempdir()?;
+    let storage = AccountStorage::create_from_path(tempdir.path())?;
+    let manager = AccountManager::new(storage)?;
+
+    // should success
+    let wallet = manager.create_account("hello")?;
+    let kp = super::account_manager::gen_keypair();
+    let result =
+        manager.import_account(*wallet.address(), kp.private_key.to_bytes().to_vec(), "abc");
+    assert!(result.is_err());
+
+    assert!(
+        matches!(result.err().unwrap(), AccountError::AccountAlreadyExist(addr) if addr == *wallet.address())
+    );
+
+    let normal_address = AccountAddress::random();
+    let _account =
+        manager.import_account(normal_address, kp.private_key.to_bytes().to_vec(), "abc")?;
+    assert_eq!(manager.list_account_infos()?.len(), 2);
+    Ok(())
+}
 
 #[test]
 pub fn test_wallet() -> Result<()> {
