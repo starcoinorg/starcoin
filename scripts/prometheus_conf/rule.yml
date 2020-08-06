@@ -1,0 +1,20 @@
+# This is the rules file.
+
+groups:
+- name: StarcoinNode 
+  rules:
+  - alert: HalleyNodeDown
+    expr: up{job=~"halley_.+"} == 0
+    for: 5m
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
+
+  - alert: ProximaNodeDown
+    expr: up{job=~"proxima_.+"} == 0
+    for: 5m
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes."
