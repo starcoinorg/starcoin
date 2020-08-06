@@ -65,10 +65,18 @@ pub fn steps() -> Steps<MyWorld> {
                 for (arg_key, arg_val) in args_map {
                     if let Some(value) = &world.value {
                         let selector = Selector::new(arg_key).unwrap();
-                        let mut next_value: Vec<&str> =
-                            selector.find(&value).map(|t| t.as_str().unwrap()).collect();
-                        info!("assert value: {:?},expect: {:?}", next_value, *arg_val);
-                        assert_eq!(next_value.pop().unwrap(), *arg_val);
+                        let mut value: Vec<String> = selector
+                            .find(&value)
+                            .map(|t| {
+                                if t.is_string() {
+                                    t.as_str().unwrap().to_string()
+                                } else {
+                                    t.to_string()
+                                }
+                            })
+                            .collect();
+                        info!("assert value: {:?},expect: {:?}", value, *arg_val);
+                        assert_eq!(value.pop().unwrap().as_str(), *arg_val);
                     }
                 }
                 info!("assert ok!");
