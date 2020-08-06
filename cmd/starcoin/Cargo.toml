@@ -14,7 +14,7 @@ crossbeam-channel = "0.4.3"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-structopt = "0.3.14"
+structopt = "0.3.16"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
 starcoin-crypto = {path = "../../commons/crypto"}
