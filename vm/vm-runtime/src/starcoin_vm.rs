@@ -553,7 +553,10 @@ impl StarcoinVM {
                 txn_data.sender(),
                 &mut cost_strategy,
             )
-            .map_err(|err| convert_prologue_runtime_error(err.into_vm_status()))?;
+            .map_err(|err| {
+                warn!("process_block_metadata error: {:?}", err);
+                convert_prologue_runtime_error(err.into_vm_status())
+            })?;
         Ok(get_transaction_output(
             &mut (),
             session,
@@ -959,7 +962,6 @@ const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
     match status {
         VMStatus::MoveAbort(_location, code) => {
-            warn!("prologue error: {:?}", code);
             let new_major_status = match code {
                 PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
                 PROLOGUE_INVALID_ACCOUNT_AUTH_KEY => StatusCode::INVALID_AUTH_KEY,

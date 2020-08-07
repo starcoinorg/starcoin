@@ -431,7 +431,7 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
         version: Version { major: 1 },
         //use latest git commit hash
         parent_hash: HashValue::sha3_256_of(hex::decode("4df939777a8560668a7bb23bf7305e62bdb116f2").expect("invalid hex").as_slice()),
-        timestamp: 1596696140,
+        timestamp: 1596779878,
         total_supply: STARCOIN_TOTAL_SUPPLY,
         reward_delay: 3,
         difficulty: 10.into(),
