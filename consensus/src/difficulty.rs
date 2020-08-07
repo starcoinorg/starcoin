@@ -56,8 +56,11 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     let mut avg_time: u64 = 0;
     let mut avg_target = U256::zero();
     let mut latest_block_index = 0;
-    let block_n = blocks.len() - 1;
-    while latest_block_index < block_n {
+    let block_n = blocks.len();
+    if block_n == 0 {
+        return Ok(difficult_to_target(current_header.difficulty));
+    }
+    while latest_block_index < block_n - 1 {
         let solve_time =
             blocks[latest_block_index].timestamp - blocks[latest_block_index + 1].timestamp;
         avg_time += solve_time * (block_n - latest_block_index) as u64;
