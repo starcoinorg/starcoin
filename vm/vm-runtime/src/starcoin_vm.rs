@@ -959,6 +959,7 @@ const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
     match status {
         VMStatus::MoveAbort(_location, code) => {
+            warn!("prologue error: {:?}", code);
             let new_major_status = match code {
                 PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
                 PROLOGUE_INVALID_ACCOUNT_AUTH_KEY => StatusCode::INVALID_AUTH_KEY,
@@ -970,14 +971,14 @@ fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
                 PROLOGUE_TRANSACTION_EXPIRED => StatusCode::TRANSACTION_EXPIRED,
                 PROLOGUE_BAD_CHAIN_ID => StatusCode::BAD_CHAIN_ID,
                 ENOT_GENESIS_ACCOUNT => StatusCode::NO_ACCOUNT_ROLE,
-                ENOT_GENESIS => StatusCode::ABORTED,
-                ECONFIG_VALUE_DOES_NOT_EXIST => StatusCode::ABORTED,
-                EINVALID_TIMESTAMP => StatusCode::ABORTED,
-                ECOIN_DEPOSIT_IS_ZERO => StatusCode::ABORTED,
-                EDESTORY_TOKEN_NON_ZERO => StatusCode::ABORTED,
-                EBLOCK_NUMBER_MISMATCH => StatusCode::ABORTED,
+                ENOT_GENESIS => StatusCode::UNKNOWN_STATUS,
+                ECONFIG_VALUE_DOES_NOT_EXIST => StatusCode::UNKNOWN_STATUS,
+                EINVALID_TIMESTAMP => StatusCode::UNKNOWN_STATUS,
+                ECOIN_DEPOSIT_IS_ZERO => StatusCode::UNKNOWN_STATUS,
+                EDESTORY_TOKEN_NON_ZERO => StatusCode::UNKNOWN_STATUS,
+                EBLOCK_NUMBER_MISMATCH => StatusCode::UNKNOWN_STATUS,
                 // ToDo add corresponding error code into StatusCode
-                _ => StatusCode::ABORTED,
+                _ => StatusCode::UNKNOWN_STATUS,
             };
             VMStatus::Error(new_major_status)
         }
