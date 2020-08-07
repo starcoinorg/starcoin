@@ -2,17 +2,13 @@ address 0x1 {
 
 module BlockReward {
     use 0x1::Timestamp;
-    use 0x1::Token::{Self,Token};
+    use 0x1::Token;
     use 0x1::STC::{STC};
     use 0x1::Vector;
     use 0x1::Account;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::ErrorCode;
-
-    resource struct BlockReward{
-        balance: Token<STC>,
-    }
 
     resource struct RewardQueue {
         reward_number: u64,
@@ -32,33 +28,19 @@ module BlockReward {
     fun REWARD_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 4}
     fun MINER_EXIST(): u64 { ErrorCode::ECODE_BASE() + 5}
 
-    public fun initialize(account: &signer, reward_balance: u128, reward_delay: u64) {
+    public fun initialize(account: &signer, reward_delay: u64) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-        assert(reward_delay > 0, 4);
+        assert(reward_delay > 0, ErrorCode::EINVALID_ARGUMENT());
         move_to<RewardQueue>(account, RewardQueue {
             reward_number: 0,
             reward_delay: reward_delay,
             infos: Vector::empty(),
         });
-        let reward_token = Token::mint<STC>(account,  reward_balance);
-        move_to<BlockReward>(account, BlockReward {
-            balance: reward_token,
-        });
-    }
-
-    fun withdraw(amount: u128): Token<STC> acquires BlockReward {
-        let block_reward = borrow_global_mut<BlockReward>(CoreAddresses::GENESIS_ADDRESS());
-        let real_amount = if (Token::value<STC>(&block_reward.balance) < amount) {
-            Token::value<STC>(&block_reward.balance)
-        } else {
-            amount
-        };
-        Token::withdraw<STC>(&mut block_reward.balance, real_amount)
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-        current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue, BlockReward {
+        current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         if (current_number > 0) {
@@ -75,7 +57,7 @@ module BlockReward {
                 rewards.reward_number = reward_number;
                 if (first_info.reward > 0) {
                     assert(Account::exists_at(first_info.miner), MINER_EXIST());
-                    let reward = Self::withdraw(first_info.reward);
+                    let reward = Token::mint<STC>(account, first_info.reward);
                     Account::deposit_to<STC>(account, first_info.miner, reward);
                 };
                 Vector::remove(&mut rewards.infos, 0);

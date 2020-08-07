@@ -18,9 +18,9 @@ aho-corasick = "0.7.10"
 termcolor = "1.0.5"
 mirai-annotations = "1.9.1"
 starcoin-types = { path = "../../types"}
-starcoin-vm-types = { path = "../types"}
-starcoin-vm-runtime = { path = "../vm-runtime"}
-starcoin-config = { path = "../../config"}
+starcoin-vm-types = { path = "../types" }
+starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"] }
+starcoin-config = { path = "../../config" }
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"]}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-statedb = { path = "../../state/statedb" }

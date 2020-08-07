@@ -9,43 +9,31 @@
 -  [Resource `Epoch`](#0x1_Consensus_Epoch)
 -  [Struct `NewEpochEvent`](#0x1_Consensus_NewEpochEvent)
 -  [Resource `EpochData`](#0x1_Consensus_EpochData)
--  [Function `UNCLE_RATE_TARGET_IS_ZERO`](#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO)
--  [Function `EPOCH_TIME_TARGET_IS_ZERO`](#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO)
--  [Function `REWARD_HALF_EPOCH_IS_ZERO`](#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO)
--  [Function `INIT_BLOCK_TIME_TARGET_IS_ZERO`](#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO)
--  [Function `BLOCK_DIFFICULTY_WINDOW_IS_ZERO`](#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO)
--  [Function `INIT_REWARD_PER_EPOCH_IS_ZERO`](#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO)
--  [Function `REWARD_PER_UNCLE_PERCENT_IS_ZERO`](#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO)
--  [Function `MIN_TIME_TARGET_IS_ZERO`](#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO)
--  [Function `MAX_UNCLES_PER_BLOCK_IS_ZERO`](#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO)
--  [Function `EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE`](#0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE)
--  [Function `EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE`](#0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE)
 -  [Function `MAX_UNCLES_PER_BLOCK_IS_WRONG`](#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG)
 -  [Function `UNCLES_IS_NOT_ZERO`](#0x1_Consensus_UNCLES_IS_NOT_ZERO)
--  [Function `BLOCK_TIME_IS_WRONG`](#0x1_Consensus_BLOCK_TIME_IS_WRONG)
--  [Function `NEW_EPOCH_BLOCKS_LESS_THAN_ONE`](#0x1_Consensus_NEW_EPOCH_BLOCKS_LESS_THAN_ONE)
 -  [Function `initialize`](#0x1_Consensus_initialize)
 -  [Function `set_uncle_rate_target`](#0x1_Consensus_set_uncle_rate_target)
--  [Function `set_epoch_time_target`](#0x1_Consensus_set_epoch_time_target)
--  [Function `set_reward_half_epoch`](#0x1_Consensus_set_reward_half_epoch)
+-  [Function `set_epoch_block_count`](#0x1_Consensus_set_epoch_block_count)
+-  [Function `set_min_block_time_target`](#0x1_Consensus_set_min_block_time_target)
 -  [Function `get_config`](#0x1_Consensus_get_config)
 -  [Function `uncle_rate_target`](#0x1_Consensus_uncle_rate_target)
--  [Function `epoch_time_target`](#0x1_Consensus_epoch_time_target)
--  [Function `min_time_target`](#0x1_Consensus_min_time_target)
--  [Function `reward_half_epoch`](#0x1_Consensus_reward_half_epoch)
+-  [Function `epoch_block_count`](#0x1_Consensus_epoch_block_count)
+-  [Function `init_block_time_target`](#0x1_Consensus_init_block_time_target)
+-  [Function `min_block_time_target`](#0x1_Consensus_min_block_time_target)
+-  [Function `max_block_time_target`](#0x1_Consensus_max_block_time_target)
 -  [Function `reward_per_uncle_percent`](#0x1_Consensus_reward_per_uncle_percent)
 -  [Function `max_uncles_per_block`](#0x1_Consensus_max_uncles_per_block)
 -  [Function `block_difficulty_window`](#0x1_Consensus_block_difficulty_window)
--  [Function `reward_per_block`](#0x1_Consensus_reward_per_block)
--  [Function `first_epoch`](#0x1_Consensus_first_epoch)
+-  [Function `compute_reward_per_block`](#0x1_Consensus_compute_reward_per_block)
 -  [Function `adjust_epoch`](#0x1_Consensus_adjust_epoch)
+-  [Function `update_epoch_data`](#0x1_Consensus_update_epoch_data)
+-  [Function `emit_epoch_event`](#0x1_Consensus_emit_epoch_event)
 -  [Function `epoch_start_time`](#0x1_Consensus_epoch_start_time)
 -  [Function `uncles`](#0x1_Consensus_uncles)
--  [Function `start_number`](#0x1_Consensus_start_number)
--  [Function `end_number`](#0x1_Consensus_end_number)
+-  [Function `epoch_start_block_number`](#0x1_Consensus_epoch_start_block_number)
+-  [Function `epoch_end_block_number`](#0x1_Consensus_epoch_end_block_number)
 -  [Function `epoch_number`](#0x1_Consensus_epoch_number)
 -  [Function `block_time_target`](#0x1_Consensus_block_time_target)
--  [Function `reward_per_epoch`](#0x1_Consensus_reward_per_epoch)
 
 
 
@@ -74,21 +62,14 @@
 </dd>
 <dt>
 
-<code>epoch_time_target: u64</code>
+<code>init_block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
 
-<code>reward_half_epoch: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-
-<code>block_difficulty_window: u64</code>
+<code>init_reward_per_block: u128</code>
 </dt>
 <dd>
 
@@ -102,7 +83,28 @@
 </dd>
 <dt>
 
-<code>min_time_target: u64</code>
+<code>epoch_block_count: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+
+<code>block_difficulty_window: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+
+<code>min_block_time_target: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+
+<code>max_block_time_target: u64</code>
 </dt>
 <dd>
 
@@ -166,13 +168,6 @@
 <dt>
 
 <code>block_time_target: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-
-<code>reward_per_epoch: u128</code>
 </dt>
 <dd>
 
@@ -249,14 +244,14 @@
 </dd>
 <dt>
 
-<code>reward_per_epoch: u128</code>
+<code>reward_per_block: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
 
-<code>reward_per_block: u128</code>
+<code>previous_epoch_total_reward: u128</code>
 </dt>
 <dd>
 
@@ -301,248 +296,6 @@
 
 </details>
 
-<a name="0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO"></a>
-
-## Function `UNCLE_RATE_TARGET_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 0}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO"></a>
-
-## Function `EPOCH_TIME_TARGET_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO"></a>
-
-## Function `REWARD_HALF_EPOCH_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO"></a>
-
-## Function `INIT_BLOCK_TIME_TARGET_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO"></a>
-
-## Function `BLOCK_DIFFICULTY_WINDOW_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO"></a>
-
-## Function `INIT_REWARD_PER_EPOCH_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 5}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO"></a>
-
-## Function `REWARD_PER_UNCLE_PERCENT_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 6}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_MIN_TIME_TARGET_IS_ZERO"></a>
-
-## Function `MIN_TIME_TARGET_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 7}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO"></a>
-
-## Function `MAX_UNCLES_PER_BLOCK_IS_ZERO`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 8}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE"></a>
-
-## Function `EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE">EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE">EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 9}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE"></a>
-
-## Function `EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE">EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE">EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 10}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
 
 ## Function `MAX_UNCLES_PER_BLOCK_IS_WRONG`
@@ -558,7 +311,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 11}
+<pre><code><b>fun</b> <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
 </code></pre>
 
 
@@ -580,51 +333,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 12}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_BLOCK_TIME_IS_WRONG"></a>
-
-## Function `BLOCK_TIME_IS_WRONG`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_TIME_IS_WRONG">BLOCK_TIME_IS_WRONG</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_BLOCK_TIME_IS_WRONG">BLOCK_TIME_IS_WRONG</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 13}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_NEW_EPOCH_BLOCKS_LESS_THAN_ONE"></a>
-
-## Function `NEW_EPOCH_BLOCKS_LESS_THAN_ONE`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_NEW_EPOCH_BLOCKS_LESS_THAN_ONE">NEW_EPOCH_BLOCKS_LESS_THAN_ONE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_NEW_EPOCH_BLOCKS_LESS_THAN_ONE">NEW_EPOCH_BLOCKS_LESS_THAN_ONE</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 14}
+<pre><code><b>fun</b> <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
 </code></pre>
 
 
@@ -637,7 +346,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_initialize">initialize</a>(account: &signer, uncle_rate_target: u64, epoch_time_target: u64, reward_half_epoch: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_epoch: u128, reward_per_uncle_percent: u64, min_time_target: u64, max_uncles_per_block: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_initialize">initialize</a>(account: &signer, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64)
 </code></pre>
 
 
@@ -646,29 +355,29 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_initialize">initialize</a>(account: &signer,uncle_rate_target:u64,epoch_time_target: u64,
-    reward_half_epoch: u64,init_block_time_target: u64, block_difficulty_window: u64,
-    init_reward_per_epoch: u128, reward_per_uncle_percent: u64,
-    min_time_target:u64, max_uncles_per_block:u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_initialize">initialize</a>(account: &signer, uncle_rate_target:u64,epoch_block_count: u64,
+    init_block_time_target: u64, block_difficulty_window: u64,
+    init_reward_per_block: u128, reward_per_uncle_percent: u64,
+    min_block_time_target:u64, max_block_time_target: u64, max_uncles_per_block:u64) {
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
-    <b>assert</b>(uncle_rate_target &gt; 0, <a href="#0x1_Consensus_UNCLE_RATE_TARGET_IS_ZERO">UNCLE_RATE_TARGET_IS_ZERO</a>());
-    <b>assert</b>(epoch_time_target &gt; 0, <a href="#0x1_Consensus_EPOCH_TIME_TARGET_IS_ZERO">EPOCH_TIME_TARGET_IS_ZERO</a>());
-    <b>assert</b>(reward_half_epoch &gt; 0, <a href="#0x1_Consensus_REWARD_HALF_EPOCH_IS_ZERO">REWARD_HALF_EPOCH_IS_ZERO</a>());
-    <b>assert</b>(init_block_time_target &gt; 0, <a href="#0x1_Consensus_INIT_BLOCK_TIME_TARGET_IS_ZERO">INIT_BLOCK_TIME_TARGET_IS_ZERO</a>());
-    <b>assert</b>(block_difficulty_window &gt; 0, <a href="#0x1_Consensus_BLOCK_DIFFICULTY_WINDOW_IS_ZERO">BLOCK_DIFFICULTY_WINDOW_IS_ZERO</a>());
-    <b>assert</b>(init_reward_per_epoch &gt; 0, <a href="#0x1_Consensus_INIT_REWARD_PER_EPOCH_IS_ZERO">INIT_REWARD_PER_EPOCH_IS_ZERO</a>());
-    <b>assert</b>(reward_per_uncle_percent &gt; 0, <a href="#0x1_Consensus_REWARD_PER_UNCLE_PERCENT_IS_ZERO">REWARD_PER_UNCLE_PERCENT_IS_ZERO</a>());
-    <b>assert</b>(min_time_target &gt; 0, <a href="#0x1_Consensus_MIN_TIME_TARGET_IS_ZERO">MIN_TIME_TARGET_IS_ZERO</a>());
-    <b>assert</b>(max_uncles_per_block &gt;= 0, <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_ZERO">MAX_UNCLES_PER_BLOCK_IS_ZERO</a>());
+
+    <b>assert</b>(uncle_rate_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(epoch_block_count &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(init_reward_per_block &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(init_block_time_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(block_difficulty_window &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(reward_per_uncle_percent &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(min_block_time_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(max_uncles_per_block &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
 
     move_to&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(account, <a href="#0x1_Consensus_Epoch">Epoch</a> {
         epoch_number:0,
-        epoch_start_time: 0,
+        epoch_start_time: <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>(),
         start_number: 0,
-        end_number: 0,
+        end_number: epoch_block_count,
         block_time_target: init_block_time_target,
-        reward_per_epoch: init_reward_per_epoch,
-        reward_per_block: 0,
+        reward_per_block: init_reward_per_block,
         new_epoch_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Consensus_NewEpochEvent">NewEpochEvent</a>&gt;(account),
     });
 
@@ -680,12 +389,14 @@
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="#0x1_Consensus_Consensus">Self::Consensus</a>&gt;(
         account,
         <a href="#0x1_Consensus">Consensus</a> {
-            uncle_rate_target: uncle_rate_target,//80
-            epoch_time_target : epoch_time_target, // two weeks in seconds 1209600
-            reward_half_epoch: reward_half_epoch,
+            uncle_rate_target: uncle_rate_target,
+            init_block_time_target: init_block_time_target,
+            init_reward_per_block: init_reward_per_block,
+            epoch_block_count : epoch_block_count,
             block_difficulty_window: block_difficulty_window,
             reward_per_uncle_percent: reward_per_uncle_percent,
-            min_time_target: min_time_target,
+            min_block_time_target: min_block_time_target,
+            max_block_time_target: max_block_time_target,
             max_uncles_per_block: max_uncles_per_block,
         },
     );
@@ -726,13 +437,13 @@
 
 </details>
 
-<a name="0x1_Consensus_set_epoch_time_target"></a>
+<a name="0x1_Consensus_set_epoch_block_count"></a>
 
-## Function `set_epoch_time_target`
+## Function `set_epoch_block_count`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_epoch_time_target">set_epoch_time_target</a>(account: &signer, epoch_time_target: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_epoch_block_count">set_epoch_block_count</a>(account: &signer, epoch_block_count: u64)
 </code></pre>
 
 
@@ -741,10 +452,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_epoch_time_target">set_epoch_time_target</a>(account: &signer, epoch_time_target: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_epoch_block_count">set_epoch_block_count</a>(account: &signer, epoch_block_count: u64) {
     <b>let</b> old_config = <a href="Config.md#0x1_Config_get">Config::get</a>&lt;<a href="#0x1_Consensus_Consensus">Self::Consensus</a>&gt;(account);
 
-    old_config.epoch_time_target = epoch_time_target;
+    old_config.epoch_block_count = epoch_block_count;
     <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="#0x1_Consensus_Consensus">Self::Consensus</a>&gt;(
         account,
         old_config,
@@ -756,13 +467,13 @@
 
 </details>
 
-<a name="0x1_Consensus_set_reward_half_epoch"></a>
+<a name="0x1_Consensus_set_min_block_time_target"></a>
 
-## Function `set_reward_half_epoch`
+## Function `set_min_block_time_target`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_reward_half_epoch">set_reward_half_epoch</a>(account: &signer, reward_half_epoch: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_min_block_time_target">set_min_block_time_target</a>(account: &signer, min_block_time_target: u64)
 </code></pre>
 
 
@@ -771,10 +482,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_reward_half_epoch">set_reward_half_epoch</a>(account: &signer, reward_half_epoch: u64) {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_set_min_block_time_target">set_min_block_time_target</a>(account: &signer, min_block_time_target: u64) {
     <b>let</b> old_config = <a href="Config.md#0x1_Config_get">Config::get</a>&lt;<a href="#0x1_Consensus_Consensus">Self::Consensus</a>&gt;(account);
 
-    old_config.reward_half_epoch = reward_half_epoch;
+    old_config.min_block_time_target = min_block_time_target;
     <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="#0x1_Consensus_Consensus">Self::Consensus</a>&gt;(
         account,
         old_config,
@@ -792,7 +503,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_get_config">get_config</a>(): <a href="#0x1_Consensus_Consensus">Consensus::Consensus</a>
+<pre><code><b>fun</b> <a href="#0x1_Consensus_get_config">get_config</a>(): <a href="#0x1_Consensus_Consensus">Consensus::Consensus</a>
 </code></pre>
 
 
@@ -801,7 +512,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_get_config">get_config</a>(): <a href="#0x1_Consensus">Consensus</a>{
+<pre><code><b>fun</b> <a href="#0x1_Consensus_get_config">get_config</a>(): <a href="#0x1_Consensus">Consensus</a>{
     <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="#0x1_Consensus">Consensus</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>())
 }
 </code></pre>
@@ -835,13 +546,13 @@
 
 </details>
 
-<a name="0x1_Consensus_epoch_time_target"></a>
+<a name="0x1_Consensus_epoch_block_count"></a>
 
-## Function `epoch_time_target`
+## Function `epoch_block_count`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_time_target">epoch_time_target</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_block_count">epoch_block_count</a>(): u64
 </code></pre>
 
 
@@ -850,9 +561,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_time_target">epoch_time_target</a>(): u64  {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_block_count">epoch_block_count</a>(): u64  {
     <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
-    current_config.epoch_time_target
+    current_config.epoch_block_count
 }
 </code></pre>
 
@@ -860,13 +571,13 @@
 
 </details>
 
-<a name="0x1_Consensus_min_time_target"></a>
+<a name="0x1_Consensus_init_block_time_target"></a>
 
-## Function `min_time_target`
+## Function `init_block_time_target`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_min_time_target">min_time_target</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_init_block_time_target">init_block_time_target</a>(): u64
 </code></pre>
 
 
@@ -875,9 +586,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_min_time_target">min_time_target</a>(): u64  {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_init_block_time_target">init_block_time_target</a>(): u64  {
     <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
-    current_config.min_time_target
+    current_config.init_block_time_target
 }
 </code></pre>
 
@@ -885,13 +596,13 @@
 
 </details>
 
-<a name="0x1_Consensus_reward_half_epoch"></a>
+<a name="0x1_Consensus_min_block_time_target"></a>
 
-## Function `reward_half_epoch`
+## Function `min_block_time_target`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_reward_half_epoch">reward_half_epoch</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_min_block_time_target">min_block_time_target</a>(): u64
 </code></pre>
 
 
@@ -900,9 +611,34 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_reward_half_epoch">reward_half_epoch</a>(): u64  {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_min_block_time_target">min_block_time_target</a>(): u64  {
     <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
-    current_config.reward_half_epoch
+    current_config.min_block_time_target
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_max_block_time_target"></a>
+
+## Function `max_block_time_target`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_max_block_time_target">max_block_time_target</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_max_block_time_target">max_block_time_target</a>(): u64  {
+    <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
+    current_config.max_block_time_target
 }
 </code></pre>
 
@@ -966,7 +702,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_block_difficulty_window">block_difficulty_window</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_block_difficulty_window">block_difficulty_window</a>(): u64
 </code></pre>
 
 
@@ -975,7 +711,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_block_difficulty_window">block_difficulty_window</a>(): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_block_difficulty_window">block_difficulty_window</a>(): u64 {
     <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
     current_config.block_difficulty_window
 }
@@ -985,13 +721,13 @@
 
 </details>
 
-<a name="0x1_Consensus_reward_per_block"></a>
+<a name="0x1_Consensus_compute_reward_per_block"></a>
 
-## Function `reward_per_block`
+## Function `compute_reward_per_block`
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_reward_per_block">reward_per_block</a>(blocks: u64, reward_per_epoch: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_compute_reward_per_block">compute_reward_per_block</a>(new_epoch_block_time_target: u64): u128
 </code></pre>
 
 
@@ -1000,42 +736,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Consensus_reward_per_block">reward_per_block</a>(blocks:u64, reward_per_epoch: u128): u128 {
-    <b>let</b> max_uncles = (blocks * <a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() * <a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>()) / (THOUSAND * HUNDRED);
-    <b>let</b> reward = reward_per_epoch / ((max_uncles <b>as</b> u128) + (blocks <b>as</b> u128));
-    reward
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_first_epoch"></a>
-
-## Function `first_epoch`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_number: u64, block_time: u64)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Consensus_first_epoch">first_epoch</a>(block_number: u64, block_time: u64) <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>assert</b>(block_number == 1, <a href="#0x1_Consensus_EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE">EEPOCH_BLOCK_NUMBER_NOT_EQUAL_ONE</a>());
-    <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>let</b> count = <a href="#0x1_Consensus_epoch_time_target">Self::epoch_time_target</a>() / epoch_ref.block_time_target;
-    <b>assert</b>(count &gt; 1, <a href="#0x1_Consensus_EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE">EEPOCH_COUNT_EQUAL_OR_LESS_THAN_ONE</a>());
-    epoch_ref.epoch_start_time = block_time;
-    epoch_ref.start_number = 1;
-    epoch_ref.end_number = epoch_ref.start_number + count;
-    epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
-    epoch_ref.reward_per_block = <a href="#0x1_Consensus_reward_per_block">Self::reward_per_block</a>(count, epoch_ref.reward_per_epoch);
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_compute_reward_per_block">compute_reward_per_block</a>(new_epoch_block_time_target: u64): u128 {
+    <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
+    (current_config.init_reward_per_block * ((new_epoch_block_time_target <b>as</b> u128) * THOUSAND_U128/(current_config.init_block_time_target <b>as</b> u128)))/THOUSAND_U128
 }
 </code></pre>
 
@@ -1049,7 +752,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64): u128
 </code></pre>
 
 
@@ -1058,86 +761,115 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, block_time: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, <a href="#0x1_Consensus_EpochData">EpochData</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
     <b>assert</b>(<a href="#0x1_Consensus_max_uncles_per_block">Self::max_uncles_per_block</a>() &gt;= uncles, <a href="#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>());
-    <b>if</b> (block_number == 1) {
-        <b>assert</b>(uncles == 0, <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
-        <a href="#0x1_Consensus_first_epoch">Self::first_epoch</a>(block_number, block_time);
-    } <b>else</b> {
-        <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-        <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-        <b>if</b> (block_number &lt; epoch_ref.end_number) {
-            epoch_data.uncles = epoch_data.uncles + uncles;
-        } <b>else</b> {
-            <b>assert</b>(uncles == 0, <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
-            <b>assert</b>(block_time &gt; epoch_ref.epoch_start_time, <a href="#0x1_Consensus_BLOCK_TIME_IS_WRONG">BLOCK_TIME_IS_WRONG</a>());
-            <b>let</b> total_time = block_time - epoch_ref.epoch_start_time;
-            <b>let</b> total_uncles = epoch_data.uncles;
-            <b>let</b> blocks = epoch_ref.end_number - epoch_ref.start_number;
-            <b>let</b> avg_block_time = total_time / blocks;
-            <b>let</b> uncles_rate = total_uncles * THOUSAND / blocks;
-            <b>let</b> new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time / (<a href="#0x1_Consensus_uncle_rate_target">Self::uncle_rate_target</a>() + THOUSAND);
-            <b>let</b> total_reward = epoch_data.total_reward;
-
-            <b>if</b> (new_epoch_block_time_target &lt; <a href="#0x1_Consensus_min_time_target">Self::min_time_target</a>()) {
-                new_epoch_block_time_target = <a href="#0x1_Consensus_min_time_target">Self::min_time_target</a>();
-            };
-            <b>let</b> new_epoch_blocks = <b>if</b> ((total_time + new_epoch_block_time_target) &lt;= (<a href="#0x1_Consensus_epoch_time_target">Self::epoch_time_target</a>() * 2)) {
-                <b>let</b> new_epoch_time_target = <a href="#0x1_Consensus_epoch_time_target">Self::epoch_time_target</a>() * 2 - total_time;
-                new_epoch_time_target / new_epoch_block_time_target
-            } <b>else</b> {
-                1
-            };
-            <b>assert</b>(new_epoch_blocks &gt;= 1, <a href="#0x1_Consensus_NEW_EPOCH_BLOCKS_LESS_THAN_ONE">NEW_EPOCH_BLOCKS_LESS_THAN_ONE</a>());
-
-            epoch_ref.epoch_start_time = block_time;
-            epoch_data.uncles = uncles;
-            epoch_ref.start_number = block_number;
-            epoch_ref.end_number = block_number + new_epoch_blocks;
-            epoch_ref.block_time_target = new_epoch_block_time_target;
-            epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
-
-            <b>let</b> old_reward_per_epoch = epoch_ref.reward_per_epoch;
-            <b>let</b> current_reward_per_epoch = <b>if</b> (epoch_ref.epoch_number % <a href="#0x1_Consensus_reward_half_epoch">Self::reward_half_epoch</a>() == 1) {
-                (epoch_ref.reward_per_epoch / 2)
-            } <b>else</b> {
-                epoch_ref.reward_per_epoch
-            };
-
-            <b>if</b> ((old_reward_per_epoch + current_reward_per_epoch) &gt; total_reward) {
-                epoch_ref.reward_per_epoch = (old_reward_per_epoch + current_reward_per_epoch) - total_reward;
-            } <b>else</b> {
-                epoch_ref.reward_per_epoch = 0;
-            };
-
-            epoch_ref.reward_per_block = <a href="#0x1_Consensus_reward_per_block">Self::reward_per_block</a>(new_epoch_blocks, epoch_ref.reward_per_epoch);
-        }
-    };
 
     <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>let</b> reward = epoch_ref.reward_per_block + (epoch_ref.reward_per_block * (<a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>() <b>as</b> u128) * (uncles <b>as</b> u128) / 100);
-
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="#0x1_Consensus_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>if</b> (block_number == epoch_ref.start_number) {
-        epoch_data.total_reward = reward;
-        <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
-            &<b>mut</b> epoch_ref.new_epoch_events,
-            <a href="#0x1_Consensus_NewEpochEvent">NewEpochEvent</a> {
-                epoch_number: epoch_ref.epoch_number,
-                epoch_start_time: epoch_ref.epoch_start_time,
-                start_number: epoch_ref.start_number,
-                end_number: epoch_ref.end_number,
-                block_time_target: epoch_ref.block_time_target,
-                reward_per_epoch: epoch_ref.reward_per_epoch,
-                reward_per_block: epoch_ref.reward_per_block,
-            }
-        );
-    } <b>else</b> {
-        epoch_data.total_reward = epoch_data.total_reward + reward;
+    <b>let</b> (new_epoch,reward_per_block) = <b>if</b> (block_number &lt; epoch_ref.end_number) {
+        (<b>false</b>, epoch_ref.reward_per_block)
+    } <b>else</b> <b>if</b>(block_number == epoch_ref.end_number){
+        //start a new epoch
+        <b>assert</b>(uncles == 0, <a href="#0x1_Consensus_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
+        <b>let</b> config = <a href="#0x1_Consensus_get_config">get_config</a>();
+
+        <b>let</b> total_time = now - epoch_ref.epoch_start_time;
+        <b>let</b> total_uncles = epoch_data.uncles;
+        <b>let</b> blocks = epoch_ref.end_number - epoch_ref.start_number;
+        <b>let</b> avg_block_time = total_time / blocks;
+        <b>let</b> uncles_rate = total_uncles * THOUSAND / blocks;
+        <b>let</b> new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time / (config.uncle_rate_target + THOUSAND);
+
+        <b>if</b> (new_epoch_block_time_target &lt; config.min_block_time_target) {
+            new_epoch_block_time_target = config.min_block_time_target;
+        };
+        <b>if</b> (new_epoch_block_time_target &gt; config.max_block_time_target) {
+            new_epoch_block_time_target = config.max_block_time_target;
+        };
+        <b>let</b> new_reward_per_block = <a href="#0x1_Consensus_compute_reward_per_block">Self::compute_reward_per_block</a>(new_epoch_block_time_target);
+        epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
+        epoch_ref.epoch_start_time = now;
+        epoch_data.uncles = uncles;
+        epoch_ref.start_number = block_number;
+        epoch_ref.end_number = block_number + config.epoch_block_count;
+        epoch_ref.block_time_target = new_epoch_block_time_target;
+        epoch_ref.reward_per_block = new_reward_per_block;
+        <a href="#0x1_Consensus_emit_epoch_event">emit_epoch_event</a>(epoch_ref, epoch_data.total_reward);
+        (<b>true</b>, new_reward_per_block)
+    }<b>else</b>{
+        //This should never happend.
+        <b>abort</b>(<a href="ErrorCode.md#0x1_ErrorCode_EUNREACHABLE">ErrorCode::EUNREACHABLE</a>())
     };
 
+    <b>let</b> reward = reward_per_block + (reward_per_block * (<a href="#0x1_Consensus_reward_per_uncle_percent">Self::reward_per_uncle_percent</a>() <b>as</b> u128) * (uncles <b>as</b> u128) / 100);
+    <a href="#0x1_Consensus_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles);
     reward
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_update_epoch_data"></a>
+
+## Function `update_epoch_data`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="#0x1_Consensus_EpochData">Consensus::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="#0x1_Consensus_EpochData">EpochData</a>, new_epoch: bool, reward: u128, uncles: u64) {
+    <b>if</b> (new_epoch){
+        epoch_data.total_reward = reward;
+        epoch_data.uncles = uncles;
+    }<b>else</b>{
+        epoch_data.total_reward = epoch_data.total_reward + reward;
+        epoch_data.uncles = epoch_data.uncles + uncles;
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Consensus_emit_epoch_event"></a>
+
+## Function `emit_epoch_event`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_emit_epoch_event">emit_epoch_event</a>(epoch_ref: &<b>mut</b> <a href="#0x1_Consensus_Epoch">Consensus::Epoch</a>, previous_epoch_total_reward: u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Consensus_emit_epoch_event">emit_epoch_event</a>(epoch_ref: &<b>mut</b> <a href="#0x1_Consensus_Epoch">Epoch</a>, previous_epoch_total_reward: u128){
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
+        &<b>mut</b> epoch_ref.new_epoch_events,
+        <a href="#0x1_Consensus_NewEpochEvent">NewEpochEvent</a> {
+            epoch_number: epoch_ref.epoch_number,
+            epoch_start_time: epoch_ref.epoch_start_time,
+            start_number: epoch_ref.start_number,
+            end_number: epoch_ref.end_number,
+            block_time_target: epoch_ref.block_time_target,
+            reward_per_block: epoch_ref.reward_per_block,
+            previous_epoch_total_reward: previous_epoch_total_reward,
+        }
+    );
 }
 </code></pre>
 
@@ -1195,13 +927,13 @@
 
 </details>
 
-<a name="0x1_Consensus_start_number"></a>
+<a name="0x1_Consensus_epoch_start_block_number"></a>
 
-## Function `start_number`
+## Function `epoch_start_block_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_start_number">start_number</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_start_block_number">epoch_start_block_number</a>(): u64
 </code></pre>
 
 
@@ -1210,7 +942,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_start_number">start_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_start_block_number">epoch_start_block_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
     <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.start_number
 }
@@ -1220,13 +952,13 @@
 
 </details>
 
-<a name="0x1_Consensus_end_number"></a>
+<a name="0x1_Consensus_epoch_end_block_number"></a>
 
-## Function `end_number`
+## Function `epoch_end_block_number`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_end_number">end_number</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_end_block_number">epoch_end_block_number</a>(): u64
 </code></pre>
 
 
@@ -1235,7 +967,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_end_number">end_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_epoch_end_block_number">epoch_end_block_number</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
     <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.end_number
 }
@@ -1288,31 +1020,6 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_block_time_target">block_time_target</a>(): u64 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
     <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_ref.block_time_target
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Consensus_reward_per_epoch"></a>
-
-## Function `reward_per_epoch`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_reward_per_epoch">reward_per_epoch</a>(): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_reward_per_epoch">reward_per_epoch</a>(): u128 <b>acquires</b> <a href="#0x1_Consensus_Epoch">Epoch</a> {
-    <b>let</b> epoch_ref = borrow_global&lt;<a href="#0x1_Consensus_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    epoch_ref.reward_per_epoch
 }
 </code></pre>
 

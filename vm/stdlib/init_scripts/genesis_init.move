@@ -18,15 +18,26 @@ script {
    use 0x1::ChainId;
    use 0x1::ConsensusStrategy;
 
-fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>,
-                 native_schedule: vector<u8>, reward_delay: u64,
-                 uncle_rate_target:u64,epoch_time_target: u64,
-                 reward_half_epoch: u64, init_block_time_target: u64,
-                 block_difficulty_window: u64, reward_per_uncle_percent: u64,
-                 min_time_target:u64, max_uncles_per_block:u64,
-                 total_supply: u128, pre_mine_percent:u64, parent_hash: vector<u8>,
-                 association_auth_key: vector<u8>, genesis_auth_key: vector<u8>,
-                 chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64,
+fun genesis_init(publishing_option: vector<u8>,
+                 instruction_schedule: vector<u8>,
+                 native_schedule: vector<u8>,
+                 reward_delay: u64,
+                 uncle_rate_target:u64,
+                 epoch_block_count: u64,
+                 init_block_time_target: u64,
+                 block_difficulty_window: u64,
+                 init_reward_per_block: u128,
+                 reward_per_uncle_percent: u64,
+                 min_block_time_target:u64,
+                 max_block_time_target: u64,
+                 max_uncles_per_block:u64,
+                 pre_mine_amount:u128,
+                 parent_hash: vector<u8>,
+                 association_auth_key: vector<u8>,
+                 genesis_auth_key: vector<u8>,
+                 chain_id: u8,
+                 consensus_strategy: u8,
+                 genesis_timestamp: u64,
                  block_gas_limit: u64,
                  global_memory_per_byte_cost: u64,
                  global_memory_per_byte_write_cost: u64,
@@ -79,18 +90,15 @@ fun genesis_init(publishing_option: vector<u8>, instruction_schedule: vector<u8>
         let association = Account::create_genesis_account(CoreAddresses::ASSOCIATION_ROOT_ADDRESS());
         Account::accept_token<STC>(&association);
 
-        let pre_mine_balance = total_supply * (pre_mine_percent as u128) / 100;
-        if (pre_mine_balance > 0) {
-            let stc = Token::mint<STC>(&genesis_account, pre_mine_balance);
+        if (pre_mine_amount > 0) {
+            let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
             Account::deposit_to(&genesis_account, Signer::address_of(&association), stc);
         };
 
-        let miner_reward_balance = total_supply - pre_mine_balance;
-        let init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 as u128);
-        Consensus::initialize(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
-                                init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);
+        Consensus::initialize(&genesis_account, uncle_rate_target, epoch_block_count, init_block_time_target, block_difficulty_window,
+                                init_reward_per_block, reward_per_uncle_percent, min_block_time_target, max_block_time_target, max_uncles_per_block);
 
-        BlockReward::initialize(&genesis_account, miner_reward_balance, reward_delay);
+        BlockReward::initialize(&genesis_account, reward_delay);
 
         TransactionFee::initialize(&genesis_account);
         //Grant stdlib maintainer to association

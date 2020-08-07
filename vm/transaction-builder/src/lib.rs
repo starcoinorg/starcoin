@@ -291,8 +291,6 @@ pub fn build_stdlib_package(
         let native_schedule = scs::to_bytes(&chain_config.vm_config.gas_schedule.native_table)
             .expect("Cannot serialize gas schedule");
 
-        let pre_mine_percent = chain_config.pre_mine_percent;
-
         package.set_init_script(Script::new(
             InitScript::GenesisInit.compiled_bytes().into_vec(),
             vec![],
@@ -302,15 +300,15 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(native_schedule),
                 TransactionArgument::U64(chain_config.reward_delay),
                 TransactionArgument::U64(chain_config.uncle_rate_target),
-                TransactionArgument::U64(chain_config.epoch_time_target),
-                TransactionArgument::U64(chain_config.reward_half_epoch),
+                TransactionArgument::U64(chain_config.epoch_block_count),
                 TransactionArgument::U64(chain_config.init_block_time_target),
                 TransactionArgument::U64(chain_config.block_difficulty_window),
+                TransactionArgument::U128(chain_config.init_reward_per_block),
                 TransactionArgument::U64(chain_config.reward_per_uncle_percent),
-                TransactionArgument::U64(chain_config.min_time_target),
+                TransactionArgument::U64(chain_config.min_block_time_target),
+                TransactionArgument::U64(chain_config.max_block_time_target),
                 TransactionArgument::U64(chain_config.max_uncles_per_block),
-                TransactionArgument::U128(chain_config.total_supply),
-                TransactionArgument::U64(pre_mine_percent),
+                TransactionArgument::U128(chain_config.pre_mine_amount),
                 TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),

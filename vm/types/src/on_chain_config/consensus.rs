@@ -15,11 +15,13 @@ const CONSENSUS_MODULE_NAME: &str = "Consensus";
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Consensus {
     pub uncle_rate_target: u64,
-    pub epoch_time_target: u64,
-    pub reward_half_epoch: u64,
-    pub block_difficulty_window: u64,
+    pub init_block_time_target: u64,
+    pub init_reward_per_block: u128,
     pub reward_per_uncle_percent: u64,
-    pub min_time_target: u64,
+    pub epoch_block_count: u64,
+    pub block_difficulty_window: u64,
+    pub min_block_time_target: u64,
+    pub max_block_time_target: u64,
     pub max_uncles_per_block: u64,
 }
 
@@ -35,7 +37,6 @@ pub struct EpochResource {
     start_number: u64,
     end_number: u64,
     block_time_target: u64,
-    reward_per_epoch: u128,
     reward_per_block: u128,
     new_epoch_events: EventHandle,
 }
@@ -47,7 +48,6 @@ impl EpochResource {
         start_number: u64,
         end_number: u64,
         block_time_target: u64,
-        reward_per_epoch: u128,
         reward_per_block: u128,
         new_epoch_events: EventHandle,
     ) -> Self {
@@ -57,7 +57,6 @@ impl EpochResource {
             start_number,
             end_number,
             block_time_target,
-            reward_per_epoch,
             reward_per_block,
             new_epoch_events,
         }
