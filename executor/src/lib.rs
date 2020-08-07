@@ -14,3 +14,5 @@ mod block_executor;
 mod executor;
 #[cfg(test)]
 pub mod executor_test;
+#[cfg(test)]
+pub mod prolog_error_code_test;

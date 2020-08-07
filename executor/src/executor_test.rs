@@ -30,7 +30,7 @@ use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use statedb::ChainStateDB;
 use stdlib::{stdlib_files, StdLibOptions};
 
-fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
+pub fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
     let net = ChainNetwork::Test;
     let chain_state = ChainStateDB::mock();
     let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
@@ -38,7 +38,7 @@ fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
     (chain_state, net)
 }
 
-fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
+pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
     let output = crate::execute_transactions(chain_state, vec![txn])
         .unwrap()
         .pop()
