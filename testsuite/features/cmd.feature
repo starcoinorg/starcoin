@@ -72,7 +72,7 @@ Feature: cmd integration test
     Then cmd: "dev get_coin"
     Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000a550c18"
     Then cmd: "account show"
-    Then assert: "$.account.is_default true $.sequence_number 0 $.balances.STC 84000000000000"
+    Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"
     Then cmd: "account show"
     Then cmd: "state get_account @$.account.address@"
