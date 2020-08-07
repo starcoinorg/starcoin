@@ -16,7 +16,10 @@ module ErrorCode {
     public fun ECOIN_DEPOSIT_IS_ZERO(): u64 {15}
     public fun EDESTORY_TOKEN_NON_ZERO(): u64 {16}
     public fun EBLOCK_NUMBER_MISMATCH(): u64 {17}
-
+    /// Invalid argument.
+    public fun EINVALID_ARGUMENT(): u64 {18}
+    /// There code should unreacheable
+    public fun EUNREACHABLE(): u64 {19}
 
     public fun ECODE_BASE(): u64 {100}
 }

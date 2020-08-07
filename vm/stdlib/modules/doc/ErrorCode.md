@@ -19,6 +19,8 @@
 -  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO)
 -  [Function `EDESTORY_TOKEN_NON_ZERO`](#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO)
 -  [Function `EBLOCK_NUMBER_MISMATCH`](#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH)
+-  [Function `EINVALID_ARGUMENT`](#0x1_ErrorCode_EINVALID_ARGUMENT)
+-  [Function `EUNREACHABLE`](#0x1_ErrorCode_EUNREACHABLE)
 -  [Function `ECODE_BASE`](#0x1_ErrorCode_ECODE_BASE)
 
 
@@ -325,6 +327,52 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64 {17}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_EINVALID_ARGUMENT"></a>
+
+## Function `EINVALID_ARGUMENT`
+
+Invalid argument.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64 {18}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_EUNREACHABLE"></a>
+
+## Function `EUNREACHABLE`
+
+There code should unreacheable
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64 {19}
 </code></pre>
 
 

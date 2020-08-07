@@ -17,21 +17,6 @@ fn test_block_metadata_error_code() -> Result<()> {
     let account1 = Account::new();
 
     net.consensus().time().sleep(1);
-    let txn = Transaction::BlockMetadata(BlockMetadata::new(
-        starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
-        1, //UNCLES_IS_NOT_ZERO when block# is 1
-        1,
-    ));
-    let output = execute_and_apply(&chain_state, txn);
-    assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNKNOWN_STATUS),
-        *output.status()
-    );
-
-    net.consensus().time().sleep(1);
     let txn_normal = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
@@ -42,8 +27,8 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output_normal = execute_and_apply(&chain_state, txn_normal);
     assert_eq!(
-        KeptVMStatus::Executed,
-        output_normal.status().status().unwrap()
+        TransactionStatus::Keep(KeptVMStatus::Executed),
+        *output_normal.status()
     );
 
     net.consensus().time().sleep(1);
@@ -64,7 +49,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     net.consensus().time().sleep(1);
     let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now() - 2, //EINVALID_TIMESTAMP
+        0, //EINVALID_TIMESTAMP
         *account1.address(),
         Some(account1.auth_key_prefix()),
         0,

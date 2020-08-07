@@ -15,7 +15,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_time_target: u64, reward_half_epoch: u64, init_block_time_target: u64, block_difficulty_window: u64, reward_per_uncle_percent: u64, min_time_target: u64, max_uncles_per_block: u64, total_supply: u128, pre_mine_percent: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
 </code></pre>
 
 
@@ -24,15 +24,26 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;,
-                 native_schedule: vector&lt;u8&gt;, reward_delay: u64,
-                 uncle_rate_target:u64,epoch_time_target: u64,
-                 reward_half_epoch: u64, init_block_time_target: u64,
-                 block_difficulty_window: u64, reward_per_uncle_percent: u64,
-                 min_time_target:u64, max_uncles_per_block:u64,
-                 total_supply: u128, pre_mine_percent:u64, parent_hash: vector&lt;u8&gt;,
-                 association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;,
-                 chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64,
+<pre><code><b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;,
+                 instruction_schedule: vector&lt;u8&gt;,
+                 native_schedule: vector&lt;u8&gt;,
+                 reward_delay: u64,
+                 uncle_rate_target:u64,
+                 epoch_block_count: u64,
+                 init_block_time_target: u64,
+                 block_difficulty_window: u64,
+                 init_reward_per_block: u128,
+                 reward_per_uncle_percent: u64,
+                 min_block_time_target:u64,
+                 max_block_time_target: u64,
+                 max_uncles_per_block:u64,
+                 pre_mine_amount:u128,
+                 parent_hash: vector&lt;u8&gt;,
+                 association_auth_key: vector&lt;u8&gt;,
+                 genesis_auth_key: vector&lt;u8&gt;,
+                 chain_id: u8,
+                 consensus_strategy: u8,
+                 genesis_timestamp: u64,
                  block_gas_limit: u64,
                  global_memory_per_byte_cost: u64,
                  global_memory_per_byte_write_cost: u64,
@@ -85,18 +96,15 @@
         <b>let</b> association = <a href="../../modules/doc/Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(<a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>());
         <a href="../../modules/doc/Account.md#0x1_Account_accept_token">Account::accept_token</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&association);
 
-        <b>let</b> pre_mine_balance = total_supply * (pre_mine_percent <b>as</b> u128) / 100;
-        <b>if</b> (pre_mine_balance &gt; 0) {
-            <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_balance);
+        <b>if</b> (pre_mine_amount &gt; 0) {
+            <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_amount);
             <a href="../../modules/doc/Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
         };
 
-        <b>let</b> miner_reward_balance = total_supply - pre_mine_balance;
-        <b>let</b> init_reward_per_epoch = miner_reward_balance / (reward_half_epoch * 2 <b>as</b> u128);
-        <a href="../../modules/doc/Consensus.md#0x1_Consensus_initialize">Consensus::initialize</a>(&genesis_account,uncle_rate_target,epoch_time_target,reward_half_epoch, init_block_time_target, block_difficulty_window,
-                                init_reward_per_epoch, reward_per_uncle_percent, min_time_target, max_uncles_per_block);
+        <a href="../../modules/doc/Consensus.md#0x1_Consensus_initialize">Consensus::initialize</a>(&genesis_account, uncle_rate_target, epoch_block_count, init_block_time_target, block_difficulty_window,
+                                init_reward_per_block, reward_per_uncle_percent, min_block_time_target, max_block_time_target, max_uncles_per_block);
 
-        <a href="../../modules/doc/BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, miner_reward_balance, reward_delay);
+        <a href="../../modules/doc/BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, reward_delay);
 
         <a href="../../modules/doc/TransactionFee.md#0x1_TransactionFee_initialize">TransactionFee::initialize</a>(&genesis_account);
         //Grant stdlib maintainer <b>to</b> association

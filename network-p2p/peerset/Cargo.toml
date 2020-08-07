@@ -4,7 +4,7 @@ homepage = "http://parity.io"
 license = "GPL-3.0"
 name = "peerset"
 #for unify version with project.
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Parity Technologies <admin@parity.io>", "Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 repository = "https://github.com/paritytech/substrate/"
