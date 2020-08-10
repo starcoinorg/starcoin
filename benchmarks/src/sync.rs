@@ -20,8 +20,6 @@ use starcoin_sync::helper::{get_body_by_hash, get_headers_msg_for_common, get_he
 use starcoin_sync::Downloader;
 use starcoin_txpool::{TxPool, TxPoolService};
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::ChainAsyncService;
 use types::peer_info::{PeerId, PeerInfo, RpcInfo};
@@ -143,9 +141,7 @@ async fn create_node(
     Arc<Storage>,
 )> {
     let bus = BusActor::launch();
-    // storage
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
+
     // node config
     let mut config = NodeConfig::random_for_test();
     config.sync.full_sync_mode();
@@ -160,13 +156,11 @@ async fn create_node(
     }
     let node_config = Arc::new(config);
 
-    // genesis
-    let genesis = Genesis::load(node_config.net()).unwrap();
-    let genesis_hash = genesis.block().header().id();
+    let (storage, startup_info, genesis_hash) =
+        Genesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
 
-    let genesis_startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let txpool = {
-        let best_block_id = *genesis_startup_info.get_master();
+        let best_block_id = *startup_info.get_master();
         TxPool::start(
             node_config.clone(),
             storage.clone(),
@@ -199,7 +193,7 @@ async fn create_node(
     // chain
     let txpool_service_clone = txpool_service.clone();
     let node_config_clone = node_config.clone();
-    let genesis_startup_info_clone = genesis_startup_info.clone();
+    let genesis_startup_info_clone = startup_info.clone();
     let storage_clone = storage.clone();
     let bus_clone = bus.clone();
     let chain = Arbiter::new()

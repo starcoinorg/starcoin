@@ -14,8 +14,6 @@ use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_vm_types::chain_config::ConsensusStrategy;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
 use storage::Storage;
 use traits::{ChainReader, ChainService};
 
@@ -33,11 +31,8 @@ impl ChainBencher {
     pub fn new(num: Option<u64>, bus: Addr<BusActor>) -> Self {
         let node_config = NodeConfig::random_for_test();
         let node_config = Arc::new(node_config);
-        let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
-        let genesis = Genesis::load(node_config.net()).unwrap();
-        let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
+        let (storage, startup_info, _) =
+            Genesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
 
         let txpool = {
             let best_block_id = *startup_info.get_master();

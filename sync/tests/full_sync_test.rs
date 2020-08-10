@@ -15,8 +15,6 @@ use starcoin_account_api::AccountInfo;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_genesis::Genesis;
 use starcoin_state_service::ChainStateActor;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
 use std::{sync::Arc, time::Duration};
@@ -34,10 +32,6 @@ fn test_network_actor_rpc() {
         // first chain
         // bus
         let bus_1 = BusActor::launch();
-        // storage
-        let storage_1 = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
@@ -45,10 +39,9 @@ fn test_network_actor_rpc() {
             .unwrap();
         let node_config_1 = Arc::new(config_1);
 
-        // genesis
-        let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
-        let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
+        let (storage_1, startup_info_1, genesis_hash_1) =
+            Genesis::init_storage(node_config_1.as_ref()).expect("init storage by genesis fail.");
+
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -65,7 +58,7 @@ fn test_network_actor_rpc() {
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
-            genesis_hash,
+            genesis_hash_1,
         );
         debug!("addr_1 : {:?}", addr_1);
 
@@ -141,10 +134,6 @@ fn test_network_actor_rpc() {
         // second chain
         // bus
         let bus_2 = BusActor::launch();
-        // storage
-        let storage_2 = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
 
         // node config
         let mut config_2 = NodeConfig::random_for_test();
@@ -159,9 +148,9 @@ fn test_network_actor_rpc() {
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
 
-        let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
-        let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
+        let (storage_2, startup_info_2, genesis_hash_2) =
+            Genesis::init_storage(node_config_2.as_ref()).expect("init storage by genesis fail.");
+
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -177,7 +166,7 @@ fn test_network_actor_rpc() {
             node_config_2.clone(),
             bus_2.clone(),
             handle.clone(),
-            genesis_hash,
+            genesis_hash_2,
         );
         debug!("addr_2 : {:?}", addr_2);
 
@@ -265,19 +254,17 @@ fn test_network_actor_rpc_2() {
         // first chain
         // bus
         let bus_1 = BusActor::launch();
-        // storage
-        let storage_1 = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
+
         // node config
         let mut config_1 = NodeConfig::random_for_test();
         config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
             .parse()
             .unwrap();
         let node_config_1 = Arc::new(config_1);
-        let genesis_1 = Genesis::load(node_config_1.net()).unwrap();
-        let genesis_hash = genesis_1.block().header().id();
-        let startup_info_1 = genesis_1.execute_genesis_block(storage_1.clone()).unwrap();
+
+        let (storage_1, startup_info_1, genesis_hash_1) =
+            Genesis::init_storage(node_config_1.as_ref()).expect("init storage by genesis fail.");
+
         let txpool_1 = {
             let best_block_id = *startup_info_1.get_master();
             TxPool::start(
@@ -293,7 +280,7 @@ fn test_network_actor_rpc_2() {
             node_config_1.clone(),
             bus_1.clone(),
             handle.clone(),
-            genesis_hash,
+            genesis_hash_1,
         );
         info!("addr_1 : {:?}", addr_1);
         BlockRelayer::new(bus_1.clone(), txpool_1.get_service(), network_1.clone()).unwrap();
@@ -338,10 +325,7 @@ fn test_network_actor_rpc_2() {
         // second chain
         // bus
         let bus_2 = BusActor::launch();
-        // storage
-        let storage_2 = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
+
         // node config
         let mut config_2 = NodeConfig::random_for_test();
         let addr_1_hex = network_1.identify().to_base58();
@@ -354,9 +338,10 @@ fn test_network_actor_rpc_2() {
                 .unwrap();
         config_2.network.seeds = vec![seed];
         let node_config_2 = Arc::new(config_2);
-        let genesis_2 = Genesis::load(node_config_2.net()).unwrap();
-        let genesis_hash = genesis_2.block().header().id();
-        let startup_info_2 = genesis_2.execute_genesis_block(storage_2.clone()).unwrap();
+
+        let (storage_2, startup_info_2, genesis_hash_2) =
+            Genesis::init_storage(node_config_2.as_ref()).expect("init storage by genesis fail.");
+
         // txpool
         let txpool_2 = {
             let best_block_id = *startup_info_2.get_master();
@@ -369,7 +354,7 @@ fn test_network_actor_rpc_2() {
         };
         // network
         let (network_2, addr_2, _rx_2) =
-            gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash);
+            gen_network(node_config_2.clone(), bus_2.clone(), handle, genesis_hash_2);
         debug!("addr_2 : {:?}", addr_2);
         BlockRelayer::new(bus_2.clone(), txpool_2.get_service(), network_2.clone()).unwrap();
         // chain
