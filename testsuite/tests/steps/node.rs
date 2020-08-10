@@ -51,18 +51,18 @@ pub fn steps() -> Steps<MyWorld> {
             assert!(result.is_ok());
         })
         .then("get node info", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let node_info = client.clone().node_info();
             info!("node_info: {:?}", node_info);
         })
         .then("get node status", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let status = client.clone().node_status();
             assert!(status.is_ok());
             assert_eq!(status.unwrap(), true);
         })
         .then("get node peers", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let peers = client.clone().node_peers();
             info!("peers: {:?}", peers);
         });

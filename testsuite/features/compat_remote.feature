@@ -1,11 +1,9 @@
-Feature: cmd integration test
+Feature: compat cmd test
   Background:
-    Given a test node config
-    And node dev handle
-    And dev rpc client
+    Given remote rpc client
 
 # chain
-  Scenario Outline: [cmd] cli chain test
+  Scenario Outline: [compat_remote] cli chain test
     Then cmd: "chain branches"
     Then cmd: "chain epoch_info"
     Then cmd: "chain get_block_by_number"
@@ -14,77 +12,69 @@ Feature: cmd integration test
     Then cmd: "chain get_txn_by_block @$.id@"
     Then cmd: "chain get_txn @$[0].transaction_hash@"
     Then cmd: "chain get_events @$.txn_info_id@"
-    Then node handle stop
 
     Examples:
       |  |
 
 # debug
-  Scenario Outline: [cmd] debug test
+  Scenario Outline: [compat_remote] debug test
     Then cmd: "chain show"
-#    Then cmd: "debug gen_dev_block -p $.head_block"
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
     Then cmd: "debug gen_txn -r -v 10"
     Then cmd: "debug log level Debug"
-    Then node handle stop
 
     Examples:
       |  |
 
 # node
-  Scenario Outline: [cmd] node test
+  Scenario Outline: [compat_remote] node test
     Then cmd: "node metrics"
     Then cmd: "node info"
     Then cmd: "node peers"
-    Then node handle stop
 
     Examples:
       |  |
 
 # multisig account
-  Scenario Outline: [cmd] multisig account
+  Scenario Outline: [compat_remote] multisig account
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
     Then cmd: "account create -p 111"
     Then cmd: "account create -p 222"
     Then cmd: "account list"
     Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
-    Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg 0x@$.address@ --arg <para> --arg 10000000u128"
-    Then node handle stop
+    Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg 0x@$.address@ --arg x@$.auth_key_prefix@ --arg 10000000u128"
 
     Examples:
-      | para |
-      | x@$.auth_key_prefix@  |
+      |  |
 
  #dev
-  Scenario Outline: [cmd] dev test
+  Scenario Outline: [compat_remote] dev test
     Then cmd: "account unlock -d 30000 0000000000000000000000000a550c18"
     Then cmd: "dev upgrade_stdlib --blocking"
-    Then node handle stop
 
     Examples:
       |  |
 
 #state
-  Scenario Outline: [cmd] state test
+  Scenario Outline: [compat_remote] state test
     Then cmd: "state get_root"
     Then cmd: "dev get_coin"
-    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000a550c18"
+    Then assert: "$.gas_unit_price 1 $.sender 0000000000000000000000000a550c18"
     Then cmd: "account show"
-    Then assert: "$.account.is_default true $.sequence_number 0"
+    Then assert: "$.account.is_default true $.balances.STC 84000000000000"
     Then cmd: "state get_proof @$.account.address@"
     Then cmd: "account show"
     Then cmd: "state get_account @$.account.address@"
     Then cmd: "account show"
     Then cmd: "state get @$.account.address@"
-    Then node handle stop
 
     Examples:
       |  |
 
 #account
-  Scenario Outline: [cmd] account test
+  Scenario Outline: [compat_remote] account test
     Then cmd: "account show"
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
@@ -100,14 +90,12 @@ Feature: cmd integration test
     Then cmd: "account show"
     Then cmd: "account execute-builtin --blocking --script empty_script -s @$.account.address@"
     Then cmd: "account accept_token 0x1::DummyToken::DummyToken"
-    Then node handle stop
-
-
+    
     Examples:
       |  |
 
 #mytoken
-  Scenario Outline: [cmd] my_token test
+  Scenario Outline: [compat_remote] my_token test
     Then cmd: "account show"
     Then cmd: "account unlock @$.account.address@"
     Then cmd: "dev get_coin"
@@ -123,7 +111,6 @@ Feature: cmd integration test
     Then cmd: "dev execute @$.result@ --blocking --arg 1000000u128"
 #    Then assert: "$.status Executed"
     Then cmd: "chain get_txn @$.txn_hash@"
-    Then node handle stop
-
+    
     Examples:
       |  |

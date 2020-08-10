@@ -19,7 +19,7 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .then("charge money to account", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let to = world.default_account.as_ref().take().unwrap();
             let pre_mine_address = account_config::association_address();
             let result = transfer_txn(client, to, pre_mine_address, None);
@@ -34,7 +34,7 @@ pub fn steps() -> Steps<MyWorld> {
         .then(
             "execute transfer transaction",
             |world: &mut MyWorld, _step| {
-                let client = world.rpc_client.as_ref().take().unwrap();
+                let client = world.default_rpc_client.as_ref().take().unwrap();
                 let from_account = world.default_account.as_ref().take().unwrap();
                 let to_account = world.txn_account.as_ref().take().unwrap();
                 info!("transfer from: {:?} to: {:?}", from_account, to_account);
