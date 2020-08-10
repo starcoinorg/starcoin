@@ -6,9 +6,13 @@ Feature: compat cmd integration test
 #    Given remote rpc client
 
   # node
-  Scenario Outline: [compat] basic test
-    Then compat basic check
-
+  Scenario Outline: [compat] transfer test
+    Then cmd: "account show"
+    Then cmd: "account unlock -d 30000 0000000000000000000000000a550c18"
+    Then cmd: "account create -p transfer"
+    Then cmd: "account transfer --blocking -v 10000 -s 0000000000000000000000000a550c18 -r @$.address@ -k @$.public_key@"
+#    Then cmd: "chain get_block @$.block_id@"
+    Then transfer txn block check
 
     Examples:
       |  |

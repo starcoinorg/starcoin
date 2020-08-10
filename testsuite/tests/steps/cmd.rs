@@ -27,7 +27,7 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .then_regex(r#"cmd: "([^"]*)""#, |world: &mut MyWorld, args, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
 
             let node_info = client.clone().node_info().unwrap();
             let state = CliState::new(node_info.net, client.clone(), None, None);

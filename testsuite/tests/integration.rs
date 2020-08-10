@@ -27,13 +27,16 @@ mod steps;
 pub struct MyWorld {
     node_config: Option<NodeConfig>,
     storage: Option<Storage>,
-    rpc_client: Option<Arc<RpcClient>>,
-    local_rpc_client: Option<RpcClient>,
+    // default rpc client for one node test, and as first node rpc client of two nodes test
+    default_rpc_client: Option<Arc<RpcClient>>,
+    // the second node rpc client
+    rpc_client2: Option<Arc<RpcClient>>,
     default_account: Option<AccountInfo>,
     txn_account: Option<AccountInfo>,
     node_handle: Option<NodeHandle>,
     value: Option<Value>,
     rt: Option<Runtime>,
+    rt2: Option<Runtime>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -67,7 +70,7 @@ pub fn steps() -> Steps<MyWorld> {
             if let Some(rt) = &mut world.rt {
                 let client = RpcClient::connect_websocket(rpc_addr.as_ref(), rt).unwrap();
                 info!("rpc client created!");
-                world.rpc_client = Some(Arc::new(client))
+                world.default_rpc_client = Some(Arc::new(client))
             }
         })
         .given("dev rpc client", |world: &mut MyWorld, _step| {
@@ -79,11 +82,11 @@ pub fn steps() -> Steps<MyWorld> {
                 helper::wait_until_file_created(ipc_file.clone()).expect("ipc file must exist");
                 let client = RpcClient::connect_ipc(ipc_file, rt).unwrap();
                 info!("dev node local rpc client created!");
-                world.rpc_client = Some(Arc::new(client))
+                world.default_rpc_client = Some(Arc::new(client))
             }
         })
         .given("default account", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let default_account = client.clone().account_default().unwrap().unwrap();
             info!("default account config success!");
             client
@@ -96,7 +99,7 @@ pub fn steps() -> Steps<MyWorld> {
             world.default_account = Some(default_account)
         })
         .given("an account", |world: &mut MyWorld, _step| {
-            let client = world.rpc_client.as_ref().take().unwrap();
+            let client = world.default_rpc_client.as_ref().take().unwrap();
             let password = "integration";
             let account = client
                 .clone()

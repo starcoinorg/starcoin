@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::TransactionView;
+use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
@@ -70,7 +70,7 @@ impl CommandAction for TransferCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = TransferOpt;
-    type ReturnItem = TransactionView;
+    type ReturnItem = ExecuteResultView;
 
     fn run(
         &self,
@@ -140,14 +140,19 @@ impl CommandAction for TransferCommand {
             ctx.state().net().chain_id(),
         );
         let txn = client.account_sign_txn(raw_txn)?;
-        let succ = client.submit_transaction(txn.clone())?;
+        let txn_hash = txn.crypto_hash();
+        let succ = client.submit_transaction(txn)?;
         if let Err(e) = succ {
             bail!("execute-txn is reject by node, reason: {}", &e)
         }
 
+        let mut output_view = ExecutionOutputView::new(txn_hash);
+
         if opt.blocking {
-            ctx.state().watch_txn(txn.crypto_hash())?;
+            let block = ctx.state().watch_txn(txn_hash)?;
+            output_view.block_number = Some(block.header().number);
+            output_view.block_id = Some(block.header().id());
         }
-        Ok(txn.into())
+        Ok(ExecuteResultView::Run(output_view))
     }
 }
