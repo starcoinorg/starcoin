@@ -6,7 +6,7 @@ Feature: integration
 #  1. node：
   Scenario: [cmd] node start and execute transfer
     Given a test node config
-    And node dev handle
+    And node handle
     And dev rpc client
     Then get node info
     Then get node status

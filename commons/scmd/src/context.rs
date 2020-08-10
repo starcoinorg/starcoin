@@ -170,15 +170,9 @@ where
     }
 
     /// Execute command by parse std::env::args_os() and print result.
-    pub fn exec(self) {
-        match self.exec_inner(&mut std::env::args_os()) {
-            Err(e) => println!("init command context error: {}", e.to_string()),
-            Ok((output_format, result)) => {
-                if let Err(e) = print_action_result(output_format, result) {
-                    println!("print result error: {}", e.to_string())
-                }
-            }
-        }
+    pub fn exec(self) -> Result<()> {
+        let (output_format, result) = self.exec_inner(&mut std::env::args_os())?;
+        print_action_result(output_format, result)
     }
 
     /// Execute command by args and return Command execute ReturnItem

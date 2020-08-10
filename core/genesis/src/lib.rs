@@ -7,13 +7,15 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
-use starcoin_config::{genesis_key_pair, ChainNetwork};
+use starcoin_config::{genesis_key_pair, ChainNetwork, NodeConfig};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{Storage, Store};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
 use starcoin_types::startup_info::StartupInfo;
 use starcoin_types::transaction::TransactionInfo;
@@ -29,6 +31,10 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
+
+mod errors;
+
+pub use errors::GenesisError;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -267,6 +273,83 @@ impl Genesis {
         let contents = scs::to_bytes(self)?;
         file.write_all(&contents)?;
         Ok(())
+    }
+
+    fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
+        let genesis = match Genesis::load_from_dir(config.data_dir()) {
+            Ok(Some(genesis)) => {
+                let expect_genesis = Genesis::load(config.net())?;
+                if genesis.block().header().id() != expect_genesis.block().header().id() {
+                    return Err(GenesisError::GenesisVersionMismatch {
+                        expect: expect_genesis.block.header.id(),
+                        real: genesis.block.header.id(),
+                    }
+                    .into());
+                }
+                genesis
+            }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
+            Ok(None) => {
+                if init {
+                    let genesis = Genesis::load(config.net())?;
+                    genesis.save(config.data_dir())?;
+                    info!("Build and save new genesis: {}", genesis);
+                    genesis
+                } else {
+                    return Err(GenesisError::GenesisNotExist("data_dir".to_owned()).into());
+                }
+            }
+        };
+        Ok(genesis)
+    }
+
+    pub fn init_storage(config: &NodeConfig) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
+        debug!("init storage by genesis.");
+        let storage = match config.net() {
+            ChainNetwork::Test => {
+                Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+                    Arc::new(CacheStorage::new()),
+                    Arc::new(DBStorage::new(config.storage.dir())),
+                ))?)
+            }
+            _ => Arc::new(Storage::new(StorageInstance::new_cache_instance(
+                CacheStorage::new(),
+            ))?),
+        };
+        debug!("load startup_info.");
+        let (startup_info, genesis_hash) = match storage.get_startup_info() {
+            Ok(Some(startup_info)) => {
+                info!("Get startup info from db");
+                info!("Check genesis file.");
+                let genesis = Self::load_and_check_genesis(&config, false)?;
+                match storage.get_block(genesis.block().header().id()) {
+                    Ok(Some(block)) => {
+                        if *genesis.block() == block {
+                            info!("Check genesis db block ok!");
+                        } else {
+                            return Err(GenesisError::GenesisVersionMismatch {
+                                expect: genesis.block.header.id(),
+                                real: block.header.id(),
+                            }
+                            .into());
+                        }
+                    }
+                    Ok(None) => {
+                        return Err(GenesisError::GenesisNotExist("database".to_owned()).into())
+                    }
+                    Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
+                }
+                (startup_info, genesis.block().header().id())
+            }
+            Ok(None) => {
+                let genesis = Self::load_and_check_genesis(&config, true)?;
+                let genesis_hash = genesis.block().header().id();
+                let startup_info = genesis.execute_genesis_block(storage.clone())?;
+                (startup_info, genesis_hash)
+            }
+            Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
+        };
+        Ok((storage, startup_info, genesis_hash))
     }
 }
 

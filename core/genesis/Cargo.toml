@@ -9,6 +9,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0"
+thiserror = "1.0"
 structopt = "0.3.16"
 once_cell = "1.4.0"
 starcoin-types = {path = "../../types"}

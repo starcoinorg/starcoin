@@ -239,8 +239,7 @@ pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
 
 fn main() -> Result<()> {
     let context = init_context();
-    context.exec();
-    Ok(())
+    context.exec()
 }
 
 #[cfg(test)]
