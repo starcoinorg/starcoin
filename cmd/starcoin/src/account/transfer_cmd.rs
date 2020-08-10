@@ -141,7 +141,7 @@ impl CommandAction for TransferCommand {
         );
         let txn = client.account_sign_txn(raw_txn)?;
         let txn_hash = txn.crypto_hash();
-        let succ = client.submit_transaction(txn.clone())?;
+        let succ = client.submit_transaction(txn)?;
         if let Err(e) = succ {
             bail!("execute-txn is reject by node, reason: {}", &e)
         }
