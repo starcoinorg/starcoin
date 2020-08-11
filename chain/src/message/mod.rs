@@ -35,6 +35,7 @@ pub enum ChainRequest {
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetEpochInfo(),
+    GetEpochInfoByNumber(u64),
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),

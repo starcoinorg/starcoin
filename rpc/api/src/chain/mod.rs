@@ -65,6 +65,10 @@ pub trait ChainApi {
     #[rpc(name = "chain.epoch")]
     fn current_epoch(&self) -> FutureResult<EpochInfo>;
 
+    /// Get epoch info by number.
+    #[rpc(name = "chain.get_epoch_info_by_number")]
+    fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo>;
+
     /// Create a block for master.
     #[rpc(name = "chain.create_dev_block")]
     fn create_dev_block(

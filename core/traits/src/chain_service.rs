@@ -57,6 +57,7 @@ pub trait ChainService {
         count: u64,
     ) -> Result<Vec<Block>>;
     fn epoch_info(&self) -> Result<EpochInfo>;
+    fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
 
     /// just for test
     fn create_block_template(
@@ -110,6 +111,7 @@ pub trait ChainAsyncService:
     async fn master_startup_info(&self) -> Result<StartupInfo>;
     async fn master_head(&self) -> Result<ChainInfo>;
     async fn epoch_info(&self) -> Result<EpochInfo>;
+    async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
 
     /// just for test
     async fn create_block_template(
