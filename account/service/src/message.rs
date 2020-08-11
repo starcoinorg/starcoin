@@ -12,6 +12,7 @@ use std::time::Duration;
 pub enum AccountRequest {
     CreateAccount(String),
     GetDefaultAccount(),
+    SetDefaultAccount(AccountAddress),
     GetAccounts(),
     GetAccount(AccountAddress),
     SignTxn {

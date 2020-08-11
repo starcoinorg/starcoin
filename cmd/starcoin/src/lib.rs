@@ -34,7 +34,9 @@ pub fn add_command(
                 .subcommand(account::UnlockCommand)
                 .subcommand(account::ExportCommand)
                 .subcommand(account::ImportCommand)
-                .subcommand(account::ExecuteBuildInCommand),
+                .subcommand(account::ExecuteBuildInCommand)
+                .subcommand(account::LockCommand)
+                .subcommand(account::DefaultCommand),
         )
         .command(
             Command::with_name("state")

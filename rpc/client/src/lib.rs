@@ -238,6 +238,17 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn set_default_account(&self, addr: AccountAddress) -> anyhow::Result<Option<AccountInfo>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .account_client
+                .set_default_account(addr)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn account_create(&self, password: String) -> anyhow::Result<AccountInfo> {
         self.call_rpc_blocking(|inner| async move {
             inner.account_client.create(password).compat().await
@@ -288,6 +299,12 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<()> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.account_client.lock(address).compat().await },
+        )
+        .map_err(map_err)
+    }
     pub fn account_unlock(
         &self,
         address: AccountAddress,

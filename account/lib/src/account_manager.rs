@@ -221,7 +221,6 @@ impl AccountManager {
         }
     }
 
-    #[allow(unused)]
     pub fn set_default_account(&self, address: AccountAddress) -> AccountResult<()> {
         self.store
             .set_default_address(Some(address))

@@ -14,7 +14,10 @@ pub trait AccountAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn create_account(self, password: String) -> ServiceResult<AccountInfo>;
 
     async fn get_default_account(self) -> ServiceResult<Option<AccountInfo>>;
-
+    async fn set_default_account(
+        self,
+        address: AccountAddress,
+    ) -> ServiceResult<Option<AccountInfo>>;
     async fn get_accounts(self) -> ServiceResult<Vec<AccountInfo>>;
 
     async fn get_account(self, address: AccountAddress) -> ServiceResult<Option<AccountInfo>>;

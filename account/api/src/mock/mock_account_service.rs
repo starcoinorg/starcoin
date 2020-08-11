@@ -73,6 +73,28 @@ impl AccountAsyncService for MockAccountService {
         Ok(None)
     }
 
+    async fn set_default_account(
+        self,
+        address: AccountAddress,
+    ) -> ServiceResult<Option<AccountInfo>> {
+        for mut r in self.accounts.iter_mut() {
+            if r.is_default {
+                r.is_default = false;
+            }
+        }
+        match self.accounts.get_mut(&address) {
+            None => Ok(None),
+            Some(mut account) => {
+                account.is_default = true;
+                Ok(Some(AccountInfo {
+                    address: *account.key(),
+                    is_default: true,
+                    public_key: account.public_key.clone(),
+                }))
+            }
+        }
+    }
+
     async fn get_accounts(self) -> ServiceResult<Vec<AccountInfo>> {
         Ok(self
             .accounts
