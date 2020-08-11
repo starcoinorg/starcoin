@@ -43,6 +43,7 @@ pub trait ChainReader {
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)>;
     fn chain_state_reader(&self) -> &dyn ChainStateReader;
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>>;

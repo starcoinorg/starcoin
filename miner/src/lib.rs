@@ -16,6 +16,7 @@ use sc_stratum::Stratum;
 use starcoin_account_api::AccountInfo;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
+use std::cmp::min;
 use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
@@ -131,15 +132,24 @@ where
         let miner = self.miner.clone();
         let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
-        // block_gas_limit / min_gas_per_txn
-        let max_txns = self.config.miner.block_gas_limit / 600;
+
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let f = async move {
-            let txns = txpool.get_pending_txns(Some(max_txns), None);
             let startup_info = chain.master_startup_info().await?;
+            let master = *startup_info.get_master();
+            let block_chain = BlockChain::new(config.net(), master, storage.clone(), None)?;
+            let on_chain_block_gas_limit = block_chain.get_on_chain_block_gas_limit()?;
+            let block_gas_limit = config.miner.block_gas_limit.map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit)).unwrap_or(on_chain_block_gas_limit);
+            // block_gas_limit / min_gas_per_txn
+            let max_txns = block_gas_limit / 600;
+
+            let txns = txpool.get_pending_txns(Some(max_txns), None);
+
             debug!(
-                "On GenerateBlockEvent, master: {:?}, txn len: {}",
+                "On GenerateBlockEvent, master: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",
                 startup_info.master,
+                block_gas_limit,
+                max_txns,
                 txns.len()
             );
 
@@ -147,8 +157,6 @@ where
                 debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
                 Ok(())
             } else {
-                let master = *startup_info.get_master();
-                let block_chain = BlockChain::new(config.clone(), master, storage.clone(),None)?;
                 let block_template = chain
                     .create_block_template(
                         *miner_account.address(),

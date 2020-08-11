@@ -292,6 +292,9 @@ impl BlockBody {
             uncles,
         }
     }
+    pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
+        self.transactions.get(index)
+    }
 }
 
 impl Into<BlockBody> for Vec<SignedUserTransaction> {
