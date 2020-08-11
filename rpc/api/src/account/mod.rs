@@ -15,6 +15,10 @@ pub trait AccountApi {
     /// Get default account
     #[rpc(name = "account.default")]
     fn default(&self) -> FutureResult<Option<AccountInfo>>;
+
+    #[rpc(name = "account.set_default_account")]
+    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>>;
+
     #[rpc(name = "account.create")]
     fn create(&self, password: String) -> FutureResult<AccountInfo>;
     #[rpc(name = "account.list")]
@@ -34,6 +38,8 @@ pub trait AccountApi {
         password: String,
         duration: std::time::Duration,
     ) -> FutureResult<()>;
+    #[rpc(name = "account.lock")]
+    fn lock(&self, address: AccountAddress) -> FutureResult<()>;
 
     /// Import private key with address.
     #[rpc(name = "account.import")]

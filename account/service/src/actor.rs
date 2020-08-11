@@ -53,6 +53,15 @@ impl Handler<AccountRequest> for AccountServiceActor {
             AccountRequest::GetDefaultAccount() => {
                 AccountResponse::AccountInfoOption(Box::new(self.service.default_account_info()?))
             }
+            AccountRequest::SetDefaultAccount(address) => {
+                let account_info = self.service.account_info(address)?;
+
+                // only set default if this address exists
+                if account_info.is_some() {
+                    self.service.set_default_account(address)?;
+                }
+                AccountResponse::AccountInfoOption(Box::new(account_info))
+            }
             AccountRequest::GetAccounts() => {
                 AccountResponse::AccountList(self.service.list_account_infos()?)
             }
@@ -129,6 +138,21 @@ impl AccountAsyncService for AccountServiceRef {
         let response = self
             .0
             .send(AccountRequest::GetDefaultAccount())
+            .await
+            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+        if let AccountResponse::AccountInfoOption(account) = response {
+            Ok(*account)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+    async fn set_default_account(
+        self,
+        address: AccountAddress,
+    ) -> ServiceResult<Option<AccountInfo>> {
+        let response = self
+            .0
+            .send(AccountRequest::SetDefaultAccount(address))
             .await
             .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
         if let AccountResponse::AccountInfoOption(account) = response {

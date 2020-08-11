@@ -38,6 +38,15 @@ where
         Box::new(fut.compat())
     }
 
+    fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>> {
+        let fut = self
+            .service
+            .clone()
+            .set_default_account(addr)
+            .map_err(|e| map_rpc_err(e.into()));
+        Box::new(fut.compat())
+    }
+
     fn create(&self, password: String) -> FutureResult<AccountInfo> {
         let fut = self
             .service
@@ -91,6 +100,16 @@ where
             .map_err(|e| map_rpc_err(e.into()));
         Box::new(fut.compat())
     }
+
+    fn lock(&self, address: AccountAddress) -> FutureResult<()> {
+        let fut = self
+            .service
+            .clone()
+            .lock_account(address)
+            .map_err(|e| map_rpc_err(e.into()));
+        Box::new(fut.compat())
+    }
+
     /// Import private key with address.
     fn import(
         &self,
