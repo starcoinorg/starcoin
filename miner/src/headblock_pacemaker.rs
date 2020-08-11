@@ -24,7 +24,7 @@ impl HeadBlockPacemaker {
     }
 
     pub fn send_event(&mut self) {
-        if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
+        if let Err(e) = self.sender.try_send(GenerateBlockEvent::new(true)) {
             error!("err : {:?}", e);
         }
     }
@@ -46,7 +46,7 @@ impl Actor for HeadBlockPacemaker {
             delay_for(Duration::from_secs(2)).await;
             info!("{}", "head block pacemaker started.");
             info!("{}", "Fire first GenerateBlock event");
-            if let Err(e) = sender.try_send(GenerateBlockEvent {}) {
+            if let Err(e) = sender.try_send(GenerateBlockEvent::new(true)) {
                 error!("err : {:?}", e);
             }
         });

@@ -7,6 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0"
 ethereum-types = "0.6.0"
 keccak-hash = "0.2.0"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }

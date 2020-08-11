@@ -13,9 +13,9 @@ use logger::prelude::*;
 use serde_json::error::Error as JsonError;
 use serde_json::{self, json};
 use starcoin_config::MinerClientConfig;
+use starcoin_types::U256;
 use std::sync::Arc;
 use thiserror::Error;
-use types::U256;
 
 pub struct StratumClient {
     request_tx: mpsc::UnboundedSender<Vec<u8>>,

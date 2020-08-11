@@ -3,13 +3,14 @@
 use ethereum_types::H256;
 use jsonrpc_tcp_server::PushMessageError;
 
-#[derive(Debug, Clone)]
+//TODO rename and refactor with this-error.
+#[derive(Debug)]
 pub enum Error {
     NoWork,
     NoWorkers,
     Io(String),
     Tcp(String),
-    Dispatch(String),
+    Dispatch(anyhow::Error),
 }
 
 impl From<std::io::Error> for Error {
