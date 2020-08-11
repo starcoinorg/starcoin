@@ -609,6 +609,10 @@ where
         self.get_master().epoch_info()
     }
 
+    fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
+        self.get_master().get_epoch_info_by_number(Some(number))
+    }
+
     fn create_block_template(
         &self,
         author: AccountAddress,

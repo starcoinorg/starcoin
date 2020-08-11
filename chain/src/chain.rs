@@ -292,20 +292,37 @@ impl ChainReader for BlockChain {
     }
 
     fn epoch_info(&self) -> Result<EpochInfo> {
-        let account_reader = AccountStateReader::new(self.chain_state_reader());
-        let epoch = account_reader
-            .get_resource::<EpochResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
+        self.get_epoch_info_by_number(None)
+    }
 
-        let epoch_data = account_reader
-            .get_resource::<EpochDataResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
+    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
+        let num = match number {
+            Some(num) => num,
+            None => self.current_header().number(),
+        };
 
-        let consensus_conf = account_reader
-            .get_on_chain_config::<ConsensusConfig>()?
-            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+        if let Some(block) = self.get_block_by_number(num)? {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(block.header().state_root()),
+            );
+            let account_reader = AccountStateReader::new(&chain_state);
+            let epoch = account_reader
+                .get_resource::<EpochResource>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
 
-        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+            let epoch_data = account_reader
+                .get_resource::<EpochDataResource>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
+
+            let consensus_conf = account_reader
+                .get_on_chain_config::<ConsensusConfig>()?
+                .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+            Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+        } else {
+            Err(format_err!("Block is none when query epoch info."))
+        }
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {

@@ -171,6 +171,13 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
+    fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo> {
+        let service = self.service.clone();
+        let fut = async move { service.get_epoch_info_by_number(number).await };
+
+        Box::new(fut.boxed().map_err(map_err).compat())
+    }
+
     fn create_dev_block(
         &self,
         author: AccountAddress,

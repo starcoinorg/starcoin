@@ -2,35 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_vm_types::on_chain_config::EpochInfo;
 use structopt::StructOpt;
 
+/// Get epoch info of master.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_block_by_number")]
-pub struct GetOpt {
+#[structopt(name = "get_epoch_info_by_number")]
+pub struct GetEpochInfoByNumberOpt {
     #[structopt(name = "number", long, short = "n", default_value = "0")]
     number: u64,
 }
 
-pub struct GetBlockByNumberCommand;
+pub struct GetEpochInfoByNumberCommand;
 
-impl CommandAction for GetBlockByNumberCommand {
+impl CommandAction for GetEpochInfoByNumberCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetOpt;
-    type ReturnItem = BlockHeaderView;
+    type Opt = GetEpochInfoByNumberOpt;
+    type ReturnItem = EpochInfo;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let opt = ctx.opt();
-        let block = client.chain_get_block_by_number(opt.number)?;
-
-        Ok(block.into())
+        client.get_epoch_info_by_number(ctx.opt().number)
     }
 }

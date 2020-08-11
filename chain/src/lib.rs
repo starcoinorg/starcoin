@@ -201,6 +201,9 @@ impl Handler<ChainRequest> for ChainActor {
             ChainRequest::GetEpochInfo() => {
                 Ok(ChainResponse::EpochInfo(self.service.epoch_info()?))
             }
+            ChainRequest::GetEpochInfoByNumber(number) => Ok(ChainResponse::EpochInfo(
+                self.service.get_epoch_info_by_number(number)?,
+            )),
         }
     }
 }
@@ -511,8 +514,21 @@ impl ChainAsyncService for ChainActorRef {
             .send(ChainRequest::GetEpochInfo())
             .await
             .map_err(Into::<Error>::into)??;
-        if let ChainResponse::EpochInfo(chain_info) = response {
-            Ok(chain_info)
+        if let ChainResponse::EpochInfo(epoch_info) = response {
+            Ok(epoch_info)
+        } else {
+            bail!("get epoch chain info error.")
+        }
+    }
+
+    async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
+        let response = self
+            .address
+            .send(ChainRequest::GetEpochInfoByNumber(number))
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::EpochInfo(epoch_info) = response {
+            Ok(epoch_info)
         } else {
             bail!("get epoch chain info error.")
         }

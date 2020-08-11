@@ -113,6 +113,10 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
+    async fn get_epoch_info_by_number(&self, _number: BlockNumber) -> Result<EpochInfo> {
+        unimplemented!()
+    }
+
     async fn create_block_template(
         &self,
         _author: AccountAddress,
