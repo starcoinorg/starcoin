@@ -12,7 +12,7 @@ use starcoin_types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 //TODO implement Mock service
 #[derive(Clone, Default)]
@@ -114,6 +114,10 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn get_epoch_info_by_number(&self, _number: BlockNumber) -> Result<EpochInfo> {
+        unimplemented!()
+    }
+
+    async fn get_global_time_by_number(&self, _number: BlockNumber) -> Result<GlobalTimeOnChain> {
         unimplemented!()
     }
 

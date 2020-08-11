@@ -11,7 +11,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 /// TODO: figure out a better place for it.
 #[derive(Clone, Debug)]
@@ -51,6 +51,7 @@ pub trait ChainReader {
     fn exist_block(&self, block_id: HashValue) -> bool;
     fn epoch_info(&self) -> Result<EpochInfo>;
     fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo>;
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
 }
 
 pub trait ChainWriter {

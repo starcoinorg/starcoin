@@ -48,7 +48,7 @@ mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::contract_event::ContractEvent;
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::thread::JoinHandle;
@@ -439,6 +439,20 @@ impl RpcClient {
             inner
                 .chain_client
                 .get_epoch_info_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn get_global_time_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<GlobalTimeOnChain> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_global_time_by_number(number)
                 .compat()
                 .await
         })

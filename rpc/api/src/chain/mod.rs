@@ -10,7 +10,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc]
 pub trait ChainApi {
@@ -68,6 +68,10 @@ pub trait ChainApi {
     /// Get epoch info by number.
     #[rpc(name = "chain.get_epoch_info_by_number")]
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo>;
+
+    /// Get global time by number.
+    #[rpc(name = "chain.get_global_time_by_number")]
+    fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain>;
 
     /// Create a block for master.
     #[rpc(name = "chain.create_dev_block")]
