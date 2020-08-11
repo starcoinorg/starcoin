@@ -64,7 +64,7 @@ pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
         VMStatus::MoveAbort(location, code @ EINSUFFICIENT_BALANCE) => {
             if location != account_module_abort() {
                 error!(
-                    "[libra_vm] Unexpected success epilogue move abort: {:?}::{:?}",
+                    "[starcoin_vm] Unexpected success epilogue move abort: {:?}::{:?}",
                     location, code
                 );
                 return VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION);
@@ -75,7 +75,7 @@ pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
         status @ VMStatus::Executed => status,
 
         status => {
-            error!("[libra_vm] Unexpected success epilogue error: {:?}", status);
+            error!("[starcoin_vm] Unexpected success epilogue error: {:?}", status);
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
     }
