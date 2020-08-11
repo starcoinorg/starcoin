@@ -7103,6 +7103,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-resource-viewer"
+version = "0.4.1"
+dependencies = [
+ "anyhow",
+ "hex",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "starcoin-vm-types",
+]
+
+[[package]]
 name = "starcoin-rpc-api"
 version = "0.4.1"
 dependencies = [
