@@ -293,8 +293,7 @@ impl DownloadActor {
                 let ancestor = ancestor_header.number();
 
                 // 2. pivot
-                let latest_number = best_peer.get_block_number();
-                let latest_block_id = best_peer.get_block_id();
+                let (latest_block_id, latest_number) = best_peer.get_hash_number();
                 let min_behind = if main_network {
                     MAIN_MIN_BLOCKS_BEHIND
                 } else {

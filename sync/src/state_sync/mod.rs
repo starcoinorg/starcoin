@@ -777,6 +777,7 @@ impl Actor for StateSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        debug!("state sync task started.");
         self.exe_state_sync_task(ctx.address());
         self.exe_accumulator_sync_task(ctx.address());
         self.exe_txn_info_sync_task(ctx.address());
