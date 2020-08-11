@@ -21,7 +21,7 @@ use std::cmp::PartialOrd;
 pub type BlockNumber = u64;
 
 /// block timestamp allowed future times
-pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15 * 1000; // 15 Second;
+pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15; // 15 Second;
 
 #[derive(
     Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Serialize, Deserialize, CryptoHasher, CryptoHash,

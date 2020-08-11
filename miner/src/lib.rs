@@ -27,11 +27,21 @@ mod metrics;
 pub mod miner;
 mod ondemand_pacemaker;
 pub mod stratum;
+
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "Result<()>")]
-pub struct GenerateBlockEvent {}
+pub struct GenerateBlockEvent {
+    /// Force break current minting, and Generate new block.
+    force: bool,
+}
+
+impl GenerateBlockEvent {
+    pub fn new(force: bool) -> Self {
+        Self { force }
+    }
+}
 
 pub struct MinerActor<P, CS, S>
 where
@@ -68,11 +78,8 @@ where
             ctx.add_message_stream(receiver);
             let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender.clone());
             pacemaker.start();
-            //TODO should start OndemandPacemaker in other network?
-            if config.net().is_test_or_dev() {
-                let transaction_receiver = txpool.subscribe_txns();
-                OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
-            }
+            let transaction_receiver = txpool.subscribe_txns();
+            OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
 
             let miner = miner::Miner::new(bus.clone(), config.clone());
 
@@ -123,8 +130,12 @@ where
 {
     type Result = Result<()>;
 
-    fn handle(&mut self, _event: GenerateBlockEvent, _ctx: &mut Self::Context) -> Self::Result {
-        debug!("Handle GenerateBlockEvent");
+    fn handle(&mut self, event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
+        debug!("Handle GenerateBlockEvent:{:?}", event);
+        if !event.force && self.miner.has_mint_job() {
+            debug!("Miner has mint job so just ignore this event.");
+            return Ok(());
+        }
         let txpool = self.txpool.clone();
         let storage = self.storage.clone();
         let chain = self.chain.clone();
@@ -134,12 +145,14 @@ where
         let miner_account = self.miner_account.clone();
 
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
+        let self_address = ctx.address();
         let f = async move {
             let startup_info = chain.master_startup_info().await?;
             let master = *startup_info.get_master();
             let block_chain = BlockChain::new(config.net(), master, storage.clone(), None)?;
             let on_chain_block_gas_limit = block_chain.get_on_chain_block_gas_limit()?;
             let block_gas_limit = config.miner.block_gas_limit.map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit)).unwrap_or(on_chain_block_gas_limit);
+            //TODO use a GasConstant value to replace 600.
             // block_gas_limit / min_gas_per_txn
             let max_txns = block_gas_limit / 600;
 
@@ -169,12 +182,14 @@ where
                 mint(stratum, miner, config.net().consensus(), &block_chain, block_template)?;
                 Ok(())
             }
-        }
-            .map(|result: Result<()>| {
-                if let Err(err) = result {
-                    error!("Failed to process generate block event:{:?}", err)
-                }
-            });
+        }.map(move |result: Result<()>| {
+            if let Err(err) = result {
+                error!("Failed to process generate block event:{:?}, try to fire a new event.", err);
+                if let Err(send_error) = self_address.try_send(GenerateBlockEvent::new(false)) {
+                    error!("Failed send GenerateBlockEvent: {:?}", send_error);
+                };
+            }
+        });
         self.arbiter.send(Box::pin(f));
         Ok(())
     }
