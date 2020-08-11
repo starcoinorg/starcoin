@@ -6548,6 +6548,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-node",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-state-api",
