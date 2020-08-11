@@ -16,7 +16,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 /// implement ChainService
 pub trait ChainService {
@@ -58,6 +58,7 @@ pub trait ChainService {
     ) -> Result<Vec<Block>>;
     fn epoch_info(&self) -> Result<EpochInfo>;
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
 
     /// just for test
     fn create_block_template(
@@ -112,6 +113,7 @@ pub trait ChainAsyncService:
     async fn master_head(&self) -> Result<ChainInfo>;
     async fn epoch_info(&self) -> Result<EpochInfo>;
     async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
+    async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
 
     /// just for test
     async fn create_block_template(

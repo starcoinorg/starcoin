@@ -28,7 +28,8 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::chain_config::ChainNetwork;
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, VMConfig,
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
+    VMConfig,
 };
 use std::cmp::min;
 use std::iter::Extend;
@@ -284,7 +285,7 @@ impl ChainReader for BlockChain {
 
     fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
         let num = match number {
-            Some(num) => num,
+            Some(n) => n,
             None => self.current_header().number(),
         };
 
@@ -309,6 +310,21 @@ impl ChainReader for BlockChain {
             Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
         } else {
             Err(format_err!("Block is none when query epoch info."))
+        }
+    }
+
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        if let Some(block) = self.get_block_by_number(number)? {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(block.header().state_root()),
+            );
+            let account_reader = AccountStateReader::new(&chain_state);
+            Ok(account_reader
+                .get_resource::<GlobalTimeOnChain>(genesis_address())?
+                .ok_or_else(|| format_err!("GlobalTime is none."))?)
+        } else {
+            Err(format_err!("Block is none when query global time."))
         }
     }
 
