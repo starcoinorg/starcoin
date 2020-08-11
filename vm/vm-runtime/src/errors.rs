@@ -75,7 +75,10 @@ pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
         status @ VMStatus::Executed => status,
 
         status => {
-            error!("[starcoin_vm] Unexpected success epilogue error: {:?}", status);
+            error!(
+                "[starcoin_vm] Unexpected success epilogue error: {:?}",
+                status
+            );
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
     }
