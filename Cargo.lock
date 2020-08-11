@@ -6548,6 +6548,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-node",
+ "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-state-api",
@@ -7100,6 +7101,18 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
+]
+
+[[package]]
+name = "starcoin-resource-viewer"
+version = "0.4.1"
+dependencies = [
+ "anyhow",
+ "hex",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "starcoin-vm-types",
 ]
 
 [[package]]
