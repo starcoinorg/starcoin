@@ -7102,6 +7102,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-proptest-helpers"
+version = "0.4.1"
+dependencies = [
+ "crossbeam",
+ "libra-proptest-helpers",
+ "proptest",
+ "proptest-derive",
+]
+
+[[package]]
 name = "starcoin-rpc-api"
 version = "0.4.1"
 dependencies = [
@@ -7579,6 +7589,7 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-proptest-helpers",
  "starcoin-vm-types",
  "thiserror",
  "tiny-keccak 1.5.0",
