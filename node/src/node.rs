@@ -25,9 +25,7 @@ use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
-use starcoin_storage::{storage::StorageInstance, BlockStore, Storage};
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_types::account_config::association_address;
@@ -35,10 +33,6 @@ use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::{SyncBegin, SyncDone};
 use std::sync::Arc;
 use std::time::Duration;
-
-/// This exit code means is that the node failed to start and required human intervention.
-/// Node start script can do auto task when meet this exist code.
-static EXIT_CODE_NEED_HELP: i32 = 120;
 
 pub struct NodeStartHandle {
     _chain_arbiter: Arbiter,
@@ -50,36 +44,6 @@ pub struct NodeStartHandle {
     _chain_notifier: Addr<ChainNotifyHandlerActor>,
 }
 
-//TODO this method should in Genesis.
-fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
-    let genesis = match Genesis::load_from_dir(config.data_dir()) {
-        Ok(Some(genesis)) => {
-            let expect_genesis = Genesis::load(config.net())?;
-            if genesis.block().header().id() != expect_genesis.block().header().id() {
-                error!("Genesis version mismatch, please clean you data_dir.");
-                std::process::exit(EXIT_CODE_NEED_HELP);
-            }
-            genesis
-        }
-        Err(e) => {
-            error!("Genesis file load error: {:?}", e);
-            std::process::exit(EXIT_CODE_NEED_HELP);
-        }
-        Ok(None) => {
-            if init {
-                let genesis = Genesis::load(config.net())?;
-                genesis.save(config.data_dir())?;
-                info!("Build and save new genesis: {}", genesis);
-                genesis
-            } else {
-                error!("Genesis file not exist, please clean you data_dir.");
-                std::process::exit(EXIT_CODE_NEED_HELP);
-            }
-        }
-    };
-    Ok(genesis)
-}
-
 pub async fn start(
     config: Arc<NodeConfig>,
     logger_handle: Arc<LoggerHandle>,
@@ -87,49 +51,8 @@ pub async fn start(
     let bus = BusActor::launch();
 
     let sync_event_receiver_future = bus.clone().channel::<SyncDone>();
-    debug!("init storage.");
-    let cache_storage = Arc::new(CacheStorage::new());
-    let db_storage = Arc::new(DBStorage::new(config.storage.clone().dir()));
-    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage.clone(),
-        db_storage.clone(),
-    ))?);
-    debug!("load startup_info.");
-    let (startup_info, genesis_hash) = match storage.get_startup_info() {
-        Ok(Some(startup_info)) => {
-            info!("Get startup info from db");
-            info!("Check genesis file.");
-            let genesis = load_and_check_genesis(&config, false)?;
-            match storage.get_block(genesis.block().header().id())? {
-                Some(block) => {
-                    if *genesis.block() == block {
-                        info!("Check genesis db block ok!");
-                    } else {
-                        error!("Genesis db storage mismatch, please clean you data_dir.");
-                        std::process::exit(EXIT_CODE_NEED_HELP);
-                    }
-                }
-                _ => {
-                    error!("Genesis block is not exist in db storage.");
-                    std::process::exit(EXIT_CODE_NEED_HELP);
-                }
-            }
-            (startup_info, genesis.block().header().id())
-        }
-        Ok(None) => {
-            let genesis = load_and_check_genesis(&config, true)?;
-            let genesis_hash = genesis.block().header().id();
-            let startup_info = genesis.execute_genesis_block(storage.clone())?;
-            (startup_info, genesis_hash)
-        }
-        Err(e) => {
-            error!(
-                "Load startup info fail: {:?}, please check or clean data_dir.",
-                e
-            );
-            std::process::exit(EXIT_CODE_NEED_HELP);
-        }
-    };
+    let (storage, startup_info, genesis_hash) = Genesis::init_storage(config.as_ref())?;
+
     info!("Start chain with startup info: {}", startup_info);
 
     let account_service = AccountServiceActor::launch(config.clone(), bus.clone())?;

@@ -6544,6 +6544,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-dev",
  "starcoin-executor",
+ "starcoin-genesis",
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-node",
@@ -6796,6 +6797,7 @@ dependencies = [
  "stdlib",
  "stest",
  "structopt 0.3.16",
+ "thiserror",
 ]
 
 [[package]]
@@ -7071,6 +7073,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "stest",
+ "thiserror",
  "tokio 0.2.22",
 ]
 

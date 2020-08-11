@@ -10,17 +10,17 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_types::account_address;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use std::sync::Arc;
-use storage::{cache_storage::CacheStorage, storage::StorageInstance, Storage};
+use storage::Storage;
 use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
 
 async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<Storage>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let genesis = StarcoinGenesis::load(node_config.net()).unwrap();
-    let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
+
+    let (storage, startup_info, _) =
+        StarcoinGenesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
+
     let bus = BusActor::launch();
     let txpool_service = {
         let best_block_id = *startup_info.get_master();

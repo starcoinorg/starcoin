@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crash_handler::setup_panic_handler;
+use crate::node::NodeStartHandle;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
@@ -19,6 +20,7 @@ mod node;
 pub struct NodeHandle {
     runtime: Runtime,
     thread_handle: JoinHandle<()>,
+    _start_handle: NodeStartHandle,
     stop_sender: oneshot::Sender<()>,
 }
 
@@ -59,11 +61,13 @@ mod platform {
 impl NodeHandle {
     pub fn new(
         thread_handle: std::thread::JoinHandle<()>,
+        start_handle: NodeStartHandle,
         stop_sender: oneshot::Sender<()>,
     ) -> Self {
         Self {
             runtime: Runtime::new().unwrap(),
             thread_handle,
+            _start_handle: start_handle,
             stop_sender,
         }
     }
@@ -91,7 +95,7 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
     let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
     let ipc_file = config.rpc.get_ipc_file();
     let node_handle = if !ipc_file.exists() {
-        let node_handle = run_node(config.clone());
+        let node_handle = run_node(config.clone())?;
         Some(node_handle)
     } else {
         //TODO check ipc file is available.
@@ -102,7 +106,7 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
 }
 
 /// Run node in a new Thread, and return a NodeHandle.
-pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
+pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
     let logger_handle = starcoin_logger::init();
     info!("Final data-dir is : {:?}", config.data_dir());
     if config.logger.enable_file() {
@@ -132,21 +136,20 @@ pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
     let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
         setup_panic_handler();
-        //TODO actix and tokio use same runtime, and config thread pool.
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
-            //let node_actor = NodeActor::<C, H>::new(config, handle);
-            //let _node_ref = node_actor.start();
-            //TODO fix me, this just a work around method.
-            let _handle = match node::start(config, logger_handle).await {
+            let handle = match node::start(config, logger_handle).await {
                 Err(e) => {
-                    error!("Node start fail: {:?}, exit.", e);
+                    error!("Node start fail: {:?}.", e);
+                    if start_sender.send(Err(e)).is_err() {
+                        info!("Start send error.");
+                    };
                     System::current().stop();
                     return;
                 }
                 Ok(handle) => handle,
             };
-            if start_sender.send(()).is_err() {
+            if start_sender.send(Ok(handle)).is_err() {
                 info!("Start send error.");
             }
             if stop_receiver.await.is_err() {
@@ -156,9 +159,21 @@ pub fn run_node(config: Arc<NodeConfig>) -> NodeHandle {
             System::current().stop();
         });
     });
-    let result = block_on(async { start_receiver.await });
-    if result.is_err() {
-        std::process::exit(1);
-    }
-    NodeHandle::new(thread_handle, stop_sender)
+    let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
+    // let start_handle = match result {
+    //     Ok(start_handle) => start_handle,
+    //     Err(e) => {
+    //         error!("{}", e);
+    //         match e.downcast::<GenesisError>() {
+    //             Ok(_e) => {
+    //                 // Genesis error use special exit code for automatic deploy.
+    //                 std::process::exit(EXIT_CODE_NEED_HELP);
+    //             }
+    //             Err(_e) => {
+    //                 std::process::exit(1);
+    //             }
+    //         }
+    //     }
+    // };
+    Ok(NodeHandle::new(thread_handle, start_handle, stop_sender))
 }

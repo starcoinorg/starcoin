@@ -1,7 +1,7 @@
 Feature: cmd integration test
   Background:
     Given a test node config
-    And node dev handle
+    And node handle
     And dev rpc client
 
 # chain

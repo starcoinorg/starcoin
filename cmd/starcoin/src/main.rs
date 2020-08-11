@@ -5,10 +5,15 @@ use scmd::CmdContext;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::Connect;
+use starcoin_genesis::GenesisError;
 use starcoin_logger::prelude::*;
 use starcoin_node::crash_handler;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
+
+/// This exit code means is that the node failed to start and required human intervention.
+/// Node start script can do auto task when meet this exist code.
+static EXIT_CODE_NEED_HELP: i32 = 120;
 
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
@@ -79,14 +84,23 @@ fn run() -> Result<()> {
             }
         },
     );
-    add_command(context).exec();
-    Ok(())
+    add_command(context).exec()
 }
 
 fn main() {
     crash_handler::setup_panic_handler();
     match run() {
         Ok(()) => {}
-        Err(e) => panic!(format!("Unexpect error: {:?}", e)),
+        Err(e) => {
+            error!("Node exits abnormally: {:?}", e);
+            match e.downcast::<GenesisError>() {
+                Ok(_e) => {
+                    std::process::exit(EXIT_CODE_NEED_HELP);
+                }
+                Err(_e) => {
+                    std::process::exit(1);
+                }
+            }
+        }
     }
 }

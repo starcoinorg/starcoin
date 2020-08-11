@@ -12,7 +12,7 @@ fn test_run_node() {
     let mut node_config = NodeConfig::random_for_test();
     node_config.network.disable_seed = true;
     let config = Arc::new(node_config);
-    let handle = run_node(config);
+    let handle = run_node(config).unwrap();
     thread::sleep(Duration::from_secs(5));
     handle.stop().unwrap()
 }

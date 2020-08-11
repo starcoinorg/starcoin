@@ -21,8 +21,6 @@ use state_api::StateWithProof;
 use state_service::ChainStateActor;
 use std::sync::Arc;
 use std::time::Duration;
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
 use storage::Storage;
 use txpool::{TxPool, TxPoolService};
 use types::{
@@ -103,14 +101,13 @@ fn gen_chain_env(
         .parse()
         .unwrap();
     let node_config = Arc::new(config);
-    let genesis = Genesis::load(node_config.net()).unwrap();
-    let genesis_hash = genesis.block().header().id();
+
+    let (storage, startup_info, genesis_hash) =
+        Genesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
+
     // network
     let (network, rpc_rx, net_addr) = gen_network(node_config.clone(), bus.clone(), genesis_hash);
 
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
-    let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
     let txpool = {
         let best_block_id = *startup_info.get_master();
         TxPool::start(

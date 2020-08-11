@@ -14,8 +14,6 @@ use starcoin_miner::MinerClientActor;
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_state_service::ChainStateActor;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::storage::StorageInstance;
 use storage::Storage;
 use sync::SyncActor;
 use tokio::time::{delay_for, Duration};
@@ -38,16 +36,12 @@ fn test_miner_with_ondemand_pacemaker() {
         let conf = NodeConfig::random_for_test();
         let config = Arc::new(conf);
         let bus = BusActor::launch();
-        let storage = Arc::new(
-            Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap(),
-        );
 
         let key_pair = config.network.network_keypair();
         let _address = account_address::from_public_key(&key_pair.public_key);
 
-        let genesis = Genesis::load(config.net()).unwrap();
-        let genesis_hash = genesis.block().header().id();
-        let startup_info = genesis.execute_genesis_block(storage.clone()).unwrap();
+        let (storage, startup_info, genesis_hash) =
+            Genesis::init_storage(config.as_ref()).expect("init storage by genesis fail.");
 
         let txpool = {
             let best_block_id = *startup_info.get_master();

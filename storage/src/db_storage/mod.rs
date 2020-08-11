@@ -5,8 +5,7 @@ use crate::batch::WriteBatch;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
-use anyhow::{ensure, format_err, Error, Result};
-use logger::prelude::*;
+use anyhow::{bail, ensure, format_err, Error, Result};
 use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
 use std::collections::HashSet;
 use std::path::Path;
@@ -41,11 +40,11 @@ impl DBStorage {
             let cf_vec = Self::list_cf(path)?;
             for cf in cf_vec {
                 if cf != DEFAULT_PREFIX_NAME && cfs_set.get(&cf.as_str()).is_none() {
-                    error!(
+                    bail!(
                         "db path cf: {:?} is not equal,please clear dir: {:?}",
-                        path, cf
+                        path,
+                        cf
                     );
-                    std::process::exit(100);
                 }
             }
         }
