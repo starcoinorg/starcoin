@@ -34,7 +34,7 @@ impl OndemandPacemaker {
     }
 
     pub fn send_event(&mut self) {
-        if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
+        if let Err(e) = self.sender.try_send(GenerateBlockEvent::new(false)) {
             trace!("err : {:?}", e);
         }
     }

@@ -10,8 +10,8 @@ use futures::stream::StreamExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::{ConsensusStrategy, MinerClientConfig};
+use starcoin_types::U256;
 use std::thread;
-use types::U256;
 
 pub struct Miner {
     job_rx: mpsc::UnboundedReceiver<(Vec<u8>, U256)>,

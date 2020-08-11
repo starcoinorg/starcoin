@@ -10,8 +10,8 @@ actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 futures = { version = "0.3" }
 starcoin-config = { path = "../../config" }
-types = { path = "../../types", package = "starcoin-types" }
-traits = {path = "../../core/traits", package="starcoin-traits" }
+starcoin-types = { path = "../../types" }
+traits = { path = "../../core/traits", package = "starcoin-traits" }
 consensus = {path = "../../consensus", package="starcoin-consensus" }
 bus = {path = "../../bus", package="starcoin-bus" }
 tokio = { version = "0.2", features = ["full"] }
@@ -39,4 +39,5 @@ name = "starcoin_miner"
 path = "src/main.rs"
 
 [dev-dependencies]
-starcoin-miner = { path = "../../miner"}
+starcoin-miner = { path = "../../miner" }
+stest = { path = "../../commons/stest" }

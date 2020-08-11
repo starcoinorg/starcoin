@@ -213,8 +213,11 @@ impl StratumImpl {
     }
 
     fn push_work_all(&self, payload: String, tcp_dispatcher: &Dispatcher) -> Result<(), Error> {
+        let workers = self.workers.read();
+        if workers.is_empty() {
+            return Err(Error::NoWorkers);
+        }
         let hup_peers = {
-            let workers = self.workers.read();
             let next_request_id = {
                 let mut counter = self.notify_counter.write();
                 if *counter == ::std::u32::MAX {

@@ -9,9 +9,9 @@ use futures::SinkExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::{ConsensusStrategy, MinerClientConfig};
+use starcoin_types::U256;
 use std::thread;
 use std::time::{Duration, Instant};
-use types::U256;
 
 const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
