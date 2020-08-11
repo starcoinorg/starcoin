@@ -47,7 +47,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let block_chain = BlockChain::new(
-                node_config.clone(),
+                node_config.net(),
                 startup_info.master,
                 storage.clone(),
                 None,
@@ -60,6 +60,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
                     None,
                     Vec::new(),
                     vec![],
+                    None,
                 )
                 .unwrap();
             let block = consensus_strategy
@@ -101,8 +102,7 @@ async fn test_block_chain_forks() {
         for i in 0..(times + 1) {
             //Delay::new(Duration::from_millis(1000)).await;
 
-            let chain =
-                BlockChain::new(config.clone(), parent_hash, storage.clone(), None).unwrap();
+            let chain = BlockChain::new(config.net(), parent_hash, storage.clone(), None).unwrap();
             let (block_template, _) = chain
                 .create_block_template(
                     *miner_account.address(),
@@ -110,6 +110,7 @@ async fn test_block_chain_forks() {
                     Some(parent_hash),
                     Vec::new(),
                     Vec::new(),
+                    None,
                 )
                 .unwrap();
             let block = config
@@ -157,6 +158,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(header.id()),
         vec![],
         vec![],
+        None,
     )?;
 
     let block_b1 = config
@@ -190,6 +192,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(block_b1.id()),
         vec![signed_txn_t2.clone()],
         vec![],
+        None,
     )?;
     let block_b2 = config
         .net()
@@ -203,6 +206,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         Some(block_b1.id()),
         vec![signed_txn_t2],
         vec![],
+        None,
     )?;
     let block_b3 = config
         .net()
@@ -235,6 +239,7 @@ async fn test_chain_apply() -> Result<()> {
         Some(header.id()),
         vec![],
         vec![],
+        None,
     )?;
 
     let new_block = config

@@ -229,7 +229,7 @@ async fn create_node(
             let startup_info = chain.clone().master_startup_info().await?;
 
             let block_chain = BlockChain::new(
-                node_config.clone(),
+                node_config.net(),
                 startup_info.master,
                 storage.clone(),
                 None,

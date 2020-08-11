@@ -16,7 +16,7 @@ pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
 pub struct MinerConfig {
     pub stratum_server: SocketAddr,
     pub enable_mint_empty_block: bool,
-    pub block_gas_limit: u64,
+    pub block_gas_limit: Option<u64>,
     pub enable_miner_client: bool,
     pub client_config: MinerClientConfig,
 }
@@ -49,7 +49,7 @@ impl ConfigModule for MinerConfig {
         Ok(Self {
             stratum_server,
             enable_mint_empty_block: !disable_mint_empty_block,
-            block_gas_limit: base.net.block_gas_limit(),
+            block_gas_limit: None,
             enable_miner_client: !opt.disable_miner_client,
             client_config: MinerClientConfig {
                 stratum_server,

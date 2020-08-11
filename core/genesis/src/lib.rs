@@ -35,6 +35,7 @@ use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 mod errors;
 
 pub use errors::GenesisError;
+use std::convert::TryFrom;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -250,7 +251,15 @@ impl Genesis {
 
     pub fn execute_genesis_block(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
         let Genesis { block } = self;
-        let mut genesis_chain = BlockChain::init_empty_chain(storage.clone())?;
+        let genesis_txn = block
+            .body
+            .get_txn(0)
+            .expect("genesis block must contains genesis txn.");
+        //TODO Keep ChainNetwork to Genesis.
+        let chain_id = genesis_txn.chain_id();
+        let net =
+            ChainNetwork::try_from(chain_id.id()).expect("Can not find chain network by chain id.");
+        let mut genesis_chain = BlockChain::init_empty_chain(net, storage.clone())?;
         if let ConnectBlockResult::SUCCESS = genesis_chain.apply(block)? {
             let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
             storage.save_startup_info(startup_info.clone())?;

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use config::NodeConfig;
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -27,9 +26,11 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::chain_config::ChainNetwork;
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, VMConfig,
 };
+use std::cmp::min;
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, sync::Arc};
@@ -37,7 +38,7 @@ use storage::Store;
 use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
 
 pub struct BlockChain {
-    config: Arc<NodeConfig>,
+    net: ChainNetwork,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
@@ -48,7 +49,7 @@ pub struct BlockChain {
 
 impl BlockChain {
     pub fn new(
-        config: Arc<NodeConfig>,
+        net: ChainNetwork,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
         remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
@@ -64,7 +65,7 @@ impl BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain = Self {
-            config,
+            net,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info,
                 AccumulatorStoreType::Transaction,
@@ -83,8 +84,7 @@ impl BlockChain {
         Ok(chain)
     }
 
-    pub fn init_empty_chain(storage: Arc<dyn Store>) -> Result<Self> {
-        let config = Arc::new(NodeConfig::random_for_test());
+    pub fn init_empty_chain(net: ChainNetwork, storage: Arc<dyn Store>) -> Result<Self> {
         let txn_accumulator = MerkleAccumulator::new_empty(
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
@@ -94,7 +94,7 @@ impl BlockChain {
             storage.clone().into_super_arc(),
         )?;
         let chain = Self {
-            config,
+            net,
             txn_accumulator,
             block_accumulator,
             head: None,
@@ -107,7 +107,7 @@ impl BlockChain {
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
         Self::new(
-            self.config.clone(),
+            self.net,
             head_block_hash,
             self.storage.clone(),
             self.remote_chain_state.clone(),
@@ -133,26 +133,39 @@ impl BlockChain {
         }
     }
 
-    pub fn create_block_template_inner(
+    fn create_block_template_inner(
         &self,
         author: AccountAddress,
         auth_key_prefix: Option<Vec<u8>>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        let on_chain_block_gas_limit = self.get_on_chain_block_gas_limit()?;
+        let final_block_gas_limit = block_gas_limit
+            .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
+            .unwrap_or(on_chain_block_gas_limit);
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header,
-            self.config.miner.block_gas_limit,
+            final_block_gas_limit,
             author,
             auth_key_prefix,
-            self.config.net().consensus().now(),
+            self.net.consensus().now(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
+    }
+
+    pub fn get_on_chain_block_gas_limit(&self) -> Result<u64> {
+        let account_state_reader = AccountStateReader::new(&self.chain_state);
+        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
+        Ok(vm_config
+            .map(|vm_config| vm_config.block_gas_limit)
+            .unwrap_or(self.net.get_config().vm_config.block_gas_limit))
     }
 
     pub fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
@@ -220,32 +233,6 @@ impl ChainReader for BlockChain {
     fn get_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
         let block_id = self.find_block_by_number(number)?;
         self.storage.get_block_by_hash(block_id)
-    }
-
-    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
-        let mut number = self.current_header().number();
-        let latest_number = number;
-        loop {
-            if number == 0 || (number + times) <= latest_number {
-                break;
-            }
-
-            let block = self
-                .get_block_by_number(number)?
-                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
-
-            if block.uncles().is_some() {
-                for uncle in block.uncles().expect("uncles is none.") {
-                    if uncle.id() == uncle_id {
-                        return Ok(Some(block));
-                    }
-                }
-            }
-
-            number -= 1;
-        }
-
-        Ok(None)
     }
 
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
@@ -335,6 +322,32 @@ impl ChainReader for BlockChain {
         Ok(None)
     }
 
+    fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>> {
+        let mut number = self.current_header().number();
+        let latest_number = number;
+        loop {
+            if number == 0 || (number + times) <= latest_number {
+                break;
+            }
+
+            let block = self
+                .get_block_by_number(number)?
+                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+
+            if block.uncles().is_some() {
+                for uncle in block.uncles().expect("uncles is none.") {
+                    if uncle.id() == uncle_id {
+                        return Ok(Some(block));
+                    }
+                }
+            }
+
+            number -= 1;
+        }
+
+        Ok(None)
+    }
+
     fn get_transaction_info_by_version(&self, version: u64) -> Result<Option<TransactionInfo>> {
         match self.txn_accumulator.get_leaf(version)? {
             None => Ok(None),
@@ -349,6 +362,7 @@ impl ChainReader for BlockChain {
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let block_id = match parent_hash {
             Some(hash) => hash,
@@ -365,12 +379,14 @@ impl ChainReader for BlockChain {
             previous_header,
             user_txns,
             uncles,
+            block_gas_limit,
         )
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
         &self.chain_state
     }
+
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
         let id = match block_id {
             Some(hash) => hash,
@@ -378,7 +394,6 @@ impl ChainReader for BlockChain {
         };
         self.storage.get_block_info(id)
     }
-
     fn get_total_difficulty(&self) -> Result<U256> {
         let block_info = self.storage.get_block_info(self.head_block().id())?;
         Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
@@ -469,7 +484,7 @@ impl BlockChain {
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(e) = self.config.net().consensus().verify(self, epoch, header) {
+            if let Err(e) = self.net.consensus().verify(self, epoch, header) {
                 error!("verify header:{:?} failed: {:?}", header.id(), e,);
                 return Ok(ConnectBlockResult::VerifyConsensusFailed);
             }

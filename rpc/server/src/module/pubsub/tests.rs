@@ -56,6 +56,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         None,
         vec![txn.clone()],
         vec![],
+        None,
     )?;
     debug!(
         "block_template: gas_used: {}, gas_limit: {}",

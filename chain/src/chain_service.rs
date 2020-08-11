@@ -59,7 +59,7 @@ where
         remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<Self> {
         let master = BlockChain::new(
-            config.clone(),
+            config.net(),
             startup_info.master,
             storage.clone(),
             remote_chain_state.clone(),
@@ -80,7 +80,7 @@ where
         let block_exist = self.block_exist(header.id());
         let block_chain = if self.block_exist(header.parent_hash()) {
             Some(BlockChain::new(
-                self.config.clone(),
+                self.config.net(),
                 header.parent_hash(),
                 self.storage.clone(),
                 self.remote_chain_state.clone(),
@@ -628,7 +628,7 @@ where
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             let remote_chain_state = self.remote_chain_state.clone();
             let block_chain = BlockChain::new(
-                self.config.clone(),
+                self.config.net(),
                 block.id(),
                 self.storage.clone(),
                 remote_chain_state,
@@ -648,6 +648,7 @@ where
                 Some(block_id),
                 user_txns,
                 uncles,
+                self.config.miner.block_gas_limit,
             )?;
             // remove invalid txn from txpool
             for invalid_txn in excluded_txns.discarded_txns {
