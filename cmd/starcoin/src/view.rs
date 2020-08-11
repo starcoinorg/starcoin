@@ -71,6 +71,7 @@ pub struct BlockHeaderView {
     pub accumulator_root: HashValue,
     pub state_root: HashValue,
     pub gas_used: u64,
+    pub time: u64,
 }
 
 impl From<Block> for BlockHeaderView {
@@ -89,6 +90,7 @@ impl From<BlockHeader> for BlockHeaderView {
             accumulator_root: header.accumulator_root,
             state_root: header.state_root,
             gas_used: header.gas_used,
+            time: header.timestamp,
         }
     }
 }

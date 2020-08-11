@@ -306,14 +306,12 @@ impl Genesis {
     pub fn init_storage(config: &NodeConfig) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
         debug!("init storage by genesis.");
         let storage = match config.net() {
-            ChainNetwork::Test => {
-                Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-                    Arc::new(CacheStorage::new()),
-                    Arc::new(DBStorage::new(config.storage.dir())),
-                ))?)
-            }
-            _ => Arc::new(Storage::new(StorageInstance::new_cache_instance(
+            ChainNetwork::Test => Arc::new(Storage::new(StorageInstance::new_cache_instance(
                 CacheStorage::new(),
+            ))?),
+            _ => Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+                Arc::new(CacheStorage::new()),
+                Arc::new(DBStorage::new(config.storage.dir())),
             ))?),
         };
         debug!("load startup_info.");

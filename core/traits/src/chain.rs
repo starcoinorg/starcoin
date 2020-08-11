@@ -49,6 +49,7 @@ pub trait ChainReader {
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> bool;
     fn epoch_info(&self) -> Result<EpochInfo>;
+    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo>;
 }
 
 pub trait ChainWriter {

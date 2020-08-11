@@ -93,8 +93,10 @@ impl MoveResource for EpochResource {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EpochInfo {
+    epoch_number: u64,
     start_number: u64,
     end_number: u64,
+    start_time: u64,
     block_time_target: u64,
     block_difficulty_window: u64,
     uncles: u64,
@@ -108,8 +110,10 @@ impl EpochInfo {
         consensus: &Consensus,
     ) -> Self {
         EpochInfo {
+            epoch_number: epoch.epoch_number,
             start_number: epoch.start_number,
             end_number: epoch.end_number,
+            start_time: epoch.epoch_start_time,
             block_time_target: epoch.block_time_target,
             block_difficulty_window: consensus.block_difficulty_window,
             uncles: epoch_data.uncles,
