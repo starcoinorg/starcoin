@@ -642,12 +642,7 @@ impl StarcoinVM {
         //TODO load config by config change event.
         self.load_configs(&data_cache)?;
 
-        // get_block_gas_limit should be called after load_configs()
-        let default_block_gas_limit = *self.get_block_gas_limit()?;
-        let mut gas_left = default_block_gas_limit;
-        if block_gas_limit.is_some() {
-            gas_left = std::cmp::min(default_block_gas_limit, block_gas_limit.unwrap_or_default());
-        }
+        let mut gas_left = block_gas_limit.unwrap_or(u64::MAX);
 
         let blocks = chunk_block_transactions(transactions);
         'outer: for block in blocks {

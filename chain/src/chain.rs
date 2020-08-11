@@ -407,23 +407,6 @@ impl ChainReader for BlockChain {
         }
         false
     }
-
-    fn epoch_info(&self) -> Result<EpochInfo> {
-        let account_reader = AccountStateReader::new(self.chain_state_reader());
-        let epoch = account_reader
-            .get_resource::<EpochResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
-
-        let epoch_data = account_reader
-            .get_resource::<EpochDataResource>(genesis_address())?
-            .ok_or_else(|| format_err!("Epoch is none."))?;
-
-        let consensus_conf = account_reader
-            .get_on_chain_config::<ConsensusConfig>()?
-            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
-
-        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
-    }
 }
 
 impl BlockChain {
