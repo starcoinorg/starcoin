@@ -9,6 +9,7 @@ module ErrorCode {
     public fun PROLOGUE_TRANSACTION_EXPIRED(): u64 {5}
     public fun PROLOGUE_BAD_CHAIN_ID(): u64 {6}
 
+    public fun EINSUFFICIENT_BALANCE(): u64 {10}
     public fun ENOT_GENESIS_ACCOUNT(): u64 {11}
     public fun ENOT_GENESIS(): u64 {12}
     public fun ECONFIG_VALUE_DOES_NOT_EXIST(): u64 {13}

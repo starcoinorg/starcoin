@@ -42,7 +42,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNKNOWN_STATUS),
+        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
         *output1.status()
     );
 
@@ -57,7 +57,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNKNOWN_STATUS),
+        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
         *output2.status()
     );
 
@@ -72,7 +72,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     ));
     let output3 = execute_and_apply(&chain_state, txn3);
     assert_eq!(
-        TransactionStatus::Discard(StatusCode::UNKNOWN_STATUS),
+        TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
         *output3.status()
     );
 
