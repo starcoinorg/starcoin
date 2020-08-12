@@ -9,9 +9,10 @@ use std::{
     path::{Path, PathBuf},
 };
 use stdlib::{
-    build_stdlib, build_stdlib_doc, build_transaction_script_doc, compile_script,
-    filter_move_files, save_binary, INIT_SCRIPTS, STAGED_EXTENSION, STAGED_OUTPUT_PATH,
-    STAGED_STDLIB_PATH, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
+    build_stdlib, build_stdlib_doc, build_transaction_script_abi, build_transaction_script_doc,
+    compile_script, filter_move_files, save_binary, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
+    INIT_SCRIPTS, STAGED_EXTENSION, STAGED_OUTPUT_PATH, STAGED_STDLIB_PATH, STD_LIB_DOC_DIR,
+    TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn compile_scripts(script_dir: &Path) {
@@ -62,6 +63,11 @@ fn main() {
     std::fs::remove_dir_all(&STD_LIB_DOC_DIR).unwrap_or(());
     std::fs::create_dir_all(&STD_LIB_DOC_DIR).unwrap();
     build_stdlib_doc();
+
+    // Generate script ABIs
+    std::fs::remove_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap_or(());
+    std::fs::create_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap();
+    build_transaction_script_abi();
 
     std::fs::remove_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap_or(());
     std::fs::create_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap();
