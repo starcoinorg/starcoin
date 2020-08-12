@@ -66,9 +66,9 @@ Feature: compat cmd test
     Then assert: "$.account.is_default true $.balances.STC 84000000000000"
     Then cmd: "state get_proof @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get_account @$.account.address@"
+    Then cmd: "state get -a @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get @$.account.address@"
+    Then cmd: "state get -a @$.account.address@"
 
     Examples:
       |  |
