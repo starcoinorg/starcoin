@@ -9,6 +9,11 @@ use crate::{
     resolver::Resolver,
 };
 use anyhow::{anyhow, Result};
+use serde::{
+    ser::{SerializeMap, SerializeSeq},
+    Serialize,
+};
+use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -23,8 +28,6 @@ use std::{
     convert::TryInto,
     fmt::{Display, Formatter},
 };
-
-use starcoin_vm_types::state_view::StateView;
 
 mod fat_type;
 mod module_cache;
@@ -54,6 +57,44 @@ pub enum AnnotatedMoveValue {
     Vector(Vec<AnnotatedMoveValue>),
     Bytes(Vec<u8>),
     Struct(AnnotatedMoveStruct),
+}
+
+impl Serialize for AnnotatedMoveValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Self::U8(v) => serializer.serialize_u8(*v),
+            Self::U64(v) => serializer.serialize_u64(*v),
+            Self::U128(v) => serializer.serialize_u128(*v),
+            Self::Bool(v) => serializer.serialize_bool(*v),
+            AnnotatedMoveValue::Address(addr) => <AccountAddress>::serialize(addr, serializer),
+            AnnotatedMoveValue::Vector(values) => {
+                let mut seq = serializer.serialize_seq(Some(values.len()))?;
+                for v in values {
+                    seq.serialize_element(v)?;
+                }
+                seq.end()
+            }
+            AnnotatedMoveValue::Bytes(data) => serializer.serialize_str(hex::encode(data).as_str()),
+            AnnotatedMoveValue::Struct(s) => AnnotatedMoveStruct::serialize(s, serializer),
+        }
+    }
+}
+
+// TODO: better serialize as a real struct, instead of map.
+impl Serialize for AnnotatedMoveStruct {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.value.len()))?;
+        for (f, v) in &self.value {
+            map.serialize_entry(f.as_str(), v)?;
+        }
+        map.end()
+    }
 }
 
 pub struct MoveValueAnnotator<'a> {
