@@ -1,7 +1,7 @@
 use crate::random_txn;
 use actix::clock::{delay_for, Duration};
 use actix::{Addr, Arbiter, System};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use criterion::{BatchSize, Bencher};
 use crypto::HashValue;
 use libp2p::multiaddr::Multiaddr;
@@ -80,12 +80,20 @@ impl SyncBencher {
                 let begin_number = header.number();
                 let end_number = best_peer.get_block_number();
 
+                let total_difficulty = downloader
+                    .get_chain_reader()
+                    .get_block_info_by_hash(&header.id())
+                    .await?
+                    .ok_or_else(|| format_err!("Master head block info is none."))?
+                    .total_difficulty;
+
                 if let Some(ancestor_header) = downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
                         &rpc_client,
                         network.clone(),
                         begin_number,
+                        total_difficulty,
                         true,
                     )
                     .await?

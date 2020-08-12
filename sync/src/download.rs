@@ -30,6 +30,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     system_events::{SyncBegin, SyncDone},
+    U256,
 };
 
 #[derive(Debug, Message)]
@@ -273,19 +274,27 @@ impl DownloadActor {
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
-            let begin_number = downloader
+            let master_header = downloader
                 .chain_reader
                 .clone()
                 .master_head_header()
                 .await?
-                .ok_or_else(|| format_err!("Master head is none."))?
-                .number();
+                .ok_or_else(|| format_err!("Master head is none."))?;
+            let begin_number = master_header.number();
+            let total_difficulty = downloader
+                .chain_reader
+                .clone()
+                .get_block_info_by_hash(&master_header.id())
+                .await?
+                .ok_or_else(|| format_err!("Master head block info is none."))?
+                .total_difficulty;
             if let Some(ancestor_header) = downloader
                 .find_ancestor_header(
                     best_peer.get_peer_id(),
                     &rpc_client,
                     network.clone(),
                     begin_number,
+                    total_difficulty,
                     false,
                 )
                 .await?
@@ -412,12 +421,20 @@ impl DownloadActor {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
                 let end_number = best_peer.get_block_number();
+                let total_difficulty = downloader
+                    .chain_reader
+                    .clone()
+                    .get_block_info_by_hash(&header.id())
+                    .await?
+                    .ok_or_else(|| format_err!("Master head block info is none."))?
+                    .total_difficulty;
                 match downloader
                     .find_ancestor_header(
                         best_peer.get_peer_id(),
                         &rpc_client,
                         network.clone(),
                         header.number(),
+                        total_difficulty,
                         true,
                     )
                     .await
@@ -489,6 +506,7 @@ impl Downloader {
         rpc_client: &NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
         block_number: BlockNumber,
+        total_difficulty: U256,
         is_full_mode: bool,
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
@@ -497,9 +515,10 @@ impl Downloader {
             .await?
             .ok_or_else(|| format_err!("get peer {:?} not exist.", peer_id))?;
 
-        if peer_info.latest_header.number() <= block_number {
+        if peer_info.total_difficulty <= total_difficulty {
             return Ok(ancestor_header);
         }
+        info!("Sync begin, find ancestor.");
         let mut need_executed = is_full_mode;
         let mut latest_block_number = block_number;
         let mut continue_none = false;
