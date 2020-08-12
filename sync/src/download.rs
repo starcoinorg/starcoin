@@ -518,6 +518,7 @@ impl Downloader {
         if peer_info.total_difficulty <= total_difficulty {
             return Ok(ancestor_header);
         }
+        info!("Sync begin, find ancestor.");
         let mut need_executed = is_full_mode;
         let mut latest_block_number = block_number;
         let mut continue_none = false;
