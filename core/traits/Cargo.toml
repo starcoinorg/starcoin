@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-traits"
-version = "0.4.1"
+version = "0.4.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
