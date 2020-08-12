@@ -111,6 +111,9 @@ pub struct ProverOptions {
     pub assume_wellformed_on_access: bool,
     /// Whether to automatically debug trace values of specification expression leafs.
     pub debug_trace: bool,
+    /// Report warnings. This is not on by default. We may turn it on if the warnings
+    /// are better filtered, e.g. do not contain unused schemas intended for other modules.
+    pub report_warnings: bool,
 }
 
 impl Default for ProverOptions {
@@ -125,6 +128,7 @@ impl Default for ProverOptions {
             resource_wellformed_axiom: false,
             assume_wellformed_on_access: false,
             debug_trace: false,
+            report_warnings: false,
         }
     }
 }
@@ -274,6 +278,12 @@ impl Options {
                 Arg::with_name("generate-only")
                     .long("generate-only")
                     .help("only generate boogie file but do not call boogie"),
+            )
+            .arg(
+                Arg::with_name("warn")
+                    .long("warn")
+                    .short("w")
+                    .help("produces warnings")
             )
             .arg(
                 Arg::with_name("trace")
@@ -433,6 +443,9 @@ impl Options {
         if matches.is_present("abigen") {
             options.run_abigen = true;
         }
+        if matches.is_present("warn") {
+            options.prover.report_warnings = true;
+        }
         if matches.is_present("trace") {
             options.prover.debug_trace = true;
         }
@@ -506,18 +519,8 @@ impl Options {
                 self.backend.proc_cores
             }
         )]);
-        if self.backend.vc_timeout != 0 {
-            add(&[&format!(
-                "-proverOpt:O:timeout={}",
-                self.backend.vc_timeout * 1000
-            )]);
-        }
         add(&["-proverOpt:O:smt.QI.EAGER_THRESHOLD=100"]);
         add(&["-proverOpt:O:smt.QI.LAZY_THRESHOLD=100"]);
-        add(&[&format!(
-            "-proverOpt:O:smt.random_seed={}",
-            self.backend.random_seed
-        )]);
         // TODO: see what we can make out of these flags.
         //add(&["-proverOpt:O:smt.QI.PROFILE=true"]);
         //add(&["-proverOpt:O:trace=true"]);
@@ -536,5 +539,15 @@ impl Options {
     /// Returns name of file where to log boogie output.
     pub fn get_boogie_log_file(&self, boogie_file: &str) -> String {
         format!("{}.log", boogie_file)
+    }
+
+    /// Adjust a timeout value, given in seconds, for the runtime environment.
+    pub fn adjust_timeout(&self, time: usize) -> usize {
+        // If running on a Linux flavor as in Ci, add 100% to the timeout for added
+        // robustness against flakiness.
+        match std::env::consts::OS {
+            "linux" | "freebsd" | "openbsd" => time + time,
+            _ => time,
+        }
     }
 }

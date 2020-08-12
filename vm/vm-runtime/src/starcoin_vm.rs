@@ -3,6 +3,7 @@
 
 use crate::access_path_cache::AccessPathCache;
 use crate::data_cache::{RemoteStorage, StateViewCache};
+use crate::errors::{convert_normal_success_epilogue_error, convert_prologue_runtime_error};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::{format_err, Error, Result};
 use move_vm_runtime::data_cache::TransactionEffects;
@@ -340,7 +341,7 @@ impl StarcoinVM {
                 let s = init_script.code().to_vec();
                 debug!("execute init script by account {:?}", sender);
                 session
-                    .execute_script(s, ty_args, args, sender, cost_strategy)
+                    .execute_script(s, ty_args, args, vec![sender], cost_strategy)
                     .map_err(|e| e.into_vm_status())?
             }
             charge_global_write_gas_usage(cost_strategy, &session)?;
@@ -386,7 +387,7 @@ impl StarcoinVM {
                     script.code().to_vec(),
                     script.ty_args().to_vec(),
                     convert_txn_args(script.args()),
-                    txn_data.sender(),
+                    vec![txn_data.sender()],
                     cost_strategy,
                 )
                 .map_err(|e| e.into_vm_status())?;
@@ -442,28 +443,27 @@ impl StarcoinVM {
         };
 
         // Run prologue by genesis account
-        session
-            .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
-                &PROLOGUE_NAME,
-                vec![gas_token_ty],
-                vec![
-                    Value::transaction_argument_signer_reference(genesis_address),
-                    Value::address(txn_data.sender),
-                    Value::u64(txn_sequence_number),
-                    Value::vector_u8(txn_public_key),
-                    Value::u64(txn_gas_price),
-                    Value::u64(txn_max_gas_amount),
-                    Value::u64(txn_expiration_time),
-                    Value::u8(chain_id),
-                    Value::u8(payload_type.into()),
-                    Value::vector_u8(script_or_package_hash.to_vec()),
-                    Value::address(package_address),
-                ],
-                genesis_address,
-                cost_strategy,
-            )
-            .map_err(|err| convert_prologue_runtime_error(err.into_vm_status()))
+        session.execute_function(
+            &account_config::TRANSACTION_MANAGER_MODULE,
+            &PROLOGUE_NAME,
+            vec![gas_token_ty],
+            vec![
+                Value::transaction_argument_signer_reference(genesis_address),
+                Value::address(txn_data.sender),
+                Value::u64(txn_sequence_number),
+                Value::vector_u8(txn_public_key),
+                Value::u64(txn_gas_price),
+                Value::u64(txn_max_gas_amount),
+                Value::u64(txn_expiration_time),
+                Value::u8(chain_id),
+                Value::u8(payload_type.into()),
+                Value::vector_u8(script_or_package_hash.to_vec()),
+                Value::address(package_address),
+            ],
+            genesis_address,
+            cost_strategy,
+            convert_prologue_runtime_error,
+        )
     }
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
@@ -493,29 +493,28 @@ impl StarcoinVM {
             }
         };
         // Run epilogue by genesis account
-        session
-            .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
-                &EPILOGUE_NAME,
-                vec![gas_token_ty],
-                vec![
-                    Value::transaction_argument_signer_reference(genesis_address),
-                    Value::address(txn_data.sender),
-                    Value::u64(txn_sequence_number),
-                    Value::u64(txn_gas_price),
-                    Value::u64(txn_max_gas_amount),
-                    Value::u64(gas_remaining),
-                    Value::u64(state_cost_amount),
-                    Value::bool(cost_is_negative),
-                    Value::u8(payload_type.into()),
-                    Value::vector_u8(script_or_package_hash.to_vec()),
-                    Value::address(package_address),
-                    Value::bool(success),
-                ],
-                genesis_address,
-                cost_strategy,
-            )
-            .map_err(|err| err.into_vm_status())
+        session.execute_function(
+            &account_config::TRANSACTION_MANAGER_MODULE,
+            &EPILOGUE_NAME,
+            vec![gas_token_ty],
+            vec![
+                Value::transaction_argument_signer_reference(genesis_address),
+                Value::address(txn_data.sender),
+                Value::u64(txn_sequence_number),
+                Value::u64(txn_gas_price),
+                Value::u64(txn_max_gas_amount),
+                Value::u64(gas_remaining),
+                Value::u64(state_cost_amount),
+                Value::bool(cost_is_negative),
+                Value::u8(payload_type.into()),
+                Value::vector_u8(script_or_package_hash.to_vec()),
+                Value::address(package_address),
+                Value::bool(success),
+            ],
+            genesis_address,
+            cost_strategy,
+            convert_normal_success_epilogue_error,
+        )
     }
 
     fn process_block_metadata(
@@ -544,19 +543,15 @@ impl StarcoinVM {
             Value::u64(number),
         ];
         let mut session = self.move_vm.new_session(remote_cache);
-        session
-            .execute_function(
-                &account_config::TRANSACTION_MANAGER_MODULE,
-                &account_config::BLOCK_PROLOGUE_NAME,
-                vec![],
-                args,
-                txn_data.sender(),
-                &mut cost_strategy,
-            )
-            .map_err(|err| {
-                warn!("process_block_metadata error: {:?}", err);
-                convert_prologue_runtime_error(err.into_vm_status())
-            })?;
+        session.execute_function(
+            &account_config::TRANSACTION_MANAGER_MODULE,
+            &account_config::BLOCK_PROLOGUE_NAME,
+            vec![],
+            args,
+            txn_data.sender(),
+            &mut cost_strategy,
+            convert_prologue_runtime_error,
+        )?;
         Ok(get_transaction_output(
             &mut (),
             session,
@@ -934,55 +929,4 @@ pub fn txn_effects_to_writeset_and_events(
 pub enum VerifiedTransactionPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
     Package(Package),
-}
-
-//should be consistent with ErrorCode.move
-const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
-const PROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
-const PROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
-const PROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
-const PROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
-const PROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
-const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
-
-const ENOT_GENESIS_ACCOUNT: u64 = 11;
-// Todo: haven't found proper StatusCode for below Error Code
-const ENOT_GENESIS: u64 = 12;
-const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
-const EINVALID_TIMESTAMP: u64 = 14;
-const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
-const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
-const EBLOCK_NUMBER_MISMATCH: u64 = 17;
-
-fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
-    match status {
-        VMStatus::MoveAbort(_location, code) => {
-            let new_major_status = match code {
-                PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
-                PROLOGUE_INVALID_ACCOUNT_AUTH_KEY => StatusCode::INVALID_AUTH_KEY,
-                PROLOGUE_SEQUENCE_NUMBER_TOO_OLD => StatusCode::SEQUENCE_NUMBER_TOO_OLD,
-                PROLOGUE_SEQUENCE_NUMBER_TOO_NEW => StatusCode::SEQUENCE_NUMBER_TOO_NEW,
-                PROLOGUE_CANT_PAY_GAS_DEPOSIT => {
-                    StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE
-                }
-                PROLOGUE_TRANSACTION_EXPIRED => StatusCode::TRANSACTION_EXPIRED,
-                PROLOGUE_BAD_CHAIN_ID => StatusCode::BAD_CHAIN_ID,
-                ENOT_GENESIS_ACCOUNT => StatusCode::NO_ACCOUNT_ROLE,
-                ENOT_GENESIS => StatusCode::UNKNOWN_STATUS,
-                ECONFIG_VALUE_DOES_NOT_EXIST => StatusCode::UNKNOWN_STATUS,
-                EINVALID_TIMESTAMP => StatusCode::UNKNOWN_STATUS,
-                ECOIN_DEPOSIT_IS_ZERO => StatusCode::UNKNOWN_STATUS,
-                EDESTORY_TOKEN_NON_ZERO => StatusCode::UNKNOWN_STATUS,
-                EBLOCK_NUMBER_MISMATCH => StatusCode::UNKNOWN_STATUS,
-                // ToDo add corresponding error code into StatusCode
-                _ => StatusCode::UNKNOWN_STATUS,
-            };
-            VMStatus::Error(new_major_status)
-        }
-        status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Executed => status,
-        VMStatus::Error(code) => {
-            warn!("[libra_vm] Unexpected prologue error: {:?}", code);
-            VMStatus::Error(StatusCode::UNKNOWN_INVARIANT_VIOLATION_ERROR) //ToDo: replace with UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-        }
-    }
 }

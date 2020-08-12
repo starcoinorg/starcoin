@@ -77,7 +77,7 @@ Feature: cmd integration test
     Then cmd: "account show"
     Then cmd: "state get_account @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get @$.account.address@"
+    Then cmd: "state get @$.account.address@ 0x1::Account::Account"
     Then node handle stop
 
     Examples:

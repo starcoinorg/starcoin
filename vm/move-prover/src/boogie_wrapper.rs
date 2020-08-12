@@ -371,10 +371,15 @@ impl<'env> BoogieWrapper<'env> {
                     diag.message =
                         "abort not covered by any of the `aborts_if` clauses".to_string();
                 }
+                let reason = if code == -1 {
+                    "with execution failure".to_string()
+                } else {
+                    format!("with code `0x{:X}`", code)
+                };
                 diag.secondary_labels = vec![Label::new(
                     abort_loc.file_id(),
                     abort_loc.span(),
-                    &format!("abort happened here with code `{}`", code),
+                    &format!("abort happened here {}", reason),
                 )];
             }
             diag = diag.with_notes(trace);
@@ -631,7 +636,7 @@ impl<'env> BoogieWrapper<'env> {
     /// Extracts inconclusive (timeout) errors.
     fn extract_inconclusive_errors(&self, out: &str) -> Vec<BoogieError> {
         let diag_re =
-            Regex::new(r"(?m)^.*\((?P<line>\d+),(?P<col>\d+)\).*Verification (inconclusive|out of resource).*$")
+            Regex::new(r"(?m)^.*\((?P<line>\d+),(?P<col>\d+)\).*Verification.*(inconclusive|out of resource|timed out).*$")
                 .unwrap();
         diag_re
             .captures_iter(&out)
@@ -643,10 +648,11 @@ impl<'env> BoogieWrapper<'env> {
                     kind: BoogieErrorKind::Inconclusive,
                     position: make_position(line, col),
                     context_position: None,
-                    message: if msg.contains("out of resource") {
+                    message: if msg.contains("out of resource") || msg.contains("timed out") {
+                        let timeout = self.options.adjust_timeout(self.options.backend.vc_timeout);
                         format!(
-                            "verification out of resources/timeout (timeout set to {}s)",
-                            self.options.backend.vc_timeout
+                            "verification out of resources/timeout (global timeout set to {}s)",
+                            timeout
                         )
                     } else {
                         "verification inconclusive".to_string()

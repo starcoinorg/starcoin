@@ -4,8 +4,7 @@ The Move Specification language (abbreviated as *Spec language*) is a language f
 contracts. It plays together with the [Move Prover](./prover-guide.md), a tool which can formally verify the
 correctness of such properties. In contrast to traditional testing, verification of properties in the Spec language
 is exhaustive and holds for all possible inputs and blockchain states of a Move contract. This document gives
-an overview of the design and usage of the Spec language. Knowledge of the Move language itself is expected
-from a reader.
+an overview of the design and usage of the Spec language. The reader is expected to have knowledge of the Move language.
 
 - [Type System](#type-system)
 - [Naming](#naming)
@@ -15,7 +14,7 @@ from a reader.
 - [Pragmas](#pragmas)
 - [Helper Functions](#helper-functions)
 - [AbortsIf Condition](#abortsif-condition)
-- [TerminatesIf Condition](#terminatesif-condition)
+- [SucceedsIf Condition](#succeedsif-condition)
 - [Requires Condition](#requires-condition)
 - [Requires Module Condition](#requires-module-condition)
 - [Ensures Condition](#ensures-condition)
@@ -27,6 +26,7 @@ from a reader.
 - [Schemas](#schemas)
 - [Schema Expressions](#schema-expressions)
 - [Schema Apply Operation](#schema-apply-operation)
+- [Available Pragmas](#available-pragmas)
 
 
 ## Type System
@@ -35,19 +35,18 @@ The type system of the Spec language is mostly identical to that of Move. Howeve
 
 - All integer types of Move (`u8`, `u64`, and `u128`) are treated as the same type. In specifications, this
   type is called `num`, which is an arbitrary precision signed integer type. When the Spec language refers to a name
-  which represents an `u8` or such, it will be automatically widened to `num`. This allows to write Spec expressions
+  which represents an `u8` or such, it will be automatically widened to `num`. This allows writing Spec expressions
   like `x + 1 <= max_u128()` or `x - y >= 0` without needing to worry about overflow or underflow.
-- The Move types `&T`, `&mut T`, and `T` are considered to be equivalent for the Spec language. There is no need
-  to worry about dereferencing when working with a reference from the Move program; it will be automatically
-  dereferenced as needed. This is enabled by that the Spec language cannot modify values from a Move program,
-  and reference equality is not something the Move language can reason about (and therefore no need for doing so
-  in the Spec language).
-- There are a few additional types compared to the Move type system. Those will be discussed as we look at expression
+- The Move types `&T`, `&mut T`, and `T` are considered equivalent for the Spec language.  Equality is interepreted as value equality.
+  There is no need to worry about dereferencing a reference from the Move program: these are automatically dereferenced as needed.
+  This simplification is possible because the Spec language cannot modify values from a Move program and the Move language cannot reason about
+  reference equality (which eliminates the for doing so in the Spec language).
+- There are a few additional types compared to the Move type system. These will be discussed when we look at the expression
   constructs which support them.
 
 ## Naming
 
-Name resolution works similar as with the Move language. `use` declarations can introduce aliases for imported names.
+Name resolution works similar to the Move language. `use` declarations can introduce aliases for imported names.
 Spec function and variable names must start with a lower case letter. Schema names are treated like types and must start
 with a capital letter (schemas are a new named construct discussed [later](#schemas)).
 
@@ -59,48 +58,49 @@ if aliased via a Move `use` clause.
 
 ## Expressions
 
-The available expressions in Spec language are a subset of the Move language, plus a set of additional constructs.
+The available expressions in Spec language are a subset of the Move language plus a set of additional constructs.
 
 - All Move operators are supported, except `&`, `&mut`, and `*` (dereference).
-- In addition to the existing operators, vector subscription `v[i]`, slicing `v[i..j]`, and range construction
-  `i..j` is supported (the type of integer ranges is a new builtin type called `range`). Moreover, boolean
+- In addition to the existing operators, vector subscript `v[i]`, slicing `v[i..j]`, and range construction
+  `i..j` are supported (the type of integer ranges is a new builtin type called `range`). Moreover, boolean
   implication `p ==> q` is supported as a more intuitive form than `!p || q`.
 - Function calls are supported (but the target is a Spec function not a Move function -- Move functions cannot be
   called from specs).
-- Limited sequences of the form `{ let x = foo(); x + x }` are supported.
+- Limited sequencing of the form `{ let x = foo(); x + x }` is supported.
 - Pack expressions are supported. Unpack expressions are currently *not* supported.
 - If-then-else is supported.
 - A [spec variable](#specification-variables-and-packunpack-invariants) can be generic, and therefore the
   notation `name<T>` (or `Module::name<T>`) is supported. In Move, type arguments can only be provided to calls.
-- A form of lambda, denoted as `|x| x + 1`, is supported. The lambda can only appear as a parameter of the `all`
-  or `any` function (see next section).
+- Universal and existential quantification are supported:
+  - General form is `forall <binding>, ..., <binding> [ where <exp> ] : <exp>`. Similar for `exists`.
+  - Bindings can either be of the form `name: <type>` or `name in <exp>`. For the second form, the expression
+    currently must either be a `range` or a vector.
+  - The optional constraint `where <exp>` allows to restrict the quantified range. `forall x: T where p: q`
+    is equivalent to `forall x: T : p ==> q` and `exists x: T where p: q` is equivalent to
+    `exists x: T : p && q`.
+
 
 ## Builtin Functions
 
 The Spec language supports a number of builtin functions. Most of them are not available in the Move language:
 
-- `exists<T>(address): bool` returns true of the resource exists at address.
+- `exists<T>(address): bool` returns true if the resource T exists at address.
 - `global<T>(address): T` returns the resource at address.
 - `sender(): address` returns the address of the sender.
-- `max_u8(): num`, `max_u64(): num`, `max_u128(): num` returns the maximum value of the according type.
+- `max_u8(): num`, `max_u64(): num`, `max_u128(): num` returns the maximum value of the corresponding type.
 - `len(vector<T>): num` returns the length of the vector.
 - `update(vector<T>, num, T>): vector<T>` returns a new vector with the element replaced at the given index.
 - `type<T>()` returns an opaque value of Spec language type `type` which represents
    the type T. Type values can be only compared for equality.
-- `domain<T>()` returns the set of all values of type T. This expression can only be used as a parameter for
-   the `all` or `any` function.
-- `all(vector<T>, |T|bool`, `all(range, |num|bool)`, `all(domain<T>, |T|bool)` is universal quantification over
-   the values in a vector, the numbers in a range, or the whole type T. The 2nd parameter must be a lambda expression.
-- `any(vector<T>, |T|bool`, `any(range, |num|bool)`, `any(domain<T>, |T|bool)` is existential quantification.
 - `old(T): T` delivers the value of the passed argument at point of entry into a Move function. This is only allowed
   in `ensures` post-conditions and certain forms of invariants, as discussed later.
-- `TRACE(T): T` semantically identity, this causes visualization of the argument's value in error messages the
-  prover creates.
+- `TRACE(T): T` is semantically the identity function and causes visualization of the argument's value in error messages created by the
+  prover.
 
 ## Spec Blocks
 
-Specification entities are contained in so-called *spec blocks*. Spec blocks can appear as module members and
-in code blocks. A spec block on module level declares the *target* of specification in a header:
+Specification entities are contained in *spec blocks* that can appear as module members and
+inside Move functions. A spec block on module level declares the *target* of the specification in a header:
 
 ```move
 module M {
@@ -139,7 +139,7 @@ module M {
 }
 ```
 
-The position of a spec block on module level is not relevant. A spec block for the same struct, function, or module can
+The position of a module-level spec block is irrelevant. A spec block for a struct, function, or module can
 be repeated multiple times, accumulating the content.
 
 Each spec block contains a number of members, separated by trailing `;`. Not all member types are allowed in all
@@ -147,8 +147,12 @@ contexts, as will be discussed when they are introduced.
 
 ## Pragmas
 
-Pragmas are special spec block members which allow to influence verification behavior by specifying a configuration
-option to the prover. The general form of a pragma is:
+Pragmas are special spec block members that influence verification behavior by specifying a configuration
+option to the prover. They should be used in favor of command-line configuration options when they influence the
+semantic interpretation of the spec language. This strategy ensures those options are transparent through the source. We aim to
+eliminate pragmas as much as possible, but for now they present a utility for experimentation.
+
+The general form of a pragma is:
 
 ```move
 spec <target> {
@@ -156,15 +160,17 @@ spec <target> {
 }
 ```
 
-The `literal` can be any value as supported by the Spec language (which are the same as the Move language).
+The `literal` can be any value supported by the Spec language (or the Move language).
 
-There are multiple pragmas which the prover understands. They will be introduced in the context
-where they apply. A general mechanism with pragmas is *inheritance*.
+There are multiple pragmas understood by the prover. They will be introduced in the context
+where they apply, and are [summarized here](#available-pragmas).
+
+A general mechanism with pragmas is *inheritance*.
 A pragma in a module spec block sets a value which applies to all other spec blocks in the module. A pragma
 in a function or struct spec block can override this value for the function or struct. Furthermore, the
 default value of some pragmas can be defined via the prover configuration.
 
-As an example, we look at the `verify` pragma. This pragma allows to turn on or off verification.
+As an example, we look at the `verify` pragma. This pragma is used to turn verification on or off.
 
 ```move
 spec module {
@@ -173,6 +179,20 @@ spec module {
 
 spec fun increment {
     pragma verify = true; // ... but do verify this function.
+    ...
+}
+```
+
+### Experimental
+
+We are working towards supporting smoke testing to check unsound or imprecise models. To turn this option on, set the smoke\_test pragma to true as shown below. By default, the experimental smoke\_test pragma is set to false.
+
+List of checks smoke\_test pragma runs:
+- Checks if `aborts_if true;` is provable for a function (at the Boogie model level, this is done by adding `ensures $abort_flag;` to the end of a function and ignoring the other post conditions); this usually indicates a bug in the specification or implementation.
+
+```move
+spec fun {
+    pragma smoke_test = true;
     ...
 }
 ```
@@ -249,22 +269,20 @@ In order to state that a function never aborts, use `aborts_if false`. One can u
 to change this behavior; this is equivalent to as if an `aborts_if false` has been added to each function which
 does not have an explicit `aborts_if` clause.
 
-> NOTE: the pragmas `aborts_if_is_partial` and `aborts_if_is_strict` are not yet implemented. Current behavior
-> is as they both would be set to their respective default (false).
+## SucceedsIf Condition
 
-## TerminatesIf Condition
+> NOTE: this condition is experimental and might be removed in the future unless we find good indication
+> that we need it.
 
-> NOTE: this conditions is currently not implemented and a proposal by @DavidLDill
-
-The `terminates_if` condition allows to positively express when a function is expected to terminate with no abortion.
+The `succeeds_if` condition expresses when a function is expected to terminate with no abort.
 In the presence of `pragma aborts_if_is_partial = true` is true, it might help
 to minimize the risk of this model as discussed in the [note](#risk-aborts-if-is-partial) above.
 
-If there are multiple `terminates_if` conditions, they are or-ed into a combined terminates condition. That is,
-each individual `terminates_if` is a condition under which the function should always succeed.
+If there are multiple `succeeds_if` conditions, they are or-ed into a combined terminates condition. That is,
+each individual `succeeds_if` is a condition under which the function should always succeed.
 
 Consider a combined aborts condition `A` (which is `false` if there is no `aborts_if`) and a combined terminates
-condition `T ` (which is false if there is no `terminates_if`). Then abortion of a function is governed by the
+condition `T ` (which is false if there is no `succeeds_if`). Then abort of a function is governed by the
 following predicate:
 
 ```
@@ -273,9 +291,9 @@ A <==> function_aborts && T ==> !functions_abort    // if aborts_if_is_partial i
 ```
 
 Notice that in the 2nd case, we should expect for a sound specification that `!A ==> T`, so
-termination conditions are in fact redundant if `aborts_if_is_partial = true`.
+termination conditions are in fact redundant if `aborts_if_is_partial = false`.
 
-> Note that mixing `aborts_if` and `terminates_if` conditions can cause unsound (contradicting) specifications,
+> Note that mixing `aborts_if` and `succeeds_if` conditions can cause unsound (contradicting) specifications,
 > as illustrated above, and should be done with care.
 
 
@@ -300,8 +318,6 @@ Notice that in the presence of an `aborts_if` with a negation of this condition
 aborts condition of a function to be or-ed with a requires condition. That is `requires P` is translated to
 `requires P || A` (with `A` the combined aborts condition). For our example,
 `requires global<Counter>(a).value < 255 || global<Counter>(a).value == 255` simplifies to `requires true`.
-
-> The automatic enrichment of `requires` with the aborts condition is not yet implemented.
 
 
 ## Requires Module Condition
@@ -345,9 +361,60 @@ spec fun increment {
 
 ## Assume and Assert Conditions
 
-Those conditions can only appear in code spec blocks.
-
-TBD
+These conditions can only appear in spec blocks inside function bodies.
+A spec block can occur anywhere an ordinary Move statement block can occur.
+Here is an example:
+```
+fun simple1(x: u64, y: u64) {
+    let z;
+    y = x;
+    z = x + y;
+    spec {
+        assert x == y;
+        assert z == 2*x;
+    }
+}
+```
+An assert statement inside a spec block indicates a condition that must hold when control reaches that block.
+If the condition does not hold, an error is reported by the Move Prover.
+An assume statement, on the other hand, blocks executions violating the condition in the statement.
+The function `simple2` shown below is verified by the Move Prover.
+However, if the first spec block containing the assume statement is removed, Move Prover will
+show a violating to the assert statement in the second spec block.
+```
+fun simple2(x: u64, y: u64) {
+    let z: u64;
+    spec {
+        assume x > y;
+    };
+    z = x + y;
+    spec {
+        assert z > 2*y;
+    }
+}
+```
+An assert statement can also encode a loop invariant if it is placed at a loop head, as in the following example.
+```
+fun simple3(n: u64) {
+    let x = 0
+    loop {
+        spec {
+            assert x <= n;
+        };
+        if (x < n) {
+            x = x + 1
+        } else {
+            break
+        }
+    };
+    spec {
+        assert x == n;
+    }
+}
+```
+A loop invariant may comprise both assert and assume statements.
+The assume statements will be assumed at each entry into the loop while the assert statements will be
+checked at each entry into the loop.
 
 ## Invariant Condition on Functions
 
@@ -411,10 +478,10 @@ module M again. It is a significant simplification of the verification problem t
 
 ## Specification Variables and Pack/Unpack Invariants
 
-The Spec language supports maintaining so called *spec variables*, which are often also called *ghost variables*
-in the verification community. Those variables allow to represent global information derived from the global state
-of resources which can be used in specifications. An example use case is f.i. to compute the sum of all coins
-available in the system and specify that it can be only changed in certain scenarios.
+The Spec language supports *spec variables*, also called *ghost variables*
+in the verification community. These variables are used only in specifications and represent information derived from the global state
+of resources. An example use case is to compute the sum of all coins
+available in the system and specify that the sum can be changed only in certain scenarios.
 
 We illustrate this feature by introducing a spec variable which maintains the sum of all `Counter` resources from
 our running example. First, a spec variable is introduced via spec module block as follows:
@@ -549,3 +616,18 @@ with it. For example, in `apply Schema<T> to *<T>`, those functions which have n
 type argument will be silently excluded because they do not match. On the other hand, until now, this kind
 of mistakes often lead to verification errors, and not to the more dangerous instance of unintended
 verification success.
+
+## Available Pragmas
+
+| Name       | Description |
+|------------|--------------
+| `verify`     | Turns on or off verification.
+| `intrinsic`  | Marks a function to skip the Move implementation and use a prover native implementation. This makes a function behave like a native function even if it not so in Move.
+| `opaque`  | Marks a function to use only pre/post conditions when it is called, not inlining the implementation. The implementation will still be verified standalone. Use `verify = false` if this is not wanted.
+| `aborts_if_is_partial` | Allows a function to abort [under non-specified conditions](#abortsif-condition).
+| `aborts_if_is_strict`  | Disallows a function to abort even if no conditions are specified.
+| `requires_if_aborts`   | Makes a requires condition mandatory to hold even in cases where the function is specified to abort.
+| `addition_overflow_unchecked` | Makes addition of large integers (`u64` and `u128`) unchecked, avoiding the need to specify `aborts_if` for those.
+| `assume_no_abort_from_here` | Assumes that this function, if called from elsewhere, does not abort.
+| `timeout` | Sets a timeout (in seconds) for function or module. Overrides the timeout provided by command line flags.
+| `seed` | Sets a random seed for function or module. Overrides the seed provided by command line flags.

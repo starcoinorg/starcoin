@@ -488,9 +488,10 @@ module Account {
         let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert(
             balance_for(sender_balance) >= transaction_fee_amount,
-            6
+            ErrorCode::EINSUFFICIENT_BALANCE()
         );
 
+        // Todo: remove the abandoned code
         let cost = SignedInteger64::create_from_raw_value(state_cost_amount, cost_is_negative);
         assert(
             SignedInteger64::get_value(cost) >= 0, 7
