@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_resource_viewer::MoveValueAnnotator;
+use starcoin_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_types::access_path::AccessPath;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
@@ -37,7 +37,7 @@ impl CommandAction for GetCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = GetOpt;
-    type ReturnItem = String;
+    type ReturnItem = AnnotatedMoveStruct;
 
     fn run(
         &self,
@@ -60,6 +60,6 @@ impl CommandAction for GetCommand {
         let viewer = MoveValueAnnotator::new(&chain_state_reader);
         let annotated_resource = viewer.view_struct(opt.struct_tag.clone(), state.as_slice())?;
 
-        Ok(annotated_resource.to_string())
+        Ok(annotated_resource)
     }
 }
