@@ -15,20 +15,20 @@ pub struct SyncConfig {
 }
 
 impl SyncConfig {
+    pub fn new(sync_mode: SyncMode) -> Self {
+        Self { sync_mode }
+    }
+
+    pub fn set_mode(&mut self, sync_mode: SyncMode) {
+        self.sync_mode = sync_mode;
+    }
+
     pub fn is_state_sync(&self) -> bool {
         self.sync_mode == SyncMode::FAST
     }
 
     pub fn is_light(&self) -> bool {
         self.sync_mode == SyncMode::LIGHT
-    }
-
-    pub fn fast_sync_mode(&mut self) {
-        self.sync_mode = SyncMode::FAST;
-    }
-
-    pub fn full_sync_mode(&mut self) {
-        self.sync_mode = SyncMode::FULL;
     }
 }
 

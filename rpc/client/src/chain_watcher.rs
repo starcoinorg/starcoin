@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use crate::pubsub_client::PubSubClient;
 use actix::prelude::*;
 use actix::AsyncContext;
@@ -9,6 +12,7 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::pubsub;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::system_events::{ActorStop, SystemStop};
 use std::collections::HashMap;
 
 #[derive(Debug)]
@@ -48,6 +52,11 @@ impl Actor for ChainWatcher {
                 async {}.into_actor(act)
             })
             .wait(ctx);
+        info!("ChainWater actor started");
+    }
+
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
+        info!("ChainWater actor stopped");
     }
 }
 
@@ -127,4 +136,20 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
         }
     }
     // fn finished(&mut self, ctx: &mut Self::Context) {}
+}
+
+impl Handler<ActorStop> for ChainWatcher {
+    type Result = ();
+
+    fn handle(&mut self, _msg: ActorStop, ctx: &mut Context<Self>) -> Self::Result {
+        ctx.stop()
+    }
+}
+
+impl Handler<SystemStop> for ChainWatcher {
+    type Result = ();
+
+    fn handle(&mut self, _msg: SystemStop, _ctx: &mut Context<Self>) -> Self::Result {
+        System::current().stop();
+    }
 }

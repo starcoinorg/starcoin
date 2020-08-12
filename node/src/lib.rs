@@ -15,7 +15,7 @@ use tokio::sync::oneshot;
 
 pub mod crash_handler;
 pub mod message;
-mod node;
+pub mod node;
 
 pub struct NodeHandle {
     runtime: Runtime,
@@ -138,7 +138,7 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
         setup_panic_handler();
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
-            let handle = match node::start(config, logger_handle).await {
+            let handle = match node::start(config, Some(logger_handle)).await {
                 Err(e) => {
                     error!("Node start fail: {:?}.", e);
                     if start_sender.send(Err(e)).is_err() {
@@ -160,20 +160,5 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
         });
     });
     let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
-    // let start_handle = match result {
-    //     Ok(start_handle) => start_handle,
-    //     Err(e) => {
-    //         error!("{}", e);
-    //         match e.downcast::<GenesisError>() {
-    //             Ok(_e) => {
-    //                 // Genesis error use special exit code for automatic deploy.
-    //                 std::process::exit(EXIT_CODE_NEED_HELP);
-    //             }
-    //             Err(_e) => {
-    //                 std::process::exit(1);
-    //             }
-    //         }
-    //     }
-    // };
     Ok(NodeHandle::new(thread_handle, start_handle, stop_sender))
 }

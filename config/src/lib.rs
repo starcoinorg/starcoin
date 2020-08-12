@@ -12,6 +12,7 @@ use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
     test_utils::KeyPair,
 };
+use starcoin_logger::prelude::*;
 use std::convert::TryFrom;
 use std::fs::create_dir_all;
 use std::fs::File;
@@ -287,19 +288,19 @@ impl NodeConfig {
 
         let config_file_path = data_dir.join(CONFIG_FILE_PATH);
         if !config_file_path.exists() {
-            println!(
+            info!(
                 "Config file not exist, generate default config to: {:?}",
                 config_file_path
             );
             let config = NodeConfig::default_with_opt(opt, &base)?;
             save_config(&config, &config_file_path)?;
         }
-        println!("Load config from: {:?}", config_file_path);
+        info!("Load config from: {:?}", config_file_path);
         let mut config: NodeConfig = match load_config(&config_file_path) {
             Ok(config) => config,
             Err(e) => match base.net {
                 ChainNetwork::Test | ChainNetwork::Dev | ChainNetwork::Halley => {
-                    println!("Load config error: {:?}, use default config.", e);
+                    info!("Load config error: {:?}, use default config.", e);
                     NodeConfig::default_with_opt(opt, &base)?
                 }
                 _ => return Err(e),

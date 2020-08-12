@@ -51,3 +51,4 @@ futures-timer = "3.0"
 statedb = {path = "../state/statedb", package = "starcoin-statedb"}
 vm_types ={path = "../vm/types", package = "starcoin-vm-types"}
 stest = { path = "../commons/stest" }
+starcoin-node = { path = "../node" }
