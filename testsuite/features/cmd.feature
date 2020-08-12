@@ -75,9 +75,9 @@ Feature: cmd integration test
     Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get_account @$.account.address@"
+    Then cmd: "state get -a @$.account.address@"
     Then cmd: "account show"
-    Then cmd: "state get @$.account.address@ 0x1::Account::Account"
+    Then cmd: "state get -a @$.account.address@ 0x1::Account::Account"
     Then node handle stop
 
     Examples:

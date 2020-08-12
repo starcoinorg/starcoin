@@ -32,7 +32,7 @@ use std::{
 mod fat_type;
 mod module_cache;
 mod resolver;
-
+mod stdlib_type_mapping;
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
