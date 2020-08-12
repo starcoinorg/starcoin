@@ -1395,3 +1395,4 @@ ensures $IsValidU8Vector(res2);
 ensures $IsValidU8Vector(res3);
 
 procedure $Debug_print(t_T: $TypeValue, x: $Value);
+procedure $Debug_print_stack_trace();

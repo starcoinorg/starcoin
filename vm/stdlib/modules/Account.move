@@ -16,6 +16,11 @@ module Account {
     use 0x1::ErrorCode;
     use 0x1::STC::{Self, STC};
 
+    spec module {
+        pragma verify = false;
+        pragma aborts_if_is_strict;
+    }
+
     // Every account has a Account::Account resource
     resource struct Account {
         // The current authentication key.

@@ -5,6 +5,11 @@ module Timestamp {
     use 0x1::Signer;
     use 0x1::ErrorCode;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     // A singleton resource holding the current Unix time in seconds
     resource struct CurrentTimeSeconds {
         seconds: u64,
@@ -25,7 +30,6 @@ module Timestamp {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if exists<CurrentTimeSeconds>(Signer::spec_address_of(account));
         ensures exists<CurrentTimeSeconds>(Signer::spec_address_of(account));
-        ensures global<CurrentTimeSeconds>(Signer::spec_address_of(account)).seconds == 0;
     }
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
@@ -37,7 +41,9 @@ module Timestamp {
         global_timer.seconds = timestamp;
     }
     spec fun update_global_time {
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if timestamp <= global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).seconds;
         ensures global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).seconds == timestamp;
     }
 
@@ -60,6 +66,13 @@ module Timestamp {
             1
         );
         move_to(account, TimeHasStarted{});
+    }
+
+    spec fun set_time_has_started {
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<CurrentTimeSeconds>(Signer::spec_address_of(account));
+        aborts_if exists<TimeHasStarted>(Signer::spec_address_of(account));
+        ensures exists<TimeHasStarted>(Signer::spec_address_of(account));
     }
 
     /// Helper function to determine if the blockchain is in genesis state.
