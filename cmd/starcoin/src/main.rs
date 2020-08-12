@@ -61,7 +61,15 @@ fn run() -> Result<()> {
             Ok(state)
         },
         |_, _, state| {
-            let (_, _, handle) = state.into_inner();
+            let (_, client, handle) = state.into_inner();
+            match Arc::try_unwrap(client) {
+                Err(_) => {
+                    error!("Can not close rpc client normal.");
+                }
+                Ok(client) => {
+                    client.close();
+                }
+            }
             if let Some(handle) = handle {
                 if let Err(e) = handle.join() {
                     error!("{:?}", e);

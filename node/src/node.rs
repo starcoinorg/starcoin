@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
-use futures::StreamExt;
+use network_rpc_core::server::NetworkRpcServer;
 use starcoin_account_api::AccountAsyncService;
 use starcoin_account_service::AccountServiceActor;
 use starcoin_block_relayer::BlockRelayer;
@@ -27,30 +27,38 @@ use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
+use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_types::account_config::association_address;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
-use starcoin_types::system_events::{SyncBegin, SyncDone};
+use starcoin_types::system_events::{SyncBegin, SystemStarted};
 use std::sync::Arc;
 use std::time::Duration;
 
+//TODO rework field and order.
 pub struct NodeStartHandle {
-    _chain_arbiter: Arbiter,
-    _chain_actor: ChainActorRef,
-    _miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
-    _sync_actor: Addr<SyncActor>,
-    _rpc_actor: Addr<RpcActor>,
-    _miner_client: Option<Addr<MinerClientActor>>,
-    _chain_notifier: Addr<ChainNotifyHandlerActor>,
+    pub config: Arc<NodeConfig>,
+    pub bus: Addr<BusActor>,
+    pub storage: Arc<Storage>,
+    pub chain_arbiter: Arbiter,
+    pub chain_actor: ChainActorRef,
+    pub miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
+    pub sync_actor: Addr<SyncActor>,
+    pub rpc_actor: Addr<RpcActor>,
+    pub miner_client: Option<Addr<MinerClientActor>>,
+    pub chain_notifier: Addr<ChainNotifyHandlerActor>,
+    pub network: NetworkAsyncService,
+    pub network_rpc_server: Addr<NetworkRpcServer>,
+    pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
+    pub txpool: TxPool,
 }
 
 pub async fn start(
     config: Arc<NodeConfig>,
-    logger_handle: Arc<LoggerHandle>,
+    logger_handle: Option<Arc<LoggerHandle>>,
 ) -> Result<NodeStartHandle> {
     let bus = BusActor::launch();
 
-    let sync_event_receiver_future = bus.clone().channel::<SyncDone>();
     let (storage, startup_info, genesis_hash) = Genesis::init_storage(config.as_ref())?;
 
     info!("Start chain with startup info: {}", startup_info);
@@ -141,7 +149,7 @@ pub async fn start(
     let head_block = storage
         .get_block(*startup_info.get_master())?
         .expect("Head block must exist.");
-    let _block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
+    let block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
     let chain_state_service = ChainStateActor::launch(
         bus.clone(),
         storage.clone(),
@@ -180,7 +188,7 @@ pub async fn start(
     };
 
     // network rpc server
-    let _network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
+    let network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
         rpc_rx,
         chain.clone(),
         storage.clone(),
@@ -220,18 +228,12 @@ pub async fn start(
 
     delay_for(Duration::from_secs(1)).await;
 
-    let waiting_sync = !(config.network.disable_seed
+    let start_sync = !(config.network.disable_seed
         || (config.network.seeds.is_empty() && config.net().get_config().boot_nodes.is_empty()));
-    if waiting_sync {
+    if start_sync {
+        info!("Start bootstrap sync ......");
         bus.clone().broadcast(SyncBegin).await?;
-
-        info!("Waiting sync ......");
-        let mut sync_event_receiver = sync_event_receiver_future
-            .await
-            .expect("Subscribe system event error.");
-
-        let _ = sync_event_receiver.next().await;
-        info!("Waiting sync finished.");
+        //TODO support query sync status by cli.
     }
     let miner_config = config.clone();
     let miner_bus = bus.clone();
@@ -261,24 +263,33 @@ pub async fn start(
     };
 
     let (json_rpc, _io_handler) = RpcActor::launch(
-        config,
+        config.clone(),
         txpool_service.clone(),
         chain.clone(),
         account_service,
         chain_state_service,
         Some(PlaygroudService::new(storage.clone())),
         Some(PubSubService::new(bus.clone(), txpool_service)),
-        Some(network),
-        Some(logger_handle),
+        Some(network.clone()),
+        logger_handle,
     )?;
+    bus.clone().broadcast(StartSyncTxnEvent).await.unwrap();
+    bus.clone().broadcast(SystemStarted).await?;
 
     Ok(NodeStartHandle {
-        _chain_arbiter: chain_arbiter,
-        _chain_actor: chain,
-        _miner_actor: miner,
-        _sync_actor: sync,
-        _rpc_actor: json_rpc,
-        _miner_client: miner_client,
-        _chain_notifier: chain_notify_handler,
+        config,
+        storage,
+        bus,
+        chain_arbiter,
+        chain_actor: chain,
+        miner_actor: miner,
+        sync_actor: sync,
+        rpc_actor: json_rpc,
+        miner_client,
+        chain_notifier: chain_notify_handler,
+        network,
+        network_rpc_server,
+        block_relayer,
+        txpool,
     })
 }
