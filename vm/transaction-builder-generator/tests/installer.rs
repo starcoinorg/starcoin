@@ -5,6 +5,7 @@ use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
+#[ignore]
 fn test_that_installed_rust_code_compiles() {
     let dir = tempdir().unwrap();
 
@@ -19,10 +20,10 @@ fn test_that_installed_rust_code_compiles() {
         .arg("--module-name")
         .arg("libra-stdlib:0.1.1")
         .arg("--with-libra-types")
-        .arg("testsuite/generate-format/tests/staged/libra.yaml")
+        .arg("testsuite/generate-format/tests/staged/starcoin.yaml")
         .arg("--target-source-dir")
         .arg(dir.path())
-        .arg("language/stdlib/compiled/transaction_scripts/abi")
+        .arg("vm/stdlib/staged/transaction_scripts/abi")
         .status()
         .unwrap();
     assert!(status.success());
