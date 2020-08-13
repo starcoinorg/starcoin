@@ -7115,7 +7115,7 @@ dependencies = [
  "libra-proptest-helpers",
  "proptest",
  "proptest-derive",
- ]
+]
 
 [[package]]
 name = "starcoin-resource-viewer"
