@@ -7345,6 +7345,9 @@ dependencies = [
  "lru 0.6.0",
  "once_cell",
  "parking_lot 0.11.0",
+ "proptest",
+ "proptest-derive",
+ "rand 0.7.3",
  "rocksdb",
  "serde",
  "starcoin-accumulator",
@@ -7353,6 +7356,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-proptest-helpers",
  "starcoin-state-store-api",
  "starcoin-types",
 ]
@@ -7589,7 +7593,6 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
- "starcoin-proptest-helpers",
  "starcoin-vm-types",
  "thiserror",
  "tiny-keccak 1.5.0",
@@ -7635,10 +7638,13 @@ dependencies = [
  "move-vm-types",
  "num_enum",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "serde",
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-proptest-helpers",
  "vm",
 ]
 
@@ -8810,11 +8816,14 @@ source = "git+https://github.com/starcoinorg/libra?rev=9eadc565466d3db3a2b6b4f38
 dependencies = [
  "anyhow",
  "libra-crypto",
+ "libra-proptest-helpers",
  "libra-workspace-hack",
  "mirai-annotations",
  "move-core-types",
  "num-variants",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "ref-cast",
 ]
 

@@ -28,7 +28,6 @@ num_enum = "0.5.1"
 actix = "0.10.0-alpha.3"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-starcoin-proptest-helpers = { path = "../commons/proptest-helpers"}
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="9eadc565466d3db3a2b6b4f38c3fea78dcddc372" }
 libp2p = "0.22.0"
 starcoin-vm-types = { path = "../vm/types"}
@@ -37,10 +36,7 @@ starcoin-accumulator = {path = "../core/accumulator"}
 
 ethereum-types = "0.2.3"
 
-[dev-dependencies]
-proptest = "0.10.0"
-proptest-derive = "0.2.0"
 
 [features]
 default = []
-fuzzing = ["proptest", "proptest-derive", "starcoin-proptest-helpers"]
+fuzzing = ["proptest", "proptest-derive"]

@@ -5,16 +5,39 @@ use crate::account_address;
 use crate::account_address::AccountAddress;
 use crate::chain_config::ChainId;
 use crate::event::EventHandle;
-use crate::transaction::{RawUserTransaction, SignedUserTransaction, TransactionPayload};
-use libra_types::proptest_types::RawTransactionGen;
-use libra_types::transaction::WriteSetPayload;
-use proptest::arbitrary::{any, Arbitrary};
-use proptest::collection::vec;
-use proptest::strategy::{BoxedStrategy, Strategy};
+use crate::transaction::{
+    Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
+    SignedUserTransaction, TransactionPayload,
+};
+use proptest::sample::Index as PropIndex;
+use proptest::{collection::vec, prelude::*};
+use proptest_derive::Arbitrary;
 use starcoin_crypto::ed25519;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_proptest_helpers::Index;
-use starcoin_vm_types::transaction::SignatureCheckedTransaction;
+use starcoin_crypto::test_utils::KeyPair;
+use std::ops::Deref;
+use vm::CompiledModule;
+
+/// Wrapper for `proptest`'s [`Index`][proptest::sample::Index] that allows `AsRef` to work.
+///
+/// There is no blanket `impl<T> AsRef<T> for T`, so `&[PropIndex]` doesn't work with
+/// `&[impl AsRef<PropIndex>]` (unless an impl gets added upstream). `Index` does.
+#[derive(Arbitrary, Clone, Copy, Debug)]
+pub struct Index(PropIndex);
+
+impl AsRef<PropIndex> for Index {
+    fn as_ref(&self) -> &PropIndex {
+        &self.0
+    }
+}
+
+impl Deref for Index {
+    type Target = PropIndex;
+
+    fn deref(&self) -> &PropIndex {
+        &self.0
+    }
+}
 
 #[derive(Debug)]
 struct AccountInfo {
@@ -64,11 +87,11 @@ impl AccountInfoUniverse {
         account_index.get_mut(self.accounts.as_mut_slice())
     }
 
-    fn get_epoch(&self) -> u64 {
+    fn _get_epoch(&self) -> u64 {
         self.epoch
     }
 
-    fn get_and_bump_epoch(&mut self) -> u64 {
+    fn _get_and_bump_epoch(&mut self) -> u64 {
         let epoch = self.epoch;
         self.epoch += 1;
         epoch
@@ -95,10 +118,9 @@ impl Arbitrary for AccountInfoUniverse {
 
     type Strategy = BoxedStrategy<Self>;
 }
+
 pub struct BlockBodyGen {}
 
-#[derive(Arbitrary, Debug)]
-pub struct SignedUserTransactionGen {}
 #[derive(Arbitrary, Debug)]
 pub struct RawUserTransactionGen {
     payload: TransactionPayload,
@@ -119,13 +141,14 @@ impl RawUserTransactionGen {
         let sequence_number = sender_info.sequence_number;
         sender_info.sequence_number += 1;
 
-        new_raw_transaction(
+        RawUserTransaction::new(
             sender_info.address,
             sequence_number,
             self.payload,
             self.max_gas_amount,
             self.gas_unit_price,
             self.expiration_time_secs,
+            ChainId::test(),
         )
     }
 }
@@ -134,7 +157,6 @@ impl RawUserTransaction {
     fn strategy_impl(
         address_strategy: impl Strategy<Value = AccountAddress>,
         payload_strategy: impl Strategy<Value = TransactionPayload>,
-        gas_currency_code_strategy: impl Strategy<Value = String>,
     ) -> impl Strategy<Value = Self> {
         // XXX what other constraints do these need to obey?
         (
@@ -143,7 +165,6 @@ impl RawUserTransaction {
             payload_strategy,
             any::<u64>(),
             any::<u64>(),
-            gas_currency_code_strategy,
             any::<u64>(),
         )
             .prop_map(
@@ -153,85 +174,72 @@ impl RawUserTransaction {
                     payload,
                     max_gas_amount,
                     gas_unit_price,
-                    gas_currency_code,
                     expiration_time_secs,
                 )| {
-                    new_raw_transaction(
+                    RawUserTransaction::new(
                         sender,
                         sequence_number,
                         payload,
                         max_gas_amount,
                         gas_unit_price,
                         expiration_time_secs,
+                        ChainId::test(),
                     )
                 },
             )
     }
 }
 
-fn new_raw_transaction(
-    sender: AccountAddress,
-    sequence_number: u64,
-    payload: TransactionPayload,
-    max_gas_amount: u64,
-    gas_unit_price: u64,
-    expiration_time_secs: u64,
-) -> RawUserTransaction {
-    let chain_id = ChainId::test();
-    match payload {
-        TransactionPayload::Module(module) => RawUserTransaction::new_module(
-            sender,
-            sequence_number,
-            module,
-            max_gas_amount,
-            gas_unit_price,
-            expiration_time_secs,
-            chain_id,
-        ),
-        TransactionPayload::Script(script) => RawUserTransaction::new_script(
-            sender,
-            sequence_number,
-            script,
-            max_gas_amount,
-            gas_unit_price,
-            expiration_time_secs,
-            chain_id,
-        ),
-        TransactionPayload::WriteSet(WriteSetPayload::Direct(write_set)) => {
-            // It's a bit unfortunate that max_gas_amount etc is generated but
-            // not used, but it isn't a huge deal.
-            RawUserTransaction::new_change_set(sender, sequence_number, write_set, chain_id)
-        }
-        TransactionPayload::WriteSet(WriteSetPayload::Script {
-            execute_as: signer,
-            script,
-        }) => RawUserTransaction::new_writeset_script(
-            sender,
-            sequence_number,
-            script,
-            signer,
-            chain_id,
-        ),
-    }
-}
-
 impl Arbitrary for RawUserTransaction {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        Self::strategy_impl(
-            any::<AccountAddress>(),
-            any::<TransactionPayload>(),
-            any::<String>(),
-        )
-        .boxed()
+        Self::strategy_impl(any::<AccountAddress>(), any::<TransactionPayload>()).boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
 }
 
+impl SignatureCheckedTransaction {
+    // This isn't an Arbitrary impl because this doesn't generate *any* possible SignedTransaction,
+    // just one kind of them.
+    pub fn script_strategy(
+        keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+    ) -> impl Strategy<Value = Self> {
+        Self::strategy_impl(keypair_strategy, TransactionPayload::script_strategy())
+    }
+
+    pub fn package_strategy(
+        keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+    ) -> impl Strategy<Value = Self> {
+        Self::strategy_impl(keypair_strategy, TransactionPayload::package_strategy())
+    }
+
+    fn strategy_impl(
+        keypair_strategy: impl Strategy<Value = KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>,
+        payload_strategy: impl Strategy<Value = TransactionPayload>,
+    ) -> impl Strategy<Value = Self> {
+        (keypair_strategy, payload_strategy)
+            .prop_flat_map(|(keypair, payload)| {
+                let address = account_address::from_public_key(&keypair.public_key);
+                (
+                    Just(keypair),
+                    RawUserTransaction::strategy_impl(Just(address), Just(payload)),
+                )
+            })
+            .prop_flat_map(|(keypair, raw_txn)| {
+                prop_oneof![Just(
+                    raw_txn
+                        .clone()
+                        .sign(&keypair.private_key, keypair.public_key.clone())
+                        .expect("signing should always work")
+                ),]
+            })
+    }
+}
+
 #[derive(Arbitrary, Debug)]
 pub struct SignatureCheckedTransactionGen {
-    raw_transaction_gen: SignedUserTransactionGen,
+    raw_transaction_gen: RawUserTransactionGen,
 }
 
 impl SignatureCheckedTransactionGen {
@@ -251,12 +259,7 @@ impl SignatureCheckedTransactionGen {
 impl Arbitrary for SignatureCheckedTransaction {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        Self::strategy_impl(
-            ed25519::keypair_strategy(),
-            any::<TransactionPayload>(),
-            any::<String>(),
-        )
-        .boxed()
+        Self::strategy_impl(ed25519::keypair_strategy(), any::<TransactionPayload>()).boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -268,6 +271,62 @@ impl Arbitrary for SignedUserTransaction {
         any::<SignatureCheckedTransaction>()
             .prop_map(|txn| txn.into_inner())
             .boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
+}
+
+impl TransactionPayload {
+    pub fn script_strategy() -> impl Strategy<Value = Self> {
+        any::<Script>().prop_map(TransactionPayload::Script)
+    }
+
+    pub fn package_strategy() -> impl Strategy<Value = Self> {
+        any::<Package>().prop_map(TransactionPayload::Package)
+    }
+}
+
+impl Arbitrary for TransactionPayload {
+    type Parameters = ();
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        // Most transactions in practice will be programs, but other parts of the system should
+        // at least not choke on write set strategies so introduce them with decent probability.
+        // The figures below are probability weights.
+        prop_oneof![
+            4 => Self::script_strategy(),
+            1 => Self::package_strategy(),
+        ]
+        .boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
+}
+
+impl Package {
+    fn strategy_impl(
+        compiled_module_strategy: impl Strategy<Value = CompiledModule>,
+        script_strategy: impl Strategy<Value = Script>,
+    ) -> impl Strategy<Value = Self> {
+        (compiled_module_strategy, script_strategy).prop_map(|(compile_module, script)| {
+            let mut vec_bytes: Vec<u8> = vec![];
+            compile_module
+                .serialize(&mut vec_bytes)
+                .expect("compile module serialize  must success");
+            let first_module = Module::new(vec_bytes);
+            let module_vec = vec![first_module];
+            Package::new(module_vec, Some(script)).expect("package init error")
+        })
+    }
+}
+impl Arbitrary for Package {
+    type Parameters = ();
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        Self::strategy_impl(
+            CompiledModule::valid_strategy(20),
+            // CompiledModuleStrategyGen::new(20).generate(),
+            any::<Script>(),
+        )
+        .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;

@@ -61,6 +61,8 @@ pub mod parser {
     }
 }
 
+pub mod proptest_types;
+
 pub mod transaction_metadata;
 
 pub mod value {

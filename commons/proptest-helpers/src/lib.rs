@@ -13,4 +13,4 @@ pub mod value_generator {
     pub use libra_proptest_helpers::ValueGenerator;
 }
 
-pub use libra_proptest_helpers::{pick_idxs, pick_slice_idxs, with_stack_size, Index};
+pub use libra_proptest_helpers::{pick_idxs, pick_slice_idxs, with_stack_size};

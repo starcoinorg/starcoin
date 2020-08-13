@@ -45,3 +45,6 @@ impl TransactionStore for TransactionStorage {
         self.store.write_batch(batch)
     }
 }
+
+#[cfg(test)]
+mod test;
