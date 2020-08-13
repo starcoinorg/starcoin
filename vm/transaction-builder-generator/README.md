@@ -52,10 +52,10 @@ To install Python3 modules `serde`, `lcs`, `libra_types`, and `libra_stdlib` int
 ```bash
 target/debug/generate-transaction-builders \
     --language python3 \
-    --module-name libra_stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/libra.yaml" \
-    --target-source-dir "$DEST" \
-    "language/stdlib/compiled/transaction_scripts/abi"
+    --module-name starcoin_stdlib \
+    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --target-source-dir "target/python" \
+    "vm/stdlib/staged/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Python demo file](examples/python3/stdlib_demo.py) with:
 ```
@@ -70,9 +70,9 @@ To install C++ files `serde.hpp`, `lcs.hpp`, `libra_types.hpp`, `libra_stdlib.hp
 target/debug/generate-transaction-builders \
     --language cpp \
     --module-name libra_stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/libra.yaml" \
-    --target-source-dir "$DEST" \
-    "language/stdlib/compiled/transaction_scripts/abi"
+    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --target-source-dir "target/cpp" \
+    "vm/stdlib/staged/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [C++ demo file](examples/cpp/stdlib_demo.cpp) with:
 ```
@@ -87,10 +87,10 @@ To install Java source packages `com.facebook.serde`, `com.facebook.lcs`, `org.l
 ```bash
 target/debug/generate-transaction-builders \
     --language java \
-    --module-name org.libra.stdlib.Stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/libra.yaml" \
-    --target-source-dir "$DEST" \
-    "language/stdlib/compiled/transaction_scripts/abi"
+    --module-name org.starcoin.stdlib.Stdlib \
+    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --target-source-dir "target/java" \
+    "vm/stdlib/staged/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Java demo file](examples/java/StdlibDemo.java) with:
 ```
@@ -106,9 +106,9 @@ To install dependency-free Rust crates `libra-types` and `libra-stdlib` into a t
 target/debug/generate-transaction-builders \
     --language rust \
     --module-name libra-stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/libra.yaml" \
-    --target-source-dir "$DEST" \
-    "language/stdlib/compiled/transaction_scripts/abi"
+    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --target-source-dir "target/rust" \
+    "vm/stdlib/staged/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Rust demo file](examples/rust/stdlib_demo.rs). (See [unit test](tests/generation.rs) for details.)
 
