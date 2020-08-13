@@ -1,51 +1,33 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::start_network_rpc_server;
-use account_api::AccountInfo;
-use actix::{Actor, Addr, System};
-use block_relayer::BlockRelayer;
-use bus::BusActor;
-use chain::{ChainActor, ChainActorRef};
+use anyhow::Result;
 use config::*;
-use crypto::HashValue;
-use futures::channel::mpsc::UnboundedReceiver;
-use futures_timer::Delay;
-use genesis::Genesis;
-use miner::{MinerActor, MinerClientActor};
-use network::{NetworkActor, NetworkAsyncService};
-use network_api::messages::RawRpcRequestMessage;
-use network_api::{Multiaddr, NetworkService};
+use logger::prelude::*;
+use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client, GetBlockHeadersByNumber, GetStateWithProof};
+use starcoin_node::node::NodeStartHandle;
 use state_api::StateWithProof;
-use state_service::ChainStateActor;
 use std::sync::Arc;
-use std::time::Duration;
-use storage::Storage;
-use txpool::{TxPool, TxPoolService};
-use types::{
-    access_path,
-    account_config::genesis_address,
-    block::BlockHeader,
-    peer_info::{PeerId, PeerInfo},
-    startup_info::StartupInfo,
-};
+use types::{access_path, account_config::genesis_address, block::BlockHeader};
 use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;
 
 #[stest::test]
-fn test_network_rpc() {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let mut system = System::new("test");
-    let (.., network_1, _, net_addr_1) = {
+async fn test_network_rpc() {
+    let (handle1, net_addr_1) = {
         let config_1 = NodeConfig::random_for_test();
-        gen_chain_env(config_1)
+        let net_addr = config_1.network.self_address().unwrap();
+        debug!("First node address: {:?}", net_addr);
+        (gen_chain_env(config_1).await.unwrap(), net_addr)
     };
-    let (.., network_2, _, _) = {
+    let network_1 = handle1.network;
+    let handle2 = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
-        gen_chain_env(config_2)
+        gen_chain_env(config_2).await.unwrap()
     };
+    let network_2 = handle2.network;
     // network rpc client for chain 1
     let peer_id_2 = network_2.identify().clone();
     let client = gen_client::NetworkRpcClient::new(network_1);
@@ -53,143 +35,34 @@ fn test_network_rpc() {
     let access_path =
         access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
 
-    let fut = async move {
-        Delay::new(Duration::from_secs(5)).await;
-        let req = GetBlockHeadersByNumber::new(1, 1, 1);
-        let resp: Vec<BlockHeader> = client
-            .get_headers_by_number(peer_id_2.clone().into(), req)
-            .await
-            .unwrap();
-        assert!(!resp.is_empty());
-        let state_root = resp[0].state_root;
+    let req = GetBlockHeadersByNumber::new(1, 1, 1);
+    let resp: Vec<BlockHeader> = client
+        .get_headers_by_number(peer_id_2.clone().into(), req)
+        .await
+        .unwrap();
+    assert!(!resp.is_empty());
+    let state_root = resp[0].state_root;
 
-        let state_req = GetStateWithProof {
-            state_root,
-            access_path: access_path.clone(),
-        };
-        let state_with_proof: StateWithProof = client
-            .get_state_with_proof(peer_id_2.clone().into(), state_req)
-            .await
-            .unwrap();
-        let state = state_with_proof.state.unwrap();
-        let epoch = scs::from_bytes::<EpochResource>(state.as_slice()).unwrap();
-        state_with_proof
-            .proof
-            .verify(state_root, access_path, Some(&state))
-            .unwrap();
-        println!("{:?}", epoch);
-
-        let rpc_info = gen_client::get_rpc_info();
-        println!("{:?}", rpc_info);
+    let state_req = GetStateWithProof {
+        state_root,
+        access_path: access_path.clone(),
     };
-    system.block_on(fut);
-    drop(rt);
+    let state_with_proof: StateWithProof = client
+        .get_state_with_proof(peer_id_2.clone().into(), state_req)
+        .await
+        .unwrap();
+    let state = state_with_proof.state.unwrap();
+    let epoch = scs::from_bytes::<EpochResource>(state.as_slice()).unwrap();
+    state_with_proof
+        .proof
+        .verify(state_root, access_path, Some(&state))
+        .unwrap();
+    debug!("{:?}", epoch);
+
+    let rpc_info = gen_client::get_rpc_info();
+    debug!("{:?}", rpc_info);
 }
 
-fn gen_chain_env(
-    mut config: NodeConfig,
-) -> (
-    ChainActorRef,
-    Arc<Storage>,
-    TxPoolService,
-    NetworkAsyncService,
-    StartupInfo,
-    Multiaddr,
-) {
-    let bus = BusActor::launch();
-    config.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_available_port_from(1024))
-        .parse()
-        .unwrap();
-    let node_config = Arc::new(config);
-
-    let (storage, startup_info, genesis_hash) =
-        Genesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
-
-    // network
-    let (network, rpc_rx, net_addr) = gen_network(node_config.clone(), bus.clone(), genesis_hash);
-
-    let txpool = {
-        let best_block_id = *startup_info.get_master();
-        TxPool::start(
-            node_config.clone(),
-            storage.clone(),
-            best_block_id,
-            bus.clone(),
-        )
-    };
-    let tx_pool_service = txpool.get_service();
-    BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone()).unwrap();
-    let chain = ChainActor::launch(
-        node_config.clone(),
-        startup_info.clone(),
-        storage.clone(),
-        bus.clone(),
-        tx_pool_service.clone(),
-        None,
-    )
-    .unwrap();
-
-    let miner_account = AccountInfo::random();
-    MinerClientActor::new(
-        node_config.miner.client_config.clone(),
-        node_config.net().consensus(),
-    )
-    .start();
-
-    let miner_bus = bus.clone();
-    let miner_storage = storage.clone();
-    let miner_tx_pool_service = tx_pool_service.clone();
-    let miner_chain = chain.clone();
-    let _miner_address = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
-        node_config,
-        miner_bus,
-        miner_storage,
-        miner_tx_pool_service,
-        miner_chain,
-        miner_account,
-    )
-    .unwrap();
-
-    let state_service = ChainStateActor::launch(bus, storage.clone(), None).unwrap();
-    start_network_rpc_server(
-        rpc_rx,
-        chain.clone(),
-        storage.clone(),
-        state_service,
-        tx_pool_service.clone(),
-    )
-    .unwrap();
-    (
-        chain,
-        storage,
-        tx_pool_service,
-        network,
-        startup_info,
-        net_addr,
-    )
-}
-
-fn gen_network(
-    node_config: Arc<NodeConfig>,
-    bus: Addr<BusActor>,
-    genesis_hash: HashValue,
-) -> (
-    NetworkAsyncService,
-    UnboundedReceiver<RawRpcRequestMessage>,
-    Multiaddr,
-) {
-    let key_pair = node_config.network.network_keypair();
-    let addr = PeerId::from_ed25519_public_key(key_pair.public_key.clone());
-    let rpc_proto_info = Vec::new();
-    let (network, rpc_rx) = NetworkActor::launch(
-        node_config.clone(),
-        bus,
-        genesis_hash,
-        PeerInfo::new_for_test(addr, rpc_proto_info),
-    );
-    let addr_hex = network.identify().to_base58();
-    let net_addr: Multiaddr = format!("{}/p2p/{}", &node_config.network.listen, addr_hex)
-        .parse()
-        .unwrap();
-    (network, rpc_rx, net_addr)
+async fn gen_chain_env(config: NodeConfig) -> Result<NodeStartHandle> {
+    starcoin_node::node::start(Arc::new(config), None).await
 }

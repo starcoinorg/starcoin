@@ -12,7 +12,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 pub struct ChainRpcImpl<S>
 where
@@ -174,6 +174,13 @@ where
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> FutureResult<EpochInfo> {
         let service = self.service.clone();
         let fut = async move { service.get_epoch_info_by_number(number).await };
+
+        Box::new(fut.boxed().map_err(map_err).compat())
+    }
+
+    fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain> {
+        let service = self.service.clone();
+        let fut = async move { service.get_global_time_by_number(number).await };
 
         Box::new(fut.boxed().map_err(map_err).compat())
     }

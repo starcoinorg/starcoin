@@ -71,6 +71,7 @@ members = [
     "vm/move-prover",
     "vm/transaction-builder",
     "vm/move-coverage",
+    "vm/resource-viewer",
     "vm/dev"
 ]
 

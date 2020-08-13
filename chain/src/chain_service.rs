@@ -24,7 +24,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
-use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource};
+use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
 use std::collections::HashSet;
 use std::iter::Iterator;
 use std::sync::Arc;
@@ -611,6 +611,10 @@ where
 
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
         self.get_master().get_epoch_info_by_number(Some(number))
+    }
+
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        self.get_master().get_global_time_by_number(number)
     }
 
     fn create_block_template(

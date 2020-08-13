@@ -47,8 +47,8 @@ mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::contract_event::ContractEvent;
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::thread::JoinHandle;
@@ -65,7 +65,7 @@ pub struct RpcClient {
     conn_source: ConnSource,
     chain_watcher: Addr<ChainWatcher>,
     //hold the watch thread handle.
-    _handle: JoinHandle<()>,
+    watcher_handle: JoinHandle<()>,
 }
 
 struct ConnectionProvider {
@@ -110,7 +110,7 @@ impl RpcClient {
             inner: RefCell::new(Some(inner)),
             conn_source,
             chain_watcher: watcher,
-            _handle: handle,
+            watcher_handle: handle,
         }
     }
     pub fn connect_websocket(url: &str, rt: &mut Runtime) -> anyhow::Result<Self> {
@@ -445,6 +445,20 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn get_global_time_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<GlobalTimeOnChain> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_global_time_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Block> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_block_by_hash(hash).compat().await
@@ -654,6 +668,15 @@ impl RpcClient {
             Err(ConnError::Io(e)) => Err(jsonrpc_client_transports::RpcError::Other(
                 failure::Error::from(e),
             )),
+        }
+    }
+
+    pub fn close(self) {
+        if let Err(e) = futures03::executor::block_on(self.chain_watcher.send(SystemStop)) {
+            error!("Try to stop chain watcher error: {:?}", e);
+        }
+        if let Err(e) = self.watcher_handle.join() {
+            error!("Wait chain watcher thread stop error: {:?}", e);
         }
     }
 }

@@ -3,14 +3,10 @@
 
 use crate::GenerateBlockEvent;
 use actix::prelude::*;
-
-use futures::channel::mpsc;
-
-use actix::clock::Duration;
-use actix_rt::time::delay_for;
 use bus::{BusActor, Subscription};
+use futures::channel::mpsc;
 use logger::prelude::*;
-use types::system_events::NewHeadBlock;
+use types::system_events::{NewHeadBlock, SystemStarted};
 
 /// HeadBlockPacemaker, only generate block when new HeadBlock publish.
 pub(crate) struct HeadBlockPacemaker {
@@ -24,7 +20,7 @@ impl HeadBlockPacemaker {
     }
 
     pub fn send_event(&mut self) {
-        if let Err(e) = self.sender.try_send(GenerateBlockEvent {}) {
+        if let Err(e) = self.sender.try_send(GenerateBlockEvent::new(true)) {
             error!("err : {:?}", e);
         }
     }
@@ -40,16 +36,13 @@ impl Actor for HeadBlockPacemaker {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-        let mut sender = self.sender.clone();
-        //TODO fire first GenerateBlock event when node is ready.
-        Arbiter::spawn(async move {
-            delay_for(Duration::from_secs(2)).await;
-            info!("{}", "head block pacemaker started.");
-            info!("{}", "Fire first GenerateBlock event");
-            if let Err(e) = sender.try_send(GenerateBlockEvent {}) {
-                error!("err : {:?}", e);
-            }
-        });
+
+        let recipient = ctx.address().recipient::<SystemStarted>();
+        self.bus
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
         info!("HeadBlockPacemaker started");
     }
 
@@ -63,6 +56,15 @@ impl Handler<NewHeadBlock> for HeadBlockPacemaker {
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
         let NewHeadBlock(_block) = msg;
+        self.send_event();
+    }
+}
+
+impl Handler<SystemStarted> for HeadBlockPacemaker {
+    type Result = ();
+
+    fn handle(&mut self, _msg: SystemStarted, _ctx: &mut Self::Context) -> Self::Result {
+        info!("{}", "Fire first GenerateBlock event");
         self.send_event();
     }
 }

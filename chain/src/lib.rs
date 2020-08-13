@@ -33,7 +33,7 @@ use starcoin_types::{
     system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 use std::sync::Arc;
 use storage::Store;
 use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
@@ -203,6 +203,9 @@ impl Handler<ChainRequest> for ChainActor {
             }
             ChainRequest::GetEpochInfoByNumber(number) => Ok(ChainResponse::EpochInfo(
                 self.service.get_epoch_info_by_number(number)?,
+            )),
+            ChainRequest::GetGlobalTimeByNumber(number) => Ok(ChainResponse::GlobalTime(
+                self.service.get_global_time_by_number(number)?,
             )),
         }
     }
@@ -531,6 +534,19 @@ impl ChainAsyncService for ChainActorRef {
             Ok(epoch_info)
         } else {
             bail!("get epoch chain info error.")
+        }
+    }
+
+    async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        let response = self
+            .address
+            .send(ChainRequest::GetGlobalTimeByNumber(number))
+            .await
+            .map_err(Into::<Error>::into)??;
+        if let ChainResponse::GlobalTime(global_time) = response {
+            Ok(global_time)
+        } else {
+            bail!("get global time error.")
         }
     }
 

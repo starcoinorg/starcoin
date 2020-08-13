@@ -204,6 +204,10 @@ impl PeerInfo {
         self.latest_header.number()
     }
 
+    pub fn get_hash_number(&self) -> (HashValue, BlockNumber) {
+        (self.latest_header.id(), self.latest_header.number())
+    }
+
     pub fn get_block_id(&self) -> HashValue {
         self.latest_header.id()
     }

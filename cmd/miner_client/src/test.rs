@@ -4,8 +4,7 @@
 use crate::miner::MinerClientActor;
 use crate::stratum::{parse_response, process_request};
 use actix::Actor;
-use actix_rt::System;
-use bus::BusActor;
+use bus::{Bus, BusActor};
 use futures_timer::Delay;
 use logger::prelude::*;
 use sc_stratum::{PushWorkHandler, Stratum};
@@ -14,42 +13,45 @@ use starcoin_miner::{
     miner::{MineCtx, Miner},
     stratum::StratumManager,
 };
+use starcoin_types::{
+    block::{Block, BlockBody, BlockHeader, BlockTemplate},
+    system_events::MinedBlock,
+    U256,
+};
 use std::sync::Arc;
 use std::time::Duration;
-use types::block::{Block, BlockBody, BlockHeader, BlockTemplate};
-use types::U256;
 
-#[test]
-fn test_stratum_client() {
-    ::logger::init_for_test();
-    let mut system = System::new("test");
-    system.block_on(async {
-        let conf = Arc::new(NodeConfig::random_for_test());
-        let miner_config = conf.miner.clone();
-        let mut miner = Miner::new(BusActor::launch(), conf.clone());
-        let stratum = {
-            let dispatcher = Arc::new(StratumManager::new(miner.clone()));
-            Stratum::start(&miner_config.stratum_server, dispatcher, None).unwrap()
-        };
-        Delay::new(Duration::from_millis(1000)).await;
-        info!("started stratum server");
-        let mine_ctx = {
-            let header = BlockHeader::random();
-            let body = BlockBody::default();
-            let block = Block::new(header, body);
-            let block_template = BlockTemplate::from_block(block);
-            let difficulty: U256 = 1.into();
-            MineCtx::new(block_template, difficulty)
-        };
-        let _addr =
-            MinerClientActor::new(miner_config.client_config.clone(), conf.net().consensus())
-                .start();
-        miner.set_mint_job(mine_ctx);
-        for _ in 1..10 {
-            stratum.push_work_all(miner.get_mint_job()).unwrap();
-            Delay::new(Duration::from_millis(200)).await;
-        }
-    });
+#[stest::test]
+async fn test_stratum_client() {
+    let conf = Arc::new(NodeConfig::random_for_test());
+    let miner_config = conf.miner.clone();
+    let bus = BusActor::launch();
+    let mut miner = Miner::new(bus.clone(), conf.clone());
+    let stratum = {
+        let dispatcher = Arc::new(StratumManager::new(miner.clone()));
+        Stratum::start(&miner_config.stratum_server, dispatcher, None).unwrap()
+    };
+    Delay::new(Duration::from_millis(1000)).await;
+    info!("started stratum server");
+    let event_receiver = bus.oneshot::<MinedBlock>();
+    let mine_ctx = {
+        let header = BlockHeader::random();
+        let body = BlockBody::default();
+        let block = Block::new(header, body);
+        let block_template = BlockTemplate::from_block(block);
+        let difficulty: U256 = 1.into();
+        MineCtx::new(block_template, difficulty)
+    };
+    let _addr =
+        MinerClientActor::new(miner_config.client_config.clone(), conf.net().consensus()).start();
+    //wait client connect to server.
+    Delay::new(Duration::from_millis(1000)).await;
+
+    miner.set_mint_job(mine_ctx);
+    stratum
+        .push_work_all(miner.get_mint_job().unwrap())
+        .unwrap();
+    let _mint_block = event_receiver.await.expect("expect MintBlock");
 }
 
 #[test]

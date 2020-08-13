@@ -39,6 +39,7 @@ pub const STAGED_EXTENSION: &str = "mv";
 pub const STD_LIB_DOC_DIR: &str = "modules/doc";
 /// The output path for transaction script documentation.
 pub const TRANSACTION_SCRIPTS_DOC_DIR: &str = "transaction_scripts/doc";
+pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = "staged/transaction_scripts/abi";
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
@@ -49,6 +50,7 @@ static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> =
 /// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
 const COMPILED_STDLIB_DIR: Dir = include_dir!("staged/stdlib");
+const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "staged/transaction_scripts";
 
 // The staged version of the move standard library.
 // Similarly to genesis, we keep a compiled version of the standard library and scripts around, and
@@ -210,6 +212,31 @@ pub fn save_binary(path: &Path, binary: &[u8]) {
 
 pub fn build_stdlib_doc() {
     build_doc(STD_LIB_DOC_DIR, "", stdlib_files().as_slice(), "")
+}
+
+pub fn build_transaction_script_abi() {
+    for txn_script_file in transaction_script_files() {
+        build_abi(
+            COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
+            &[txn_script_file],
+            STD_LIB_DIR,
+            COMPILED_TRANSACTION_SCRIPTS_DIR,
+        )
+    }
+}
+
+fn build_abi(output_path: &str, sources: &[String], dep_path: &str, compiled_script_path: &str) {
+    let mut options = move_prover::cli::Options::default();
+    options.move_sources = sources.to_vec();
+    if !dep_path.is_empty() {
+        options.move_deps = vec![dep_path.to_string()]
+    }
+    options.verbosity_level = LevelFilter::Warn;
+    options.run_abigen = true;
+    options.abigen.output_directory = output_path.to_string();
+    options.abigen.compiled_script_directory = compiled_script_path.to_string();
+    options.setup_logging_for_test();
+    move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }
 
 pub fn build_transaction_script_doc() {

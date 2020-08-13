@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-sync"
-version = "0.4.1"
+version = "0.4.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
@@ -49,4 +49,5 @@ libp2p = "0.22.0"
 stest = { path = "../commons/stest"}
 starcoin-block-relayer = { path = "../block-relayer"}
 starcoin-statedb = {path = "../state/statedb"}
-starcoin-state-service = {path="../state/service"}
+starcoin-state-service = { path = "../state/service" }
+starcoin-node = { path = "../node" }

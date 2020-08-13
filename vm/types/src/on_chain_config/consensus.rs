@@ -11,7 +11,7 @@ use move_core_types::{language_storage::StructTag, move_resource::MoveResource};
 
 const CONSENSUS_MODULE_NAME: &str = "Consensus";
 
-/// Defines the version of Starcoin software.
+/// The Consensus on chain.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Consensus {
     pub uncle_rate_target: u64,
