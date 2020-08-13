@@ -1,6 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
+#![allow(clippy::unit_arg)]
 use crate::account_address;
 use crate::account_address::AccountAddress;
 use crate::chain_config::ChainId;
@@ -229,7 +229,6 @@ impl SignatureCheckedTransaction {
             .prop_flat_map(|(keypair, raw_txn)| {
                 prop_oneof![Just(
                     raw_txn
-                        .clone()
                         .sign(&keypair.private_key, keypair.public_key.clone())
                         .expect("signing should always work")
                 ),]

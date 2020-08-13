@@ -46,8 +46,8 @@ proptest! {
         let tmpdir = starcoin_config::temp_path();
         let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage.clone(),
-            db_storage.clone(),
+            cache_storage,
+            db_storage,
         ))
         .unwrap();
         let txns = init_store(universe, gens, &storage);
