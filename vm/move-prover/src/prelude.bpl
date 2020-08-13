@@ -1388,7 +1388,21 @@ function {:inline} $Signer_$borrow_address(signer: $Value): $Value
     signer
 }
 
+// ==================================================================================
+// Mocked out Event module
 
+procedure {:inline 1} $Event_new_event_handle(t: $TypeValue, signer: $Value) returns (res: $Value) {
+}
+
+procedure {:inline 1} $Event_publish_generator(account: $Value) {
+}
+
+procedure {:inline 1} $Event_emit_event(t: $TypeValue, handler: $Value, msg: $Value) returns (res: $Value) {
+    res := handler;
+}
+
+procedure {:inline 1} $Event_destroy_handle(t: $TypeValue, handler: $Value) {
+}
 
 procedure $Token_name_of(t_E: $TypeValue) returns (res1: $Value, res2: $Value, res3: $Value);
 ensures $IsValidU8Vector(res2);
