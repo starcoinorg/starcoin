@@ -220,42 +220,44 @@ impl DownloadActor {
                 .sync_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-            syncing.store(true, Ordering::Relaxed);
-            match Self::sync_state_and_block_inner(
-                self_peer_id.clone(),
-                main_network,
-                downloader.clone(),
-                rpc_client.clone(),
-                network.clone(),
-                storage.clone(),
-                sync_task.clone(),
-                download_address.clone(),
-            )
-            .await
-            {
-                Err(e) => {
-                    debug!("state sync error : {:?}", e);
-                    syncing.store(false, Ordering::Relaxed);
-                    Self::sync_state_and_block(
-                        self_peer_id.clone(),
-                        main_network,
-                        downloader.clone(),
-                        rpc_client,
-                        network.clone(),
-                        storage.clone(),
-                        sync_task,
-                        syncing.clone(),
-                        download_address,
-                    );
-                }
-                Ok(flag) => {
-                    SYNC_METRICS
-                        .sync_done_count
-                        .with_label_values(&[LABEL_STATE])
-                        .inc();
-                    if flag {
-                        download_address.do_send(SyncTaskType::STATE);
+            if !syncing.load(Ordering::Relaxed) {
+                syncing.store(true, Ordering::Relaxed);
+                match Self::sync_state_and_block_inner(
+                    self_peer_id.clone(),
+                    main_network,
+                    downloader.clone(),
+                    rpc_client.clone(),
+                    network.clone(),
+                    storage.clone(),
+                    sync_task.clone(),
+                    download_address.clone(),
+                )
+                .await
+                {
+                    Err(e) => {
+                        error!("state sync error : {:?}", e);
                         syncing.store(false, Ordering::Relaxed);
+                        Self::sync_state_and_block(
+                            self_peer_id.clone(),
+                            main_network,
+                            downloader.clone(),
+                            rpc_client,
+                            network.clone(),
+                            storage.clone(),
+                            sync_task,
+                            syncing.clone(),
+                            download_address,
+                        );
+                    }
+                    Ok(flag) => {
+                        SYNC_METRICS
+                            .sync_done_count
+                            .with_label_values(&[LABEL_STATE])
+                            .inc();
+                        if flag {
+                            download_address.do_send(SyncTaskType::STATE);
+                            syncing.store(false, Ordering::Relaxed);
+                        }
                     }
                 }
             }
