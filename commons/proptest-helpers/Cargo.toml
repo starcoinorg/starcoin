@@ -1,0 +1,14 @@
+[package]
+name = "starcoin-proptest-helpers"
+version = "0.4.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+crossbeam = "0.7.3"
+libra-proptest-helpers = { package="libra-proptest-helpers",  git = "https://github.com/starcoinorg/libra", rev="fb0724ca39edc9afc8c697d1183d562880433d8e" }
+
+proptest = "0.10.0"
+proptest-derive = "0.2.0"

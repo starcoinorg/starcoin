@@ -7133,6 +7133,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-proptest-helpers"
+version = "0.4.1"
+dependencies = [
+ "crossbeam",
+ "libra-proptest-helpers",
+ "proptest",
+ "proptest-derive",
+]
+
+[[package]]
 name = "starcoin-resource-viewer"
 version = "0.4.3"
 dependencies = [
@@ -7379,6 +7389,9 @@ dependencies = [
  "lru 0.6.0",
  "once_cell",
  "parking_lot 0.11.0",
+ "proptest",
+ "proptest-derive",
+ "rand 0.7.3",
  "rocksdb",
  "serde",
  "starcoin-accumulator",
@@ -7387,6 +7400,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-proptest-helpers",
  "starcoin-state-store-api",
  "starcoin-types",
 ]
@@ -7670,10 +7684,13 @@ dependencies = [
  "move-vm-types",
  "num_enum",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "serde",
  "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-proptest-helpers",
  "vm",
 ]
 
@@ -8871,11 +8888,14 @@ source = "git+https://github.com/starcoinorg/libra?rev=fb0724ca39edc9afc8c697d11
 dependencies = [
  "anyhow",
  "libra-crypto",
+ "libra-proptest-helpers",
  "libra-workspace-hack",
  "mirai-annotations",
  "move-core-types",
  "num-variants",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "ref-cast",
 ]
 

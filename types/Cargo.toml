@@ -35,3 +35,8 @@ futures = "0.3"
 starcoin-accumulator = {path = "../core/accumulator"}
 
 ethereum-types = "0.2.3"
+
+
+[features]
+default = []
+fuzzing = ["proptest", "proptest-derive"]
