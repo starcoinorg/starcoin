@@ -21,3 +21,18 @@ pub struct SyncBegin;
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub struct SyncDone;
+
+/// Try to stop a actor
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "()")]
+pub struct ActorStop;
+
+/// Try to stop system.
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "()")]
+pub struct SystemStop;
+
+///Fire this event on System start and all service is init.
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "()")]
+pub struct SystemStarted;

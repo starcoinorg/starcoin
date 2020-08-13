@@ -1,204 +1,52 @@
-mod gen_network;
-
-use actix_rt::System;
-use bus::{Bus, BusActor};
-use chain::ChainActor;
-use config::{get_random_available_port, NodeConfig};
+use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use futures_timer::Delay;
-use gen_network::gen_network;
-use libp2p::multiaddr::Multiaddr;
-use logger::prelude::*;
-use network_api::NetworkService;
-use starcoin_genesis::Genesis;
-use starcoin_state_service::ChainStateActor;
-use starcoin_sync::SyncActor;
-use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
-use std::{sync::Arc, time::Duration};
-use txpool::TxPool;
+use std::sync::Arc;
+use std::time::Duration;
 use types::{
     account_address,
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
 };
 
-#[test]
-fn test_txn_sync_actor() {
-    ::logger::init_for_test();
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let handle = rt.handle().clone();
-    let mut system = System::new("test");
-
-    let fut = async move {
-        // first chain
-        // bus
-        let bus_1 = BusActor::launch();
-
-        // node config
-        let mut config_1 = NodeConfig::random_for_test();
-        config_1.network.listen = format!("/ip4/127.0.0.1/tcp/{}", get_random_available_port())
-            .parse()
-            .unwrap();
-        let node_config_1 = Arc::new(config_1);
-
-        let (storage_1, startup_info_1, genesis_hash_1) =
-            Genesis::init_storage(node_config_1.as_ref()).expect("init storage by genesis fail.");
-
-        let txpool_1 = {
-            let best_block_id = *startup_info_1.get_master();
-            TxPool::start(
-                node_config_1.clone(),
-                storage_1.clone(),
-                best_block_id,
-                bus_1.clone(),
-            )
-        };
-
-        // network
-        let (network_1, addr_1, rpc_rx) = gen_network(
-            node_config_1.clone(),
-            bus_1.clone(),
-            handle.clone(),
-            genesis_hash_1,
-        );
-        debug!("addr_1 : {:?}", addr_1);
-        // chain
-        let first_chain = ChainActor::launch(
-            node_config_1.clone(),
-            startup_info_1.clone(),
-            storage_1.clone(),
-            bus_1.clone(),
-            txpool_1.get_service(),
-            None,
-        )
+#[stest::test]
+async fn test_txn_sync_actor() {
+    let mut first_config = NodeConfig::random_for_test();
+    first_config.miner.enable_miner_client = false;
+    let first_network_address = first_config.network.self_address().unwrap();
+    let first_config = Arc::new(first_config);
+    let first_node = starcoin_node::node::start(first_config.clone(), None)
+        .await
         .unwrap();
-        let state_service_1 =
-            ChainStateActor::launch(bus_1.clone(), storage_1.clone(), None).unwrap();
-        // network rpc server
-        starcoin_network_rpc::start_network_rpc_server(
-            rpc_rx,
-            first_chain.clone(),
-            storage_1.clone(),
-            state_service_1,
-            txpool_1.get_service(),
-        )
+    let txpool_1 = first_node.txpool;
+
+    // add txn to node1
+    let user_txn = gen_user_txn(&first_config);
+    let import_result = txpool_1
+        .get_service()
+        .add_txns(vec![user_txn.clone()])
+        .pop();
+    assert!(import_result.unwrap().is_ok());
+
+    let mut second_config = NodeConfig::random_for_test();
+    second_config.network.seeds = vec![first_network_address];
+    second_config.miner.enable_miner_client = false;
+    let second_config = Arc::new(second_config);
+    let second_node = starcoin_node::node::start(second_config.clone(), None)
+        .await
         .unwrap();
-        // sync
-        let first_p = Arc::new(network_1.identify().clone().into());
-        let _first_sync_actor = SyncActor::launch(
-            node_config_1.clone(),
-            bus_1.clone(),
-            first_p,
-            first_chain.clone(),
-            txpool_1.get_service(),
-            network_1.clone(),
-            storage_1.clone(),
-        )
-        .unwrap();
-
-        // add txn to node1
-        let user_txn = gen_user_txn(&node_config_1);
-        let import_result = txpool_1
-            .get_service()
-            .add_txns(vec![user_txn.clone()])
-            .pop();
-        assert!(import_result.unwrap().is_ok());
-
-        ////////////////////////
-        // second chain
-        // bus
-        let bus_2 = BusActor::launch();
-
-        // node config
-        let mut config_2 = NodeConfig::random_for_test();
-        let addr_1_hex = network_1.identify().to_base58();
-        let seed: Multiaddr = format!("{}/p2p/{}", &node_config_1.network.listen, addr_1_hex)
-            .parse()
-            .unwrap();
-        config_2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-                .parse()
-                .unwrap();
-        config_2.network.seeds = vec![seed];
-        let node_config_2 = Arc::new(config_2);
-
-        let (storage_2, startup_info_2, genesis_hash_2) =
-            Genesis::init_storage(node_config_2.as_ref()).expect("init storage by genesis fail.");
-
-        // txpool
-        let txpool_2 = {
-            let best_block_id = *startup_info_2.get_master();
-            TxPool::start(
-                node_config_2.clone(),
-                storage_2.clone(),
-                best_block_id,
-                bus_2.clone(),
-            )
-        };
-        // network
-        let (network_2, addr_2, rpc_rx_2) = gen_network(
-            node_config_2.clone(),
-            bus_2.clone(),
-            handle.clone(),
-            genesis_hash_2,
-        );
-        debug!("addr_2 : {:?}", addr_2);
-
-        // chain
-        let second_chain = ChainActor::launch(
-            node_config_2.clone(),
-            startup_info_2.clone(),
-            storage_2.clone(),
-            bus_2.clone(),
-            txpool_2.get_service(),
-            None,
-        )
-        .unwrap();
-
-        let state_service_2 =
-            ChainStateActor::launch(bus_2.clone(), storage_2.clone(), None).unwrap();
-        // network rpc server
-        starcoin_network_rpc::start_network_rpc_server(
-            rpc_rx_2,
-            second_chain.clone(),
-            storage_2.clone(),
-            state_service_2,
-            txpool_2.get_service(),
-        )
-        .unwrap();
-
-        // sync
-        let second_p = Arc::new(network_2.identify().clone().into());
-        let _second_sync_actor = SyncActor::launch(
-            node_config_2.clone(),
-            bus_2.clone(),
-            Arc::clone(&second_p),
-            second_chain.clone(),
-            txpool_2.get_service(),
-            network_2.clone(),
-            storage_2.clone(),
-        )
-        .unwrap();
-
-        Delay::new(Duration::from_secs(5)).await;
-
-        // make node2 to sync txn
-        bus_2.clone().broadcast(StartSyncTxnEvent).await.unwrap();
-        // wait 10s to sync done
-        Delay::new(Duration::from_secs(10)).await;
-        let current_timestamp = node_config_2.net().consensus().now();
-        // check txn
-        let mut txns = txpool_2
-            .get_service()
-            .get_pending_txns(None, Some(current_timestamp));
-        assert_eq!(txns.len(), 1);
-        let txn = txns.pop().unwrap();
-        assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
-    };
-
-    system.block_on(fut);
-    drop(rt);
+    let txpool_2 = second_node.txpool;
+    //wait sync finish.
+    Delay::new(Duration::from_secs(2)).await;
+    let current_timestamp = second_config.net().consensus().now();
+    // check txn
+    let mut txns = txpool_2
+        .get_service()
+        .get_pending_txns(None, Some(current_timestamp));
+    assert_eq!(txns.len(), 1);
+    let txn = txns.pop().unwrap();
+    assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
 }
 
 fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {

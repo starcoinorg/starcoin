@@ -41,10 +41,29 @@ pub fn steps() -> Steps<MyWorld> {
                 .unwrap_or_else(|e| panic!("run node fail:{:?}", e));
             world.node_handle = Some(handle)
         })
-        .then("node handle stop", |world: &mut MyWorld, _step| {
-            let node_handle = world.node_handle.take().unwrap();
-            let result = node_handle.stop();
-            assert!(result.is_ok());
+        .then("stop", |world: &mut MyWorld, _step| {
+            info!("try to stop world.");
+            //drop client first.
+            if world.default_rpc_client.is_some() {
+                let client = world.default_rpc_client.take().unwrap();
+                //arc client should no more reference at stop step.
+                let client = Arc::try_unwrap(client).ok().unwrap();
+                client.close();
+                info!("default rpc client stopped.");
+            }
+            if world.rpc_client2.is_some() {
+                let client = world.rpc_client2.take().unwrap();
+                let client = Arc::try_unwrap(client).ok().unwrap();
+                client.close();
+                info!("rpc_client2 stopped.");
+            }
+            // stop node
+            if world.node_handle.is_some() {
+                let node_handle = world.node_handle.take().unwrap();
+                let result = node_handle.stop();
+                assert!(result.is_ok());
+                info!("node stopped.");
+            }
         })
         .then("get node info", |world: &mut MyWorld, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();

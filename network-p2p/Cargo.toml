@@ -1,6 +1,6 @@
 [package]
 name = "network-p2p"
-version = "0.4.1"
+version = "0.4.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -34,7 +34,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"
-smallvec = "1.4.1"
+smallvec = "1.4.2"
 thiserror = "1"
 unsigned-varint = { version = "0.3.1", features = ["futures", "futures-codec"] }
 void = "1.0.2"

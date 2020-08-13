@@ -32,10 +32,18 @@ pub(crate) struct Resolver<'a> {
 impl<'a> Resolver<'a> {
     pub fn new(state: &'a dyn StateView) -> Self {
         let cache = ModuleCache::new();
+        Self::new_with_cache(state, cache)
+    }
+
+    pub fn new_with_cache(state: &'a dyn StateView, cache: ModuleCache) -> Self {
         Resolver { state, cache }
     }
 
-    fn get_module(&self, address: &AccountAddress, name: &IdentStr) -> Result<Rc<CompiledModule>> {
+    pub(crate) fn get_module(
+        &self,
+        address: &AccountAddress,
+        name: &IdentStr,
+    ) -> Result<Rc<CompiledModule>> {
         let module_id = ModuleId::new(*address, name.to_owned());
         if let Some(module) = self.cache.get(&module_id) {
             return Ok(module);
@@ -69,13 +77,14 @@ impl<'a> Resolver<'a> {
 
     pub fn resolve_struct(&self, struct_tag: &StructTag) -> Result<FatStructType> {
         let module = self.get_module(&struct_tag.address, &struct_tag.module)?;
-        let struct_def = find_struct_def_in_module(module.clone(), struct_tag.name.as_ident_str())?;
+        let struct_def =
+            find_struct_def_in_module(module.as_ref(), struct_tag.name.as_ident_str())?;
         let ty_args = struct_tag
             .type_params
             .iter()
             .map(|ty| self.resolve_type(ty))
             .collect::<Result<Vec<_>>>()?;
-        let ty_body = self.resolve_struct_definition(module, struct_def)?;
+        let ty_body = self.resolve_struct_definition(module.as_ref(), struct_def)?;
         ty_body.subst(&ty_args).map_err(|e: PartialVMError| {
             anyhow!("StructTag {:?} cannot be resolved: {:?}", struct_tag, e)
         })
@@ -83,7 +92,7 @@ impl<'a> Resolver<'a> {
 
     pub fn get_field_names(&self, ty: &FatStructType) -> Result<Vec<Identifier>> {
         let module = self.get_module(&ty.address, ty.module.as_ident_str())?;
-        let struct_def_idx = find_struct_def_in_module(module.clone(), ty.name.as_ident_str())?;
+        let struct_def_idx = find_struct_def_in_module(module.as_ref(), ty.name.as_ident_str())?;
         let struct_def = module.struct_def_at(struct_def_idx);
 
         match &struct_def.field_information {
@@ -95,9 +104,9 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    fn resolve_signature(
+    pub(crate) fn resolve_signature(
         &self,
-        module: Rc<CompiledModule>,
+        module: &CompiledModule,
         sig: &SignatureToken,
     ) -> Result<FatType> {
         Ok(match sig {
@@ -114,10 +123,10 @@ impl<'a> Resolver<'a> {
                 FatType::Struct(Box::new(self.resolve_struct_handle(module, *idx)?))
             }
             SignatureToken::StructInstantiation(idx, toks) => {
-                let struct_ty = self.resolve_struct_handle(module.clone(), *idx)?;
+                let struct_ty = self.resolve_struct_handle(module, *idx)?;
                 let args = toks
                     .iter()
-                    .map(|tok| self.resolve_signature(module.clone(), tok))
+                    .map(|tok| self.resolve_signature(module, tok))
                     .collect::<Result<Vec<_>>>()?;
                 FatType::Struct(Box::new(
                     struct_ty
@@ -132,9 +141,9 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    fn resolve_struct_handle(
+    pub(crate) fn resolve_struct_handle(
         &self,
-        module: Rc<CompiledModule>,
+        module: &CompiledModule,
         idx: StructHandleIndex,
     ) -> Result<FatStructType> {
         let struct_handle = module.struct_handle_at(idx);
@@ -146,15 +155,15 @@ impl<'a> Resolver<'a> {
             )?
         };
         let target_idx = find_struct_def_in_module(
-            target_module.clone(),
+            target_module.as_ref(),
             module.identifier_at(struct_handle.name),
         )?;
-        self.resolve_struct_definition(target_module, target_idx)
+        self.resolve_struct_definition(target_module.as_ref(), target_idx)
     }
 
-    fn resolve_struct_definition(
+    pub(crate) fn resolve_struct_definition(
         &self,
-        module: Rc<CompiledModule>,
+        module: &CompiledModule,
         idx: StructDefinitionIndex,
     ) -> Result<FatStructType> {
         let struct_def = module.struct_def_at(idx);
@@ -176,7 +185,7 @@ impl<'a> Resolver<'a> {
                 ty_args,
                 layout: defs
                     .iter()
-                    .map(|field_def| self.resolve_signature(module.clone(), &field_def.signature.0))
+                    .map(|field_def| self.resolve_signature(module, &field_def.signature.0))
                     .collect::<Result<_>>()?,
             }),
         }
@@ -184,7 +193,7 @@ impl<'a> Resolver<'a> {
 }
 
 fn find_struct_def_in_module(
-    module: Rc<CompiledModule>,
+    module: &CompiledModule,
     name: &IdentStr,
 ) -> Result<StructDefinitionIndex> {
     for (i, defs) in module.struct_defs().iter().enumerate() {

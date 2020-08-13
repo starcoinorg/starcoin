@@ -5,7 +5,7 @@ use crate::{
     decode_key, get_available_port_from, get_random_available_port, load_key, BaseConfig,
     ChainNetwork, ConfigModule, StarcoinOpt,
 };
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
@@ -38,6 +38,13 @@ pub struct NetworkConfig {
 impl NetworkConfig {
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
         self.network_keypair.clone().unwrap()
+    }
+
+    pub fn self_address(&self) -> Result<Multiaddr> {
+        self.self_address
+            .as_ref()
+            .cloned()
+            .ok_or_else(|| format_err!("Config not init."))
     }
 
     fn prepare_peer_id(&mut self) {

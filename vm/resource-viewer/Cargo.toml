@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-resource-viewer"
-version = "0.4.1"
+version = "0.4.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 starcoin-vm-types = { path = "../types" }
+stdlib = {path = "../stdlib"}
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive", "rc"] }
 

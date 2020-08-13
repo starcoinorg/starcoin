@@ -7,7 +7,7 @@ Feature: integration
   Scenario: [cmd] node start and execute transfer
     Given a test node config
     And node handle
-    And dev rpc client
+    And ipc rpc client
     Then get node info
     Then get node status
     Then get node peers
@@ -16,7 +16,7 @@ Feature: integration
     Then charge money to account
     Then execute transfer transaction
     Then state proof
-    Then node handle stop
+    Then stop
 
 #  Scenario: Node start and execute transfer
 #    Given remote rpc client
