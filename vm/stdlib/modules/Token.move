@@ -322,12 +322,18 @@ module Token {
     public fun scaling_factor<TokenType>(): u128
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
+        spec {
+            assert exists<TokenInfo<TokenType>>(token_address);
+        };
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
     spec fun scaling_factor {
         // Todo: fix name_of()
-        pragma verify = false;
+        pragma verify = true;
+
+        //let x  = name_of();
+        //aborts_if !exists<TokenInfo<TokenType>>(x);
     }
 
     /// Returns the representable fractional part for the `TokenType` token.
