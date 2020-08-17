@@ -85,6 +85,8 @@ while read -r line; do
   (cd "$dirline" && pwd && cargo test || true)
 done < <(find "$TEST_DIR" -name 'Cargo.toml')
 
+cargo test --test integration -- -e "cmd"
+
 # Make the coverage directory if it doesn't exist
 if [ ! -d "$COVERAGE_DIR" ]; then
   mkdir "$COVERAGE_DIR"
@@ -92,7 +94,7 @@ fi
 
 # Generate lcov report
 echo "Generating lcov report at ${COVERAGE_DIR}/lcov.info..."
-grcov target -t lcov --llvm --branch --ignore "/*" --ignore "x/*" --ignore "testsuite/*" -o "$COVERAGE_DIR/lcov.info"
+grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" -o "$COVERAGE_DIR/lcov.info"
 
 # Generate HTML report
 echo "Generating report at ${COVERAGE_DIR}..."
