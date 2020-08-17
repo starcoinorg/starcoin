@@ -1458,9 +1458,10 @@ Message for accept token events
     <b>let</b> transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
     <b>assert</b>(
         <a href="#0x1_Account_balance_for">balance_for</a>(sender_balance) &gt;= transaction_fee_amount,
-        6
+        <a href="ErrorCode.md#0x1_ErrorCode_EINSUFFICIENT_BALANCE">ErrorCode::EINSUFFICIENT_BALANCE</a>()
     );
 
+    // Todo: remove the abandoned code
     <b>let</b> cost = <a href="SignedInteger64.md#0x1_SignedInteger64_create_from_raw_value">SignedInteger64::create_from_raw_value</a>(state_cost_amount, cost_is_negative);
     <b>assert</b>(
         <a href="SignedInteger64.md#0x1_SignedInteger64_get_value">SignedInteger64::get_value</a>(cost) &gt;= 0, 7

@@ -22,6 +22,7 @@ fn get_stdlib_script_abis() -> Vec<ScriptABI> {
 }
 
 const EXPECTED_OUTPUT : &str = "225 1 161 28 235 11 1 0 0 0 7 1 0 2 2 2 4 3 6 16 4 22 2 5 24 29 7 53 97 8 150 1 16 0 0 0 1 1 0 0 2 0 1 0 0 3 2 3 1 1 0 4 1 3 0 1 5 1 6 12 1 8 0 5 6 8 0 5 3 10 2 10 2 0 5 6 12 5 3 10 2 10 2 1 9 0 12 76 105 98 114 97 65 99 99 111 117 110 116 18 87 105 116 104 100 114 97 119 67 97 112 97 98 105 108 105 116 121 27 101 120 116 114 97 99 116 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 8 112 97 121 95 102 114 111 109 27 114 101 115 116 111 114 101 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 4 1 12 11 0 17 0 12 5 14 5 10 1 10 2 11 3 11 4 56 0 11 5 17 2 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 1 135 214 18 0 0 0 0 0 4 0 4 0 \n";
+const OUTPUT : &str = "181 1 161 28 235 11 1 0 0 0 6 1 0 2 3 2 17 4 19 4 5 23 28 7 51 56 8 107 16 0 0 0 1 0 1 1 1 0 2 2 3 0 0 3 4 1 1 1 0 6 2 6 2 5 10 2 0 1 5 1 1 4 6 12 5 4 10 2 5 6 12 5 10 2 4 10 2 1 9 0 7 65 99 99 111 117 110 116 14 99 114 101 97 116 101 95 97 99 99 111 117 110 116 9 101 120 105 115 116 115 95 97 116 22 112 97 121 95 102 114 111 109 95 119 105 116 104 95 109 101 116 97 100 97 116 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 5 1 14 10 1 17 1 32 3 5 5 8 10 1 11 2 56 0 11 0 10 1 10 3 11 4 56 1 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 4 0 2 135 214 18 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 \n";
 
 // Cannot run this test in the CI of Libra.
 #[test]
@@ -101,14 +102,15 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
 }
 
 #[test]
-#[ignore]
 fn test_that_rust_code_compiles() {
     let registry = get_libra_registry();
     let abis = get_stdlib_script_abis();
     let dir = tempdir().unwrap();
 
     let installer = serdegen::rust::Installer::new(dir.path().to_path_buf());
-    installer.install_module("libra-types", &registry).unwrap();
+    installer
+        .install_module("starcoin-types", &registry)
+        .unwrap();
 
     let stdlib_dir_path = dir.path().join("libra-stdlib");
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
@@ -122,19 +124,16 @@ version = "0.1.0"
 edition = "2018"
 
 [dependencies]
-libra-types = {{ path = "../libra-types", version = "0.1.0" }}
 serde_bytes = "0.11"
-libra-canonical-serialization = {{ path = "{}", version = "0.1.0" }}
+lcs = {{ package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f2c0d1b241971c8dd89f640"}}
+starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
+
 
 [[bin]]
 name = "stdlib_demo"
 path = "src/stdlib_demo.rs"
 test = false
-"#,
-        std::env::current_dir()
-            .unwrap()
-            .join("../../common/lcs")
-            .to_string_lossy()
+"#
     )
     .unwrap();
     std::fs::create_dir(stdlib_dir_path.join("src")).unwrap();
@@ -163,10 +162,7 @@ test = false
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(
-        std::str::from_utf8(&output.stdout).unwrap(),
-        EXPECTED_OUTPUT
-    );
+    assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 }
 
 #[test]
