@@ -5,9 +5,16 @@ use std::process::Command;
 use tempfile::tempdir;
 
 #[test]
-#[ignore]
 fn test_that_installed_rust_code_compiles() {
     let dir = tempdir().unwrap();
+
+    // let yaml_path = std::env::current_dir()
+    //     .unwrap()
+    //     .join("../../testsuite/generate-format/tests/staged/starcoin.yaml");
+    //
+    // let abi_dir_path = std::env::current_dir()
+    //     .unwrap()
+    //     .join("../../vm/stdlib/staged/transaction_scripts/abi");
 
     let status = Command::new("cargo")
         .current_dir("../..")
@@ -30,6 +37,7 @@ fn test_that_installed_rust_code_compiles() {
 
     // Use a stable `target` dir to avoid downloading and recompiling crates everytime.
     let target_dir = std::env::current_dir().unwrap().join("../../target");
+    println!("target dir is {:?}", target_dir.as_path());
     let status = Command::new("cargo")
         .current_dir(dir.path().join("libra-stdlib"))
         .arg("build")

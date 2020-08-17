@@ -22,6 +22,7 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Res
 }
 
 fn output_preamble(out: &mut dyn Write, local_types: bool) -> Result<()> {
+    println!("local_type is {}", local_types);
     let preamble = if local_types {
         r#"
 // Copyright (c) The Libra Core Contributors
@@ -31,13 +32,13 @@ fn output_preamble(out: &mut dyn Write, local_types: bool) -> Result<()> {
 //
 // To re-generate this code, run: `(cd language/stdlib && cargo run --release)`
 
-use move_core_types::language_storage::TypeTag;
-use libra_types::transaction::{Script, TransactionArgument};
-use libra_types::account_address::AccountAddress;
+use starcoin_types::language_storage::TypeTag;
+use starcoin_types::transaction::{Script, TransactionArgument};
+use starcoin_types::account_address::AccountAddress;
 "#
     } else {
         r#"
-use libra_types::{AccountAddress, TypeTag, Script, TransactionArgument};
+use starcoin_types::{AccountAddress, TypeTag, Script, TransactionArgument};
 use serde_bytes::ByteBuf;
 "#
     };
@@ -213,7 +214,7 @@ edition = "2018"
 [dependencies]
 serde = {{ version = "1.0", features = ["derive"] }}
 serde_bytes = "0.11"
-libra-types = {{ path = "../libra-types", version = "{}" }}
+starcoin-types = {{ path = "../starcoin-types", version = "{}" }}
 "#,
             name, version, self.libra_types_version,
         )?;
