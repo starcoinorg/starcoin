@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 // #![feature(vec_remove_item)]
+#![forbid(unsafe_code)]
 pub mod access_path {
     pub use starcoin_vm_types::access_path::{
         into_inner, random_code, random_resource, AccessPath, DataType,
@@ -34,6 +35,16 @@ pub mod event {
 pub mod filter;
 pub mod peer_info;
 pub mod proof;
+
+#[cfg(any(test, feature = "fuzzing"))]
+pub mod proptest_types {
+    pub use starcoin_vm_types::proptest_types::*;
+}
+
+//TODO 指定具体用到libra的
+// pub mod proptest_types {
+//     pub use libra_types::proptest_types::*;
+// }
 pub mod startup_info;
 pub mod state_set;
 pub mod system_events;

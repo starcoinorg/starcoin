@@ -1,0 +1,33 @@
+[package]
+name = "transaction-builder-generator"
+version = "0.1.0"
+authors = ["Libra Association <opensource@libra.org>"]
+description = "Libra transaction-builder"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.31"
+structopt = "0.3.15"
+textwrap = "0.12.1"
+serde-reflection = "0.3.1"
+serde-generate = "0.7.1"
+serde_yaml = "0.8.13"
+
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f2c0d1b241971c8dd89f640" }
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f2c0d1b241971c8dd89f640" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f2c0d1b241971c8dd89f640" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f2c0d1b241971c8dd89f640"}
+
+[dev-dependencies]
+tempfile = "3.1.0"
+
+[features]
+default = []
+
+[[bin]]
+name = "generate-transaction-builders"
+path = "src/generate.rs"
+test = false

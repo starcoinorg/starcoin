@@ -16,10 +16,13 @@ chrono = "0.4"
 byteorder = "1.3.2"
 lru = "0.6.0"
 parking_lot = "0.11.0"
+proptest = { version = "0.10.0", optional = true }
+proptest-derive = { version = "0.2.0", optional = true }
 once_cell = "1.4.0"
 #state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
+starcoin-proptest-helpers = { path = "../commons/proptest-helpers", optional = true}
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", package = "forkable-jellyfish-merkle" }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-metrics = { path = "../commons/metrics"}
@@ -29,3 +32,14 @@ starcoin-config = { path = "../config"}
 version = "0.14"
 default-features = false
 features = ["lz4"]
+
+
+[dev-dependencies]
+proptest = "0.10.0"
+proptest-derive = "0.2.0"
+rand = "0.7.3"
+starcoin-types = {path = "../types", features = ["fuzzing"]}
+
+[features]
+default = []
+fuzzing = ["proptest", "proptest-derive", "starcoin-proptest-helpers",  "starcoin-types/fuzzing"]
