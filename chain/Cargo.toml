@@ -38,7 +38,17 @@ starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
 starcoin-network-rpc-api = {path = "../network-rpc/api"}
 starcoin-network = {path ="../network"}
+proptest = { version = "0.10.0", default-features = false, optional = true }
+proptest-derive = { version = "0.2.0", default-features = false, optional = true }
+ethereum-types = "0.2.3"
+
 [dev-dependencies]
 starcoin-account-api = { path = "../account/api"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../core/genesis"}
+proptest = { version = "0.10.0"}
+proptest-derive = { version = "0.2.0"}
+
+[features]
+default = []
+fuzzing = ["proptest","proptest-derive", "starcoin-types/fuzzing"]
