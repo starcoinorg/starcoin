@@ -21,7 +21,7 @@ abigen = { git = "https://github.com/starcoinorg/libra", rev="c5071199cf5d65ea2f
 
 # external dependencies
 anyhow = "1.0.32"
-clap = "2.33.2"
+clap = "2.33.3"
 codespan = "0.8.0"
 codespan-reporting = "0.8.0"
 handlebars = "3.4.0"
