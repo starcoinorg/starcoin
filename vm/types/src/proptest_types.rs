@@ -119,8 +119,6 @@ impl Arbitrary for AccountInfoUniverse {
     type Strategy = BoxedStrategy<Self>;
 }
 
-pub struct BlockBodyGen {}
-
 #[derive(Arbitrary, Debug)]
 pub struct RawUserTransactionGen {
     payload: TransactionPayload,
