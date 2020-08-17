@@ -1,7 +1,7 @@
 script {
 use 0x1::Account;
 
-fun main<TokenType>(
+fun peer_to_peer_with_metadata<TokenType>(
     account: &signer,
     payee: address,
     auth_key_prefix: vector<u8>,
