@@ -152,6 +152,13 @@ module Vector {
         }
     }
 
+    spec fun length {
+        pragma intrinsic = true;
+    }
+    spec fun borrow {
+        pragma intrinsic = true;
+    }
+
     spec fun reverse {
         pragma intrinsic = true;
     }

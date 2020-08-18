@@ -322,15 +322,12 @@ module Token {
     public fun scaling_factor<TokenType>(): u128
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
-        spec {
-            assert exists<TokenInfo<TokenType>>(token_address);
-        };
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
     spec fun scaling_factor {
         // Todo: fix name_of()
-        pragma verify = true;
+        pragma verify = false;
 
         //let x  = name_of();
         //aborts_if !exists<TokenInfo<TokenType>>(x);
@@ -366,6 +363,7 @@ module Token {
     }
 
     spec fun is_registered_in {
+        aborts_if false;
     }
 
     /// Return true if the type `TokenType1` is same with `TokenType2`
@@ -374,6 +372,7 @@ module Token {
     }
 
     spec fun is_same_token {
+        aborts_if false;
     }
 
     /// Return the TokenType's address
@@ -383,6 +382,7 @@ module Token {
     }
 
     spec fun token_address {
+        aborts_if false;
     }
 
     /// Return the token code for the registered token.
@@ -392,6 +392,7 @@ module Token {
     }
 
     spec fun token_code {
+        aborts_if false;
     }
 
     fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
@@ -407,6 +408,7 @@ module Token {
     }
 
     spec fun code_to_bytes {
+        aborts_if false;
     }
 
     /// Return Token's module address, module name, and type name of `TokenType`.
