@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{ChainAsyncService, ConnectBlockResult};
+use crate::ChainAsyncService;
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use starcoin_types::peer_info::PeerId;
@@ -20,15 +20,11 @@ pub struct MockChainService;
 
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
-    async fn try_connect(&self, _block: Block) -> Result<ConnectBlockResult> {
+    async fn try_connect(&self, _block: Block) -> Result<()> {
         unimplemented!()
     }
 
-    async fn try_connect_without_execute(
-        &mut self,
-        _block: Block,
-        _peer_id: PeerId,
-    ) -> Result<ConnectBlockResult> {
+    async fn try_connect_without_execute(&mut self, _block: Block, _peer_id: PeerId) -> Result<()> {
         unimplemented!()
     }
 
@@ -40,13 +36,9 @@ impl ChainAsyncService for MockChainService {
         unimplemented!()
     }
 
-    async fn master_block_by_uncle(&self, _uncle_id: HashValue) -> Result<Option<Block>> {
-        unimplemented!()
-    }
     async fn get_block_state_by_hash(&self, _hash: &HashValue) -> Result<Option<BlockState>> {
         unimplemented!()
     }
-
     async fn get_block_info_by_hash(&self, _hash: &HashValue) -> Result<Option<BlockInfo>> {
         unimplemented!()
     }
@@ -77,15 +69,19 @@ impl ChainAsyncService for MockChainService {
     ) -> Result<Option<Vec<ContractEvent>>, Error> {
         unimplemented!()
     }
+
     async fn master_head_header(&self) -> Result<Option<BlockHeader>> {
         unimplemented!()
     }
-
     async fn master_head_block(&self) -> Result<Option<Block>> {
         unimplemented!()
     }
 
     async fn master_block_by_number(&self, _number: u64) -> Result<Block> {
+        unimplemented!()
+    }
+
+    async fn master_block_by_uncle(&self, _uncle_id: HashValue) -> Result<Option<Block>> {
         unimplemented!()
     }
 

@@ -7,11 +7,11 @@ use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, Private
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use std::sync::Arc;
 use storage::Storage;
-use traits::{ChainReader, ChainWriter, ConnectBlockResult};
 use txpool::TxPool;
 
 async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<Storage>) {
@@ -67,8 +67,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
                 .create_block(&block_chain, block_template)
                 .unwrap();
 
-            let connect_result = chain.clone().try_connect(block).await.unwrap();
-            assert_eq!(connect_result, ConnectBlockResult::SUCCESS);
+            chain.clone().try_connect(block).await.unwrap();
         }
     }
 
