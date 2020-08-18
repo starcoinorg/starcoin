@@ -5,12 +5,21 @@ use crate::test_helper;
 use config::NodeConfig;
 use crypto::HashValue;
 use ethereum_types::U256;
+use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
+use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_genesis::Genesis;
+use starcoin_statedb::ChainStateDB;
+use starcoin_traits::ChainWriter;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::chain_config::ChainNetwork;
-use starcoin_types::transaction::SignedUserTransaction;
+use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use std::sync::Arc;
+use storage::cache_storage::CacheStorage;
+use storage::storage::StorageInstance;
+use storage::Storage;
+
 type LinearizedBlockForest = Vec<Block>;
 
 /// This produces the genesis block
@@ -52,7 +61,7 @@ fn gen_header(
         acc_root,
         state_root,
         0,
-        0, //block_gas_limit
+        10_000, //block_gas_limit
         U256::zero(),
         0,
         None,
@@ -69,7 +78,25 @@ prop_compose! {
         parent_header in Just(parent_header),
         // block in block_strategy
     ) -> Block {
-        let header = gen_header(parent_header, HashValue::zero(), HashValue::zero());
+    //transfer transactions
+    let txns = {
+            let mut t = vec![];
+            t.extend(
+                user_txns
+                    .iter()
+                    .cloned()
+                    .map(Transaction::UserTransaction),
+            );
+            t
+        };
+    //gen state_root, acc_root
+        let (state_root, acc_root) = gen_root_hashes(
+            parent_header.accumulator_root(),
+            parent_header.state_root(),
+            txns,
+            10_000 /*block_gas_limit*/
+        );
+        let header = gen_header(parent_header, state_root, acc_root);
         let body = BlockBody::new(user_txns, None);
         Block::new_with_body(header, body)
     }
@@ -112,7 +139,41 @@ prop_compose! {
 /// vector
 pub fn block_forest(depth: u32) -> impl Strategy<Value = LinearizedBlockForest> {
     let leaf = leaf_strategy().prop_map(|block| vec![block]);
-    leaf.prop_recursive(depth, depth, 2, child)
+    leaf.prop_recursive(depth, depth, 4, child)
+}
+
+fn gen_root_hashes(
+    pre_accumulator_root: HashValue,
+    pre_state_root: HashValue,
+    block_txns: Vec<Transaction>,
+    block_gat_limit: u64,
+) -> (HashValue, HashValue) {
+    let storage =
+        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
+    //state_db
+    let chain_state = ChainStateDB::new(storage.clone(), Some(pre_state_root));
+    if let Ok(executed_data) = executor::block_execute(&chain_state, block_txns, block_gat_limit) {
+        let txn_accumulator = MerkleAccumulator::new(
+            pre_accumulator_root,
+            vec![],
+            0,
+            0,
+            AccumulatorStoreType::Transaction,
+            storage,
+        )
+        .unwrap();
+
+        let included_txn_info_hashes: Vec<_> = executed_data
+            .txn_infos
+            .iter()
+            .map(|info| info.id())
+            .collect();
+        let (accumulator_root, _first_leaf_idx) =
+            txn_accumulator.append(&included_txn_info_hashes).unwrap();
+        (accumulator_root, executed_data.state_root)
+    } else {
+        (HashValue::zero(), HashValue::zero())
+    }
 }
 
 proptest! {
@@ -122,16 +183,14 @@ proptest! {
     fn test_block_gen_and_insert(
         blocks in block_forest(
             // recursion depth
-            2)
+            10)
     ){
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut _block_chain = test_helper::gen_blockchain_for_test(config).unwrap();
+    let mut block_chain = test_helper::gen_blockchain_for_test(config).unwrap();
 
-    for _block in blocks {
-        // TODO check parent is exist
-        // TODO execute block,
-        // let result = block_chain.apply(block);
-        // TODO insert to storage
+    for block in blocks {
+        let result = block_chain.apply(block);
+        info!("{:?}", result);
     }
     }
 }
