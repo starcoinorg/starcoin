@@ -35,10 +35,10 @@ fn output_preamble(out: &mut dyn Write, package: Option<&str>) -> Result<()> {
         r#"
 import java.math.BigInteger;
 import java.util.Arrays;
-import org.libra.types.AccountAddress;
-import org.libra.types.Script;
-import org.libra.types.TransactionArgument;
-import org.libra.types.TypeTag;
+import org.starcoin.types.AccountAddress;
+import org.starcoin.types.Script;
+import org.starcoin.types.TransactionArgument;
+import org.starcoin.types.TypeTag;
 import com.facebook.serde.Int128;
 import com.facebook.serde.Unsigned;
 import com.facebook.serde.Bytes;

@@ -58,7 +58,7 @@ fn output_preamble(
 {}import Script, TypeTag, AccountAddress, TransactionArgument__Bool, TransactionArgument__U8, TransactionArgument__U64, TransactionArgument__U128, TransactionArgument__Address, TransactionArgument__U8Vector
 "#,
         quote_from_package(serde_package_name),
-        quote_from_package_and_module(libra_package_name, "libra_types"),
+        quote_from_package_and_module(libra_package_name, "starcoin_types"),
     )
 }
 

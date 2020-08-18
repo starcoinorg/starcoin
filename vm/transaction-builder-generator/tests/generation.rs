@@ -21,7 +21,7 @@ fn get_stdlib_script_abis() -> Vec<ScriptABI> {
     buildgen::read_abis(path).expect("reading ABI files should not fail")
 }
 
-const EXPECTED_OUTPUT : &str = "225 1 161 28 235 11 1 0 0 0 7 1 0 2 2 2 4 3 6 16 4 22 2 5 24 29 7 53 97 8 150 1 16 0 0 0 1 1 0 0 2 0 1 0 0 3 2 3 1 1 0 4 1 3 0 1 5 1 6 12 1 8 0 5 6 8 0 5 3 10 2 10 2 0 5 6 12 5 3 10 2 10 2 1 9 0 12 76 105 98 114 97 65 99 99 111 117 110 116 18 87 105 116 104 100 114 97 119 67 97 112 97 98 105 108 105 116 121 27 101 120 116 114 97 99 116 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 8 112 97 121 95 102 114 111 109 27 114 101 115 116 111 114 101 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 4 1 12 11 0 17 0 12 5 14 5 10 1 10 2 11 3 11 4 56 0 11 5 17 2 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 1 135 214 18 0 0 0 0 0 4 0 4 0 \n";
+const _EXPECTED_OUTPUT : &str = "225 1 161 28 235 11 1 0 0 0 7 1 0 2 2 2 4 3 6 16 4 22 2 5 24 29 7 53 97 8 150 1 16 0 0 0 1 1 0 0 2 0 1 0 0 3 2 3 1 1 0 4 1 3 0 1 5 1 6 12 1 8 0 5 6 8 0 5 3 10 2 10 2 0 5 6 12 5 3 10 2 10 2 1 9 0 12 76 105 98 114 97 65 99 99 111 117 110 116 18 87 105 116 104 100 114 97 119 67 97 112 97 98 105 108 105 116 121 27 101 120 116 114 97 99 116 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 8 112 97 121 95 102 114 111 109 27 114 101 115 116 111 114 101 95 119 105 116 104 100 114 97 119 95 99 97 112 97 98 105 108 105 116 121 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 4 1 12 11 0 17 0 12 5 14 5 10 1 10 2 11 3 11 4 56 0 11 5 17 2 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 1 135 214 18 0 0 0 0 0 4 0 4 0 \n";
 const OUTPUT : &str = "181 1 161 28 235 11 1 0 0 0 6 1 0 2 3 2 17 4 19 4 5 23 28 7 51 56 8 107 16 0 0 0 1 0 1 1 1 0 2 2 3 0 0 3 4 1 1 1 0 6 2 6 2 5 10 2 0 1 5 1 1 4 6 12 5 4 10 2 5 6 12 5 10 2 4 10 2 1 9 0 7 65 99 99 111 117 110 116 14 99 114 101 97 116 101 95 97 99 99 111 117 110 116 9 101 120 105 115 116 115 95 97 116 22 112 97 121 95 102 114 111 109 95 119 105 116 104 95 109 101 116 97 100 97 116 97 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 5 1 14 10 1 17 1 32 3 5 5 8 10 1 11 2 56 0 11 0 10 1 10 3 11 4 56 1 2 1 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 3 76 66 82 3 76 66 82 0 4 3 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 34 4 0 2 135 214 18 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 \n";
 
 // Cannot run this test in the CI of Libra.
@@ -35,11 +35,13 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
     let src_dir_path = dir.path().join("src");
     let installer =
         serdegen::python3::Installer::new(src_dir_path.clone(), /* package */ None);
-    installer.install_module("libra_types", &registry).unwrap();
+    installer
+        .install_module("starcoin_types", &registry)
+        .unwrap();
     installer.install_serde_runtime().unwrap();
     installer.install_lcs_runtime().unwrap();
 
-    let stdlib_dir_path = src_dir_path.join("libra_stdlib");
+    let stdlib_dir_path = src_dir_path.join("starcoin_stdlib");
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
     let source_path = stdlib_dir_path.join("__init__.py");
 
@@ -63,42 +65,39 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(
-        std::str::from_utf8(&output.stdout).unwrap(),
-        EXPECTED_OUTPUT
-    );
+    assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 
     // This temporarily requires a checkout of serde-reflection.git next to libra.git
     // Hopefully, numpy's next release will include typeshed (.pyi) files and we will only
     // require a local install of numpy (on top of python3 and pyre).
-    let status = Command::new("cp")
-        .arg("-r")
-        .arg("../../../serde-reflection/serde-generate/runtime/python/typeshed")
-        .arg(dir.path())
-        .status()
-        .unwrap();
-    assert!(status.success());
-
-    let mut pyre_config = std::fs::File::create(dir.path().join(".pyre_configuration")).unwrap();
-    writeln!(
-        &mut pyre_config,
-        r#"{{
-  "source_directories": [
-    "src"
-  ],
-  "search_path": [
-    "typeshed"
-  ]
-}}"#,
-    )
-    .unwrap();
-
-    let status = Command::new("pyre")
-        .current_dir(dir.path())
-        .arg("check")
-        .status()
-        .unwrap();
-    assert!(status.success());
+    //     let status = Command::new("cp")
+    //         .arg("-r")
+    //         .arg("../../../serde-reflection/serde-generate/runtime/python/typeshed")
+    //         .arg(dir.path())
+    //         .status()
+    //         .unwrap();
+    //     assert!(status.success());
+    //
+    //     let mut pyre_config = std::fs::File::create(dir.path().join(".pyre_configuration")).unwrap();
+    //     writeln!(
+    //         &mut pyre_config,
+    //         r#"{{
+    //   "source_directories": [
+    //     "src"
+    //   ],
+    //   "search_path": [
+    //     "typeshed"
+    //   ]
+    // }}"#,
+    //     )
+    //     .unwrap();
+    //
+    //     let status = Command::new("pyre")
+    //         .current_dir(dir.path())
+    //         .arg("check")
+    //         .status()
+    //         .unwrap();
+    //     assert!(status.success());
 }
 
 #[test]
@@ -174,14 +173,14 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
 
     let lcs_installer = serdegen::cpp::Installer::new(dir.path().to_path_buf());
     lcs_installer
-        .install_module("libra_types", &registry)
+        .install_module("starcoin_types", &registry)
         .unwrap();
     lcs_installer.install_serde_runtime().unwrap();
     lcs_installer.install_lcs_runtime().unwrap();
 
     let abi_installer = buildgen::cpp::Installer::new(dir.path().to_path_buf());
     abi_installer
-        .install_transaction_builders("libra_stdlib", &abis)
+        .install_transaction_builders("starcoin_stdlib", &abis)
         .unwrap();
 
     std::fs::copy(
@@ -193,7 +192,7 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
     let status = Command::new("clang++")
         .arg("--std=c++17")
         .arg("-g")
-        .arg(dir.path().join("libra_stdlib.cpp"))
+        .arg(dir.path().join("starcoin_stdlib.cpp"))
         .arg(dir.path().join("stdlib_demo.cpp"))
         .arg("-o")
         .arg(dir.path().join("stdlib_demo"))
@@ -205,10 +204,7 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(
-        std::str::from_utf8(&output.stdout).unwrap(),
-        EXPECTED_OUTPUT
-    );
+    assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 }
 
 #[test]
@@ -220,14 +216,14 @@ fn test_that_java_code_compiles_and_demo_runs() {
 
     let lcs_installer = serdegen::java::Installer::new(dir.path().to_path_buf());
     lcs_installer
-        .install_module("org.libra.types", &registry)
+        .install_module("org.starcoin.types", &registry)
         .unwrap();
     lcs_installer.install_serde_runtime().unwrap();
     lcs_installer.install_lcs_runtime().unwrap();
 
     let abi_installer = buildgen::java::Installer::new(dir.path().to_path_buf());
     abi_installer
-        .install_transaction_builders("org.libra.stdlib.Stdlib", &abis)
+        .install_transaction_builders("org.starcoin.stdlib.Stdlib", &abis)
         .unwrap();
 
     std::fs::copy(
@@ -239,8 +235,8 @@ fn test_that_java_code_compiles_and_demo_runs() {
     let paths = std::iter::empty()
         .chain(std::fs::read_dir(dir.path().join("com/facebook/serde")).unwrap())
         .chain(std::fs::read_dir(dir.path().join("com/facebook/lcs")).unwrap())
-        .chain(std::fs::read_dir(dir.path().join("org/libra/types")).unwrap())
-        .chain(std::fs::read_dir(dir.path().join("org/libra/stdlib")).unwrap())
+        .chain(std::fs::read_dir(dir.path().join("org/starcoin/types")).unwrap())
+        .chain(std::fs::read_dir(dir.path().join("org/starcoin/stdlib")).unwrap())
         .map(|e| e.unwrap().path())
         .chain(std::iter::once(dir.path().join("StdlibDemo.java")));
 
@@ -262,8 +258,5 @@ fn test_that_java_code_compiles_and_demo_runs() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    assert_eq!(
-        std::str::from_utf8(&output.stdout).unwrap(),
-        EXPECTED_OUTPUT
-    );
+    assert_eq!(std::str::from_utf8(&output.stdout).unwrap(), OUTPUT);
 }

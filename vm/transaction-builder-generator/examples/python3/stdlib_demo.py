@@ -3,32 +3,32 @@
 
 # pyre-strict
 
-import libra_types as libra
+import starcoin_types as starcoin
 import serde_types as st
 import lcs
-import libra_stdlib as stdlib
+import starcoin_stdlib as stdlib
 
 
-def make_address(content: bytes) -> libra.AccountAddress:
+def make_address(content: bytes) -> starcoin.AccountAddress:
     assert len(content) == 16
     # pyre-fixme
-    return libra.AccountAddress(tuple(st.uint8(x) for x in content))
+    return starcoin.AccountAddress(tuple(st.uint8(x) for x in content))
 
 
 def main() -> None:
-    token = libra.TypeTag__Struct(
-        libra.StructTag(
+    token = starcoin.TypeTag__Struct(
+        starcoin.StructTag(
             address=make_address(b"\x00" * 15 + b"\x01"),
-            module=libra.Identifier("LBR"),
-            name=libra.Identifier("LBR"),
+            module=starcoin.Identifier("LBR"),
+            name=starcoin.Identifier("LBR"),
             type_params=[],
         )
     )
     payee = make_address(b"\x22" * 16)
-    amount = st.uint64(1_234_567)
-    script = stdlib.encode_peer_to_peer_with_metadata_script(token, payee, amount, b"", b"")
+    amount = st.uint128(1_234_567)
+    script = stdlib.encode_peer_to_peer_with_metadata_script(token, payee, b"",amount, b"")
 
-    for b in lcs.serialize(script, libra.Script):
+    for b in lcs.serialize(script, starcoin.Script):
         print("%d " % b, end='')
     print()
 
