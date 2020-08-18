@@ -11,6 +11,7 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
+use starcoin_traits::ChainWriter;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::chain_config::ChainNetwork;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
@@ -18,7 +19,6 @@ use std::sync::Arc;
 use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use traits::ChainWriter;
 
 type LinearizedBlockForest = Vec<Block>;
 
