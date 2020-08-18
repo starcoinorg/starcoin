@@ -58,7 +58,7 @@ fn output_preamble(out: &mut dyn Write) -> Result<()> {
         r#"
 #pragma once
 
-#include "libra_types.hpp"
+#include "starcoin_types.hpp"
 "#
     )
 }
@@ -68,7 +68,7 @@ fn output_using_namespaces(out: &mut dyn Write) -> Result<()> {
         out,
         r#"
 using namespace serde;
-using namespace libra_types;
+using namespace starcoin_types;
 "#
     )
 }

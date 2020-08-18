@@ -8,12 +8,12 @@ import com.facebook.serde.Bytes;
 import com.facebook.serde.Serializer;
 import com.facebook.serde.Unsigned; // used as documentation.
 import com.facebook.lcs.LcsSerializer;
-import org.libra.stdlib.Stdlib;
-import org.libra.types.AccountAddress;
-import org.libra.types.Identifier;
-import org.libra.types.Script;
-import org.libra.types.StructTag;
-import org.libra.types.TypeTag;
+import org.starcoin.stdlib.Stdlib;
+import org.starcoin.types.AccountAddress;
+import org.starcoin.types.Identifier;
+import org.starcoin.types.Script;
+import org.starcoin.types.StructTag;
+import org.starcoin.types.TypeTag;
 
 public class StdlibDemo {
 
@@ -31,7 +31,7 @@ public class StdlibDemo {
         builder.address = make_address(new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
         builder.module = new Identifier("LBR");
         builder.name = new Identifier("LBR");
-        builder.type_params = new ArrayList<org.libra.types.TypeTag>();
+        builder.type_params = new ArrayList<org.starcoin.types.TypeTag>();
         StructTag tag = builder.build();
 
         TypeTag token = new TypeTag.Struct(tag);
@@ -41,7 +41,7 @@ public class StdlibDemo {
 
         @Unsigned Long amount = Long.valueOf(1234567);
         Script script =
-            Stdlib.encode_peer_to_peer_with_metadata_script(token, payee, amount, new Bytes(new byte[]{}), new Bytes(new byte[]{}));
+            Stdlib.encode_peer_to_peer_with_metadata_script(token, payee, new Bytes(new byte[]{}),java.math.BigInteger.valueOf(amount), new Bytes(new byte[]{}));
 
         Serializer serializer = new LcsSerializer();
         script.serialize(serializer);

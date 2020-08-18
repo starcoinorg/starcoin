@@ -128,8 +128,8 @@ fn main() {
                     format!("starcoin-types:{}", options.libra_version_number)
                 }
             }
-            Language::Java => "org.libra.types".to_string(),
-            _ => "libra_types".to_string(),
+            Language::Java => "org.starcoin.types".to_string(),
+            _ => "starcoin_types".to_string(),
         };
         installer.install_module(&name, &registry).unwrap();
     }
