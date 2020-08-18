@@ -3,18 +3,21 @@
 #![allow(clippy::unit_arg)]
 use crate::account_address;
 use crate::account_address::AccountAddress;
+use crate::block_metadata::BlockMetadata;
 use crate::chain_config::ChainId;
 use crate::event::EventHandle;
+use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
+use proptest::collection::SizeRange;
 use proptest::sample::Index as PropIndex;
 use proptest::{collection::vec, prelude::*};
 use proptest_derive::Arbitrary;
-use starcoin_crypto::ed25519;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
 use starcoin_crypto::test_utils::KeyPair;
+use starcoin_crypto::{ed25519, HashValue};
 use std::ops::Deref;
 use vm::CompiledModule;
 
@@ -161,8 +164,8 @@ impl RawUserTransaction {
             address_strategy,
             any::<u64>(),
             payload_strategy,
-            any::<u64>(),
-            any::<u64>(),
+            Just(20000u64),
+            Just(1u64),
             any::<u64>(),
         )
             .prop_map(
@@ -324,6 +327,40 @@ impl Arbitrary for Package {
             any::<Script>(),
         )
         .boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
+}
+
+impl Arbitrary for BlockMetadata {
+    type Parameters = SizeRange;
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        let key_prefix_strategy = ed25519::keypair_strategy().prop_map(|key_pair| {
+            AuthenticationKey::ed25519(&key_pair.public_key)
+                .prefix()
+                .to_vec()
+        });
+        (
+            any::<HashValue>(),
+            any::<u64>(),
+            any::<AccountAddress>(),
+            key_prefix_strategy,
+            any::<u64>(),
+            any::<u64>(),
+        )
+            .prop_map(
+                |(parent_hash, timestamp, addresses, auth_key_prefix, uncles, number)| {
+                    BlockMetadata::new(
+                        parent_hash,
+                        timestamp,
+                        addresses,
+                        Some(auth_key_prefix),
+                        uncles,
+                        number,
+                    )
+                },
+            )
+            .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;

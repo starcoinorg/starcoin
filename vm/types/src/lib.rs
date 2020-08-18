@@ -138,3 +138,6 @@ pub mod chain_config;
 pub mod event;
 pub mod on_chain_config;
 pub mod token;
+
+#[cfg(test)]
+mod unit_tests;

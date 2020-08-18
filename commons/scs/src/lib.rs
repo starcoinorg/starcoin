@@ -11,6 +11,10 @@ use anyhow::Result;
 pub use lcs::MAX_SEQUENCE_LENGTH;
 use serde::{Deserialize, Serialize};
 
+pub mod test_helpers {
+    pub use lcs::test_helpers::*;
+}
+
 pub fn to_bytes<T>(value: &T) -> Result<Vec<u8>>
 where
     T: ?Sized + Serialize,
