@@ -24,6 +24,7 @@ use logger::prelude::*;
 use message::ChainRequest;
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_traits::{ChainAsyncService, ChainService};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -36,7 +37,6 @@ use starcoin_types::{
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainAsyncService, ChainService, ConnectBlockResult};
 use txpool::TxPoolService;
 
 /// actor for block chain.
@@ -155,7 +155,7 @@ impl Handler<ChainRequest> for ChainActor {
                 self.service.get_block_info_by_hash(hash)?,
             ))),
             ChainRequest::ConnectBlock(block) => {
-                let conn_state = self.service.try_connect(*block)?;
+                let conn_state = self.service.try_connect(*block);
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::ConnectBlockWithoutExe(block, peer_id) => {
@@ -166,7 +166,7 @@ impl Handler<ChainRequest> for ChainActor {
                     .with(peer_id, block.header.state_root);
                 let conn_state = self
                     .service
-                    .try_connect_without_execute(*block, &remote_chain_state)?;
+                    .try_connect_without_execute(*block, &remote_chain_state);
                 Ok(ChainResponse::Conn(conn_state))
             }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
@@ -245,24 +245,20 @@ impl Into<ChainActorRef> for Addr<ChainActor> {
 
 #[async_trait::async_trait]
 impl ChainAsyncService for ChainActorRef {
-    async fn try_connect(&self, block: Block) -> Result<ConnectBlockResult> {
-        if let ChainResponse::Conn(conn_result) = self
+    async fn try_connect(&self, block: Block) -> Result<()> {
+        if let ChainResponse::Conn(result) = self
             .address
             .send(ChainRequest::ConnectBlock(Box::new(block)))
             .await
             .map_err(Into::<Error>::into)??
         {
-            Ok(conn_result)
+            result
         } else {
             Err(format_err!("error ChainResponse type."))
         }
     }
 
-    async fn try_connect_without_execute(
-        &mut self,
-        block: Block,
-        peer_id: PeerId,
-    ) -> Result<ConnectBlockResult> {
+    async fn try_connect_without_execute(&mut self, block: Block, peer_id: PeerId) -> Result<()> {
         if let ChainResponse::Conn(conn_result) = self
             .address
             .send(ChainRequest::ConnectBlockWithoutExe(
@@ -272,7 +268,7 @@ impl ChainAsyncService for ChainActorRef {
             .await
             .map_err(Into::<Error>::into)??
         {
-            Ok(conn_result)
+            conn_result
         } else {
             Err(format_err!("error ChainResponse type."))
         }

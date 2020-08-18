@@ -13,6 +13,9 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_traits::{
+    verify_block, BlockVerifyField, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns,
+};
 use starcoin_types::{
     account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
@@ -36,7 +39,6 @@ use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{convert::TryInto, sync::Arc};
 use storage::Store;
-use traits::{ChainReader, ChainWriter, ConnectBlockResult, ExcludedTxns};
 
 pub struct BlockChain {
     net: ChainNetwork,
@@ -279,55 +281,6 @@ impl ChainReader for BlockChain {
         self.storage.get_transaction(txn_hash)
     }
 
-    fn epoch_info(&self) -> Result<EpochInfo> {
-        self.get_epoch_info_by_number(None)
-    }
-
-    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
-        let num = match number {
-            Some(n) => n,
-            None => self.current_header().number(),
-        };
-
-        if let Some(block) = self.get_block_by_number(num)? {
-            let chain_state = ChainStateDB::new(
-                self.storage.clone().into_super_arc(),
-                Some(block.header().state_root()),
-            );
-            let account_reader = AccountStateReader::new(&chain_state);
-            let epoch = account_reader
-                .get_resource::<EpochResource>(genesis_address())?
-                .ok_or_else(|| format_err!("Epoch is none."))?;
-
-            let epoch_data = account_reader
-                .get_resource::<EpochDataResource>(genesis_address())?
-                .ok_or_else(|| format_err!("Epoch is none."))?;
-
-            let consensus_conf = account_reader
-                .get_on_chain_config::<ConsensusConfig>()?
-                .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
-
-            Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
-        } else {
-            Err(format_err!("Block is none when query epoch info."))
-        }
-    }
-
-    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        if let Some(block) = self.get_block_by_number(number)? {
-            let chain_state = ChainStateDB::new(
-                self.storage.clone().into_super_arc(),
-                Some(block.header().state_root()),
-            );
-            let account_reader = AccountStateReader::new(&chain_state);
-            Ok(account_reader
-                .get_resource::<GlobalTimeOnChain>(genesis_address())?
-                .ok_or_else(|| format_err!("GlobalTime is none."))?)
-        } else {
-            Err(format_err!("Block is none when query global time."))
-        }
-    }
-
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
         let txn_vec = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
         for txn_info_id in txn_vec {
@@ -410,6 +363,7 @@ impl ChainReader for BlockChain {
         };
         self.storage.get_block_info(id)
     }
+
     fn get_total_difficulty(&self) -> Result<U256> {
         let block_info = self.storage.get_block_info(self.head_block().id())?;
         Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
@@ -422,6 +376,54 @@ impl ChainReader for BlockChain {
             }
         }
         false
+    }
+
+    fn epoch_info(&self) -> Result<EpochInfo> {
+        self.get_epoch_info_by_number(None)
+    }
+    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
+        let num = match number {
+            Some(n) => n,
+            None => self.current_header().number(),
+        };
+
+        if let Some(block) = self.get_block_by_number(num)? {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(block.header().state_root()),
+            );
+            let account_reader = AccountStateReader::new(&chain_state);
+            let epoch = account_reader
+                .get_resource::<EpochResource>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
+
+            let epoch_data = account_reader
+                .get_resource::<EpochDataResource>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
+
+            let consensus_conf = account_reader
+                .get_on_chain_config::<ConsensusConfig>()?
+                .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
+
+            Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+        } else {
+            Err(format_err!("Block is none when query epoch info."))
+        }
+    }
+
+    fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        if let Some(block) = self.get_block_by_number(number)? {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(block.header().state_root()),
+            );
+            let account_reader = AccountStateReader::new(&chain_state);
+            Ok(account_reader
+                .get_resource::<GlobalTimeOnChain>(genesis_address())?
+                .ok_or_else(|| format_err!("GlobalTime is none."))?)
+        } else {
+            Err(format_err!("Block is none when query global time."))
+        }
     }
 }
 
@@ -469,49 +471,62 @@ impl BlockChain {
         header: &BlockHeader,
         verify_head_id: bool,
         epoch: &EpochInfo,
-    ) -> Result<ConnectBlockResult> {
-        let pre_hash = header.parent_hash();
+    ) -> Result<()> {
+        let parent_hash = header.parent_hash();
         if verify_head_id {
-            ensure!(
-                self.head_block().id() == pre_hash,
+            verify_block!(
+                BlockVerifyField::Header,
+                self.head_block().id() == parent_hash,
                 "Invalid block: Parent id mismatch."
             );
         }
         // do not check genesis block timestamp check
-        if let Some(pre_block) = self.get_block(pre_hash)? {
-            ensure!(
-                pre_block.header().timestamp() <= header.timestamp(),
+        if !header.is_genesis() {
+            let pre_block = match self.get_block(parent_hash)? {
+                Some(block) => block,
+                None => {
+                    return Err(ConnectBlockError::ParentNotExist(Box::new(header.clone())).into());
+                }
+            };
+
+            verify_block!(
+                BlockVerifyField::Header,
+                pre_block.header().timestamp() < header.timestamp(),
                 "Invalid block: block timestamp too old"
             );
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
-            ensure!(
+            verify_block!(
+                BlockVerifyField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
                 "Invalid block: block timestamp too new"
             );
         }
 
-        if header.gas_used > header.gas_limit {
-            error!(
-                "gas used {} in transaction is bigger than gas limit {}",
-                header.gas_used, header.gas_limit
-            );
-            return Ok(ConnectBlockResult::VerifyConsensusFailed);
-        }
+        verify_block!(
+            BlockVerifyField::Header,
+            header.gas_used <= header.gas_limit,
+            "gas used {} in transaction is bigger than gas limit {}",
+            header.gas_used,
+            header.gas_limit
+        );
+
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(e) = self.net.consensus().verify(self, epoch, header) {
-                error!("verify header:{:?} failed: {:?}", header.id(), e,);
-                return Ok(ConnectBlockResult::VerifyConsensusFailed);
-            }
+            if let Err(err) = self.net.consensus().verify(self, epoch, header) {
+                return Err(
+                    ConnectBlockError::VerifyBlockFailed(BlockVerifyField::Consensus, err).into(),
+                );
+            };
         }
-        Ok(ConnectBlockResult::SUCCESS)
+        Ok(())
     }
 
-    fn apply_inner(&mut self, block: Block) -> Result<ConnectBlockResult> {
+    fn apply_inner(&mut self, block: Block) -> Result<()> {
         let header = block.header();
         let is_genesis = header.is_genesis();
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Header,
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
@@ -519,18 +534,11 @@ impl BlockChain {
         if !is_genesis {
             let account_reader = AccountStateReader::new(&self.chain_state);
             let epoch = account_reader.epoch()?;
-            if let ConnectBlockResult::VerifyConsensusFailed =
-                self.verify_header(header, true, &epoch)?
-            {
-                return Ok(ConnectBlockResult::VerifyConsensusFailed);
-            }
+            self.verify_header(header, true, &epoch)?;
+
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
-                    if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header, false, &epoch)?
-                    {
-                        return Ok(ConnectBlockResult::VerifyConsensusFailed);
-                    }
+                    self.verify_header(uncle_header, false, &epoch)?;
                 }
             }
         }
@@ -556,7 +564,8 @@ impl BlockChain {
             executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?;
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Header,
             state_root == block.header().state_root(),
             "verify block:{:?} state_root fail",
             block.header().id(),
@@ -564,12 +573,14 @@ impl BlockChain {
         let block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc + i.gas_used());
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Header,
             block_gas_used == block.header().gas_used(),
             "invalid block: gas_used is not match"
         );
 
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Body,
             vec_transaction_info.len() == txns.len(),
             "invalid txn num in the block"
         );
@@ -583,7 +594,8 @@ impl BlockChain {
             accumulator_root
         };
 
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Header,
             executed_accumulator_root == block.header().accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
@@ -625,12 +637,30 @@ impl BlockChain {
             Some((executed_data.txn_infos, executed_data.txn_events)),
         )?;
         self.commit(block, block_info, BlockState::Executed)?;
-        Ok(ConnectBlockResult::SUCCESS)
+        Ok(())
+    }
+
+    fn commit(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+        block_state: BlockState,
+    ) -> Result<()> {
+        let block_id = block.id();
+        self.save_block(&block, block_state);
+        self.head = Some(block);
+        self.chain_state = ChainStateDB::new(
+            self.storage.clone().into_super_arc(),
+            Some(self.head_block().header().state_root()),
+        );
+        self.save_block_info(block_info);
+        debug!("save block {:?} succ.", block_id);
+        Ok(())
     }
 }
 
 impl ChainWriter for BlockChain {
-    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult> {
+    fn apply(&mut self, block: Block) -> Result<()> {
         self.apply_inner(block)
     }
 
@@ -638,7 +668,7 @@ impl ChainWriter for BlockChain {
         &mut self,
         block: Block,
         remote_chain_state: &dyn ChainStateReader,
-    ) -> Result<ConnectBlockResult> {
+    ) -> Result<()> {
         // 1. verify txn info
         let block_id = block.id();
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
@@ -661,7 +691,11 @@ impl ChainWriter for BlockChain {
         };
         if executed_accumulator_root != block.header().accumulator_root() {
             //TODO:remove txn infos
-            return Ok(ConnectBlockResult::VerifyTxnInfoFailed);
+            return Err(ConnectBlockError::VerifyBlockFailed(
+                BlockVerifyField::Header,
+                format_err!("invalid txn accumulator root"),
+            )
+            .into());
         }
 
         // 2. verify body
@@ -677,34 +711,26 @@ impl ChainWriter for BlockChain {
             );
             t
         };
-        if let Ok(ConnectBlockResult::VerifyBodyFailed) = verify_txns(txns.as_ref(), &txn_infos) {
-            return Ok(ConnectBlockResult::VerifyBodyFailed);
-        }
+        verify_txns(txns.as_ref(), &txn_infos)?;
 
         // 3. verify block header
         let header = block.header();
         if !header.is_genesis() {
             let account_reader = AccountStateReader::new(remote_chain_state);
             let epoch = account_reader.epoch()?;
-            if let ConnectBlockResult::VerifyConsensusFailed =
-                self.verify_header(header, true, &epoch)?
-            {
-                return Ok(ConnectBlockResult::VerifyConsensusFailed);
-            }
+            self.verify_header(header, true, &epoch)?;
+
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
-                    if let ConnectBlockResult::VerifyConsensusFailed =
-                        self.verify_header(uncle_header, false, &epoch)?
-                    {
-                        return Ok(ConnectBlockResult::VerifyConsensusFailed);
-                    }
+                    self.verify_header(uncle_header, false, &epoch)?;
                 }
             }
         }
 
         // 4. save all data
         let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
-        ensure!(
+        verify_block!(
+            BlockVerifyField::Header,
             accumulator_root == block.header().accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
@@ -727,24 +753,6 @@ impl ChainWriter for BlockChain {
 
         self.save(block_id, txns, None)?;
         self.commit(block, block_info, BlockState::Verified)?;
-        Ok(ConnectBlockResult::SUCCESS)
-    }
-
-    fn commit(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-        block_state: BlockState,
-    ) -> Result<()> {
-        let block_id = block.id();
-        self.save_block(&block, block_state);
-        self.head = Some(block);
-        self.chain_state = ChainStateDB::new(
-            self.storage.clone().into_super_arc(),
-            Some(self.head_block().header().state_root()),
-        );
-        self.save_block_info(block_info);
-        debug!("save block {:?} succ.", block_id);
         Ok(())
     }
 
@@ -768,14 +776,32 @@ pub(crate) fn info_2_accumulator(
     )
 }
 
-fn verify_txns(txns: &[Transaction], txn_infos: &[TransactionInfo]) -> Result<ConnectBlockResult> {
+fn verify_txns(
+    txns: &[Transaction],
+    txn_infos: &[TransactionInfo],
+) -> Result<(), ConnectBlockError> {
     if txn_infos.len() != txns.len() {
-        return Ok(ConnectBlockResult::VerifyBodyFailed);
+        return Err(ConnectBlockError::VerifyBlockFailed(
+            BlockVerifyField::Body,
+            format_err!(
+                "txn infos len ({:?}) is not equals txns len ({:?}).",
+                txn_infos.len(),
+                txns.len()
+            ),
+        ));
     }
     for i in 0..txns.len() {
-        if txns[i].id() != txn_infos[i].transaction_hash() {
-            return Ok(ConnectBlockResult::VerifyBodyFailed);
+        let id = txns[i].id();
+        if id != txn_infos[i].transaction_hash() {
+            return Err(ConnectBlockError::VerifyBlockFailed(
+                BlockVerifyField::Body,
+                format_err!(
+                    "txn {:?} is not match with txn_info ({:?}).",
+                    id,
+                    txn_infos[i]
+                ),
+            ));
         }
     }
-    Ok(ConnectBlockResult::SUCCESS)
+    Ok(())
 }

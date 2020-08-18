@@ -8,11 +8,11 @@ use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
+use starcoin_traits::ChainReader;
 use starcoin_types::{
     account_address, account_config, transaction::authenticator::AuthenticationKey,
 };
 use std::{convert::TryInto, sync::Arc};
-use traits::ChainReader;
 
 #[stest::test]
 pub fn test_open_block() -> Result<()> {

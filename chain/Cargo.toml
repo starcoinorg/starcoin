@@ -17,9 +17,9 @@ state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
 executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 consensus = { package="starcoin-consensus", path = "../consensus"}
-scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
-traits = {path = "../core/traits", package="starcoin-traits"}
-starcoin-state-api = {path = "../state/api"}
+scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
+starcoin-traits = { path = "../core/traits" }
+starcoin-state-api = { path = "../state/api" }
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 starcoin-txpool-api = {path = "../txpool/api"}
 async-trait = "0.1"

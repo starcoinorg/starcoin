@@ -380,10 +380,13 @@ impl Block {
     }
 
     pub fn into_metadata(self) -> BlockMetadata {
-        let uncles = match &self.body.uncles {
-            Some(uncles) => uncles.len() as u64,
-            None => 0 as u64,
-        };
+        let uncles = self
+            .body
+            .uncles
+            .as_ref()
+            .map(|uncles| uncles.len() as u64)
+            .unwrap_or(0);
+
         BlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,

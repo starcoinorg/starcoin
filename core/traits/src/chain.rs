@@ -1,13 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ConnectBlockResult;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
@@ -56,22 +55,15 @@ pub trait ChainReader {
 
 pub trait ChainWriter {
     /// execute and insert block to current chain.
-    fn apply(&mut self, block: Block) -> Result<ConnectBlockResult>;
+    fn apply(&mut self, block: Block) -> Result<()>;
 
     /// insert block to current chain.
     fn apply_without_execute(
         &mut self,
         block: Block,
         remote_state_chain: &dyn ChainStateReader,
-    ) -> Result<ConnectBlockResult>;
-
-    /// execute and insert block to current chain.
-    fn commit(
-        &mut self,
-        block: Block,
-        block_info: BlockInfo,
-        block_state: BlockState,
     ) -> Result<()>;
+
     fn chain_state(&mut self) -> &dyn ChainState;
 }
 
