@@ -14,6 +14,9 @@ use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
+use starcoin_traits::{
+    verify_block, BlockVerifyField, ChainReader, ChainService, ChainWriter, ConnectBlockError,
+};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -29,7 +32,6 @@ use std::collections::HashSet;
 use std::iter::Iterator;
 use std::sync::Arc;
 use storage::Store;
-use traits::{ChainReader, ChainService, ChainWriter, ConnectBlockResult};
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
@@ -405,32 +407,39 @@ where
         uncles: &[BlockHeader],
         header: &BlockHeader,
         reader: &dyn ChainStateReader,
-    ) -> Result<ConnectBlockResult> {
-        if uncles.len() > MAX_UNCLE_COUNT_PER_BLOCK {
-            debug!("too many uncles {} in block {}", uncles.len(), header.id());
-            return Ok(ConnectBlockResult::UncleBlockIllegal);
-        }
-
+    ) -> Result<()> {
+        verify_block!(
+            BlockVerifyField::Uncle,
+            uncles.len() <= MAX_UNCLE_COUNT_PER_BLOCK,
+            "too many uncles {} in block {}",
+            uncles.len(),
+            header.id()
+        );
         for uncle in uncles {
-            if uncle.number >= header.number {
-                debug!("uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number);
-                return Ok(ConnectBlockResult::UncleBlockIllegal);
-            }
+            verify_block!(
+            BlockVerifyField::Uncle,
+            uncle.number < header.number ,
+           "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number
+        );
         }
 
         match header.uncle_hash {
             Some(uncle_hash) => {
                 let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
-                if !calculated_hash.eq(&uncle_hash) {
-                    debug!(
-                        "uncle hash in header is {},uncle hash calculated is {}",
-                        uncle_hash, calculated_hash
-                    );
-                    return Ok(ConnectBlockResult::UncleBlockIllegal);
-                }
+                verify_block!(
+                    BlockVerifyField::Uncle,
+                    calculated_hash.eq(&uncle_hash),
+                    "uncle hash in header is {},uncle hash calculated is {}",
+                    uncle_hash,
+                    calculated_hash
+                );
             }
             None => {
-                return Ok(ConnectBlockResult::UncleBlockIllegal);
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    BlockVerifyField::Uncle,
+                    format_err!("Unexpect uncles, header's uncle hash is None"),
+                )
+                .into());
             }
         }
 
@@ -449,12 +458,15 @@ where
                 epoch_start_number,
                 &master_block_headers,
             )? {
-                debug!(
-                    "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
-                    uncle.id(),
-                    header.number
-                );
-                return Ok(ConnectBlockResult::UncleBlockIllegal);
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    BlockVerifyField::Uncle,
+                    format_err!(
+                        "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
+                        uncle.id(),
+                        header.number
+                    ),
+                )
+                .into());
             }
         }
 
@@ -463,11 +475,15 @@ where
         for uncle in uncles {
             if exists_uncles.contains(uncle) {
                 debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
-                return Ok(ConnectBlockResult::DuplicateUncles);
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    BlockVerifyField::Uncle,
+                    format_err!("uncle block exists in master,uncle id is {:?}", uncle.id()),
+                )
+                .into());
             }
         }
 
-        Ok(ConnectBlockResult::FutureBlock)
+        Ok(())
     }
 
     fn connect_inner(
@@ -475,42 +491,38 @@ where
         block: Block,
         execute: bool,
         remote_chain_state: Option<&dyn ChainStateReader>,
-    ) -> Result<ConnectBlockResult> {
+    ) -> Result<()> {
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         if block_exist {
             CHAIN_METRICS.duplicate_conn_count.inc();
             self.select_head(fork.expect("Branch not exist."), block_exist)?;
-            Ok(ConnectBlockResult::DuplicateConn)
+            Err(ConnectBlockError::DuplicateConn(Box::new(block)).into())
         } else if let Some(mut branch) = fork {
             let timer = CHAIN_METRICS
                 .exe_block_time
                 .with_label_values(&["time"])
                 .start_timer();
             if let Some(uncles) = block.uncles() {
-                if let ConnectBlockResult::VerifyConsensusFailed =
-                    self.verify_uncles(uncles, &block.header, branch.chain_state_reader())?
-                {
-                    return Ok(ConnectBlockResult::VerifyConsensusFailed);
-                }
+                self.verify_uncles(uncles, &block.header, branch.chain_state_reader())?;
             }
             let connected = if execute {
-                branch.apply(block.clone())?
+                branch.apply(block.clone())
             } else {
                 branch.apply_without_execute(
                     block.clone(),
                     remote_chain_state.expect("remote chain state not set"),
-                )?
+                )
             };
             timer.observe_duration();
-            if connected != ConnectBlockResult::SUCCESS {
+            if connected.is_err() {
                 debug!("connected failed {:?}", block.header().id());
                 CHAIN_METRICS.verify_fail_count.inc();
             } else {
                 self.select_head(branch, block_exist)?;
             }
-            Ok(connected)
+            connected
         } else {
-            Ok(ConnectBlockResult::FutureBlock)
+            Err(ConnectBlockError::FutureBlock(Box::new(block)).into())
         }
     }
 }
@@ -519,7 +531,7 @@ impl<P> ChainService for ChainServiceImpl<P>
 where
     P: TxPoolSyncService,
 {
-    fn try_connect(&mut self, block: Block) -> Result<ConnectBlockResult> {
+    fn try_connect(&mut self, block: Block) -> Result<()> {
         self.connect_inner(block, true, None)
     }
 
@@ -527,7 +539,7 @@ where
         &mut self,
         block: Block,
         remote_chain_state: &dyn ChainStateReader,
-    ) -> Result<ConnectBlockResult> {
+    ) -> Result<()> {
         self.connect_inner(block, false, Some(remote_chain_state))
     }
 

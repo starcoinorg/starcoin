@@ -1,4 +1,5 @@
 use crate::state_sync::StateSyncTaskRef;
+use anyhow::format_err;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -9,7 +10,7 @@ use starcoin_storage::Store;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use traits::{ChainAsyncService, ConnectBlockResult};
+use traits::{BlockVerifyField, ChainAsyncService, ConnectBlockError};
 use types::block::{Block, BlockInfo, BlockNumber};
 
 #[derive(Clone)]
@@ -197,18 +198,32 @@ impl BlockConnector {
                                     .try_connect_without_execute(block.clone(), peer_id.into())
                                     .await
                             } else {
-                                error!(
-                                    "block miss match : {:?} :{:?} : {:?}",
-                                    number, block_id, current_block_id
-                                );
-                                Ok(ConnectBlockResult::VerifyBlockIdFailed)
+                                Err(ConnectBlockError::VerifyBlockFailed(
+                                    BlockVerifyField::Header,
+                                    format_err!(
+                                        "block miss match : {:?} :{:?} : {:?}",
+                                        number,
+                                        block_id,
+                                        current_block_id
+                                    ),
+                                )
+                                .into())
                             }
                         }
-                        Ok(None) => Ok(ConnectBlockResult::VerifyBlockIdFailed),
-                        Err(err) => {
-                            error!("Get block accumulator leaf {:?} failed : {:?}", number, err);
-                            Ok(ConnectBlockResult::VerifyBlockIdFailed)
-                        }
+                        Ok(None) => Err(ConnectBlockError::VerifyBlockFailed(
+                            BlockVerifyField::Header,
+                            format_err!("Can not find block accumulator leaf {:?} failed", number,),
+                        )
+                        .into()),
+                        Err(err) => Err(ConnectBlockError::VerifyBlockFailed(
+                            BlockVerifyField::Header,
+                            format_err!(
+                                "Get block accumulator leaf {:?} failed : {:?}",
+                                number,
+                                err,
+                            ),
+                        )
+                        .into()),
                     }
                 }
                 Ordering::Equal => {
@@ -219,11 +234,16 @@ impl BlockConnector {
                             .try_connect_without_execute(block.clone(), peer_id.into())
                             .await
                     } else {
-                        error!(
-                            "pivot block id miss match : {:?} :{:?} : {:?}",
-                            number, pivot_id, parent_id
-                        );
-                        Ok(ConnectBlockResult::VerifyBlockIdFailed)
+                        Err(ConnectBlockError::VerifyBlockFailed(
+                            BlockVerifyField::Header,
+                            format_err!(
+                                "pivot block id miss match : {:?} :{:?} : {:?}",
+                                number,
+                                pivot_id,
+                                parent_id
+                            ),
+                        )
+                        .into())
                     }
                 }
                 Ordering::Less => self.chain_reader.clone().try_connect(block.clone()).await,
@@ -231,56 +251,30 @@ impl BlockConnector {
         };
 
         match connect_result {
-            Ok(connect) => {
-                match connect {
-                    ConnectBlockResult::SUCCESS | ConnectBlockResult::DuplicateConn => {
-                        debug!(
-                            "connect succ block {:?} : {:?}",
-                            block.header().number(),
-                            block.id()
-                        );
-                        return true;
+            Ok(_) => {
+                debug!(
+                    "connect succ block {:?} : {:?}",
+                    block.header().number(),
+                    block.id()
+                );
+                return true;
+            }
+            Err(e) => {
+                match e.downcast::<ConnectBlockError>() {
+                    Ok(connect_error) => {
+                        match connect_error {
+                            ConnectBlockError::FutureBlock(block) => {
+                                //TODO use error's block.
+                                self.future_blocks.add_future_block(*block)
+                            }
+                            err => {
+                                error!("Connect block {:?}, failed: {:?}", current_block_id, err)
+                            }
+                        }
                     }
-                    ConnectBlockResult::FutureBlock => self.future_blocks.add_future_block(block),
-                    ConnectBlockResult::VerifyBlockIdFailed => {
-                        //TODO
-                        error!(
-                            "Connect block {:?} verify block id failed.",
-                            current_block_id
-                        );
-                    }
-                    ConnectBlockResult::VerifyConsensusFailed => {
-                        error!("Connect block {:?} verify nonce failed.", current_block_id);
-                        //TODO: remove child block
-                    }
-                    ConnectBlockResult::VerifyBodyFailed => {
-                        error!("Connect block {:?} verify body failed.", current_block_id);
-                        //TODO:
-                    }
-                    ConnectBlockResult::VerifyTxnInfoFailed => {
-                        error!(
-                            "Connect block {:?} verify txn info failed.",
-                            current_block_id
-                        );
-                        //todo: state_sync_address.expect("").reset();
-                    }
-                    ConnectBlockResult::UncleBlockIllegal => {
-                        error!(
-                            "Connect block {:?} verify txn info failed.",
-                            current_block_id
-                        );
-                        //todo: state_sync_address.expect("").reset();
-                    }
-                    ConnectBlockResult::DuplicateUncles => {
-                        error!(
-                            "Connect block {:?} verify txn info failed.",
-                            current_block_id
-                        );
-                        //todo: state_sync_address.expect("").reset();
-                    }
+                    Err(err) => error!("Connect block {:?} failed : {:?}", current_block_id, err),
                 }
             }
-            Err(e) => error!("Connect block {:?} failed : {:?}", current_block_id, e),
         }
 
         false

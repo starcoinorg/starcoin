@@ -123,13 +123,13 @@ fn main() {
         let name = match options.language {
             Language::Rust => {
                 if options.libra_version_number == "0.1.0" {
-                    "libra-types".to_string()
+                    "starcoin-types".to_string()
                 } else {
-                    format!("libra-types:{}", options.libra_version_number)
+                    format!("starcoin-types:{}", options.libra_version_number)
                 }
             }
-            Language::Java => "org.libra.types".to_string(),
-            _ => "libra_types".to_string(),
+            Language::Java => "org.starcoin.types".to_string(),
+            _ => "starcoin_types".to_string(),
         };
         installer.install_module(&name, &registry).unwrap();
     }

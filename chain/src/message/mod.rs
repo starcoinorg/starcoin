@@ -11,7 +11,6 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
-use traits::ConnectBlockResult;
 
 #[derive(Clone)]
 pub enum ChainRequest {
@@ -70,7 +69,7 @@ pub enum ChainResponse {
     TransactionInfo(Option<TransactionInfo>),
     Events(Option<Vec<ContractEvent>>),
     None,
-    Conn(ConnectBlockResult),
+    Conn(Result<()>),
     BlockState(Option<Box<BlockState>>),
     EpochInfo(EpochInfo),
     GlobalTime(GlobalTimeOnChain),

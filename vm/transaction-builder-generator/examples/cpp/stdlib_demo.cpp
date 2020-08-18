@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "lcs.hpp"
-#include "libra_stdlib.hpp"
-#include "libra_types.hpp"
+#include "starcoin_stdlib.hpp"
+#include "starcoin_types.hpp"
 #include "serde.hpp"
 #include <memory>
 
-using namespace libra_stdlib;
-using namespace libra_types;
+using namespace starcoin_stdlib;
+using namespace starcoin_types;
 using namespace serde;
 
 int main() {
@@ -20,9 +20,9 @@ int main() {
     }}};
     auto payee = AccountAddress{0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                                 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
-    uint64_t amount = 1234567;
+    uint128_t amount = uint128_t {0,1234567};
     auto script =
-        encode_peer_to_peer_with_metadata_script(token, payee, amount, {}, {});
+        encode_peer_to_peer_with_metadata_script(token, payee, {},amount, {});
 
     auto serializer = LcsSerializer();
     Serializable<Script>::serialize(script, serializer);

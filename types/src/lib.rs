@@ -37,14 +37,8 @@ pub mod peer_info;
 pub mod proof;
 
 #[cfg(any(test, feature = "fuzzing"))]
-pub mod proptest_types {
-    pub use starcoin_vm_types::proptest_types::*;
-}
+pub mod proptest_types;
 
-//TODO 指定具体用到libra的
-// pub mod proptest_types {
-//     pub use libra_types::proptest_types::*;
-// }
 pub mod startup_info;
 pub mod state_set;
 pub mod system_events;
@@ -62,6 +56,10 @@ pub mod language_storage {
     pub use starcoin_vm_types::language_storage::{
         ModuleId, ResourceKey, StructTag, TypeTag, CODE_TAG, CORE_CODE_ADDRESS, RESOURCE_TAG,
     };
+}
+
+pub mod identifier {
+    pub use starcoin_vm_types::identifier::Identifier;
 }
 
 pub mod write_set {

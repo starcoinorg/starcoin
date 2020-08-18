@@ -5,17 +5,17 @@
 
 ### Table of Contents
 
--  [Function `main`](#SCRIPT_main)
+-  [Function `peer_to_peer_with_metadata`](#SCRIPT_peer_to_peer_with_metadata)
 
 
 
-<a name="SCRIPT_main"></a>
+<a name="SCRIPT_peer_to_peer_with_metadata"></a>
 
-## Function `main`
+## Function `peer_to_peer_with_metadata`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_main">main</a>&lt;TokenType&gt;(account: &signer, payee: address, auth_key_prefix: vector&lt;u8&gt;, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_peer_to_peer_with_metadata">peer_to_peer_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, auth_key_prefix: vector&lt;u8&gt;, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -24,7 +24,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_main">main</a>&lt;TokenType&gt;(
+<pre><code><b>fun</b> <a href="#SCRIPT_peer_to_peer_with_metadata">peer_to_peer_with_metadata</a>&lt;TokenType&gt;(
     account: &signer,
     payee: address,
     auth_key_prefix: vector&lt;u8&gt;,
