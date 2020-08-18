@@ -14,7 +14,7 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::{
-    verify_block, BlockVerifyField, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
 };
 use starcoin_types::{
     account_address::AccountAddress,
@@ -475,7 +475,7 @@ impl BlockChain {
         let parent_hash = header.parent_hash();
         if verify_head_id {
             verify_block!(
-                BlockVerifyField::Header,
+                VerifyBlockField::Header,
                 self.head_block().id() == parent_hash,
                 "Invalid block: Parent id mismatch."
             );
@@ -490,20 +490,20 @@ impl BlockChain {
             };
 
             verify_block!(
-                BlockVerifyField::Header,
+                VerifyBlockField::Header,
                 pre_block.header().timestamp() < header.timestamp(),
                 "Invalid block: block timestamp too old"
             );
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             verify_block!(
-                BlockVerifyField::Header,
+                VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
                 "Invalid block: block timestamp too new"
             );
         }
 
         verify_block!(
-            BlockVerifyField::Header,
+            VerifyBlockField::Header,
             header.gas_used <= header.gas_limit,
             "gas used {} in transaction is bigger than gas limit {}",
             header.gas_used,
@@ -515,24 +515,33 @@ impl BlockChain {
         if verify_head_id {
             if let Err(err) = self.net.consensus().verify(self, epoch, header) {
                 return Err(
-                    ConnectBlockError::VerifyBlockFailed(BlockVerifyField::Consensus, err).into(),
+                    ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, err).into(),
                 );
             };
         }
         Ok(())
     }
 
-    fn apply_inner(&mut self, block: Block) -> Result<()> {
+    fn apply_inner(
+        &mut self,
+        block: Block,
+        execute: bool,
+        state_reader: Option<&dyn ChainStateReader>,
+    ) -> Result<()> {
         let header = block.header();
+        let block_id = header.id();
         let is_genesis = header.is_genesis();
         verify_block!(
-            BlockVerifyField::Header,
+            VerifyBlockField::Header,
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
 
         if !is_genesis {
-            let account_reader = AccountStateReader::new(&self.chain_state);
+            let account_reader = match state_reader {
+                Some(state_reader) => AccountStateReader::new(state_reader),
+                None => AccountStateReader::new(&self.chain_state),
+            };
             let epoch = account_reader.epoch()?;
             self.verify_header(header, true, &epoch)?;
 
@@ -560,12 +569,15 @@ impl BlockChain {
             t
         };
 
-        let executed_data =
-            executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?;
+        let executed_data = if execute {
+            executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?
+        } else {
+            self.verify_txns(block_id, txns.as_slice())?
+        };
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
-            BlockVerifyField::Header,
+            VerifyBlockField::Header,
             state_root == block.header().state_root(),
             "verify block:{:?} state_root fail",
             block.header().id(),
@@ -574,13 +586,13 @@ impl BlockChain {
             .iter()
             .fold(0u64, |acc, i| acc + i.gas_used());
         verify_block!(
-            BlockVerifyField::Header,
+            VerifyBlockField::Header,
             block_gas_used == block.header().gas_used(),
             "invalid block: gas_used is not match"
         );
 
         verify_block!(
-            BlockVerifyField::Body,
+            VerifyBlockField::Body,
             vec_transaction_info.len() == txns.len(),
             "invalid txn num in the block"
         );
@@ -595,7 +607,7 @@ impl BlockChain {
         };
 
         verify_block!(
-            BlockVerifyField::Header,
+            VerifyBlockField::Header,
             executed_accumulator_root == block.header().accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
@@ -634,10 +646,63 @@ impl BlockChain {
         self.save(
             header.id(),
             txns,
-            Some((executed_data.txn_infos, executed_data.txn_events)),
+            //TODO refactor this, there some weird
+            if execute {
+                Some((executed_data.txn_infos, executed_data.txn_events))
+            } else {
+                None
+            },
         )?;
-        self.commit(block, block_info, BlockState::Executed)?;
+        let block_state = if execute {
+            BlockState::Executed
+        } else {
+            BlockState::Verified
+        };
+        self.commit(block, block_info, block_state)?;
         Ok(())
+    }
+
+    fn verify_txns(
+        &self,
+        block_id: HashValue,
+        txns: &[Transaction],
+    ) -> Result<executor::BlockExecutedData> {
+        let mut block_executed_data = executor::BlockExecutedData::default();
+
+        let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
+
+        if txn_infos.len() != txns.len() {
+            return Err(ConnectBlockError::VerifyBlockFailed(
+                VerifyBlockField::Body,
+                format_err!(
+                    "txn infos len ({:?}) is not equals txns len ({:?}).",
+                    txn_infos.len(),
+                    txns.len()
+                ),
+            )
+            .into());
+        }
+        let mut state_root = None;
+        for i in 0..txns.len() {
+            let id = txns[i].id();
+            if id != txn_infos[i].transaction_hash() {
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Body,
+                    format_err!(
+                        "txn {:?} is not match with txn_info ({:?}).",
+                        id,
+                        txn_infos[i]
+                    ),
+                )
+                .into());
+            }
+            state_root = Some(txn_infos[i].state_root_hash());
+        }
+        block_executed_data.state_root =
+            state_root.expect("txn infos is not empty, state root must not been None");
+        block_executed_data.txn_infos = txn_infos;
+        //TODO event?
+        Ok(block_executed_data)
     }
 
     fn commit(
@@ -661,7 +726,7 @@ impl BlockChain {
 
 impl ChainWriter for BlockChain {
     fn apply(&mut self, block: Block) -> Result<()> {
-        self.apply_inner(block)
+        self.apply_inner(block, true, None)
     }
 
     fn apply_without_execute(
@@ -669,91 +734,7 @@ impl ChainWriter for BlockChain {
         block: Block,
         remote_chain_state: &dyn ChainStateReader,
     ) -> Result<()> {
-        // 1. verify txn info
-        let block_id = block.id();
-        let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
-
-        let included_txn_info_hashes: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-        let parent_block_info = self
-            .storage
-            .get_block_info(block.header().parent_hash())?
-            .expect("Parent block info is none.");
-        let executed_accumulator_root = {
-            let parent_txn_accumulator_info = parent_block_info.get_txn_accumulator_info();
-            let tmp_txn_accumulator = info_2_accumulator(
-                parent_txn_accumulator_info,
-                AccumulatorStoreType::Transaction,
-                self.storage.clone().into_super_arc(),
-            )?;
-            let (accumulator_root, _first_leaf_idx) =
-                tmp_txn_accumulator.append(&included_txn_info_hashes)?;
-            accumulator_root
-        };
-        if executed_accumulator_root != block.header().accumulator_root() {
-            //TODO:remove txn infos
-            return Err(ConnectBlockError::VerifyBlockFailed(
-                BlockVerifyField::Header,
-                format_err!("invalid txn accumulator root"),
-            )
-            .into());
-        }
-
-        // 2. verify body
-        let txns = {
-            let block_metadata = block.clone().into_metadata();
-            let mut t = vec![Transaction::BlockMetadata(block_metadata)];
-            t.extend(
-                block
-                    .transactions()
-                    .iter()
-                    .cloned()
-                    .map(Transaction::UserTransaction),
-            );
-            t
-        };
-        verify_txns(txns.as_ref(), &txn_infos)?;
-
-        // 3. verify block header
-        let header = block.header();
-        if !header.is_genesis() {
-            let account_reader = AccountStateReader::new(remote_chain_state);
-            let epoch = account_reader.epoch()?;
-            self.verify_header(header, true, &epoch)?;
-
-            if let Some(uncles) = block.uncles() {
-                for uncle_header in uncles {
-                    self.verify_header(uncle_header, false, &epoch)?;
-                }
-            }
-        }
-
-        // 4. save all data
-        let (accumulator_root, _) = self.txn_accumulator.append(&included_txn_info_hashes)?;
-        verify_block!(
-            BlockVerifyField::Header,
-            accumulator_root == block.header().accumulator_root(),
-            "verify block: txn accumulator root mismatch"
-        );
-        self.txn_accumulator
-            .flush()
-            .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
-
-        let total_difficulty =
-            parent_block_info.get_total_difficulty() + block.header().difficulty();
-        self.block_accumulator.append(&[block_id])?;
-        self.block_accumulator.flush()?;
-        let txn_accumulator_info: AccumulatorInfo = (&self.txn_accumulator).try_into()?;
-        let block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
-        let block_info = BlockInfo::new_with_accumulator_info(
-            block_id,
-            txn_accumulator_info,
-            block_accumulator_info,
-            total_difficulty,
-        );
-
-        self.save(block_id, txns, None)?;
-        self.commit(block, block_info, BlockState::Verified)?;
-        Ok(())
+        self.apply_inner(block, false, Some(remote_chain_state))
     }
 
     fn chain_state(&mut self) -> &dyn ChainState {
@@ -774,34 +755,4 @@ pub(crate) fn info_2_accumulator(
         store_type,
         node_store,
     )
-}
-
-fn verify_txns(
-    txns: &[Transaction],
-    txn_infos: &[TransactionInfo],
-) -> Result<(), ConnectBlockError> {
-    if txn_infos.len() != txns.len() {
-        return Err(ConnectBlockError::VerifyBlockFailed(
-            BlockVerifyField::Body,
-            format_err!(
-                "txn infos len ({:?}) is not equals txns len ({:?}).",
-                txn_infos.len(),
-                txns.len()
-            ),
-        ));
-    }
-    for i in 0..txns.len() {
-        let id = txns[i].id();
-        if id != txn_infos[i].transaction_hash() {
-            return Err(ConnectBlockError::VerifyBlockFailed(
-                BlockVerifyField::Body,
-                format_err!(
-                    "txn {:?} is not match with txn_info ({:?}).",
-                    id,
-                    txn_infos[i]
-                ),
-            ));
-        }
-    }
-    Ok(())
 }
