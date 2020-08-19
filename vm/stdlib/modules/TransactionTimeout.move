@@ -8,7 +8,8 @@ module TransactionTimeout {
   use 0x1::Block;
 
   spec module {
-      pragma verify = false;
+      pragma verify;
+      pragma aborts_if_is_strict;
   }
 
   const ONE_DAY :u64 = 86400;
@@ -40,7 +41,7 @@ module TransactionTimeout {
   spec fun set_timeout {
     aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
     aborts_if !exists<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS());
-    ensures global<TTL>(Signer::spec_address_of(account)).duration_seconds == new_duration;
+    ensures global<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS()).duration_seconds == new_duration;
   }
 
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool acquires TTL {
@@ -53,6 +54,13 @@ module TransactionTimeout {
     let timeout = borrow_global<TTL>(CoreAddresses::GENESIS_ADDRESS()).duration_seconds;
     let max_txn_time = current_block_time + timeout;
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time
+  }
+  spec fun is_valid_transaction_timestamp {
+    pragma verify = false;
+    aborts_if !exists<Timestamp::CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    // Todo: function does not abort under this condition?
+    aborts_if !exists<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS());
   }
 }
 }

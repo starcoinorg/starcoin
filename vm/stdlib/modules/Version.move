@@ -6,6 +6,10 @@ module Version {
     use 0x1::CoreAddresses;
     use 0x1::ErrorCode;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
 
     struct Version {
         major: u64,
@@ -20,9 +24,21 @@ module Version {
         );
     }
 
+    spec fun initialize {
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
+        aborts_if exists<Config::Config<Version>>(Signer::spec_address_of(account));
+        ensures exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
+        ensures exists<Config::Config<Version>>(Signer::spec_address_of(account));
+    }
+
     public fun get():u64{
         let version = Config::get_by_address<Self::Version>(CoreAddresses::GENESIS_ADDRESS());
         version.major
+    }
+
+    spec fun get {
+        aborts_if !exists<Config::Config<Version>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
     public fun set(account: &signer, major: u64) {
@@ -38,6 +54,12 @@ module Version {
             account,
             Version { major }
         );
+    }
+
+    spec fun set {
+        pragma verify = false; //Todo: data invariant does not hold
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if Config::spec_get<Version>(Signer::spec_address_of(account)).major >= major;
     }
 }
 

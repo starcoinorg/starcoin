@@ -8,6 +8,11 @@ module SignedInteger64 {
         is_negative: bool,
     }
 
+    spec module {
+        pragma verify = false;
+        pragma aborts_if_is_strict;
+    }
+
     // Multiply a u64 integer by a signed integer number.
     public fun multiply_u64(num: u64, multiplier: SignedInteger64): SignedInteger64 {
         let product = multiplier.value * num;

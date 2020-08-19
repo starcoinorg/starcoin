@@ -6,6 +6,11 @@ module Token {
     use 0x1::LCS;
     use 0x1::ErrorCode;
 
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
+
     /// The token has a `TokenType` color that tells us what token the
     /// `value` inside represents.
     resource struct Token<TokenType> {
@@ -77,10 +82,20 @@ module Token {
         );
     }
 
+    spec fun register_token {
+        // Todo: fix name_of()
+        pragma verify = false;
+    }
+
     public fun remove_mint_capability<TokenType>(
         signer: &signer,
     ): MintCapability<TokenType> acquires MintCapability {
         move_from<MintCapability<TokenType>>(Signer::address_of(signer))
+    }
+
+    spec fun remove_mint_capability {
+        aborts_if !exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
+        ensures !exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
     }
 
     public fun add_mint_capability<TokenType>(signer: &signer,
@@ -88,8 +103,16 @@ module Token {
         move_to(signer, cap)
     }
 
+    spec fun add_mint_capability {
+        aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
+        ensures exists<MintCapability<TokenType>>(Signer::spec_address_of(signer));
+    }
+
     public fun destroy_mint_capability<TokenType>(cap: MintCapability<TokenType>) {
         let MintCapability<TokenType>{  } = cap;
+    }
+
+    spec fun destroy_mint_capability {
     }
 
     public fun remove_burn_capability<TokenType>(
@@ -98,13 +121,26 @@ module Token {
         move_from<BurnCapability<TokenType>>(Signer::address_of(signer))
     }
 
+    spec fun remove_burn_capability {
+        aborts_if !exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
+        ensures !exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
+    }
+
     public fun add_burn_capability<TokenType>(signer: &signer,
         cap: BurnCapability<TokenType>)  {
             move_to(signer, cap)
     }
 
+    spec fun add_burn_capability {
+        aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
+        ensures exists<BurnCapability<TokenType>>(Signer::spec_address_of(signer));
+    }
+
     public fun destroy_burn_capability<TokenType>(cap: BurnCapability<TokenType>) {
         let BurnCapability<TokenType>{  } = cap;
+    }
+
+    spec fun destroy_burn_capability {
     }
 
     /// Return `amount` tokens.
@@ -117,6 +153,13 @@ module Token {
             borrow_global<MintCapability<TokenType>>(Signer::address_of(account)),
             amount,
         )
+    }
+
+    spec fun mint {
+        pragma verify = false;
+
+        aborts_if !exists<MintCapability<TokenType>>(Signer::address_of(account));
+        //Todo: fix name_of()
     }
 
     /// Mint a new Token::Token worth `value`. The caller must have a reference to a MintCapability.
@@ -140,6 +183,12 @@ module Token {
         Token<TokenType> { value }
     }
 
+    spec fun mint_with_capability {
+        pragma verify = false;
+
+        //Todo: fix name_of()
+    }
+
     public fun burn<TokenType>(
         account: &signer,
         tokens: Token<TokenType>,
@@ -148,6 +197,13 @@ module Token {
             borrow_global<BurnCapability<TokenType>>(Signer::address_of(account)),
             tokens,
         )
+    }
+
+    spec fun burn {
+        pragma verify = false;
+
+        //Todo: fix name_of()
+        aborts_if !exists<BurnCapability<TokenType>>(Signer::address_of(account));
     }
 
     public fun burn_with_capability<TokenType>(
@@ -168,14 +224,27 @@ module Token {
 
     }
 
+    spec fun burn_with_capability {
+        pragma verify = false;
+
+        //Todo: fix name_of()
+        //aborts_if !exists<TokenInfo<TokenType>>(token_address);
+    }
+
     /// Create a new Token::Token<TokenType> with a value of 0
     public fun zero<TokenType>(): Token<TokenType> {
         Token<TokenType> { value: 0 }
     }
 
+    spec fun zero {
+    }
+
     /// Public accessor for the value of a token
     public fun value<TokenType>(token: &Token<TokenType>): u128 {
         token.value
+    }
+
+    spec fun value {
     }
 
     /// Splits the given token into two and returns them both
@@ -186,6 +255,10 @@ module Token {
     ): (Token<TokenType>, Token<TokenType>) {
         let other = withdraw(&mut token, amount);
         (token, other)
+    }
+
+    spec fun split {
+        aborts_if token.value < amount;
     }
 
     /// "Divides" the given token into two, where the original token is modified in place
@@ -202,6 +275,10 @@ module Token {
         Token { value: amount }
     }
 
+    spec fun withdraw {
+        aborts_if token.value < amount;
+    }
+
     /// Merges two tokens of the same token and returns a new token whose
     /// value is equal to the sum of the two inputs
     public fun join<TokenType>(
@@ -212,12 +289,20 @@ module Token {
         token1
     }
 
+    spec fun join {
+        aborts_if token1.value + token2.value > max_u128();
+    }
+
     /// "Merges" the two tokens
     /// The token passed in by reference will have a value equal to the sum of the two tokens
     /// The `check` token is consumed in the process
     public fun deposit<TokenType>(token: &mut Token<TokenType>, check: Token<TokenType>) {
         let Token{ value: value } = check;
         token.value = token.value + value;
+    }
+
+    spec fun deposit {
+        aborts_if token.value + check.value > max_u128();
     }
 
     /// Destroy a token
@@ -229,11 +314,23 @@ module Token {
         assert(value == 0, ErrorCode::EDESTORY_TOKEN_NON_ZERO())
     }
 
+    spec fun destroy_zero {
+        aborts_if token.value > 0;
+    }
+
     /// Returns the scaling factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u128
     acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
+    }
+
+    spec fun scaling_factor {
+        // Todo: fix name_of()
+        pragma verify = false;
+
+        //let x  = name_of();
+        //aborts_if !exists<TokenInfo<TokenType>>(x);
     }
 
     /// Returns the representable fractional part for the `TokenType` token.
@@ -243,10 +340,21 @@ module Token {
         borrow_global<TokenInfo<TokenType>>(token_address).fractional_part
     }
 
+    spec fun fractional_part {
+        // Todo: fix name_of()
+        pragma verify = false;
+    }
+
     /// Return the total amount of token minted of type `TokenType`
     public fun market_cap<TokenType>(): u128 acquires TokenInfo {
         let (token_address, _, _) =name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
+    }
+
+    spec fun market_cap {
+        // Todo: fix name_of()
+        pragma verify = false;
+        //aborts_if !exists<TokenInfo<TokenType>>(token_module_address());
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
@@ -254,9 +362,17 @@ module Token {
         exists<TokenInfo<TokenType>>(token_address)
     }
 
+    spec fun is_registered_in {
+        aborts_if false;
+    }
+
     /// Return true if the type `TokenType1` is same with `TokenType2`
     public fun is_same_token<TokenType1,TokenType2>(): bool {
         return token_code<TokenType1>() == token_code<TokenType2>()
+    }
+
+    spec fun is_same_token {
+        aborts_if false;
     }
 
     /// Return the TokenType's address
@@ -265,10 +381,18 @@ module Token {
         addr
     }
 
+    spec fun token_address {
+        aborts_if false;
+    }
+
     /// Return the token code for the registered token.
     public fun token_code<TokenType>(): vector<u8> {
         let (addr, module_name, name) =name_of<TokenType>();
         code_to_bytes(addr, module_name, name)
+    }
+
+    spec fun token_code {
+        aborts_if false;
     }
 
     fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
@@ -283,7 +407,15 @@ module Token {
         code
     }
 
+    spec fun code_to_bytes {
+        aborts_if false;
+    }
+
     /// Return Token's module address, module name, and type name of `TokenType`.
     native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
+
+    spec fun name_of {
+        pragma intrinsic = true;
+    }
 }
 }

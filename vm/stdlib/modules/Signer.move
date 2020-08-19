@@ -1,5 +1,9 @@
 address 0x1 {
 module Signer {
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
     // Borrows the address of the signer
     // Conceptually, you can think of the `signer` as being a resource struct wrapper arround an
     // address

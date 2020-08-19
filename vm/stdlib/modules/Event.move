@@ -69,6 +69,28 @@ module Event {
     public fun destroy_handle<T: copyable>(handle: EventHandle<T>) {
         EventHandle<T> { counter: _, guid: _ } = handle;
     }
+
+    // ****************** SPECIFICATIONS *******************
+
+    spec module {
+        /// Functions of the event module are mocked out using the intrinsic
+        /// pragma. They are implemented in the prover's prelude as no-ops.
+        ///
+        /// Functionality in this module uses GUIDs created from serialization of
+        /// addresses and integers. These constructs are difficult to treat by the
+        /// verifier and the verification problem propagates up to callers of
+        /// those functions. Since events cannot be observed by Move programs,
+        /// mocking out functions of this module does not have effect on other
+        /// verification result.
+        ///
+        /// A specification of the functions is neverthelesse  included in the
+        /// comments of this module and it has been verified.
+        ///
+        /// > TODO(wrwg): We may want to have support by the Move prover to
+        /// > mock out functions for callers but still have them verified
+        /// > standlone.
+        pragma intrinsic = true;
+    }
 }
 
 }

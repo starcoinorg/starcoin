@@ -16,6 +16,11 @@ module Account {
     use 0x1::ErrorCode;
     use 0x1::STC::{Self, STC};
 
+    spec module {
+        //pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
+
     // Every account has a Account::Account resource
     resource struct Account {
         // The current authentication key.
@@ -110,9 +115,18 @@ module Account {
         new_account
     }
 
+    spec fun create_genesis_account {
+        pragma verify = false;
+        aborts_if !Timestamp::is_genesis();
+    }
+
     // Release genesis account signer
     public fun release_genesis_signer(genesis_account: signer){
         destroy_signer(genesis_account);
+    }
+
+    spec fun release_genesis_signer {
+        aborts_if false;
     }
 
     // Creates a new account at `fresh_address` with a balance of zero and authentication
@@ -156,6 +170,10 @@ module Account {
               accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
               sequence_number: 0,
         });
+    }
+
+    spec fun make_account {
+        pragma verify = false;
     }
 
     native fun create_signer(addr: address): signer;
@@ -338,6 +356,19 @@ module Account {
         sender_account_resource.authentication_key = new_authentication_key;
     }
 
+    spec fun rotate_authentication_key {
+        pragma verify = true;
+
+        aborts_if !exists<Account>(cap.account_address);
+        aborts_if len(new_authentication_key) != 32;
+        ensures global<Account>(cap.account_address).authentication_key == new_authentication_key;
+    }
+    spec module {
+        define spec_rotate_authentication_key(addr: address, new_authentication_key: vector<u8>): bool {
+            global<Account>(addr).authentication_key == new_authentication_key
+        }
+    }
+
     // Return a unique capability granting permission to rotate the sender's authentication key
     public fun extract_key_rotation_capability(account: &signer): KeyRotationCapability
     acquires Account {
@@ -385,9 +416,19 @@ module Account {
         exists<Balance<TokenType>>(addr)
     }
 
+    spec fun is_accepts_token {
+        pragma verify = true;
+        aborts_if false;
+    }
+
     // Helper to return the sequence number field for given `account`
     fun sequence_number_for_account(account: &Account): u64 {
         account.sequence_number
+    }
+
+    spec fun is_accepts_token {
+        pragma verify = true;
+        aborts_if false;
     }
 
     // Return the current sequence number at `addr`
@@ -395,9 +436,19 @@ module Account {
         sequence_number_for_account(borrow_global<Account>(addr))
     }
 
+    spec fun is_accepts_token {
+        pragma verify = true;
+        aborts_if false;
+    }
+
     // Return the authentication key for this account
     public fun authentication_key(addr: address): vector<u8> acquires Account {
         *&borrow_global<Account>(addr).authentication_key
+    }
+
+    spec fun is_accepts_token {
+        pragma verify = true;
+        aborts_if false;
     }
 
     // Return true if the account at `addr` has delegated its key rotation capability
@@ -406,10 +457,20 @@ module Account {
         Option::is_none(&borrow_global<Account>(addr).key_rotation_capability)
     }
 
+    spec fun is_accepts_token {
+        pragma verify = true;
+        aborts_if false;
+    }
+
     // Return true if the account at `addr` has delegated its withdraw capability
     public fun delegated_withdraw_capability(addr: address): bool
     acquires Account {
         Option::is_none(&borrow_global<Account>(addr).withdrawal_capability)
+    }
+
+    spec fun delegated_withdraw_capability {
+        pragma verify = true;
+        aborts_if !exists<Account>(addr);
     }
 
     // Return a reference to the address associated with the given withdraw capability
@@ -417,9 +478,19 @@ module Account {
         &cap.account_address
     }
 
+    spec fun withdraw_capability_address {
+        pragma verify = true;
+        aborts_if false;
+    }
+
     // Return a reference to the address associated with the given key rotation capability
     public fun key_rotation_capability_address(cap: &KeyRotationCapability): &address {
         &cap.account_address
+    }
+
+    spec fun key_rotation_capability_address {
+        pragma verify = true;
+        aborts_if false;
     }
 
     // Checks if an account exists at `check_addr`
@@ -427,6 +498,10 @@ module Account {
         exists<Account>(check_addr)
     }
 
+    spec fun exists_at {
+        pragma verify = true;
+        aborts_if false;
+    }
 
     // The prologue is invoked at the beginning of every transaction
     // It verifies:

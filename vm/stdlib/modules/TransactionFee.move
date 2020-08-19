@@ -8,6 +8,11 @@ module TransactionFee {
     use 0x1::Timestamp;
     use 0x1::ErrorCode;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     /// The `TransactionFee` resource holds a preburn resource for each
     /// fiat `TokenType` that can be collected as a transaction fee.
     resource struct TransactionFee<TokenType> {
@@ -26,6 +31,12 @@ module TransactionFee {
         add_txn_fee_token<STC>(account);
     }
 
+    spec fun initialize {
+        aborts_if !Timestamp::is_genesis();
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if exists<TransactionFee<STC>>(Signer::spec_address_of(account));
+    }
+
     /// publishing a wrapper of the `Preburn<TokenType>` resource under `fee_account`
     fun add_txn_fee_token<TokenType>(
         account: &signer,
@@ -38,12 +49,21 @@ module TransactionFee {
         )
      }
 
+    spec fun add_txn_fee_token {
+        aborts_if exists<TransactionFee<TokenType>>(Signer::spec_address_of(account));
+    }
+
     /// Deposit `token` into the transaction fees bucket
     public fun pay_fee<TokenType>(token: Token<TokenType>) acquires TransactionFee {
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(
             CoreAddresses::GENESIS_ADDRESS()
         );
         Token::deposit(&mut txn_fees.fee, token)
+    }
+
+    spec fun pay_fee {
+        aborts_if !exists<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if global<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).fee.value + token.value > max_u128();
     }
 
     /// Distribute the transaction fees collected in the `TokenType` token.
@@ -63,6 +83,12 @@ module TransactionFee {
         }else {
             Token::zero<TokenType>()
         }
+    }
+
+    spec fun distribute_transaction_fees {
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+
     }
  }
 }

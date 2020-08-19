@@ -5,6 +5,10 @@
 
 address 0x1 {
 module LCS {
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
     // Return the binary representation of `v` in LCS (Libra Canonical Serialization) format
     native public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>;
 
