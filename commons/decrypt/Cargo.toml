@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-pbkdf2="0.3"
+pbkdf2="0.5"
 hmac = "0.7"
 sha2 = "0.8"
 aes-gcm = "0.5"
