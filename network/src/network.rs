@@ -133,7 +133,9 @@ impl NetworkService for NetworkAsyncService {
 
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
-        self.raw_message_processor.add_future(request_id, tx).await;
+        self.raw_message_processor
+            .add_future(request_id, tx, peer_id.clone())
+            .await;
         debug!("send request to {} with id {}", peer_id, request_id);
         let processor = self.raw_message_processor.clone();
         let peer_id_clone = peer_id.clone();
