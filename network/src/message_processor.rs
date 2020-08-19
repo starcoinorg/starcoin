@@ -13,6 +13,7 @@ use futures::{
 use anyhow::*;
 use futures::lock::Mutex;
 
+use libp2p::PeerId;
 use std::cmp::Eq;
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -56,7 +57,7 @@ impl<T> Future for MessageFuture<T> {
 
 #[derive(Clone)]
 pub struct MessageProcessor<K, T> {
-    tx_map: Arc<Mutex<HashMap<K, Sender<Result<T>>>>>,
+    tx_map: Arc<Mutex<HashMap<K, (Sender<Result<T>>, PeerId)>>>,
 }
 
 impl<K, T> MessageProcessor<K, T>
@@ -70,18 +71,18 @@ where
         }
     }
 
-    pub async fn add_future(&self, id: K, sender: Sender<Result<T>>) {
+    pub async fn add_future(&self, id: K, sender: Sender<Result<T>>, to_peer: PeerId) {
         self.tx_map
             .lock()
             .await
             .entry(id)
-            .or_insert_with(|| sender.clone());
+            .or_insert_with(|| (sender.clone(), to_peer));
     }
 
     pub async fn send_response(&self, id: K, value: T) -> Result<()> {
         let mut tx_map = self.tx_map.lock().await;
         match tx_map.get(&id) {
-            Some(tx) => {
+            Some((tx, _)) => {
                 match tx.clone().send(Ok(value)).await {
                     Ok(_new_tx) => {
                         debug!("send message {:?} succ", id);
@@ -97,9 +98,13 @@ where
     //
     pub async fn remove_future(&self, id: K) -> bool {
         let mut tx_map = self.tx_map.lock().await;
-        if let Some(tx) = tx_map.get(&id) {
+        if let Some((tx, peer_id)) = tx_map.get(&id) {
             tx.clone()
-                .send(Err(anyhow!("request {:?} future time out", id)))
+                .send(Err(anyhow!(
+                    "request {:?} send to peer {:?} future time out",
+                    id,
+                    peer_id
+                )))
                 .await
                 .unwrap();
             tx_map.remove(&id);
