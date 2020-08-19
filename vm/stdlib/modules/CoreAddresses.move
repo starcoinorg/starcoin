@@ -1,6 +1,9 @@
 address 0x1 {
 module CoreAddresses {
-
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
     /// The address of the genesis
     public fun GENESIS_ADDRESS(): address {
         0x1

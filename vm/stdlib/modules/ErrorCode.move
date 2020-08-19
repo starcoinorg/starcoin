@@ -1,6 +1,11 @@
 address 0x1 {
 
 module ErrorCode {
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     public fun PROLOGUE_ACCOUNT_DOES_NOT_EXIST(): u64 {0}
     public fun PROLOGUE_INVALID_ACCOUNT_AUTH_KEY(): u64 {1}
     public fun PROLOGUE_SEQUENCE_NUMBER_TOO_OLD(): u64 {2}
@@ -23,5 +28,6 @@ module ErrorCode {
     public fun EUNREACHABLE(): u64 {19}
 
     public fun ECODE_BASE(): u64 {100}
+
 }
 }

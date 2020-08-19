@@ -8,6 +8,11 @@ module Authenticator {
     use 0x1::LCS;
     use 0x1::Vector;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     const ED25519_SCHEME_ID: u8 = 0;
     const MULTI_ED25519_SCHEME_ID: u8 = 1;
 
@@ -39,11 +44,21 @@ module Authenticator {
         MultiEd25519PublicKey { public_keys, threshold }
     }
 
+    spec fun create_multi_ed25519 {
+        aborts_if threshold == 0;
+        aborts_if threshold > Vector::length(public_keys);
+        aborts_if Vector::length(public_keys) > 32;
+    }
+
     // Compute an authentication key for the ed25519 public key `public_key`
     public fun ed25519_authentication_key(public_key: vector<u8>): vector<u8> {
         // TODO: add constant ED25519_SCHEME_ID = 0u8
         Vector::push_back(&mut public_key, ED25519_SCHEME_ID);
         Hash::sha3_256(public_key)
+    }
+
+    spec fun ed25519_authentication_key {
+        aborts_if false;
     }
 
     // Compute a multied25519 account authentication key for the policy `k`
@@ -66,14 +81,26 @@ module Authenticator {
         Hash::sha3_256(authentication_key_preimage)
     }
 
+    spec fun multi_ed25519_authentication_key {
+        aborts_if false;
+    }
+
     // Return the public keys involved in the multisig policy `k`
     public fun public_keys(k: &MultiEd25519PublicKey): &vector<vector<u8>> {
         &k.public_keys
     }
 
+    spec fun public_keys {
+        aborts_if false;
+    }
+
     // Return the threshold for the multisig policy `k`
     public fun threshold(k: &MultiEd25519PublicKey): u8 {
         *&k.threshold
+    }
+
+    spec fun threshold {
+        aborts_if false;
     }
 
 }

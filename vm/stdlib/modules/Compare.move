@@ -9,6 +9,11 @@ address 0x1 {
 module Compare {
     use 0x1::Vector;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     // Compare `v1` and `v2` using
     // (1) byte-by-byte comparison from right to left until we reach the end of the shorter vector,
     // then
@@ -54,11 +59,19 @@ module Compare {
         len_cmp
     }
 
+    spec fun cmp_lcs_bytes {
+        pragma verify = false;
+        //cmp_u8(*Vector::borrow(v1, i1), *Vector::borrow(v2, i2)) is not covered
+    }
     // Compare two `u8`'s
     fun cmp_u8(i1: u8, i2: u8): u8 {
         if (i1 == i2) 0
         else if (i1 < i2) 1
         else 2
+    }
+
+    spec fun cmp_u8 {
+        aborts_if false;
     }
 
     // Compare two `u64`'s
@@ -68,6 +81,9 @@ module Compare {
         else 2
     }
 
+    spec fun cmp_u64 {
+        aborts_if false;
+    }
 }
 
 }
