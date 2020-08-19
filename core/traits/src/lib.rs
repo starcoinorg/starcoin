@@ -37,20 +37,20 @@ macro_rules! verify_block {
 }
 
 #[derive(Debug)]
-pub enum BlockVerifyField {
+pub enum VerifyBlockField {
     Header,
     Body,
     Uncle,
     Consensus,
 }
 
-impl Display for BlockVerifyField {
+impl Display for VerifyBlockField {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BlockVerifyField::Body => write!(f, "body"),
-            BlockVerifyField::Header => write!(f, "header"),
-            BlockVerifyField::Uncle => write!(f, "uncle"),
-            BlockVerifyField::Consensus => write!(f, "consensus"),
+            VerifyBlockField::Body => write!(f, "body"),
+            VerifyBlockField::Header => write!(f, "header"),
+            VerifyBlockField::Uncle => write!(f, "uncle"),
+            VerifyBlockField::Consensus => write!(f, "consensus"),
         }
     }
 }
@@ -64,5 +64,5 @@ pub enum ConnectBlockError {
     #[error("Block {0:?} 's parent not exist")]
     ParentNotExist(Box<BlockHeader>),
     #[error("Verify block {0} failed: {1:?}")]
-    VerifyBlockFailed(BlockVerifyField, Error),
+    VerifyBlockFailed(VerifyBlockField, Error),
 }

@@ -15,7 +15,7 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::{AccountStateReader, ChainStateReader};
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::{
-    verify_block, BlockVerifyField, ChainReader, ChainService, ChainWriter, ConnectBlockError,
+    verify_block, ChainReader, ChainService, ChainWriter, ConnectBlockError, VerifyBlockField,
 };
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
@@ -409,7 +409,7 @@ where
         reader: &dyn ChainStateReader,
     ) -> Result<()> {
         verify_block!(
-            BlockVerifyField::Uncle,
+            VerifyBlockField::Uncle,
             uncles.len() <= MAX_UNCLE_COUNT_PER_BLOCK,
             "too many uncles {} in block {}",
             uncles.len(),
@@ -417,7 +417,7 @@ where
         );
         for uncle in uncles {
             verify_block!(
-            BlockVerifyField::Uncle,
+            VerifyBlockField::Uncle,
             uncle.number < header.number ,
            "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number
         );
@@ -427,7 +427,7 @@ where
             Some(uncle_hash) => {
                 let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
                 verify_block!(
-                    BlockVerifyField::Uncle,
+                    VerifyBlockField::Uncle,
                     calculated_hash.eq(&uncle_hash),
                     "uncle hash in header is {},uncle hash calculated is {}",
                     uncle_hash,
@@ -436,7 +436,7 @@ where
             }
             None => {
                 return Err(ConnectBlockError::VerifyBlockFailed(
-                    BlockVerifyField::Uncle,
+                    VerifyBlockField::Uncle,
                     format_err!("Unexpect uncles, header's uncle hash is None"),
                 )
                 .into());
@@ -459,7 +459,7 @@ where
                 &master_block_headers,
             )? {
                 return Err(ConnectBlockError::VerifyBlockFailed(
-                    BlockVerifyField::Uncle,
+                    VerifyBlockField::Uncle,
                     format_err!(
                         "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
                         uncle.id(),
@@ -476,7 +476,7 @@ where
             if exists_uncles.contains(uncle) {
                 debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
                 return Err(ConnectBlockError::VerifyBlockFailed(
-                    BlockVerifyField::Uncle,
+                    VerifyBlockField::Uncle,
                     format_err!("uncle block exists in master,uncle id is {:?}", uncle.id()),
                 )
                 .into());

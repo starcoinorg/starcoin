@@ -10,7 +10,7 @@ use starcoin_storage::Store;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use traits::{BlockVerifyField, ChainAsyncService, ConnectBlockError};
+use traits::{ChainAsyncService, ConnectBlockError, VerifyBlockField};
 use types::block::{Block, BlockInfo, BlockNumber};
 
 #[derive(Clone)]
@@ -199,7 +199,7 @@ impl BlockConnector {
                                     .await
                             } else {
                                 Err(ConnectBlockError::VerifyBlockFailed(
-                                    BlockVerifyField::Header,
+                                    VerifyBlockField::Header,
                                     format_err!(
                                         "block miss match : {:?} :{:?} : {:?}",
                                         number,
@@ -211,12 +211,12 @@ impl BlockConnector {
                             }
                         }
                         Ok(None) => Err(ConnectBlockError::VerifyBlockFailed(
-                            BlockVerifyField::Header,
+                            VerifyBlockField::Header,
                             format_err!("Can not find block accumulator leaf {:?} failed", number,),
                         )
                         .into()),
                         Err(err) => Err(ConnectBlockError::VerifyBlockFailed(
-                            BlockVerifyField::Header,
+                            VerifyBlockField::Header,
                             format_err!(
                                 "Get block accumulator leaf {:?} failed : {:?}",
                                 number,
@@ -235,7 +235,7 @@ impl BlockConnector {
                             .await
                     } else {
                         Err(ConnectBlockError::VerifyBlockFailed(
-                            BlockVerifyField::Header,
+                            VerifyBlockField::Header,
                             format_err!(
                                 "pivot block id miss match : {:?} :{:?} : {:?}",
                                 number,

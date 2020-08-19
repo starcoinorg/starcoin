@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-pub use block_executor::block_execute;
+pub use block_executor::{block_execute, BlockExecutedData};
 pub use executor::*;
 pub use starcoin_transaction_builder::{
     build_accept_token_txn, build_transfer_from_association, build_transfer_txn,
