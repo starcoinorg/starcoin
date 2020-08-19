@@ -8,6 +8,11 @@ module Block {
     use 0x1::Consensus;
     use 0x1::ErrorCode;
 
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
+
      resource struct BlockMetadata {
           // number of the current block
           number: u64,
@@ -40,9 +45,19 @@ module Block {
       });
     }
 
+    spec fun initialize {
+        aborts_if !Timestamp::is_genesis();
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if exists<BlockMetadata>(Signer::spec_address_of(account));
+    }
+
     // Get the current block number
     public fun get_current_block_number(): u64 acquires BlockMetadata {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number
+    }
+
+    spec fun get_current_block_number {
+        aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
     // Get the hash of the parent block.
@@ -50,9 +65,17 @@ module Block {
       *&borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).parent_hash
     }
 
+    spec fun get_parent_hash {
+        aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
     // Gets the address of the author of the current block
     public fun get_current_author(): address acquires BlockMetadata {
       borrow_global<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).author
+    }
+
+    spec fun get_current_author {
+        aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
     // Call at block prologue
@@ -76,6 +99,14 @@ module Block {
           }
         );
         reward
+    }
+
+    spec fun process_block_metadata {
+        pragma verify = false;
+
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if number != global<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS()).number + 1;
     }
 }
 }

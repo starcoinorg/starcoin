@@ -47,6 +47,11 @@ module Config {
         }
     }
 
+    spec schema Get<ConfigValue> {
+        account: &signer;
+        aborts_if !exists<Config<ConfigValue>>(Signer::spec_address_of(account));
+    }
+
     // Get a copy of `ConfigValue` value stored under `addr`.
     public fun get_by_address<ConfigValue: copyable>(addr: address): ConfigValue acquires Config {
         assert(exists<Config<ConfigValue>>(addr), ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST());
