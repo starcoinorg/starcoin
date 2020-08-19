@@ -6635,6 +6635,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "test-helper",
  "thiserror",
  "tokio 0.2.22",
 ]
@@ -7396,6 +7397,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "test-helper",
  "thiserror",
  "tokio 0.1.22",
  "tokio 0.2.22",
@@ -7682,6 +7684,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
+ "test-helper",
  "trace-time",
  "transaction-pool",
 ]
@@ -8080,6 +8083,50 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f0fcee7b24a25675de40d5bb4de6e41b0df07bc9856295e7e2b3a3600c400c2"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "test-helper"
+version = "0.4.3"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "backtrace",
+ "futures 0.3.5",
+ "network-rpc-core",
+ "starcoin-account-api",
+ "starcoin-account-service",
+ "starcoin-block-relayer",
+ "starcoin-bus",
+ "starcoin-chain",
+ "starcoin-chain-notify",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-dev",
+ "starcoin-executor",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-metrics",
+ "starcoin-miner",
+ "starcoin-network",
+ "starcoin-network-rpc",
+ "starcoin-network-rpc-api",
+ "starcoin-rpc-server",
+ "starcoin-state-api",
+ "starcoin-state-service",
+ "starcoin-storage",
+ "starcoin-sync",
+ "starcoin-sync-api",
+ "starcoin-traits",
+ "starcoin-txpool",
+ "starcoin-txpool-api",
+ "starcoin-types",
+ "stest",
+ "thiserror",
+ "tokio 0.2.22",
 ]
 
 [[package]]

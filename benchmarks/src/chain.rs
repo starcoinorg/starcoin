@@ -31,8 +31,8 @@ impl ChainBencher {
     pub fn new(num: Option<u64>, bus: Addr<BusActor>) -> Self {
         let node_config = NodeConfig::random_for_test();
         let node_config = Arc::new(node_config);
-        let (storage, startup_info, _) =
-            Genesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
+        let (storage, startup_info, _) = Genesis::init_storage_for_test(node_config.net())
+            .expect("init storage by genesis fail.");
 
         let txpool = {
             let best_block_id = *startup_info.get_master();

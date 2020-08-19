@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_helper;
 use config::NodeConfig;
 use crypto::HashValue;
 use ethereum_types::U256;
@@ -16,7 +15,6 @@ use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_types::chain_config::ChainNetwork;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction};
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 
@@ -148,8 +146,7 @@ fn gen_root_hashes(
     block_txns: Vec<Transaction>,
     block_gat_limit: u64,
 ) -> (HashValue, HashValue) {
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(CacheStorage::new())).unwrap());
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
     //state_db
     let chain_state = ChainStateDB::new(storage.clone(), Some(pre_state_root));
     if let Ok(executed_data) = executor::block_execute(&chain_state, block_txns, block_gat_limit) {
@@ -186,7 +183,7 @@ proptest! {
             10)
     ){
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config).unwrap();
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net()).unwrap();
 
     for block in blocks {
         let result = block_chain.apply(block);

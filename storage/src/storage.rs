@@ -74,9 +74,9 @@ pub enum StorageInstance {
 }
 
 impl StorageInstance {
-    pub fn new_cache_instance(cache: CacheStorage) -> Self {
+    pub fn new_cache_instance() -> Self {
         StorageInstance::CACHE {
-            cache: Arc::new(cache),
+            cache: Arc::new(CacheStorage::new()),
         }
     }
     pub fn new_db_instance(db: Arc<DBStorage>) -> Self {

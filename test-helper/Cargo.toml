@@ -1,0 +1,50 @@
+[package]
+name = "test-helper"
+version = "0.4.3"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+backtrace = "0.3.46"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
+tokio = { version = "0.2", features = ["full"] }
+futures = "0.3"
+async-trait = "0.1"
+starcoin-metrics = { path = "../commons/metrics" }
+starcoin-config = { path = "../config" }
+starcoin-bus = { path = "../bus" }
+starcoin-consensus = { path = "../consensus" }
+starcoin-executor = { path = "../executor" }
+starcoin-network = { path = "../network" }
+starcoin-txpool = { path = "../txpool" }
+starcoin-chain = { path = "../chain" }
+starcoin-chain-notify = { path = "../chain/chain-notify" }
+starcoin-rpc-server = { path = "../rpc/server" }
+starcoin-storage = { path = "../storage" }
+starcoin-miner = { path = "../miner" }
+starcoin-crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
+starcoin-logger = { path = "../commons/logger" }
+starcoin-types = { path = "../types" }
+starcoin-sync = { path = "../sync" }
+starcoin-traits = { path = "../core/traits" }
+starcoin-genesis = { path = "../core/genesis" }
+starcoin-account-api = { path = "../account/api" }
+starcoin-account-service = { path = "../account/service" }
+starcoin-state-api = { path = "../state/api" }
+starcoin-state-service = { path = "../state/service" }
+starcoin-txpool-api = { path = "../txpool/api" }
+starcoin-sync-api = { package = "starcoin-sync-api", path = "../sync/api" }
+starcoin-block-relayer = { path = "../block-relayer" }
+starcoin-network-rpc = { path = "../network-rpc" }
+starcoin-network-rpc-api = { path = "../network-rpc/api" }
+network-rpc-core = { path = "../network-rpc/core" }
+starcoin-dev = { path = "../vm/dev" }
+
+[dev-dependencies]
+stest = { path = "../commons/stest" }
+

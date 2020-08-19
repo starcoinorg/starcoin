@@ -10,8 +10,6 @@ mod dev_rpc;
 mod node_rpc;
 mod pubsub;
 mod state_rpc;
-#[cfg(test)]
-mod test_helper;
 mod txpool_rpc;
 pub use self::account_rpc::AccountRpcImpl;
 pub use self::chain_rpc::ChainRpcImpl;

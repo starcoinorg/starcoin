@@ -1,4 +1,4 @@
-use crate::{test_helper, BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
+use crate::{BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
 use config::NodeConfig;
@@ -18,8 +18,8 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
-    let (storage, startup_info, _) =
-        StarcoinGenesis::init_storage(node_config.as_ref()).expect("init storage by genesis fail.");
+    let (storage, startup_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
+        .expect("init storage by genesis fail.");
 
     let bus = BusActor::launch();
     let txpool_service = {
@@ -147,7 +147,7 @@ async fn test_block_chain_forks() {
 ///             
 async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
     let miner_account = AccountInfo::random();
 
@@ -227,7 +227,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 #[stest::test(timeout = 480)]
 async fn test_chain_apply() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
     debug!("genesis header: {:?}", header);
 

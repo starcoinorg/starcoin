@@ -7,13 +7,11 @@ use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
-use starcoin_config::{genesis_key_pair, ChainNetwork, NodeConfig};
+use starcoin_config::{genesis_key_pair, ChainNetwork};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
-use starcoin_storage::cache_storage::CacheStorage;
-use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_transaction_builder::{build_stdlib_package, StdLibOptions};
@@ -129,9 +127,7 @@ impl Genesis {
 
         let txn = Self::build_genesis_transaction(net)?;
 
-        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
-            CacheStorage::new(),
-        ))?);
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let chain_state_db = ChainStateDB::new(storage.clone(), None);
 
         let transaction_info = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
@@ -281,10 +277,10 @@ impl Genesis {
         Ok(())
     }
 
-    fn load_and_check_genesis(config: &NodeConfig, init: bool) -> Result<Genesis> {
-        let genesis = match Genesis::load_from_dir(config.data_dir()) {
+    fn load_and_check_genesis(net: ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
+        let genesis = match Genesis::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
-                let expect_genesis = Genesis::load(config.net())?;
+                let expect_genesis = Genesis::load(net)?;
                 if genesis.block().header().id() != expect_genesis.block().header().id() {
                     return Err(GenesisError::GenesisVersionMismatch {
                         expect: expect_genesis.block.header.id(),
@@ -297,8 +293,8 @@ impl Genesis {
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
             Ok(None) => {
                 if init {
-                    let genesis = Genesis::load(config.net())?;
-                    genesis.save(config.data_dir())?;
+                    let genesis = Genesis::load(net)?;
+                    genesis.save(data_dir)?;
                     info!("Build and save new genesis: {}", genesis);
                     genesis
                 } else {
@@ -309,23 +305,17 @@ impl Genesis {
         Ok(genesis)
     }
 
-    pub fn init_storage(config: &NodeConfig) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
-        debug!("init storage by genesis.");
-        let storage = match config.net() {
-            ChainNetwork::Test => Arc::new(Storage::new(StorageInstance::new_cache_instance(
-                CacheStorage::new(),
-            ))?),
-            _ => Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-                Arc::new(CacheStorage::new()),
-                Arc::new(DBStorage::new(config.storage.dir())),
-            ))?),
-        };
+    pub fn init_and_check_storage(
+        net: ChainNetwork,
+        storage: Arc<Storage>,
+        data_dir: &Path,
+    ) -> Result<(StartupInfo, HashValue)> {
         debug!("load startup_info.");
         let (startup_info, genesis_hash) = match storage.get_startup_info() {
             Ok(Some(startup_info)) => {
                 info!("Get startup info from db");
                 info!("Check genesis file.");
-                let genesis = Self::load_and_check_genesis(&config, false)?;
+                let genesis = Self::load_and_check_genesis(net, data_dir, false)?;
                 match storage.get_block(genesis.block().header().id()) {
                     Ok(Some(block)) => {
                         if *genesis.block() == block {
@@ -346,13 +336,24 @@ impl Genesis {
                 (startup_info, genesis.block().header().id())
             }
             Ok(None) => {
-                let genesis = Self::load_and_check_genesis(&config, true)?;
+                let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let genesis_hash = genesis.block().header().id();
-                let startup_info = genesis.execute_genesis_block(storage.clone())?;
+                let startup_info = genesis.execute_genesis_block(storage)?;
                 (startup_info, genesis_hash)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
         };
+        Ok((startup_info, genesis_hash))
+    }
+
+    pub fn init_storage_for_test(
+        net: ChainNetwork,
+    ) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
+        debug!("init storage by genesis for test.");
+        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let genesis = Genesis::load(net)?;
+        let genesis_hash = genesis.block().header().id();
+        let startup_info = genesis.execute_genesis_block(storage.clone())?;
         Ok((storage, startup_info, genesis_hash))
     }
 }
@@ -363,7 +364,6 @@ mod tests {
     use starcoin_crypto::HashValue;
     use starcoin_state_api::AccountStateReader;
     use starcoin_storage::block_info::BlockInfoStore;
-    use starcoin_storage::cache_storage::CacheStorage;
     use starcoin_storage::storage::StorageInstance;
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
     use starcoin_types::account_config::genesis_address;
@@ -388,33 +388,31 @@ mod tests {
 
     pub fn do_test_genesis(net: ChainNetwork) -> Result<()> {
         let temp_dir = starcoin_config::temp_path();
-        let genesis = Genesis::build(net)?;
-        debug!("build genesis {} for {:?}", genesis, net);
-        genesis.save(temp_dir.as_ref())?;
-        let genesis2 = Genesis::load_from_dir(temp_dir.as_ref())?;
-        assert!(genesis2.is_some(), "load genesis fail.");
-        let genesis2 = genesis2.unwrap();
-        assert_eq!(genesis, genesis2, "genesis save and load different.");
 
-        let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance(
-            CacheStorage::new(),
-        ))?);
-        let startup_info = genesis.execute_genesis_block(storage.clone())?;
+        let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let (startup_info1, genesis_hash1) =
+            Genesis::init_and_check_storage(net, storage1, temp_dir.path())?;
 
-        let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance(
-            CacheStorage::new(),
-        ))?);
-        let startup_info2 = genesis2.execute_genesis_block(storage2)?;
+        let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
+        let (startup_info2, genesis_hash2) =
+            Genesis::init_and_check_storage(net, storage2.clone(), temp_dir.path())?;
 
         assert_eq!(
-            startup_info, startup_info2,
+            genesis_hash1, genesis_hash2,
             "genesis execute startup info different."
         );
-        let genesis_block = storage
-            .get_block(startup_info.master)?
+
+        assert_eq!(
+            startup_info1, startup_info2,
+            "genesis execute startup info different."
+        );
+
+        let genesis_block = storage2
+            .get_block(startup_info2.master)?
             .expect("Genesis block must exist.");
+
         let state_db = ChainStateDB::new(
-            storage.clone().into_super_arc(),
+            storage2.clone().into_super_arc(),
             Some(genesis_block.header().state_root()),
         );
         let account_state_reader = AccountStateReader::new(&state_db);
@@ -455,7 +453,7 @@ mod tests {
         let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");
 
-        let block_info = storage
+        let block_info = storage2
             .get_block_info(genesis_block.header().id())?
             .expect("Genesis block info must exist.");
 
@@ -466,7 +464,7 @@ mod tests {
             txn_accumulator_info.get_num_leaves(),
             txn_accumulator_info.get_num_nodes(),
             AccumulatorStoreType::Transaction,
-            storage.clone().into_super_arc(),
+            storage2.clone().into_super_arc(),
         )?;
         //ensure block_accumulator can work.
         txn_accumulator.append(&[HashValue::random()])?;
@@ -479,7 +477,7 @@ mod tests {
             block_accumulator_info.get_num_leaves(),
             block_accumulator_info.get_num_nodes(),
             AccumulatorStoreType::Block,
-            storage.into_super_arc(),
+            storage2.into_super_arc(),
         )?;
         let hash = block_accumulator.get_leaf(0)?.expect("leaf 0 must exist.");
         assert_eq!(hash, block_info.block_id);
