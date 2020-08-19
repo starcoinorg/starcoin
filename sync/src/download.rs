@@ -29,7 +29,7 @@ use traits::ChainAsyncService;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
-    system_events::{SyncBegin, SyncDone},
+    system_events::{SyncDone, SystemStarted},
     U256,
 };
 
@@ -100,7 +100,7 @@ impl Actor for DownloadActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        let sys_event_recipient = ctx.address().recipient::<SyncBegin>();
+        let sys_event_recipient = ctx.address().recipient::<SystemStarted>();
         self.bus
             .send(Subscription {
                 recipient: sys_event_recipient,
@@ -108,18 +108,6 @@ impl Actor for DownloadActor {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-
-        ctx.run_interval(self.sync_duration, move |download, _ctx| {
-            if !download.ready.load(Ordering::Relaxed) {
-                return;
-            }
-            debug!("Send sync event.");
-            if download.sync_task.is_finish() {
-                if let Err(e) = download.sync_event_sender.try_send(SyncEvent::DoSync) {
-                    error!("{:?}", e);
-                }
-            }
-        });
     }
 }
 
@@ -138,10 +126,20 @@ impl Handler<SyncTaskType> for DownloadActor {
     }
 }
 
-impl Handler<SyncBegin> for DownloadActor {
+impl Handler<SystemStarted> for DownloadActor {
     type Result = ();
 
-    fn handle(&mut self, _msg: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: SystemStarted, ctx: &mut Self::Context) -> Self::Result {
+        if !self.ready.load(Ordering::Relaxed) {
+            ctx.run_interval(self.sync_duration, move |download, _ctx| {
+                debug!("Send sync event.");
+                if download.sync_task.is_finish() {
+                    if let Err(e) = download.sync_event_sender.try_send(SyncEvent::DoSync) {
+                        error!("{:?}", e);
+                    }
+                }
+            });
+        }
         self.ready.store(true, Ordering::Relaxed);
         info!("Sync Ready.");
     }
