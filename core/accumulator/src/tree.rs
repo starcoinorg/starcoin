@@ -321,21 +321,19 @@ impl AccumulatorTree {
                         if internal_index.right_child() == index {
                             return Ok(internal.right());
                         }
+                    } else if internal_index.to_inorder_index() > index.to_inorder_index() {
+                        //current internal node is left part
+                        if internal.left() != *ACCUMULATOR_PLACEHOLDER_HASH
+                            && !internal_index.left_child().is_leaf()
+                        {
+                            hash_vec.push(internal.left());
+                        }
                     } else {
-                        if internal_index.to_inorder_index() > index.to_inorder_index() {
-                            //current internal node is left part
-                            if internal.left() != *ACCUMULATOR_PLACEHOLDER_HASH
-                                && !internal_index.left_child().is_leaf()
-                            {
-                                hash_vec.push(internal.left());
-                            }
-                        } else {
-                            //current internal node is left part
-                            if internal.right() != *ACCUMULATOR_PLACEHOLDER_HASH
-                                && !internal_index.right_child().is_leaf()
-                            {
-                                hash_vec.push(internal.right());
-                            }
+                        //current internal node is left part
+                        if internal.right() != *ACCUMULATOR_PLACEHOLDER_HASH
+                            && !internal_index.right_child().is_leaf()
+                        {
+                            hash_vec.push(internal.right());
                         }
                     }
                 }

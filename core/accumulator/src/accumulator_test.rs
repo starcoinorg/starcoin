@@ -13,7 +13,7 @@ use std::{collections::HashMap, sync::Arc};
 #[test]
 fn test_get_leaves() {
     // let leaves = create_leaves(1..32769);
-    let leaves = create_leaves(1..10_000);
+    let leaves = create_leaves(1..1_000_000);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
         *ACCUMULATOR_PLACEHOLDER_HASH,
