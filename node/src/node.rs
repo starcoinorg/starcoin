@@ -63,8 +63,8 @@ pub async fn start(
 ) -> Result<NodeStartHandle> {
     let bus = BusActor::launch();
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
-        Arc::new(CacheStorage::new()),
-        Arc::new(DBStorage::new(config.storage.dir())),
+        CacheStorage::new(),
+        DBStorage::new(config.storage.dir()),
     ))?);
     let (startup_info, genesis_hash) =
         Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;

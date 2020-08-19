@@ -17,7 +17,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use std::convert::TryFrom;
 use std::path::Path;
-use std::sync::Arc;
 
 pub const SETTING_PREFIX_NAME: ColumnFamilyName = "account_settings";
 pub const ENCRYPTED_PRIVATE_KEY_PREFIX_NAME: ColumnFamilyName = "encrypted_private_key";
@@ -198,10 +197,8 @@ impl AccountStorage {
             ],
             false,
         )?;
-        let storage_instance = StorageInstance::new_cache_and_db_instance(
-            Arc::new(CacheStorage::default()),
-            Arc::new(db),
-        );
+        let storage_instance =
+            StorageInstance::new_cache_and_db_instance(CacheStorage::default(), db);
         Ok(Self::new(storage_instance))
     }
 

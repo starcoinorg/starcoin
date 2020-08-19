@@ -53,11 +53,9 @@ pub fn steps() -> Steps<MyWorld> {
     let mut builder: StepsBuilder<MyWorld> = Default::default();
     builder
         .given("a storage", |world: &mut MyWorld, _step| {
-            let cache_storage = Arc::new(CacheStorage::new());
-            let db_storage = Arc::new(DBStorage::new(starcoin_config::temp_path().as_ref()));
             let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-                cache_storage,
-                db_storage,
+                CacheStorage::new(),
+                DBStorage::new(starcoin_config::temp_path().as_ref()),
             ))
             .unwrap();
             info!("storage created!");
