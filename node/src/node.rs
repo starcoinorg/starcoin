@@ -228,13 +228,10 @@ pub async fn start(
 
     delay_for(Duration::from_secs(1)).await;
 
-    let start_sync = !(config.network.disable_seed
-        || (config.network.seeds.is_empty() && config.net().get_config().boot_nodes.is_empty()));
-    if start_sync {
-        info!("Start bootstrap sync ......");
-        bus.clone().broadcast(SyncBegin).await?;
-        //TODO support query sync status by cli.
-    }
+    info!("Start bootstrap sync ......");
+    bus.clone().broadcast(SyncBegin).await?;
+    //TODO support query sync status by cli.
+
     let miner_config = config.clone();
     let miner_bus = bus.clone();
     let miner_storage = storage.clone();

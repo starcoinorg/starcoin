@@ -522,7 +522,11 @@ impl Downloader {
         }
         info!("Sync begin, find ancestor.");
         let mut need_executed = is_full_mode;
-        let mut latest_block_number = block_number;
+        let mut latest_block_number = if block_number > peer_info.latest_header.number() {
+            peer_info.latest_header.number()
+        } else {
+            block_number
+        };
         let mut continue_none = false;
         loop {
             let get_block_headers_by_number_req =
