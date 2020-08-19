@@ -68,16 +68,11 @@ spec:
               configMapKeyRef:
                 name: starcoin-config
                 key: node_keys
-
-          - name: SEED_PEER_ID
+          - name: SEED
             valueFrom:
               configMapKeyRef:
                 name: starcoin-config
-                key: seed_peer_id
-          
-          - name: SEED
-            value: /dns4/starcoin-0.starcoin-svc.default.svc.cluster.local/tcp/9840/p2p/$SEED_PEER_ID
-
+                key: seed
           - name: DISABLE_SEED
             valueFrom:
               configMapKeyRef:

@@ -54,6 +54,6 @@ COPY --from=builder $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_miner \
      $RELEASE_PATH/txfactory \
      $RELEASE_PATH/faucet \
-     /usr/local/bin/
+     /starcoin/
      
-CMD ["starcoin"]
+CMD ["/starcoin/starcoin"]

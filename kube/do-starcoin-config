@@ -1,0 +1,6 @@
+# start a node as the init seed
+start_disable_seed_node=false
+# seed address
+seed=/ip4/182.92.148.5/tcp/31440/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU
+# the other node keys
+node_keys=f4a84431187e8e511c59e358802b039bc5316e8e34a3bd02349e55fec34531db;379c3c90d11a20b1cefa78b2d96847ae6100e98d3f302217de2ae80635274091;c03a477b4199ff4043d3a58bfa730bbac38d4503039c7b584f3b6165347a3196
