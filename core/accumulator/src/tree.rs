@@ -280,7 +280,8 @@ impl AccumulatorTree {
     }
 
     fn get_node_index(&self, key: NodeCacheKey) -> Option<HashValue> {
-        self.index_cache.lock().get(&key).copied()
+        let mut cache = self.index_cache.lock();
+        cache.get(&key).copied()
     }
 
     /// Get node hash always.
@@ -303,41 +304,46 @@ impl AccumulatorTree {
             }
             temp_index = temp_index.parent();
         }
-
-        let parent_hash = parent_hash.unwrap_or(self.root_hash);
         // get node by hash
+        let parent_hash = parent_hash.unwrap_or(self.root_hash);
         let mut hash_vec = vec![parent_hash];
-        for _i in 0..level {
-            while let Some(temp_node_hash) = hash_vec.pop() {
-                match self.get_node(temp_node_hash) {
-                    Ok(AccumulatorNode::Internal(internal)) => {
-                        let internal_index = internal.index();
-                        if internal_index == index {
-                            return Ok(internal.hash());
-                        } else if internal_index == index.parent() {
-                            if internal_index.left_child() == index {
-                                return Ok(internal.left());
-                            }
-                            if internal_index.right_child() == index {
-                                return Ok(internal.right());
-                            }
-                        } else {
-                            if internal.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                hash_vec.push(internal.left());
-                            }
-                            if internal.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                hash_vec.push(internal.right());
-                            }
+
+        while let Some(temp_node_hash) = hash_vec.pop() {
+            match self.get_node(temp_node_hash) {
+                Ok(AccumulatorNode::Internal(internal)) => {
+                    let internal_index = internal.index();
+                    if internal_index == index {
+                        return Ok(internal.hash());
+                    } else if internal_index == index.parent() {
+                        if internal_index.left_child() == index {
+                            return Ok(internal.left());
+                        }
+                        if internal_index.right_child() == index {
+                            return Ok(internal.right());
+                        }
+                    } else if internal_index.to_inorder_index() > index.to_inorder_index() {
+                        //current internal node is left part
+                        if internal.left() != *ACCUMULATOR_PLACEHOLDER_HASH
+                            && !internal_index.left_child().is_leaf()
+                        {
+                            hash_vec.push(internal.left());
+                        }
+                    } else {
+                        //current internal node is left part
+                        if internal.right() != *ACCUMULATOR_PLACEHOLDER_HASH
+                            && !internal_index.right_child().is_leaf()
+                        {
+                            hash_vec.push(internal.right());
                         }
                     }
-                    Ok(AccumulatorNode::Leaf(leaf)) => {
-                        if leaf.index() == index {
-                            return Ok(leaf.value());
-                        }
+                }
+                Ok(AccumulatorNode::Leaf(leaf)) => {
+                    if leaf.index() == index {
+                        return Ok(leaf.value());
                     }
-                    _ => {
-                        debug!("get node error:{:?}", temp_node_hash);
-                    }
+                }
+                _ => {
+                    debug!("get node error:{:?}", temp_node_hash);
                 }
             }
         }
