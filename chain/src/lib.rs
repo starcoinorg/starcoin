@@ -8,7 +8,6 @@ pub use chain::BlockChain;
 mod chain_metrics;
 pub mod chain_service;
 pub mod message;
-pub mod mock;
 
 pub use chain_service::ChainServiceImpl;
 
@@ -16,10 +15,10 @@ use crate::message::ChainResponse;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};
 use bus::{BusActor, Subscription};
-use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
+use starcoin_config::NodeConfig;
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_traits::{ChainAsyncService, ChainService};

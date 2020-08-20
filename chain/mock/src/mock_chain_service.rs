@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ChainAsyncService;
 use anyhow::{Error, Result};
 use crypto::HashValue;
+use starcoin_traits::ChainAsyncService;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,

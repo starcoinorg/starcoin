@@ -1,10 +1,10 @@
 use anyhow::Result;
-use config::NodeConfig;
 use consensus::Consensus;
 use crypto::keygen::KeyGen;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
+use starcoin_config::NodeConfig;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::ChainReader;

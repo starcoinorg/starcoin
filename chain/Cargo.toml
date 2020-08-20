@@ -11,9 +11,9 @@ anyhow = "1.0"
 thiserror = "1.0"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
-starcoin-types = {path = "../types", package="starcoin-types"}
-config = {path = "../config", package="starcoin-config"}
-state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
+starcoin-types = { path = "../types", package = "starcoin-types" }
+starcoin-config = { path = "../config" }
+state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 consensus = { package="starcoin-consensus", path = "../consensus"}
@@ -49,6 +49,7 @@ starcoin-genesis = {path = "../core/genesis"}
 proptest = { version = "0.10.0"}
 proptest-derive = { version = "0.2.0" }
 test-helper = { path = "../test-helper" }
+starcoin-chain-mock = { path = "./mock" }
 
 [features]
 default = []
