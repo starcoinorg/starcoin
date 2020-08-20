@@ -77,10 +77,16 @@ module Config {
         pragma verify = false;
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
+        aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account)));
         //Todo: why below aborts_if does not work?
-        aborts_if !exists<Config<ConfigValue>>(Option::spec_get<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap).account_address);
+        aborts_if !exists<Config<ConfigValue>>(Option::spec_get<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account))).account_address);
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
+    }
+
+    spec module {
+        define spec_cap<ConfigValue>(addr: address): Option<ModifyConfigCapability<ConfigValue>> {
+            global<ModifyConfigCapabilityHolder<ConfigValue>>(addr).cap
+        }
     }
 
     // Set a config item to a new value with cap.
@@ -116,15 +122,15 @@ module Config {
 
     // Publish a new config item under account address.
     public fun publish_new_config<ConfigValue: copyable>(account: &signer, payload: ConfigValue) {
-        move_to(account, Config{ payload });
+        move_to(account, Config<ConfigValue>{ payload });
         let cap = ModifyConfigCapability<ConfigValue> {account_address: Signer::address_of(account), events: Event::new_event_handle<ConfigChangeEvent<ConfigValue>>(account)};
         move_to(account, ModifyConfigCapabilityHolder{cap: Option::some(cap)});
     }
 
     spec fun publish_new_config {
-        aborts_if exists<Config>(Signer::spec_address_of(account));
+        aborts_if exists<Config<ConfigValue>>(Signer::spec_address_of(account));
         aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        ensures exists<Config>(Signer::spec_address_of(account));
+        ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 

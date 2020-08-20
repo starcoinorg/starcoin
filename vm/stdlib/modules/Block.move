@@ -9,7 +9,7 @@ module Block {
     use 0x1::ErrorCode;
 
     spec module {
-        pragma verify = true;
+        pragma verify;
         pragma aborts_if_is_strict = true;
     }
 
