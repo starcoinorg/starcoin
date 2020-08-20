@@ -7,7 +7,43 @@ use crate::{
     Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator,
 };
 use starcoin_crypto::HashValue;
+use std::time::SystemTime;
 use std::{collections::HashMap, sync::Arc};
+
+#[test]
+fn test_get_leaves() {
+    // let leaves = create_leaves(1..32769);
+    let leaves = create_leaves(1..1_000_000);
+    let mock_store = MockAccumulatorStore::new();
+    let accumulator = MerkleAccumulator::new(
+        *ACCUMULATOR_PLACEHOLDER_HASH,
+        vec![],
+        0,
+        0,
+        AccumulatorStoreType::Transaction,
+        Arc::new(mock_store),
+    )
+    .unwrap();
+    let (root_hash, index) = accumulator.append(leaves.as_slice()).unwrap();
+    dbg!(root_hash);
+    let mut i = index;
+    let len = leaves.len() as u64;
+    loop {
+        if i < len {
+            let time = SystemTime::now();
+            let leaf = accumulator.get_leaf(i).unwrap().unwrap();
+            println!(
+                "current i: {:?} {:?} {:?}",
+                i,
+                leaf,
+                SystemTime::now().duration_since(time).unwrap()
+            );
+        } else {
+            break;
+        }
+        i += 1;
+    }
+}
 
 #[test]
 fn test_accumulator_append() {
