@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
@@ -13,7 +16,7 @@ use storage::storage::StorageInstance;
 use storage::Storage;
 
 fn bench_get_with_proof(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::logger::init();
     let tmp_dir = starcoin_config::temp_path();
     let db_store = new_empty_store(tmp_dir.as_ref()) as Arc<dyn StateNodeStore>;
 
