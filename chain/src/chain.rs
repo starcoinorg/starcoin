@@ -121,23 +121,11 @@ impl BlockChain {
         self.net
     }
 
-    pub fn save_block(&self, block: &Block, block_state: BlockState) {
-        if let Err(e) = self.storage.commit_block(block.clone(), block_state) {
-            error!("save block {:?} failed : {:?}", block.id(), e);
-        }
-    }
-
     fn get_block_info(&self, block_id: HashValue) -> Result<BlockInfo> {
         Ok(self
             .storage
             .get_block_info(block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", block_id))?)
-    }
-    pub fn save_block_info(&self, block_info: BlockInfo) {
-        let block_id = *block_info.block_id();
-        if let Err(e) = self.storage.save_block_info(block_info) {
-            error!("save block info {:?} failed : {:?}", block_id, e);
-        }
     }
 
     fn create_block_template_inner(
@@ -181,9 +169,9 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can not find block by number {}", number))
     }
 
-    pub fn transaction_info_exist(&self, txn_id: HashValue) -> bool {
-        if let Ok(node) = self.txn_accumulator.get_node(txn_id) {
-            return !node.is_empty();
+    fn transaction_info_exist(&self, txn_info_id: HashValue) -> bool {
+        if let Ok(node) = self.txn_accumulator.get_node(txn_info_id) {
+            return node.is_some();
         }
         false
     }
@@ -286,8 +274,8 @@ impl ChainReader for BlockChain {
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>> {
-        let txn_vec = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
-        for txn_info_id in txn_vec {
+        let txn_info_ids = self.storage.get_transaction_info_ids_by_hash(txn_hash)?;
+        for txn_info_id in txn_info_ids {
             if self.transaction_info_exist(txn_info_id) {
                 return self.storage.get_transaction_info(txn_info_id);
             }
@@ -716,14 +704,14 @@ impl BlockChain {
         block_state: BlockState,
     ) -> Result<()> {
         let block_id = block.id();
-        self.save_block(&block, block_state);
+        self.storage.commit_block(block.clone(), block_state)?;
+        self.storage.save_block_info(block_info)?;
         self.head = Some(block);
         self.chain_state = ChainStateDB::new(
             self.storage.clone().into_super_arc(),
             Some(self.head_block().header().state_root()),
         );
-        self.save_block_info(block_info);
-        debug!("save block {:?} succ.", block_id);
+        debug!("commit block {:?} success.", block_id);
         Ok(())
     }
 }

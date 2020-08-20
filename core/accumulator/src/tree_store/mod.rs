@@ -85,7 +85,7 @@ impl AccumulatorWriter for MockAccumulatorStore {
     ) -> Result<(), Error> {
         let mut store = self.node_store.lock();
         for node in nodes {
-            store.insert(Self::get_store_key(store_type.clone(), node.hash()), node);
+            store.insert(Self::get_store_key(store_type, node.hash()), node);
         }
         Ok(())
     }
@@ -98,7 +98,7 @@ impl AccumulatorWriter for MockAccumulatorStore {
         for hash in node_hash_vec {
             self.node_store
                 .lock()
-                .remove(&Self::get_store_key(store_type.clone(), hash));
+                .remove(&Self::get_store_key(store_type, hash));
         }
         Ok(())
     }
