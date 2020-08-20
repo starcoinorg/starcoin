@@ -14,7 +14,6 @@ use anyhow::Result;
 use crypto::HashValue;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::vm_error::KeptVMStatus;
-use std::sync::Arc;
 
 #[test]
 fn test_reopen() {
@@ -57,12 +56,10 @@ fn test_open_read_only() {
 
 #[test]
 fn test_storage() {
-    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage,
-        db_storage,
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
     ))
     .unwrap();
     let transaction_info1 = TransactionInfo::new(
@@ -83,14 +80,14 @@ fn test_storage() {
 }
 #[test]
 fn test_two_level_storage() {
-    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage.clone(),
-        db_storage.clone(),
-    ))
-    .unwrap();
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
+    );
+    let cache_storage = instance.cache().unwrap();
+    let db_storage = instance.db().unwrap();
+    let storage = Storage::new(instance).unwrap();
 
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
@@ -139,8 +136,6 @@ fn test_two_level_storage() {
 #[test]
 fn test_two_level_storage_read_through() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let storage = Storage::new(StorageInstance::new_db_instance(db_storage.clone())).unwrap();
 
     let transaction_info1 = TransactionInfo::new(
         HashValue::random(),
@@ -150,23 +145,31 @@ fn test_two_level_storage_read_through() -> Result<()> {
         KeptVMStatus::Executed,
     );
     let id = transaction_info1.id();
-    storage
-        .transaction_info_storage
-        .put(id, transaction_info1.clone())
-        .unwrap();
 
-    let cache_storage = Arc::new(CacheStorage::new());
-    let storage2 = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage.clone(),
-        db_storage,
-    ))
-    .unwrap();
+    {
+        let storage = Storage::new(StorageInstance::new_db_instance(DBStorage::new(
+            tmpdir.path(),
+        )))
+        .unwrap();
+        storage
+            .transaction_info_storage
+            .put(id, transaction_info1.clone())
+            .unwrap();
+    }
+    let storage_instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
+    );
+    let storage2 = Storage::new(storage_instance.clone()).unwrap();
 
     let transaction_info2 = storage2.transaction_info_storage.get(id).unwrap();
     assert_eq!(transaction_info1, transaction_info2.unwrap());
 
     //verfiy cache storage
-    let transaction_info_data = cache_storage.get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
+    let transaction_info_data = storage_instance
+        .cache()
+        .unwrap()
+        .get(TRANSACTION_INFO_PREFIX_NAME, id.to_vec())?;
     let transaction_info3 = TransactionInfo::decode_value(&transaction_info_data.unwrap()).unwrap();
     assert_eq!(transaction_info3, transaction_info1);
     Ok(())
@@ -175,10 +178,12 @@ fn test_two_level_storage_read_through() -> Result<()> {
 #[test]
 fn test_missing_key_handle() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
-    let cache_storage = Arc::new(CacheStorage::new());
-    let instance =
-        StorageInstance::new_cache_and_db_instance(cache_storage.clone(), db_storage.clone());
+    let instance = StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
+    );
+    let cache_storage = instance.cache().unwrap();
+    let db_storage = instance.db().unwrap();
     let storage = Storage::new(instance.clone()).unwrap();
     let key = HashValue::random();
     let result = storage.get_transaction_info(key)?;

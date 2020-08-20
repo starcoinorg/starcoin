@@ -9,8 +9,6 @@ mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 pub mod mock;
-#[cfg(test)]
-pub mod test_helper;
 
 pub use chain_service::ChainServiceImpl;
 

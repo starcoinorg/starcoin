@@ -1,4 +1,3 @@
-use super::test_helper;
 use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
 use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};

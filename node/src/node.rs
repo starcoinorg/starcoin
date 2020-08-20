@@ -1,5 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use network_rpc_core::server::NetworkRpcServer;
@@ -25,6 +26,9 @@ use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
 use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::StartSyncTxnEvent;
@@ -58,8 +62,12 @@ pub async fn start(
     logger_handle: Option<Arc<LoggerHandle>>,
 ) -> Result<NodeStartHandle> {
     let bus = BusActor::launch();
-
-    let (storage, startup_info, genesis_hash) = Genesis::init_storage(config.as_ref())?;
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
+        CacheStorage::new(),
+        DBStorage::new(config.storage.dir()),
+    ))?);
+    let (startup_info, genesis_hash) =
+        Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
     info!("Start chain with startup info: {}", startup_info);
 

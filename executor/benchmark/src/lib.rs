@@ -15,7 +15,6 @@ use starcoin_state_api::ChainState;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
 use storage::storage::StorageInstance;
 use storage::Storage;
 use types::chain_config::ChainId;
@@ -244,9 +243,7 @@ pub fn run_benchmark(
     block_size: usize,
     num_transfer_blocks: usize,
 ) {
-    let cache_storage = CacheStorage::new();
-    let storage =
-        Arc::new(Storage::new(StorageInstance::new_cache_instance(cache_storage)).unwrap());
+    let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
 
     let chain_state = ChainStateDB::new(storage, None);
 

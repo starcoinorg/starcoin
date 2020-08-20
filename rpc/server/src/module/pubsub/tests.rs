@@ -1,6 +1,6 @@
 use crate::{
     metadata::Metadata,
-    module::{test_helper, PubSubImpl, PubSubService},
+    module::{PubSubImpl, PubSubService},
 };
 use actix::Actor;
 use anyhow::Result;
@@ -32,7 +32,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     starcoin_logger::init_for_test();
     // prepare
     let config = Arc::new(NodeConfig::random_for_test());
-    let mut block_chain = test_helper::gen_blockchain_for_test(config.clone())?;
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let miner_account = AccountInfo::random();
 
     let pri_key = Ed25519PrivateKey::genesis();

@@ -47,7 +47,8 @@ starcoin-account-api = { path = "../account/api"}
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../core/genesis"}
 proptest = { version = "0.10.0"}
-proptest-derive = { version = "0.2.0"}
+proptest-derive = { version = "0.2.0" }
+test-helper = { path = "../test-helper" }
 
 [features]
 default = []

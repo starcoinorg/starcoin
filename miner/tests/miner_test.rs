@@ -41,7 +41,7 @@ fn test_miner_with_ondemand_pacemaker() {
         let _address = account_address::from_public_key(&key_pair.public_key);
 
         let (storage, startup_info, genesis_hash) =
-            Genesis::init_storage(config.as_ref()).expect("init storage by genesis fail.");
+            Genesis::init_storage_for_test(config.net()).expect("init storage by genesis fail.");
 
         let txpool = {
             let best_block_id = *startup_info.get_master();

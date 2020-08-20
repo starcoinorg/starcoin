@@ -111,8 +111,7 @@ fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
 }
 
 fn new_empty_store<P: AsRef<Path> + Clone>(p: P) -> Arc<Storage> {
-    let db_storage = DBStorage::new(p);
-    let store = Storage::new(StorageInstance::new_db_instance(Arc::new(db_storage))).unwrap();
+    let store = Storage::new(StorageInstance::new_db_instance(DBStorage::new(p))).unwrap();
     Arc::new(store)
 }
 

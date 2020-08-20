@@ -14,16 +14,13 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
-use std::sync::Arc;
 
 #[test]
 fn test_block() {
-    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage,
-        db_storage,
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
     ))
     .unwrap();
     let dt = Local::now();
@@ -81,12 +78,10 @@ fn test_block() {
 
 #[test]
 fn test_block_number() {
-    let cache_storage = Arc::new(CacheStorage::new());
     let tmpdir = starcoin_config::temp_path();
-    let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-        cache_storage,
-        db_storage,
+        CacheStorage::new(),
+        DBStorage::new(tmpdir.path()),
     ))
     .unwrap();
     let dt = Local::now();

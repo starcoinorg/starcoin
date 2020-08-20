@@ -73,7 +73,8 @@ members = [
     "vm/transaction-builder-generator",
     "vm/move-coverage",
     "vm/resource-viewer",
-    "vm/dev"
+    "vm/dev",
+    "test-helper"
 ]
 
 [profile.dev]

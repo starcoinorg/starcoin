@@ -11,7 +11,6 @@ use starcoin_types::{
     proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen},
     transaction::Transaction,
 };
-use std::sync::Arc;
 
 fn init_store(
     mut universe: AccountInfoUniverse,
@@ -42,12 +41,10 @@ proptest! {
             1..10
         ),
     ) {
-        let cache_storage = Arc::new(CacheStorage::new());
         let tmpdir = starcoin_config::temp_path();
-        let db_storage = Arc::new(DBStorage::new(tmpdir.path()));
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
-            cache_storage,
-            db_storage,
+            CacheStorage::new(),
+            DBStorage::new(tmpdir.path()),
         ))
         .unwrap();
         let txns = init_store(universe, gens, &storage);

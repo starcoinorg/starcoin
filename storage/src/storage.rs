@@ -65,25 +65,47 @@ pub enum StorageInstance {
         cache: Arc<CacheStorage>,
     },
     DB {
-        db: Arc<dyn InnerStore>,
+        db: Arc<DBStorage>,
     },
     CacheAndDb {
         cache: Arc<CacheStorage>,
-        db: Arc<dyn InnerStore>,
+        db: Arc<DBStorage>,
     },
 }
 
 impl StorageInstance {
-    pub fn new_cache_instance(cache: CacheStorage) -> Self {
+    pub fn new_cache_instance() -> Self {
         StorageInstance::CACHE {
-            cache: Arc::new(cache),
+            cache: Arc::new(CacheStorage::new()),
         }
     }
-    pub fn new_db_instance(db: Arc<DBStorage>) -> Self {
-        Self::DB { db }
+    pub fn new_db_instance(db: DBStorage) -> Self {
+        Self::DB { db: Arc::new(db) }
     }
-    pub fn new_cache_and_db_instance(cache: Arc<CacheStorage>, db: Arc<DBStorage>) -> Self {
-        Self::CacheAndDb { cache, db }
+
+    pub fn new_cache_and_db_instance(cache: CacheStorage, db: DBStorage) -> Self {
+        Self::CacheAndDb {
+            cache: Arc::new(cache),
+            db: Arc::new(db),
+        }
+    }
+
+    pub fn cache(&self) -> Option<Arc<CacheStorage>> {
+        match self {
+            StorageInstance::CACHE { cache } | StorageInstance::CacheAndDb { cache, db: _ } => {
+                Some(cache.clone())
+            }
+            _ => None,
+        }
+    }
+
+    pub fn db(&self) -> Option<Arc<DBStorage>> {
+        match self {
+            StorageInstance::DB { db } | StorageInstance::CacheAndDb { cache: _, db } => {
+                Some(db.clone())
+            }
+            _ => None,
+        }
     }
 }
 
