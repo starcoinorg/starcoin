@@ -44,7 +44,7 @@ impl AccumulatorStorage {
 
 impl KeyCodec for AccumulatorNodeKey {
     fn encode_key(&self) -> Result<Vec<u8>> {
-        let (hash, store_type) = self.clone();
+        let (hash, store_type) = self;
 
         let mut encoded_key = Vec::with_capacity(size_of::<AccumulatorNodeKey>());
         encoded_key.write_all(&hash.to_vec())?;
@@ -113,7 +113,7 @@ impl AccumulatorWriter for AccumulatorStorage {
     ) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for node in nodes {
-            batch.put(Self::get_store_key(store_type.clone(), node.hash()), node)?;
+            batch.put(Self::get_store_key(store_type, node.hash()), node)?;
         }
         self.node_store.write_batch(batch)
     }
@@ -125,7 +125,7 @@ impl AccumulatorWriter for AccumulatorStorage {
     ) -> Result<(), Error> {
         let mut batch = WriteBatch::new();
         for key in node_hash_vec {
-            batch.delete(Self::get_store_key(store_type.clone(), key))?;
+            batch.delete(Self::get_store_key(store_type, key))?;
         }
         self.node_store.write_batch(batch)
     }

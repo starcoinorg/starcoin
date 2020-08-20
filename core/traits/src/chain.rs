@@ -29,6 +29,7 @@ pub trait ChainReader {
     fn get_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
     fn get_block(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    /// Get transaction info by transaction's hash
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn get_latest_block_by_uncle(&self, uncle_id: HashValue, times: u64) -> Result<Option<Block>>;
 

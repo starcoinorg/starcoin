@@ -12,8 +12,7 @@ use std::{collections::HashMap, sync::Arc};
 
 #[test]
 fn test_get_leaves() {
-    // let leaves = create_leaves(1..32769);
-    let leaves = create_leaves(1..1_000_000);
+    let leaves = create_leaves(1..100_000);
     let mock_store = MockAccumulatorStore::new();
     let accumulator = MerkleAccumulator::new(
         *ACCUMULATOR_PLACEHOLDER_HASH,
@@ -28,21 +27,22 @@ fn test_get_leaves() {
     dbg!(root_hash);
     let mut i = index;
     let len = leaves.len() as u64;
+    let begin = SystemTime::now();
     loop {
         if i < len {
-            let time = SystemTime::now();
-            let leaf = accumulator.get_leaf(i).unwrap().unwrap();
-            println!(
-                "current i: {:?} {:?} {:?}",
-                i,
-                leaf,
-                SystemTime::now().duration_since(time).unwrap()
-            );
+            let _leaf = accumulator.get_leaf(i).unwrap().unwrap();
         } else {
             break;
         }
         i += 1;
     }
+    let use_time = SystemTime::now().duration_since(begin).unwrap();
+    println!(
+        "test accumulator get leaves, leaves count: {:?} use time: {:?} average time:{:?}",
+        len,
+        use_time,
+        use_time.as_nanos() / len as u128,
+    );
 }
 
 #[test]
@@ -109,11 +109,14 @@ fn test_multiple_chain() {
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots().unwrap();
     for node in frozen_node.clone() {
-        let acc = accumulator.get_node(node).unwrap();
+        let acc = accumulator
+            .get_node(node)
+            .expect("get accumulator node by hash should success")
+            .unwrap();
         if let AccumulatorNode::Internal(internal) = acc {
-            let left = accumulator.get_node(internal.left()).unwrap();
+            let left = accumulator.get_node(internal.left()).unwrap().unwrap();
             assert_eq!(left.is_frozen(), true);
-            let right = accumulator.get_node(internal.right()).unwrap();
+            let right = accumulator.get_node(internal.right()).unwrap().unwrap();
             assert_eq!(right.is_frozen(), true);
         }
     }
@@ -292,7 +295,7 @@ fn test_flush() {
     //get from storage
     for node_hash in leaves.clone() {
         let node = accumulator.get_node(node_hash).unwrap();
-        assert!(!node.is_empty());
+        assert!(node.is_some());
     }
 }
 

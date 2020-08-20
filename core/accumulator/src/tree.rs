@@ -183,33 +183,14 @@ impl AccumulatorTree {
     }
 
     /// Get node for self package.
-    pub(crate) fn get_node(&self, hash: HashValue) -> Result<AccumulatorNode> {
-        if hash == HashValue::zero() {
-            error!(
-                "{:?} get accumulator node hash is zero.",
-                self.id.short_str()
-            );
-            return Ok(AccumulatorNode::new_empty());
-        }
-
+    pub(crate) fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         let updates = self.update_nodes.lock();
         if !updates.is_empty() {
             if let Some(node) = updates.get(&hash) {
-                return Ok(node.clone());
+                return Ok(Some(node.clone()));
             }
         }
-
-        let node = match self.store.get_node(self.store_type.clone(), hash) {
-            Ok(Some(node)) => node,
-            _ => {
-                debug!(
-                    "get accumulator node from store none:{:?}",
-                    hash.short_str()
-                );
-                AccumulatorNode::new_empty()
-            }
-        };
-        Ok(node)
+        self.store.get_node(self.store_type, hash)
     }
 
     /// Flush node to storage
@@ -221,7 +202,7 @@ impl AccumulatorTree {
                 .map(|(_, node)| node.clone())
                 .collect::<Vec<AccumulatorNode>>();
             let nodes_len = nodes_vec.len();
-            self.store.save_nodes(self.store_type.clone(), nodes_vec)?;
+            self.store.save_nodes(self.store_type, nodes_vec)?;
             nodes.clear();
             debug!("flush {} acc node to storage.", nodes_len);
         }
@@ -309,8 +290,8 @@ impl AccumulatorTree {
         let mut hash_vec = vec![parent_hash];
 
         while let Some(temp_node_hash) = hash_vec.pop() {
-            match self.get_node(temp_node_hash) {
-                Ok(AccumulatorNode::Internal(internal)) => {
+            match self.get_node(temp_node_hash)? {
+                Some(AccumulatorNode::Internal(internal)) => {
                     let internal_index = internal.index();
                     if internal_index == index {
                         return Ok(internal.hash());
@@ -337,13 +318,16 @@ impl AccumulatorTree {
                         }
                     }
                 }
-                Ok(AccumulatorNode::Leaf(leaf)) => {
+                Some(AccumulatorNode::Leaf(leaf)) => {
                     if leaf.index() == index {
                         return Ok(leaf.value());
                     }
                 }
                 _ => {
-                    debug!("get node error:{:?}", temp_node_hash);
+                    error!(
+                        "can not find {:?} accumulator node by hash :{:?}",
+                        self.store_type, temp_node_hash
+                    );
                 }
             }
         }
