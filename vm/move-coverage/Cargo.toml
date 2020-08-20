@@ -1,6 +1,6 @@
 [package]
 name = "move-coverage"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Libra Association <opensource@libra.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 description = "starcoin Move VM code coverage"
 license = "Apache-2.0"
