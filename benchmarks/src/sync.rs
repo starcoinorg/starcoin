@@ -124,9 +124,15 @@ impl SyncBencher {
                         latest_number = latest_header.number();
                         let hashes: Vec<HashValue> =
                             headers.iter().map(|header| header.id()).collect();
+                        let max_height = headers
+                            .iter()
+                            .map(|h| h.number)
+                            .max()
+                            .expect("headers should be not empty");
                         //TODO: get_body_by_hash select a best peer again.which maybe different to best peer selected before.
                         let (bodies, _) =
-                            get_body_by_hash(&rpc_client, &network, hashes.clone()).await?;
+                            get_body_by_hash(&rpc_client, &network, hashes.clone(), max_height)
+                                .await?;
                         info!(
                             "sync block number : {:?} from peer {:?}",
                             latest_number,
