@@ -67,3 +67,4 @@ tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = {path = "../../core/genesis"}
 tokio-compat = "0.1.5"
 test-helper = { path = "../../test-helper" }
+starcoin-chain-mock = { path = "../../chain/mock" }

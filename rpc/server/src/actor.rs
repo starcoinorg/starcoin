@@ -180,7 +180,7 @@ impl Supervised for RpcActor {
 mod tests {
     use super::*;
     use starcoin_account_api::mock::MockAccountService;
-    use starcoin_chain::mock::mock_chain_service::MockChainService;
+    use starcoin_chain_mock::MockChainService;
     use starcoin_state_api::mock::MockChainStateService;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_txpool_mock_service::MockTxPoolService;

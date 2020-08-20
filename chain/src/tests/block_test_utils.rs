@@ -1,13 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use config::NodeConfig;
 use crypto::HashValue;
 use ethereum_types::U256;
 use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;

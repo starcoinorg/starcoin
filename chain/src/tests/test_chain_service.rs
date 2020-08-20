@@ -1,11 +1,11 @@
 use crate::{BlockChain, ChainActor, ChainActorRef, ChainAsyncService};
 use anyhow::Result;
 use bus::BusActor;
-use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
+use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;

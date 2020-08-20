@@ -117,6 +117,10 @@ impl BlockChain {
         )
     }
 
+    pub fn net(&self) -> ChainNetwork {
+        self.net
+    }
+
     pub fn save_block(&self, block: &Block, block_state: BlockState) {
         if let Err(e) = self.storage.commit_block(block.clone(), block_state) {
             error!("save block {:?} failed : {:?}", block.id(), e);

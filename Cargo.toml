@@ -35,6 +35,7 @@ members = [
     "executor/benchmark",
     "chain",
     "chain/open-block",
+    "chain/mock",
     "chain/chain-notify",
     "node",
     "sync",
