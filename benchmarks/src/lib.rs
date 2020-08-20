@@ -8,6 +8,7 @@ use starcoin_vm_types::chain_config::{ChainId, ChainNetwork};
 use types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
 pub mod chain;
+pub mod chain_service;
 pub mod helper;
 pub mod storage;
 pub mod sync;

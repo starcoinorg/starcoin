@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use executor_benchmark::run_benchmark;
 
 pub fn transaction_execution(c: &mut Criterion) {
-    ::logger::init_for_test();
+    ::logger::init();
     let mut group = c.benchmark_group("vm");
     group.sample_size(10);
     let bench_id = "transaction_execution";

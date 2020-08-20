@@ -60,9 +60,14 @@ fn accumulator_append(c: &mut Criterion) {
         )
     });
 }
+
 fn create_leaves(nums: std::ops::Range<usize>) -> Vec<HashValue> {
     nums.map(|x| HashValue::sha3_256_of(x.to_be_bytes().as_ref()))
         .collect()
 }
-criterion_group!(starcoin_benches, storage_transaction, accumulator_append);
-criterion_main!(starcoin_benches);
+criterion_group!(
+    starcoin_storage_benches,
+    storage_transaction,
+    accumulator_append
+);
+criterion_main!(starcoin_storage_benches);

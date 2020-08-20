@@ -43,15 +43,19 @@ executor-benchmark = {path = "../executor/benchmark", package="starcoin-executor
 futures = "0.3"
 logger = {path = "../commons/logger",package="starcoin-logger"}
 network-rpc = {path ="../network-rpc", package = "starcoin-network-rpc"}
-starcoin-state-service = {path="../state/service"}
+starcoin-state-service = { path = "../state/service" }
 [dev-dependencies]
 
 [[bench]]
-name = "benchmarks"
+name = "bench_storage"
 harness = false
 
 [[bench]]
 name = "bench_chain"
+harness = false
+
+[[bench]]
+name = "bench_chain_service"
 harness = false
 
 [[bench]]
