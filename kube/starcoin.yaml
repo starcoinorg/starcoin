@@ -3,7 +3,6 @@ kind: Service
 metadata:
   name: starcoin-svc
 spec:
-  type: NodePort
   selector:
     app: starcoin
   ports:
@@ -12,8 +11,7 @@ spec:
       port: 9840
       targetPort: 9840
       name: peer
-      nodePort: 31440
-
+  clusterIP: None
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -37,19 +35,23 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.4.3
+        image: starcoin/starcoin:v0.4.4
         command:
           - bash
           - -c
         args:
           -
-            rm -rf /data/proxima/*;
+            rm -rf /data/proxima/starcoin.ipc;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            node_key=${node_keys[$id]};
+            if [ ! -z $node_key ]; then
+              node_key_flag="--node-key ${node_key}";
+            fi;
             if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /data --disable-seed --node-key ${node_keys[$id]};
+              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag;
               sleep 5;
             else
-              /starcoin/starcoin -n proxima -d /data --seed $(SEED) --node-key ${node_keys[$id]};
+              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag;
             fi
             
         ports:
@@ -65,9 +67,9 @@ spec:
                 fieldPath: metadata.name
           - name: NODE_KEYS
             valueFrom:
-              configMapKeyRef:
-                name: starcoin-config
-                key: node_keys
+              secretKeyRef:
+                name: node-keys
+                key: node-keys
           - name: SEED
             valueFrom:
               configMapKeyRef:
@@ -78,10 +80,8 @@ spec:
               configMapKeyRef:
                 name: starcoin-config
                 key: start_disable_seed_node
-
             
       volumes:
       - name: volume
         hostPath:
           path: /data
-          

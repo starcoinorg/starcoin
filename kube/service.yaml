@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-0
+  name: starcoin-0
+spec:
+  ports:
+  - port: 9840
+    protocol: TCP
+    targetPort: 9840
+  selector:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-0
+  type: LoadBalancer
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-1
+  name: starcoin-1
+spec:
+  ports:
+  - port: 9840
+    protocol: TCP
+    targetPort: 9840
+  selector:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-1
+  type: LoadBalancer
+status:
+  loadBalancer: {}
+---  
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-2
+  name: starcoin-2
+spec:
+  ports:
+  - port: 9840
+    protocol: TCP
+    targetPort: 9840
+  selector:
+    app: starcoin
+    network: proxima
+    statefulset.kubernetes.io/pod-name: starcoin-2
+  type: LoadBalancer
+status:
+  loadBalancer: {}

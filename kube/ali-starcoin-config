@@ -1,6 +1,0 @@
-# start a node as the init seed
-start_disable_seed_node=true
-# seed address
-seed=/dns4/starcoin-0.starcoin-svc.default.svc.cluster.local/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU
-# node keys
-node_keys=17f42931c760ce8d4611a8907e0e8325ce59569aa3e3eb207cb0eef596f44af6;6a5d25da2a86dab3b46639aae7db33bc7d1fe2006c7c8a9fdf93e20775b8bc8d;a52cb7fe64b154d192cebd35a0b129c80481f89dd94f2aa2978b71417304a858;
