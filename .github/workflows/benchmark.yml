@@ -28,7 +28,7 @@ jobs:
           command: bench
           args: --bench benchmarks --bench bench_state_tree --bench bench_vm
       - name: tar result files
-          run: tar -cvf benchmark.tar benchmarks/target/criterion
+        run: tar -cvf benchmark.tar benchmarks/target/criterion
       - name: upload Artifact
         uses: actions/upload-artifact@v2
         with:
