@@ -6,6 +6,11 @@ address 0x1 {
         use 0x1::Block;
         use 0x1::ErrorCode;
 
+        spec module {
+            pragma verify = true;
+            pragma aborts_if_is_strict = true;
+        }
+
         struct UpgradePlan {
             package_hash: vector<u8>,
             active_after_number: u64,
@@ -59,6 +64,10 @@ address 0x1 {
            };
         }
 
+        spec fun grant_maintainer {
+            aborts_if false;
+        }
+
         // Update account's ModuleUpgradeStrategy
         public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
             assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), EUNKNOWN_STRATEGY());
@@ -86,8 +95,20 @@ address 0x1 {
             };
         }
 
+        spec fun update_module_upgrade_strategy {
+            pragma verify = false; //Todo: fix the spec below
+            aborts_if strategy < 0 || strategy > 3;
+            aborts_if strategy <= global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy;
+            aborts_if global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy == 1
+                      && !exists<TwoPhaseUpgrade>(Signer::address_of(account));
+        }
+
         public fun destroy_upgrade_plan_cap(cap: UpgradePlanCapability){
             let UpgradePlanCapability{account_address:_} = cap;
+        }
+
+        spec fun destroy_upgrade_plan_cap {
+            aborts_if false;
         }
 
         public fun extract_submit_upgrade_plan_cap(account: &signer): UpgradePlanCapability acquires ModuleUpgradeStrategy, UpgradePlanCapability{
@@ -96,10 +117,20 @@ address 0x1 {
             move_from<UpgradePlanCapability>(account_address)
         }
 
+        spec fun extract_submit_upgrade_plan_cap {
+            aborts_if !exists<ModuleUpgradeStrategy>(Signer::address_of(account));
+            aborts_if global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy != 1;
+            aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
+        }
+
         public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
             submit_upgrade_plan_with_cap(cap, package_hash, active_after_number);
+        }
+
+        spec fun submit_upgrade_plan {
+            pragma verify = false;
         }
 
         public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
@@ -112,10 +143,18 @@ address 0x1 {
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
         }
 
+        spec fun submit_upgrade_plan_with_cap {
+            pragma verify = false;
+        }
+
         public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
             cancel_upgrade_plan_with_cap(cap);
+        }
+
+        spec fun cancel_upgrade_plan {
+            pragma verify = false;
         }
 
         public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
@@ -124,6 +163,10 @@ address 0x1 {
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
             assert(Option::is_some(&tpu.plan), EUPGRADE_PLAN_IS_NONE());
             tpu.plan = Option::none<UpgradePlan>();
+        }
+
+        spec fun cancel_upgrade_plan_with_cap {
+            pragma verify = false;
         }
 
         // Get Module maintainer for addr
@@ -135,6 +178,10 @@ address 0x1 {
             }
         }
 
+        spec fun get_module_maintainer {
+            pragma verify = false;
+        }
+
         public fun get_module_upgrade_strategy(module_address: address): u8 acquires ModuleUpgradeStrategy {
             if (exists<ModuleUpgradeStrategy>(module_address)) {
                 borrow_global<ModuleUpgradeStrategy>(module_address).strategy
@@ -143,12 +190,20 @@ address 0x1 {
             }
         }
 
+        spec fun get_module_upgrade_strategy {
+            aborts_if false;
+        }
+
         public fun get_upgrade_plan(module_address: address): Option<UpgradePlan> acquires TwoPhaseUpgrade {
             if (exists<TwoPhaseUpgrade>(module_address)) {
                 *&borrow_global<TwoPhaseUpgrade>(module_address).plan
             }else{
                 Option::none<UpgradePlan>()
             }
+        }
+
+        spec fun get_upgrade_plan {
+            pragma verify = false;
         }
 
         public fun check_package_txn(sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy{
@@ -171,15 +226,29 @@ address 0x1 {
             };
         }
 
+        spec fun check_package_txn {
+            pragma verify = false;
+
+        }
+
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(package_address);
             tpu.plan = Option::none<UpgradePlan>();
+        }
+
+        spec fun finish_upgrade_plan {
+            aborts_if !exists<TwoPhaseUpgrade>(package_address);
         }
 
         public fun package_txn_prologue(account: &signer, txn_sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy {
             // Can only be invoked by genesis account
             assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
             check_package_txn(txn_sender, package_address, package_hash);
+        }
+
+        spec fun package_txn_prologue {
+            pragma verify = false; //fix me
+            aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         }
 
         /// Package txn finished, and clean UpgradePlan
@@ -193,6 +262,13 @@ address 0x1 {
                     //TODO fire event.
                 };
             };
+        }
+
+        spec fun package_txn_epilogue {
+            pragma verify = false; //fix me
+            aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+            aborts_if  global<ModuleUpgradeStrategy>(package_address).strategy == 1
+                       && success && !exists<TwoPhaseUpgrade>(package_address);
         }
 
     }
