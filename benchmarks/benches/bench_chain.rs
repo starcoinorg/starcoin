@@ -6,12 +6,12 @@ use criterion::{criterion_group, criterion_main, Benchmark, Criterion};
 
 fn block_apply(c: &mut Criterion) {
     ::logger::init();
-    for i in vec![20u64, 50, 100].into_iter() {
+    for i in &[10u64, 1000] {
         c.bench(
-            "block_try_connect",
-            Benchmark::new(format!("connect_branch_{:?}", i), move |b| {
-                let bencher = ChainBencher::new(Some(i));
-                bencher.bench(b, None)
+            "block_apply",
+            Benchmark::new(format!("block_apply_{:?}", i), move |b| {
+                let bencher = ChainBencher::new(Some(*i));
+                bencher.bench(b)
             })
             .sample_size(10),
         );
@@ -19,21 +19,18 @@ fn block_apply(c: &mut Criterion) {
 }
 
 fn query_block(c: &mut Criterion) {
-    for i in vec![20u64, 50, 100].into_iter() {
-        for j in vec![2u64, 5, 10].into_iter() {
-            for k in vec![20u64, 50, 100].into_iter() {
-                for id in [format!("query_block_{:?}_{:?}_{:?}", i, j, k)].iter() {
-                    c.bench(
-                        "query_block",
-                        Benchmark::new(id, move |b| {
-                            let bencher = ChainBencher::new(Some(i));
-                            bencher.execute(Some(j));
-                            bencher.query_bench(b, k)
-                        })
-                        .sample_size(10),
-                    );
-                }
-            }
+    ::logger::init();
+    for block_num in &[10u64, 1000u64] {
+        let bencher = ChainBencher::new(Some(*block_num));
+        bencher.execute();
+
+        for i in &[100u64, 1000, 10000] {
+            let id = format!("query_block_in({:?})_times({:?})", block_num, i,);
+            let bencher_local = bencher.clone();
+            c.bench(
+                "query_block",
+                Benchmark::new(id, move |b| bencher_local.query_bench(b, *i)).sample_size(10),
+            );
         }
     }
 }
