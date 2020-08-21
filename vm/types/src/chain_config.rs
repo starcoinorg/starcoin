@@ -340,7 +340,7 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
 
     ChainConfig {
         version: Version { major: 1 },
-        parent_hash: HashValue::random(),
+        parent_hash: HashValue::sha3_256_of(b"starcoin_test"),
         //Test timestamp set to 0 for mock time.
         timestamp: 0,
         reward_delay: 1,

@@ -22,7 +22,6 @@ members = [
     "state/state-store-api",
     "state/service",
     "config",
-    "config/config-generator",
     "bus",
     "storage",
     "consensus",
@@ -60,10 +59,6 @@ members = [
     "rpc/middleware",
     "rpc/client",
     "rpc/server",
-    "cmd/starcoin",
-    "cmd/faucet",
-    "cmd/tx-factory",
-    "cmd/miner_client",
     "vm/types",
     "vm/functional-tests",
     "vm/vm-runtime",
@@ -75,7 +70,12 @@ members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/dev",
-    "test-helper"
+    "test-helper",
+    "cmd/starcoin",
+    "cmd/faucet",
+    "cmd/tx-factory",
+    "cmd/miner_client",
+    "cmd/generator",
 ]
 
 [profile.dev]
