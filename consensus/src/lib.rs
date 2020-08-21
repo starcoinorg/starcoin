@@ -19,6 +19,7 @@ use crate::dummy::DummyConsensus;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
+use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
@@ -44,6 +45,14 @@ static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
 static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 
 impl Consensus for ConsensusStrategy {
+    fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.init(reader),
+            ConsensusStrategy::Dev => DEV.init(reader),
+            ConsensusStrategy::Argon => ARGON.init(reader),
+        }
+    }
+
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,

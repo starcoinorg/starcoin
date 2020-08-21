@@ -15,17 +15,17 @@ use std::{collections::HashMap, sync::Arc};
 
 mod consensus;
 mod genesis_gas_schedule;
-mod global_time;
 mod version;
 mod vm_config;
 
 pub use self::{
     consensus::{Consensus, EpochDataResource, EpochInfo, EpochResource},
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
-    global_time::GlobalTimeOnChain,
     version::Version,
     vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
 };
+
+pub use crate::on_chain_resource::GlobalTimeOnChain;
 
 /// To register an on-chain config in Rust:
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config

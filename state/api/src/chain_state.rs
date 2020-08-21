@@ -17,7 +17,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
 };
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
@@ -296,5 +296,10 @@ impl<'a> AccountStateReader<'a> {
             .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
 
         Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+    }
+
+    pub fn timestamp(&self) -> Result<GlobalTimeOnChain> {
+        self.get_resource(genesis_address())?
+            .ok_or_else(|| format_err!("Timestamp resource should exist."))
     }
 }

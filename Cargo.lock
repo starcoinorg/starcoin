@@ -6762,14 +6762,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-config-generator"
-version = "0.4.4"
-dependencies = [
- "starcoin-config",
- "structopt 0.3.16",
-]
-
-[[package]]
 name = "starcoin-consensus"
 version = "0.4.4"
 dependencies = [
@@ -6946,6 +6938,31 @@ dependencies = [
  "tempfile",
  "termcolor",
  "thiserror",
+]
+
+[[package]]
+name = "starcoin-generator"
+version = "0.4.4"
+dependencies = [
+ "anyhow",
+ "ascii",
+ "futures 0.3.5",
+ "futures-timer",
+ "hex",
+ "scmd",
+ "serde",
+ "serde_json",
+ "starcoin-account-api",
+ "starcoin-account-lib",
+ "starcoin-chain-mock",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-types",
+ "structopt 0.3.16",
 ]
 
 [[package]]
