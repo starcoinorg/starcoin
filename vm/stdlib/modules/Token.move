@@ -259,6 +259,7 @@ module Token {
 
     spec fun split {
         aborts_if token.value < amount;
+        // TODO: ensure result
     }
 
     /// "Divides" the given token into two, where the original token is modified in place
@@ -277,6 +278,8 @@ module Token {
 
     spec fun withdraw {
         aborts_if token.value < amount;
+        ensures result.value == amount;
+        ensures token.value == old(token).value - amount;
     }
 
     /// Merges two tokens of the same token and returns a new token whose
@@ -291,6 +294,8 @@ module Token {
 
     spec fun join {
         aborts_if token1.value + token2.value > max_u128();
+        ensures old(token1).value + old(token2).value == result.value;
+        ensures token1.value + token2.value == result.value;
     }
 
     /// "Merges" the two tokens
@@ -303,6 +308,7 @@ module Token {
 
     spec fun deposit {
         aborts_if token.value + check.value > max_u128();
+        ensures old(token).value + check.value == token.value;
     }
 
     /// Destroy a token
