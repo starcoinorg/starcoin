@@ -6,8 +6,13 @@ use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
+use starcoin_config::{temp_path, DataDirPath};
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use starcoin_vm_types::chain_config::{ChainNetwork, ConsensusStrategy};
 use std::ops::Deref;
 use std::sync::Arc;
@@ -18,13 +23,23 @@ pub struct ChainBencher {
     chain: Arc<RwLock<BlockChain>>,
     block_num: u64,
     account: AccountInfo,
+    temp_path: DataDirPath,
 }
 
 impl ChainBencher {
     pub fn new(num: Option<u64>) -> Self {
         let net = ChainNetwork::Test;
-        let (storage, startup_info, _) =
-            Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
+        let temp_path = temp_path();
+        let storage = Arc::new(
+            Storage::new(StorageInstance::new_cache_and_db_instance(
+                CacheStorage::new(),
+                DBStorage::new(temp_path.path().join("starcoindb")),
+            ))
+            .unwrap(),
+        );
+        let (startup_info, _) =
+            Genesis::init_and_check_storage(net, storage.clone(), temp_path.path())
+                .expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(net, startup_info.master, storage, None)
             .expect("create block chain should success.");
@@ -37,10 +52,11 @@ impl ChainBencher {
                 None => 100,
             },
             account: miner_account,
+            temp_path,
         }
     }
 
-    pub fn execute(&self, _proportion: Option<u64>) {
+    pub fn execute(&self) {
         for _i in 0..self.block_num {
             //let mut txn_vec = Vec::new();
             //txn_vec.push(random_txn(self.count.load(Ordering::Relaxed)));
@@ -85,11 +101,18 @@ impl ChainBencher {
         )
     }
 
-    pub fn bench(&self, b: &mut Bencher, proportion: Option<u64>) {
-        b.iter_batched(
-            || (self, proportion),
-            |(bench, p)| bench.execute(p),
-            BatchSize::LargeInput,
-        )
+    pub fn bench(&self, b: &mut Bencher) {
+        b.iter_batched(|| self, |bench| bench.execute(), BatchSize::LargeInput)
+    }
+}
+
+impl Clone for ChainBencher {
+    fn clone(&self) -> Self {
+        Self {
+            chain: self.chain.clone(),
+            block_num: self.block_num,
+            account: self.account.clone(),
+            temp_path: self.temp_path.clone(),
+        }
     }
 }

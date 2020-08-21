@@ -5,12 +5,12 @@ use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_storage::cache_storage::CacheStorage;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::IntoSuper;
+use starcoin_storage::Storage;
 use std::sync::Arc;
-use storage::cache_storage::CacheStorage;
-use storage::db_storage::DBStorage;
-use storage::storage::StorageInstance;
-use storage::IntoSuper;
-use storage::Storage;
 
 //
 // Storage benchmarks

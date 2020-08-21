@@ -12,8 +12,8 @@ criterion = "0.3.1"
 proptest = "0.10.1"
 futures-timer = "3.0"
 types = { path = "../types", package = "starcoin-types" }
-storage = { package="starcoin-storage", path = "../storage"}
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-storage = { path = "../storage" }
+crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-config = { path = "../config"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
 starcoin-chain = { path = "../chain"}
