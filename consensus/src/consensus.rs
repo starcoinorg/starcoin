@@ -6,6 +6,7 @@ use crate::ChainReader;
 use anyhow::Result;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_state_api::AccountStateReader;
+use starcoin_statedb::ChainStateReader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -16,6 +17,11 @@ pub trait Consensus {
     fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
         account_reader.epoch()
+    }
+
+    /// Init consensus with on chain state
+    fn init(&self, _reader: &dyn ChainStateReader) -> Result<()> {
+        Ok(())
     }
 
     fn calculate_next_difficulty(

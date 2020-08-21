@@ -33,6 +33,7 @@ use traits::{ChainReader, ChainWriter};
 mod errors;
 
 pub use errors::GenesisError;
+use starcoin_consensus::Consensus;
 use std::convert::TryFrom;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
@@ -338,11 +339,17 @@ impl Genesis {
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let genesis_hash = genesis.block().header().id();
-                let startup_info = genesis.execute_genesis_block(storage)?;
+                let startup_info = genesis.execute_genesis_block(storage.clone())?;
                 (startup_info, genesis_hash)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
         };
+        let latest_block = storage
+            .get_block_header_by_hash(startup_info.master)?
+            .ok_or_else(|| format_err!("startup info block should exist."))?;
+        let state_root = latest_block.state_root;
+        net.consensus()
+            .init(&ChainStateDB::new(storage, Some(state_root)))?;
         Ok((startup_info, genesis_hash))
     }
 
@@ -352,7 +359,7 @@ impl Genesis {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load(net)?;
-        let genesis_hash = genesis.block().header().id();
+        let genesis_hash = genesis.block.header().id();
         let startup_info = genesis.execute_genesis_block(storage.clone())?;
         Ok((storage, startup_info, genesis_hash))
     }
