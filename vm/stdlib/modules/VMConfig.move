@@ -5,6 +5,11 @@ module VMConfig {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     // The struct to hold all config data needed to operate the VM.
     // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.
     // * gas_schedule: Cost of running the VM.
@@ -113,10 +118,22 @@ module VMConfig {
         );
     }
 
+    spec fun initialize {
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if exists<Config::Config<VMConfig>>(Signer::spec_address_of(account));
+        aborts_if exists<Config::ModifyConfigCapabilityHolder<VMConfig>>(Signer::spec_address_of(account));
+        ensures exists<Config::Config<VMConfig>>(Signer::spec_address_of(account));
+        ensures exists<Config::ModifyConfigCapabilityHolder<VMConfig>>(Signer::spec_address_of(account));
+    }
+
     public fun set_publishing_option(account: &signer, publishing_option: vector<u8>) {
         let current_config = Config::get<VMConfig>(account);
         current_config.publishing_option = publishing_option;
         Config::set<VMConfig>(account, current_config);
+    }
+
+    spec fun set_publishing_option {
+        pragma verify = false;
     }
 }
 
