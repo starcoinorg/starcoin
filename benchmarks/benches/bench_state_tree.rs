@@ -8,12 +8,12 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_state_store_api::StateNodeStore;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::StateTree;
+use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::storage::StorageInstance;
+use starcoin_storage::Storage;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
-use storage::db_storage::DBStorage;
-use storage::storage::StorageInstance;
-use storage::Storage;
 
 fn bench_get_with_proof(c: &mut Criterion) {
     ::logger::init();
