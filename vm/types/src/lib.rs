@@ -137,6 +137,7 @@ pub mod block_metadata;
 pub mod chain_config;
 pub mod event;
 pub mod on_chain_config;
+pub mod on_chain_resource;
 pub mod token;
 
 #[cfg(test)]

@@ -806,6 +806,7 @@ pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
 }
 
 pub(crate) fn discard_error_vm_status(err: VMStatus) -> (VMStatus, TransactionOutput) {
+    info!("discard error vm_status output: {:?}", err);
     let vm_status = err.clone();
     let error_code = match err.keep_or_discard() {
         Ok(_) => {
