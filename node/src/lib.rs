@@ -2,26 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crash_handler::setup_panic_handler;
-use crate::node::NodeStartHandle;
+use crate::node::Node;
 use actix::prelude::*;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
+use starcoin_node_api::message::{NodeRequest, NodeResponse};
+use starcoin_node_api::service_registry::ServiceInfo;
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
 pub mod crash_handler;
-pub mod message;
 pub mod node;
 
 pub struct NodeHandle {
     runtime: Runtime,
-    thread_handle: JoinHandle<()>,
-    _start_handle: NodeStartHandle,
-    stop_sender: oneshot::Sender<()>,
+    thread_handle: JoinHandle<Result<()>>,
+    node_addr: Addr<Node>,
 }
 
 #[cfg(unix)]
@@ -59,16 +59,11 @@ mod platform {
 }
 
 impl NodeHandle {
-    pub fn new(
-        thread_handle: std::thread::JoinHandle<()>,
-        start_handle: NodeStartHandle,
-        stop_sender: oneshot::Sender<()>,
-    ) -> Self {
+    pub fn new(thread_handle: std::thread::JoinHandle<Result<()>>, node_addr: Addr<Node>) -> Self {
         Self {
             runtime: Runtime::new().unwrap(),
             thread_handle,
-            _start_handle: start_handle,
-            stop_sender,
+            node_addr,
         }
     }
 
@@ -80,14 +75,54 @@ impl NodeHandle {
     }
 
     pub fn stop(self) -> Result<()> {
-        self.stop_sender
-            .send(())
+        self.node_addr
+            .try_send(NodeRequest::StopSystem)
             .map_err(|_| format_err!("Stop message send fail."))?;
         self.thread_handle
             .join()
-            .map_err(|e| format_err!("Waiting thread exist fail. {:?}", e))?;
+            .map_err(|e| format_err!("Waiting thread exist fail. {:?}", e))??;
         println!("Starcoin node shutdown success.");
         Ok(())
+    }
+
+    pub fn node_addr(&self) -> Addr<Node> {
+        self.node_addr.clone()
+    }
+
+    pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
+        let node_addr = self.node_addr();
+        block_on(async {
+            match node_addr.send(NodeRequest::ListService).await?? {
+                NodeResponse::Services(services) => Ok(services),
+                resp => bail!("Unexpected response: {:?}", resp),
+            }
+        })
+    }
+
+    pub fn stop_service(&self, service_name: String) -> Result<()> {
+        let node_addr = self.node_addr();
+        block_on(async {
+            match node_addr
+                .send(NodeRequest::StopService(service_name))
+                .await??
+            {
+                NodeResponse::Result(r) => r,
+                resp => bail!("Unexpected response: {:?}", resp),
+            }
+        })
+    }
+
+    pub fn start_service(&self, service_name: String) -> Result<()> {
+        let node_addr = self.node_addr();
+        block_on(async {
+            match node_addr
+                .send(NodeRequest::StartService(service_name))
+                .await??
+            {
+                NodeResponse::Result(r) => r,
+                resp => bail!("Unexpected response: {:?}", resp),
+            }
+        })
     }
 }
 
@@ -133,32 +168,26 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
     }
 
     let (start_sender, start_receiver) = oneshot::channel();
-    let (stop_sender, stop_receiver) = oneshot::channel();
     let thread_handle = std::thread::spawn(move || {
         setup_panic_handler();
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
-            let handle = match node::start(config, Some(logger_handle)).await {
+            match node::start(config, Some(logger_handle)).await {
                 Err(e) => {
                     error!("Node start fail: {:?}.", e);
                     if start_sender.send(Err(e)).is_err() {
                         info!("Start send error.");
                     };
-                    System::current().stop();
-                    return;
                 }
-                Ok(handle) => handle,
+                Ok(node_handle) => {
+                    if start_sender.send(Ok(node_handle.node_addr)).is_err() {
+                        info!("Start send error.");
+                    }
+                }
             };
-            if start_sender.send(Ok(handle)).is_err() {
-                info!("Start send error.");
-            }
-            if stop_receiver.await.is_err() {
-                info!("Stop receiver await error.");
-            }
-            info!("Receive stop signal, try to stop system.");
-            System::current().stop();
         });
+        system.run().map_err(|e| e.into())
     });
-    let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
-    Ok(NodeHandle::new(thread_handle, start_handle, stop_sender))
+    let node_addr = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
+    Ok(NodeHandle::new(thread_handle, node_addr))
 }

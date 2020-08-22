@@ -22,6 +22,8 @@ use starcoin_network_rpc_api::{
     gen_client::{get_rpc_info, NetworkRpcClient},
     RemoteChainStateReader,
 };
+use starcoin_node_api::message::{NodeRequest, NodeResponse};
+use starcoin_node_api::service_registry::ServiceRegistry;
 use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_state_service::ChainStateActor;
@@ -40,7 +42,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 //TODO rework field and order.
-pub struct NodeStartHandle {
+pub struct NodeStartedHandle {
     pub config: Arc<NodeConfig>,
     pub bus: Addr<BusActor>,
     pub storage: Arc<Storage>,
@@ -56,12 +58,62 @@ pub struct NodeStartHandle {
     pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
     pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
     pub txpool: TxPool,
+    pub node_addr: Addr<Node>,
+}
+
+pub struct Node {
+    //TODO remove there fields, after register all service to registry.
+    pub chain_arbiter: Arbiter,
+    pub chain_actor: ChainActorRef,
+    pub miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
+    pub sync_actor: Addr<SyncActor>,
+    pub rpc_actor: Addr<RpcActor>,
+    pub miner_client: Option<Addr<MinerClientActor>>,
+    pub chain_notifier: Addr<ChainNotifyHandlerActor>,
+    pub network: NetworkAsyncService,
+    pub network_rpc_server: Addr<NetworkRpcServer>,
+    pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
+    pub txpool: TxPool,
+    pub registry: ServiceRegistry,
+}
+
+impl Actor for Node {
+    type Context = Context<Self>;
+}
+
+impl Handler<NodeRequest> for Node {
+    type Result = Result<NodeResponse>;
+
+    fn handle(&mut self, msg: NodeRequest, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(match msg {
+            NodeRequest::ListService => NodeResponse::Services(self.registry.list()),
+            NodeRequest::StopService(service_name) => {
+                info!(
+                    "Receive StopService request, try to stop service {:?}",
+                    service_name
+                );
+                NodeResponse::Result(self.registry.stop_by_name(service_name.as_str()))
+            }
+            NodeRequest::StartService(service_name) => {
+                info!(
+                    "Receive StartService request, try to start service {:?}",
+                    service_name
+                );
+                NodeResponse::Result(self.registry.start_by_name(service_name.as_str()))
+            }
+            NodeRequest::StopSystem => {
+                info!("Receive StopSystem request, try to stop system.");
+                System::current().stop();
+                NodeResponse::Result(Ok(()))
+            }
+        })
+    }
 }
 
 pub async fn start(
     config: Arc<NodeConfig>,
     logger_handle: Option<Arc<LoggerHandle>>,
-) -> Result<NodeStartHandle> {
+) -> Result<NodeStartedHandle> {
     let bus = BusActor::launch();
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
@@ -70,19 +122,16 @@ pub async fn start(
     let (startup_info, genesis_hash) =
         Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
-    info!("Start chain with startup info: {}", startup_info);
+    info!("Start node with startup info: {}", startup_info);
+    let registry = ServiceRegistry::new_with_storage(config.clone(), bus.clone(), storage.clone());
 
-    let account_service = AccountServiceActor::launch(config.clone(), bus.clone())?;
+    let account_service = registry.registry(AccountServiceActor::new)?;
 
     //Init default account
-    let default_account = match account_service.clone().get_default_account().await? {
+    let default_account = match account_service.get_default_account().await? {
         Some(account) => account,
         None => {
-            //TODO only in dev mod ?
-            let wallet_account = account_service
-                .clone()
-                .create_account("".to_string())
-                .await?;
+            let wallet_account = account_service.create_account("".to_string()).await?;
             info!("Create default account: {}", wallet_account.address);
             wallet_account
         }
@@ -90,10 +139,7 @@ pub async fn start(
 
     //Only dev network association_key_pair contains private_key.
     if let (Some(association_private_key), _) = &config.net().get_config().association_key_pair {
-        let association_account = account_service
-            .clone()
-            .get_account(association_address())
-            .await?;
+        let association_account = account_service.get_account(association_address()).await?;
         if association_account.is_none() {
             account_service
                 .clone()
@@ -283,11 +329,26 @@ pub async fn start(
     )?;
     bus.clone().broadcast(StartSyncTxnEvent).await.unwrap();
     bus.clone().broadcast(SystemStarted).await?;
-
-    Ok(NodeStartHandle {
+    let node = Node {
+        chain_arbiter: chain_arbiter.clone(),
+        chain_actor: chain.clone(),
+        miner_actor: miner.clone(),
+        sync_actor: sync.clone(),
+        rpc_actor: json_rpc.clone(),
+        miner_client: miner_client.clone(),
+        chain_notifier: chain_notify_handler.clone(),
+        network: network.clone(),
+        network_rpc_server: network_rpc_server.clone(),
+        block_relayer: block_relayer.clone(),
+        txpool: txpool.clone(),
+        registry,
+    };
+    let node_addr = node.start();
+    //TODO remove NodeStartedHandle after refactor finished.
+    Ok(NodeStartedHandle {
         config,
-        storage,
         bus,
+        storage,
         chain_arbiter,
         chain_actor: chain,
         miner_actor: miner,
@@ -300,5 +361,6 @@ pub async fn start(
         block_relayer,
         peer_msg_broadcaster,
         txpool,
+        node_addr,
     })
 }

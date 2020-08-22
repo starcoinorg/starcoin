@@ -1,0 +1,29 @@
+[package]
+name = "starcoin-node-api"
+version = "0.4.4"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+thiserror = "1.0"
+backtrace = "0.3.46"
+actix = "0.10.0-alpha.3"
+actix-rt = "1.1"
+futures = "0.3"
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+starcoin-config = { path = "../../config" }
+starcoin-bus = { path = "../../bus" }
+starcoin-consensus = { path = "../../consensus" }
+starcoin-storage = { path = "../../storage" }
+starcoin-crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-types = { path = "../../types" }
+starcoin-genesis = { path = "../../core/genesis" }
+
+[dev-dependencies]
+stest = { path = "../../commons/stest" }
+

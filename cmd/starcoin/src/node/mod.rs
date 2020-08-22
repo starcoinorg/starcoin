@@ -5,6 +5,8 @@ mod info_cmd;
 mod metrics_cmd;
 mod peers_cmd;
 
+pub mod service;
+
 pub use info_cmd::*;
 pub use metrics_cmd::*;
 pub use peers_cmd::*;

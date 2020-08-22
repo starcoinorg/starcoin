@@ -57,19 +57,20 @@ impl CommandAction for GenDataCommand {
             startup_info.master,
             account,
         )?;
+        let mut latest_header = mock_chain.head().current_header();
         for i in 0..opt.count {
-            let new_header = mock_chain.produce_and_apply()?;
+            latest_header = mock_chain.produce_and_apply()?;
+            startup_info.master = latest_header.id();
+            storage.save_startup_info(startup_info.clone())?;
             if i % 10 == 0 {
                 println!(
                     "latest_block: {:?}, {:?}",
-                    new_header.number,
-                    new_header.id()
+                    latest_header.number,
+                    latest_header.id()
                 );
             }
         }
-        let latest_header = mock_chain.head().current_header();
-        startup_info.master = latest_header.id();
-        storage.save_startup_info(startup_info)?;
+
         let duration = SystemTime::now().duration_since(begin)?;
         Ok(GenBlockResult {
             count: opt.count,

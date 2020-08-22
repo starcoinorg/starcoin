@@ -1,7 +1,7 @@
-use crate::account_storage::AccountStorage;
 use actix::prelude::*;
-use anyhow::Error;
+use anyhow::{Error, Result};
 use bstr::ByteSlice;
+use starcoin_account_lib::account_storage::AccountStorage;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_chain_notify::message::ContractEventNotification;
@@ -11,6 +11,7 @@ use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
+use starcoin_types::system_events::ActorStop;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 
@@ -44,6 +45,14 @@ impl Actor for AccountEventActor {
                 };
                 async {}.into_actor(act)
             }).wait(ctx);
+    }
+}
+
+impl Handler<ActorStop> for AccountEventActor {
+    type Result = ();
+
+    fn handle(&mut self, _msg: ActorStop, ctx: &mut Self::Context) -> Self::Result {
+        ctx.stop()
     }
 }
 

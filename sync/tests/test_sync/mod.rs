@@ -9,7 +9,7 @@ pub async fn test_sync(sync_mode: SyncMode) {
     let first_node = starcoin_node::node::start(first_config.clone(), None)
         .await
         .unwrap();
-    let first_chain = first_node.chain_actor;
+    let first_chain = first_node.chain_actor.clone();
     let mut second_config = NodeConfig::random_for_test();
     second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
     second_config.miner.enable_miner_client = false;
@@ -18,7 +18,7 @@ pub async fn test_sync(sync_mode: SyncMode) {
     let second_node = starcoin_node::node::start(Arc::new(second_config), None)
         .await
         .unwrap();
-    let second_chain = second_node.chain_actor;
+    let second_chain = second_node.chain_actor.clone();
 
     //TODO add more check.
     for i in 0..5 as usize {

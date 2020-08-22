@@ -48,7 +48,13 @@ pub fn add_command(
             Command::with_name("node")
                 .subcommand(node::InfoCommand)
                 .subcommand(node::PeersCommand)
-                .subcommand(node::MetricsCommand),
+                .subcommand(node::MetricsCommand)
+                .subcommand(
+                    Command::with_name("service")
+                        .subcommand(node::service::ListCommand)
+                        .subcommand(node::service::StartCommand)
+                        .subcommand(node::service::StopCommand),
+                ),
         )
         .command(
             Command::with_name("chain")

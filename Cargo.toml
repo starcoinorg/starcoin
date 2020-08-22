@@ -36,6 +36,7 @@ members = [
     "chain/open-block",
     "chain/mock",
     "chain/chain-notify",
+    "node/api",
     "node",
     "sync",
     "sync/api",

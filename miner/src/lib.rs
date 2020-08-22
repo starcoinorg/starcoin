@@ -22,6 +22,8 @@ use std::cmp::min;
 use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
+use types::system_events::ActorStop;
+use types::transaction::TxStatus;
 use types::{startup_info::StartupInfo, transaction::TxStatus};
 
 mod headblock_pacemaker;
@@ -131,6 +133,19 @@ where
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         info!("MinerActor stopped");
+    }
+}
+
+impl<P, CS, S> Handler<ActorStop> for MinerActor<P, CS, S>
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    CS: ChainAsyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
+{
+    type Result = ();
+
+    fn handle(&mut self, _msg: ActorStop, ctx: &mut Self::Context) -> Self::Result {
+        ctx.stop()
     }
 }
 

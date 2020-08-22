@@ -6,7 +6,7 @@ use config::*;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client, GetBlockHeadersByNumber, GetStateWithProof};
-use starcoin_node::node::NodeStartHandle;
+use starcoin_node::node::NodeStartedHandle;
 use state_api::StateWithProof;
 use std::sync::Arc;
 use types::{access_path, account_config::genesis_address, block::BlockHeader};
@@ -63,6 +63,6 @@ async fn test_network_rpc() {
     debug!("{:?}", rpc_info);
 }
 
-async fn gen_chain_env(config: NodeConfig) -> Result<NodeStartHandle> {
+async fn gen_chain_env(config: NodeConfig) -> Result<NodeStartedHandle> {
     starcoin_node::node::start(Arc::new(config), None).await
 }

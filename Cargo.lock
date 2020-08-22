@@ -6476,6 +6476,7 @@ dependencies = [
 name = "starcoin-account-api"
 version = "0.4.4"
 dependencies = [
+ "actix",
  "anyhow",
  "async-trait",
  "dashmap",
@@ -6496,7 +6497,6 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "bstr",
  "dashmap",
  "futures 0.3.5",
  "parking_lot 0.9.0",
@@ -6523,13 +6523,17 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
+ "bstr",
  "futures 0.3.5",
  "starcoin-account-api",
  "starcoin-account-lib",
  "starcoin-bus",
+ "starcoin-canonical-serialization",
+ "starcoin-chain-notify",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-node-api",
  "starcoin-txpool",
  "starcoin-types",
  "stest",
@@ -6754,6 +6758,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-move-compiler",
  "starcoin-node",
+ "starcoin-node-api",
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
@@ -7291,6 +7296,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
+ "starcoin-node-api",
  "starcoin-rpc-server",
  "starcoin-state-api",
  "starcoin-state-service",
@@ -7304,6 +7310,29 @@ dependencies = [
  "stest",
  "thiserror",
  "tokio 0.2.22",
+]
+
+[[package]]
+name = "starcoin-node-api"
+version = "0.4.4"
+dependencies = [
+ "actix",
+ "actix-rt",
+ "anyhow",
+ "async-trait",
+ "backtrace",
+ "futures 0.3.5",
+ "serde",
+ "starcoin-bus",
+ "starcoin-config",
+ "starcoin-consensus",
+ "starcoin-crypto",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-types",
+ "stest",
+ "thiserror",
 ]
 
 [[package]]

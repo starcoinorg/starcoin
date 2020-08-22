@@ -16,10 +16,12 @@ async fn test_txn_sync_actor() {
     first_config.miner.enable_miner_client = false;
     let first_network_address = first_config.network.self_address().unwrap();
     let first_config = Arc::new(first_config);
-    let first_node = starcoin_node::node::start(first_config.clone(), None)
-        .await
-        .unwrap();
-    let txpool_1 = first_node.txpool;
+    let txpool_1 = {
+        let first_node = starcoin_node::node::start(first_config.clone(), None)
+            .await
+            .unwrap();
+        first_node.txpool
+    };
 
     // add txn to node1
     let user_txn = gen_user_txn(&first_config);
@@ -33,10 +35,12 @@ async fn test_txn_sync_actor() {
     second_config.network.seeds = vec![first_network_address];
     second_config.miner.enable_miner_client = false;
     let second_config = Arc::new(second_config);
-    let second_node = starcoin_node::node::start(second_config.clone(), None)
-        .await
-        .unwrap();
-    let txpool_2 = second_node.txpool;
+    let txpool_2 = {
+        let second_node = starcoin_node::node::start(second_config.clone(), None)
+            .await
+            .unwrap();
+        second_node.txpool
+    };
     //wait sync finish.
     Delay::new(Duration::from_secs(2)).await;
     let current_timestamp = second_config.net().consensus().now();
