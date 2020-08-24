@@ -28,6 +28,7 @@ use starcoin_types::{
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 use std::sync::Arc;
+use std::fmt::{Debug, Formatter, Display};
 
 pub mod accumulator;
 pub mod batch;
@@ -199,6 +200,17 @@ impl StateNodeStore for Storage {
 
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
         self.state_node_storage.write_nodes(nodes)
+    }
+}
+
+impl Display for Storage {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.clone())
+    }
+}
+impl Debug for Storage {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self)
     }
 }
 

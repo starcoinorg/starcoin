@@ -1,16 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::unit_arg)]
-use crate::account_address;
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::chain_config::ChainId;
+use crate::chain_config::{ChainId, ChainNetwork};
 use crate::event::EventHandle;
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
+use crate::{account_address, account_config};
+use anyhow::{bail, Result};
 use proptest::collection::SizeRange;
 use proptest::sample::Index as PropIndex;
 use proptest::{collection::vec, prelude::*};
@@ -42,7 +43,7 @@ impl Deref for Index {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct AccountInfo {
     address: AccountAddress,
     private_key: Ed25519PrivateKey,
@@ -64,9 +65,23 @@ impl AccountInfo {
             received_event_handle: EventHandle::new_from_address(&address, 1),
         }
     }
+    pub fn new_with_address(
+        address: AccountAddress,
+        private_key: Ed25519PrivateKey,
+        public_key: Ed25519PublicKey,
+    ) -> Self {
+        Self {
+            address,
+            private_key,
+            public_key,
+            sequence_number: 0,
+            sent_event_handle: EventHandle::new_from_address(&address, 0),
+            received_event_handle: EventHandle::new_from_address(&address, 1),
+        }
+    }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AccountInfoUniverse {
     accounts: Vec<AccountInfo>,
     epoch: u64,
@@ -80,6 +95,25 @@ impl AccountInfoUniverse {
             .collect();
 
         Self { accounts, epoch }
+    }
+
+    pub fn default() -> Result<Self> {
+        // association account
+        if let (Some(private_key), public_key) =
+        &ChainNetwork::Test.get_config().association_key_pair
+        {
+            let account = AccountInfo::new_with_address(
+                account_config::association_address(),
+                private_key.clone(),
+                public_key.clone(),
+            );
+            Ok(Self {
+                accounts: vec![account],
+                epoch: 0,
+            })
+        } else {
+            bail!("association private_key not config at dev network.")
+        }
     }
 
     fn get_account_info(&self, account_index: Index) -> &AccountInfo {
@@ -136,19 +170,22 @@ impl RawUserTransactionGen {
         self,
         sender_index: Index,
         universe: &mut AccountInfoUniverse,
+        expired_time: u64,
+        payload: Option<TransactionPayload>,
     ) -> RawUserTransaction {
         let mut sender_info = universe.get_account_info_mut(sender_index);
 
         let sequence_number = sender_info.sequence_number;
-        sender_info.sequence_number += 1;
+        let temp_payload = payload.unwrap_or(self.payload);
 
+        sender_info.sequence_number += 1;
         RawUserTransaction::new(
             sender_info.address,
             sequence_number,
-            self.payload,
-            self.max_gas_amount,
-            self.gas_unit_price,
-            self.expiration_time_secs,
+            temp_payload,
+            20000,
+            1,
+            expired_time,
             ChainId::test(),
         )
     }
@@ -194,7 +231,11 @@ impl RawUserTransaction {
 impl Arbitrary for RawUserTransaction {
     type Parameters = ();
     fn arbitrary_with(_args: ()) -> Self::Strategy {
-        Self::strategy_impl(any::<AccountAddress>(), any::<TransactionPayload>()).boxed()
+        Self::strategy_impl(
+            Just(account_config::association_address()),
+            any::<TransactionPayload>(),
+        )
+        .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -221,17 +262,22 @@ impl SignatureCheckedTransaction {
     ) -> impl Strategy<Value = Self> {
         (keypair_strategy, payload_strategy)
             .prop_flat_map(|(keypair, payload)| {
-                let address = account_address::from_public_key(&keypair.public_key);
+                // let address = account_address::from_public_key(&keypair.public_key);
                 (
                     Just(keypair),
-                    RawUserTransaction::strategy_impl(Just(address), Just(payload)),
+                    RawUserTransaction::strategy_impl(
+                        Just(account_config::association_address()),
+                        Just(payload),
+                    ),
                 )
             })
-            .prop_flat_map(|(keypair, raw_txn)| {
+            .prop_flat_map(|(_keypair, raw_txn)| {
                 prop_oneof![Just(
-                    raw_txn
-                        .sign(&keypair.private_key, keypair.public_key.clone())
+                    ChainNetwork::Test
+                        .sign_with_association(raw_txn)
                         .expect("signing should always work")
+                        .check_signature()
+                        .unwrap()
                 ),]
             })
     }
@@ -247,8 +293,12 @@ impl SignatureCheckedTransactionGen {
         self,
         sender_index: Index,
         universe: &mut AccountInfoUniverse,
+        expired_time: u64,
+        payload: Option<TransactionPayload>,
     ) -> SignatureCheckedTransaction {
-        let raw_txn = self.raw_transaction_gen.materialize(sender_index, universe);
+        let raw_txn = self
+            .raw_transaction_gen
+            .materialize(sender_index, universe, expired_time, payload);
         let account_info = universe.get_account_info(sender_index);
         raw_txn
             .sign(&account_info.private_key, account_info.public_key.clone())
