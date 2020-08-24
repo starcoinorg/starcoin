@@ -9,6 +9,7 @@ use crate::{NetworkMessage, PeerEvent, PeerMessage};
 use actix::prelude::*;
 use anyhow::{bail, Result};
 use async_trait::async_trait;
+use bitflags::_core::ops::Deref;
 use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
@@ -41,7 +42,6 @@ const PEERS_FILE_NAME: &str = "peers.json";
 
 #[derive(Clone)]
 pub struct NetworkAsyncService {
-    addr: Addr<NetworkActor>,
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     /// TODO: tx is unused?
     tx: mpsc::UnboundedSender<NetworkMessage>,
@@ -49,6 +49,14 @@ pub struct NetworkAsyncService {
     peer_id: PeerId,
     inner: Arc<Inner>,
     metrics: Option<NetworkMetrics>,
+}
+
+impl Deref for NetworkAsyncService {
+    type Target = SNetworkService;
+
+    fn deref(&self) -> &Self::Target {
+        &self.network_service
+    }
 }
 
 struct Inner {
@@ -64,7 +72,7 @@ struct Inner {
 }
 
 #[derive(Debug)]
-struct PeerInfoNet {
+pub struct PeerInfoNet {
     peer_info: PeerInfo,
     known_transactions: LruCache<HashValue, ()>,
     /// Holds a set of blocks known to this peer.
@@ -240,21 +248,13 @@ impl NetworkService for NetworkAsyncService {
 }
 
 impl NetworkAsyncService {
-    #[cfg(test)]
-    pub fn network_actor_addr(&self) -> Addr<NetworkActor> {
-        self.addr.clone()
+    pub fn peers(&self) -> Arc<Mutex<HashMap<PeerId, PeerInfoNet>>> {
+        self.inner.peers.clone()
     }
 }
 
-pub struct NetworkActor {
-    network_service: SNetworkService,
-    bus: Addr<BusActor>,
-    peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
-    peer_id: PeerId,
-}
-
-impl NetworkActor {
-    pub fn launch(
+impl NetworkAsyncService {
+    pub fn start(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         genesis_hash: HashValue,
@@ -288,23 +288,14 @@ impl NetworkActor {
         let raw_message_processor_clone = raw_message_processor.clone();
 
         let peer_id = service.identify().clone();
-        let peer_id_clone = peer_id.clone();
 
-        let service_clone = service.clone();
-        let bus_clone = bus.clone();
         let mut peers = HashMap::new();
         peers.insert(
             self_info.peer_id.clone().into(),
             PeerInfoNet::new(self_info),
         );
         let peers = Arc::new(Mutex::new(peers));
-        let peers_clone = peers.clone();
-        let addr = NetworkActor::create(move |_ctx: &mut Context<NetworkActor>| NetworkActor {
-            network_service: service_clone,
-            bus: bus_clone,
-            peers: peers_clone,
-            peer_id: peer_id_clone,
-        });
+
         let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
         let need_send_event = AtomicBool::new(false);
 
@@ -327,7 +318,9 @@ impl NetworkActor {
             rpc_tx,
         };
         let inner = Arc::new(inner);
-        async_std::task::spawn(Self::start(inner.clone(), rx, event_rx, tx_command));
+
+        // TODO: unify all async runtimes into one.
+        async_std::task::spawn(Inner::start(inner.clone(), rx, event_rx, tx_command));
 
         if has_seed {
             info!("Seed was in configuration and not ignored.So wait for connection open event.");
@@ -339,7 +332,6 @@ impl NetworkActor {
 
         (
             NetworkAsyncService {
-                addr,
                 raw_message_processor,
                 network_service: service,
                 tx,
@@ -350,7 +342,9 @@ impl NetworkActor {
             rpc_rx,
         )
     }
+}
 
+impl Inner {
     async fn start(
         inner: Arc<Inner>,
         net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
@@ -378,58 +372,46 @@ impl NetworkActor {
             }
         }
     }
-}
 
-impl Inner {
     async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) -> Result<()> {
         debug!("receive network_message ");
-        // decode msg based on protocol name.
+        // TODO: we should decode msg based on protocol name.
         // when protocol upgrade, we can decoded data based on the new protocol.
-        if network_msg.protocol_name.as_ref() == TXN_PROTOCOL_NAME {
-            let txns: Vec<SignedUserTransaction> = scs::from_bytes(network_msg.data.as_slice())?;
-            inner.handle_txn_message(network_msg.peer_id, txns).await?;
-        } else {
-            // Other peer message can be refactored in the similar way.
-            let message = PeerMessage::decode(&network_msg.data);
-            match message {
-                Ok(msg) => {
-                    inner
-                        .handle_network_message(network_msg.peer_id, msg)
-                        .await?
-                }
-                Err(e) => {
-                    debug!("get error {:?}", e);
-                }
-            }
-        }
-        Ok(())
-    }
 
-    async fn handle_txn_message(
-        &self,
-        peer_id: PeerId,
-        txns: Vec<SignedUserTransaction>,
-    ) -> Result<()> {
-        debug!("receive new txn list from {:?} ", peer_id);
-        if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-            for txn in &txns {
-                let id = txn.crypto_hash();
-                if !peer_info.known_transactions.contains(&id) {
-                    peer_info.known_transactions.put(id, ());
-                } else {
-                    return Ok(());
-                }
+        let message = PeerMessage::decode(&network_msg.data);
+        match message {
+            Ok(msg) => {
+                inner
+                    .handle_network_message(network_msg.peer_id, msg)
+                    .await?;
+            }
+            Err(e) => {
+                debug!("get error {:?}", e);
             }
         }
-        self.bus
-            .clone()
-            .broadcast(PeerTransactions::new(txns))
-            .await?;
+
         Ok(())
     }
 
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
         match msg {
+            PeerMessage::NewTransactions(txns) => {
+                debug!("receive new txn list from {:?} ", peer_id);
+                if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
+                    for txn in &txns {
+                        let id = txn.crypto_hash();
+                        if !peer_info.known_transactions.contains(&id) {
+                            peer_info.known_transactions.put(id, ());
+                        } else {
+                            return Ok(());
+                        }
+                    }
+                }
+                self.bus
+                    .clone()
+                    .broadcast(PeerTransactions::new(txns))
+                    .await?;
+            }
             PeerMessage::CompactBlock(compact_block, total_diff) => {
                 //TODO: Check total difficulty
                 let block_header = compact_block.header.clone();
@@ -588,7 +570,24 @@ impl Inner {
     }
 }
 
-impl Actor for NetworkActor {
+// TODO: figure out a better place for the actor.
+/// Used to manage broadcast new txn and new block event to other network peers.
+pub struct PeerMsgBroadcasterActor {
+    network: NetworkAsyncService,
+    bus: Addr<BusActor>,
+}
+
+impl PeerMsgBroadcasterActor {
+    pub fn launch(
+        network: NetworkAsyncService,
+        bus: Addr<BusActor>,
+    ) -> Addr<PeerMsgBroadcasterActor> {
+        PeerMsgBroadcasterActor::create(move |_ctx: &mut Context<PeerMsgBroadcasterActor>| {
+            PeerMsgBroadcasterActor { network, bus }
+        })
+    }
+}
+impl Actor for PeerMsgBroadcasterActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -629,20 +628,20 @@ impl Actor for NetworkActor {
     }
 }
 
-impl Handler<NetCmpctBlockMessage> for NetworkActor {
+impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
     type Result = ();
 
     fn handle(&mut self, msg: NetCmpctBlockMessage, _ctx: &mut Self::Context) -> Self::Result {
         let id = msg.compact_block.header.id();
         debug!("broadcast new compact block message {:?}", id);
-        let peers = self.peers.clone();
-        let network_service = self.network_service.clone();
+        let network = self.network.clone();
         let block_header = msg.compact_block.header.clone();
         let total_difficulty = msg.total_difficulty;
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
-        let bytes = msg.encode().expect("should encode success");
-        let self_id = self.peer_id.clone();
+
+        let self_id = self.network.identify().clone();
         Arbiter::spawn(async move {
+            let peers = network.peers();
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
                 debug!(
                     "total_difficulty is {},peer_info is {:?}",
@@ -660,7 +659,7 @@ impl Handler<NetCmpctBlockMessage> for NetworkActor {
                     peer_info.peer_info.latest_header.clone(),
                     peer_info.get_peer_info(),
                 );
-                network_service.update_self_info(self_info);
+                network.update_self_info(self_info);
             }
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
@@ -669,9 +668,8 @@ impl Handler<NetCmpctBlockMessage> for NetworkActor {
                 } else {
                     continue;
                 }
-
-                network_service
-                    .send_message(peer_id.clone(), BLOCK_PROTOCOL_NAME.into(), bytes.clone())
+                network
+                    .send_peer_message(BLOCK_PROTOCOL_NAME.into(), peer_id.clone(), msg.clone())
                     .await
                     .expect("send message failed ,check network service please");
             }
@@ -680,7 +678,7 @@ impl Handler<NetCmpctBlockMessage> for NetworkActor {
 }
 
 /// handle txn relayer
-impl Handler<PropagateNewTransactions> for NetworkActor {
+impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
     type Result = <PropagateNewTransactions as Message>::Result;
 
     fn handle(&mut self, msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
@@ -694,14 +692,14 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
         }
         debug!("propagate new txns, len: {}", txns.len());
 
-        let peers = self.peers.clone();
-        let network_service = self.network_service.clone();
+        let network_service = self.network.clone();
         let mut txn_map: HashMap<HashValue, SignedUserTransaction> = HashMap::new();
         for txn in txns {
             txn_map.insert(txn.crypto_hash(), txn);
         }
-        let self_peer_id = self.peer_id.clone();
+        let self_peer_id = self.network.identify().clone();
         Arbiter::spawn(async move {
+            let peers = network_service.peers();
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
@@ -710,10 +708,12 @@ impl Handler<PropagateNewTransactions> for NetworkActor {
                         txns_unhandled.push(txn.clone());
                     }
                 }
-
-                let bytes = scs::to_bytes(&txns_unhandled).expect("encode should succ");
                 network_service
-                    .send_message(peer_id.clone(), Cow::Borrowed(protocol_name), bytes)
+                    .send_peer_message(
+                        Cow::Borrowed(protocol_name),
+                        peer_id.clone(),
+                        PeerMessage::NewTransactions(txns_unhandled),
+                    )
                     .await
                     .expect("check network service");
             }
@@ -765,10 +765,11 @@ mod tests {
         let node_config1 = Arc::new(node_config1);
 
         let bus = BusActor::launch();
-        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus.clone());
+        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus);
+        // let _msg_broadcaster = NetworkActor::launch(network1.clone(), bus.clone());
 
         let mut node_config2 = NodeConfig::random_for_test();
-        let addr1_hex = network1.peer_id.to_base58();
+        let addr1_hex = network1.identify().to_base58();
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
             .parse()
             .unwrap();
@@ -779,7 +780,8 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, _rpc_rx_2) = build_network(node_config2, bus);
+        let bus2 = BusActor::launch();
+        let (network2, _rpc_rx_2) = build_network(node_config2, bus2);
 
         Arbiter::spawn(async move {
             let (tx, _rx) = mpsc::unbounded();
@@ -825,11 +827,12 @@ mod tests {
                 .unwrap();
         let node_config1 = Arc::new(node_config1);
 
-        let bus = BusActor::launch();
-        let (network1, _rpc_rx_1) = build_network(node_config1.clone(), bus.clone());
+        let bus1 = BusActor::launch();
+        let (network1, _rpc_rx_1) = build_network(node_config1.clone(), bus1.clone());
+        let network1_msg_broadcaster = PeerMsgBroadcasterActor::launch(network1.clone(), bus1);
 
         let mut node_config2 = NodeConfig::random_for_test();
-        let addr1_hex = network1.peer_id.to_base58();
+        let addr1_hex = network1.identify().to_base58();
         let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
             .parse()
             .unwrap();
@@ -840,7 +843,10 @@ mod tests {
         node_config2.network.seeds = vec![seed];
         let node_config2 = Arc::new(node_config2);
 
-        let (network2, rpc_rx_2) = build_network(node_config2, bus.clone());
+        let bus2 = BusActor::launch();
+        let (network2, rpc_rx_2) = build_network(node_config2, bus2.clone());
+        let network2_msg_broadcaster =
+            PeerMsgBroadcasterActor::launch(network2.clone(), bus2.clone());
 
         Arbiter::spawn(async move {
             let network_clone2 = network2.clone();
@@ -850,22 +856,20 @@ mod tests {
             //let addr = response_actor.start();
 
             // subscribe peer txns for network2
-            bus.send(Subscription {
+            bus2.send(Subscription {
                 recipient: response_actor2.clone().recipient::<PeerTransactions>(),
             })
             .await
             .unwrap();
 
-            network1
-                .network_actor_addr()
+            network1_msg_broadcaster
                 .send(PropagateNewTransactions::new(vec![
                     SignedUserTransaction::mock(),
                 ]))
                 .await
                 .unwrap();
 
-            network2
-                .network_actor_addr()
+            network2_msg_broadcaster
                 .send(PropagateNewTransactions::new(vec![
                     SignedUserTransaction::mock(),
                 ]))
@@ -910,9 +914,10 @@ mod tests {
         NetworkAsyncService,
         mpsc::UnboundedReceiver<RawRpcRequestMessage>,
     ) {
-        let (network, rpc_rx) =
-            NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::random());
-        (network, rpc_rx)
+        NetworkAsyncService::start(node_config, bus, HashValue::default(), PeerInfo::random())
+        // let (network, rpc_rx) =
+        //     NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::random());
+        // (network, rpc_rx)
     }
 
     struct TestResponseActor {
