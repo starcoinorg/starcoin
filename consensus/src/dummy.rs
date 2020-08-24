@@ -6,6 +6,8 @@ use crate::time::{MockTimeService, TimeService};
 use anyhow::Result;
 use logger::prelude::*;
 use rand::Rng;
+use starcoin_state_api::AccountStateReader;
+use starcoin_statedb::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
@@ -18,16 +20,23 @@ pub struct DummyConsensus {
 
 impl DummyConsensus {
     pub fn new() -> Self {
-        let s = Self {
-            time_service: MockTimeService::new(),
-        };
-        // 0 is genesis time, auto increment to 1.
-        s.time_service.increment();
-        s
+        Self {
+            // 0 is genesis time, so default init with 1.
+            time_service: MockTimeService::new_with_value(1),
+        }
     }
 }
 
 impl Consensus for DummyConsensus {
+    fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
+        let account_state_reader = AccountStateReader::new(reader);
+        let init_seconds = account_state_reader.timestamp()?.seconds;
+        info!("Adjust time service with on chain time: {}", init_seconds);
+        //add 1 seconds to on chain seconds, for avoid time conflict
+        self.time_service.set(init_seconds + 1);
+        Ok(())
+    }
+
     fn calculate_next_difficulty(
         &self,
         _chain: &dyn ChainReader,

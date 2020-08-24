@@ -1,0 +1,35 @@
+[package]
+name = "starcoin-generator"
+version = "0.4.4"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0"
+serde = { version = "1.0" }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
+futures = { version = "0.3" }
+hex = { version = "0.4.2", default-features = false }
+futures-timer = "3.0"
+ascii = "0.8"
+structopt = "0.3.16"
+scmd = { path = "../../commons/scmd" }
+starcoin-traits = { path = "../../core/traits" }
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-config = { path = "../../config" }
+starcoin-types = { path = "../../types" }
+starcoin-crypto = { path = "../../commons/crypto" }
+starcoin-storage = { path = "../../storage" }
+starcoin-genesis = { path = "../../core/genesis" }
+starcoin-account-api = { path = "../../account/api" }
+starcoin-account-lib = { path = "../../account/lib" }
+starcoin-chain-mock = { path = "../../chain/mock" }
+
+[[bin]]
+name = "starcoin_generator"
+path = "src/main.rs"
+
+[features]
+default = []

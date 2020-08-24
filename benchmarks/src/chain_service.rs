@@ -13,11 +13,11 @@ use starcoin_chain::{BlockChain, ChainServiceImpl};
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
+use starcoin_storage::Storage;
 use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_vm_types::chain_config::ConsensusStrategy;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use storage::Storage;
 use traits::{ChainReader, ChainService};
 
 /// Benchmarking support for chain.

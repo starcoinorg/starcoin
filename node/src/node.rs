@@ -17,7 +17,7 @@ use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
-use starcoin_network::{NetworkActor, NetworkAsyncService, RawRpcRequestMessage};
+use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
 use starcoin_network_rpc_api::{
     gen_client::{get_rpc_info, NetworkRpcClient},
     RemoteChainStateReader,
@@ -54,6 +54,7 @@ pub struct NodeStartHandle {
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
     pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
+    pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
     pub txpool: TxPool,
 }
 
@@ -143,14 +144,18 @@ pub async fn start(
     );
     let network_config = config.clone();
     let network_bus = bus.clone();
-    let (network, rpc_rx) = Arbiter::new()
-        .exec(move || -> (NetworkAsyncService, futures::channel::mpsc::UnboundedReceiver<RawRpcRequestMessage>){
-            NetworkActor::launch(
-                network_config,
-                network_bus,
-                genesis_hash,
-                self_info,
-            )
+
+    let (network, rpc_rx) = NetworkAsyncService::start(
+        network_config.clone(),
+        network_bus.clone(),
+        genesis_hash,
+        self_info,
+    );
+    let peer_msg_broadcaster = Arbiter::new()
+        .exec({
+            let network = network.clone();
+            let network_bus = network_bus.clone();
+            move || PeerMsgBroadcasterActor::launch(network, network_bus)
         })
         .await?;
 
@@ -291,6 +296,7 @@ pub async fn start(
         network,
         network_rpc_server,
         block_relayer,
+        peer_msg_broadcaster,
         txpool,
     })
 }

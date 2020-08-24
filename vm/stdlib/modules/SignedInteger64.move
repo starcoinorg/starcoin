@@ -9,7 +9,7 @@ module SignedInteger64 {
     }
 
     spec module {
-        pragma verify = false;
+        pragma verify;
         pragma aborts_if_is_strict;
     }
 
@@ -71,15 +71,19 @@ module SignedInteger64 {
     
 
     spec fun multiply_u64 {
+       aborts_if multiplier.value * num > max_u64();
     }
 
     spec fun divide_u64 {
+        aborts_if divisor.value == 0;
     }
 
     spec fun sub_u64 {
+        aborts_if minus.is_negative && num + minus.value > max_u64();
     }
 
     spec fun add_u64 {
+       aborts_if !addend.is_negative && num + addend.value > max_u64();
     }
 
     spec fun create_from_raw_value {

@@ -46,9 +46,7 @@ impl Handler<AccountRequest> for AccountServiceActor {
     fn handle(&mut self, msg: AccountRequest, _ctx: &mut Self::Context) -> Self::Result {
         let response = match msg {
             AccountRequest::CreateAccount(password) => AccountResponse::AccountInfo(Box::new(
-                self.service
-                    .create_account(password.as_str())?
-                    .wallet_info(),
+                self.service.create_account(password.as_str())?.info(),
             )),
             AccountRequest::GetDefaultAccount() => {
                 AccountResponse::AccountInfoOption(Box::new(self.service.default_account_info()?))
@@ -93,7 +91,7 @@ impl Handler<AccountRequest> for AccountServiceActor {
                 let wallet =
                     self.service
                         .import_account(address, private_key, password.as_str())?;
-                AccountResponse::AccountInfo(Box::new(wallet.wallet_info()))
+                AccountResponse::AccountInfo(Box::new(wallet.info()))
             }
             AccountRequest::AccountAcceptedTokens { address } => {
                 let tokens = self.service.accepted_tokens(address)?;

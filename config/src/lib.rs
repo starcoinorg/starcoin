@@ -179,6 +179,12 @@ impl DataDirPath {
     pub fn path(&self) -> &Path {
         self.as_ref()
     }
+    pub fn is_temp(&self) -> bool {
+        match self {
+            DataDirPath::TempPath(_) => true,
+            _ => false,
+        }
+    }
 }
 
 impl AsRef<Path> for DataDirPath {
@@ -236,8 +242,8 @@ impl BaseConfig {
     pub fn data_dir(&self) -> &Path {
         self.data_dir.as_path()
     }
-    pub fn base_data_dir(&self) -> &Path {
-        self.base_data_dir.as_ref()
+    pub fn base_data_dir(&self) -> DataDirPath {
+        self.base_data_dir.clone()
     }
 }
 

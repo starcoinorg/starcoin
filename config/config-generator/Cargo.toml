@@ -1,9 +1,0 @@
-[package]
-name = "starcoin-config-generator"
-version = "0.4.4"
-authors = ["Starcoin Core Dev <dev@starcoin.org>"]
-edition = "2018"
-
-[dependencies]
-starcoin-config = {path="../../config"}
-structopt = "0.3.16"

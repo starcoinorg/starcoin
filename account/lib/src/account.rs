@@ -64,7 +64,7 @@ impl Account {
         }))
     }
 
-    pub fn wallet_info(&self) -> AccountInfo {
+    pub fn info(&self) -> AccountInfo {
         // TODO: fix is_default
         AccountInfo::new(self.addr, self.private_key.public_key(), false)
     }
@@ -92,7 +92,7 @@ impl Account {
         self.private_key.public_key()
     }
 
-    pub fn authentication_key(&self) -> AuthenticationKey {
+    pub fn get_auth_key(&self) -> AuthenticationKey {
         AuthenticationKey::ed25519(&self.public_key())
     }
 

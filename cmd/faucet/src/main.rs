@@ -8,7 +8,7 @@ use structopt::StructOpt;
 use tiny_http::Server;
 
 #[derive(Debug, Clone, StructOpt, Default)]
-#[structopt(name = "starcoin", about = "Starcoin")]
+#[structopt(name = "starcoin-faucet", about = "Starcoin")]
 pub struct FaucetOpt {
     #[structopt(long, short = "p", parse(from_os_str))]
     pub ipc_path: PathBuf,

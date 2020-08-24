@@ -53,18 +53,28 @@ pub struct MockTimeService {
 }
 
 impl MockTimeService {
+    #[cfg(test)]
     pub fn new() -> Self {
+        Self::new_with_value(0)
+    }
+
+    pub fn new_with_value(init_value: u64) -> Self {
         Self {
-            now: Arc::new(AtomicU64::new(0)),
+            now: Arc::new(AtomicU64::new(init_value)),
         }
     }
 
+    #[cfg(test)]
     pub fn increment(&self) {
         self.now.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn increment_by(&self, value: u64) {
         self.now.fetch_add(value, Ordering::Relaxed);
+    }
+
+    pub fn set(&self, value: u64) {
+        self.now.store(value, Ordering::Relaxed)
     }
 }
 

@@ -9,6 +9,11 @@ module SharedEd25519PublicKey {
     use 0x1::Signature;
     use 0x1::Signer;
 
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_strict;
+    }
+
     // A resource that forces the account associated with `rotation_cap` to use a ed25519
     // authentication key derived from `key`
     resource struct SharedEd25519PublicKey {
@@ -34,6 +39,18 @@ module SharedEd25519PublicKey {
         move_to(account, t);
     }
 
+    spec fun publish {
+        pragma verify = false;
+        aborts_if !exists<Account::Account>(Signer::spec_address_of(account));
+        aborts_if !exists<Account::Account>(
+                  0x1::Option::spec_get<Account::KeyRotationCapability>(
+                      global<Account::Account>(Signer::spec_address_of(account))
+                      .key_rotation_capability
+                  ).account_address);
+        aborts_if !Signature::ed25519_validate_pubkey(key);
+        aborts_if exists<SharedEd25519PublicKey>(Signer::spec_address_of(account));
+    }
+
     fun rotate_key_(shared_key: &mut SharedEd25519PublicKey, new_public_key: vector<u8>) {
         // Cryptographic check of public key validity
         assert(
@@ -47,6 +64,11 @@ module SharedEd25519PublicKey {
         shared_key.key = new_public_key;
     }
 
+    spec fun rotate_key_ {
+        aborts_if !exists<Account::Account>(shared_key.rotation_cap.account_address);
+        aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
+    }
+
     // (1) rotate the public key stored `account`'s `SharedEd25519PublicKey` resource to
     // `new_public_key`
     // (2) rotate the authentication key using the capability stored in the `account`'s
@@ -57,10 +79,20 @@ module SharedEd25519PublicKey {
         rotate_key_(borrow_global_mut<SharedEd25519PublicKey>(Signer::address_of(account)), new_public_key);
     }
 
+    spec fun rotate_key {
+        aborts_if !exists<SharedEd25519PublicKey>(Signer::address_of(account));
+        aborts_if !exists<Account::Account>(global<SharedEd25519PublicKey>(Signer::address_of(account)).rotation_cap.account_address);
+        aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
+    }
+
     // Return the public key stored under `addr`.
     // Aborts if `addr` does not hold a `SharedEd25519PublicKey` resource.
     public fun key(addr: address): vector<u8> acquires SharedEd25519PublicKey {
         *&borrow_global<SharedEd25519PublicKey>(addr).key
+    }
+
+    spec fun key {
+        aborts_if !exists<SharedEd25519PublicKey>(addr);
     }
 
     // Returns true if `addr` holds a `SharedEd25519PublicKey` resource.
@@ -68,5 +100,8 @@ module SharedEd25519PublicKey {
         exists<SharedEd25519PublicKey>(addr)
     }
 
+    spec fun exists_at {
+        aborts_if false;
+    }
 }
 }
