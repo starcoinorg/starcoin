@@ -26,6 +26,7 @@ mod headblock_pacemaker;
 mod metrics;
 pub mod miner;
 mod ondemand_pacemaker;
+mod open_block;
 pub mod stratum;
 
 pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
