@@ -66,6 +66,10 @@ fn test_accumulator_append() {
         Arc::new(mock_store),
     )
     .unwrap();
+
+    // test to append empty leaf to an empty accumulator
+    accumulator.append(&vec![]).unwrap();
+
     // Append the leaves one at a time and check the root hashes match.
     for (i, (leaf, expected_root_hash)) in
         itertools::zip_eq(leaves.into_iter(), expected_root_hashes.into_iter()).enumerate()
@@ -74,6 +78,9 @@ fn test_accumulator_append() {
         assert_eq!(accumulator.num_leaves(), i as LeafCount);
         accumulator.append(&[leaf]).unwrap();
     }
+
+    // test to append empty leaf to an accumulator which isn't empty
+    accumulator.append(&vec![]).unwrap();
 }
 
 #[test]
