@@ -27,8 +27,8 @@ use starcoin_types::{
 };
 use std::collections::BTreeMap;
 use std::convert::TryInto;
+use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
-use std::fmt::{Debug, Formatter, Display};
 
 pub mod accumulator;
 pub mod batch;

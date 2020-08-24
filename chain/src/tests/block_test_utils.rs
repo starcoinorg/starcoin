@@ -15,13 +15,16 @@ use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
 use starcoin_types::chain_config::ChainNetwork;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
-use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionPayload, Script};
-use starcoin_types::{block::{Block, BlockBody, BlockHeader}, block_metadata::BlockMetadata};
+use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
+use starcoin_types::{
+    block::{Block, BlockBody, BlockHeader},
+    block_metadata::BlockMetadata,
+};
 use std::convert::TryFrom;
 use std::sync::Arc;
-use storage::storage::StorageInstance;
-use storage::{Storage};
 use stdlib::transaction_scripts::StdlibScript;
+use storage::storage::StorageInstance;
+use storage::Storage;
 
 type LinearizedBlockForest = Vec<Block>;
 
@@ -98,8 +101,13 @@ fn txn_transfer(
                 temp_index = Some(index);
             }
             Transaction::UserTransaction(
-                gen.materialize(temp_index.unwrap(), &mut universe, expired, Some(gen_scrit_payload()))
-                    .into_inner(),
+                gen.materialize(
+                    temp_index.unwrap(),
+                    &mut universe,
+                    expired,
+                    Some(gen_scrit_payload()),
+                )
+                .into_inner(),
             )
         })
         .collect::<Vec<_>>()
@@ -194,13 +202,14 @@ prop_compose! {
 /// vector
 pub fn block_forest(depth: u32) -> impl Strategy<Value = LinearizedBlockForest> {
     let temp_depth = depth;
-  get_storage().prop_flat_map(move |storage| {
-      let store = Arc::new(storage);
-      leaf_strategy(store.clone()).prop_map(|block| vec![block])
-          .prop_recursive(temp_depth, temp_depth, 4,
-                          move |inner| child(store.clone(), inner))
-        }
-    )
+    get_storage().prop_flat_map(move |storage| {
+        let store = Arc::new(storage);
+        leaf_strategy(store.clone())
+            .prop_map(|block| vec![block])
+            .prop_recursive(temp_depth, temp_depth, 4, move |inner| {
+                child(store.clone(), inner)
+            })
+    })
     // leaf.prop_recursive(depth, depth, 4, child)
 }
 
@@ -224,7 +233,7 @@ fn gen_root_hashes(
                 AccumulatorStoreType::Transaction,
                 storage,
             )
-                .unwrap();
+            .unwrap();
 
             let included_txn_info_hashes: Vec<_> = executed_data
                 .txn_infos
@@ -234,14 +243,13 @@ fn gen_root_hashes(
             let (accumulator_root, _first_leaf_idx) =
                 txn_accumulator.append(&included_txn_info_hashes).unwrap();
             (accumulator_root, executed_data.state_root)
-        },
+        }
         // Err(err) => {
         //     (HashValue::zero(), HashValue::zero())
         // }
-        _ => {  (HashValue::zero(), HashValue::zero())}
+        _ => (HashValue::zero(), HashValue::zero()),
     }
 }
-
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(1))]

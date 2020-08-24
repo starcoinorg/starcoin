@@ -100,7 +100,7 @@ impl AccountInfoUniverse {
     pub fn default() -> Result<Self> {
         // association account
         if let (Some(private_key), public_key) =
-        &ChainNetwork::Test.get_config().association_key_pair
+            &ChainNetwork::Test.get_config().association_key_pair
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
@@ -296,9 +296,9 @@ impl SignatureCheckedTransactionGen {
         expired_time: u64,
         payload: Option<TransactionPayload>,
     ) -> SignatureCheckedTransaction {
-        let raw_txn = self
-            .raw_transaction_gen
-            .materialize(sender_index, universe, expired_time, payload);
+        let raw_txn =
+            self.raw_transaction_gen
+                .materialize(sender_index, universe, expired_time, payload);
         let account_info = universe.get_account_info(sender_index);
         raw_txn
             .sign(&account_info.private_key, account_info.public_key.clone())
