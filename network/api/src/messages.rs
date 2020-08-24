@@ -7,8 +7,8 @@ use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
-
 use std::borrow::Cow;
 
 #[derive(Message)]
@@ -17,9 +17,10 @@ pub struct GetCounterMessage {}
 
 /// message from peer
 #[rtype(result = "Result<()>")]
-#[derive(Debug, Serialize, Deserialize, Message)]
+#[derive(Clone, Debug, Serialize, Deserialize, Message)]
 #[allow(clippy::large_enum_variant)]
 pub enum PeerMessage {
+    NewTransactions(Vec<SignedUserTransaction>),
     CompactBlock(CompactBlock, U256),
     RawRPCRequest(u128, String, Vec<u8>),
     RawRPCResponse(u128, Vec<u8>),

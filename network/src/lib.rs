@@ -13,7 +13,7 @@ mod net_test;
 pub mod network;
 mod network_metrics;
 
-pub use network::NetworkActor;
+pub use network::PeerMsgBroadcasterActor;
 pub use network_api::messages::*;
 
 pub use helper::get_unix_ts;

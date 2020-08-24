@@ -6,7 +6,8 @@ use bus::BusActor;
 use chain::{ChainActor, ChainActorRef};
 use config::NodeConfig;
 use logger::prelude::*;
-use network::network::NetworkActor;
+use network::network::NetworkAsyncService;
+use network::network::PeerMsgBroadcasterActor;
 use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis;
 use starcoin_miner::MinerActor;
@@ -56,12 +57,15 @@ fn test_miner_with_ondemand_pacemaker() {
             chain_rpc_proto_info.0.into(),
             RpcInfo::new(chain_rpc_proto_info.1),
         ));
-        let (network, rx) = NetworkActor::launch(
+
+        let (network, rx) = NetworkAsyncService::start(
             config.clone(),
             bus.clone(),
             genesis_hash,
             PeerInfo::new_only_proto(rpc_proto_info),
         );
+        let _msg_broadcaster = PeerMsgBroadcasterActor::launch(network.clone(), bus.clone());
+
         let chain = ChainActor::launch(
             config.clone(),
             startup_info.clone(),
