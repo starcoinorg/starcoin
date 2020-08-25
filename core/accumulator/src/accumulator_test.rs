@@ -68,7 +68,7 @@ fn test_accumulator_append() {
     .unwrap();
 
     // test to append empty leaf to an empty accumulator
-    accumulator.append(&vec![]).unwrap();
+    accumulator.append(&[]).unwrap();
 
     // Append the leaves one at a time and check the root hashes match.
     for (i, (leaf, expected_root_hash)) in
@@ -80,7 +80,7 @@ fn test_accumulator_append() {
     }
 
     // test to append empty leaf to an accumulator which isn't empty
-    accumulator.append(&vec![]).unwrap();
+    accumulator.append(&[]).unwrap();
 }
 
 #[test]
