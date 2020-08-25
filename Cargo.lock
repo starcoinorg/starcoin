@@ -6635,6 +6635,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
+ "stdlib",
  "stest",
  "test-helper",
  "thiserror",

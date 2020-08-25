@@ -36,6 +36,7 @@ bus = {path = "../bus", package="starcoin-bus" }
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
+stdlib = { path = "../vm/stdlib"}
 starcoin-network-rpc-api = {path = "../network-rpc/api"}
 starcoin-network = {path ="../network"}
 proptest = { version = "0.10.0", default-features = false, optional = true }
