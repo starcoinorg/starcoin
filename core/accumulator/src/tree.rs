@@ -60,10 +60,6 @@ impl AccumulatorTree {
         }
     }
 
-    pub fn get_id(&self) -> HashValue {
-        self.id
-    }
-
     ///append from multiple leaves
     pub(crate) fn append_leaves(&mut self, new_leaves: &[HashValue]) -> Result<HashValue> {
         // Deal with the case where new_leaves is empty

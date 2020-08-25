@@ -128,10 +128,6 @@ impl MerkleAccumulator {
             )),
         })
     }
-
-    pub fn get_id(&self) -> HashValue {
-        self.tree.lock().get_id()
-    }
 }
 
 impl Accumulator for MerkleAccumulator {

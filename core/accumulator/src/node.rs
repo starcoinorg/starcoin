@@ -39,10 +39,6 @@ impl AccumulatorNode {
         AccumulatorNode::Leaf(LeafNode::new(index, value))
     }
 
-    pub fn new_empty() -> Self {
-        AccumulatorNode::Empty
-    }
-
     pub fn hash(&self) -> HashValue {
         match self {
             AccumulatorNode::Internal(internal) => internal.hash(),
@@ -75,14 +71,6 @@ impl AccumulatorNode {
             AccumulatorNode::Internal(internal) => internal.is_frozen,
             AccumulatorNode::Leaf(_) => true,
             AccumulatorNode::Empty => false,
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        if let AccumulatorNode::Empty = self {
-            true
-        } else {
-            false
         }
     }
 }
