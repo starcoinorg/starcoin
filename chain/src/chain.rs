@@ -199,6 +199,11 @@ impl BlockChain {
     pub fn get_storage(&self) -> Arc<dyn Store> {
         self.storage.clone()
     }
+
+    fn verify_uncles(&self, _uncles: &[BlockHeader]) -> Result<()> {
+        // TODO
+        Ok(())
+    }
 }
 
 impl ChainReader for BlockChain {
@@ -528,6 +533,10 @@ impl BlockChain {
             block.header().gas_used() <= block.header().gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
+
+        if block.uncles().is_some() {
+            self.verify_uncles(block.uncles().expect("uncles is none."))?;
+        }
 
         if !is_genesis {
             let account_reader = match state_reader {
