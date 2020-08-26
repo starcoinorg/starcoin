@@ -37,7 +37,7 @@ use starcoin_vm_types::on_chain_config::{
 use std::cmp::min;
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::{convert::TryInto, sync::Arc};
+use std::{collections::HashSet, convert::TryInto, sync::Arc};
 use storage::Store;
 
 pub struct BlockChain {
@@ -48,6 +48,8 @@ pub struct BlockChain {
     chain_state: ChainStateDB,
     remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     storage: Arc<dyn Store>,
+    uncles: HashSet<HashValue>,
+    epoch: Option<EpochResource>,
 }
 
 impl BlockChain {
@@ -67,7 +69,7 @@ impl BlockChain {
         let state_root = head.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
-        let chain = Self {
+        let mut chain = Self {
             net,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info,
@@ -83,7 +85,10 @@ impl BlockChain {
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
             remote_chain_state,
             storage,
+            uncles: HashSet::new(),
+            epoch: None,
         };
+        chain.update_epoch_and_uncle_cache()?;
         Ok(chain)
     }
 
@@ -104,17 +109,67 @@ impl BlockChain {
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
             remote_chain_state: None,
             storage,
+            uncles: HashSet::new(),
+            epoch: None,
         };
         Ok(chain)
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        Self::new(
+        let mut chain = Self::new(
             self.net,
             head_block_hash,
             self.storage.clone(),
             self.remote_chain_state.clone(),
-        )
+        )?;
+        chain.update_epoch_and_uncle_cache()?;
+        Ok(chain)
+    }
+
+    pub fn update_epoch_and_uncle_cache(&mut self) -> Result<()> {
+        let epoch_resource = self.get_epoch_resource_by_number(None)?;
+        self.uncles = self
+            .epoch_uncles(&epoch_resource)?
+            .iter()
+            .cloned()
+            .collect();
+        self.epoch = Some(epoch_resource);
+        Ok(())
+    }
+
+    pub fn can_be_uncle(&self, block_header: &BlockHeader) -> bool {
+        let epoch = self.epoch.as_ref().expect("epoch is none.");
+        epoch.start_number() <= block_header.number()
+            && epoch.end_number() > block_header.number()
+            && self.exist_block(block_header.parent_hash())
+            && !self.uncles.contains(&block_header.id())
+    }
+
+    fn epoch_uncles(&self, epoch_resource: &EpochResource) -> Result<Vec<HashValue>> {
+        let mut uncles = Vec::new();
+        let mut block = self.head_block();
+        let mut number = block.header().number();
+        loop {
+            if let Some(block_uncles) = block.uncles() {
+                block_uncles.iter().for_each(|header| {
+                    uncles.push(header.id());
+                });
+            }
+            if number == 0 {
+                break;
+            }
+
+            number -= 1;
+
+            if epoch_resource.start_number() > number || epoch_resource.end_number() <= number {
+                break;
+            }
+
+            block = self
+                .get_block_by_number(number)?
+                .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+        }
+        Ok(uncles)
     }
 
     pub fn net(&self) -> ChainNetwork {
@@ -198,6 +253,31 @@ impl BlockChain {
 
     pub fn get_storage(&self) -> Arc<dyn Store> {
         self.storage.clone()
+    }
+
+    fn block_with_number(&self, number: Option<BlockNumber>) -> Result<Option<Block>> {
+        let num = match number {
+            Some(n) => n,
+            None => self.current_header().number(),
+        };
+
+        self.get_block_by_number(num)
+    }
+
+    fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<EpochResource> {
+        if let Some(block) = self.block_with_number(number)? {
+            let chain_state = ChainStateDB::new(
+                self.storage.clone().into_super_arc(),
+                Some(block.header().state_root()),
+            );
+            let account_reader = AccountStateReader::new(&chain_state);
+            let epoch = account_reader
+                .get_resource::<EpochResource>(genesis_address())?
+                .ok_or_else(|| format_err!("Epoch is none."))?;
+            Ok(epoch)
+        } else {
+            Err(format_err!("Block is none when query epoch resource."))
+        }
     }
 }
 
@@ -373,13 +453,9 @@ impl ChainReader for BlockChain {
     fn epoch_info(&self) -> Result<EpochInfo> {
         self.get_epoch_info_by_number(None)
     }
-    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
-        let num = match number {
-            Some(n) => n,
-            None => self.current_header().number(),
-        };
 
-        if let Some(block) = self.get_block_by_number(num)? {
+    fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
+        if let Some(block) = self.block_with_number(number)? {
             let chain_state = ChainStateDB::new(
                 self.storage.clone().into_super_arc(),
                 Some(block.header().state_root()),
@@ -520,26 +596,44 @@ impl BlockChain {
         execute: bool,
         state_reader: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
-        let header = block.header();
+        let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
         verify_block!(
             VerifyBlockField::Header,
-            block.header().gas_used() <= block.header().gas_limit(),
+            header.gas_used() <= header.gas_limit(),
             "invalid block: gas_used should not greater than gas_limit"
         );
 
+        let mut switch_epoch = false;
         if !is_genesis {
             let account_reader = match state_reader {
                 Some(state_reader) => AccountStateReader::new(state_reader),
                 None => AccountStateReader::new(&self.chain_state),
             };
-            let epoch = account_reader.epoch()?;
-            self.verify_header(header, true, &epoch)?;
+            let epoch_info = account_reader.epoch()?;
+            self.verify_header(&header, true, &epoch_info)?;
 
+            if header.number() == epoch_info.end_number() {
+                switch_epoch = true;
+            }
+
+            if switch_epoch {
+                verify_block!(
+                    VerifyBlockField::Uncle,
+                    block.uncles().is_none(),
+                    "invalid block: block uncle must be empty."
+                );
+            }
             if let Some(uncles) = block.uncles() {
                 for uncle_header in uncles {
-                    self.verify_header(uncle_header, false, &epoch)?;
+                    verify_block!(
+                        VerifyBlockField::Uncle,
+                        self.can_be_uncle(uncle_header),
+                        "invalid block: block {} can not be uncle.",
+                        uncle_header.id()
+                    );
+                    self.verify_header(uncle_header, false, &epoch_info)?;
                 }
             }
         }
@@ -562,7 +656,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), block.header().gas_limit())?
+            executor::block_execute(&self.chain_state, txns.clone(), header.gas_limit())?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };
@@ -570,16 +664,16 @@ impl BlockChain {
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
             VerifyBlockField::Header,
-            state_root == block.header().state_root(),
+            state_root == header.state_root(),
             "verify block:{:?} state_root fail",
-            block.header().id(),
+            header.id(),
         );
         let block_gas_used = vec_transaction_info
             .iter()
             .fold(0u64, |acc, i| acc + i.gas_used());
         verify_block!(
             VerifyBlockField::Header,
-            block_gas_used == block.header().gas_used(),
+            block_gas_used == header.gas_used(),
             "invalid block: gas_used is not match"
         );
 
@@ -600,7 +694,7 @@ impl BlockChain {
 
         verify_block!(
             VerifyBlockField::Header,
-            executed_accumulator_root == block.header().accumulator_root(),
+            executed_accumulator_root == header.accumulator_root(),
             "verify block: txn accumulator root mismatch"
         );
 
@@ -617,9 +711,8 @@ impl BlockChain {
             if is_genesis {
                 header.difficulty()
             } else {
-                let pre_total_difficulty = self
-                    .get_block_info(block.header().parent_hash())?
-                    .total_difficulty;
+                let pre_total_difficulty =
+                    self.get_block_info(header.parent_hash())?.total_difficulty;
                 pre_total_difficulty + header.difficulty()
             }
         };
@@ -650,7 +743,59 @@ impl BlockChain {
         } else {
             BlockState::Verified
         };
-        self.commit(block, block_info, block_state)?;
+        let uncles = block.uncles();
+        self.commit(block.clone(), block_info, block_state)?;
+
+        // update cache
+        if switch_epoch {
+            self.update_epoch_and_uncle_cache()?;
+        } else if let Some(block_uncles) = uncles {
+            block_uncles.iter().for_each(|header| {
+                self.uncles.insert(header.id());
+            });
+        }
+        Ok(())
+    }
+
+    pub fn update_chain_head(&mut self, block: Block) -> Result<()> {
+        if self.epoch.is_some()
+            && self
+                .epoch
+                .as_ref()
+                .expect("epoch resource is none.")
+                .end_number()
+                == block.header().number()
+        {
+            let block_info = self
+                .storage
+                .get_block_info(block.id())?
+                .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
+            let txn_accumulator_info = block_info.get_txn_accumulator_info();
+            let block_accumulator_info = block_info.get_block_accumulator_info();
+            let state_root = block.header().state_root();
+            self.head = Some(block);
+            self.txn_accumulator = info_2_accumulator(
+                txn_accumulator_info,
+                AccumulatorStoreType::Transaction,
+                self.storage.clone().into_super_arc(),
+            )?;
+            self.block_accumulator = info_2_accumulator(
+                block_accumulator_info.clone(),
+                AccumulatorStoreType::Block,
+                self.storage.clone().into_super_arc(),
+            )?;
+            self.chain_state =
+                ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+            self.remote_chain_state = None;
+            self.update_epoch_and_uncle_cache()?;
+        } else {
+            if let Some(block_uncles) = block.uncles() {
+                block_uncles.iter().for_each(|header| {
+                    self.uncles.insert(header.id());
+                });
+            }
+            self.head = Some(block);
+        }
         Ok(())
     }
 

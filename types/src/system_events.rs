@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockDetail};
+use crate::block::{Block, BlockDetail, BlockHeader};
 use actix::prelude::*;
 use std::sync::Arc;
 
@@ -9,6 +9,11 @@ use std::sync::Arc;
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub struct NewHeadBlock(pub Arc<BlockDetail>);
+
+/// may be uncle block
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "()")]
+pub struct NewBranch(pub Arc<BlockHeader>);
 
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]

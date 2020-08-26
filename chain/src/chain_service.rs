@@ -23,7 +23,7 @@ use starcoin_types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
-    system_events::NewHeadBlock,
+    system_events::{NewBranch, NewHeadBlock},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
@@ -114,24 +114,30 @@ where
 
     fn select_head(&mut self, new_branch: BlockChain, repeat_apply: bool) -> Result<()> {
         let block = new_branch.head_block();
-        let block_header = block.header();
+        let block_header = block.header().clone();
         let total_difficulty = new_branch.get_total_difficulty()?;
+        let broadcast_new_branch = self.is_new_branch(&block_header.parent_hash(), repeat_apply);
         if total_difficulty > self.get_master().get_total_difficulty()? {
-            let (enacted_blocks, retracted_blocks) =
-                if block.header().parent_hash() == self.startup_info.master {
-                    (vec![block.clone()], vec![])
-                } else {
-                    self.find_ancestors_from_accumulator(&new_branch)?
-                };
+            let broadcast_new_master = !self.parent_eq_head(&block_header.parent_hash());
+            let (enacted_blocks, retracted_blocks) = if broadcast_new_master {
+                self.find_ancestors_from_accumulator(&new_branch)?
+            } else {
+                (vec![block.clone()], vec![])
+            };
 
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             CHAIN_METRICS.broadcast_head_count.inc();
-            self.broadcast_2_bus(BlockDetail::new(block, total_difficulty));
+            self.broadcast_new_head(BlockDetail::new(block, total_difficulty));
         } else {
-            self.insert_branch(block_header, repeat_apply);
+            self.insert_branch(&block_header, repeat_apply);
+        }
+
+        if broadcast_new_branch {
+            //send new branch event
+            self.broadcast_new_branch(block_header);
         }
 
         CHAIN_METRICS
@@ -154,6 +160,16 @@ where
         {
             self.startup_info.insert_branch(new_block_header);
         }
+    }
+
+    fn is_new_branch(&self, parent_id: &HashValue, repeat_apply: bool) -> bool {
+        !repeat_apply
+            && !self.startup_info.branch_exist_exclude(parent_id)
+            && !self.parent_eq_head(parent_id)
+    }
+
+    fn parent_eq_head(&self, parent_id: &HashValue) -> bool {
+        parent_id == &self.startup_info.master
     }
 
     fn save_startup(&self) -> Result<()> {
@@ -395,10 +411,17 @@ where
         Ok(result)
     }
 
-    pub fn broadcast_2_bus(&self, block: BlockDetail) {
+    fn broadcast_new_head(&self, block: BlockDetail) {
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
             msg: NewHeadBlock(Arc::new(block)),
+        });
+    }
+
+    fn broadcast_new_branch(&self, maybe_uncle: BlockHeader) {
+        let bus = self.bus.clone();
+        bus.do_send(Broadcast {
+            msg: NewBranch(Arc::new(maybe_uncle)),
         });
     }
 
