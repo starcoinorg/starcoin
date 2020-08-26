@@ -1,27 +1,23 @@
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
-use futures_timer::Delay;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use std::time::Duration;
+use test_helper::run_node_by_config;
 use types::{
     account_address,
     transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
 };
 
 #[stest::test]
-async fn test_txn_sync_actor() {
+fn test_txn_sync_actor() {
     let mut first_config = NodeConfig::random_for_test();
     first_config.miner.enable_miner_client = false;
     let first_network_address = first_config.network.self_address().unwrap();
     let first_config = Arc::new(first_config);
-    let txpool_1 = {
-        let first_node = starcoin_node::node::start(first_config.clone(), None)
-            .await
-            .unwrap();
-        first_node.txpool
-    };
+    let first_node = run_node_by_config(first_config.clone()).unwrap();
+    let txpool_1 = first_node.start_handle().txpool.clone();
 
     // add txn to node1
     let user_txn = gen_user_txn(&first_config);
@@ -35,14 +31,12 @@ async fn test_txn_sync_actor() {
     second_config.network.seeds = vec![first_network_address];
     second_config.miner.enable_miner_client = false;
     let second_config = Arc::new(second_config);
-    let txpool_2 = {
-        let second_node = starcoin_node::node::start(second_config.clone(), None)
-            .await
-            .unwrap();
-        second_node.txpool
-    };
+
+    let second_node = run_node_by_config(second_config.clone()).unwrap();
+    let txpool_2 = second_node.start_handle().txpool.clone();
     //wait sync finish.
-    Delay::new(Duration::from_secs(2)).await;
+    //Delay::new(Duration::from_secs(2)).await;
+    std::thread::sleep(Duration::from_secs(2));
     let current_timestamp = second_config.net().consensus().now();
     // check txn
     let mut txns = txpool_2
@@ -51,6 +45,8 @@ async fn test_txn_sync_actor() {
     assert_eq!(txns.len(), 1);
     let txn = txns.pop().unwrap();
     assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());
+    second_node.stop().unwrap();
+    first_node.stop().unwrap();
 }
 
 fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {

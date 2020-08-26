@@ -133,8 +133,7 @@ mod tests {
         let bus = BusActor::launch();
         let address = {
             let registry = ServiceRegistry::new(config.clone(), bus.clone());
-            registry.registry(AccountServiceActor::new).unwrap();
-            registry.start::<AccountServiceActor>().unwrap()
+            registry.registry(AccountServiceActor::new).unwrap()
         };
         let account = address.get_default_account().await?;
         assert!(account.is_none());

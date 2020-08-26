@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crash_handler::setup_panic_handler;
-use crate::node::Node;
+use crate::node::{Node, NodeStartedHandle};
 use actix::prelude::*;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
+use starcoin_logger::LoggerHandle;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_node_api::service_registry::ServiceInfo;
 use std::sync::Arc;
@@ -22,6 +23,8 @@ pub struct NodeHandle {
     runtime: Runtime,
     thread_handle: JoinHandle<Result<()>>,
     node_addr: Addr<Node>,
+    //TODO remove this field after refactor node
+    start_handle: NodeStartedHandle,
 }
 
 #[cfg(unix)]
@@ -59,11 +62,16 @@ mod platform {
 }
 
 impl NodeHandle {
-    pub fn new(thread_handle: std::thread::JoinHandle<Result<()>>, node_addr: Addr<Node>) -> Self {
+    pub fn new(
+        thread_handle: std::thread::JoinHandle<Result<()>>,
+        node_addr: Addr<Node>,
+        start_handle: NodeStartedHandle,
+    ) -> Self {
         Self {
             runtime: Runtime::new().unwrap(),
             thread_handle,
             node_addr,
+            start_handle,
         }
     }
 
@@ -87,6 +95,10 @@ impl NodeHandle {
 
     pub fn node_addr(&self) -> Addr<Node> {
         self.node_addr.clone()
+    }
+
+    pub fn start_handle(&self) -> &NodeStartedHandle {
+        &self.start_handle
     }
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
@@ -143,6 +155,13 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
 /// Run node in a new Thread, and return a NodeHandle.
 pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
     let logger_handle = starcoin_logger::init();
+    run_node_with_log(config, logger_handle)
+}
+
+pub fn run_node_with_log(
+    config: Arc<NodeConfig>,
+    logger_handle: Arc<LoggerHandle>,
+) -> Result<NodeHandle> {
     info!("Final data-dir is : {:?}", config.data_dir());
     if config.logger.enable_file() {
         let file_log_path = config.logger.get_log_path();
@@ -180,7 +199,7 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
                     };
                 }
                 Ok(node_handle) => {
-                    if start_sender.send(Ok(node_handle.node_addr)).is_err() {
+                    if start_sender.send(Ok(node_handle)).is_err() {
                         info!("Start send error.");
                     }
                 }
@@ -188,6 +207,10 @@ pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
         });
         system.run().map_err(|e| e.into())
     });
-    let node_addr = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
-    Ok(NodeHandle::new(thread_handle, node_addr))
+    let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
+    Ok(NodeHandle::new(
+        thread_handle,
+        start_handle.node_addr.clone(),
+        start_handle,
+    ))
 }

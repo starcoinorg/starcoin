@@ -7243,6 +7243,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "test-helper",
  "tokio 0.2.22",
 ]
 
@@ -7698,6 +7699,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "stest",
+ "test-helper",
  "tokio 0.2.22",
 ]
 
@@ -8240,6 +8242,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
+ "starcoin-node",
  "starcoin-rpc-server",
  "starcoin-state-api",
  "starcoin-state-service",

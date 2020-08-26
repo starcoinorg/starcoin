@@ -23,7 +23,6 @@ use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
 use types::system_events::ActorStop;
-use types::transaction::TxStatus;
 use types::{startup_info::StartupInfo, transaction::TxStatus};
 
 mod headblock_pacemaker;

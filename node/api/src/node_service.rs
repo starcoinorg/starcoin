@@ -17,7 +17,7 @@ pub trait NodeAsyncService:
 
     async fn start_service(&self, service_name: String) -> Result<()>;
 
-    async fn stop_system(self) -> Result<()>;
+    async fn stop_system(&self) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -55,7 +55,7 @@ where
         }
     }
 
-    async fn stop_system(self) -> Result<()> {
+    async fn stop_system(&self) -> Result<()> {
         self.try_send(NodeRequest::StopSystem)?;
         Ok(())
     }

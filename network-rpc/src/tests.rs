@@ -3,31 +3,33 @@
 
 use anyhow::Result;
 use config::*;
+use futures::executor::block_on;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client, GetBlockHeadersByNumber, GetStateWithProof};
-use starcoin_node::node::NodeStartedHandle;
+use starcoin_node::NodeHandle;
 use state_api::StateWithProof;
 use std::sync::Arc;
 use types::{access_path, account_config::genesis_address, block::BlockHeader};
 use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;
 
+#[ignore]
 #[stest::test]
-async fn test_network_rpc() {
+fn test_network_rpc() {
     let (handle1, net_addr_1) = {
         let config_1 = NodeConfig::random_for_test();
         let net_addr = config_1.network.self_address().unwrap();
         debug!("First node address: {:?}", net_addr);
-        (gen_chain_env(config_1).await.unwrap(), net_addr)
+        (gen_chain_env(config_1).unwrap(), net_addr)
     };
-    let network_1 = handle1.network;
+    let network_1 = handle1.start_handle().network.clone();
     let handle2 = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
-        gen_chain_env(config_2).await.unwrap()
+        gen_chain_env(config_2).unwrap()
     };
-    let network_2 = handle2.network;
+    let network_2 = handle2.start_handle().network.clone();
     // network rpc client for chain 1
     let peer_id_2 = network_2.identify().clone();
     let client = gen_client::NetworkRpcClient::new(network_1);
@@ -36,10 +38,12 @@ async fn test_network_rpc() {
         access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
 
     let req = GetBlockHeadersByNumber::new(1, 1, 1);
-    let resp: Vec<BlockHeader> = client
-        .get_headers_by_number(peer_id_2.clone().into(), req)
-        .await
-        .unwrap();
+    let resp: Vec<BlockHeader> = block_on(async {
+        client
+            .get_headers_by_number(peer_id_2.clone().into(), req)
+            .await
+            .unwrap()
+    });
     assert!(!resp.is_empty());
     let state_root = resp[0].state_root;
 
@@ -47,10 +51,12 @@ async fn test_network_rpc() {
         state_root,
         access_path: access_path.clone(),
     };
-    let state_with_proof: StateWithProof = client
-        .get_state_with_proof(peer_id_2.clone().into(), state_req)
-        .await
-        .unwrap();
+    let state_with_proof: StateWithProof = block_on(async {
+        client
+            .get_state_with_proof(peer_id_2.clone().into(), state_req)
+            .await
+            .unwrap()
+    });
     let state = state_with_proof.state.unwrap();
     let epoch = scs::from_bytes::<EpochResource>(state.as_slice()).unwrap();
     state_with_proof
@@ -63,6 +69,6 @@ async fn test_network_rpc() {
     debug!("{:?}", rpc_info);
 }
 
-async fn gen_chain_env(config: NodeConfig) -> Result<NodeStartedHandle> {
-    starcoin_node::node::start(Arc::new(config), None).await
+fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
+    test_helper::run_node_by_config(Arc::new(config))
 }
