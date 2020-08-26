@@ -174,7 +174,7 @@ pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
                     .expect("stdlib module dependency failed to verify");
                 // Tag each module with its index in the module dependency order. Needed for
                 // when they are deserialized and verified later on.
-                modules.insert(format!("{:2}_{}", i, name), module);
+                modules.insert(format!("{:02}_{}", i, name), module);
             }
             CompiledUnit::Script { .. } => panic!("Unexpected Script in stdlib"),
         }
