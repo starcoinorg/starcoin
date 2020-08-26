@@ -15,11 +15,12 @@ use log::{debug, info, warn};
 
 use crate::{
     boogie_helpers::{
-        boogie_byte_blob, boogie_declare_global, boogie_field_name, boogie_global_declarator,
-        boogie_local_type, boogie_resource_memory_name, boogie_saved_resource_memory_name,
-        boogie_spec_fun_name, boogie_spec_var_name, boogie_struct_name, boogie_type_value,
-        boogie_type_value_array, boogie_type_value_array_from_strings, boogie_well_formed_expr,
-        WellFormedMode,
+        boogie_byte_blob, boogie_caller_resource_memory_domain_name, boogie_declare_global,
+        boogie_field_name, boogie_global_declarator, boogie_local_type,
+        boogie_resource_memory_name, boogie_saved_resource_memory_name,
+        boogie_self_resource_memory_domain_name, boogie_spec_fun_name, boogie_spec_var_name,
+        boogie_struct_name, boogie_type_value, boogie_type_value_array,
+        boogie_type_value_array_from_strings, boogie_well_formed_expr, WellFormedMode,
     },
     cli::Options,
 };
@@ -32,15 +33,15 @@ use spec_lang::{
         ConditionInfo, ConditionTag, GlobalEnv, GlobalId, QualifiedId, SpecVarId,
         ABORTS_IF_IS_PARTIAL_PRAGMA, ABORTS_IF_IS_STRICT_PRAGMA, CONDITION_ABORT_ASSERT_PROP,
         CONDITION_ABORT_ASSUME_PROP, CONDITION_ABSTRACT_PROP, CONDITION_CONCRETE_PROP,
-        CONDITION_EXPORT_PROP, CONDITION_INJECTED_PROP, CONDITION_ON_UPDATE_PROP,
-        EXPORT_ENSURES_PRAGMA, OPAQUE_PRAGMA, REQUIRES_IF_ABORTS,
+        CONDITION_EXPORT_PROP, CONDITION_INJECTED_PROP, CONDITION_ISOLATED, EXPORT_ENSURES_PRAGMA,
+        OPAQUE_PRAGMA, REQUIRES_IF_ABORTS,
     },
     symbol::Symbol,
     ty::TypeDisplayContext,
 };
 use stackless_bytecode_generator::{
     function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder,
-    stackless_bytecode::SpecBlockId, usage_analysis::TransitiveUsage,
+    stackless_bytecode::SpecBlockId, usage_analysis,
 };
 use std::collections::BTreeSet;
 
@@ -52,6 +53,7 @@ const WRONG_ABORTS_CODE: &str = "function does not abort with any of the expecte
 const SUCCEEDS_IF_FAILS_MESSAGE: &str = "function does not succeed under this condition";
 const INVARIANT_FAILS_MESSAGE: &str = "data invariant does not hold";
 const GLOBAL_INVARIANT_FAILS_MESSAGE: &str = "global memory invariant does not hold";
+const MODIFY_TARGET_FAILS_MESSAGE: &str = "caller does not have permission for this modify target";
 
 pub enum SpecEnv<'env> {
     Module(ModuleEnv<'env>),
@@ -152,6 +154,20 @@ enum TraceItem {
     Exp,
     // Explicitly traced item via user level trace function.
     Explicit,
+}
+
+/// An enumeration of the context in which a global invariant is accessed.
+#[derive(Debug)]
+enum GlobalInvariantContext {
+    /// The global invariant is assumed on function entry.
+    AssumeOnEntry,
+    /// The global invariant is assumed on memory access.
+    AssumeOnAccess,
+    /// The global invariant is assumed before an update is performed.
+    /// An invariant will either be included in OnEntry, OnAccess, or OnUpdate.
+    AssumeOnUpdate,
+    /// The global invariant is accessed for asserting it after update.
+    Assert,
 }
 
 impl<'env> SpecTranslator<'env> {
@@ -317,12 +333,12 @@ impl<'env> SpecTranslator<'env> {
                 continue;
             }
             if fun.is_move_fun && fun.is_native {
-                // This function is a native move function and its spec version is
+                // This function is a native Move function and its spec version is
                 // expected to be found in the prelude.
                 continue;
             }
             if fun.is_move_fun && !self.module_env().spec_fun_is_used(*id) {
-                // This function is a pure move function but is never used,
+                // This function is a pure Move function but is never used,
                 // so we don't need to translate it.
                 continue;
             }
@@ -618,6 +634,28 @@ impl<'env> SpecTranslator<'env> {
             distribution.add(self, for_entry_point, cond);
         }
 
+        // emit preconditions for modifies
+        // TODO: implement optimization to make sure that modifies checking is done once and not repeatedly
+        for (ty, targets) in func_target.get_modify_targets() {
+            let ty_name = boogie_caller_resource_memory_domain_name(func_target.global_env(), *ty);
+            for target in targets {
+                let loc = self.module_env().get_node_loc(target.node_id());
+                self.writer.set_location(&loc);
+                self.set_condition_info(&loc, ConditionTag::Requires, MODIFY_TARGET_FAILS_MESSAGE);
+                emit!(self.writer, "requires ");
+                let node_id = target.node_id();
+                let args = target.call_args();
+                let rty = &self.module_env().get_node_instantiation(node_id)[0];
+                let (_, _, targs) = rty.require_struct();
+                let env = self.global_env();
+                let type_args = boogie_type_value_array(env, targs);
+                emit!(self.writer, "{}[{}, a#$Address(", ty_name, type_args);
+                self.translate_exp(&args[0]);
+                emit!(self.writer, ")];");
+                emitln!(self.writer);
+            }
+        }
+
         // Helper to filter conditions.
         let kind_filter = |k: ConditionKind| move |c: &&&Condition| c.kind == k;
 
@@ -826,7 +864,7 @@ impl<'env> SpecTranslator<'env> {
 
     /// Emit either assume or requires for preconditions. For a regular requires,
     /// 'or' them with the aborts conditions. If the condition is an aborts_if or a succeeds_if,
-    /// treat it a an [assert] or a [assume] which has been lifted as a precondition.
+    /// treat it as an [assert] or an [assume] which has been lifted as a precondition.
     fn emit_requires(&self, assume: bool, aborts_if: &[&Condition], requires: &[&Condition]) {
         let func_target = self.function_target();
         self.translate_seq(requires.iter().copied(), "\n", |cond: &Condition| {
@@ -917,21 +955,13 @@ impl<'env> SpecTranslator<'env> {
     pub fn assume_invariants_for_verify(&self) {
         let env = self.global_env();
         let func_target = self.function_target();
-        let usage = TransitiveUsage::default();
-        let used_mem = usage.get_used_memory(
-            self.global_env(),
-            self.targets,
-            func_target
-                .module_env()
-                .get_id()
-                .qualified(func_target.get_id()),
-        );
+        let used_mem = usage_analysis::get_used_memory(&func_target);
         let mut invariants: BTreeSet<GlobalId> = BTreeSet::new();
         for mem in used_mem {
             // Emit type well-formedness invariant.
             let struct_env = env.get_module(mem.module_id).into_struct(mem.id);
             emit!(self.writer, "assume ");
-            let memory_name = boogie_resource_memory_name(func_target.global_env(), mem);
+            let memory_name = boogie_resource_memory_name(func_target.global_env(), *mem);
             emit!(self.writer, "(forall $inv_addr: int");
             let mut type_args = vec![];
             for i in 0..struct_env.get_type_parameters().len() {
@@ -955,23 +985,72 @@ impl<'env> SpecTranslator<'env> {
             emitln!(self.writer, ");");
 
             // Collect global invariants.
-            invariants.extend(env.get_global_invariants_for_memory(mem).into_iter());
+            invariants.extend(
+                self.get_effective_global_invariants(*mem, GlobalInvariantContext::AssumeOnEntry)
+                    .into_iter(),
+            );
         }
 
-        // Now emit assume of global invariants which touch the used memory.
-        self.emit_global_invariants(
-            true,
-            invariants
-                .into_iter()
-                .filter(|id| {
-                    !env.get_global_invariant(*id)
-                        .and_then(|inv| {
-                            env.is_property_true(&inv.properties, CONDITION_ON_UPDATE_PROP)
-                        })
-                        .unwrap_or(false)
-                })
-                .collect_vec(),
-        )
+        // Now emit assume of global invariants which have been collected.
+        self.emit_global_invariants(true, invariants.into_iter())
+    }
+
+    /// Generate initialization of modifies permissions of a function
+    pub fn emit_modifies_initialization(&self) {
+        let func_target = self.function_target();
+        for (ty, targets) in func_target.get_modify_targets() {
+            emit!(
+                self.writer,
+                "{} := {}",
+                boogie_self_resource_memory_domain_name(func_target.global_env(), *ty),
+                "$ConstMemoryDomain(false)"
+            );
+            for target in targets {
+                let node_id = target.node_id();
+                let args = target.call_args();
+                let rty = &self.module_env().get_node_instantiation(node_id)[0];
+                let (_, _, targs) = rty.require_struct();
+                let env = func_target.global_env();
+                let type_args = boogie_type_value_array(env, targs);
+                emit!(self.writer, "[{}, a#$Address(", type_args);
+                self.translate_exp(&args[0]);
+                emit!(self.writer, ") := true]");
+            }
+            emitln!(self.writer, ";");
+        }
+    }
+
+    /// Translate modify targets to constrain havocs at opaque calls
+    pub fn translate_modify_targets(&self) {
+        let func_target = self.function_target();
+        let modified_types = usage_analysis::get_modified_memory(func_target);
+        for type_name in modified_types {
+            let memory_name = self.get_memory_name(*type_name);
+            emitln!(self.writer, "modifies {};", memory_name);
+            let type_name_targets = func_target.get_modify_targets_for_type(type_name);
+            if let Some(type_name_targets) = type_name_targets {
+                let generate_ensures = |bpl_map| {
+                    emit!(self.writer, "ensures {} == old({})", bpl_map, bpl_map);
+                    for target in type_name_targets {
+                        let node_id = target.node_id();
+                        let args = target.call_args();
+                        let rty = &self.module_env().get_node_instantiation(node_id)[0];
+                        let (_, _, targs) = rty.require_struct();
+                        let env = self.global_env();
+                        let type_args = boogie_type_value_array(env, targs);
+                        emit!(self.writer, "[{}, a#$Address(", type_args);
+                        self.translate_exp(&args[0]);
+                        emit!(self.writer, ") := {}", bpl_map);
+                        emit!(self.writer, "[{}, a#$Address(", type_args);
+                        self.translate_exp(&args[0]);
+                        emit!(self.writer, ")]]");
+                    }
+                    emitln!(self.writer, ";");
+                };
+                generate_ensures(format!("contents#$Memory({})", memory_name));
+                generate_ensures(format!("domain#$Memory({})", memory_name));
+            }
+        }
     }
 
     /// Sets info for verification condition so it can be later retrieved by the boogie wrapper.
@@ -1320,8 +1399,8 @@ impl<'env> SpecTranslator<'env> {
     pub fn save_memory_for_update_invariants(&self, memory: QualifiedId<StructId>) {
         let env = self.global_env();
         let mut memory_to_save = BTreeSet::new();
-        // Collect all update invariants.
-        for id in env.get_global_invariants_for_memory(memory) {
+        // Collect all memory touched by update invariants.
+        for id in self.get_effective_global_invariants(memory, GlobalInvariantContext::Assert) {
             let inv = env.get_global_invariant(id).unwrap();
             if inv.kind == ConditionKind::InvariantUpdate {
                 memory_to_save.extend(inv.mem_usage.iter());
@@ -1336,28 +1415,112 @@ impl<'env> SpecTranslator<'env> {
     }
 
     pub fn emit_on_update_global_invariant_assumes(&self, memory: QualifiedId<StructId>) {
-        let env = self.global_env();
         self.emit_global_invariants(
             true,
-            env.get_global_invariants_for_memory(memory)
-                .into_iter()
-                .filter(|id| {
-                    env.get_global_invariant(*id)
-                        .and_then(|inv| {
-                            env.is_property_true(&inv.properties, CONDITION_ON_UPDATE_PROP)
-                        })
-                        .unwrap_or(false)
-                })
-                .collect_vec(),
+            self.get_effective_global_invariants(memory, GlobalInvariantContext::AssumeOnUpdate),
         );
     }
 
-    pub fn emit_global_invariants_for_memory(&self, assume: bool, memory: QualifiedId<StructId>) {
-        let env = self.global_env();
-        self.emit_global_invariants(assume, env.get_global_invariants_for_memory(memory))
+    pub fn emit_on_access_global_invariant_assumes(&self, memory: QualifiedId<StructId>) {
+        self.emit_global_invariants(
+            true,
+            self.get_effective_global_invariants(memory, GlobalInvariantContext::AssumeOnAccess),
+        );
     }
 
-    fn emit_global_invariants(&self, assume: bool, invariants: Vec<GlobalId>) {
+    pub fn emit_on_update_global_invariant_asserts(&self, memory: QualifiedId<StructId>) {
+        self.emit_global_invariants(
+            false,
+            self.get_effective_global_invariants(memory, GlobalInvariantContext::Assert),
+        );
+    }
+
+    /// Returns the set of effective global invariants for a given memory in a given usage
+    /// context (on top-level function entry, on memory access, and before and after a memory
+    /// update). This uses properties on the invariants and program options to determine the
+    /// effective set.
+    fn get_effective_global_invariants(
+        &self,
+        mem: QualifiedId<StructId>,
+        context: GlobalInvariantContext,
+    ) -> Vec<GlobalId> {
+        // All invariants which refer to this memory.
+        let all_invariants = self.global_env().get_global_invariants_for_memory(mem);
+
+        // A predicate determining whether the invariant has the property `isolated`. Such
+        // invariants are not used as assumptions for other verification steps.
+        let is_isolated = |id: &GlobalId| {
+            self.global_env()
+                .get_global_invariant(*id)
+                .and_then(|inv| {
+                    self.global_env()
+                        .is_property_true(&inv.properties, CONDITION_ISOLATED)
+                })
+                .unwrap_or(false)
+        };
+        let is_connected = |id: &GlobalId| !is_isolated(id);
+
+        // A predicate which determines whether this invariant depends on any memory which
+        // is part of the verification problem, that is touches a memory which is declared by
+        // a module which is verified.
+        let is_verified = |id: &GlobalId| {
+            self.global_env()
+                .get_global_invariant(*id)
+                .map(|inv| {
+                    inv.mem_usage
+                        .iter()
+                        .any(|used| !self.global_env().get_module(used.module_id).is_dependency())
+                })
+                .unwrap_or(true)
+        };
+
+        // Option which determines whether invariants should be assumed at access instead of
+        // on function entry. If invariants or assumed on access they my be assumed many times
+        // (each time memory is access). However, they are not assumed before actually needed.
+        // Benchmarks show that this is slightly less efficient than the if set to false (the
+        // current default).
+        let assume_on_access = self.options.prover.assume_invariant_on_access;
+
+        match context {
+            GlobalInvariantContext::AssumeOnEntry if !assume_on_access => {
+                // All invariants are included which are not marked as isolated.
+                all_invariants
+                    .into_iter()
+                    .filter(is_connected)
+                    .collect_vec()
+            }
+            GlobalInvariantContext::AssumeOnAccess if assume_on_access => {
+                // All invariants are included which are not marked as isolated.
+                all_invariants
+                    .into_iter()
+                    .filter(is_connected)
+                    .collect_vec()
+            }
+            GlobalInvariantContext::AssumeOnUpdate if !assume_on_access => {
+                // All invariants are included which are marked as isolated and are
+                // verified.
+                all_invariants
+                    .into_iter()
+                    .filter(is_verified)
+                    .filter(is_isolated)
+                    .collect_vec()
+            }
+            GlobalInvariantContext::AssumeOnUpdate if assume_on_access => {
+                // All invariants which are verified are included.
+                all_invariants.into_iter().filter(is_verified).collect_vec()
+            }
+            GlobalInvariantContext::Assert => {
+                // All invariants which are verified are included.
+                all_invariants.into_iter().filter(is_verified).collect_vec()
+            }
+            _ => vec![],
+        }
+    }
+
+    fn emit_global_invariants<I>(&self, assume: bool, invariants: I)
+    where
+        I: IntoIterator<Item = GlobalId>,
+    {
         let env = self.global_env();
         for inv in invariants
             .into_iter()
@@ -1614,7 +1777,7 @@ impl<'env> SpecTranslator<'env> {
     fn translate_call(&self, node_id: NodeId, oper: &Operation, args: &[Exp]) {
         let loc = self.module_env().get_node_loc(node_id);
         match oper {
-            Operation::AbortCodes | Operation::CondWithAbortCode => {
+            Operation::ModifyTargets | Operation::AbortCodes | Operation::CondWithAbortCode => {
                 panic!("unexpected virtual operator")
             }
             Operation::Function(module_id, fun_id) => {

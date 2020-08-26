@@ -13,6 +13,7 @@ use abigen::Abigen;
 use anyhow::anyhow;
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream, WriteColor};
 use docgen::Docgen;
+use errmapgen::ErrmapGen;
 use handlebars::Handlebars;
 use itertools::Itertools;
 #[allow(unused_imports)]
@@ -29,8 +30,9 @@ use stackless_bytecode_generator::{
     livevar_analysis::LiveVarAnalysisProcessor,
     packref_analysis::PackrefAnalysisProcessor,
     reaching_def_analysis::ReachingDefProcessor,
+    stackless_bytecode::{Bytecode, Operation},
     test_instrumenter::TestInstrumenter,
-    usage_analysis::UsageProcessor,
+    usage_analysis::{self, UsageProcessor},
     writeback_analysis::WritebackAnalysisProcessor,
 };
 use std::{
@@ -81,11 +83,24 @@ pub fn run_move_prover<W: WriteColor>(
     if options.run_abigen {
         return run_abigen(&env, &options, now);
     }
+    // Same for the error map generator
+    if options.run_errmapgen {
+        return run_errmapgen(&env, &options, now);
+    }
     let targets = create_and_process_bytecode(&options, &env);
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with transformation errors"));
     }
+    if options.run_packed_types_gen {
+        return run_packed_types_gen(&env, &targets, now);
+    }
+    check_modifies(&env, &targets);
+    if env.has_errors() {
+        env.report_errors(error_writer);
+        return Err(anyhow!("exiting with modifies checking errors"));
+    }
+
     let writer = CodeWriter::new(env.internal_loc());
     add_prelude(&options, &writer)?;
     let mut translator = BoogieTranslator::new(&env, &options, &targets, &writer);
@@ -180,6 +195,45 @@ fn run_abigen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Resul
     Ok(())
 }
 
+fn run_errmapgen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Result<()> {
+    let mut generator = ErrmapGen::new(env, &options.errmapgen);
+    let checking_elapsed = now.elapsed();
+    info!("generating error map");
+    generator.gen();
+    generator.save_result();
+    let generating_elapsed = now.elapsed();
+    info!(
+        "{:.3}s checking, {:.3}s generating",
+        checking_elapsed.as_secs_f64(),
+        (generating_elapsed - checking_elapsed).as_secs_f64()
+    );
+    Ok(())
+}
+
+fn run_packed_types_gen(
+    env: &GlobalEnv,
+    targets: &FunctionTargetsHolder,
+    now: Instant,
+) -> anyhow::Result<()> {
+    let checking_elapsed = now.elapsed();
+    info!("generating packed_types");
+    let packed_types = usage_analysis::get_packed_types(&env, &targets);
+    info!("found {:?} packed types", packed_types.len());
+    let mut access_path_type_map = BTreeMap::new();
+    for ty in packed_types {
+        access_path_type_map.insert(ty.access_vector(), ty);
+    }
+    // TODO: save to disk, resource-viewer and an LCS schema extractor should look at this
+
+    let generating_elapsed = now.elapsed();
+    info!(
+        "{:.3}s checking, {:.3}s generating",
+        checking_elapsed.as_secs_f64(),
+        (generating_elapsed - checking_elapsed).as_secs_f64()
+    );
+    Ok(())
+}
+
 /// Adds the prelude to the generated output.
 fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
     emit!(writer, "\n// ** prelude from {}\n\n", &options.prelude_path);
@@ -200,6 +254,39 @@ fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
     let expanded_content = handlebars.render_template(&content, &options)?;
     emitln!(writer, &expanded_content);
     Ok(())
+}
+
+/// Check modifies annotations
+fn check_modifies(env: &GlobalEnv, targets: &FunctionTargetsHolder) {
+    use Bytecode::*;
+    use Operation::*;
+
+    for module_env in env.get_modules() {
+        for func_env in module_env.get_functions() {
+            let caller_func_target = targets.get_target(&func_env);
+            for code in caller_func_target.get_bytecode() {
+                if let Call(_, _, oper, _) = code {
+                    if let Function(mid, fid, _) = oper {
+                        let callee = mid.qualified(*fid);
+                        let callee_func_env = env.get_function(callee);
+                        let callee_func_target = targets.get_target(&callee_func_env);
+                        let callee_modified_memory =
+                            usage_analysis::get_modified_memory(&callee_func_target);
+                        caller_func_target.get_modify_targets().keys().for_each(|target| {
+                                if callee_modified_memory.contains(target) && callee_func_target.get_modify_targets_for_type(target).is_none() {
+                                    let loc = caller_func_target.get_bytecode_loc(code.get_attr_id());
+                                    env.error(&loc, &format!(
+                                                        "caller `{}` specifies modify targets for `{}::{}` but callee does not",
+                                                        env.symbol_pool().string(caller_func_target.get_name()),
+                                                        env.get_module(target.module_id).get_name().display(env.symbol_pool()),
+                                                        env.symbol_pool().string(target.id.symbol())));
+                                }
+                            });
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Create bytecode and process it.
@@ -238,7 +325,7 @@ fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipel
     res
 }
 
-/// Calculates transitive dependencies of the given move sources.
+/// Calculates transitive dependencies of the given Move sources.
 fn calculate_deps(sources: &[String], input_deps: &[String]) -> anyhow::Result<Vec<String>> {
     let file_map = calculate_file_map(input_deps)?;
     let mut deps = vec![];
