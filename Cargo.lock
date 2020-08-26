@@ -6052,10 +6052,11 @@ dependencies = [
 
 [[package]]
 name = "serde-generate"
-version = "0.7.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "582443c3fcb3fa68f2ee5776756ad183f28d10f6cf368b2c8bc60feed8d30d0b"
+checksum = "622fd31edf06adb255c68daa5943e595f8e97e4c24fcae8080de334f0cc0847c"
 dependencies = [
+ "heck",
  "include_dir",
  "maplit",
  "serde",
@@ -6063,6 +6064,7 @@ dependencies = [
  "serde_bytes",
  "serde_yaml",
  "structopt 0.3.17",
+ "textwrap 0.12.1",
 ]
 
 [[package]]
