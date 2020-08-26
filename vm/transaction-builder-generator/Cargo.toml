@@ -10,7 +10,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.31"
-structopt = "0.3.15"
+structopt = "0.3.17"
 textwrap = "0.12.1"
 serde-reflection = "0.3.1"
 serde-generate = "0.7.1"
