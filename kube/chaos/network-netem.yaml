@@ -1,0 +1,30 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-netem
+  namespace: starcoin-chaos
+spec:
+  action: netem
+  mode: one
+  selector:
+    namespaces:
+      - default
+    labelSelectors:
+      "app": "starcoin"
+  delay:
+    latency: "100ms"
+    correlation: "25"
+    jitter: "100ms"
+  corrupt:
+    corrupt: "40"
+    correlation: "25"
+  loss:
+    loss: "20"
+    correlation: "20"
+  duplicate:
+    duplicate: "40"
+    correlation: "25"
+    
+  duration: "5s"
+  scheduler:
+    cron: "@every 20s"

@@ -1,0 +1,24 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: network-partition
+  namespace: starcoin-chaos
+spec:
+  action: partition
+  mode: one
+  selector:
+    namespaces:
+      - default     
+    labelSelectors:
+      "app": "starcoin"
+  direction: to
+  target:
+    selector:
+      namespaces:
+      - default      
+      labelSelectors:
+        "app": "starcoin"
+    mode: one
+  duration: "5s"
+  scheduler:
+    cron: "@every 20s"

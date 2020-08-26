@@ -1,0 +1,15 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: pod-kill
+  namespace: starcoin-chaos
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+    - default
+    labelSelectors:
+      "app": "starcoin"
+  scheduler:
+    cron: "@every 20m"
