@@ -13,5 +13,5 @@ echo -e "${green} Starcoin nodes in this cluster:"
 counter=0
 for add in $addresses;do
     ip=${exips[$((counter++))]};
-    echo "$add"|sed -e  "s/127.0.0.1/$ip/"|sed -e  "s/9840/$PORT/"
+    echo "$add"|sed -e  "s/127.0.0.1/$ip/"
 done

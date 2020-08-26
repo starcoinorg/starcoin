@@ -29,6 +29,7 @@ spec:
   replicas: 3
   template:
     metadata:
+      name: starcoin
       labels:
         app: starcoin
         network: proxima
@@ -42,7 +43,7 @@ spec:
           - -c
         args:
           -
-            rm -rf /data/proxima/starcoin.ipc;
+            rm -rf /data/proxima/starcoin.ipc /data/proxima/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
@@ -53,8 +54,7 @@ spec:
               sleep 5;
             else
               /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag;
-            fi
-            
+            fi;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -81,7 +81,17 @@ spec:
               configMapKeyRef:
                 name: starcoin-config
                 key: start_disable_seed_node
-            
+      - name: txfactory
+        image: starcoin/starcoin:v0.4.4
+        imagePullPolicy: IfNotPresent
+        command:
+          - bash
+          - -c
+        args:
+          -  /starcoin/txfactory --ipc-path /data/proxima/starcoin.ipc
+        volumeMounts:
+        - name: volume
+          mountPath: /data
       volumes:
       - name: volume
         hostPath:
