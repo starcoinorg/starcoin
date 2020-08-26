@@ -23,7 +23,7 @@ use starcoin_types::{
     block::{Block, BlockDetail, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
-    system_events::{NewBranch, NewHeadBlock, SwitchMaster},
+    system_events::{NewBranch, NewHeadBlock},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use starcoin_vm_types::account_config::CORE_CODE_ADDRESS;
@@ -131,10 +131,6 @@ where
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             CHAIN_METRICS.broadcast_head_count.inc();
             self.broadcast_new_head(BlockDetail::new(block, total_difficulty));
-            if broadcast_new_master {
-                //send change master event
-                self.broadcast_switch_master();
-            }
         } else {
             self.insert_branch(&block_header, repeat_apply);
         }
@@ -426,13 +422,6 @@ where
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
             msg: NewBranch(Arc::new(maybe_uncle)),
-        });
-    }
-
-    fn broadcast_switch_master(&self) {
-        let bus = self.bus.clone();
-        bus.do_send(Broadcast {
-            msg: SwitchMaster(),
         });
     }
 

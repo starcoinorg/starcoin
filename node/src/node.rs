@@ -178,11 +178,12 @@ pub async fn start(
         network.clone(),
     )));
     let chain_arbiter = Arbiter::new();
+    let chain_startup_info = startup_info.clone();
     let chain = chain_arbiter
         .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
                 chain_config,
-                startup_info,
+                chain_startup_info,
                 chain_storage,
                 chain_bus,
                 chain_txpool_service,
@@ -253,6 +254,7 @@ pub async fn start(
         miner_txpool,
         miner_chain,
         default_account,
+        startup_info,
     )?;
     let miner_client_config = config.miner.client_config.clone();
     let consensus_strategy = config.net().consensus();

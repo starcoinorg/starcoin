@@ -15,11 +15,6 @@ pub struct NewHeadBlock(pub Arc<BlockDetail>);
 #[rtype(result = "()")]
 pub struct NewBranch(pub Arc<BlockHeader>);
 
-/// new master
-#[derive(Clone, Debug, Message)]
-#[rtype(result = "()")]
-pub struct SwitchMaster();
-
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub struct MinedBlock(pub Arc<Block>);

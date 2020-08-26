@@ -6,14 +6,14 @@ use crate::{
 };
 use actix::prelude::*;
 use anyhow::Result;
-use bus::{BusActor};
+use bus::BusActor;
 use chain::BlockChain;
 use config::NodeConfig;
 use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
 use futures::{channel::mpsc, prelude::*};
 use logger::prelude::*;
-use open_block::{CreateBlockTemplateRequest, UnclesActor, UnclesActorAddress};
+use open_block::{CreateBlockTemplateRequest, UncleActor, UncleActorAddress};
 use sc_stratum::Stratum;
 use starcoin_account_api::AccountInfo;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
@@ -22,9 +22,7 @@ use std::cmp::min;
 use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
-use types::{
-    transaction::TxStatus,
-};
+use types::{startup_info::StartupInfo, transaction::TxStatus};
 
 mod headblock_pacemaker;
 mod metrics;
@@ -62,7 +60,7 @@ where
     stratum: Arc<Stratum>,
     miner_account: AccountInfo,
     arbiter: Arbiter,
-    uncle_address: UnclesActorAddress,
+    uncle_address: UncleActorAddress,
 }
 
 impl<P, CS, S> MinerActor<P, CS, S>
@@ -78,7 +76,14 @@ where
         txpool: P,
         chain: CS,
         miner_account: AccountInfo,
+        startup_info: StartupInfo,
     ) -> Result<Addr<Self>> {
+        let uncle_address = UncleActor::launch(
+            *startup_info.get_master(),
+            config.net(),
+            bus.clone(),
+            storage.clone(),
+        )?;
         let actor = MinerActor::create(move |ctx| {
             let (sender, receiver) = mpsc::channel(100);
             ctx.add_message_stream(receiver);
@@ -87,7 +92,7 @@ where
             let transaction_receiver = txpool.subscribe_txns();
             OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
 
-            let miner = miner::Miner::new(bus.clone(), config.clone());
+            let miner = miner::Miner::new(bus, config.clone());
 
             let stratum = sc_stratum::Stratum::start(
                 &config.miner.stratum_server,
@@ -103,7 +108,7 @@ where
                 stratum,
                 miner_account,
                 arbiter,
-                uncle_address: UnclesActor::launch(config.net(), bus, storage.clone()),
+                uncle_address,
                 config,
                 storage,
             }

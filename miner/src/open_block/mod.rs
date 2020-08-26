@@ -2,20 +2,21 @@ use actix::prelude::*;
 use actix::{Actor, Addr, Context};
 use anyhow::{bail, format_err, Result};
 use bus::{BusActor, Subscription};
+use chain::BlockChain;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_vm_types::{chain_config::ChainNetwork, on_chain_config::EpochInfo};
+use starcoin_vm_types::chain_config::ChainNetwork;
 use statedb::ChainStateDB;
 use std::{collections::HashMap, convert::TryInto, sync::Arc};
 use storage::Store;
-use traits::ExcludedTxns;
+use traits::{ChainReader, ExcludedTxns};
 use types::{
     account_address::AccountAddress,
-    block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
+    block::{Block, BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
     system_events::{NewBranch, NewHeadBlock},
@@ -25,7 +26,9 @@ use types::{
     vm_error::KeptVMStatus,
 };
 
-pub type UnclesActorAddress = Addr<UnclesActor>;
+const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
+
+pub type UncleActorAddress = Addr<UncleActor>;
 
 pub struct CreateBlockTemplateRequest {
     final_block_gas_limit: u64,
@@ -90,25 +93,24 @@ impl Message for CreateBlockTemplateRequest {
     type Result = Result<CreateBlockTemplateResponse>;
 }
 
-pub struct UnclesActor {
+pub struct UncleActor {
     bus: Addr<BusActor>,
     inner: Inner,
 }
 
-impl UnclesActor {
+impl UncleActor {
     pub fn launch(
+        block_id: HashValue,
         net: ChainNetwork,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
-    ) -> UnclesActorAddress {
-        UnclesActor::create(move |_ctx| {
-            let inner = Inner::new(None, storage, net);
-            UnclesActor { bus, inner }
-        })
+    ) -> Result<UncleActorAddress> {
+        let inner = Inner::new(block_id, storage, net)?;
+        Ok(UncleActor::create(move |_ctx| UncleActor { bus, inner }))
     }
 }
 
-impl Actor for UnclesActor {
+impl Actor for UncleActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -126,23 +128,25 @@ impl Actor for UnclesActor {
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
 
-        info!("MinerActor started");
+        info!("UncleActor started");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("MinerActor stopped");
+        info!("UncleActor stopped");
     }
 }
 
-impl Handler<NewHeadBlock> for UnclesActor {
+impl Handler<NewHeadBlock> for UncleActor {
     type Result = ();
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
-        self.inner.update_head(msg.0.header().id());
+        if let Err(e) = self.inner.update_chain(msg.0.get_block().clone()) {
+            error!("err : {:?}", e);
+        }
     }
 }
 
-impl Handler<NewBranch> for UnclesActor {
+impl Handler<NewBranch> for UncleActor {
     type Result = ();
 
     fn handle(&mut self, msg: NewBranch, _ctx: &mut Self::Context) -> Self::Result {
@@ -150,7 +154,7 @@ impl Handler<NewBranch> for UnclesActor {
     }
 }
 
-impl Handler<CreateBlockTemplateRequest> for UnclesActor {
+impl Handler<CreateBlockTemplateRequest> for UncleActor {
     type Result = Result<CreateBlockTemplateResponse>;
 
     fn handle(
@@ -173,46 +177,56 @@ impl Handler<CreateBlockTemplateRequest> for UnclesActor {
 }
 
 pub struct Inner {
-    head_block_id: Option<HashValue>,
+    chain: BlockChain,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
-    _epoch_data: Option<EpochInfo>,
     storage: Arc<dyn Store>,
     net: ChainNetwork,
 }
 
 impl Inner {
-    fn update_head(&mut self, head_block_id: HashValue) {
-        self.head_block_id = Some(head_block_id);
-    }
-
     fn insert_uncle(&mut self, uncle: BlockHeader) {
-        if self.parent_uncle.contains_key(&uncle.parent_hash()) {
-            self.parent_uncle
-                .get_mut(&uncle.parent_hash())
-                .unwrap()
-                .push(uncle.id());
-        } else {
-            let mut empty = Vec::new();
-            empty.push(uncle.id());
-            self.parent_uncle.insert(uncle.parent_hash(), empty);
-        }
+        self.parent_uncle
+            .entry(uncle.parent_hash())
+            .or_insert_with(Vec::new)
+            .push(uncle.id());
         self.uncles.insert(uncle.id(), uncle);
     }
 
-    fn new(
-        previous_block_id: Option<HashValue>,
-        storage: Arc<dyn Store>,
-        net: ChainNetwork,
-    ) -> Self {
-        Inner {
-            head_block_id: previous_block_id,
+    fn new(block_id: HashValue, storage: Arc<dyn Store>, net: ChainNetwork) -> Result<Self> {
+        let chain = BlockChain::new(net, block_id, storage.clone(), None)?;
+
+        Ok(Inner {
+            chain,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
-            _epoch_data: None,
             storage,
             net,
+        })
+    }
+
+    fn update_chain(&mut self, block: Block) -> Result<()> {
+        if block.header().parent_hash() != self.chain.current_header().id() {
+            self.chain = BlockChain::new(self.net, block.id(), self.storage.clone(), None)?;
+        } else {
+            self.chain.update_chain_head(block)?;
         }
+        // TODO:prune uncles when switch epoch
+        Ok(())
+    }
+
+    fn do_uncles(&self) -> Vec<BlockHeader> {
+        let mut new_uncle = Vec::new();
+        for maybe_uncle in self.uncles.values() {
+            if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
+                break;
+            }
+            if self.chain.can_be_uncle(maybe_uncle) {
+                new_uncle.push(maybe_uncle.clone())
+            }
+        }
+
+        new_uncle
     }
 
     pub fn create_block_template(
@@ -222,28 +236,20 @@ impl Inner {
         auth_key_prefix: Option<Vec<u8>>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        if let Some(previous_block_id) = self.head_block_id {
-            if let Some(previous_header) =
-                self.storage.get_block_header_by_hash(previous_block_id)?
-            {
-                //TODO: uncles
-                let uncles = Vec::new();
-                let mut opened_block = OpenedBlock::new(
-                    self.storage.clone(),
-                    previous_header,
-                    final_block_gas_limit,
-                    author,
-                    auth_key_prefix,
-                    self.net.consensus().now(),
-                    uncles,
-                )?;
-                let excluded_txns = opened_block.push_txns(user_txns)?;
-                let template = opened_block.finalize()?;
-                return Ok((template, excluded_txns));
-            }
-        };
-
-        Err(format_err!("create block template failed."))
+        let previous_header = self.chain.current_header();
+        let uncles = self.do_uncles();
+        let mut opened_block = OpenedBlock::new(
+            self.storage.clone(),
+            previous_header,
+            final_block_gas_limit,
+            author,
+            auth_key_prefix,
+            self.net.consensus().now(),
+            uncles,
+        )?;
+        let excluded_txns = opened_block.push_txns(user_txns)?;
+        let template = opened_block.finalize()?;
+        Ok((template, excluded_txns))
     }
 }
 

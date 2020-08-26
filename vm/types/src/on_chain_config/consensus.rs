@@ -66,6 +66,10 @@ impl EpochResource {
         self.start_number
     }
 
+    pub fn end_number(&self) -> u64 {
+        self.end_number
+    }
+
     pub fn block_time_target(&self) -> u64 {
         self.block_time_target
     }
