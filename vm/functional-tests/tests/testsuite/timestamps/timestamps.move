@@ -33,7 +33,7 @@ fun main(signer: &signer) {
 }
 }
 
-// check: CANNOT_WRITE_EXISTING_RESOURCE
+// check: RESOURCE_ALREADY_EXISTS 
 
 
 //! new-transaction

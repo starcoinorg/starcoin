@@ -7,7 +7,7 @@ fun main(account: &signer) {
 }
 }
 // check: EXECUTION_FAILURE
-// check: CANNOT_WRITE_EXISTING_RESOUR
+// check: RESOURCE_ALREADY_EXISTS 
 
 //! new-transaction
 script{
