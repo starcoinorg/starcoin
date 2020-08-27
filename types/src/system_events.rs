@@ -3,6 +3,7 @@
 
 use crate::block::{Block, BlockDetail, BlockHeader};
 use actix::prelude::*;
+use anyhow::Result;
 use std::sync::Arc;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
@@ -41,3 +42,17 @@ pub struct SystemStop;
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub struct SystemStarted;
+
+///Fire this event for generate a new block
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "Result<()>")]
+pub struct GenerateBlockEvent {
+    /// Force break current minting, and Generate new block.
+    pub force: bool,
+}
+
+impl GenerateBlockEvent {
+    pub fn new(force: bool) -> Self {
+        Self { force }
+    }
+}

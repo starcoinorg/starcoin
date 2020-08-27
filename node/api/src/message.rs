@@ -20,5 +20,5 @@ pub enum NodeResponse {
 }
 
 impl Message for NodeRequest {
-    type Result = Result<NodeResponse>;
+    type Result = NodeResponse;
 }

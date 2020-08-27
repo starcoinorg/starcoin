@@ -25,27 +25,14 @@ use traits::ChainAsyncService;
 use types::system_events::ActorStop;
 use types::{startup_info::StartupInfo, transaction::TxStatus};
 
-mod headblock_pacemaker;
+pub mod headblock_pacemaker;
 mod metrics;
 pub mod miner;
-mod ondemand_pacemaker;
+pub mod ondemand_pacemaker;
 mod open_block;
 pub mod stratum;
 
-pub(crate) type TransactionStatusEvent = Arc<Vec<(HashValue, TxStatus)>>;
-
-#[derive(Default, Debug, Message)]
-#[rtype(result = "Result<()>")]
-pub struct GenerateBlockEvent {
-    /// Force break current minting, and Generate new block.
-    force: bool,
-}
-
-impl GenerateBlockEvent {
-    pub fn new(force: bool) -> Self {
-        Self { force }
-    }
-}
+pub use types::system_events::GenerateBlockEvent;
 
 pub struct MinerActor<P, CS, S>
 where
@@ -86,15 +73,7 @@ where
             storage.clone(),
         )?;
         let actor = MinerActor::create(move |ctx| {
-            let (sender, receiver) = mpsc::channel(100);
-            ctx.add_message_stream(receiver);
-            let pacemaker = HeadBlockPacemaker::new(bus.clone(), sender.clone());
-            pacemaker.start();
-            let transaction_receiver = txpool.subscribe_txns();
-            OndemandPacemaker::new(bus.clone(), sender, transaction_receiver).start();
-
             let miner = miner::Miner::new(bus, config.clone());
-
             let stratum = sc_stratum::Stratum::start(
                 &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),

@@ -15,6 +15,8 @@ use starcoin_dev::playground::PlaygroudService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
+use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
+use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
@@ -82,10 +84,10 @@ impl Actor for Node {
 }
 
 impl Handler<NodeRequest> for Node {
-    type Result = Result<NodeResponse>;
+    type Result = NodeResponse;
 
     fn handle(&mut self, msg: NodeRequest, _ctx: &mut Self::Context) -> Self::Result {
-        Ok(match msg {
+        match msg {
             NodeRequest::ListService => NodeResponse::Services(self.registry.list()),
             NodeRequest::StopService(service_name) => {
                 info!(
@@ -106,7 +108,7 @@ impl Handler<NodeRequest> for Node {
                 System::current().stop();
                 NodeResponse::Result(Ok(()))
             }
-        })
+        }
     }
 }
 
@@ -329,6 +331,10 @@ pub async fn start(
     )?;
     bus.clone().broadcast(StartSyncTxnEvent).await.unwrap();
     bus.clone().broadcast(SystemStarted).await?;
+
+    registry.registry(OndemandPacemaker::new)?;
+    registry.registry(HeadBlockPacemaker::new)?;
+
     let node = Node {
         chain_arbiter: chain_arbiter.clone(),
         chain_actor: chain.clone(),
