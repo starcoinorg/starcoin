@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{nonce_generator, partition_nonce};
+use anyhow::{bail, Result};
 use consensus::{argon, difficulty::difficult_to_target, Consensus};
 use futures::channel::mpsc;
 use futures::executor::block_on;
@@ -150,7 +151,10 @@ impl Worker {
         let mut start = Instant::now();
         let pb = pb.as_ref();
         loop {
-            self.refresh_new_work();
+            if let Err(e) = self.refresh_new_work() {
+                error!("refresh new work error: {:?}", e);
+                break;
+            }
             if self.start {
                 if let Some(pow_header) = self.pow_header.clone() {
                     hash_counter += 1;
@@ -183,19 +187,26 @@ impl Worker {
         }
     }
 
-    fn refresh_new_work(&mut self) {
-        if let Ok(msg) = self.worker_rx.try_next() {
-            if let Some(msg) = msg {
-                match msg {
+    fn refresh_new_work(&mut self) -> Result<()> {
+        match self.worker_rx.try_next() {
+            Ok(msg) => match msg {
+                Some(msg) => match msg {
                     WorkerMessage::NewWork { pow_header, diff } => {
                         self.pow_header = Some(pow_header);
                         self.diff = diff;
                         self.start = true;
+                        Ok(())
                     }
                     WorkerMessage::Stop => {
                         self.start = false;
+                        Ok(())
                     }
-                }
+                },
+                None => bail!("Receiver get None, channel is closed."),
+            },
+            Err(_) => {
+                debug!("work channel is empty.");
+                Ok(())
             }
         }
     }
