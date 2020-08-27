@@ -102,7 +102,7 @@ axiom $MAX_U128 == 340282366920938463463374607431768211455;
 function {:constructor} $Boolean(b: bool): $Value;
 function {:constructor} $Integer(i: int): $Value;
 function {:constructor} $Address(a: int): $Value;
-function {:constructor} $Vector(v: $ValueArray): $Value; // used to both represent move Struct and Vector
+function {:constructor} $Vector(v: $ValueArray): $Value; // used to both represent Move Struct and Vector
 function {:constructor} $Range(lb: $Value, ub: $Value): $Value;
 function {:constructor} $Type(t: $TypeValue): $Value;
 function {:constructor} $Error(): $Value;
@@ -539,7 +539,7 @@ function {:constructor} $Local(i: int): $Location;
 function {:constructor} $Param(i: int): $Location;
 
 
-// A mutable reference which also carries its current value. Since mutual references
+// A mutable reference which also carries its current value. Since mutable references
 // are single threaded in Move, we can keep them together and treat them as a value
 // during mutation until the point they are stored back to their original location.
 type {:datatype} $Mutation;
@@ -556,6 +556,8 @@ function {:inline} $Memory__is_well_formed(m: $Memory): bool {
 
 function {:builtin "MapConst"} $ConstMemoryDomain(v: bool): [$TypeValueArray, int]bool;
 function {:builtin "MapConst"} $ConstMemoryContent(v: $Value): [$TypeValueArray, int]$Value;
+axiom $ConstMemoryDomain(false) == (lambda ta: $TypeValueArray, i: int :: false);
+axiom $ConstMemoryDomain(true) == (lambda ta: $TypeValueArray, i: int :: true);
 
 const $EmptyMemory: $Memory;
 axiom domain#$Memory($EmptyMemory) == $ConstMemoryDomain(false);
@@ -623,15 +625,19 @@ procedure {:inline 1} $MoveToRaw(m: $Memory, ta: $TypeValueArray, a: int, v: $Va
 
 procedure {:inline 1} $MoveTo(m: $Memory, ta: $TypeValueArray, v: $Value, signer: $Value) returns (m': $Memory)
 {
-    var addr: $Value;
-    call addr := $Signer_borrow_address(signer);
-    call m' := $MoveToRaw(m, ta, a#$Address(addr), v);
+    var address: $Value;
+    var a: int;
+
+    call address := $Signer_borrow_address(signer);
+    a := a#$Address(address);
+    call m' := $MoveToRaw(m, ta, a, v);
 }
 
 procedure {:inline 1} $MoveFrom(m: $Memory, address: $Value, ta: $TypeValueArray) returns (m': $Memory, dst: $Value)
 {{backend.type_requires}} is#$Address(address);
 {
     var a: int;
+
     a := a#$Address(address);
     if (!$ResourceExistsRaw(m, ta, a)) {
         call $ExecFailureAbort();
@@ -645,6 +651,7 @@ procedure {:inline 1} $BorrowGlobal(m: $Memory, address: $Value, ta: $TypeValueA
 {{backend.type_requires}} is#$Address(address);
 {
     var a: int;
+
     a := a#$Address(address);
     if (!$ResourceExistsRaw(m, ta, a)) {
         call $ExecFailureAbort();
@@ -870,6 +877,7 @@ function $shr(src1: $Value, src2: $Value): $Value {
    )
 }
 
+// TODO: fix this and $Shr to drop bits on overflow. Requires $Shl8, $Shl64, and $Shl128
 procedure {:inline 1} $Shl(src1: $Value, src2: $Value) returns (dst: $Value)
 requires is#$Integer(src1) && is#$Integer(src2);
 {
@@ -1247,7 +1255,7 @@ ensures res == $Hash_sha2_core(val);     // returns Hash_sha2 Value
 ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 ensures $vlen(res) == 32;               // result is 32 bytes.
 
-// Spec version of move native function.
+// Spec version of Move native function.
 function {:inline} $Hash_$sha2_256(val: $Value): $Value {
     $Hash_sha2_core(val)
 }
@@ -1269,7 +1277,7 @@ ensures res == $Hash_sha3_core(val);     // returns Hash_sha3 Value
 ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 ensures $vlen(res) == 32;               // result is 32 bytes.
 
-// Spec version of move native function.
+// Spec version of Move native function.
 function {:inline} $Hash_$sha3_256(val: $Value): $Value {
     $Hash_sha3_core(val)
 }
