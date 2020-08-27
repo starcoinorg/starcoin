@@ -94,6 +94,7 @@ fn test_miner_with_ondemand_pacemaker() {
             txpool_service.clone(),
             chain.clone(),
             miner_account,
+            startup_info,
         );
         MinerClientActor::new(config.miner.client_config.clone(), config.net().consensus()).start();
         let _sync = SyncActor::launch(

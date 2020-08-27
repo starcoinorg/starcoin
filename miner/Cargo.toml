@@ -35,6 +35,8 @@ thiserror = "1.0"
 once_cell = "1.4.1"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-miner-client = { path = "../cmd/miner_client" }
+scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
+starcoin-vm-types = { path = "../vm/types"}
 
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }
