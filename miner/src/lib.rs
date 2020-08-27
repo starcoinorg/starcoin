@@ -1,17 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    headblock_pacemaker::HeadBlockPacemaker, ondemand_pacemaker::OndemandPacemaker, stratum::mint,
-};
+use crate::stratum::mint;
 use actix::prelude::*;
 use anyhow::Result;
-use bus::BusActor;
+use bus::{BusActor, Subscription};
 use chain::BlockChain;
 use config::NodeConfig;
-use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
-use futures::{channel::mpsc, prelude::*};
+use futures::prelude::*;
 use logger::prelude::*;
 use open_block::{CreateBlockTemplateRequest, UncleActor, UncleActorAddress};
 use sc_stratum::Stratum;
@@ -22,8 +19,8 @@ use std::cmp::min;
 use std::sync::Arc;
 use storage::Store;
 use traits::ChainAsyncService;
+use types::startup_info::StartupInfo;
 use types::system_events::ActorStop;
-use types::{startup_info::StartupInfo, transaction::TxStatus};
 
 pub mod headblock_pacemaker;
 mod metrics;
@@ -41,6 +38,7 @@ where
     S: Store + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
+    bus: Addr<BusActor>,
     txpool: P,
     storage: Arc<S>,
     chain: CS,
@@ -72,8 +70,8 @@ where
             bus.clone(),
             storage.clone(),
         )?;
-        let actor = MinerActor::create(move |ctx| {
-            let miner = miner::Miner::new(bus, config.clone());
+        let actor = MinerActor::create(move |_ctx| {
+            let miner = miner::Miner::new(bus.clone(), config.clone());
             let stratum = sc_stratum::Stratum::start(
                 &config.miner.stratum_server,
                 Arc::new(stratum::StratumManager::new(miner.clone())),
@@ -82,15 +80,16 @@ where
             .unwrap();
             let arbiter = Arbiter::new();
             MinerActor {
+                config,
+                bus,
                 txpool,
+                storage,
                 chain,
                 miner,
                 stratum,
                 miner_account,
                 arbiter,
                 uncle_address,
-                config,
-                storage,
             }
         });
         Ok(actor)
@@ -105,7 +104,14 @@ where
 {
     type Context = Context<Self>;
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let recipient = ctx.address().recipient::<GenerateBlockEvent>();
+        self.bus
+            .clone()
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
         info!("MinerActor started");
     }
 

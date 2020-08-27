@@ -84,10 +84,10 @@ impl Actor for Node {
 }
 
 impl Handler<NodeRequest> for Node {
-    type Result = NodeResponse;
+    type Result = MessageResult<NodeRequest>;
 
     fn handle(&mut self, msg: NodeRequest, _ctx: &mut Self::Context) -> Self::Result {
-        match msg {
+        MessageResult(match msg {
             NodeRequest::ListService => NodeResponse::Services(self.registry.list()),
             NodeRequest::StopService(service_name) => {
                 info!(
@@ -108,7 +108,18 @@ impl Handler<NodeRequest> for Node {
                 System::current().stop();
                 NodeResponse::Result(Ok(()))
             }
-        }
+            NodeRequest::StopPacemaker => NodeResponse::Result(
+                self.registry
+                    .stop::<HeadBlockPacemaker>()
+                    .and_then(|_| self.registry.stop::<OndemandPacemaker>()),
+            ),
+            NodeRequest::StartPacemaker => NodeResponse::Result(
+                self.registry
+                    .start::<HeadBlockPacemaker>()
+                    .and_then(|_| self.registry.start::<OndemandPacemaker>())
+                    .map(|_| ()),
+            ),
+        })
     }
 }
 

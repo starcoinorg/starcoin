@@ -36,7 +36,7 @@ where
     }
 }
 
-pub trait ServiceHandle {
+pub trait ServiceHandle: Send {
     fn service_name(&self) -> &str;
     fn is_started(&self) -> bool;
     fn is_stopped(&self) -> bool;
@@ -48,14 +48,14 @@ pub trait ServiceHandle {
 }
 
 struct SystemServiceHandle<S: SystemService> {
-    creator: Box<dyn Fn(&ServiceRegistry) -> Result<S>>,
+    creator: Box<dyn Fn(&ServiceRegistry) -> Result<S> + Send + 'static>,
     address: Option<Addr<S>>,
 }
 
 impl<S: SystemService> SystemServiceHandle<S> {
     pub fn new<F: 'static>(creator: F) -> Self
     where
-        F: Fn(&ServiceRegistry) -> Result<S>,
+        F: Fn(&ServiceRegistry) -> Result<S> + Send,
     {
         Self {
             creator: Box::new(creator),
@@ -178,10 +178,10 @@ impl ServiceRegistry {
             .any(|handle| handle.service_name() == service_name)
     }
 
-    pub fn registry<S, F: 'static>(&self, creator: F) -> Result<Addr<S>>
+    pub fn registry<S, F>(&self, creator: F) -> Result<Addr<S>>
     where
         S: SystemService,
-        F: Fn(&ServiceRegistry) -> Result<S>,
+        F: Fn(&ServiceRegistry) -> Result<S> + Send + 'static,
     {
         let service_name = S::service_name();
         if self.has_service(service_name) {

@@ -14,7 +14,6 @@ use types::{access_path, account_config::genesis_address, block::BlockHeader};
 use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;
 
-#[ignore]
 #[stest::test]
 fn test_network_rpc() {
     let (handle1, net_addr_1) = {
@@ -23,12 +22,15 @@ fn test_network_rpc() {
         debug!("First node address: {:?}", net_addr);
         (gen_chain_env(config_1).unwrap(), net_addr)
     };
+
     let network_1 = handle1.start_handle().network.clone();
     let handle2 = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
         gen_chain_env(config_2).unwrap()
     };
+    handle2.generate_block().unwrap();
+
     let network_2 = handle2.start_handle().network.clone();
     // network rpc client for chain 1
     let peer_id_2 = network_2.identify().clone();

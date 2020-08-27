@@ -17,6 +17,10 @@ pub trait NodeAsyncService:
 
     async fn start_service(&self, service_name: String) -> Result<()>;
 
+    async fn start_pacemaker(&self) -> Result<()>;
+
+    async fn stop_pacemaker(&self) -> Result<()>;
+
     async fn stop_system(&self) -> Result<()>;
 }
 
@@ -29,7 +33,7 @@ where
     A: std::marker::Send,
 {
     async fn list_service(&self) -> Result<Vec<ServiceInfo>> {
-        let response = self.send(NodeRequest::ListService).await??;
+        let response = self.send(NodeRequest::ListService).await?;
         if let NodeResponse::Services(services) = response {
             Ok(services)
         } else {
@@ -38,7 +42,7 @@ where
     }
 
     async fn stop_service(&self, service_name: String) -> Result<()> {
-        let response = self.send(NodeRequest::StopService(service_name)).await??;
+        let response = self.send(NodeRequest::StopService(service_name)).await?;
         if let NodeResponse::Result(result) = response {
             result
         } else {
@@ -47,7 +51,25 @@ where
     }
 
     async fn start_service(&self, service_name: String) -> Result<()> {
-        let response = self.send(NodeRequest::StartService(service_name)).await??;
+        let response = self.send(NodeRequest::StartService(service_name)).await?;
+        if let NodeResponse::Result(result) = response {
+            result
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn start_pacemaker(&self) -> Result<()> {
+        let response = self.send(NodeRequest::StartPacemaker).await?;
+        if let NodeResponse::Result(result) = response {
+            result
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
+    async fn stop_pacemaker(&self) -> Result<()> {
+        let response = self.send(NodeRequest::StopPacemaker).await?;
         if let NodeResponse::Result(result) = response {
             result
         } else {

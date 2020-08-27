@@ -65,7 +65,7 @@ impl Handler<ActorStop> for OndemandPacemaker {
 impl Handler<PropagateNewTransactions> for OndemandPacemaker {
     type Result = ();
 
-    fn handle(&mut self, _msg: PropagateNewTransactions, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
         self.send_event()
     }
 }

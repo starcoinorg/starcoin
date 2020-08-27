@@ -10,6 +10,8 @@ pub enum NodeRequest {
     ListService,
     StartService(String),
     StopService(String),
+    StopPacemaker,
+    StartPacemaker,
     StopSystem,
 }
 

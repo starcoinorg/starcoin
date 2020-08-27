@@ -4,13 +4,17 @@
 use crate::crash_handler::setup_panic_handler;
 use crate::node::{Node, NodeStartedHandle};
 use actix::prelude::*;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use futures::executor::block_on;
+use starcoin_bus::Bus;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_node_api::message::{NodeRequest, NodeResponse};
+use starcoin_node_api::message::NodeRequest;
+use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_node_api::service_registry::ServiceInfo;
+use starcoin_types::block::BlockDetail;
+use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::thread::JoinHandle;
 use tokio::runtime::Runtime;
@@ -103,37 +107,27 @@ impl NodeHandle {
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
         let node_addr = self.node_addr();
-        block_on(async {
-            match node_addr.send(NodeRequest::ListService).await?? {
-                NodeResponse::Services(services) => Ok(services),
-                resp => bail!("Unexpected response: {:?}", resp),
-            }
-        })
+        block_on(async { node_addr.list_service().await })
     }
 
     pub fn stop_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_addr();
-        block_on(async {
-            match node_addr
-                .send(NodeRequest::StopService(service_name))
-                .await??
-            {
-                NodeResponse::Result(r) => r,
-                resp => bail!("Unexpected response: {:?}", resp),
-            }
-        })
+        block_on(async { node_addr.stop_service(service_name).await })
     }
 
     pub fn start_service(&self, service_name: String) -> Result<()> {
         let node_addr = self.node_addr();
-        block_on(async {
-            match node_addr
-                .send(NodeRequest::StartService(service_name))
-                .await??
-            {
-                NodeResponse::Result(r) => r,
-                resp => bail!("Unexpected response: {:?}", resp),
-            }
+        block_on(async { node_addr.start_service(service_name).await })
+    }
+
+    /// Just for test
+    pub fn generate_block(&self) -> Result<BlockDetail> {
+        let bus = self.start_handle.bus.clone();
+        block_on(async move {
+            let receiver = bus.clone().oneshot::<NewHeadBlock>();
+            bus.broadcast(GenerateBlockEvent::new(false)).await?;
+            let new_head_block = receiver.await?;
+            Ok(new_head_block.0.as_ref().clone())
         })
     }
 }
