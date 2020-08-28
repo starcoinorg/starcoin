@@ -9,7 +9,7 @@ use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_vm_types::chain_config::ChainNetwork;
+use starcoin_vm_types::chain_config::{ChainNetwork, ConsensusStrategy};
 use statedb::ChainStateDB;
 use std::{collections::HashMap, convert::TryInto, sync::Arc};
 use storage::Store;
@@ -111,7 +111,7 @@ pub struct CreateBlockTemplateActor {
 impl CreateBlockTemplateActor {
     pub fn launch(
         block_id: HashValue,
-        net: ChainNetwork,
+        net: &ChainNetwork,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
     ) -> Result<CreateBlockTemplateActorAddress> {
@@ -203,7 +203,7 @@ pub struct Inner {
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
     storage: Arc<dyn Store>,
-    net: ChainNetwork,
+    consensus: ConsensusStrategy,
 }
 
 impl Inner {
@@ -215,21 +215,21 @@ impl Inner {
         self.uncles.insert(uncle.id(), uncle);
     }
 
-    fn new(block_id: HashValue, storage: Arc<dyn Store>, net: ChainNetwork) -> Result<Self> {
-        let chain = BlockChain::new(net, block_id, storage.clone(), None)?;
+    fn new(block_id: HashValue, storage: Arc<dyn Store>, net: &ChainNetwork) -> Result<Self> {
+        let chain = BlockChain::new(net.consensus(), block_id, storage.clone(), None)?;
 
         Ok(Inner {
             chain,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
             storage,
-            net,
+            consensus: net.consensus(),
         })
     }
 
     fn update_chain(&mut self, block: Block) -> Result<()> {
         if block.header().parent_hash() != self.chain.current_header().id() {
-            self.chain = BlockChain::new(self.net, block.id(), self.storage.clone(), None)?;
+            self.chain = BlockChain::new(self.consensus, block.id(), self.storage.clone(), None)?;
         } else {
             self.chain.update_chain_head(block)?;
         }
@@ -266,7 +266,7 @@ impl Inner {
             final_block_gas_limit,
             author,
             auth_key_prefix,
-            self.net.consensus().now(),
+            self.consensus.now(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;

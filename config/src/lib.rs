@@ -44,6 +44,7 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+use starcoin_vm_types::chain_config::BuiltinNetwork;
 pub use starcoin_vm_types::chain_config::{
     genesis_key_pair, ChainConfig, ChainNetwork, ConsensusStrategy, DEV_CHAIN_CONFIG,
     HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
@@ -118,6 +119,11 @@ pub struct StarcoinOpt {
 
     #[structopt(long, short = "n")]
     /// Chain Network
+    /// Builtin network: test,dev,halley,proxima,main
+    /// Custom network format: chain_name|chain_id|chain_config_name_or_path
+    /// Such as:  
+    /// my_chain|123|dev will init a new chain with id `123`, but reuse builtin dev network's config.
+    /// my_chain2|124|/my_chain2/chain_config.yaml will init a new chain with id `123`, and the config at chain_config.yaml
     pub net: Option<ChainNetwork>,
 
     #[structopt(long)]
@@ -204,7 +210,6 @@ impl Default for DataDirPath {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct BaseConfig {
-    #[serde(default)]
     net: ChainNetwork,
     #[serde(skip)]
     base_data_dir: DataDirPath,
@@ -235,22 +240,18 @@ impl BaseConfig {
             data_dir,
         }
     }
-
-    pub fn net(&self) -> ChainNetwork {
-        self.net
+    pub fn load_chain_config(&mut self) -> Result<()> {
+        let data_dir = self.data_dir.as_path();
+        self.net.load_config(data_dir)
+    }
+    pub fn net(&self) -> &ChainNetwork {
+        &self.net
     }
     pub fn data_dir(&self) -> &Path {
         self.data_dir.as_path()
     }
     pub fn base_data_dir(&self) -> DataDirPath {
         self.base_data_dir.clone()
-    }
-}
-
-impl Default for BaseConfig {
-    fn default() -> Self {
-        let net = ChainNetwork::default();
-        BaseConfig::new(net, None)
     }
 }
 
@@ -282,13 +283,13 @@ pub struct NodeConfig {
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let mut opt = StarcoinOpt::default();
-        let net = ChainNetwork::Test;
-        opt.net = Some(net);
+        opt.net = Some(BuiltinNetwork::Test.into());
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
-        let base = BaseConfig::new(opt.net.unwrap_or_default(), opt.data_dir.clone());
+        let mut base = BaseConfig::new(opt.net.clone().unwrap_or_default(), opt.data_dir.clone());
+        base.load_chain_config()?;
         let data_dir = base.data_dir();
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
@@ -304,13 +305,14 @@ impl NodeConfig {
         info!("Load config from: {:?}", config_file_path);
         let mut config: NodeConfig = match load_config(&config_file_path) {
             Ok(config) => config,
-            Err(e) => match base.net {
-                ChainNetwork::Test | ChainNetwork::Dev | ChainNetwork::Halley => {
+            Err(e) => {
+                if base.net.is_dev() || base.net.is_test() || base.net.is_halley() {
                     info!("Load config error: {:?}, use default config.", e);
                     NodeConfig::default_with_opt(opt, &base)?
+                } else {
+                    return Err(e);
                 }
-                _ => return Err(e),
-            },
+            }
         };
 
         config.after_load(opt, &base)?;
@@ -322,8 +324,8 @@ impl NodeConfig {
         self.base.data_dir()
     }
 
-    pub fn net(&self) -> ChainNetwork {
-        self.base.net
+    pub fn net(&self) -> &ChainNetwork {
+        &self.base.net
     }
 }
 
@@ -426,10 +428,10 @@ mod tests {
 
     #[test]
     fn test_generate_and_load() -> Result<()> {
-        for net in ChainNetwork::networks() {
+        for net in BuiltinNetwork::networks() {
             let mut opt = StarcoinOpt::default();
             let temp_path = temp_path();
-            opt.net = Some(net);
+            opt.net = Some(net.into());
             opt.data_dir = Some(temp_path.path().to_path_buf());
 
             let config = NodeConfig::load_with_opt(&opt)?;

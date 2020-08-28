@@ -34,9 +34,9 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 
 /// This produces the genesis block
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
-    // let storage = Arc::new(storage);
-    let genesis = Genesis::load(ChainNetwork::Test).unwrap();
-    genesis.clone().execute_genesis_block(storage).unwrap();
+    let net = &ChainNetwork::TEST;
+    let genesis = Genesis::load(net).unwrap();
+    genesis.clone().execute_genesis_block(net, storage).unwrap();
     Just(genesis.block().clone())
 }
 
@@ -94,7 +94,7 @@ fn txn_transfer(
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = ChainNetwork::Test.consensus().now() + DEFAULT_EXPIRATION_TIME;
+    let expired = ChainNetwork::TEST.consensus().now() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {

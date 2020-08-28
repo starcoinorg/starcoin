@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_port, BaseConfig, ChainNetwork, ConfigModule,
-    StarcoinOpt,
+    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -20,10 +19,12 @@ pub static DEFAULT_METRIC_SERVER_PORT: u16 = 9101;
 
 impl ConfigModule for MetricsConfig {
     fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let port = match base.net {
-            ChainNetwork::Test => get_random_available_port(),
-            ChainNetwork::Dev => get_available_port_from(DEFAULT_METRIC_SERVER_PORT),
-            _ => DEFAULT_METRIC_SERVER_PORT,
+        let port = if base.net.is_test() {
+            get_random_available_port()
+        } else if base.net.is_dev() {
+            get_available_port_from(DEFAULT_METRIC_SERVER_PORT)
+        } else {
+            DEFAULT_METRIC_SERVER_PORT
         };
         Ok(Self {
             enable_metrics: !opt.disable_metrics,

@@ -28,7 +28,7 @@ pub fn build_transfer_from_association(
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
@@ -36,7 +36,7 @@ pub fn build_transfer_from_association(
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
-        chain_id,
+        net,
     ))
 }
 
@@ -210,7 +210,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
@@ -218,7 +218,7 @@ pub fn peer_to_peer_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
-        chain_id,
+        net,
     )
 }
 
@@ -229,7 +229,7 @@ pub fn create_signed_txn_with_association_account(
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -238,15 +238,15 @@ pub fn create_signed_txn_with_association_account(
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
-        chain_id,
+        net.chain_id(),
     );
-    ChainNetwork::Dev
+    net.get_config()
         .sign_with_association(raw_txn)
         .expect("Sign txn should work.")
 }
 
 pub fn build_stdlib_package(
-    net: ChainNetwork,
+    net: &ChainNetwork,
     stdlib_option: StdLibOptions,
     with_init_script: bool,
 ) -> Result<Package> {

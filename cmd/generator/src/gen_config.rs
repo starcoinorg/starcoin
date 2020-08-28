@@ -51,7 +51,7 @@ impl CommandAction for GenConfigCommand {
         let (config, .., genesis_hash, account) =
             init_or_load_data_dir(&global_opt, opt.password.clone())?;
         Ok(GenConfigResult {
-            net: config.net(),
+            net: config.net().clone(),
             config_path: config.data_dir().join(starcoin_config::CONFIG_FILE_PATH),
             account_info: account,
             genesis: genesis_hash,

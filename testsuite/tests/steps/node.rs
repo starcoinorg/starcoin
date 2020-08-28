@@ -12,7 +12,7 @@ pub fn steps() -> Steps<MyWorld> {
     builder
         .given("a test node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::Test);
+            opt.net = Some(ChainNetwork::TEST);
             opt.disable_metrics = true;
             opt.disable_seed = true;
             let config = NodeConfig::load_with_opt(&opt).unwrap();
@@ -21,7 +21,7 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("a dev node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::Dev);
+            opt.net = Some(ChainNetwork::DEV);
             opt.disable_metrics = true;
             opt.disable_seed = true;
             let config = NodeConfig::load_with_opt(&opt).unwrap();
@@ -29,7 +29,7 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("halley node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::Halley);
+            opt.net = Some(ChainNetwork::HALLEY);
             opt.disable_metrics = true;
             opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
             let config = NodeConfig::load_with_opt(&opt).unwrap();

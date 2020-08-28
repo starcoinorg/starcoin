@@ -24,14 +24,13 @@ use starcoin_types::{
     transaction::TransactionStatus,
     transaction::{Module, TransactionPayload},
 };
-use starcoin_vm_types::chain_config::ChainId;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use statedb::ChainStateDB;
 use stdlib::{stdlib_files, StdLibOptions};
 
-pub fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
-    let net = ChainNetwork::Test;
+pub fn prepare_genesis() -> (ChainStateDB, &'static ChainNetwork) {
+    let net = &ChainNetwork::TEST;
     let chain_state = ChainStateDB::mock();
     let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
     Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
@@ -62,7 +61,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         sequence_number1,
         50_000_000,
         net.consensus().now() + DEFAULT_EXPIRATION_TIME,
-        net.chain_id(),
+        net,
     ));
     let output = execute_and_apply(&chain_state, txn1);
     info!("output: {:?}", output.gas_used());
@@ -178,8 +177,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
 fn test_validate_sequence_number_too_new() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
-    let txn =
-        create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, net.chain_id());
+    let txn = create_account_txn_sent_as_association(&account1, 10000, 50_000_000, 1, net);
     let output = crate::validate_transaction(&chain_state, txn);
     assert_eq!(output, None);
     Ok(())
@@ -189,10 +187,10 @@ fn test_validate_sequence_number_too_new() -> Result<()> {
 fn test_validate_sequence_number_too_old() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
-    let txn1 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, net.chain_id());
+    let txn1 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, net);
     let output1 = execute_and_apply(&chain_state, Transaction::UserTransaction(txn1));
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
-    let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, net.chain_id());
+    let txn2 = create_account_txn_sent_as_association(&account1, 0, 50_000_000, 1, net);
     let output = crate::validate_transaction(&chain_state, txn2);
     assert!(
         output.is_some(),
@@ -214,11 +212,7 @@ fn test_validate_txn() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1,
-        0,
-        50_000_000,
-        1,
-        net.chain_id(),
+        &account1, 0, 50_000_000, 1, net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -244,7 +238,7 @@ fn test_validate_txn() -> Result<()> {
 
 #[stest::test]
 fn test_validate_txn_chain_id() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
+    let (chain_state, _net) = prepare_genesis();
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
@@ -252,7 +246,7 @@ fn test_validate_txn_chain_id() -> Result<()> {
         0,
         50_000_000,
         1,
-        ChainId::new(net.chain_id().id() - 1), //wrong chain id
+        &ChainNetwork::DEV, //wrong chain id
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(
@@ -274,7 +268,7 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
         sequence_number1,
         50_000_000,
         1,
-        net.chain_id(),
+        net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -308,7 +302,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number1, // fix me
         50_000_000,
         1,
-        net.chain_id(),
+        net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -320,7 +314,7 @@ fn test_execute_real_txn_with_starcoin_vm() -> Result<()> {
         sequence_number2, // fix me
         1_000,
         1,
-        net.chain_id(),
+        net,
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(KeptVMStatus::Executed, output2.status().status().unwrap());
@@ -351,7 +345,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
         0,
         1000,
         1,
-        net.chain_id(),
+        net,
     );
     let output = crate::execute_transactions(&chain_state, vec![txn]).unwrap();
     assert_eq!(KeptVMStatus::Executed, output[0].status().status().unwrap());
@@ -365,11 +359,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1,
-        0,
-        50_000_000,
-        1,
-        net.chain_id(),
+        &account1, 0, 50_000_000, 1, net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -401,11 +391,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1,
-        0,
-        50_000_000,
-        1,
-        net.chain_id(),
+        &account1, 0, 50_000_000, 1, net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -459,7 +445,7 @@ fn test_sequence_number() -> Result<()> {
         old_sequence_number,
         1000,
         1,
-        net.chain_id(),
+        net,
     );
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
@@ -483,7 +469,7 @@ fn test_gas_used() -> Result<()> {
         0,
         1000,
         1,
-        net.chain_id(),
+        net,
     );
     let output = execute_and_apply(&chain_state, txn);
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
@@ -525,11 +511,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1,
-        0,
-        50_000_000,
-        1,
-        net.chain_id(),
+        &account1, 0, 50_000_000, 1, net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
@@ -635,7 +617,7 @@ fn test_stdlib_upgrade() -> Result<()> {
         2_000_000,
         1,
         1,
-        net.chain_id(),
+        &net,
     );
     let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
     assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());

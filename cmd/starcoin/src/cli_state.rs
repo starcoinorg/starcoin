@@ -59,8 +59,8 @@ impl CliState {
         }
     }
 
-    pub fn net(&self) -> ChainNetwork {
-        self.net
+    pub fn net(&self) -> &ChainNetwork {
+        &self.net
     }
 
     pub fn client(&self) -> &RpcClient {

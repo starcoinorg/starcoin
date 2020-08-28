@@ -5,15 +5,21 @@ use crate::on_chain_config::{VMConfig, VMPublishingOption, Version, INITIAL_GAS_
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, format_err, Result};
 use ethereum_types::U256;
-use libp2p::Multiaddr;
+use libp2p::multiaddr::Multiaddr;
+use move_core_types::move_resource::MoveResource;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use std::fmt::{self, Display, Formatter};
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, IntoPrimitive)]
+#[derive(
+    Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, IntoPrimitive,
+)]
 #[repr(u8)]
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
@@ -79,8 +85,8 @@ pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
     Serialize,
 )]
 #[repr(u8)]
-#[serde(tag = "net")]
-pub enum ChainNetwork {
+#[serde(tag = "chain_id")]
+pub enum BuiltinNetwork {
     /// A ephemeral network just for unit test.
     Test = 255,
     /// A ephemeral network just for developer test.
@@ -98,35 +104,40 @@ pub enum ChainNetwork {
     Main = 1,
 }
 
-impl Display for ChainNetwork {
+impl Display for BuiltinNetwork {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChainNetwork::Test => write!(f, "test"),
-            ChainNetwork::Dev => write!(f, "dev"),
-            ChainNetwork::Halley => write!(f, "halley"),
-            ChainNetwork::Proxima => write!(f, "proxima"),
-            ChainNetwork::Main => write!(f, "main"),
+            BuiltinNetwork::Test => write!(f, "test"),
+            BuiltinNetwork::Dev => write!(f, "dev"),
+            BuiltinNetwork::Halley => write!(f, "halley"),
+            BuiltinNetwork::Proxima => write!(f, "proxima"),
+            BuiltinNetwork::Main => write!(f, "main"),
         }
     }
 }
 
-impl FromStr for ChainNetwork {
+impl FromStr for BuiltinNetwork {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "test" => Ok(ChainNetwork::Test),
-            "dev" => Ok(ChainNetwork::Dev),
-            "halley" => Ok(ChainNetwork::Halley),
-            "proxima" => Ok(ChainNetwork::Proxima),
+            "test" => Ok(BuiltinNetwork::Test),
+            "dev" => Ok(BuiltinNetwork::Dev),
+            "halley" => Ok(BuiltinNetwork::Halley),
+            "proxima" => Ok(BuiltinNetwork::Proxima),
+            "main" => Ok(BuiltinNetwork::Main),
             s => Err(format_err!("Unknown network: {}", s)),
         }
     }
 }
 
-impl ChainNetwork {
+impl BuiltinNetwork {
+    pub fn chain_name(self) -> String {
+        self.to_string()
+    }
+
     pub fn chain_id(self) -> ChainId {
-        ChainId(self.into())
+        ChainId::new(self.into())
     }
 
     pub fn assert_test_or_dev(self) -> Result<()> {
@@ -138,119 +149,342 @@ impl ChainNetwork {
 
     pub fn is_test_or_dev(self) -> bool {
         match self {
-            ChainNetwork::Test | ChainNetwork::Dev => true,
+            BuiltinNetwork::Test | BuiltinNetwork::Dev => true,
             _ => false,
         }
     }
 
     pub fn is_test(self) -> bool {
         match self {
-            ChainNetwork::Test => true,
+            BuiltinNetwork::Test => true,
             _ => false,
         }
     }
 
     pub fn is_dev(self) -> bool {
         match self {
-            ChainNetwork::Dev => true,
+            BuiltinNetwork::Dev => true,
             _ => false,
         }
     }
 
     pub fn is_main(self) -> bool {
         match self {
-            ChainNetwork::Main => true,
+            BuiltinNetwork::Main => true,
             _ => false,
         }
     }
 
     pub fn is_halley(self) -> bool {
         match self {
-            ChainNetwork::Halley => true,
+            BuiltinNetwork::Halley => true,
             _ => false,
         }
     }
 
-    pub fn get_config(self) -> &'static ChainConfig {
-        match self {
-            ChainNetwork::Test => &TEST_CHAIN_CONFIG,
-            ChainNetwork::Dev => &DEV_CHAIN_CONFIG,
-            ChainNetwork::Halley => &HALLEY_CHAIN_CONFIG,
-            ChainNetwork::Proxima => &PROXIMA_CHAIN_CONFIG,
-            ChainNetwork::Main => &MAIN_CHAIN_CONFIG,
-        }
-    }
-
-    pub fn consensus(self) -> ConsensusStrategy {
-        self.get_config().consensus_strategy
-    }
-
-    pub fn sign_with_association(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        if let (Some(private_key), public_key) = &self.get_config().association_key_pair {
-            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
-        } else {
-            bail!(
-                "association private_key not config at current network: {}.",
-                self
-            )
-        }
-    }
-
-    pub fn sign_with_genesis(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        if let Some((private_key, public_key)) = &self.get_config().genesis_key_pair {
-            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
-        } else {
-            bail!(
-                "genesis private_key not config at current network: {}.",
-                self
-            )
-        }
-    }
-
-    pub fn networks() -> Vec<ChainNetwork> {
+    pub fn networks() -> Vec<BuiltinNetwork> {
         vec![
-            ChainNetwork::Test,
-            ChainNetwork::Dev,
-            ChainNetwork::Halley,
-            ChainNetwork::Proxima,
-            ChainNetwork::Main,
+            BuiltinNetwork::Test,
+            BuiltinNetwork::Dev,
+            BuiltinNetwork::Halley,
+            BuiltinNetwork::Proxima,
+            BuiltinNetwork::Main,
         ]
     }
 
-    pub fn block_gas_limit(self) -> u64 {
-        self.get_config().vm_config.block_gas_limit
+    pub fn get_config(self) -> &'static ChainConfig {
+        match self {
+            BuiltinNetwork::Test => &TEST_CHAIN_CONFIG,
+            BuiltinNetwork::Dev => &DEV_CHAIN_CONFIG,
+            BuiltinNetwork::Halley => &HALLEY_CHAIN_CONFIG,
+            BuiltinNetwork::Proxima => &PROXIMA_CHAIN_CONFIG,
+            BuiltinNetwork::Main => &MAIN_CHAIN_CONFIG,
+        }
+    }
+}
+
+impl Default for BuiltinNetwork {
+    fn default() -> Self {
+        BuiltinNetwork::Dev
+    }
+}
+
+impl From<BuiltinNetwork> for ChainNetwork {
+    fn from(network: BuiltinNetwork) -> Self {
+        ChainNetwork::new_builtin(network)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct CustomNetwork {
+    chain_name: String,
+    chain_id: ChainId,
+    chain_config: String,
+    #[serde(skip)]
+    chain_config_loaded: Option<ChainConfig>,
+}
+
+impl CustomNetwork {
+    pub const CHAIN_CONFIG_FILE_NAME: &'static str = "chain_config.json";
+
+    pub fn new(chain_name: String, chain_id: ChainId, chain_config: Option<String>) -> Self {
+        Self {
+            chain_name,
+            chain_id,
+            chain_config: chain_config.unwrap_or_else(|| Self::CHAIN_CONFIG_FILE_NAME.to_string()),
+            chain_config_loaded: None,
+        }
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
+
+    pub fn chain_name(&self) -> &str {
+        self.chain_name.as_str()
+    }
+
+    pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
+        if self.chain_config_loaded.is_some() {
+            bail!("Chain config has bean loaded");
+        }
+        let config_name_or_path = self.chain_config.as_str();
+        let chain_config = match BuiltinNetwork::from_str(config_name_or_path) {
+            Ok(net) => net.get_config().clone(),
+            Err(_) => {
+                let path = Path::new(config_name_or_path);
+                let config_path = if path.is_relative() {
+                    base_dir.join(path)
+                } else {
+                    path.to_path_buf()
+                };
+                ChainConfig::load(config_path)?
+            }
+        };
+        self.chain_config_loaded = Some(chain_config);
+        Ok(())
+    }
+
+    pub fn chain_config(&self) -> &ChainConfig {
+        self.chain_config_loaded
+            .as_ref()
+            .expect("chain config should load before get.")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum ChainNetwork {
+    Builtin(BuiltinNetwork),
+    Custom(Box<CustomNetwork>),
+}
+
+impl Display for ChainNetwork {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            Self::Builtin(b) => b.to_string(),
+            Self::Custom(c) => c.chain_name.clone(),
+        };
+        write!(f, "{}", name)
+    }
+}
+
+impl FromStr for ChainNetwork {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match BuiltinNetwork::from_str(s) {
+            Ok(net) => Ok(Self::Builtin(net)),
+            Err(e) => {
+                let parts: Vec<&str> = s.split('|').collect();
+                if parts.len() <= 1 {
+                    return Err(e);
+                }
+                if parts.len() > 3 {
+                    bail!("Invalid Custom chain network {}, custom chain network format is: name|id|config_name or path", s);
+                }
+                let chain_name = parts[0].to_string();
+                let chain_id = ChainId::from_str(parts[1])?;
+                let chain_config = if parts.len() == 3 {
+                    Some(parts[2].to_string())
+                } else {
+                    None
+                };
+                Self::new_custom(chain_name, chain_id, chain_config)
+            }
+        }
+    }
+}
+
+impl ChainNetwork {
+    pub const TEST: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Test);
+    pub const DEV: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Dev);
+    pub const HALLEY: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Halley);
+    pub const PROXIMA: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Proxima);
+    pub const MAIN: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Main);
+
+    pub fn new_builtin(network: BuiltinNetwork) -> Self {
+        Self::Builtin(network)
+    }
+    pub fn new_custom(
+        chain_name: String,
+        chain_id: ChainId,
+        chain_config: Option<String>,
+    ) -> Result<Self> {
+        for net in BuiltinNetwork::networks() {
+            if net.chain_id() == chain_id {
+                bail!("Chain id {} has used for builtin {}", chain_id, net);
+            }
+            if net.chain_name() == chain_name {
+                bail!("Chain name {} has used for builtin {}", chain_name, net);
+            }
+        }
+        Ok(Self::Custom(Box::new(CustomNetwork::new(
+            chain_name,
+            chain_id,
+            chain_config,
+        ))))
+    }
+
+    pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
+        match self {
+            ChainNetwork::Custom(net) => net.load_config(base_dir),
+            _ => Ok(()),
+        }
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        match self {
+            Self::Builtin(b) => b.chain_id(),
+            Self::Custom(c) => c.chain_id(),
+        }
+    }
+
+    pub fn assert_test_or_dev(&self) -> Result<()> {
+        if !self.is_test_or_dev() {
+            bail!("Only support test or dev network.")
+        }
+        Ok(())
+    }
+
+    pub fn is_test_or_dev(&self) -> bool {
+        self.is_test() || self.is_dev()
+    }
+
+    pub fn is_test(&self) -> bool {
+        match self {
+            Self::Builtin(BuiltinNetwork::Test) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_dev(&self) -> bool {
+        match self {
+            Self::Builtin(BuiltinNetwork::Dev) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_main(&self) -> bool {
+        match self {
+            Self::Builtin(BuiltinNetwork::Main) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_halley(&self) -> bool {
+        match self {
+            Self::Builtin(BuiltinNetwork::Halley) => true,
+            _ => false,
+        }
+    }
+
+    pub fn get_config(&self) -> &ChainConfig {
+        match self {
+            Self::Builtin(b) => b.get_config(),
+            Self::Custom(c) => c.chain_config(),
+        }
+    }
+
+    pub fn consensus(&self) -> ConsensusStrategy {
+        self.get_config().consensus_strategy
+    }
+
+    pub fn as_builtin(&self) -> Option<BuiltinNetwork> {
+        match self {
+            Self::Builtin(net) => Some(*net),
+            _ => None,
+        }
+    }
+
+    pub fn builtin_networks() -> Vec<&'static ChainNetwork> {
+        vec![
+            &Self::TEST,
+            &Self::DEV,
+            &Self::HALLEY,
+            &Self::PROXIMA,
+            &Self::MAIN,
+        ]
     }
 }
 
 impl Default for ChainNetwork {
     fn default() -> Self {
-        ChainNetwork::Dev
+        ChainNetwork::Builtin(BuiltinNetwork::default())
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
-pub struct ChainId(u8);
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub struct ChainId {
+    id: u8,
+}
 
 impl ChainId {
     pub fn new(id: u8) -> Self {
-        ChainId(id)
+        Self { id }
     }
 
     pub fn id(self) -> u8 {
-        self.0
+        self.id
     }
 
     pub fn test() -> Self {
-        ChainNetwork::Test.chain_id()
+        BuiltinNetwork::Test.chain_id()
     }
 
     pub fn dev() -> Self {
-        ChainNetwork::Dev.chain_id()
+        BuiltinNetwork::Dev.chain_id()
     }
 }
 
-/// ChainConfig is a static hard code config.
-#[derive(Debug)]
+impl fmt::Display for ChainId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+impl FromStr for ChainId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let id: u8 = s.parse()?;
+        Ok(ChainId::new(id))
+    }
+}
+
+impl From<u8> for ChainId {
+    fn from(id: u8) -> Self {
+        Self::new(id)
+    }
+}
+
+impl MoveResource for ChainId {
+    const MODULE_NAME: &'static str = "ChainId";
+    const STRUCT_NAME: &'static str = "ChainId";
+}
+
+/// ChainConfig is a config for initialize a chain.
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct ChainConfig {
     /// Starcoin system major version for genesis.
     pub version: Version,
@@ -306,6 +540,38 @@ pub struct ChainConfig {
     pub max_transaction_size_in_bytes: u64,
     pub gas_unit_scaling_factor: u64,
     pub default_account_size: u64,
+}
+
+impl ChainConfig {
+    pub fn sign_with_association(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        if let (Some(private_key), public_key) = &self.association_key_pair {
+            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
+        } else {
+            bail!("association private_key not config at current network",)
+        }
+    }
+
+    pub fn sign_with_genesis(self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        if let Some((private_key, public_key)) = &self.genesis_key_pair {
+            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
+        } else {
+            bail!("genesis private_key not config at current network.",)
+        }
+    }
+
+    pub fn block_gas_limit(&self) -> u64 {
+        self.vm_config.block_gas_limit
+    }
+
+    pub fn load<P>(path: P) -> Result<ChainConfig>
+    where
+        P: AsRef<Path>,
+    {
+        let mut file = File::open(&path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        Ok(toml::from_str(&contents)?)
+    }
 }
 
 pub static UNCLE_RATE_TARGET: u64 = 80;

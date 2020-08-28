@@ -296,7 +296,7 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        expiration_timestamp_secs: ChainNetwork::Test.consensus().now()
+        expiration_timestamp_secs: ChainNetwork::TEST.consensus().now()
             + config.expiration_time.unwrap_or(3600),
     }
 }

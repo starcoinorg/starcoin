@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{BaseConfig, ChainNetwork, ConfigModule, StarcoinOpt};
+use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -37,28 +37,30 @@ impl ConfigModule for LoggerConfig {
         let enable_stderr = !opt.disable_std_log;
         let enable_file = !opt.disable_file_log;
 
-        Ok(match base.net {
-            ChainNetwork::Test => Self {
+        Ok(if base.net.is_test() {
+            Self {
                 enable_stderr,
                 enable_file,
                 max_file_size: 10 * 1024 * 1024,
                 max_backup: 1,
                 log_path: None,
-            },
-            ChainNetwork::Dev => Self {
+            }
+        } else if base.net.is_dev() {
+            Self {
                 enable_stderr,
                 enable_file,
                 max_file_size: 10 * 1024 * 1024,
                 max_backup: 2,
                 log_path: None,
-            },
-            _ => Self {
+            }
+        } else {
+            Self {
                 enable_stderr,
                 enable_file,
                 max_file_size: 1024 * 1024 * 1024,
                 max_backup: 7,
                 log_path: None,
-            },
+            }
         })
     }
 

@@ -44,7 +44,7 @@ pub fn test_open_block() -> Result<()> {
         association_sequence_num,
         50_000_000,
         config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
-        config.net().chain_id(),
+        config.net(),
     )
     .try_into()?;
     let excluded = opened_block.push_txns(vec![txn1])?;

@@ -44,7 +44,7 @@ pub fn wait_channel<T>(rx: Receiver<Option<T>>) -> T {
     let result = rx.recv();
     match result {
         Ok(Some(t)) => t,
-        _ => panic!(),
+        _ => panic!("test timeout"),
     }
 }
 
@@ -72,6 +72,6 @@ pub async fn wait_result<T>(mut rx: UnboundedReceiver<Option<T>>) -> T {
     actix_rt::System::current().stop();
     match result {
         Some(Some(t)) => t,
-        _ => panic!(),
+        _ => panic!("test timeout"),
     }
 }

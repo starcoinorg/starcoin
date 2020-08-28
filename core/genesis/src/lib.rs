@@ -34,7 +34,7 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_consensus::Consensus;
-use std::convert::TryFrom;
+use starcoin_vm_types::chain_config::BuiltinNetwork;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -45,28 +45,28 @@ const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/g
 const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
 
 static FRESH_TEST_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(ChainNetwork::Test)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Test, e))
+    Genesis::build(&ChainNetwork::TEST)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::TEST, e))
 });
 
 static FRESH_DEV_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(ChainNetwork::Dev)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Dev, e))
+    Genesis::build(&ChainNetwork::DEV)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::DEV, e))
 });
 
 static FRESH_HALLEY_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(ChainNetwork::Halley)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Halley, e))
+    Genesis::build(&ChainNetwork::HALLEY)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::HALLEY, e))
 });
 
 static FRESH_PROXIMA_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(ChainNetwork::Proxima)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Proxima, e))
+    Genesis::build(&ChainNetwork::PROXIMA)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::PROXIMA, e))
 });
 
 static FRESH_MAIN_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(ChainNetwork::Main)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::Main, e))
+    Genesis::build(&ChainNetwork::MAIN)
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::MAIN, e))
 });
 
 pub enum GenesisOpt {
@@ -91,21 +91,22 @@ impl Display for Genesis {
 }
 
 impl Genesis {
-    pub fn load_by_opt(option: GenesisOpt, net: ChainNetwork) -> Result<Self> {
-        match option {
-            GenesisOpt::Generated => Self::load_generated(net),
-            GenesisOpt::Fresh => match net {
-                ChainNetwork::Test => Ok(FRESH_TEST_GENESIS.clone()),
-                ChainNetwork::Dev => Ok(FRESH_DEV_GENESIS.clone()),
-                ChainNetwork::Halley => Ok(FRESH_HALLEY_GENESIS.clone()),
-                ChainNetwork::Proxima => Ok(FRESH_PROXIMA_GENESIS.clone()),
-                ChainNetwork::Main => Ok(FRESH_MAIN_GENESIS.clone()),
+    pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Self> {
+        match (option, net) {
+            (GenesisOpt::Generated, ChainNetwork::Builtin(net)) => Self::load_generated(*net),
+            (GenesisOpt::Fresh, ChainNetwork::Builtin(net)) => match net {
+                BuiltinNetwork::Test => Ok(FRESH_TEST_GENESIS.clone()),
+                BuiltinNetwork::Dev => Ok(FRESH_DEV_GENESIS.clone()),
+                BuiltinNetwork::Halley => Ok(FRESH_HALLEY_GENESIS.clone()),
+                BuiltinNetwork::Proxima => Ok(FRESH_PROXIMA_GENESIS.clone()),
+                BuiltinNetwork::Main => Ok(FRESH_MAIN_GENESIS.clone()),
             },
+            (_, _) => Self::build(net),
         }
     }
 
     /// Load pre generated genesis.
-    pub fn load(net: ChainNetwork) -> Result<Self> {
+    pub fn load(net: &ChainNetwork) -> Result<Self> {
         if net.is_test() {
             Self::load_by_opt(GenesisOpt::Fresh, net)
         } else {
@@ -114,7 +115,7 @@ impl Genesis {
     }
 
     /// Build fresh genesis
-    pub(crate) fn build(net: ChainNetwork) -> Result<Self> {
+    pub(crate) fn build(net: &ChainNetwork) -> Result<Self> {
         debug!("Init genesis for {}", net);
         let block = Self::build_genesis_block(net)?;
         assert_eq!(block.header().number(), 0);
@@ -123,7 +124,7 @@ impl Genesis {
         Ok(genesis)
     }
 
-    fn build_genesis_block(net: ChainNetwork) -> Result<Block> {
+    fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
         let chain_config = net.get_config();
 
         let txn = Self::build_genesis_transaction(net)?;
@@ -156,7 +157,7 @@ impl Genesis {
         ))
     }
 
-    pub fn build_genesis_transaction(net: ChainNetwork) -> Result<SignedUserTransaction> {
+    pub fn build_genesis_transaction(net: &ChainNetwork) -> Result<SignedUserTransaction> {
         let package = build_stdlib_package(
             net,
             if net.is_test() {
@@ -231,32 +232,28 @@ impl Genesis {
         Ok(Some(genesis))
     }
 
-    fn genesis_bytes(net: ChainNetwork) -> &'static [u8] {
+    fn genesis_bytes(net: BuiltinNetwork) -> &'static [u8] {
         match net {
-            ChainNetwork::Test => unreachable!(),
-            ChainNetwork::Dev => DEV_GENESIS_BYTES,
-            ChainNetwork::Halley => HALLEY_GENESIS_BYTES,
-            ChainNetwork::Proxima => PROXIMA_GENESIS_BYTES,
-            ChainNetwork::Main => MAIN_GENESIS_BYTES,
+            BuiltinNetwork::Test => unreachable!(),
+            BuiltinNetwork::Dev => DEV_GENESIS_BYTES,
+            BuiltinNetwork::Halley => HALLEY_GENESIS_BYTES,
+            BuiltinNetwork::Proxima => PROXIMA_GENESIS_BYTES,
+            BuiltinNetwork::Main => MAIN_GENESIS_BYTES,
         }
     }
 
-    pub fn load_generated(net: ChainNetwork) -> Result<Self> {
+    pub fn load_generated(net: BuiltinNetwork) -> Result<Self> {
         let bytes = Self::genesis_bytes(net);
         scs::from_bytes(bytes)
     }
 
-    pub fn execute_genesis_block(self, storage: Arc<dyn Store>) -> Result<StartupInfo> {
+    pub fn execute_genesis_block(
+        self,
+        net: &ChainNetwork,
+        storage: Arc<dyn Store>,
+    ) -> Result<StartupInfo> {
         let Genesis { block } = self;
-        let genesis_txn = block
-            .body
-            .get_txn(0)
-            .expect("genesis block must contains genesis txn.");
-        //TODO Keep ChainNetwork to Genesis.
-        let chain_id = genesis_txn.chain_id();
-        let net =
-            ChainNetwork::try_from(chain_id.id()).expect("Can not find chain network by chain id.");
-        let mut genesis_chain = BlockChain::init_empty_chain(net, storage.clone())?;
+        let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone())?;
         genesis_chain.apply(block)?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
         storage.save_startup_info(startup_info.clone())?;
@@ -278,7 +275,7 @@ impl Genesis {
         Ok(())
     }
 
-    fn load_and_check_genesis(net: ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
+    fn load_and_check_genesis(net: &ChainNetwork, data_dir: &Path, init: bool) -> Result<Genesis> {
         let genesis = match Genesis::load_from_dir(data_dir) {
             Ok(Some(genesis)) => {
                 let expect_genesis = Genesis::load(net)?;
@@ -307,7 +304,7 @@ impl Genesis {
     }
 
     pub fn init_and_check_storage(
-        net: ChainNetwork,
+        net: &ChainNetwork,
         storage: Arc<Storage>,
         data_dir: &Path,
     ) -> Result<(StartupInfo, HashValue)> {
@@ -339,7 +336,7 @@ impl Genesis {
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
                 let genesis_hash = genesis.block().header().id();
-                let startup_info = genesis.execute_genesis_block(storage.clone())?;
+                let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
                 (startup_info, genesis_hash)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
@@ -354,13 +351,13 @@ impl Genesis {
     }
 
     pub fn init_storage_for_test(
-        net: ChainNetwork,
+        net: &ChainNetwork,
     ) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load(net)?;
         let genesis_hash = genesis.block.header().id();
-        let startup_info = genesis.execute_genesis_block(storage.clone())?;
+        let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
         Ok((storage, startup_info, genesis_hash))
     }
 }
@@ -375,34 +372,46 @@ mod tests {
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
     use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
+    use starcoin_vm_types::chain_config::ChainId;
     use starcoin_vm_types::on_chain_config::{EpochResource, VMConfig, Version};
 
     #[stest::test]
     pub fn test_genesis_load() -> Result<()> {
-        for net in ChainNetwork::networks() {
+        for net in ChainNetwork::builtin_networks() {
             Genesis::load(net)?;
         }
         Ok(())
     }
 
     #[stest::test]
-    pub fn test_genesis() -> Result<()> {
-        for net in ChainNetwork::networks() {
-            do_test_genesis(net)?;
+    pub fn test_builtin_genesis() -> Result<()> {
+        for net in ChainNetwork::builtin_networks() {
+            let temp_dir = starcoin_config::temp_path();
+            do_test_genesis(net, temp_dir.path())?;
         }
         Ok(())
     }
 
-    pub fn do_test_genesis(net: ChainNetwork) -> Result<()> {
+    #[stest::test]
+    pub fn test_custom_genesis() -> Result<()> {
+        let mut net = ChainNetwork::new_custom(
+            "testx".to_string(),
+            ChainId::new(123),
+            Some("test".to_string()),
+        )?;
         let temp_dir = starcoin_config::temp_path();
+        net.load_config(temp_dir.path())?;
+        do_test_genesis(&net, temp_dir.path())
+    }
 
+    pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let (startup_info1, genesis_hash1) =
-            Genesis::init_and_check_storage(net, storage1, temp_dir.path())?;
+            Genesis::init_and_check_storage(net, storage1, data_dir)?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let (startup_info2, genesis_hash2) =
-            Genesis::init_and_check_storage(net, storage2.clone(), temp_dir.path())?;
+            Genesis::init_and_check_storage(net, storage2.clone(), data_dir)?;
 
         assert_eq!(
             genesis_hash1, genesis_hash2,
@@ -423,7 +432,12 @@ mod tests {
             Some(genesis_block.header().state_root()),
         );
         let account_state_reader = AccountStateReader::new(&state_db);
-
+        let chain_id = account_state_reader.chain_id()?;
+        assert_eq!(
+            net.chain_id(),
+            chain_id,
+            "chain id in Move resource should equals ChainNetwork's chain_id."
+        );
         let genesis_account_resource =
             account_state_reader.get_account_resource(&genesis_address())?;
         assert!(

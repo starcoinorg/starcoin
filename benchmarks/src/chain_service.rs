@@ -75,7 +75,7 @@ impl ChainServiceBencher {
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
             let block_chain = BlockChain::new(
-                self.config.net(),
+                self.config.net().consensus(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
                 None,
