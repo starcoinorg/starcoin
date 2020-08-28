@@ -515,7 +515,7 @@ checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "benchmarks"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -1925,7 +1925,7 @@ checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 
 [[package]]
 name = "forkable-jellyfish-merkle"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "bincode",
@@ -4060,7 +4060,7 @@ dependencies = [
 
 [[package]]
 name = "move-coverage"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
@@ -4118,7 +4118,7 @@ dependencies = [
 
 [[package]]
 name = "move-prover"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "abigen",
  "anyhow",
@@ -4279,7 +4279,7 @@ dependencies = [
 
 [[package]]
 name = "network-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -4294,7 +4294,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-std",
@@ -4345,7 +4345,7 @@ dependencies = [
 
 [[package]]
 name = "network-rpc-core"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -4357,7 +4357,7 @@ dependencies = [
 
 [[package]]
 name = "network-rpc-derive"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "futures 0.3.5",
@@ -4850,7 +4850,7 @@ checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "peerset"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "futures 0.3.5",
  "libp2p",
@@ -5981,7 +5981,7 @@ dependencies = [
 
 [[package]]
 name = "scmd"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "clap",
@@ -6023,7 +6023,7 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64808902d7d99f78eaddd2b4e2509713babc3dc3c85ad6f4c447680f3c01e535"
 dependencies = [
@@ -6418,7 +6418,7 @@ dependencies = [
 
 [[package]]
 name = "sp-utils"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "futures 0.3.5",
  "futures-core",
@@ -6474,7 +6474,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -6491,7 +6491,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-lib"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6517,7 +6517,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-account-service"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6543,7 +6543,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-accumulator"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
@@ -6564,7 +6564,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-block-relayer"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6595,7 +6595,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-block-relayer-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -6608,7 +6608,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-bus"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6623,7 +6623,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-canonical-serialization"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "libra-canonical-serialization",
@@ -6632,7 +6632,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6678,7 +6678,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-mock"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6723,7 +6723,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-chain-notify"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -6737,7 +6737,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-cmd"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "crossbeam-channel",
@@ -6776,7 +6776,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-config"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "dirs 3.0.1",
@@ -6799,7 +6799,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-consensus"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-std",
@@ -6822,7 +6822,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-crypto"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "libra-crypto",
  "once_cell",
@@ -6836,7 +6836,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-crypto-macro"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "proc-macro2 1.0.19",
  "quote 1.0.7",
@@ -6845,7 +6845,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-decrypt"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "aes-gcm 0.5.0",
  "anyhow",
@@ -6859,7 +6859,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dev"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "starcoin-crypto",
@@ -6874,7 +6874,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "once_cell",
@@ -6902,7 +6902,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-executor-benchmark"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "itertools 0.9.0",
@@ -6926,7 +6926,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-faucet"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "ascii",
@@ -6950,7 +6950,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-functional-tests"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "aho-corasick",
  "anyhow",
@@ -6978,7 +6978,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-generator"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "ascii",
@@ -7003,7 +7003,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-genesis"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "once_cell",
@@ -7031,7 +7031,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-logger"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -7043,7 +7043,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-metrics"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "futures 0.3.5",
@@ -7058,7 +7058,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7104,7 +7104,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-miner-client"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7140,7 +7140,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-compiler"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "move-lang",
@@ -7155,7 +7155,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7201,7 +7201,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7250,7 +7250,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-network-rpc-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -7271,7 +7271,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7316,7 +7316,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-node-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7339,7 +7339,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-open-block"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7373,7 +7373,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-resource-viewer"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "hex",
@@ -7386,7 +7386,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7415,7 +7415,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-client"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7453,7 +7453,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-middleware"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "failure",
@@ -7470,7 +7470,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-rpc-server"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7534,7 +7534,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7549,7 +7549,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-service"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7569,7 +7569,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-store-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
@@ -7579,7 +7579,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-state-tree"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
@@ -7591,7 +7591,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-statedb"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -7611,7 +7611,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-storage"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "byteorder 1.3.4",
@@ -7638,7 +7638,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-stratum"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "ethereum-types 0.6.0",
@@ -7655,7 +7655,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7706,7 +7706,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-sync-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7723,7 +7723,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-traits"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7737,7 +7737,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-transaction-builder"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "starcoin-canonical-serialization",
@@ -7750,7 +7750,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-tx-factory"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "ctrlc",
@@ -7770,7 +7770,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-tx-relay"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "starcoin-types",
@@ -7778,7 +7778,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7820,7 +7820,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-api"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7832,7 +7832,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-txpool-mock-service"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix-rt",
  "anyhow",
@@ -7846,7 +7846,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-types"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "anyhow",
@@ -7879,7 +7879,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-runtime"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "move-vm-runtime",
@@ -7902,7 +7902,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-vm-types"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
@@ -7941,7 +7941,7 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
 name = "stdlib"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
@@ -7959,7 +7959,7 @@ dependencies = [
 
 [[package]]
 name = "stest"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -7972,7 +7972,7 @@ dependencies = [
 
 [[package]]
 name = "stest-macro"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -8216,7 +8216,7 @@ dependencies = [
 
 [[package]]
 name = "test-helper"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -8273,7 +8273,7 @@ dependencies = [
 
 [[package]]
 name = "testsuite"
-version = "0.4.4"
+version = "0.4.5"
 dependencies = [
  "actix",
  "actix-rt",
@@ -9542,7 +9542,7 @@ dependencies = [
 
 [[package]]
 name = "yaml-rust"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"
 dependencies = [
