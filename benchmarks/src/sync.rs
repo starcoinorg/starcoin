@@ -15,7 +15,7 @@ use starcoin_config::{NodeConfig, SyncMode};
 use starcoin_consensus::Consensus;
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_api::NetworkService;
-use starcoin_node::node::NodeStartHandle;
+use starcoin_node::node::NodeStartedHandle;
 use starcoin_sync::helper::{get_body_by_hash, get_headers_msg_for_common, get_headers_with_peer};
 use starcoin_sync::Downloader;
 use std::sync::Arc;
@@ -153,7 +153,7 @@ impl SyncBencher {
     }
 }
 
-async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<NodeStartHandle> {
+async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<NodeStartedHandle> {
     let node_handle = starcoin_node::node::start(node_config.clone(), None).await?;
     let chain = node_handle.chain_actor.clone();
     let storage = node_handle.storage.clone();

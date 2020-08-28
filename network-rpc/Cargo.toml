@@ -52,3 +52,4 @@ statedb = {path = "../state/statedb", package = "starcoin-statedb"}
 vm_types ={path = "../vm/types", package = "starcoin-vm-types"}
 stest = { path = "../commons/stest" }
 starcoin-node = { path = "../node" }
+test-helper = { path = "../test-helper" }

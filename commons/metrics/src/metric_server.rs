@@ -61,10 +61,12 @@ pub fn start_server(host: String, port: u16) {
             crate::process_collector::ProcessCollector::for_self("starcoin".to_string());
         match process_collector {
             Ok(p) => {
-                prometheus::register(Box::new(p)).unwrap();
+                if let Err(e) = prometheus::register(Box::new(p)) {
+                    error!("registry metric collector fail: {:?}", e);
+                }
             }
             Err(e) => {
-                error!("{:?}", e);
+                error!("process_collector error: {:?}", e);
             }
         }
     }

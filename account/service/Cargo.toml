@@ -12,17 +12,23 @@ futures = "0.3"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 async-trait = "0.1"
-starcoin-logger = {path = "../../commons/logger"}
-stest = {path = "../../commons/stest"}
-starcoin-types = { path = "../../types"}
-starcoin-config = { path = "../../config"}
-starcoin-account-api = { path = "../api", features = ["mock"]}
-starcoin-account-lib = { path = "../lib"}
-starcoin-crypto = {path = "../../commons/crypto"}
-starcoin-txpool = {path = "../../txpool"}
-starcoin-bus = {path = "../../bus"}
+bstr = "0.2"
+starcoin-logger = { path = "../../commons/logger" }
+starcoin-types = { path = "../../types" }
+starcoin-canonical-serialization = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
+starcoin-config = { path = "../../config" }
+starcoin-node-api = { path = "../../node/api" }
+starcoin-account-api = { path = "../api", features = ["mock"] }
+starcoin-account-lib = { path = "../lib" }
+starcoin-crypto = { path = "../../commons/crypto" }
+starcoin-txpool = { path = "../../txpool" }
+starcoin-bus = { path = "../../bus" }
+starcoin-chain-notify = { path = "../../chain/chain-notify" }
+
 
 [dev-dependencies]
-tempfile="3"
+stest = { path = "../../commons/stest" }
+starcoin-types = { path = "../../types" }
+tempfile = "3"
 tokio = { version = "0.2", features = ["full"] }
 

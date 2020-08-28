@@ -3,6 +3,8 @@
 
 use crate::module::map_rpc_err;
 use futures::future::TryFutureExt;
+use futures::FutureExt;
+use starcoin_account_api::error::AccountServiceError;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
@@ -30,48 +32,53 @@ where
     S: AccountAsyncService,
 {
     fn default(&self) -> FutureResult<Option<AccountInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_default_account()
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.get_default_account().await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn set_default_account(&self, addr: AccountAddress) -> FutureResult<Option<AccountInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .set_default_account(addr)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.set_default_account(addr).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn create(&self, password: String) -> FutureResult<AccountInfo> {
-        let fut = self
-            .service
-            .clone()
-            .create_account(password)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.create_account(password).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn list(&self) -> FutureResult<Vec<AccountInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_accounts()
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.get_accounts().await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn get(&self, address: AccountAddress) -> FutureResult<Option<AccountInfo>> {
-        let fut = self
-            .service
-            .clone()
-            .get_account(address)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.get_account(address).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn sign_txn(
@@ -79,12 +86,13 @@ where
         raw_txn: RawUserTransaction,
         signer: AccountAddress,
     ) -> FutureResult<SignedUserTransaction> {
-        let fut = self
-            .service
-            .clone()
-            .sign_txn(raw_txn, signer)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.sign_txn(raw_txn, signer).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn unlock(
@@ -93,21 +101,17 @@ where
         password: String,
         duration: std::time::Duration,
     ) -> FutureResult<()> {
-        let fut = self
-            .service
-            .clone()
-            .unlock_account(address, password, duration)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move { service.unlock_account(address, password, duration).await }
+            .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn lock(&self, address: AccountAddress) -> FutureResult<()> {
-        let fut = self
-            .service
-            .clone()
-            .lock_account(address)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move { service.lock_account(address).await }
+            .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     /// Import private key with address.
@@ -117,31 +121,36 @@ where
         private_key: Vec<u8>,
         password: String,
     ) -> FutureResult<AccountInfo> {
-        let fut = self
-            .service
-            .clone()
-            .import_account(address, private_key, password)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service
+                .import_account(address, private_key, password)
+                .await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     /// Return the private key as bytes for `address`
     fn export(&self, address: AccountAddress, password: String) -> FutureResult<Vec<u8>> {
-        let fut = self
-            .service
-            .clone()
-            .export_account(address, password)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.export_account(address, password).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>> {
-        let fut = self
-            .service
-            .clone()
-            .accepted_tokens(address)
-            .map_err(|e| map_rpc_err(e.into()));
-        Box::new(fut.compat())
+        let service = self.service.clone();
+        let fut = async move {
+            let result = service.accepted_tokens(address).await?;
+            Ok(result)
+        }
+        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        Box::new(fut.boxed().compat())
     }
 }
 

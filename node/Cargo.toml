@@ -43,6 +43,7 @@ starcoin-block-relayer = {path = "../block-relayer"}
 starcoin-network-rpc = {path = "../network-rpc"}
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 network-rpc-core = { path = "../network-rpc/core" }
+starcoin-node-api = { path = "./api" }
 starcoin-dev = { path = "../vm/dev" }
 
 [dev-dependencies]

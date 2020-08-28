@@ -43,7 +43,7 @@ impl MockAccountService {
 
 #[async_trait::async_trait]
 impl AccountAsyncService for MockAccountService {
-    async fn create_account(self, password: String) -> ServiceResult<AccountInfo> {
+    async fn create_account(&self, password: String) -> ServiceResult<AccountInfo> {
         let mut key_gen = KeyGen::from_os_rng();
         let (private_key, public_key) = key_gen.generate_keypair();
         let addr = account_address::from_public_key(&public_key);
@@ -60,7 +60,7 @@ impl AccountAsyncService for MockAccountService {
         Ok(self.get_account_info(addr).unwrap())
     }
 
-    async fn get_default_account(self) -> ServiceResult<Option<AccountInfo>> {
+    async fn get_default_account(&self) -> ServiceResult<Option<AccountInfo>> {
         for r in self.accounts.as_ref() {
             if r.is_default {
                 return Ok(Some(AccountInfo {
@@ -74,7 +74,7 @@ impl AccountAsyncService for MockAccountService {
     }
 
     async fn set_default_account(
-        self,
+        &self,
         address: AccountAddress,
     ) -> ServiceResult<Option<AccountInfo>> {
         for mut r in self.accounts.iter_mut() {
@@ -95,7 +95,7 @@ impl AccountAsyncService for MockAccountService {
         }
     }
 
-    async fn get_accounts(self) -> ServiceResult<Vec<AccountInfo>> {
+    async fn get_accounts(&self) -> ServiceResult<Vec<AccountInfo>> {
         Ok(self
             .accounts
             .iter()
@@ -107,12 +107,12 @@ impl AccountAsyncService for MockAccountService {
             .collect())
     }
 
-    async fn get_account(self, address: AccountAddress) -> ServiceResult<Option<AccountInfo>> {
+    async fn get_account(&self, address: AccountAddress) -> ServiceResult<Option<AccountInfo>> {
         Ok(self.get_account_info(address))
     }
 
     async fn sign_txn(
-        self,
+        &self,
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
     ) -> ServiceResult<SignedUserTransaction> {
@@ -127,19 +127,19 @@ impl AccountAsyncService for MockAccountService {
     }
 
     async fn unlock_account(
-        self,
+        &self,
         _address: AccountAddress,
         _password: String,
         _duration: Duration,
     ) -> ServiceResult<()> {
         Ok(())
     }
-    async fn lock_account(self, _address: AccountAddress) -> ServiceResult<()> {
+    async fn lock_account(&self, _address: AccountAddress) -> ServiceResult<()> {
         Ok(())
     }
 
     async fn import_account(
-        self,
+        &self,
         address: AccountAddress,
         private_key: Vec<u8>,
         password: String,
@@ -161,7 +161,7 @@ impl AccountAsyncService for MockAccountService {
 
     /// Return the private key as bytes for `address`
     async fn export_account(
-        self,
+        &self,
         address: AccountAddress,
         _password: String,
     ) -> ServiceResult<Vec<u8>> {
@@ -172,7 +172,7 @@ impl AccountAsyncService for MockAccountService {
         Ok(r.private_key.to_bytes().to_vec())
     }
 
-    async fn accepted_tokens(self, _address: AccountAddress) -> ServiceResult<Vec<TokenCode>> {
+    async fn accepted_tokens(&self, _address: AccountAddress) -> ServiceResult<Vec<TokenCode>> {
         Ok(vec![])
     }
 }

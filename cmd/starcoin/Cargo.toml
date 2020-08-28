@@ -20,8 +20,9 @@ starcoin-config = { path = "../../config"}
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-types = { path = "../../types"}
 starcoin-rpc-api = { path = "../../rpc/api"}
-starcoin-rpc-client = { path = "../../rpc/client"}
-starcoin-node = { path = "../../node"}
+starcoin-rpc-client = { path = "../../rpc/client" }
+starcoin-node-api = { path = "../../node/api" }
+starcoin-node = { path = "../../node" }
 starcoin-consensus = {path = "../../consensus"}
 starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}

@@ -19,7 +19,7 @@ static HISTORY_FILE_NAME: &str = "history";
 pub struct CliState {
     net: ChainNetwork,
     client: Arc<RpcClient>,
-    join_handle: Option<NodeHandle>,
+    node_handle: Option<NodeHandle>,
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
     temp_dir: DataDirPath,
@@ -31,7 +31,7 @@ impl CliState {
     pub fn new(
         net: ChainNetwork,
         client: Arc<RpcClient>,
-        join_handle: Option<NodeHandle>,
+        node_handle: Option<NodeHandle>,
         rt: Option<Runtime>,
     ) -> CliState {
         let data_dir = starcoin_config::DEFAULT_BASE_DATA_DIR
@@ -52,7 +52,7 @@ impl CliState {
         Self {
             net,
             client,
-            join_handle,
+            node_handle,
             data_dir,
             temp_dir,
             _rt: rt,
@@ -78,6 +78,10 @@ impl CliState {
 
     pub fn history_file(&self) -> PathBuf {
         self.data_dir().join(HISTORY_FILE_NAME)
+    }
+
+    pub fn node_handle(&self) -> Option<&NodeHandle> {
+        self.node_handle.as_ref()
     }
 
     pub fn default_account(&self) -> Result<AccountInfo> {
@@ -116,6 +120,6 @@ impl CliState {
     }
 
     pub fn into_inner(self) -> (ChainNetwork, Arc<RpcClient>, Option<NodeHandle>) {
-        (self.net, self.client, self.join_handle)
+        (self.net, self.client, self.node_handle)
     }
 }

@@ -2,26 +2,32 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::GenerateBlockEvent;
-use actix::prelude::*;
-use bus::{BusActor, Subscription};
-use futures::channel::mpsc;
+use actix::{
+    Actor, ActorContext, ActorFuture, Addr, AsyncContext, Context, ContextFutureSpawner, Handler,
+    WrapFuture,
+};
+use anyhow::Result;
+use bus::{Broadcast, BusActor, Subscription};
 use logger::prelude::*;
-use types::system_events::{NewHeadBlock, SystemStarted};
+use starcoin_node_api::service_registry::{ServiceRegistry, SystemService};
+use types::system_events::{ActorStop, NewHeadBlock};
 
 /// HeadBlockPacemaker, only generate block when new HeadBlock publish.
-pub(crate) struct HeadBlockPacemaker {
+pub struct HeadBlockPacemaker {
     bus: Addr<BusActor>,
-    sender: mpsc::Sender<GenerateBlockEvent>,
 }
 
 impl HeadBlockPacemaker {
-    pub fn new(bus: Addr<BusActor>, sender: mpsc::Sender<GenerateBlockEvent>) -> Self {
-        Self { bus, sender }
+    pub fn new(service_registry: &ServiceRegistry) -> Result<Self> {
+        Ok(Self {
+            bus: service_registry.bus(),
+        })
     }
 
     pub fn send_event(&mut self) {
-        if let Err(e) = self.sender.try_send(GenerateBlockEvent::new(true)) {
-            error!("err : {:?}", e);
+        let bus = self.bus.clone();
+        if let Err(e) = bus.try_send(Broadcast::new(GenerateBlockEvent::new(true))) {
+            error!("HeadBlockPacemaker send event error:  : {:?}", e);
         }
     }
 }
@@ -36,14 +42,9 @@ impl Actor for HeadBlockPacemaker {
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
-
-        let recipient = ctx.address().recipient::<SystemStarted>();
-        self.bus
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
         info!("HeadBlockPacemaker started");
+        info!("{}", "Fire first GenerateBlock event");
+        self.send_event();
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
@@ -51,20 +52,20 @@ impl Actor for HeadBlockPacemaker {
     }
 }
 
-impl Handler<NewHeadBlock> for HeadBlockPacemaker {
+impl SystemService for HeadBlockPacemaker {}
+
+impl Handler<ActorStop> for HeadBlockPacemaker {
     type Result = ();
 
-    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
-        let NewHeadBlock(_block) = msg;
-        self.send_event();
+    fn handle(&mut self, _msg: ActorStop, ctx: &mut Context<Self>) -> Self::Result {
+        ctx.stop()
     }
 }
 
-impl Handler<SystemStarted> for HeadBlockPacemaker {
+impl Handler<NewHeadBlock> for HeadBlockPacemaker {
     type Result = ();
 
-    fn handle(&mut self, _msg: SystemStarted, _ctx: &mut Self::Context) -> Self::Result {
-        info!("{}", "Fire first GenerateBlock event");
-        self.send_event();
+    fn handle(&mut self, _msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        self.send_event()
     }
 }

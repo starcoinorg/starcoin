@@ -91,6 +91,16 @@ where
     pub msg: M,
 }
 
+impl<M> Broadcast<M>
+where
+    M: Message + Send + Clone + Debug,
+    M::Result: Send,
+{
+    pub fn new(msg: M) -> Self {
+        Self { msg }
+    }
+}
+
 #[async_trait::async_trait]
 pub trait Bus {
     async fn subscribe<M: 'static>(self, recipient: Recipient<M>) -> Result<()>

@@ -51,3 +51,4 @@ starcoin-block-relayer = { path = "../block-relayer"}
 starcoin-statedb = {path = "../state/statedb"}
 starcoin-state-service = { path = "../state/service" }
 starcoin-node = { path = "../node" }
+test-helper = { path = "../test-helper" }
