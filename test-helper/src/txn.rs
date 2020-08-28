@@ -89,7 +89,7 @@ pub fn gen_txns_with_txpool(
     let mut accounts_with_seq_num = Vec::new();
     for account in accounts {
         let seq_num = txpool_service
-            .next_sequence_number(account.address().clone())
+            .next_sequence_number(*account.address())
             .unwrap();
         let account_with_seq_num = AccountWithSeqNum { account, seq_num };
         accounts_with_seq_num.push(account_with_seq_num);
