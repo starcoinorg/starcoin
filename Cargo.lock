@@ -6023,7 +6023,7 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "0.4.5"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64808902d7d99f78eaddd2b4e2509713babc3dc3c85ad6f4c447680f3c01e535"
 dependencies = [
@@ -8822,7 +8822,7 @@ checksum = "efd1f82c56340fdf16f2a953d7bda4f8fdffba13d93b00844c25572110b26079"
 
 [[package]]
 name = "transaction-builder-generator"
-version = "0.1.0"
+version = "0.4.5"
 dependencies = [
  "anyhow",
  "libra-canonical-serialization",
@@ -9542,7 +9542,7 @@ dependencies = [
 
 [[package]]
 name = "yaml-rust"
-version = "0.4.5"
+version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"
 dependencies = [
