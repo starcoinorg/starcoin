@@ -10,8 +10,11 @@
 #[cfg(test)]
 mod nibble_path_test;
 
-use crate::{nibble::Nibble, ROOT_NIBBLE_HEIGHT};
+use crate::nibble::Nibble;
+use crate::ROOT_NIBBLE_HEIGHT;
 use mirai_annotations::*;
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest::{collection::vec, prelude::*};
 use serde::{Deserialize, Serialize};
 use std::{fmt, iter::FromIterator};
 
@@ -44,6 +47,43 @@ impl FromIterator<Nibble> for NibblePath {
         for nibble in iter {
             nibble_path.push(nibble);
         }
+        nibble_path
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for NibblePath {
+    type Parameters = ();
+    fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
+        arb_nibble_path().boxed()
+    }
+    type Strategy = BoxedStrategy<Self>;
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_nibble_path()(
+        mut bytes in vec(any::<u8>(), 0..=ROOT_NIBBLE_HEIGHT/2),
+        is_odd in any::<bool>()
+    ) -> NibblePath {
+        if let Some(last_byte) = bytes.last_mut() {
+            if is_odd {
+                *last_byte &= 0xf0;
+                return NibblePath::new_odd(bytes);
+            }
+        }
+        NibblePath::new(bytes)
+    }
+}
+
+#[cfg(any(test, feature = "fuzzing"))]
+prop_compose! {
+    fn arb_internal_nibble_path()(
+        nibble_path in arb_nibble_path().prop_filter(
+            "Filter out leaf paths.",
+            |p| p.num_nibbles() < ROOT_NIBBLE_HEIGHT,
+        )
+    ) -> NibblePath {
         nibble_path
     }
 }
