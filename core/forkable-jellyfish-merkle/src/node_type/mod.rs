@@ -12,6 +12,7 @@
 //! binary tree to optimize for IOPS: it compresses a tree with 31 nodes into one node with 16
 //! chidren at the lowest level. [`LeafNode`] stores the full key and the account blob data
 //! associated.
+#![allow(clippy::unit_arg)]
 
 #[cfg(test)]
 mod node_type_test;

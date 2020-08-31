@@ -20,7 +20,7 @@ fn test_get_node() {
     let cache = TreeCache::new(&db, None);
 
     let (node, node_key) = random_leaf_with_key();
-    db.put_node(node_key.clone(), node.clone()).unwrap();
+    db.put_node(node_key, node.clone()).unwrap();
 
     assert_eq!(cache.get_node(&node_key).unwrap(), node);
 }
@@ -32,8 +32,8 @@ fn test_root_node() {
     assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
     let (node, node_key) = random_leaf_with_key();
-    db.put_node(node_key.clone(), node).unwrap();
-    cache.set_root_node_key(node_key.clone());
+    db.put_node(node_key, node).unwrap();
+    cache.set_root_node_key(node_key);
 
     assert_eq!(*cache.get_root_node_key(), node_key);
 }
@@ -46,9 +46,9 @@ fn test_freeze_with_delete() {
     assert_eq!(*cache.get_root_node_key(), *SPARSE_MERKLE_PLACEHOLDER_HASH);
 
     let (node1, node1_key) = random_leaf_with_key();
-    cache.put_node(node1_key.clone(), node1.clone()).unwrap();
+    cache.put_node(node1_key, node1.clone()).unwrap();
     let (node2, node2_key) = random_leaf_with_key();
-    cache.put_node(node2_key.clone(), node2.clone()).unwrap();
+    cache.put_node(node2_key, node2.clone()).unwrap();
     assert_eq!(cache.get_node(&node1_key).unwrap(), node1);
     assert_eq!(cache.get_node(&node2_key).unwrap(), node2);
     cache.freeze();

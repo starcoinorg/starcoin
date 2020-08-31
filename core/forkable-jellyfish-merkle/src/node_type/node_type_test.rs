@@ -33,7 +33,7 @@ fn gen_leaf_keys(nibble_path: &NibblePath, nibble: Nibble) -> HashValue {
     dbg!(nibble_path.bytes());
     let mut np = nibble_path.clone();
     np.push(nibble);
-    dbg!(np.clone().bytes());
+    dbg!(np.bytes());
     HashValue::from_slice(np.bytes()).unwrap()
 }
 
@@ -150,13 +150,13 @@ proptest! {
         for i in 0..8 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf1_node_key.clone()), vec![hash2])
+                (Some(leaf1_node_key), vec![hash2])
             );
         }
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf2_node_key.clone()), vec![hash1])
+                (Some(leaf2_node_key), vec![hash1])
             );
         }
 
@@ -205,7 +205,7 @@ proptest! {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf1_node_key.clone()),
+                    Some(leaf1_node_key),
                     vec![
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -219,7 +219,7 @@ proptest! {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf2_node_key.clone()),
+                    Some(leaf2_node_key),
                     vec![
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
                         *SPARSE_MERKLE_PLACEHOLDER_HASH,
@@ -271,21 +271,21 @@ proptest! {
         for i in 0..4 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf1_node_key.clone()),vec![hash3, hash2])
+                (Some(leaf1_node_key),vec![hash3, hash2])
             );
         }
 
         for i in 4..8 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf2_node_key.clone()),vec![hash3, hash1])
+                (Some(leaf2_node_key),vec![hash3, hash1])
             );
         }
 
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf3_node_key.clone()),vec![hash_x])
+                (Some(leaf3_node_key),vec![hash_x])
             );
         }
     }
@@ -337,7 +337,7 @@ proptest! {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
                 (
-                    Some(leaf1_node_key.clone()),
+                    Some(leaf1_node_key),
                     vec![hash4, hash_x4, hash_x1]
                 )
             );
@@ -404,7 +404,7 @@ proptest! {
         for i in 8..16 {
             prop_assert_eq!(
                 internal_node.get_child_with_siblings( i.into()),
-                (Some(leaf4_node_key.clone()), vec![hash_x5])
+                (Some(leaf4_node_key), vec![hash_x5])
             );
         }
     }
@@ -719,5 +719,41 @@ impl NaiveInternalNode {
         };
 
         BinaryTreeNode::new_internal(begin, width, left, right)
+    }
+
+    fn get_child_with_siblings(&self, n: u8) -> (Option<NodeKey>, Vec<HashValue>) {
+        let mut current_node = Rc::clone(&self.root);
+        let mut siblings = Vec::new();
+
+        loop {
+            match current_node.as_ref() {
+                BinaryTreeNode::Internal(node) => {
+                    if node.in_left_subtree(n) {
+                        siblings.push(node.right.hash());
+                        current_node = Rc::clone(&node.left);
+                    } else {
+                        siblings.push(node.left.hash());
+                        current_node = Rc::clone(&node.right);
+                    }
+                }
+                BinaryTreeNode::Child(node) => return (Some(node.hash), siblings),
+                BinaryTreeNode::Null => return (None, siblings),
+            }
+        }
+    }
+}
+
+proptest! {
+    #[test]
+    #[allow(clippy::unnecessary_operation)]
+    fn test_get_child_with_siblings(
+        node in any::<InternalNode>(),
+    ) {
+        for n in 0..16u8 {
+            prop_assert_eq!(
+                node.get_child_with_siblings(n.into()),
+                NaiveInternalNode::from_clever_node(&node).get_child_with_siblings(n)
+            )
+        }
     }
 }
