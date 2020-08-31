@@ -3,7 +3,7 @@
 use actix::Actor;
 use actix_rt::System;
 use bus::BusActor;
-use chain::{ChainActor, ChainActorRef};
+use chain::ChainActor;
 use config::NodeConfig;
 use logger::prelude::*;
 use network::network::NetworkAsyncService;
@@ -87,12 +87,11 @@ fn test_miner_with_ondemand_pacemaker() {
         )
         .unwrap();
         let miner_account = AccountInfo::random();
-        let _miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+        let _miner = MinerActor::<TxPoolService, Storage>::launch(
             config.clone(),
             bus.clone(),
             storage.clone(),
             txpool_service.clone(),
-            chain.clone(),
             miner_account,
             startup_info,
         );

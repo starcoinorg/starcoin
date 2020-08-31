@@ -50,7 +50,7 @@ pub struct NodeStartedHandle {
     pub storage: Arc<Storage>,
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
-    pub miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
+    pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor>>,
@@ -67,7 +67,7 @@ pub struct Node {
     //TODO remove there fields, after register all service to registry.
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
-    pub miner_actor: Addr<MinerActor<TxPoolService, ChainActorRef, Storage>>,
+    pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor>>,
@@ -305,13 +305,11 @@ pub async fn start(
     let miner_bus = bus.clone();
     let miner_storage = storage.clone();
     let miner_txpool = txpool.get_service();
-    let miner_chain = chain.clone();
-    let miner = MinerActor::<TxPoolService, ChainActorRef, Storage>::launch(
+    let miner = MinerActor::<TxPoolService, Storage>::launch(
         miner_config,
         miner_bus,
         miner_storage,
         miner_txpool,
-        miner_chain,
         default_account,
         startup_info,
     )?;
