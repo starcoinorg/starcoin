@@ -156,6 +156,19 @@ pub fn check_compat_and_verify_module(pre_code: &[u8], new_code: &[u8]) -> Resul
     Ok(new_module)
 }
 
+/// check module compatibility
+pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<CompiledModule> {
+    let pre_module = CompiledModule::deserialize(pre_code)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
+    let new_module = CompiledModule::deserialize(new_code)
+        .map_err(|e| e.finish(Location::Undefined).into_vm_status())?;
+
+    let pre_contract = ModuleContract::new(&pre_module);
+    let new_contract = ModuleContract::new(&new_module);
+    new_contract.compat_with(&pre_contract)?;
+    Ok(new_module)
+}
+
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
 pub fn load_bytecode_file<P: AsRef<Path>>(file_path: P) -> Result<(Vec<u8>, bool)> {
     let mut file = OpenOptions::new().read(true).write(false).open(file_path)?;
