@@ -10,7 +10,7 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_vm_types::chain_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 
 pub struct MockChain {

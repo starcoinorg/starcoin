@@ -3,7 +3,7 @@
 
 use starcoin_chain_mock::MockChain;
 use starcoin_traits::ChainReader;
-use starcoin_vm_types::chain_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 
 #[stest::test]
 fn test_block_chain_head() {

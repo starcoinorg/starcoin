@@ -4,7 +4,7 @@ use starcoin_functional_tests::account::{
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config;
-use starcoin_types::chain_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::transaction::SignedUserTransaction;
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;

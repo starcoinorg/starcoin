@@ -5,7 +5,7 @@ use actix::clock::Duration;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::chain_config::ChainId;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::{RawUserTransaction, Script, TransactionPayload};
 
 #[test]

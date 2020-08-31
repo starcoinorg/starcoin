@@ -34,7 +34,7 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_consensus::Consensus;
-use starcoin_vm_types::chain_config::BuiltinNetwork;
+use starcoin_vm_types::genesis_config::BuiltinNetwork;
 
 pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -125,7 +125,7 @@ impl Genesis {
     }
 
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
-        let chain_config = net.get_config();
+        let genesis_config = net.get_config();
 
         let txn = Self::build_genesis_transaction(net)?;
 
@@ -147,12 +147,12 @@ impl Genesis {
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
         accumulator.flush()?;
         Ok(Block::genesis_block(
-            chain_config.parent_hash,
-            chain_config.timestamp,
+            genesis_config.parent_hash,
+            genesis_config.timestamp,
             accumulator_root,
             transaction_info.state_root_hash(),
-            chain_config.difficulty,
-            chain_config.nonce,
+            genesis_config.difficulty,
+            genesis_config.nonce,
             txn,
         ))
     }
@@ -372,7 +372,7 @@ mod tests {
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
     use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::chain_config::ChainId;
+    use starcoin_vm_types::genesis_config::ChainId;
     use starcoin_vm_types::on_chain_config::{EpochResource, VMConfig, Version};
 
     #[stest::test]

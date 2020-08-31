@@ -4,7 +4,7 @@
 use anyhow::Result;
 use starcoin_chain::BlockChain;
 use starcoin_genesis::Genesis;
-use starcoin_types::chain_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetwork;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {
     let (storage, startup_info, _) =

@@ -23,7 +23,7 @@ use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
-use starcoin_vm_types::chain_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {

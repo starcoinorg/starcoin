@@ -10,7 +10,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_config::StarcoinOpt;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::chain_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetwork;
 use std::path::PathBuf;
 use structopt::StructOpt;
 

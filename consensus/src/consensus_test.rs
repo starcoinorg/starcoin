@@ -2,7 +2,7 @@ use crate::argon::verify;
 use crate::consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
-use starcoin_vm_types::chain_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 #[stest::test]
 fn raw_hash_test() {

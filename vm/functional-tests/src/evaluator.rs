@@ -20,7 +20,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
-use starcoin_vm_types::chain_config::{ChainId, ChainNetwork};
+use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork};
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},

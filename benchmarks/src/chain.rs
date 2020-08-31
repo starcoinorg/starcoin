@@ -13,7 +13,7 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_vm_types::chain_config::{ChainNetwork, ConsensusStrategy};
+use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
 use std::ops::Deref;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter};

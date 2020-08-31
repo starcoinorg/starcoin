@@ -13,7 +13,7 @@ use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
-use starcoin_types::chain_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{

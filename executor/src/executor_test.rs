@@ -569,11 +569,11 @@ fn test_publish_module_and_upgrade() -> Result<()> {
 #[stest::test]
 fn test_block_metadata() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let chain_config = net.get_config();
+    let genesis_config = net.get_config();
 
     let account1 = Account::new();
 
-    for i in 0..chain_config.reward_delay + 1 {
+    for i in 0..genesis_config.reward_delay + 1 {
         debug!("execute block metadata: {}", i);
         net.consensus().time().sleep(1);
         let timestamp = net.consensus().now();

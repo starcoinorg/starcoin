@@ -16,7 +16,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
-use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
 };

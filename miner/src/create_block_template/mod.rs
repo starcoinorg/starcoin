@@ -9,7 +9,7 @@ use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
-use starcoin_vm_types::chain_config::{ChainNetwork, ConsensusStrategy};
+use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
 use statedb::ChainStateDB;
 use std::{collections::HashMap, convert::TryInto, sync::Arc};
 use storage::Store;

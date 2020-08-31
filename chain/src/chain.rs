@@ -29,7 +29,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::chain_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
     VMConfig,

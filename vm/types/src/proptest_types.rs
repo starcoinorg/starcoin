@@ -3,8 +3,8 @@
 #![allow(clippy::unit_arg)]
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::chain_config::{BuiltinNetwork, ChainId};
 use crate::event::EventHandle;
+use crate::genesis_config::{BuiltinNetwork, ChainId};
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,

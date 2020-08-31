@@ -192,7 +192,7 @@ impl BuiltinNetwork {
         ]
     }
 
-    pub fn get_config(self) -> &'static ChainConfig {
+    pub fn get_config(self) -> &'static GenesisConfig {
         match self {
             BuiltinNetwork::Test => &TEST_CHAIN_CONFIG,
             BuiltinNetwork::Dev => &DEV_CHAIN_CONFIG,
@@ -219,20 +219,21 @@ impl From<BuiltinNetwork> for ChainNetwork {
 pub struct CustomNetwork {
     chain_name: String,
     chain_id: ChainId,
-    chain_config: String,
+    genesis_config: String,
     #[serde(skip)]
-    chain_config_loaded: Option<ChainConfig>,
+    genesis_config_loaded: Option<GenesisConfig>,
 }
 
 impl CustomNetwork {
-    pub const CHAIN_CONFIG_FILE_NAME: &'static str = "chain_config.json";
+    pub const GENESIS_CONFIG_FILE_NAME: &'static str = "genesis_config.json";
 
-    pub fn new(chain_name: String, chain_id: ChainId, chain_config: Option<String>) -> Self {
+    pub fn new(chain_name: String, chain_id: ChainId, genesis_config: Option<String>) -> Self {
         Self {
             chain_name,
             chain_id,
-            chain_config: chain_config.unwrap_or_else(|| Self::CHAIN_CONFIG_FILE_NAME.to_string()),
-            chain_config_loaded: None,
+            genesis_config: genesis_config
+                .unwrap_or_else(|| Self::GENESIS_CONFIG_FILE_NAME.to_string()),
+            genesis_config_loaded: None,
         }
     }
 
@@ -245,11 +246,11 @@ impl CustomNetwork {
     }
 
     pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
-        if self.chain_config_loaded.is_some() {
+        if self.genesis_config_loaded.is_some() {
             bail!("Chain config has bean loaded");
         }
-        let config_name_or_path = self.chain_config.as_str();
-        let chain_config = match BuiltinNetwork::from_str(config_name_or_path) {
+        let config_name_or_path = self.genesis_config.as_str();
+        let genesis_config = match BuiltinNetwork::from_str(config_name_or_path) {
             Ok(net) => net.get_config().clone(),
             Err(_) => {
                 let path = Path::new(config_name_or_path);
@@ -258,15 +259,15 @@ impl CustomNetwork {
                 } else {
                     path.to_path_buf()
                 };
-                ChainConfig::load(config_path)?
+                GenesisConfig::load(config_path)?
             }
         };
-        self.chain_config_loaded = Some(chain_config);
+        self.genesis_config_loaded = Some(genesis_config);
         Ok(())
     }
 
-    pub fn chain_config(&self) -> &ChainConfig {
-        self.chain_config_loaded
+    pub fn genesis_config(&self) -> &GenesisConfig {
+        self.genesis_config_loaded
             .as_ref()
             .expect("chain config should load before get.")
     }
@@ -301,16 +302,16 @@ impl FromStr for ChainNetwork {
                     return Err(e);
                 }
                 if parts.len() > 3 {
-                    bail!("Invalid Custom chain network {}, custom chain network format is: name|id|config_name or path", s);
+                    bail!("Invalid Custom chain network {}, custom chain network format is: name|id|genesis_config_name or path", s);
                 }
                 let chain_name = parts[0].to_string();
                 let chain_id = ChainId::from_str(parts[1])?;
-                let chain_config = if parts.len() == 3 {
+                let genesis_config = if parts.len() == 3 {
                     Some(parts[2].to_string())
                 } else {
                     None
                 };
-                Self::new_custom(chain_name, chain_id, chain_config)
+                Self::new_custom(chain_name, chain_id, genesis_config)
             }
         }
     }
@@ -329,7 +330,7 @@ impl ChainNetwork {
     pub fn new_custom(
         chain_name: String,
         chain_id: ChainId,
-        chain_config: Option<String>,
+        genesis_config: Option<String>,
     ) -> Result<Self> {
         for net in BuiltinNetwork::networks() {
             if net.chain_id() == chain_id {
@@ -342,7 +343,7 @@ impl ChainNetwork {
         Ok(Self::Custom(Box::new(CustomNetwork::new(
             chain_name,
             chain_id,
-            chain_config,
+            genesis_config,
         ))))
     }
 
@@ -399,10 +400,10 @@ impl ChainNetwork {
         }
     }
 
-    pub fn get_config(&self) -> &ChainConfig {
+    pub fn get_config(&self) -> &GenesisConfig {
         match self {
             Self::Builtin(b) => b.get_config(),
-            Self::Custom(c) => c.chain_config(),
+            Self::Custom(c) => c.genesis_config(),
         }
     }
 
@@ -483,9 +484,9 @@ impl MoveResource for ChainId {
     const STRUCT_NAME: &'static str = "ChainId";
 }
 
-/// ChainConfig is a config for initialize a chain.
+/// GenesisConfig is a config for initialize a chain genesis.
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct ChainConfig {
+pub struct GenesisConfig {
     /// Starcoin system major version for genesis.
     pub version: Version,
     /// Genesis block parent hash
@@ -542,7 +543,7 @@ pub struct ChainConfig {
     pub default_account_size: u64,
 }
 
-impl ChainConfig {
+impl GenesisConfig {
     pub fn sign_with_association(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         if let (Some(private_key), public_key) = &self.association_key_pair {
             Ok(txn.sign(private_key, public_key.clone())?.into_inner())
@@ -563,7 +564,7 @@ impl ChainConfig {
         self.vm_config.block_gas_limit
     }
 
-    pub fn load<P>(path: P) -> Result<ChainConfig>
+    pub fn load<P>(path: P) -> Result<GenesisConfig>
     where
         P: AsRef<Path>,
     {
@@ -600,11 +601,11 @@ pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
 pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
-pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+pub static TEST_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
-    ChainConfig {
+    GenesisConfig {
         version: Version { major: 1 },
         parent_hash: HashValue::sha3_256_of(b"starcoin_test"),
         //Test timestamp set to 0 for mock time.
@@ -645,11 +646,11 @@ pub static TEST_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     }
 });
 
-pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
+pub static DEV_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
-    ChainConfig {
+    GenesisConfig {
         version: Version { major: 1 },
         //use latest git commit version's hash
         parent_hash: HashValue::sha3_256_of(
@@ -695,8 +696,8 @@ pub static DEV_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     }
 });
 
-pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
-    ChainConfig {
+pub static HALLEY_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    GenesisConfig {
         version: Version { major: 1 },
         //use latest git commit hash
         parent_hash: HashValue::sha3_256_of(hex::decode("8bf9cdf5f3624db507613f7fe0cd786c8c9f8037").expect("invalid hex").as_slice()),
@@ -742,8 +743,8 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     }
 });
 
-pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
-    ChainConfig {
+pub static PROXIMA_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    GenesisConfig {
         version: Version { major: 1 },
         parent_hash: HashValue::sha3_256_of(hex::decode("6b1eddc3847bb8476f8937abd017e5833e878b60").expect("invalid hex").as_slice()),
         timestamp: 1596791843,
@@ -788,7 +789,7 @@ pub static PROXIMA_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| {
     }
 });
 
-pub static MAIN_CHAIN_CONFIG: Lazy<ChainConfig> = Lazy::new(|| ChainConfig {
+pub static MAIN_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     version: Version { major: 1 },
     //TODO set parent_hash and timestamp
     parent_hash: HashValue::zero(),

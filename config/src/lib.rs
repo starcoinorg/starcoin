@@ -44,9 +44,9 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
-use starcoin_vm_types::chain_config::BuiltinNetwork;
-pub use starcoin_vm_types::chain_config::{
-    genesis_key_pair, ChainConfig, ChainNetwork, ConsensusStrategy, DEV_CHAIN_CONFIG,
+use starcoin_vm_types::genesis_config::BuiltinNetwork;
+pub use starcoin_vm_types::genesis_config::{
+    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, DEV_CHAIN_CONFIG,
     HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
 };
 pub use storage_config::StorageConfig;
@@ -123,7 +123,7 @@ pub struct StarcoinOpt {
     /// Custom network format: chain_name|chain_id|chain_config_name_or_path
     /// Such as:  
     /// my_chain|123|dev will init a new chain with id `123`, but reuse builtin dev network's config.
-    /// my_chain2|124|/my_chain2/chain_config.yaml will init a new chain with id `123`, and the config at chain_config.yaml
+    /// my_chain2|124|/my_chain2/genesis_config.json will init a new chain with id `123`, and the config at genesis_config.json
     pub net: Option<ChainNetwork>,
 
     #[structopt(long)]

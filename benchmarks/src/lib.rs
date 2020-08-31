@@ -4,7 +4,7 @@
 use starcoin_executor::{peer_to_peer_txn_sent_as_association, DEFAULT_EXPIRATION_TIME};
 
 use starcoin_consensus::Consensus;
-use starcoin_vm_types::chain_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use types::transaction::{authenticator::AuthenticationKey, SignedUserTransaction};
 
 pub mod chain;

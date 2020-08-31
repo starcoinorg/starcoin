@@ -5,7 +5,7 @@ use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
-use starcoin_types::chain_config::ChainId;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::transaction::RawUserTransaction;
 

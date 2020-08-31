@@ -70,8 +70,8 @@ pub use ethereum_types::{H256, U256};
 use once_cell::sync::Lazy;
 use std::borrow::Cow;
 
-pub mod chain_config {
-    pub use starcoin_vm_types::chain_config::*;
+pub mod genesis_config {
+    pub use starcoin_vm_types::genesis_config::*;
 }
 
 //TODO should define at here?
