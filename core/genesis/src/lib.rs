@@ -36,7 +36,6 @@ pub use errors::GenesisError;
 use starcoin_consensus::Consensus;
 use starcoin_vm_types::genesis_config::BuiltinNetwork;
 
-pub static GENESIS_FILE_NAME: &str = "genesis";
 pub static GENESIS_GENERATED_DIR: &str = "generated";
 
 const DEV_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/dev/genesis");
@@ -91,6 +90,8 @@ impl Display for Genesis {
 }
 
 impl Genesis {
+    pub const GENESIS_FILE_NAME: &'static str = "genesis";
+
     pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Self> {
         match (option, net) {
             (GenesisOpt::Generated, ChainNetwork::Builtin(net)) => Self::load_generated(*net),
@@ -221,7 +222,7 @@ impl Genesis {
     where
         P: AsRef<Path>,
     {
-        let genesis_file_path = data_dir.as_ref().join(GENESIS_FILE_NAME);
+        let genesis_file_path = data_dir.as_ref().join(Self::GENESIS_FILE_NAME);
         if !genesis_file_path.exists() {
             return Ok(None);
         }
@@ -268,7 +269,7 @@ impl Genesis {
         if !data_dir.exists() {
             create_dir_all(data_dir)?;
         }
-        let genesis_file = data_dir.join(GENESIS_FILE_NAME);
+        let genesis_file = data_dir.join(Self::GENESIS_FILE_NAME);
         let mut file = File::create(genesis_file)?;
         let contents = scs::to_bytes(self)?;
         file.write_all(&contents)?;

@@ -120,10 +120,11 @@ pub struct StarcoinOpt {
     #[structopt(long, short = "n")]
     /// Chain Network
     /// Builtin network: test,dev,halley,proxima,main
-    /// Custom network format: chain_name|chain_id|chain_config_name_or_path
+    /// Custom network format: chain_name:chain_id:chain_config_name_or_path
     /// Such as:  
-    /// my_chain|123|dev will init a new chain with id `123`, but reuse builtin dev network's config.
-    /// my_chain2|124|/my_chain2/genesis_config.json will init a new chain with id `123`, and the config at genesis_config.json
+    /// my_chain:123:dev will init a new chain with id `123`, but reuse builtin dev network's config.
+    /// my_chain2:124:/my_chain2/genesis_config.json will init a new chain with id `124`, and the config at genesis_config.json.
+    /// use starcoin_generator command to generate a genesis config.
     pub net: Option<ChainNetwork>,
 
     #[structopt(long)]
@@ -229,7 +230,7 @@ impl BaseConfig {
                 }
             }
         };
-        let data_dir = base_data_dir.as_ref().join(net.to_string());
+        let data_dir = base_data_dir.as_ref().join(net.dir_name());
         if !data_dir.exists() {
             create_dir_all(data_dir.as_path())
                 .unwrap_or_else(|_| panic!("Create data dir {:?} fail.", data_dir));
@@ -425,6 +426,7 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use starcoin_vm_types::genesis_config::CustomNetwork;
 
     #[test]
     fn test_generate_and_load() -> Result<()> {
@@ -472,6 +474,20 @@ mod tests {
             let toml = toml::to_string(&base_config)?;
             println!("{} base_config_toml: {}", base_config.net(), toml);
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_genesis_config_save_and_load() -> Result<()> {
+        let mut genesis_config = ChainNetwork::TEST.genesis_config().clone();
+        genesis_config.timestamp = 1000;
+        let temp_path = temp_path();
+        let file_path = temp_path
+            .path()
+            .join(CustomNetwork::GENESIS_CONFIG_FILE_NAME);
+        genesis_config.save(file_path.as_path())?;
+        let genesis_config2 = GenesisConfig::load(file_path.as_path())?;
+        assert_eq!(genesis_config, genesis_config2);
         Ok(())
     }
 }

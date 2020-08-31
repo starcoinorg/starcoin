@@ -14,7 +14,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
 
@@ -229,9 +229,9 @@ impl From<BuiltinNetwork> for ChainNetwork {
 pub struct CustomNetwork {
     chain_name: String,
     chain_id: ChainId,
-    genesis_config: String,
+    genesis_config_name: String,
     #[serde(skip)]
-    genesis_config_loaded: Option<GenesisConfig>,
+    genesis_config: Option<GenesisConfig>,
 }
 
 impl Display for CustomNetwork {
@@ -239,7 +239,7 @@ impl Display for CustomNetwork {
         write!(
             f,
             "{}:{}:{}",
-            self.chain_name, self.chain_id, self.genesis_config
+            self.chain_name, self.chain_id, self.genesis_config_name
         )
     }
 }
@@ -247,13 +247,13 @@ impl Display for CustomNetwork {
 impl CustomNetwork {
     pub const GENESIS_CONFIG_FILE_NAME: &'static str = "genesis_config.json";
 
-    pub fn new(chain_name: String, chain_id: ChainId, genesis_config: Option<String>) -> Self {
+    pub fn new(chain_name: String, chain_id: ChainId, genesis_config_name: Option<String>) -> Self {
         Self {
             chain_name,
             chain_id,
-            genesis_config: genesis_config
+            genesis_config_name: genesis_config_name
                 .unwrap_or_else(|| Self::GENESIS_CONFIG_FILE_NAME.to_string()),
-            genesis_config_loaded: None,
+            genesis_config: None,
         }
     }
 
@@ -265,11 +265,15 @@ impl CustomNetwork {
         self.chain_name.as_str()
     }
 
+    pub fn genesis_config_name(&self) -> &str {
+        self.genesis_config_name.as_str()
+    }
+
     pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
-        if self.genesis_config_loaded.is_some() {
+        if self.genesis_config.is_some() {
             bail!("Chain config has bean loaded");
         }
-        let config_name_or_path = self.genesis_config.as_str();
+        let config_name_or_path = self.genesis_config_name.as_str();
         let genesis_config = match BuiltinNetwork::from_str(config_name_or_path) {
             Ok(net) => net.genesis_config().clone(),
             Err(_) => {
@@ -282,12 +286,12 @@ impl CustomNetwork {
                 GenesisConfig::load(config_path)?
             }
         };
-        self.genesis_config_loaded = Some(genesis_config);
+        self.genesis_config = Some(genesis_config);
         Ok(())
     }
 
     pub fn genesis_config(&self) -> &GenesisConfig {
-        self.genesis_config_loaded
+        self.genesis_config
             .as_ref()
             .expect("chain config should load before get.")
     }
@@ -299,7 +303,7 @@ impl FromStr for CustomNetwork {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split(':').collect();
         if parts.len() <= 1 || parts.len() > 3 {
-            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id:genesis_config_name or path", s);
+            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id:genesis_config_name_or_path", s);
         }
         let chain_name = parts[0].to_string();
         let chain_id = ChainId::from_str(parts[1])?;
@@ -312,10 +316,11 @@ impl FromStr for CustomNetwork {
     }
 }
 
+// ChainNetwork is a global variable and does not create many instances, so allow large enum
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum ChainNetwork {
     Builtin(BuiltinNetwork),
-    #[allow(clippy::large_enum_variant)]
     Custom(CustomNetwork),
 }
 
@@ -355,7 +360,7 @@ impl<'de> Deserialize<'de> for ChainNetwork {
         D: Deserializer<'de>,
     {
         let s = <String>::deserialize(deserializer)?;
-        Self::from_str(s.as_str()).map_err(|e| D::Error::custom(e))
+        Self::from_str(s.as_str()).map_err(D::Error::custom)
     }
 }
 
@@ -442,6 +447,21 @@ impl ChainNetwork {
         }
     }
 
+    pub fn is_custom(&self) -> bool {
+        match self {
+            Self::Custom(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Default data dir name of this network
+    pub fn dir_name(&self) -> String {
+        match self {
+            Self::Builtin(net) => net.to_string(),
+            Self::Custom(net) => net.chain_name().to_string(),
+        }
+    }
+
     pub fn genesis_config(&self) -> &GenesisConfig {
         match self {
             Self::Builtin(b) => b.genesis_config(),
@@ -460,9 +480,16 @@ impl ChainNetwork {
         self.genesis_config().consensus_strategy
     }
 
-    pub fn as_builtin(&self) -> Option<BuiltinNetwork> {
+    pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
         match self {
-            Self::Builtin(net) => Some(*net),
+            Self::Builtin(net) => Some(net),
+            _ => None,
+        }
+    }
+
+    pub fn as_custom(&self) -> Option<&CustomNetwork> {
+        match self {
+            Self::Custom(net) => Some(net),
             _ => None,
         }
     }
@@ -618,7 +645,17 @@ impl GenesisConfig {
         let mut file = File::open(&path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        Ok(toml::from_str(&contents)?)
+        Ok(serde_json::from_str(&contents)?)
+    }
+
+    pub fn save<P>(&self, path: P) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let mut file = File::create(&path)?;
+        let buf = serde_json::to_vec(self)?;
+        file.write_all(buf.as_slice())?;
+        Ok(())
     }
 }
 
@@ -648,7 +685,7 @@ pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
 pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
-pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| vec![]);
+pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -854,7 +891,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     default_account_size: DEFAULT_ACCOUNT_SIZE,
 });
 
-pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| vec![]);
+pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     version: Version { major: 1 },
