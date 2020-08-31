@@ -100,7 +100,7 @@ impl AccountInfoUniverse {
     pub fn default() -> Result<Self> {
         // association account
         if let (Some(private_key), public_key) =
-            &BuiltinNetwork::Test.get_config().association_key_pair
+            &BuiltinNetwork::Test.genesis_config().association_key_pair
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
@@ -274,7 +274,7 @@ impl SignatureCheckedTransaction {
             .prop_flat_map(|(_keypair, raw_txn)| {
                 prop_oneof![Just(
                     BuiltinNetwork::Test
-                        .get_config()
+                        .genesis_config()
                         .sign_with_association(raw_txn)
                         .expect("signing should always work")
                         .check_signature()

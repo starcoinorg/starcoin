@@ -9,7 +9,8 @@ use libp2p::multiaddr::Multiaddr;
 use move_core_types::move_resource::MoveResource;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
-use serde::{Deserialize, Serialize};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
@@ -85,7 +86,6 @@ pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
     Serialize,
 )]
 #[repr(u8)]
-#[serde(tag = "chain_id")]
 pub enum BuiltinNetwork {
     /// A ephemeral network just for unit test.
     Test = 255,
@@ -192,13 +192,23 @@ impl BuiltinNetwork {
         ]
     }
 
-    pub fn get_config(self) -> &'static GenesisConfig {
+    pub fn genesis_config(self) -> &'static GenesisConfig {
         match self {
-            BuiltinNetwork::Test => &TEST_CHAIN_CONFIG,
-            BuiltinNetwork::Dev => &DEV_CHAIN_CONFIG,
-            BuiltinNetwork::Halley => &HALLEY_CHAIN_CONFIG,
-            BuiltinNetwork::Proxima => &PROXIMA_CHAIN_CONFIG,
-            BuiltinNetwork::Main => &MAIN_CHAIN_CONFIG,
+            BuiltinNetwork::Test => &TEST_CONFIG,
+            BuiltinNetwork::Dev => &DEV_CONFIG,
+            BuiltinNetwork::Halley => &HALLEY_CONFIG,
+            BuiltinNetwork::Proxima => &PROXIMA_CONFIG,
+            BuiltinNetwork::Main => &MAIN_CONFIG,
+        }
+    }
+
+    pub fn boot_nodes(self) -> &'static [Multiaddr] {
+        match self {
+            BuiltinNetwork::Test => EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetwork::Dev => &EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetwork::Halley => &HALLEY_BOOT_NODES.as_slice(),
+            BuiltinNetwork::Proxima => &PROXIMA_BOOT_NODES.as_slice(),
+            BuiltinNetwork::Main => &MAIN_BOOT_NODES.as_slice(),
         }
     }
 }
@@ -222,6 +232,16 @@ pub struct CustomNetwork {
     genesis_config: String,
     #[serde(skip)]
     genesis_config_loaded: Option<GenesisConfig>,
+}
+
+impl Display for CustomNetwork {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}",
+            self.chain_name, self.chain_id, self.genesis_config
+        )
+    }
 }
 
 impl CustomNetwork {
@@ -251,7 +271,7 @@ impl CustomNetwork {
         }
         let config_name_or_path = self.genesis_config.as_str();
         let genesis_config = match BuiltinNetwork::from_str(config_name_or_path) {
-            Ok(net) => net.get_config().clone(),
+            Ok(net) => net.genesis_config().clone(),
             Err(_) => {
                 let path = Path::new(config_name_or_path);
                 let config_path = if path.is_relative() {
@@ -273,18 +293,37 @@ impl CustomNetwork {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-#[serde(tag = "type")]
+impl FromStr for CustomNetwork {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() <= 1 || parts.len() > 3 {
+            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id:genesis_config_name or path", s);
+        }
+        let chain_name = parts[0].to_string();
+        let chain_id = ChainId::from_str(parts[1])?;
+        let genesis_config = if parts.len() == 3 {
+            Some(parts[2].to_string())
+        } else {
+            None
+        };
+        Ok(Self::new(chain_name, chain_id, genesis_config))
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum ChainNetwork {
     Builtin(BuiltinNetwork),
-    Custom(Box<CustomNetwork>),
+    #[allow(clippy::large_enum_variant)]
+    Custom(CustomNetwork),
 }
 
 impl Display for ChainNetwork {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let name = match self {
             Self::Builtin(b) => b.to_string(),
-            Self::Custom(c) => c.chain_name.clone(),
+            Self::Custom(c) => c.to_string(),
         };
         write!(f, "{}", name)
     }
@@ -296,24 +335,27 @@ impl FromStr for ChainNetwork {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match BuiltinNetwork::from_str(s) {
             Ok(net) => Ok(Self::Builtin(net)),
-            Err(e) => {
-                let parts: Vec<&str> = s.split('|').collect();
-                if parts.len() <= 1 {
-                    return Err(e);
-                }
-                if parts.len() > 3 {
-                    bail!("Invalid Custom chain network {}, custom chain network format is: name|id|genesis_config_name or path", s);
-                }
-                let chain_name = parts[0].to_string();
-                let chain_id = ChainId::from_str(parts[1])?;
-                let genesis_config = if parts.len() == 3 {
-                    Some(parts[2].to_string())
-                } else {
-                    None
-                };
-                Self::new_custom(chain_name, chain_id, genesis_config)
-            }
+            Err(_e) => Ok(Self::Custom(CustomNetwork::from_str(s)?)),
         }
+    }
+}
+
+impl Serialize for ChainNetwork {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for ChainNetwork {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+        Self::from_str(s.as_str()).map_err(|e| D::Error::custom(e))
     }
 }
 
@@ -340,11 +382,11 @@ impl ChainNetwork {
                 bail!("Chain name {} has used for builtin {}", chain_name, net);
             }
         }
-        Ok(Self::Custom(Box::new(CustomNetwork::new(
+        Ok(Self::Custom(CustomNetwork::new(
             chain_name,
             chain_id,
             genesis_config,
-        ))))
+        )))
     }
 
     pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
@@ -400,15 +442,22 @@ impl ChainNetwork {
         }
     }
 
-    pub fn get_config(&self) -> &GenesisConfig {
+    pub fn genesis_config(&self) -> &GenesisConfig {
         match self {
-            Self::Builtin(b) => b.get_config(),
+            Self::Builtin(b) => b.genesis_config(),
             Self::Custom(c) => c.genesis_config(),
         }
     }
 
+    pub fn boot_nodes(&self) -> &[Multiaddr] {
+        match self {
+            Self::Builtin(b) => b.boot_nodes(),
+            _ => &[],
+        }
+    }
+
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.get_config().consensus_strategy
+        self.genesis_config().consensus_strategy
     }
 
     pub fn as_builtin(&self) -> Option<BuiltinNetwork> {
@@ -503,8 +552,6 @@ pub struct GenesisConfig {
     pub pre_mine_amount: u128,
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
-    /// List of initial node addresses
-    pub boot_nodes: Vec<Multiaddr>,
     /// uncle rate target
     pub uncle_rate_target: u64,
     /// how many block as a epoch
@@ -601,7 +648,9 @@ pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
 pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
 
-pub static TEST_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| vec![]);
+
+pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
@@ -619,7 +668,6 @@ pub static TEST_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
-        boot_nodes: vec![],
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -646,7 +694,7 @@ pub static TEST_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static DEV_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
@@ -669,7 +717,6 @@ pub static DEV_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
-        boot_nodes: vec![],
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -696,11 +743,21 @@ pub static DEV_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static HALLEY_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+pub static HALLEY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
+    vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
+         "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+         "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ]
+});
+
+pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         version: Version { major: 1 },
         //use latest git commit hash
-        parent_hash: HashValue::sha3_256_of(hex::decode("8bf9cdf5f3624db507613f7fe0cd786c8c9f8037").expect("invalid hex").as_slice()),
+        parent_hash: HashValue::sha3_256_of(
+            hex::decode("8bf9cdf5f3624db507613f7fe0cd786c8c9f8037")
+                .expect("invalid hex")
+                .as_slice(),
+        ),
         timestamp: 1596791843,
         reward_delay: 3,
         difficulty: 10.into(),
@@ -711,9 +768,6 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
-        boot_nodes: vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"),
-                         "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-                         "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"), ],
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 10,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -723,10 +777,13 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         min_block_time_target: MIN_BLOCK_TIME_TARGET,
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
         max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
-        association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
-            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-        )
-            .expect("decode public key must success.")),
+        association_key_pair: (
+            None,
+            Ed25519PublicKey::from_encoded_string(
+                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+            )
+            .expect("decode public key must success."),
+        ),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Argon,
         global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
@@ -743,53 +800,63 @@ pub static HALLEY_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static PROXIMA_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    GenesisConfig {
-        version: Version { major: 1 },
-        parent_hash: HashValue::sha3_256_of(hex::decode("6b1eddc3847bb8476f8937abd017e5833e878b60").expect("invalid hex").as_slice()),
-        timestamp: 1596791843,
-        reward_delay: 7,
-        difficulty: 10.into(),
-        nonce: 0,
-        pre_mine_amount: PRE_MINT_AMOUNT,
-        vm_config: VMConfig {
-            publishing_option: VMPublishingOption::Open,
-            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-            block_gas_limit: BLOCK_GAS_LIMIT,
-        },
-        boot_nodes: vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
-                         "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
-                         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ],
-        uncle_rate_target: UNCLE_RATE_TARGET,
-        epoch_block_count: BLOCK_DIFF_WINDOW * 10,
-        init_block_time_target: INIT_BLOCK_TIME_TARGET,
-        block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: INIT_REWARD_PER_BLOCK,
-        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-        min_block_time_target: MIN_BLOCK_TIME_TARGET,
-        max_block_time_target: MAX_BLOCK_TIME_TARGET,
-        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
-        association_key_pair: (None, Ed25519PublicKey::from_encoded_string(
-            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-        )
-            .expect("decode public key must success.")),
-        genesis_key_pair: None,
-        consensus_strategy: ConsensusStrategy::Argon,
-        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
-        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
-        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-        default_account_size: DEFAULT_ACCOUNT_SIZE,
-    }
+pub static PROXIMA_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
+    vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
+         "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
+         "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ]
 });
 
-pub static MAIN_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
+pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
+    version: Version { major: 1 },
+    parent_hash: HashValue::sha3_256_of(
+        hex::decode("6b1eddc3847bb8476f8937abd017e5833e878b60")
+            .expect("invalid hex")
+            .as_slice(),
+    ),
+    timestamp: 1596791843,
+    reward_delay: 7,
+    difficulty: 10.into(),
+    nonce: 0,
+    pre_mine_amount: PRE_MINT_AMOUNT,
+    vm_config: VMConfig {
+        publishing_option: VMPublishingOption::Open,
+        gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        block_gas_limit: BLOCK_GAS_LIMIT,
+    },
+    uncle_rate_target: UNCLE_RATE_TARGET,
+    epoch_block_count: BLOCK_DIFF_WINDOW * 10,
+    init_block_time_target: INIT_BLOCK_TIME_TARGET,
+    block_difficulty_window: BLOCK_DIFF_WINDOW,
+    init_reward_per_block: INIT_REWARD_PER_BLOCK,
+    reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
+    min_block_time_target: MIN_BLOCK_TIME_TARGET,
+    max_block_time_target: MAX_BLOCK_TIME_TARGET,
+    max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+    association_key_pair: (
+        None,
+        Ed25519PublicKey::from_encoded_string(
+            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        )
+        .expect("decode public key must success."),
+    ),
+    genesis_key_pair: None,
+    consensus_strategy: ConsensusStrategy::Argon,
+    global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
+    global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
+    min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
+    large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
+    instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
+    maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
+    min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
+    max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
+    max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
+    gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
+    default_account_size: DEFAULT_ACCOUNT_SIZE,
+});
+
+pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| vec![]);
+
+pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     version: Version { major: 1 },
     //TODO set parent_hash and timestamp
     parent_hash: HashValue::zero(),
@@ -803,7 +870,6 @@ pub static MAIN_CHAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         block_gas_limit: BLOCK_GAS_LIMIT,
     },
-    boot_nodes: vec![],
     uncle_rate_target: UNCLE_RATE_TARGET,
     epoch_block_count: BLOCK_DIFF_WINDOW * 1000,
     init_block_time_target: INIT_BLOCK_TIME_TARGET,

@@ -125,7 +125,7 @@ impl Genesis {
     }
 
     fn build_genesis_block(net: &ChainNetwork) -> Result<Block> {
-        let genesis_config = net.get_config();
+        let genesis_config = net.genesis_config();
 
         let txn = Self::build_genesis_transaction(net)?;
 

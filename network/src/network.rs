@@ -266,7 +266,7 @@ impl NetworkAsyncService {
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
-            let seeds = node_config.base.net().get_config().boot_nodes.clone();
+            let seeds = node_config.base.net().boot_nodes().to_vec();
             config.seeds.extend(seeds);
         }
         let has_seed = !config.seeds.is_empty();

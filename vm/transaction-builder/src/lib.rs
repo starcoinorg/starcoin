@@ -240,7 +240,7 @@ pub fn create_signed_txn_with_association_account(
         expiration_timestamp_secs,
         net.chain_id(),
     );
-    net.get_config()
+    net.genesis_config()
         .sign_with_association(raw_txn)
         .expect("Sign txn should work.")
 }
@@ -269,10 +269,10 @@ pub fn build_stdlib_package(
             .collect(),
     )?;
     if with_init_script {
-        let genesis_config = net.get_config();
+        let genesis_config = net.genesis_config();
         let chain_id = net.chain_id().id();
         let consensus_strategy = net.consensus();
-        let genesis_timestamp = net.get_config().timestamp;
+        let genesis_timestamp = net.genesis_config().timestamp;
 
         let genesis_auth_key = genesis_config
             .genesis_key_pair

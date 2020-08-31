@@ -569,7 +569,7 @@ fn test_publish_module_and_upgrade() -> Result<()> {
 #[stest::test]
 fn test_block_metadata() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let genesis_config = net.get_config();
+    let genesis_config = net.genesis_config();
 
     let account1 = Account::new();
 

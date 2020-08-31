@@ -46,8 +46,8 @@ pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 use starcoin_vm_types::genesis_config::BuiltinNetwork;
 pub use starcoin_vm_types::genesis_config::{
-    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, DEV_CHAIN_CONFIG,
-    HALLEY_CHAIN_CONFIG, MAIN_CHAIN_CONFIG, PROXIMA_CHAIN_CONFIG,
+    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, DEV_CONFIG, HALLEY_CONFIG,
+    MAIN_CONFIG, PROXIMA_CONFIG,
 };
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
@@ -437,6 +437,40 @@ mod tests {
             let config = NodeConfig::load_with_opt(&opt)?;
             let config2 = NodeConfig::load_with_opt(&opt)?;
             assert_eq!(config, config2, "test config for network {} fail.", net);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_custom_chain_genesis() -> Result<()> {
+        let mut opt = StarcoinOpt::default();
+        let net = ChainNetwork::from_str("test1:123:test")?;
+        let temp_path = temp_path();
+        opt.net = Some(net);
+        opt.data_dir = Some(temp_path.path().to_path_buf());
+
+        let config = NodeConfig::load_with_opt(&opt)?;
+        let config2 = NodeConfig::load_with_opt(&opt)?;
+        assert_eq!(
+            config, config2,
+            "test config for network {:?} fail.",
+            opt.net
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_config_serialize() -> Result<()> {
+        for net in vec![
+            ChainNetwork::TEST.clone(),
+            ChainNetwork::from_str("test1:123:test")?,
+        ] {
+            let mut base_config = BaseConfig::new(net, None);
+            base_config.load_chain_config()?;
+            let json = serde_json::to_string(&base_config)?;
+            println!("{} base_config_json: {}", base_config.net(), json);
+            let toml = toml::to_string(&base_config)?;
+            println!("{} base_config_toml: {}", base_config.net(), toml);
         }
         Ok(())
     }
