@@ -28,7 +28,17 @@ use types::{
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
-pub type UncleActorAddress = Addr<UncleActor>;
+pub type CreateBlockTemplateActorAddress = Addr<CreateBlockTemplateActor>;
+
+pub struct GetHeadRequest;
+
+pub struct GetHeadResponse {
+    pub head: HashValue,
+}
+
+impl Message for GetHeadRequest {
+    type Result = Result<GetHeadResponse>;
+}
 
 pub struct CreateBlockTemplateRequest {
     final_block_gas_limit: u64,
@@ -93,24 +103,26 @@ impl Message for CreateBlockTemplateRequest {
     type Result = Result<CreateBlockTemplateResponse>;
 }
 
-pub struct UncleActor {
+pub struct CreateBlockTemplateActor {
     bus: Addr<BusActor>,
     inner: Inner,
 }
 
-impl UncleActor {
+impl CreateBlockTemplateActor {
     pub fn launch(
         block_id: HashValue,
         net: ChainNetwork,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
-    ) -> Result<UncleActorAddress> {
+    ) -> Result<CreateBlockTemplateActorAddress> {
         let inner = Inner::new(block_id, storage, net)?;
-        Ok(UncleActor::create(move |_ctx| UncleActor { bus, inner }))
+        Ok(CreateBlockTemplateActor::create(move |_ctx| {
+            CreateBlockTemplateActor { bus, inner }
+        }))
     }
 }
 
-impl Actor for UncleActor {
+impl Actor for CreateBlockTemplateActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -128,15 +140,15 @@ impl Actor for UncleActor {
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
 
-        info!("UncleActor started");
+        info!("CreateBlockTemplateActor started");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("UncleActor stopped");
+        info!("CreateBlockTemplateActor stopped");
     }
 }
 
-impl Handler<NewHeadBlock> for UncleActor {
+impl Handler<NewHeadBlock> for CreateBlockTemplateActor {
     type Result = ();
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
@@ -146,7 +158,7 @@ impl Handler<NewHeadBlock> for UncleActor {
     }
 }
 
-impl Handler<NewBranch> for UncleActor {
+impl Handler<NewBranch> for CreateBlockTemplateActor {
     type Result = ();
 
     fn handle(&mut self, msg: NewBranch, _ctx: &mut Self::Context) -> Self::Result {
@@ -154,7 +166,7 @@ impl Handler<NewBranch> for UncleActor {
     }
 }
 
-impl Handler<CreateBlockTemplateRequest> for UncleActor {
+impl Handler<CreateBlockTemplateRequest> for CreateBlockTemplateActor {
     type Result = Result<CreateBlockTemplateResponse>;
 
     fn handle(
@@ -172,6 +184,16 @@ impl Handler<CreateBlockTemplateRequest> for UncleActor {
         Ok(CreateBlockTemplateResponse {
             block_template,
             txns,
+        })
+    }
+}
+
+impl Handler<GetHeadRequest> for CreateBlockTemplateActor {
+    type Result = Result<GetHeadResponse>;
+
+    fn handle(&mut self, _msg: GetHeadRequest, _ctx: &mut Self::Context) -> Self::Result {
+        Ok(GetHeadResponse {
+            head: self.inner.chain.current_header().id(),
         })
     }
 }
