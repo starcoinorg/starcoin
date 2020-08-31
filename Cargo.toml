@@ -83,4 +83,6 @@ members = [
 panic = "unwind"
 
 [profile.release]
+debug = true
+debug-assertions = true
 panic = "unwind"
