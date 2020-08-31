@@ -3,6 +3,7 @@
 
 pub mod chain;
 pub mod node;
+pub mod txn;
 pub mod txpool;
 
 pub use chain::gen_blockchain_for_test;
