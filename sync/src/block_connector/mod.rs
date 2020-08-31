@@ -13,6 +13,8 @@ use std::sync::Arc;
 use traits::{ChainAsyncService, ConnectBlockError, VerifyBlockField};
 use types::block::{Block, BlockInfo, BlockNumber};
 
+mod block_connect_test;
+
 #[derive(Clone)]
 pub struct PivotBlock {
     number: BlockNumber,
@@ -99,9 +101,23 @@ impl FutureBlockPool {
                     child.push(block);
                 }
             });
+
+            let _ = child_lock.remove(parent_id);
             Some(child)
         } else {
             None
+        }
+    }
+
+    pub fn _len(&self) -> usize {
+        self.blocks.read().len()
+    }
+
+    pub fn _son_len(&self, block_id: &HashValue) -> usize {
+        let lock = self.child.read();
+        match lock.get(&block_id) {
+            None => 0,
+            Some(child) => child.len(),
         }
     }
 }
