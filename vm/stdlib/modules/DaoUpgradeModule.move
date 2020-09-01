@@ -1,11 +1,11 @@
 address 0x1 {
-  module ModuleUpgradingProposal {
+  module DaoUpgradeModule {
     use 0x1::PackageTxnManager;
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::Option;
-    use 0x1::Gov;
+    use 0x1::Dao;
     use 0x1::Block;
 
     resource struct UpgradeModuleCapabilities<TokenT> {
@@ -16,7 +16,7 @@ address 0x1 {
       cap: PackageTxnManager::UpgradePlanCapability,
     }
 
-    const EXECUTE_DELAY: u64 = 200;
+    // const UPGRADE_DELAY: u64 = 200;
 
     struct UpgradeModule {
       module_address: address,
@@ -55,10 +55,10 @@ address 0x1 {
     public fun propose_module_upgrade<TokenT>(signer: &signer, module_address: address, module_hash: vector<u8>)
     acquires UpgradeModuleCapabilities {
       assert(able_to_upgrade<TokenT>(module_address), 400);
-      Gov::propose<TokenT, UpgradeModule>(signer, UpgradeModule {
+      Dao::propose<TokenT, UpgradeModule>(signer, UpgradeModule {
         module_address,
         module_hash
-      });
+      }, 200); // TODO: replace 200 with DAO::MIN_ACTION_DELAY
     }
 
     public fun submit_module_upgrade_plan<TokenT>(_signer: &signer, proposer_address: address, proposal_id: u64)
@@ -66,15 +66,13 @@ address 0x1 {
       let UpgradeModule {
         module_address,
         module_hash
-      } = Gov::extract_proposal_action<TokenT, UpgradeModule>(proposer_address, proposal_id);
-      let eta = Block::get_current_block_number() + EXECUTE_DELAY;
-
+      } = Dao::extract_proposal_action<TokenT, UpgradeModule>(proposer_address, proposal_id);
       let pos = find_module_upgrade_cap<TokenT>(module_address);
       assert(Option::is_some(&pos), 500);
       let pos = Option::extract(&mut pos);
       let caps = borrow_global<UpgradeModuleCapabilities<TokenT>>(Token::token_address<TokenT>());
       let cap = Vector::borrow(&caps.caps, pos);
-      PackageTxnManager::submit_upgrade_plan_with_cap(&cap.cap, module_hash, eta);
+      PackageTxnManager::submit_upgrade_plan_with_cap(&cap.cap, module_hash, Block::get_current_block_number());
     }
 
     fun find_module_upgrade_cap<TokenT>(module_address: address): Option::Option<u64> acquires UpgradeModuleCapabilities {

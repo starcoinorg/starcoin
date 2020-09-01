@@ -1,5 +1,5 @@
 address 0x1 {
-  module Gov {
+  module Dao {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Block;
@@ -12,7 +12,7 @@ address 0x1 {
     /// quorum rate: 4% of toal token supply.
     const VOTEING_QUORUM_RATE: u8 = 4;
 
-    // const EXECUTE_DELAY: u64 = 200;
+    const MIN_ACTION_DELAY: u64 = 200;
 
     /// Proposal state
     const PENDING: u8 = 1;
@@ -20,7 +20,7 @@ address 0x1 {
     const DEFEATED: u8 = 3;
     const AGREED: u8 = 4;
     const QUEUED: u8 = 5;
-
+    const EXECUTABLE: u8 = 6;
 
     resource struct GovGlobalInfo<Token> {
       next_proposal_id: u64,
@@ -28,11 +28,6 @@ address 0x1 {
 
     /// TODO: support that one can propose mutli proposals.
     resource struct Proposal<Token, Action> {
-      info: ProposalInfo,
-      action: Option::Option<Action>,
-    }
-
-    struct ProposalInfo {
       id: u64,
       proposer: address,
       start_block: u64,
@@ -41,6 +36,8 @@ address 0x1 {
       against_votes: u128,
       // executable after this block.
       eta: u64,
+      action_delay: u64,
+      action: Option::Option<Action>,
     }
 
     // TODO: allow user do multi votes.
@@ -67,21 +64,24 @@ address 0x1 {
       move_to(signer, gov_info);
     }
 
-    public fun propose<TokenT, ActionT>(signer: &signer, action: ActionT)
+    /// propose a proposal.
+    /// `action`: the actual action to execute.
+    /// `action_delay`: the delay to execute after the proposal is agreed
+    public fun propose<TokenT, ActionT>(signer: &signer, action: ActionT, action_delay: u64)
     acquires GovGlobalInfo {
+      assert(action_delay >= MIN_ACTION_DELAY, 401);
       let proposal_id = generate_next_proposal_id<TokenT>();
       // TODO: make the delay configurable
       let start_block = Block::get_current_block_number() + VOTEING_DELAY;
       let proposal = Proposal<TokenT, ActionT> {
-        info: ProposalInfo {
-          id: proposal_id,
-          proposer: Signer::address_of(signer),
-          start_block: start_block,
-          end_block: start_block + VOTEING_PERIOD,
-          for_votes: 0,
-          against_votes: 0,
-          eta: 0,
-        },
+        id: proposal_id,
+        proposer: Signer::address_of(signer),
+        start_block: start_block,
+        end_block: start_block + VOTEING_PERIOD,
+        for_votes: 0,
+        against_votes: 0,
+        eta: 0,
+        action_delay,
         action: Option::some(action),
       };
 
@@ -100,7 +100,7 @@ address 0x1 {
       };
 
       let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-      assert(proposal.info.id == proposal_id, 500);
+      assert(proposal.id == proposal_id, 500);
       let stakes = Account::withdraw<TokenT>(signer, stake);
       let my_vote = Vote<TokenT> {
         proposer: proposer_address,
@@ -109,9 +109,9 @@ address 0x1 {
         agree,
       };
       if (agree) {
-        proposal.info.for_votes = proposal.info.for_votes + stake;
+        proposal.for_votes = proposal.for_votes + stake;
       } else {
-        proposal.info.against_votes = proposal.info.against_votes + stake;
+        proposal.against_votes = proposal.against_votes + stake;
       };
 
       move_to(signer, my_vote);
@@ -136,10 +136,18 @@ address 0x1 {
       Account::deposit(signer, stake);
     }
 
-    public fun extract_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64): ActionT
+    public fun queue_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64)
     acquires Proposal {
       // Only agreed proposal can be submitted.
       assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED, 601);
+      let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
+      proposal.eta = Block::get_current_block_number() + proposal.action_delay;
+    }
+
+    public fun extract_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64): ActionT
+    acquires Proposal {
+      // Only executable proposal's action can be extracted.
+      assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == EXECUTABLE, 601);
       let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
       let action: ActionT = Option::extract(&mut proposal.action);
       action
@@ -148,23 +156,25 @@ address 0x1 {
     fun proposal_state<TokenT, ActionT>( proposer_address: address, proposal_id: u64): u8
     acquires Proposal {
       let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
-      assert(proposal.info.id == proposal_id, 500);
+      assert(proposal.id == proposal_id, 500);
       let current_block_number = Block::get_current_block_number();
-      if (current_block_number <= proposal.info.start_block) {
+      if (current_block_number <= proposal.start_block) {
         // Pending
         PENDING
-      } else if (current_block_number <= proposal.info.end_block) {
+      } else if (current_block_number <= proposal.end_block) {
         // Active
         ACTIVE
-      } else if (proposal.info.for_votes <= proposal.info.against_votes || proposal.info.for_votes < quorum_votes<TokenT>()) {
+      } else if (proposal.for_votes <= proposal.against_votes || proposal.for_votes < quorum_votes<TokenT>()) {
         // Defeated
         DEFEATED
-      } else if (proposal.info.eta == 0) {
+      } else if (proposal.eta == 0) {
         // Agreed.
         AGREED
-      } else {
+      } else if (proposal.eta < current_block_number) {
         // Queued, waiting to execute
         QUEUED
+      } else {
+        EXECUTABLE
       }
     }
 
