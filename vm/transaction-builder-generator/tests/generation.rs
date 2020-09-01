@@ -17,7 +17,7 @@ fn get_libra_registry() -> Registry {
 }
 
 fn get_stdlib_script_abis() -> Vec<ScriptABI> {
-    let path = "../stdlib/staged/transaction_scripts/abi";
+    let path = "../stdlib/compiled/latest/transaction_scripts/abi";
     buildgen::read_abis(path).expect("reading ABI files should not fail")
 }
 

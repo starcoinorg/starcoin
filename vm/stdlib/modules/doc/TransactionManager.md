@@ -5,10 +5,34 @@
 
 ### Table of Contents
 
+-  [Const `TXN_PAYLOAD_TYPE_SCRIPT`](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT)
+-  [Const `TXN_PAYLOAD_TYPE_PACKAGE`](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE)
 -  [Function `prologue`](#0x1_TransactionManager_prologue)
 -  [Function `epilogue`](#0x1_TransactionManager_epilogue)
 -  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
 -  [Function `distribute`](#0x1_TransactionManager_distribute)
+
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
+
+## Const `TXN_PAYLOAD_TYPE_SCRIPT`
+
+
+
+<pre><code><b>const</b> TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
+
+## Const `TXN_PAYLOAD_TYPE_PACKAGE`
+
+
+
+<pre><code><b>const</b> TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
+</code></pre>
 
 
 

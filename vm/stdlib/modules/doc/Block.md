@@ -12,6 +12,12 @@
 -  [Function `get_parent_hash`](#0x1_Block_get_parent_hash)
 -  [Function `get_current_author`](#0x1_Block_get_current_author)
 -  [Function `process_block_metadata`](#0x1_Block_process_block_metadata)
+-  [Specification](#0x1_Block_Specification)
+    -  [Function `initialize`](#0x1_Block_Specification_initialize)
+    -  [Function `get_current_block_number`](#0x1_Block_Specification_get_current_block_number)
+    -  [Function `get_parent_hash`](#0x1_Block_Specification_get_parent_hash)
+    -  [Function `get_current_author`](#0x1_Block_Specification_get_current_author)
+    -  [Function `process_block_metadata`](#0x1_Block_Specification_process_block_metadata)
 
 
 
@@ -253,3 +259,98 @@
 
 
 </details>
+
+<a name="0x1_Block_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+<a name="0x1_Block_Specification_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_initialize">initialize</a>(account: &signer, parent_hash: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> exists&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Block_Specification_get_current_block_number"></a>
+
+### Function `get_current_block_number`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_block_number">get_current_block_number</a>(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+<a name="0x1_Block_Specification_get_parent_hash"></a>
+
+### Function `get_parent_hash`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_parent_hash">get_parent_hash</a>(): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+<a name="0x1_Block_Specification_get_current_author"></a>
+
+### Function `get_current_author`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_get_current_author">get_current_author</a>(): address
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+<a name="0x1_Block_Specification_process_block_metadata"></a>
+
+### Function `process_block_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> number != <b>global</b>&lt;<a href="#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).number + 1;
+</code></pre>

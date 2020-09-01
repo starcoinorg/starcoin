@@ -9,7 +9,7 @@ use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
 use std::{convert::TryFrom, fmt, path::PathBuf};
 
 #[allow(dead_code)]
-const STAGED_INIT_SCRIPTS_DIR: Dir = include_dir!("staged/init_scripts");
+const COMPILED_INIT_SCRIPTS_DIR: Dir = include_dir!("compiled/latest/init_scripts");
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum InitScript {
@@ -53,7 +53,7 @@ impl InitScript {
         let mut path = PathBuf::from(self.name());
         path.set_extension("mv");
         CompiledBytes(
-            STAGED_INIT_SCRIPTS_DIR
+            COMPILED_INIT_SCRIPTS_DIR
                 .get_file(path)
                 .unwrap()
                 .contents()
@@ -101,7 +101,7 @@ mod test {
 
     #[test]
     fn test_file_correspondence() {
-        let files = STAGED_INIT_SCRIPTS_DIR.files();
+        let files = COMPILED_INIT_SCRIPTS_DIR.files();
         let scripts = InitScript::all();
         for file in files {
             assert!(

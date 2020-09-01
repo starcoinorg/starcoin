@@ -12,6 +12,7 @@
 -  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
 -  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
+-  [Const `DUMMY_AUTH_KEY`](#0x1_Account_DUMMY_AUTH_KEY)
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
 -  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
@@ -51,6 +52,40 @@
 -  [Function `exists_at`](#0x1_Account_exists_at)
 -  [Function `txn_prologue`](#0x1_Account_txn_prologue)
 -  [Function `txn_epilogue`](#0x1_Account_txn_epilogue)
+-  [Specification](#0x1_Account_Specification)
+    -  [Function `create_genesis_account`](#0x1_Account_Specification_create_genesis_account)
+    -  [Function `release_genesis_signer`](#0x1_Account_Specification_release_genesis_signer)
+    -  [Function `create_account`](#0x1_Account_Specification_create_account)
+    -  [Function `make_account`](#0x1_Account_Specification_make_account)
+    -  [Function `deposit_to`](#0x1_Account_Specification_deposit_to)
+    -  [Function `deposit`](#0x1_Account_Specification_deposit)
+    -  [Function `deposit_with_metadata`](#0x1_Account_Specification_deposit_with_metadata)
+    -  [Function `deposit_with_payer_and_metadata`](#0x1_Account_Specification_deposit_with_payer_and_metadata)
+    -  [Function `withdraw_from_balance`](#0x1_Account_Specification_withdraw_from_balance)
+    -  [Function `withdraw`](#0x1_Account_Specification_withdraw)
+    -  [Function `withdraw_with_capability`](#0x1_Account_Specification_withdraw_with_capability)
+    -  [Function `extract_withdraw_capability`](#0x1_Account_Specification_extract_withdraw_capability)
+    -  [Function `restore_withdraw_capability`](#0x1_Account_Specification_restore_withdraw_capability)
+    -  [Function `pay_from_capability`](#0x1_Account_Specification_pay_from_capability)
+    -  [Function `pay_from_with_metadata`](#0x1_Account_Specification_pay_from_with_metadata)
+    -  [Function `pay_from`](#0x1_Account_Specification_pay_from)
+    -  [Function `rotate_authentication_key_for_account`](#0x1_Account_Specification_rotate_authentication_key_for_account)
+    -  [Function `rotate_authentication_key`](#0x1_Account_Specification_rotate_authentication_key)
+    -  [Function `extract_key_rotation_capability`](#0x1_Account_Specification_extract_key_rotation_capability)
+    -  [Function `restore_key_rotation_capability`](#0x1_Account_Specification_restore_key_rotation_capability)
+    -  [Function `balance_for`](#0x1_Account_Specification_balance_for)
+    -  [Function `balance`](#0x1_Account_Specification_balance)
+    -  [Function `accept_token`](#0x1_Account_Specification_accept_token)
+    -  [Function `is_accepts_token`](#0x1_Account_Specification_is_accepts_token)
+    -  [Function `sequence_number`](#0x1_Account_Specification_sequence_number)
+    -  [Function `authentication_key`](#0x1_Account_Specification_authentication_key)
+    -  [Function `delegated_key_rotation_capability`](#0x1_Account_Specification_delegated_key_rotation_capability)
+    -  [Function `delegated_withdraw_capability`](#0x1_Account_Specification_delegated_withdraw_capability)
+    -  [Function `withdraw_capability_address`](#0x1_Account_Specification_withdraw_capability_address)
+    -  [Function `key_rotation_capability_address`](#0x1_Account_Specification_key_rotation_capability_address)
+    -  [Function `exists_at`](#0x1_Account_Specification_exists_at)
+    -  [Function `txn_prologue`](#0x1_Account_Specification_txn_prologue)
+    -  [Function `txn_epilogue`](#0x1_Account_Specification_txn_epilogue)
 
 
 
@@ -334,6 +369,17 @@ Message for accept token events
 
 
 </details>
+
+<a name="0x1_Account_DUMMY_AUTH_KEY"></a>
+
+## Const `DUMMY_AUTH_KEY`
+
+
+
+<pre><code><b>const</b> DUMMY_AUTH_KEY: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+</code></pre>
+
+
 
 <a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
 
@@ -1429,7 +1475,7 @@ Message for accept token events
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, state_cost_amount: u64, cost_is_negative: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, _state_cost_amount: u64, _cost_is_negative: bool)
 </code></pre>
 
 
@@ -1445,8 +1491,8 @@ Message for accept token events
     txn_gas_price: u64,
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
-    state_cost_amount: u64,
-    cost_is_negative: bool,
+    _state_cost_amount: u64,
+    _cost_is_negative: bool,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
@@ -1462,10 +1508,10 @@ Message for accept token events
     );
 
     // Todo: remove the abandoned code
-    <b>let</b> cost = <a href="SignedInteger64.md#0x1_SignedInteger64_create_from_raw_value">SignedInteger64::create_from_raw_value</a>(state_cost_amount, cost_is_negative);
-    <b>assert</b>(
-        <a href="SignedInteger64.md#0x1_SignedInteger64_get_value">SignedInteger64::get_value</a>(cost) &gt;= 0, 7
-     );
+    // <b>let</b> cost = <a href="SignedInteger64.md#0x1_SignedInteger64_create_from_raw_value">SignedInteger64::create_from_raw_value</a>(state_cost_amount, cost_is_negative);
+    // <b>assert</b>(
+    //     <a href="SignedInteger64.md#0x1_SignedInteger64_get_value">SignedInteger64::get_value</a>(cost) &gt;= 0, 7
+    // );
 
     // Bump the sequence number
     sender_account.sequence_number = txn_sequence_number + 1;
@@ -1484,3 +1530,642 @@ Message for accept token events
 
 
 </details>
+
+<a name="0x1_Account_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_create_genesis_account"></a>
+
+### Function `create_genesis_account`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_genesis_account">create_genesis_account</a>(new_account_address: address): signer
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
+<b>aborts_if</b> len(DUMMY_AUTH_KEY) != 32;
+<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(new_account_address);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_release_genesis_signer"></a>
+
+### Function `release_genesis_signer`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_release_genesis_signer">release_genesis_signer</a>(genesis_account: signer)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_create_account"></a>
+
+### Function `create_account`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, auth_key_prefix: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> len(auth_key_prefix) + len(<a href="LCS.md#0x1_LCS_serialize">LCS::serialize</a>(fresh_address)) != 32;
+<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(fresh_address);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_make_account"></a>
+
+### Function `make_account`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_make_account">make_account</a>(new_account: &signer, authentication_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> len(authentication_key) != 32;
+<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account));
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_deposit_to"></a>
+
+### Function `deposit_to`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_deposit_to">deposit_to</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_deposit"></a>
+
+### Function `deposit`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> to_deposit.value == 0;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value) + to_deposit.value;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_deposit_with_metadata"></a>
+
+### Function `deposit_with_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_deposit_with_payer_and_metadata"></a>
+
+### Function `deposit_with_payer_and_metadata`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>&lt;TokenType&gt;(payer: address, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;;
+</code></pre>
+
+
+
+
+<a name="0x1_Account_Deposit_With_Payer_And_Metadata"></a>
+
+
+<pre><code><b>schema</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt; {
+    payer: address;
+    payee: address;
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;;
+    <b>aborts_if</b> to_deposit.value == 0;
+    <b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(payer);
+    <b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(payee);
+    <b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee);
+    <b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value + to_deposit.value &gt; max_u128();
+    <b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value) + to_deposit.value;
+}
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_withdraw_from_balance"></a>
+
+### Function `withdraw_from_balance`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(_addr: address, balance: &<b>mut</b> <a href="#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> balance.token.value &lt; amount;
+<b>ensures</b> balance.token.value == <b>old</b>(balance.token.value) - amount;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_withdraw"></a>
+
+### Function `withdraw`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).withdrawal_capability);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value &lt; amount;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value
+        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value) - amount;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_withdraw_with_capability"></a>
+
+### Function `withdraw_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(cap: &<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value
+        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value) - amount;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_extract_withdraw_capability"></a>
+
+### Function `extract_withdraw_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_extract_withdraw_capability">extract_withdraw_capability</a>(sender: &signer): <a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender));
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;( <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(sender)).withdrawal_capability);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_restore_withdraw_capability"></a>
+
+### Function `restore_withdraw_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_restore_withdraw_capability">restore_withdraw_capability</a>(cap: <a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address).withdrawal_capability);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_pay_from_capability"></a>
+
+### Function `pay_from_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_capability">pay_from_capability</a>&lt;TokenType&gt;(cap: &<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
+<b>aborts_if</b> amount == 0;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(payee);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_pay_from_with_metadata"></a>
+
+### Function `pay_from_with_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value &lt; amount;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value
+        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value) - amount;
+<b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{
+    payer: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
+};
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_pay_from"></a>
+
+### Function `pay_from`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_pay_from">pay_from</a>&lt;TokenType&gt;(account: &signer, payee: address, amount: u128)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value &lt; amount;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value
+        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value) - amount;
+<b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{
+    payer: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
+};
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_rotate_authentication_key_for_account"></a>
+
+### Function `rotate_authentication_key_for_account`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_rotate_authentication_key_for_account">rotate_authentication_key_for_account</a>(account: &<b>mut</b> <a href="#0x1_Account_Account">Account::Account</a>, new_authentication_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> len(new_authentication_key) != 32;
+<b>ensures</b> account.authentication_key == new_authentication_key;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_rotate_authentication_key"></a>
+
+### Function `rotate_authentication_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_rotate_authentication_key">rotate_authentication_key</a>(cap: &<a href="#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>, new_authentication_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address);
+<b>aborts_if</b> len(new_authentication_key) != 32;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address).authentication_key == new_authentication_key;
+</code></pre>
+
+
+
+
+<a name="0x1_Account_spec_rotate_authentication_key"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Account_spec_rotate_authentication_key">spec_rotate_authentication_key</a>(addr: address, new_authentication_key: vector&lt;u8&gt;): bool {
+    <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(addr).authentication_key == new_authentication_key
+}
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_extract_key_rotation_capability"></a>
+
+### Function `extract_key_rotation_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_extract_key_rotation_capability">extract_key_rotation_capability</a>(account: &signer): <a href="#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).key_rotation_capability);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_restore_key_rotation_capability"></a>
+
+### Function `restore_key_rotation_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_restore_key_rotation_capability">restore_key_rotation_capability</a>(cap: <a href="#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address).key_rotation_capability);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(cap.account_address);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_balance_for"></a>
+
+### Function `balance_for`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_balance_for">balance_for</a>&lt;TokenType&gt;(balance: &<a href="#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_balance"></a>
+
+### Function `balance`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_balance">balance</a>&lt;TokenType&gt;(addr: address): u128
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_accept_token"></a>
+
+### Function `accept_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_is_accepts_token"></a>
+
+### Function `is_accepts_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_sequence_number"></a>
+
+### Function `sequence_number`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_sequence_number">sequence_number</a>(addr: address): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_authentication_key"></a>
+
+### Function `authentication_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_authentication_key">authentication_key</a>(addr: address): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_delegated_key_rotation_capability"></a>
+
+### Function `delegated_key_rotation_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_delegated_withdraw_capability"></a>
+
+### Function `delegated_withdraw_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_withdraw_capability_address"></a>
+
+### Function `withdraw_capability_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_withdraw_capability_address">withdraw_capability_address</a>(cap: &<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>): &address
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_key_rotation_capability_address"></a>
+
+### Function `key_rotation_capability_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_key_rotation_capability_address">key_rotation_capability_address</a>(cap: &<a href="#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>): &address
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_exists_at"></a>
+
+### Function `exists_at`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_exists_at">exists_at</a>(check_addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_txn_prologue"></a>
+
+### Function `txn_prologue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_prologue">txn_prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);
+<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) != <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).authentication_key;
+<b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; max_u64();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; txn_gas_price * txn_max_gas_units;
+<b>aborts_if</b> txn_sequence_number &lt; <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).sequence_number;
+<b>aborts_if</b> txn_sequence_number != <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).sequence_number;
+</code></pre>
+
+
+
+<a name="0x1_Account_Specification_txn_epilogue"></a>
+
+### Function `txn_epilogue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, _state_cost_amount: u64, _cost_is_negative: bool)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
+<b>aborts_if</b> txn_gas_price * (txn_max_gas_units - gas_units_remaining) &gt; max_u64();
+<b>aborts_if</b> txn_max_gas_units &lt; gas_units_remaining;
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+<b>aborts_if</b> txn_sequence_number + 1 &gt; max_u64();
+<b>aborts_if</b> txn_gas_price * (txn_max_gas_units - gas_units_remaining) &gt; 0 &&
+           !exists&lt;<a href="TransactionFee.md#0x1_TransactionFee_TransactionFee">TransactionFee::TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <b>global</b>&lt;<a href="TransactionFee.md#0x1_TransactionFee_TransactionFee">TransactionFee::TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).fee.value + txn_gas_price * (txn_max_gas_units - gas_units_remaining) &gt; max_u128();
+</code></pre>

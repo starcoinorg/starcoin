@@ -14,7 +14,7 @@ fn test_that_installed_rust_code_compiles() {
     //
     // let abi_dir_path = std::env::current_dir()
     //     .unwrap()
-    //     .join("../../vm/stdlib/staged/transaction_scripts/abi");
+    //     .join("../../vm/stdlib/compiled/latest/transaction_scripts/abi");
 
     let status = Command::new("cargo")
         .current_dir("../..")
@@ -30,7 +30,7 @@ fn test_that_installed_rust_code_compiles() {
         .arg("testsuite/generate-format/tests/staged/starcoin.yaml")
         .arg("--target-source-dir")
         .arg(dir.path())
-        .arg("vm/stdlib/staged/transaction_scripts/abi")
+        .arg("vm/stdlib/compiled/latest/transaction_scripts/abi")
         .status()
         .unwrap();
     assert!(status.success());

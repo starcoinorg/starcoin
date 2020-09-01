@@ -63,6 +63,13 @@
 ## Specification
 
 
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
 <a name="0x1_Signer_Specification_address_of"></a>
 
 ### Function `address_of`

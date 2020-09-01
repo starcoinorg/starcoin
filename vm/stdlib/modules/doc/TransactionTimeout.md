@@ -6,12 +6,14 @@
 ### Table of Contents
 
 -  [Resource `TTL`](#0x1_TransactionTimeout_TTL)
+-  [Const `ONE_DAY`](#0x1_TransactionTimeout_ONE_DAY)
 -  [Function `initialize`](#0x1_TransactionTimeout_initialize)
 -  [Function `set_timeout`](#0x1_TransactionTimeout_set_timeout)
 -  [Function `is_valid_transaction_timestamp`](#0x1_TransactionTimeout_is_valid_transaction_timestamp)
 -  [Specification](#0x1_TransactionTimeout_Specification)
     -  [Function `initialize`](#0x1_TransactionTimeout_Specification_initialize)
     -  [Function `set_timeout`](#0x1_TransactionTimeout_Specification_set_timeout)
+    -  [Function `is_valid_transaction_timestamp`](#0x1_TransactionTimeout_Specification_is_valid_transaction_timestamp)
 
 
 
@@ -42,6 +44,17 @@
 
 
 </details>
+
+<a name="0x1_TransactionTimeout_ONE_DAY"></a>
+
+## Const `ONE_DAY`
+
+
+
+<pre><code><b>const</b> ONE_DAY: u64 = 86400;
+</code></pre>
+
+
 
 <a name="0x1_TransactionTimeout_initialize"></a>
 
@@ -137,7 +150,8 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
 </code></pre>
 
 
@@ -173,5 +187,24 @@
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> !exists&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).duration_seconds == new_duration;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).duration_seconds == new_duration;
+</code></pre>
+
+
+
+<a name="0x1_TransactionTimeout_Specification_is_valid_transaction_timestamp"></a>
+
+### Function `is_valid_transaction_timestamp`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionTimeout_is_valid_transaction_timestamp">is_valid_transaction_timestamp</a>(txn_timestamp: u64): bool
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeSeconds">Timestamp::CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> !exists&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> !exists&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 </code></pre>

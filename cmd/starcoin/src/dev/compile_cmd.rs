@@ -89,7 +89,7 @@ impl CommandAction for CompileCommand {
             .unwrap_or_else(|| ctx.state().temp_dir().to_path_buf());
 
         txn_path.push(source_file_path.file_name().unwrap());
-        txn_path.set_extension(stdlib::STAGED_EXTENSION);
+        txn_path.set_extension(stdlib::COMPILED_EXTENSION);
         let mut file = File::create(txn_path.clone()).expect("unable create out file");
         file.write_all(&compile_unit.serialize())
             .expect("write out file error");
