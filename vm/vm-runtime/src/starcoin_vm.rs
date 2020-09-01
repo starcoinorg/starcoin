@@ -254,7 +254,11 @@ impl StarcoinVM {
         }
     }
 
-    fn check_compatibility_if_exist<R: RemoteCache>(&self, session: &Session<R>, module: &Module) -> Result<(), VMStatus> {
+    fn check_compatibility_if_exist<R: RemoteCache>(
+        &self,
+        session: &Session<R>,
+        module: &Module,
+    ) -> Result<(), VMStatus> {
         let compiled_module = match CompiledModule::deserialize(module.code()) {
             Ok(module) => module,
             Err(err) => {
@@ -271,21 +275,19 @@ impl StarcoinVM {
             let pre_version = session
                 .load_module(&module_id)
                 .map_err(|e| e.into_vm_status())?;
-            check_module_compat(pre_version.as_slice(), module.code()).map_err(
-                |e| {
-                    {
-                        warn!("Check module compat error: {:?}", e);
-                        errors::verification_error(
-                            //TODO define error code for compat.
-                            StatusCode::VERIFICATION_ERROR,
-                            IndexKind::ModuleHandle,
-                            compiled_module.self_handle_idx().0,
-                        )
-                    }
-                        .finish(Location::Undefined)
-                        .into_vm_status()
-                },
-            )?;
+            check_module_compat(pre_version.as_slice(), module.code()).map_err(|e| {
+                {
+                    warn!("Check module compat error: {:?}", e);
+                    errors::verification_error(
+                        //TODO define error code for compat.
+                        StatusCode::VERIFICATION_ERROR,
+                        IndexKind::ModuleHandle,
+                        compiled_module.self_handle_idx().0,
+                    )
+                }
+                .finish(Location::Undefined)
+                .into_vm_status()
+            })?;
         }
         Ok(())
     }
@@ -337,8 +339,8 @@ impl StarcoinVM {
                         IndexKind::AddressIdentifier,
                         compiled_module.self_handle_idx().0,
                     )
-                        .finish(Location::Undefined)
-                        .into_vm_status());
+                    .finish(Location::Undefined)
+                    .into_vm_status());
                 }
                 self.check_compatibility_if_exist(&session, module)?;
 
