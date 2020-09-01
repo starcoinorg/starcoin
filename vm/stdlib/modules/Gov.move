@@ -65,10 +65,10 @@ address 0x1 {
     }
 
 
-    /// init function, can only be called by token issuer.
+    /// plug_in function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this moudle by call this `register function`.
-    public fun register<TokenT>(signer: &signer) {
+    public fun plug_in<TokenT>(signer: &signer) {
       // TODO: we can add a token manage cap in Token module.
       // and only token manager can register this.
       let token_issuer = Token::token_address<TokenT>();
