@@ -106,6 +106,14 @@ impl FromStr for Connect {
     }
 }
 
+static OPT_NET_HELP: &str = r#"Chain Network 
+    Builtin network: test,dev,halley,proxima,main
+    Custom network format: chain_name:chain_id:chain_config_name_or_path
+    Such as:  
+    my_chain:123:dev will init a new chain with id `123`, but reuse builtin dev network's config.
+    my_chain2:124:/my_chain2/genesis_config.json will init a new chain with id `124`, and the config at /my_chain2/genesis_config.json.
+    Use starcoin_generator command to generate a genesis config."#;
+
 #[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "starcoin", about = "Starcoin")]
 pub struct StarcoinOpt {
@@ -117,14 +125,7 @@ pub struct StarcoinOpt {
     /// Path to data dir
     pub data_dir: Option<PathBuf>,
 
-    #[structopt(long, short = "n")]
-    /// Chain Network
-    /// Builtin network: test,dev,halley,proxima,main
-    /// Custom network format: chain_name:chain_id:chain_config_name_or_path
-    /// Such as:  
-    /// my_chain:123:dev will init a new chain with id `123`, but reuse builtin dev network's config.
-    /// my_chain2:124:/my_chain2/genesis_config.json will init a new chain with id `124`, and the config at genesis_config.json.
-    /// use starcoin_generator command to generate a genesis config.
+    #[structopt(long, short = "n", help = OPT_NET_HELP)]
     pub net: Option<ChainNetwork>,
 
     #[structopt(long)]
