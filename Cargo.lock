@@ -7078,6 +7078,7 @@ dependencies = [
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node-api",
+ "starcoin-open-block",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
