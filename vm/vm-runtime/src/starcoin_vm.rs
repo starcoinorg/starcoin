@@ -11,7 +11,7 @@ use move_vm_runtime::session::Session;
 use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
 use once_cell::sync::Lazy;
 use starcoin_logger::prelude::*;
-use starcoin_move_compiler::check_compat_and_verify_module;
+use starcoin_move_compiler::check_module_compat;
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -30,7 +30,7 @@ use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
-use starcoin_vm_types::transaction::{Package, Script, TransactionPayloadType};
+use starcoin_vm_types::transaction::{Module, Package, Script, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -213,13 +213,16 @@ impl StarcoinVM {
             TransactionPayload::Script(script) => {
                 self.is_allowed_script(script)?;
             }
-            TransactionPayload::Package(_package) => {
+            TransactionPayload::Package(package) => {
                 //TODO move to prologue
                 if !&self.vm_config()?.publishing_option.is_open() {
                     warn!("[VM] Custom modules not allowed");
                     return Err(VMStatus::Error(StatusCode::UNKNOWN_MODULE));
                 };
                 //TODO verify module compat.
+                for module in package.modules() {
+                    self.check_compatibility_if_exist(&session, module)?;
+                }
             }
         }
         self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
@@ -249,6 +252,44 @@ impl StarcoinVM {
                 }
             }
         }
+    }
+
+    fn check_compatibility_if_exist<R: RemoteCache>(
+        &self,
+        session: &Session<R>,
+        module: &Module,
+    ) -> Result<(), VMStatus> {
+        let compiled_module = match CompiledModule::deserialize(module.code()) {
+            Ok(module) => module,
+            Err(err) => {
+                warn!("[VM] module deserialization failed {:?}", err);
+                return Err(err.finish(Location::Undefined).into_vm_status());
+            }
+        };
+
+        let module_id = compiled_module.self_id();
+        if session
+            .exists_module(&module_id)
+            .map_err(|e| e.into_vm_status())?
+        {
+            let pre_version = session
+                .load_module(&module_id)
+                .map_err(|e| e.into_vm_status())?;
+            check_module_compat(pre_version.as_slice(), module.code()).map_err(|e| {
+                {
+                    warn!("Check module compat error: {:?}", e);
+                    errors::verification_error(
+                        //TODO define error code for compat.
+                        StatusCode::VERIFICATION_ERROR,
+                        IndexKind::ModuleHandle,
+                        compiled_module.self_handle_idx().0,
+                    )
+                }
+                .finish(Location::Undefined)
+                .into_vm_status()
+            })?;
+        }
+        Ok(())
     }
 
     fn execute_package(
@@ -301,35 +342,12 @@ impl StarcoinVM {
                     .finish(Location::Undefined)
                     .into_vm_status());
                 }
+                self.check_compatibility_if_exist(&session, module)?;
 
-                //verify module compatibility
-                let _new_module = if session
-                    .exists_module(&module_id)
-                    .map_err(|e| e.into_vm_status())?
-                {
-                    let pre_version = session
-                        .load_module(&module_id)
-                        .map_err(|e| e.into_vm_status())?;
-                    check_compat_and_verify_module(pre_version.as_slice(), module.code()).map_err(
-                        |e| {
-                            {
-                                warn!("Check module compat error: {:?}", e);
-                                errors::verification_error(
-                                    //TODO define error code for compat.
-                                    StatusCode::VERIFICATION_ERROR,
-                                    IndexKind::ModuleHandle,
-                                    compiled_module.self_handle_idx().0,
-                                )
-                            }
-                            .finish(Location::Undefined)
-                            .into_vm_status()
-                        },
-                    )?
-                } else {
-                    session
-                        .verify_module(module.code())
-                        .map_err(|e| e.into_vm_status())?
-                };
+                session
+                    .verify_module(module.code())
+                    .map_err(|e| e.into_vm_status())?;
+
                 session
                     .publish_module(module.code().to_vec(), txn_data.sender, cost_strategy)
                     .map_err(|e| e.into_vm_status())?;
