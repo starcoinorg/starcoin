@@ -29,7 +29,9 @@ pub const TRANSACTION_SCRIPTS: &str = "transaction_scripts";
 
 pub const INIT_SCRIPTS: &str = "init_scripts";
 /// The output path under which compiled files will be put
-pub const COMPILED_OUTPUT_PATH: &str = "compiled/latest";
+pub const COMPILED_OUTPUT_PATH: &str = "compiled";
+/// The latest output path under which compiled files will be put
+pub const LATEST_COMPILED_OUTPUT_PATH: &str = "compiled/latest";
 /// The output path for the compiled stdlib
 pub const COMPILED_STDLIB_PATH: &str = "stdlib";
 /// The extension for compiled files
