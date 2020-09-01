@@ -4,7 +4,7 @@ use starcoin_functional_tests::account::{
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config;
-use starcoin_types::chain_config::ChainId;
+use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::transaction::SignedUserTransaction;
 
 const NEW_ACCOUNT_AMOUNT: u128 = 1_000_000_000;
@@ -16,7 +16,7 @@ pub struct AccountWithSeqNum {
 }
 
 pub fn create_account(
-    chain_id: ChainId,
+    net: &ChainNetwork,
     seq_number: u64,
     account_count: u64,
 ) -> Vec<(Account, SignedUserTransaction)> {
@@ -29,7 +29,7 @@ pub fn create_account(
             seq_number + i,
             NEW_ACCOUNT_AMOUNT,
             1,
-            chain_id,
+            net,
         );
         new_accounts.push((new_account, new_txn));
     }
@@ -37,18 +37,18 @@ pub fn create_account(
 }
 
 pub fn create_account_with_txpool(
-    chain_id: ChainId,
+    net: &ChainNetwork,
     txpool_service: &TxPoolService,
     account_count: u64,
 ) -> Vec<(Account, SignedUserTransaction)> {
     let next_sequence_number = txpool_service
         .next_sequence_number(account_config::association_address())
         .unwrap();
-    create_account(chain_id, next_sequence_number, account_count)
+    create_account(net, next_sequence_number, account_count)
 }
 
 pub fn gen_random_txn(
-    chain_id: ChainId,
+    net: &ChainNetwork,
     accounts: Vec<AccountWithSeqNum>,
     txn_count_per_account: u64,
 ) -> Vec<SignedUserTransaction> {
@@ -68,7 +68,7 @@ pub fn gen_random_txn(
                         accounts.get(i).expect("account1 is none.").seq_num,
                         TRANSFER_AMOUNT,
                         1,
-                        chain_id,
+                        net.chain_id(),
                     );
                     txns.push(txn);
                     accounts.get_mut(i).expect("account1 is none.").seq_num += 1;
@@ -81,7 +81,7 @@ pub fn gen_random_txn(
 }
 
 pub fn gen_txns_with_txpool(
-    chain_id: ChainId,
+    net: &ChainNetwork,
     txpool_service: &TxPoolService,
     accounts: Vec<Account>,
     txn_count_per_account: u64,
@@ -94,5 +94,5 @@ pub fn gen_txns_with_txpool(
         let account_with_seq_num = AccountWithSeqNum { account, seq_num };
         accounts_with_seq_num.push(account_with_seq_num);
     }
-    gen_random_txn(chain_id, accounts_with_seq_num, txn_count_per_account)
+    gen_random_txn(net, accounts_with_seq_num, txn_count_per_account)
 }

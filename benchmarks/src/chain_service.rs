@@ -15,7 +15,7 @@ use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;
 use starcoin_txpool::{TxPool, TxPoolService};
-use starcoin_vm_types::chain_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use traits::{ChainReader, ChainService};
@@ -75,7 +75,7 @@ impl ChainServiceBencher {
         let mut rng: StdRng = StdRng::from_seed([0; 32]);
         for i in 0..self.block_num {
             let block_chain = BlockChain::new(
-                self.config.net(),
+                self.config.net().consensus(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
                 None,

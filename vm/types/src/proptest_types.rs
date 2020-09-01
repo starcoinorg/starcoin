@@ -3,8 +3,8 @@
 #![allow(clippy::unit_arg)]
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
-use crate::chain_config::{ChainId, ChainNetwork};
 use crate::event::EventHandle;
+use crate::genesis_config::{BuiltinNetwork, ChainId};
 use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
@@ -100,7 +100,7 @@ impl AccountInfoUniverse {
     pub fn default() -> Result<Self> {
         // association account
         if let (Some(private_key), public_key) =
-            &ChainNetwork::Test.get_config().association_key_pair
+            &BuiltinNetwork::Test.genesis_config().association_key_pair
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
@@ -273,7 +273,8 @@ impl SignatureCheckedTransaction {
             })
             .prop_flat_map(|(_keypair, raw_txn)| {
                 prop_oneof![Just(
-                    ChainNetwork::Test
+                    BuiltinNetwork::Test
+                        .genesis_config()
                         .sign_with_association(raw_txn)
                         .expect("signing should always work")
                         .check_signature()

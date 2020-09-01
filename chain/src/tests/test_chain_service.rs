@@ -47,7 +47,7 @@ async fn gen_master_chain(times: u64) -> (ChainActorRef, Arc<NodeConfig>, Arc<St
         for _i in 0..times {
             let startup_info = chain.clone().master_startup_info().await.unwrap();
             let block_chain = BlockChain::new(
-                node_config.net(),
+                node_config.net().consensus(),
                 startup_info.master,
                 storage.clone(),
                 None,
@@ -101,7 +101,9 @@ async fn test_block_chain_forks() {
         for i in 0..(times + 1) {
             //Delay::new(Duration::from_millis(1000)).await;
 
-            let chain = BlockChain::new(config.net(), parent_hash, storage.clone(), None).unwrap();
+            let chain =
+                BlockChain::new(config.net().consensus(), parent_hash, storage.clone(), None)
+                    .unwrap();
             let (block_template, _) = chain
                 .create_block_template(
                     *miner_account.address(),
@@ -180,7 +182,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             0,
             10000,
             config.net().consensus().now() + 40000,
-            config.net().chain_id(),
+            config.net(),
         );
         txn.as_signed_user_txn()?.clone()
     };

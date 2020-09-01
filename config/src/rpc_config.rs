@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_ports, BaseConfig, ChainNetwork, ConfigModule,
-    StarcoinOpt,
+    get_available_port_from, get_random_available_ports, BaseConfig, ConfigModule, StarcoinOpt,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -53,14 +52,16 @@ impl RpcConfig {
 
 impl ConfigModule for RpcConfig {
     fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let ports = match base.net {
-            ChainNetwork::Test => get_random_available_ports(3),
-            ChainNetwork::Dev => vec![
+        let ports = if base.net.is_test() {
+            get_random_available_ports(3)
+        } else if base.net.is_dev() {
+            vec![
                 get_available_port_from(DEFAULT_HTTP_PORT),
                 get_available_port_from(DEFAULT_TCP_PORT),
                 get_available_port_from(DEFAULT_WEB_SOCKET_PORT),
-            ],
-            _ => vec![DEFAULT_HTTP_PORT, DEFAULT_TCP_PORT, DEFAULT_WEB_SOCKET_PORT],
+            ]
+        } else {
+            vec![DEFAULT_HTTP_PORT, DEFAULT_TCP_PORT, DEFAULT_WEB_SOCKET_PORT]
         };
         let rpc_address: IpAddr = opt
             .rpc_address

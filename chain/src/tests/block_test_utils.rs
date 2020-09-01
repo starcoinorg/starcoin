@@ -13,7 +13,7 @@ use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
-use starcoin_types::chain_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
@@ -34,9 +34,9 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 
 /// This produces the genesis block
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
-    // let storage = Arc::new(storage);
-    let genesis = Genesis::load(ChainNetwork::Test).unwrap();
-    genesis.clone().execute_genesis_block(storage).unwrap();
+    let net = &ChainNetwork::TEST;
+    let genesis = Genesis::load(net).unwrap();
+    genesis.clone().execute_genesis_block(net, storage).unwrap();
     Just(genesis.block().clone())
 }
 
@@ -94,7 +94,7 @@ fn txn_transfer(
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = ChainNetwork::Test.consensus().now() + DEFAULT_EXPIRATION_TIME;
+    let expired = ChainNetwork::TEST.consensus().now() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {
@@ -143,7 +143,7 @@ prop_compose! {
     let p_header = parent_header.clone();
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
-        ChainNetwork::Test.consensus().now(),
+        ChainNetwork::TEST.consensus().now(),
         p_header.author,
         p_header.auth_key_prefix,
         0,

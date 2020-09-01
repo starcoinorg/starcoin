@@ -17,7 +17,6 @@ use std::sync::mpsc;
 use std::sync::Arc;
 use storage::storage::StorageInstance;
 use storage::Storage;
-use types::chain_config::ChainId;
 use types::{
     account_address,
     account_address::AccountAddress,
@@ -90,7 +89,7 @@ impl TransactionGenerator {
             rng,
             block_sender: Some(block_sender),
             sequence: 0,
-            net: ChainNetwork::Test,
+            net: ChainNetwork::TEST,
             block_number: 1,
         }
     }
@@ -247,7 +246,7 @@ pub fn run_benchmark(
 
     let chain_state = ChainStateDB::new(storage, None);
 
-    let genesis_txn = Genesis::build_genesis_transaction(ChainNetwork::Test).unwrap();
+    let genesis_txn = Genesis::build_genesis_transaction(&ChainNetwork::TEST).unwrap();
     let _txn_info = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
@@ -288,7 +287,7 @@ fn create_transaction(
         400_000,
         1,
         expiration_timestamp_secs,
-        ChainId::test(),
+        &ChainNetwork::TEST,
     );
     Transaction::UserTransaction(signed_txn)
 }

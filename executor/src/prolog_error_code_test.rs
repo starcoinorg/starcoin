@@ -67,7 +67,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         net.consensus().now(),
         *account1.address(),
         Some(account1.auth_key_prefix()),
-        net.get_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
+        net.genesis_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
     ));
     let output3 = execute_and_apply(&chain_state, txn3);

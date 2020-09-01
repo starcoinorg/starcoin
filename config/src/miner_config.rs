@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_port, BaseConfig, ChainNetwork, ConfigModule,
-    StarcoinOpt,
+    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -39,10 +38,12 @@ impl ConfigModule for MinerConfig {
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
 
-        let port = match base.net {
-            ChainNetwork::Test => get_random_available_port(),
-            ChainNetwork::Dev => get_available_port_from(DEFAULT_STRATUM_SERVER_PORT),
-            _ => DEFAULT_STRATUM_SERVER_PORT,
+        let port = if base.net.is_test() {
+            get_random_available_port()
+        } else if base.net.is_dev() {
+            get_available_port_from(DEFAULT_STRATUM_SERVER_PORT)
+        } else {
+            DEFAULT_STRATUM_SERVER_PORT
         };
         let stratum_server = format!("127.0.0.1:{}", port).parse::<SocketAddr>()?;
 

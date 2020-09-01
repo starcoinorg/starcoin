@@ -7,7 +7,7 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -28,7 +28,7 @@ pub fn build_transfer_from_association(
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
@@ -36,7 +36,7 @@ pub fn build_transfer_from_association(
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
-        chain_id,
+        net,
     ))
 }
 
@@ -210,7 +210,7 @@ pub fn peer_to_peer_txn_sent_as_association(
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
@@ -218,7 +218,7 @@ pub fn peer_to_peer_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timestamp_secs,
-        chain_id,
+        net,
     )
 }
 
@@ -229,7 +229,7 @@ pub fn create_signed_txn_with_association_account(
     max_gas_amount: u64,
     gas_unit_price: u64,
     expiration_timestamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> SignedUserTransaction {
     let raw_txn = RawUserTransaction::new(
         account_config::association_address(),
@@ -238,15 +238,15 @@ pub fn create_signed_txn_with_association_account(
         max_gas_amount,
         gas_unit_price,
         expiration_timestamp_secs,
-        chain_id,
+        net.chain_id(),
     );
-    ChainNetwork::Dev
+    net.genesis_config()
         .sign_with_association(raw_txn)
         .expect("Sign txn should work.")
 }
 
 pub fn build_stdlib_package(
-    net: ChainNetwork,
+    net: &ChainNetwork,
     stdlib_option: StdLibOptions,
     with_init_script: bool,
 ) -> Result<Package> {
@@ -269,26 +269,26 @@ pub fn build_stdlib_package(
             .collect(),
     )?;
     if with_init_script {
-        let chain_config = net.get_config();
+        let genesis_config = net.genesis_config();
         let chain_id = net.chain_id().id();
         let consensus_strategy = net.consensus();
-        let genesis_timestamp = net.get_config().timestamp;
+        let genesis_timestamp = net.genesis_config().timestamp;
 
-        let genesis_auth_key = chain_config
+        let genesis_auth_key = genesis_config
             .genesis_key_pair
             .as_ref()
             .map(|(_, public_key)| AuthenticationKey::ed25519(&public_key).to_vec())
             .unwrap_or_else(Vec::new);
 
         let association_auth_key =
-            AuthenticationKey::ed25519(&chain_config.association_key_pair.1).to_vec();
+            AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        let publish_option_bytes = scs::to_bytes(&chain_config.vm_config.publishing_option)
+        let publish_option_bytes = scs::to_bytes(&genesis_config.vm_config.publishing_option)
             .expect("Cannot serialize publishing option");
         let instruction_schedule =
-            scs::to_bytes(&chain_config.vm_config.gas_schedule.instruction_table)
+            scs::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
                 .expect("Cannot serialize gas schedule");
-        let native_schedule = scs::to_bytes(&chain_config.vm_config.gas_schedule.native_table)
+        let native_schedule = scs::to_bytes(&genesis_config.vm_config.gas_schedule.native_table)
             .expect("Cannot serialize gas schedule");
 
         package.set_init_script(Script::new(
@@ -298,35 +298,35 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(publish_option_bytes),
                 TransactionArgument::U8Vector(instruction_schedule),
                 TransactionArgument::U8Vector(native_schedule),
-                TransactionArgument::U64(chain_config.reward_delay),
-                TransactionArgument::U64(chain_config.uncle_rate_target),
-                TransactionArgument::U64(chain_config.epoch_block_count),
-                TransactionArgument::U64(chain_config.init_block_time_target),
-                TransactionArgument::U64(chain_config.block_difficulty_window),
-                TransactionArgument::U128(chain_config.init_reward_per_block),
-                TransactionArgument::U64(chain_config.reward_per_uncle_percent),
-                TransactionArgument::U64(chain_config.min_block_time_target),
-                TransactionArgument::U64(chain_config.max_block_time_target),
-                TransactionArgument::U64(chain_config.max_uncles_per_block),
-                TransactionArgument::U128(chain_config.pre_mine_amount),
-                TransactionArgument::U8Vector(chain_config.parent_hash.to_vec()),
+                TransactionArgument::U64(genesis_config.reward_delay),
+                TransactionArgument::U64(genesis_config.uncle_rate_target),
+                TransactionArgument::U64(genesis_config.epoch_block_count),
+                TransactionArgument::U64(genesis_config.init_block_time_target),
+                TransactionArgument::U64(genesis_config.block_difficulty_window),
+                TransactionArgument::U128(genesis_config.init_reward_per_block),
+                TransactionArgument::U64(genesis_config.reward_per_uncle_percent),
+                TransactionArgument::U64(genesis_config.min_block_time_target),
+                TransactionArgument::U64(genesis_config.max_block_time_target),
+                TransactionArgument::U64(genesis_config.max_uncles_per_block),
+                TransactionArgument::U128(genesis_config.pre_mine_amount),
+                TransactionArgument::U8Vector(genesis_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
                 TransactionArgument::U8(chain_id),
                 TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
-                TransactionArgument::U64(chain_config.vm_config.block_gas_limit),
-                TransactionArgument::U64(chain_config.global_memory_per_byte_cost),
-                TransactionArgument::U64(chain_config.global_memory_per_byte_write_cost),
-                TransactionArgument::U64(chain_config.min_transaction_gas_units),
-                TransactionArgument::U64(chain_config.large_transaction_cutoff),
-                TransactionArgument::U64(chain_config.instrinsic_gas_per_byte),
-                TransactionArgument::U64(chain_config.maximum_number_of_gas_units),
-                TransactionArgument::U64(chain_config.min_price_per_gas_unit),
-                TransactionArgument::U64(chain_config.max_price_per_gas_unit),
-                TransactionArgument::U64(chain_config.max_transaction_size_in_bytes),
-                TransactionArgument::U64(chain_config.gas_unit_scaling_factor),
-                TransactionArgument::U64(chain_config.default_account_size),
+                TransactionArgument::U64(genesis_config.vm_config.block_gas_limit),
+                TransactionArgument::U64(genesis_config.global_memory_per_byte_cost),
+                TransactionArgument::U64(genesis_config.global_memory_per_byte_write_cost),
+                TransactionArgument::U64(genesis_config.min_transaction_gas_units),
+                TransactionArgument::U64(genesis_config.large_transaction_cutoff),
+                TransactionArgument::U64(genesis_config.instrinsic_gas_per_byte),
+                TransactionArgument::U64(genesis_config.maximum_number_of_gas_units),
+                TransactionArgument::U64(genesis_config.min_price_per_gas_unit),
+                TransactionArgument::U64(genesis_config.max_price_per_gas_unit),
+                TransactionArgument::U64(genesis_config.max_transaction_size_in_bytes),
+                TransactionArgument::U64(genesis_config.gas_unit_scaling_factor),
+                TransactionArgument::U64(genesis_config.default_account_size),
             ],
         ));
     }

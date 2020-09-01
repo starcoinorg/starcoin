@@ -29,7 +29,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::chain_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
     VMConfig,
@@ -41,7 +41,7 @@ use std::{collections::HashSet, convert::TryInto, sync::Arc};
 use storage::Store;
 
 pub struct BlockChain {
-    net: ChainNetwork,
+    consensus: ConsensusStrategy,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
@@ -54,7 +54,7 @@ pub struct BlockChain {
 
 impl BlockChain {
     pub fn new(
-        net: ChainNetwork,
+        consensus: ConsensusStrategy,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
         remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
@@ -70,7 +70,7 @@ impl BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let mut chain = Self {
-            net,
+            consensus,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info,
                 AccumulatorStoreType::Transaction,
@@ -92,7 +92,7 @@ impl BlockChain {
         Ok(chain)
     }
 
-    pub fn init_empty_chain(net: ChainNetwork, storage: Arc<dyn Store>) -> Result<Self> {
+    pub fn init_empty_chain(consensus: ConsensusStrategy, storage: Arc<dyn Store>) -> Result<Self> {
         let txn_accumulator = MerkleAccumulator::new_empty(
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
@@ -102,7 +102,7 @@ impl BlockChain {
             storage.clone().into_super_arc(),
         )?;
         let chain = Self {
-            net,
+            consensus,
             txn_accumulator,
             block_accumulator,
             head: None,
@@ -117,13 +117,17 @@ impl BlockChain {
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
         let mut chain = Self::new(
-            self.net,
+            self.consensus,
             head_block_hash,
             self.storage.clone(),
             self.remote_chain_state.clone(),
         )?;
         chain.update_epoch_and_uncle_cache()?;
         Ok(chain)
+    }
+
+    pub fn consensus(&self) -> ConsensusStrategy {
+        self.consensus
     }
 
     pub fn update_epoch_and_uncle_cache(&mut self) -> Result<()> {
@@ -172,10 +176,6 @@ impl BlockChain {
         Ok(uncles)
     }
 
-    pub fn net(&self) -> ChainNetwork {
-        self.net
-    }
-
     fn get_block_info(&self, block_id: HashValue) -> Result<BlockInfo> {
         Ok(self
             .storage
@@ -202,7 +202,7 @@ impl BlockChain {
             final_block_gas_limit,
             author,
             auth_key_prefix,
-            self.net.consensus().now(),
+            self.consensus.now(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
@@ -213,9 +213,9 @@ impl BlockChain {
     pub fn get_on_chain_block_gas_limit(&self) -> Result<u64> {
         let account_state_reader = AccountStateReader::new(&self.chain_state);
         let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
-        Ok(vm_config
+        vm_config
             .map(|vm_config| vm_config.block_gas_limit)
-            .unwrap_or(self.net.get_config().vm_config.block_gas_limit))
+            .ok_or_else(|| format_err!("read on chain config fail."))
     }
 
     pub fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
@@ -581,7 +581,7 @@ impl BlockChain {
         // TODO 最小值是否需要
         // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
         if verify_head_id {
-            if let Err(err) = self.net.consensus().verify(self, epoch, header) {
+            if let Err(err) = self.consensus.verify(self, epoch, header) {
                 return Err(
                     ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, err).into(),
                 );

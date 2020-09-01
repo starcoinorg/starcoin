@@ -16,6 +16,7 @@ use starcoin_types::{
     state_set::ChainStateSet,
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{
     Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
 };
@@ -301,5 +302,10 @@ impl<'a> AccountStateReader<'a> {
     pub fn timestamp(&self) -> Result<GlobalTimeOnChain> {
         self.get_resource(genesis_address())?
             .ok_or_else(|| format_err!("Timestamp resource should exist."))
+    }
+
+    pub fn chain_id(&self) -> Result<ChainId> {
+        self.get_resource::<ChainId>(genesis_address())?
+            .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
     }
 }

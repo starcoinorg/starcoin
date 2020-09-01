@@ -167,7 +167,7 @@ async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<N
             let startup_info = chain.clone().master_startup_info().await?;
 
             let block_chain = BlockChain::new(
-                node_config.net(),
+                node_config.net().consensus(),
                 startup_info.master,
                 storage.clone(),
                 None,

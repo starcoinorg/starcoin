@@ -5,7 +5,7 @@ use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
 /// Defines the version of Starcoin software.
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, Hash, PartialEq, PartialOrd, Ord)]
 pub struct Version {
     pub major: u64,
 }

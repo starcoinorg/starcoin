@@ -23,11 +23,12 @@ pub struct NodeInfo {
 
 impl NodeInfo {
     pub fn new(peer_info: PeerInfo, self_address: String, net: ChainNetwork) -> Self {
+        let now = net.consensus().now();
         Self {
             peer_info,
             self_address,
             net,
-            now: net.consensus().now(),
+            now,
         }
     }
 }

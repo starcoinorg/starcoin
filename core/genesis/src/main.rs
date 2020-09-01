@@ -18,9 +18,9 @@ pub struct GenesisGeneratorOpt {
 fn main() {
     let _logger = starcoin_logger::init();
     let opts = GenesisGeneratorOpt::from_args();
-    let networks = match opts.net {
+    let networks = match opts.net.as_ref() {
         Some(network) => vec![network],
-        None => ChainNetwork::networks(),
+        None => ChainNetwork::builtin_networks(),
     };
     for net in networks {
         // skip test network generate.

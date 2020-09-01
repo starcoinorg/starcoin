@@ -16,8 +16,9 @@ use starcoin_types::startup_info::StartupInfo;
 use std::sync::Arc;
 
 pub mod cli_state;
-pub mod gen_config;
 pub mod gen_data;
+pub mod gen_genesis;
+pub mod gen_genesis_config;
 
 pub fn init_or_load_data_dir(
     global_opt: &StarcoinOpt,

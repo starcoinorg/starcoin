@@ -3,7 +3,7 @@
 
 use crate::{
     decode_key, get_available_port_from, get_random_available_port, load_key, BaseConfig,
-    ChainNetwork, ConfigModule, StarcoinOpt,
+    ConfigModule, StarcoinOpt,
 };
 use anyhow::{bail, format_err, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
@@ -101,10 +101,12 @@ impl ConfigModule for NetworkConfig {
         for seed in &seeds {
             Self::check_seed(seed)?;
         }
-        let port = match base.net {
-            ChainNetwork::Test => get_random_available_port(),
-            ChainNetwork::Dev => get_available_port_from(DEFAULT_NETWORK_PORT),
-            _ => DEFAULT_NETWORK_PORT,
+        let port = if base.net.is_test() {
+            get_random_available_port()
+        } else if base.net.is_dev() {
+            get_available_port_from(DEFAULT_NETWORK_PORT)
+        } else {
+            DEFAULT_NETWORK_PORT
         };
         Ok(Self {
             listen: format!("/ip4/0.0.0.0/tcp/{}", port)

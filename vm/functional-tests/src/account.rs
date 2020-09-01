@@ -19,7 +19,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::chain_config::ChainId;
+use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
@@ -693,7 +693,7 @@ pub fn create_account_txn_sent_as_association(
     seq_num: u64,
     initial_amount: u128,
     expiration_timstamp_secs: u64,
-    chain_id: ChainId,
+    net: &ChainNetwork,
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
@@ -710,6 +710,6 @@ pub fn create_account_txn_sent_as_association(
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         expiration_timstamp_secs,
-        chain_id,
+        net,
     )
 }

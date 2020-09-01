@@ -61,7 +61,7 @@ where
         remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<Self> {
         let master = BlockChain::new(
-            config.net(),
+            config.net().consensus(),
             startup_info.master,
             storage.clone(),
             remote_chain_state.clone(),
@@ -82,7 +82,7 @@ where
         let block_exist = self.block_exist(header.id());
         let block_chain = if self.block_exist(header.parent_hash()) {
             Some(BlockChain::new(
-                self.config.net(),
+                self.config.net().consensus(),
                 header.parent_hash(),
                 self.storage.clone(),
                 self.remote_chain_state.clone(),
@@ -667,7 +667,7 @@ where
         if let Ok(Some(block)) = self.get_block_by_hash(block_id) {
             let remote_chain_state = self.remote_chain_state.clone();
             let block_chain = BlockChain::new(
-                self.config.net(),
+                self.config.net().consensus(),
                 block.id(),
                 self.storage.clone(),
                 remote_chain_state,

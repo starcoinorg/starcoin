@@ -59,7 +59,7 @@ fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
         0,
         10000,
         config.net().consensus().now() + 40000,
-        config.net().chain_id(),
+        config.net(),
     );
     txn.as_signed_user_txn().unwrap().clone()
 }

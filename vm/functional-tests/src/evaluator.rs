@@ -20,7 +20,7 @@ use starcoin_types::{
         TransactionStatus,
     },
 };
-use starcoin_vm_types::chain_config::{ChainId, ChainNetwork};
+use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork};
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
@@ -296,7 +296,7 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        expiration_timestamp_secs: ChainNetwork::Test.consensus().now()
+        expiration_timestamp_secs: ChainNetwork::TEST.consensus().now()
             + config.expiration_time.unwrap_or(3600),
     }
 }

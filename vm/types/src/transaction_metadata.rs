@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::STC_TOKEN_CODE;
-use crate::chain_config::ChainId;
+use crate::genesis_config::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::{
     account_address::AccountAddress,

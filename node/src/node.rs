@@ -151,7 +151,8 @@ pub async fn start(
     };
 
     //Only dev network association_key_pair contains private_key.
-    if let (Some(association_private_key), _) = &config.net().get_config().association_key_pair {
+    if let (Some(association_private_key), _) = &config.net().genesis_config().association_key_pair
+    {
         let association_account = account_service.get_account(association_address()).await?;
         if association_account.is_none() {
             account_service
