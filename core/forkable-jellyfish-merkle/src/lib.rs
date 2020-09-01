@@ -595,7 +595,7 @@ where
                         .next()
                         .ok_or_else(|| format_err!("ran out of nibbles"))?;
                     let (child_node_key, mut siblings_in_internal) =
-                        internal_node.get_child_with_siblings(&next_node_key, queried_child_index);
+                        internal_node.get_child_with_siblings(queried_child_index);
                     siblings.append(&mut siblings_in_internal);
                     if let Some(node_key) = child_node_key {
                         next_node_key = node_key;

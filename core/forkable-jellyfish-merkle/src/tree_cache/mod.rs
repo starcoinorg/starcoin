@@ -215,7 +215,6 @@ where
             .get_node(root_node_key)
             .unwrap_or_else(|_| unreachable!("Root node with key {:?} must exist", root_node_key))
             .hash();
-        assert_eq!(root_node_key, &root_hash);
         self.frozen_cache.root_hashes.push(root_hash);
         self.frozen_cache.node_cache.extend(self.node_cache.drain());
 
