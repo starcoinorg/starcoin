@@ -6101,9 +6101,9 @@ dependencies = [
 
 [[package]]
 name = "serde-reflection"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0724ee4d089608c6f22bb25058e73e56d8ecd6506628b635b5a2ed6c94c9e21"
+checksum = "695ca48311bdeac687d09bbd558de507f0874a401c56cce52ee5665705f817f3"
 dependencies = [
  "serde",
  "thiserror",
