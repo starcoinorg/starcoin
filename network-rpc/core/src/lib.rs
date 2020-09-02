@@ -15,7 +15,7 @@ pub struct NetRpcError {
 }
 
 impl NetRpcError {
-    fn new(msg: String) -> Self {
+    pub fn new(msg: String) -> Self {
         Self { message: msg }
     }
 }
