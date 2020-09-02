@@ -92,7 +92,16 @@ fn main() {
                     };
                     buildgen::java::output(&mut out, &abis, package_name, class_name).unwrap()
                 }
-                Language::Dart => {}
+                Language::Dart => {
+                    let module_name = options.module_name.as_deref().unwrap_or("Helpers");
+                    let parts = module_name.rsplitn(2, '.').collect::<Vec<_>>();
+                    let (_, class_name) = if parts.len() > 1 {
+                        (Some(parts[1]), parts[0])
+                    } else {
+                        (None, parts[0])
+                    };
+                    buildgen::dart::output(&mut out, &abis, class_name).unwrap()
+                }
             }
             return;
         }
@@ -118,6 +127,7 @@ fn main() {
             _ => {
                 installer.install_serde_runtime().unwrap();
                 installer.install_lcs_runtime().unwrap();
+                installer.install_bincode_runtime().unwrap();
             }
         }
         let content =
@@ -132,10 +142,10 @@ fn main() {
                 }
             }
             Language::Java => "org.starcoin.types".to_string(),
-            _ => "starcoin_types".to_string(),
+            _ => "starcoin".to_string(),
         };
-        let config =
-            serdegen::CodeGeneratorConfig::new(name).with_encodings(vec![serdegen::Encoding::Lcs]);
+        let config = serdegen::CodeGeneratorConfig::new(name)
+            .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
         installer.install_module(&config, &registry).unwrap();
     }
 
@@ -153,7 +163,7 @@ fn main() {
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),
-            Language::Dart => Box::new(buildgen::java::Installer::new(install_dir)),
+            Language::Dart => Box::new(buildgen::dart::Installer::new(install_dir)),
         };
 
     if let Some(name) = options.module_name {
