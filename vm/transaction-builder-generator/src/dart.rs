@@ -50,7 +50,7 @@ fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
     var code = new Bytes(Uint8List.fromList({}));"#,
         quote_code(abi.code()),
     )?;
-    if abi.ty_args().len() == 0 {
+    if abi.ty_args().is_empty() {
         writeln!(out, "\t\tvar ty_args = List<TypeTag>();")?;
     } else {
         writeln!(
@@ -63,7 +63,7 @@ fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
         }
     }
 
-    if abi.args().len() == 0 {
+    if abi.args().is_empty() {
         writeln!(out, "\t\tvar args = List<TransactionArgument>();")?;
     } else {
         writeln!(
