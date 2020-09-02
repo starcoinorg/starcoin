@@ -69,6 +69,14 @@ fn test_network_rpc() {
 
     let rpc_info = gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);
+
+    let ping = block_on(async {
+        client
+            .ping(peer_id_2.clone().into(), "hello".to_string())
+            .await
+            .unwrap()
+    });
+    debug!("{:?}", ping);
 }
 
 fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {

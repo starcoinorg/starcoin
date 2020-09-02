@@ -292,4 +292,8 @@ where
         };
         Box::pin(fut)
     }
+
+    fn ping(&self, _peer_id: PeerId, req: String) -> BoxFuture<Result<String>> {
+        Box::pin(async move { Err(anyhow!("ping error")) })
+    }
 }
