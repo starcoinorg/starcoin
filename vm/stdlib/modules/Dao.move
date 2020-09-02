@@ -4,7 +4,6 @@ address 0x1 {
     use 0x1::Signer;
     use 0x1::Block;
     use 0x1::Option;
-    use 0x1::Account;
 
     /// make them into configs
     const VOTEING_DELAY: u64 = 100;
@@ -21,6 +20,7 @@ address 0x1 {
     const AGREED: u8 = 4;
     const QUEUED: u8 = 5;
     const EXECUTABLE: u8 = 6;
+    const EXTRACTED: u8 = 7;
 
     resource struct GovGlobalInfo<Token> {
       next_proposal_id: u64,
@@ -92,7 +92,7 @@ address 0x1 {
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
     /// So think twice before casting vote.
-    public fun cast_vote<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64, stake: u128, agree: bool)
+    public fun cast_vote<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64, stake: Token::Token<TokenT>, agree: bool)
     acquires Proposal {
       {
         let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
@@ -101,24 +101,24 @@ address 0x1 {
 
       let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
       assert(proposal.id == proposal_id, 500);
-      let stakes = Account::withdraw<TokenT>(signer, stake);
+      let stake_value = Token::value(&stake);
       let my_vote = Vote<TokenT> {
         proposer: proposer_address,
         id: proposal_id,
-        stake: stakes,
+        stake: stake,
         agree,
       };
       if (agree) {
-        proposal.for_votes = proposal.for_votes + stake;
+        proposal.for_votes = proposal.for_votes + stake_value;
       } else {
-        proposal.against_votes = proposal.against_votes + stake;
+        proposal.against_votes = proposal.against_votes + stake_value;
       };
 
       move_to(signer, my_vote);
     }
 
     /// Retrieve back my staked token voted for a proposal.
-    public fun unstake_votes<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64)
+    public fun unstake_votes<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64): Token::Token<TokenT>
     acquires Proposal, Vote {
       {
         let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
@@ -133,9 +133,10 @@ address 0x1 {
       } = move_from<Vote<TokenT>>(Signer::address_of(signer));
       assert(proposer == proposer_address, 100);
       assert(id == proposal_id, 101);
-      Account::deposit(signer, stake);
+      stake
     }
 
+    /// queue agreed proposal to execute.
     public fun queue_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64)
     acquires Proposal {
       // Only agreed proposal can be submitted.
@@ -144,6 +145,7 @@ address 0x1 {
       proposal.eta = Block::get_current_block_number() + proposal.action_delay;
     }
 
+    /// extract proposal action to execute.
     public fun extract_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64): ActionT
     acquires Proposal {
       // Only executable proposal's action can be extracted.
@@ -173,8 +175,10 @@ address 0x1 {
       } else if (proposal.eta < current_block_number) {
         // Queued, waiting to execute
         QUEUED
-      } else {
+      } else if (Option::is_some(&proposal.action)) {
         EXECUTABLE
+      } else {
+        EXTRACTED
       }
     }
 
