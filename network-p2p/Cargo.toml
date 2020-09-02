@@ -47,7 +47,7 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
 types = {path = "../types", package="starcoin-types"}
-prometheus = "0.9"
+prometheus = "0.10"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
 
