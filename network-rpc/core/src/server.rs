@@ -23,8 +23,8 @@ impl NetworkRpcServer {
         rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
         rpc_methods: F,
     ) -> Result<Addr<NetworkRpcServer>>
-        where
-            F: IntoIterator<Item=(String, Arc<dyn RpcMethod>)>,
+    where
+        F: IntoIterator<Item = (String, Arc<dyn RpcMethod>)>,
     {
         Ok(NetworkRpcServer::create(move |ctx| {
             let mut methods: HashMap<String, Arc<dyn RpcMethod>> = Default::default();

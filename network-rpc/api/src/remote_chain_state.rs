@@ -82,7 +82,12 @@ where
             account_address: account_address.to_owned(),
         };
         let client = self.client.clone();
-        futures::executor::block_on(async {client.get_account_state(peer_id, req).await.map_err(|e|e.into())})
+        futures::executor::block_on(async {
+            client
+                .get_account_state(peer_id, req)
+                .await
+                .map_err(|e| e.into())
+        })
     }
 
     fn state_root(&self) -> HashValue {

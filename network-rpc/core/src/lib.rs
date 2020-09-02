@@ -4,8 +4,8 @@
 pub mod delegates;
 pub mod server;
 
-use serde::{Deserialize, Serialize};
 use anyhow::Error;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -48,10 +48,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                                         Err(e) => Err(e.into()),
                                     }
                                 },
-                                Err(e) => {Err(e.into())}
-                            }
-                        }
-                    }                      
+                                Err(e) => Err(e.into())
+                            }}}
                 })
             } else {
                 None
@@ -60,7 +58,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         .collect();
     let get_rpc_info_method = quote! {
         pub fn get_rpc_info() -> (&'static [u8], Vec<String>) {
-           (CHAIN_PROTOCOL_NAME, vec![#(stringify!(#rpc_info).to_string()),*])
+            (CHAIN_PROTOCOL_NAME, vec![#(stringify!(#rpc_info).to_string()),*])
         }
     };
 

@@ -3,6 +3,7 @@
 
 use actix::Message;
 use futures::future::BoxFuture;
+use network_rpc_core::Result;
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -14,7 +15,6 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
-use network_rpc_core::Result;
 mod remote_chain_state;
 pub use remote_chain_state::RemoteChainStateReader;
 use starcoin_types::account_address::AccountAddress;
