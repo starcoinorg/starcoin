@@ -24,8 +24,7 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], class_name: &str) -> Resu
 fn output_preamble(out: &mut dyn Write) -> Result<()> {
     writeln!(
         out,
-        r#"
-import 'starcoin/starcoin.dart';
+        r#"import 'starcoin/starcoin.dart';
 import 'serde/serde.dart';
 import 'dart:typed_data';
 "#,
@@ -36,8 +35,7 @@ import 'dart:typed_data';
 fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
     writeln!(
         out,
-        "\n{}static Script encode_{}_script({}) {{",
-        quote_doc(abi.doc()),
+        "\n\tstatic Script encode_{}_script({}) {{",
         abi.name(),
         [
             quote_type_parameters(abi.ty_args()),
@@ -48,24 +46,49 @@ fn output_builder(out: &mut dyn Write, abi: &ScriptABI) -> Result<()> {
     )?;
     writeln!(
         out,
-        r#"    
-    var code = new Bytes(Uint8List.fromList({}));
-    var ty_args = List<TypeTag>.filled(1,{});
-    var args = List<TransactionArgument>.filled(1,{});
+        r#"
+    var code = new Bytes(Uint8List.fromList({}));"#,
+        quote_code(abi.code()),
+    )?;
+    if abi.ty_args().len() == 0 {
+        writeln!(out, "\t\tvar ty_args = List<TypeTag>();")?;
+    } else {
+        writeln!(
+            out,
+            "\t\tList<TypeTag> ty_args = new List<TypeTag>({});",
+            abi.ty_args().len(),
+        )?;
+        for (index, arg) in abi.ty_args().iter().enumerate() {
+            writeln!(out, "\t\tty_args[{}] = {};", index, arg.name())?;
+        }
+    }
+
+    if abi.args().len() == 0 {
+        writeln!(out, "\t\tvar args = List<TransactionArgument>();")?;
+    } else {
+        writeln!(
+            out,
+            "\t\tList<TransactionArgument> args = new List<TransactionArgument>({});",
+            abi.args().len(),
+        )?;
+        for (index, arg) in abi.args().iter().enumerate() {
+            writeln!(
+                out,
+                "\t\targs[{}] = {};",
+                index,
+                make_transaction_argument(arg.type_tag(), arg.name())
+            )?;
+        }
+    }
+
+    writeln!(
+        out,
+        r#"
     var script = new Script(code,ty_args,args);
     return script;
-}}"#,
-        quote_code(abi.code()),
-        quote_type_arguments(abi.ty_args()),
-        quote_arguments(abi.args()),
+  }}"#
     )?;
     Ok(())
-}
-
-fn quote_doc(doc: &str) -> String {
-    let doc = crate::common::prepare_doc_string(doc);
-    let text = textwrap::fill(&doc, 86);
-    format!("/**\n{} */\n", textwrap::indent(&text, " * "))
 }
 
 fn quote_type_parameters(ty_args: &[TypeArgumentABI]) -> Vec<String> {
@@ -89,21 +112,6 @@ fn quote_code(code: &[u8]) -> String {
             .collect::<Vec<_>>()
             .join(", ")
     )
-}
-
-fn quote_type_arguments(ty_args: &[TypeArgumentABI]) -> String {
-    ty_args
-        .iter()
-        .map(|ty_arg| ty_arg.name().to_string())
-        .collect::<Vec<_>>()
-        .join(", ")
-}
-
-fn quote_arguments(args: &[ArgumentABI]) -> String {
-    args.iter()
-        .map(|arg| make_transaction_argument(arg.type_tag(), arg.name()))
-        .collect::<Vec<_>>()
-        .join(", ")
 }
 
 fn quote_type(type_tag: &TypeTag) -> String {
@@ -130,7 +138,7 @@ fn make_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
         U8 => format!("new TransactionArgumentU8Item({})", name),
         U64 => format!("new TransactionArgumentU64Item({})", name),
         U128 => format!("new TransactionArgumentU128Item({})", name),
-        Address => format!("new TransactionArgumentAddress({})", name),
+        Address => format!("new TransactionArgumentAddressItem({})", name),
         Vector(type_tag) => match type_tag.as_ref() {
             U8 => format!("new TransactionArgumentU8VectorItem({})", name),
             _ => type_not_allowed(type_tag),
