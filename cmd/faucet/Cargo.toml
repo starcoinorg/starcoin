@@ -28,7 +28,7 @@ starcoin-account-api = {path = "../../account/api"}
 starcoin-executor = {path = "../../executor"}
 
 [[bin]]
-name = "faucet"
+name = "starcoin_faucet"
 path = "src/main.rs"
 
 [features]
