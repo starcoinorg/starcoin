@@ -24,7 +24,7 @@ config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-prometheus = "0.8"
+prometheus = "0.10"
 network-api = { path="../network/api" }
 scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
 block-relayer-api = { path = "../block-relayer/api/", package = "starcoin-block-relayer-api" }
