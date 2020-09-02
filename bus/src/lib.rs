@@ -4,10 +4,7 @@
 use crate::bus::SysBus;
 use actix::prelude::*;
 use anyhow::Result;
-use futures::{
-    channel::{mpsc, oneshot},
-    FutureExt,
-};
+use futures::channel::{mpsc, oneshot};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -113,7 +110,7 @@ pub trait Bus {
         M: Message + Send + Clone + Debug,
         M::Result: Send;
 
-    async fn oneshot<M: 'static>(self) -> Result<M>
+    async fn oneshot<M: 'static>(self) -> Result<oneshot::Receiver<M>>
     where
         M: Message + Send + Clone + Debug,
         M::Result: Send;
@@ -209,19 +206,14 @@ impl Bus for Addr<BusActor> {
             .map_err(Into::<anyhow::Error>::into)?
     }
 
-    async fn oneshot<M: 'static>(self) -> Result<M>
+    async fn oneshot<M: 'static>(self) -> Result<oneshot::Receiver<M>>
     where
         M: Message + Send + Clone + Debug,
         M::Result: Send,
     {
         self.send(Oneshot::<M>::new())
-            .then(|result| async {
-                match result {
-                    Ok(receiver) => receiver?.await.map_err(Into::<anyhow::Error>::into),
-                    Err(err) => Err(Into::<anyhow::Error>::into(err)),
-                }
-            })
             .await
+            .map_err(Into::<anyhow::Error>::into)?
     }
 
     async fn broadcast<M: 'static>(self, msg: M) -> Result<()>
@@ -376,9 +368,19 @@ mod tests {
             debug!("broadcast result: {}", result);
             sleep(Duration::from_millis(50));
         });
-        let msg = bus_actor.clone().oneshot::<MyMessage>().await;
+        let msg = bus_actor
+            .clone()
+            .oneshot::<MyMessage>()
+            .await
+            .unwrap()
+            .await;
         assert!(msg.is_ok());
-        let msg = bus_actor.clone().oneshot::<MyMessage>().await;
+        let msg = bus_actor
+            .clone()
+            .oneshot::<MyMessage>()
+            .await
+            .unwrap()
+            .await;
         assert!(msg.is_ok());
     }
 
