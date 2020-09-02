@@ -20,6 +20,7 @@ enum Language {
     Rust,
     Cpp,
     Java,
+    Dart,
 }
 }
 
@@ -91,6 +92,16 @@ fn main() {
                     };
                     buildgen::java::output(&mut out, &abis, package_name, class_name).unwrap()
                 }
+                Language::Dart => {
+                    let module_name = options.module_name.as_deref().unwrap_or("Helpers");
+                    let parts = module_name.rsplitn(2, '.').collect::<Vec<_>>();
+                    let (_, class_name) = if parts.len() > 1 {
+                        (Some(parts[1]), parts[0])
+                    } else {
+                        (None, parts[0])
+                    };
+                    buildgen::dart::output(&mut out, &abis, class_name).unwrap()
+                }
             }
             return;
         }
@@ -108,6 +119,7 @@ fn main() {
                 Language::Rust => Box::new(serdegen::rust::Installer::new(install_dir.clone())),
                 Language::Cpp => Box::new(serdegen::cpp::Installer::new(install_dir.clone())),
                 Language::Java => Box::new(serdegen::java::Installer::new(install_dir.clone())),
+                Language::Dart => Box::new(serdegen::dart::Installer::new(install_dir.clone())),
             };
 
         match options.language {
@@ -129,9 +141,11 @@ fn main() {
                 }
             }
             Language::Java => "org.starcoin.types".to_string(),
-            _ => "starcoin_types".to_string(),
+            _ => "starcoin".to_string(),
         };
-        installer.install_module(&name, &registry).unwrap();
+        let config =
+            serdegen::CodeGeneratorConfig::new(name).with_encodings(vec![serdegen::Encoding::Lcs]);
+        installer.install_module(&config, &registry).unwrap();
     }
 
     // Transaction builders
@@ -148,6 +162,7 @@ fn main() {
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),
+            Language::Dart => Box::new(buildgen::dart::Installer::new(install_dir)),
         };
 
     if let Some(name) = options.module_name {
