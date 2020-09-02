@@ -127,7 +127,6 @@ fn main() {
             _ => {
                 installer.install_serde_runtime().unwrap();
                 installer.install_lcs_runtime().unwrap();
-                installer.install_bincode_runtime().unwrap();
             }
         }
         let content =
@@ -144,8 +143,8 @@ fn main() {
             Language::Java => "org.starcoin.types".to_string(),
             _ => "starcoin".to_string(),
         };
-        let config = serdegen::CodeGeneratorConfig::new(name)
-            .with_encodings(vec![serdegen::Encoding::Lcs, serdegen::Encoding::Bincode]);
+        let config =
+            serdegen::CodeGeneratorConfig::new(name).with_encodings(vec![serdegen::Encoding::Lcs]);
         installer.install_module(&config, &registry).unwrap();
     }
 
