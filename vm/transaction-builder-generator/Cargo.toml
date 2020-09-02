@@ -12,9 +12,10 @@ edition = "2018"
 anyhow = "1.0.31"
 structopt = "0.3.17"
 textwrap = "0.12.1"
-serde-reflection = "0.3.2"
-serde-generate = "0.7.1"
 serde_yaml = "0.8.13"
+
+serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="fd29fe0757f10acd7f2ec246a9a89c32baa91f95"}
+serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="fd29fe0757f10acd7f2ec246a9a89c32baa91f95"}
 
 libra-types = { git = "https://github.com/starcoinorg/libra", rev="b660407697decb9719c071e71e47991f78b4e903" }
 libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="b660407697decb9719c071e71e47991f78b4e903" }
