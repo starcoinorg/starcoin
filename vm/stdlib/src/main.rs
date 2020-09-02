@@ -11,9 +11,9 @@ use std::{
 };
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_transaction_script_abi, build_transaction_script_doc,
-    compile_script, filter_move_files, save_binary, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR,
-    INIT_SCRIPTS, COMPILED_EXTENSION, LATEST_COMPILED_OUTPUT_PATH, COMPILED_STDLIB_PATH, STD_LIB_DOC_DIR,
-    TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR, COMPILED_OUTPUT_PATH,
+    compile_script, filter_move_files, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
+    COMPILED_STDLIB_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS,
+    LATEST_COMPILED_OUTPUT_PATH, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn compile_scripts(script_dir: &Path) {
@@ -50,7 +50,7 @@ fn main() {
         );
     let matches = cli.get_matches();
     let mut generate_new_version = false;
-    let mut version_number= "0.0".to_string();
+    let mut version_number = "0.0".to_string();
     if matches.is_present("version") {
         generate_new_version = true;
         version_number = matches.value_of("version").unwrap().to_string();

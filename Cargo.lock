@@ -1948,6 +1948,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs_extra"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9aa367c1d5d2dcf81121ae29c4ffa3c7309cef3b0694f746e47ee8bb29f6fe4"
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7940,7 +7946,9 @@ version = "0.4.5"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
+ "clap",
  "datatest-stable",
+ "fs_extra",
  "include_dir",
  "log 0.4.11",
  "move-prover",
