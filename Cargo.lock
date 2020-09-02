@@ -4319,7 +4319,7 @@ dependencies = [
  "parking_lot 0.11.0",
  "peerset",
  "pin-project",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
  "prost",
  "rand 0.7.3",
  "rustc-hex 2.1.0",
@@ -5182,20 +5182,6 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0575e258dab62268e7236d7307caa38848acbda7ec7ab87bd9093791e999d20"
-dependencies = [
- "cfg-if",
- "fnv",
- "lazy_static",
- "protobuf",
- "spin",
- "thiserror",
-]
-
-[[package]]
-name = "prometheus"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd0ced56dee39a6e960c15c74dc48849d614586db2eaada6497477af7c7811cd"
@@ -5203,8 +5189,22 @@ dependencies = [
  "cfg-if",
  "fnv",
  "lazy_static",
- "protobuf",
  "spin",
+ "thiserror",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30d70cf4412832bcac9cffe27906f4a66e450d323525e977168c70d1b36120ae"
+dependencies = [
+ "cfg-if",
+ "fnv",
+ "lazy_static",
+ "parking_lot 0.11.0",
+ "protobuf",
+ "regex",
  "thiserror",
 ]
 
@@ -6417,7 +6417,7 @@ dependencies = [
  "futures 0.3.5",
  "futures-core",
  "lazy_static",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
 ]
 
 [[package]]
@@ -7044,7 +7044,7 @@ dependencies = [
  "futures 0.3.5",
  "hyper 0.13.7",
  "once_cell",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
  "psutil",
  "serde_json",
  "starcoin-logger",
@@ -7171,7 +7171,7 @@ dependencies = [
  "network-p2p",
  "parity-codec",
  "parking_lot 0.11.0",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -7209,7 +7209,7 @@ dependencies = [
  "network-rpc-core",
  "network-rpc-derive",
  "parity-codec",
- "prometheus 0.8.0",
+ "prometheus 0.10.0",
  "serde",
  "serde_json",
  "starcoin-account-api",
@@ -7786,7 +7786,7 @@ dependencies = [
  "log 0.4.11",
  "once_cell",
  "parking_lot 0.11.0",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -7880,7 +7880,7 @@ dependencies = [
  "move-vm-runtime",
  "num_enum",
  "once_cell",
- "prometheus 0.9.0",
+ "prometheus 0.10.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "starcoin-canonical-serialization",
