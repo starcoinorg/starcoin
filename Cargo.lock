@@ -4351,6 +4351,7 @@ dependencies = [
  "anyhow",
  "futures 0.3.5",
  "network-api",
+ "serde",
  "starcoin-logger",
  "starcoin-types",
 ]

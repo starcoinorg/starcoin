@@ -74,9 +74,11 @@ fn test_network_rpc() {
         client
             .ping(peer_id_2.clone().into(), "hello".to_string())
             .await
-            .unwrap()
     });
-    debug!("{:?}", ping);
+    match ping {
+        Err(e) => debug!("{}", e),
+        Ok(_) => panic!(""),
+    }
 }
 
 fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {

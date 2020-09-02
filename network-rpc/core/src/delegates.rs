@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use futures::prelude::future::BoxFuture;
 use futures::Future;
 use starcoin_types::peer_info::PeerId;
@@ -9,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub trait RpcMethod: Send + Sync + 'static {
-    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Result<Vec<u8>>>;
+    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Vec<u8>>;
 }
 
 struct DelegateAsyncMethod<T, F> {
@@ -20,11 +19,11 @@ struct DelegateAsyncMethod<T, F> {
 impl<T, F, I> RpcMethod for DelegateAsyncMethod<T, F>
 where
     F: Fn(Arc<T>, PeerId, Vec<u8>) -> I,
-    I: Future<Output = Result<Vec<u8>>> + Send + Unpin + 'static,
+    I: Future<Output = Vec<u8>> + Send + Unpin + 'static,
     T: Send + Sync + 'static,
     F: Send + Sync + 'static,
 {
-    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Result<Vec<u8>>> {
+    fn call(&self, peer_id: PeerId, params: Vec<u8>) -> BoxFuture<Vec<u8>> {
         let closure = &self.closure;
         Box::pin(closure(self.delegate.clone(), peer_id, params))
     }
@@ -53,7 +52,7 @@ where
     where
         F: Fn(Arc<T>, PeerId, Vec<u8>) -> I,
         F: Send + Sync + 'static,
-        I: Future<Output = Result<Vec<u8>>> + Send + Unpin + 'static,
+        I: Future<Output = Vec<u8>> + Send + Unpin + 'static,
     {
         self.methods.insert(
             name.into(),

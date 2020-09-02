@@ -1,11 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use proc_macro2::TokenStream;
 use syn::{parse_quote, ItemTrait, TraitItem, TraitItemMethod};
 
-pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> Result<TokenStream> {
+pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<TokenStream> {
     let delegate_methods: Vec<TokenStream> = rpc_trait
         .items
         .iter()
@@ -69,8 +68,8 @@ pub fn generate_to_delegate(method: &TraitItemMethod) -> TokenStream {
         move | base, peer_id, params | {
             Box::pin(async move{
                 let method = &(Self::#method_ident as #method_sig);
-                let params = from_bytes::<#param_type>(&params)?;
-                method(&base, peer_id, params).await.and_then(|r| r.encode())
+                let params = from_bytes::<#param_type>(&params).expect("network rpc argument encode failed");
+                method(&base, peer_id, params).await.encode().expect("network rpc result encode failed")
             })
         }
     };

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::Message;
-use anyhow::Result;
 use futures::future::BoxFuture;
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
@@ -15,9 +14,8 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
-
+use network_rpc_core::Result;
 mod remote_chain_state;
-
 pub use remote_chain_state::RemoteChainStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;

@@ -130,7 +130,7 @@ pub async fn get_txn_infos<N>(
 where
     N: NetworkService + 'static,
 {
-    client.get_txn_infos(peer_id, block_id).await
+    client.get_txn_infos(peer_id, block_id).await.map_err(|e| e.into())
 }
 
 pub async fn get_headers_by_number<N>(

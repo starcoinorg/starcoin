@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use accumulator::AccumulatorNode;
-use anyhow::*;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use futures::future::BoxFuture;
+use network_rpc_core::Result;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
@@ -250,7 +250,7 @@ where
         state_node_key: HashValue,
     ) -> BoxFuture<Result<Option<StateNode>>> {
         let storage = self.storage.clone();
-        let fut = async move { storage.get(&state_node_key) };
+        let fut = async move { storage.get(&state_node_key).map_err(|e| e.into()) };
         Box::pin(fut)
     }
 
@@ -260,8 +260,11 @@ where
         request: GetAccumulatorNodeByNodeHash,
     ) -> BoxFuture<Result<Option<AccumulatorNode>>> {
         let storage = self.storage.clone();
-        let fut =
-            async move { storage.get_node(request.accumulator_storage_type, request.node_hash) };
+        let fut = async move {
+            storage
+                .get_node(request.accumulator_storage_type, request.node_hash)
+                .map_err(|e| e.into())
+        };
         Box::pin(fut)
     }
 
@@ -275,6 +278,7 @@ where
             state_service
                 .get_with_proof_by_root(req.access_path, req.state_root)
                 .await
+                .map_err(|e| e.into())
         };
         Box::pin(fut)
     }
@@ -289,11 +293,12 @@ where
             state_service
                 .get_account_state_by_root(req.account_address, req.state_root)
                 .await
+                .map_err(|e| e.into())
         };
         Box::pin(fut)
     }
 
-    fn ping(&self, _peer_id: PeerId, req: String) -> BoxFuture<Result<String>> {
-        Box::pin(async move { Err(anyhow!("ping error")) })
+    fn ping(&self, _peer_id: PeerId, _req: String) -> BoxFuture<Result<String>> {
+        Box::pin(async move { Err(anyhow::anyhow!("ping error").into()) })
     }
 }

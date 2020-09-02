@@ -3,10 +3,10 @@
 
 extern crate proc_macro2;
 
-use anyhow::{Error, Result};
+use anyhow::Error;
 use syn::punctuated::Punctuated;
 
-pub fn compute_returns(method: &syn::TraitItemMethod) -> Result<syn::Type> {
+pub fn compute_returns(method: &syn::TraitItemMethod) -> anyhow::Result<syn::Type> {
     if let Some(returns) = try_infer_returns(&method.sig.output) {
         return Ok(returns);
     }
@@ -89,7 +89,7 @@ pub fn compute_args(method: &syn::TraitItemMethod) -> Punctuated<syn::FnArg, syn
 
 pub fn compute_arg_identifiers(
     args: &Punctuated<syn::FnArg, syn::token::Comma>,
-) -> Result<Vec<&syn::Ident>> {
+) -> anyhow::Result<Vec<&syn::Ident>> {
     let mut arg_names = vec![];
     for arg in args {
         let pat = match arg {

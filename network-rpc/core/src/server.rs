@@ -23,8 +23,8 @@ impl NetworkRpcServer {
         rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
         rpc_methods: F,
     ) -> Result<Addr<NetworkRpcServer>>
-    where
-        F: IntoIterator<Item = (String, Arc<dyn RpcMethod>)>,
+        where
+            F: IntoIterator<Item=(String, Arc<dyn RpcMethod>)>,
     {
         Ok(NetworkRpcServer::create(move |ctx| {
             let mut methods: HashMap<String, Arc<dyn RpcMethod>> = Default::default();
@@ -60,14 +60,10 @@ impl StreamHandler<RawRpcRequestMessage> for NetworkRpcServer {
         if let Some(method) = self.methods.get(&path) {
             let method = method.clone();
             Arbiter::spawn(async move {
-                if let Ok(response) = method.call(peer_id, request).await {
-                    if let Err(e) = Self::do_response(responder, response).await {
-                        error!("{:?}", e);
-                    };
-                } else {
-                    // TODO: Do not handle for back compatibly
-                    error!("network rpc call return custom error");
-                }
+                let response = method.call(peer_id, request).await;
+                if let Err(e) = Self::do_response(responder, response).await {
+                    error!("Respond to rpc call failed:{:?}", e);
+                };
             })
         } else {
             warn!(
