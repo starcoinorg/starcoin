@@ -14,7 +14,6 @@ actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
-async-trait = "0.1"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-config = { path = "../config" }
 starcoin-bus = { path = "../bus" }
@@ -48,6 +47,12 @@ starcoin-node = { path = "../node" }
 starcoin-node-api = { path = "../node/api" }
 starcoin-functional-tests = { path = "../vm/functional-tests"}
 rand = "0.7.3"
+network-api = { path = "../network/api" }
+libp2p = "0.22.0"
+async-trait = "0.1.40"
+accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
+state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
+scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
 
 [dev-dependencies]
 stest = { path = "../commons/stest" }

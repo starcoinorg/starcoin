@@ -176,7 +176,7 @@ impl BlockChain {
         Ok(uncles)
     }
 
-    fn get_block_info(&self, block_id: HashValue) -> Result<BlockInfo> {
+    fn get_block_info_inner(&self, block_id: HashValue) -> Result<BlockInfo> {
         Ok(self
             .storage
             .get_block_info(block_id)?
@@ -711,8 +711,9 @@ impl BlockChain {
             if is_genesis {
                 header.difficulty()
             } else {
-                let pre_total_difficulty =
-                    self.get_block_info(header.parent_hash())?.total_difficulty;
+                let pre_total_difficulty = self
+                    .get_block_info_inner(header.parent_hash())?
+                    .total_difficulty;
                 pre_total_difficulty + header.difficulty()
             }
         };

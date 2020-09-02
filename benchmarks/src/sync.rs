@@ -81,7 +81,7 @@ impl SyncBencher {
     }
 
     async fn sync_block_inner(
-        downloader: Arc<Downloader>,
+        downloader: Arc<Downloader<NetworkAsyncService>>,
         rpc_client: NetworkRpcClient<NetworkAsyncService>,
         network: NetworkAsyncService,
     ) -> Result<()> {

@@ -51,7 +51,7 @@ pub struct NodeStartedHandle {
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
     pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
-    pub sync_actor: Addr<SyncActor>,
+    pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor>>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
@@ -68,7 +68,7 @@ pub struct Node {
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
     pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
-    pub sync_actor: Addr<SyncActor>,
+    pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor>>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
@@ -287,7 +287,7 @@ pub async fn start(
     let sync_network = network.clone();
     let sync_storage = storage.clone();
     let sync = Arbiter::new()
-        .exec(move || -> Result<Addr<SyncActor>> {
+        .exec(move || -> Result<Addr<SyncActor<NetworkAsyncService>>> {
             SyncActor::launch(
                 sync_config,
                 sync_bus,

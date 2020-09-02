@@ -11,8 +11,7 @@ use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network::NetworkAsyncService;
-use network_api::PeerId;
+use network_api::{NetworkService, PeerId};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
@@ -116,20 +115,26 @@ impl BlockSyncTask {
     }
 }
 
-pub struct BlockSyncTaskActor {
+pub struct BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     ancestor_number: BlockNumber,
     target_number: BlockNumber,
     next: BlockIdAndNumber,
     headers: HashMap<HashValue, BlockHeader>,
     body_task: BlockSyncTask,
-    downloader: Arc<Downloader>,
-    network: NetworkAsyncService,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
+    downloader: Arc<Downloader<N>>,
+    network: N,
+    rpc_client: NetworkRpcClient<N>,
     state: SyncTaskState,
-    download_address: Addr<DownloadActor>,
+    download_address: Addr<DownloadActor<N>>,
 }
 
-impl Debug for BlockSyncTaskActor {
+impl<N> Debug for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_tuple("BlockSyncTask")
             .field(&self.ancestor_number)
@@ -141,15 +146,18 @@ impl Debug for BlockSyncTaskActor {
     }
 }
 
-impl BlockSyncTaskActor {
+impl<N> BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn launch(
         ancestor_header: &BlockHeader,
         target_number: BlockNumber,
-        downloader: Arc<Downloader>,
-        network: NetworkAsyncService,
+        downloader: Arc<Downloader<N>>,
+        network: N,
         start: bool,
-        download_address: Addr<DownloadActor>,
-    ) -> BlockSyncTaskRef {
+        download_address: Addr<DownloadActor<N>>,
+    ) -> BlockSyncTaskRef<N> {
         debug_assert!(ancestor_header.number() < target_number);
         let address = BlockSyncTaskActor::create(move |_ctx| Self {
             ancestor_number: ancestor_header.number(),
@@ -188,7 +196,7 @@ impl BlockSyncTaskActor {
         self.state.is_finish()
     }
 
-    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor>) {
+    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
         let sync_header_flag =
             !(self.body_task.len() > MAX_LEN || self.next.height >= self.target_number);
 
@@ -327,13 +335,13 @@ impl BlockSyncTaskActor {
         Box::new(fut)
     }
 
-    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor>) {
+    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
         // self.sync_headers(address.clone());
         // self.sync_bodies(address);
         self.sync_blocks(address);
     }
 
-    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor>) {
+    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
         self.state = SyncTaskState::Syncing;
         if let Err(err) = address.try_send(NextTimeEvent {}) {
             error!("Send NextTimeEvent failed when start : {:?}", err);
@@ -341,7 +349,10 @@ impl BlockSyncTaskActor {
     }
 }
 
-impl Actor for BlockSyncTaskActor {
+impl<N> Actor for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -351,7 +362,10 @@ impl Actor for BlockSyncTaskActor {
     }
 }
 
-impl Handler<SyncDataEvent> for BlockSyncTaskActor {
+impl<N> Handler<SyncDataEvent> for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = ();
 
     fn handle(&mut self, data: SyncDataEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -371,7 +385,10 @@ impl Handler<SyncDataEvent> for BlockSyncTaskActor {
     }
 }
 
-impl Handler<NextTimeEvent> for BlockSyncTaskActor {
+impl<N> Handler<NextTimeEvent> for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, _event: NextTimeEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -387,7 +404,10 @@ impl Handler<NextTimeEvent> for BlockSyncTaskActor {
     }
 }
 
-impl Handler<BlockSyncBeginEvent> for BlockSyncTaskActor {
+impl<N> Handler<BlockSyncBeginEvent> for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, _event: BlockSyncBeginEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -400,7 +420,10 @@ impl Handler<BlockSyncBeginEvent> for BlockSyncTaskActor {
     }
 }
 
-impl Handler<SyncTaskRequest> for BlockSyncTaskActor {
+impl<N> Handler<SyncTaskRequest> for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -411,11 +434,17 @@ impl Handler<SyncTaskRequest> for BlockSyncTaskActor {
 }
 
 #[derive(Clone)]
-pub struct BlockSyncTaskRef {
-    address: Addr<BlockSyncTaskActor>,
+pub struct BlockSyncTaskRef<N>
+where
+    N: NetworkService + 'static,
+{
+    address: Addr<BlockSyncTaskActor<N>>,
 }
 
-impl BlockSyncTaskRef {
+impl<N> BlockSyncTaskRef<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn start(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -424,4 +453,4 @@ impl BlockSyncTaskRef {
     }
 }
 
-impl SyncTaskAction for BlockSyncTaskRef {}
+impl<N> SyncTaskAction for BlockSyncTaskRef<N> where N: NetworkService + 'static {}

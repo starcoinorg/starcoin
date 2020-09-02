@@ -3,7 +3,7 @@ use anyhow::format_err;
 use chain::ChainActorRef;
 use crypto::HashValue;
 use logger::prelude::*;
-use network_api::PeerId;
+use network_api::{NetworkService, PeerId};
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_storage::Store;
@@ -16,19 +16,25 @@ use types::block::{Block, BlockInfo, BlockNumber};
 mod block_connect_test;
 
 #[derive(Clone)]
-pub struct PivotBlock {
+pub struct PivotBlock<N>
+where
+    N: NetworkService + 'static,
+{
     number: BlockNumber,
     block_info: BlockInfo,
-    state_sync_task_ref: StateSyncTaskRef,
+    state_sync_task_ref: StateSyncTaskRef<N>,
     block_accumulator: Option<Arc<MerkleAccumulator>>,
     storage: Arc<dyn Store>,
 }
 
-impl PivotBlock {
+impl<N> PivotBlock<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn new(
         number: BlockNumber,
         block_info: BlockInfo,
-        state_sync_task_ref: StateSyncTaskRef,
+        state_sync_task_ref: StateSyncTaskRef<N>,
         storage: Arc<dyn Store>,
     ) -> Self {
         Self {
@@ -122,15 +128,21 @@ impl FutureBlockPool {
     }
 }
 
-pub struct BlockConnector {
+pub struct BlockConnector<N>
+where
+    N: NetworkService + 'static,
+{
     chain_reader: ChainActorRef,
     future_blocks: FutureBlockPool,
-    pivot: Arc<RwLock<Option<PivotBlock>>>,
+    pivot: Arc<RwLock<Option<PivotBlock<N>>>>,
 }
 
-impl BlockConnector {
+impl<N> BlockConnector<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn new(chain_reader: ChainActorRef) -> Self {
-        let pivot: Option<PivotBlock> = None;
+        let pivot: Option<PivotBlock<N>> = None;
         BlockConnector {
             chain_reader,
             future_blocks: FutureBlockPool::new(),
@@ -138,14 +150,14 @@ impl BlockConnector {
         }
     }
 
-    pub fn update_pivot(&self, pivot: Option<PivotBlock>) {
+    pub fn update_pivot(&self, pivot: Option<PivotBlock<N>>) {
         match pivot {
             Some(p) => self.pivot.write().replace(p),
             None => self.pivot.write().take(),
         };
     }
 
-    fn get_pivot(&self) -> Option<PivotBlock> {
+    fn get_pivot(&self) -> Option<PivotBlock<N>> {
         (*self.pivot.read()).clone()
     }
 
