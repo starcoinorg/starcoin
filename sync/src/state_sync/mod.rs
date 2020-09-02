@@ -16,7 +16,6 @@ use forkable_jellyfish_merkle::node_type::Node;
 use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use futures::executor::block_on;
 use logger::prelude::*;
-use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
 use starcoin_accumulator::AccumulatorNode;
@@ -65,12 +64,14 @@ impl Roots {
     }
 }
 
-async fn sync_accumulator_node(
+async fn sync_accumulator_node<N>(
     node_key: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor>,
-) {
+    rpc_client: NetworkRpcClient<N>,
+    address: Addr<StateSyncTaskActor<N>>,
+) where
+    N: NetworkService + 'static,
+{
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_ACCUMULATOR])
@@ -123,12 +124,14 @@ async fn sync_accumulator_node(
     };
 }
 
-async fn sync_state_node(
+async fn sync_state_node<N>(
     node_key: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor>,
-) {
+    rpc_client: NetworkRpcClient<N>,
+    address: Addr<StateSyncTaskActor<N>>,
+) where
+    N: NetworkService + 'static,
+{
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
@@ -172,12 +175,14 @@ async fn sync_state_node(
     };
 }
 
-async fn sync_txn_info(
+async fn sync_txn_info<N>(
     block_id: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    address: Addr<StateSyncTaskActor>,
-) {
+    rpc_client: NetworkRpcClient<N>,
+    address: Addr<StateSyncTaskActor<N>>,
+) where
+    N: NetworkService + 'static,
+{
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
@@ -209,11 +214,17 @@ async fn sync_txn_info(
 }
 
 #[derive(Clone)]
-pub struct StateSyncTaskRef {
-    address: Addr<StateSyncTaskActor>,
+pub struct StateSyncTaskRef<N>
+where
+    N: NetworkService + 'static,
+{
+    address: Addr<StateSyncTaskActor<N>>,
 }
 
-impl SyncTaskAction for StateSyncTaskRef {
+impl<N> SyncTaskAction for StateSyncTaskRef<N>
+where
+    N: NetworkService + 'static,
+{
     fn activate(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -223,7 +234,10 @@ impl SyncTaskAction for StateSyncTaskRef {
 }
 
 #[async_trait::async_trait]
-impl StateSyncReset for StateSyncTaskRef {
+impl<N> StateSyncReset for StateSyncTaskRef<N>
+where
+    N: NetworkService + 'static,
+{
     async fn reset(
         &self,
         state_root: HashValue,
@@ -305,18 +319,21 @@ impl StateSyncTaskEvent {
     }
 }
 
-pub struct StateSyncTaskActor {
+pub struct StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    network_service: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<N>,
+    network_service: N,
     state_sync_task: StateSyncTask<(HashValue, bool)>,
     txn_info_sync_task: StateSyncTask<HashValue>,
     block_accumulator_sync_task: StateSyncTask<HashValue>,
-    block_sync_address: BlockSyncTaskRef,
+    block_sync_address: BlockSyncTaskRef<N>,
     state: SyncTaskState,
-    download_address: Addr<DownloadActor>,
+    download_address: Addr<DownloadActor<N>>,
     total_txn_info_task: AtomicU64,
 }
 
@@ -378,15 +395,18 @@ impl<T> StateSyncTask<T> {
     }
 }
 
-impl StateSyncTaskActor {
+impl<N> StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn launch(
         self_peer_id: PeerId,
         root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
-        network_service: NetworkAsyncService,
-        block_sync_address: BlockSyncTaskRef,
-        download_address: Addr<DownloadActor>,
-    ) -> StateSyncTaskRef {
+        network_service: N,
+        block_sync_address: BlockSyncTaskRef<N>,
+        download_address: Addr<DownloadActor<N>>,
+    ) -> StateSyncTaskRef<N> {
         let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = StateSyncTask::new();
         state_sync_task.push_back((*roots.state_root(), true));
@@ -435,7 +455,7 @@ impl StateSyncTaskActor {
         self.block_accumulator_sync_task.is_empty() && self.txn_info_sync_task.is_empty()
     }
 
-    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_state_sync_task(&mut self, address: Addr<StateSyncTaskActor<N>>) {
         let value = self.state_sync_task.pop_front();
         if let Some((node_key, is_global)) = value {
             SYNC_METRICS
@@ -537,7 +557,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_accumulator_sync_task(&mut self, address: Addr<StateSyncTaskActor<N>>) {
         let value = self.block_accumulator_sync_task.pop_front();
         if let Some(node_key) = value {
             SYNC_METRICS
@@ -589,7 +609,7 @@ impl StateSyncTaskActor {
     fn handle_accumulator_sync(
         &mut self,
         task_event: StateSyncTaskEvent,
-        address: Addr<StateSyncTaskActor>,
+        address: Addr<StateSyncTaskActor<N>>,
     ) {
         if let Some(accumulator_node_hash) =
             self.block_accumulator_sync_task.get(&task_event.peer_id)
@@ -641,7 +661,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn exe_txn_info_sync_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn exe_txn_info_sync_task(&mut self, address: Addr<StateSyncTaskActor<N>>) {
         let value = self.txn_info_sync_task.pop_front();
         if let Some(block_id) = value {
             SYNC_METRICS
@@ -686,7 +706,7 @@ impl StateSyncTaskActor {
     fn handle_txn_info_sync(
         &mut self,
         task_event: StateSyncTaskEvent,
-        address: Addr<StateSyncTaskActor>,
+        address: Addr<StateSyncTaskActor<N>>,
     ) {
         // if let Some(block_id) = self.txn_info_sync_task.get(&task_event.peer_id) {
         //1. push back
@@ -729,7 +749,7 @@ impl StateSyncTaskActor {
         state_root: &HashValue,
         block_accumulator_root: &HashValue,
         pivot_id: &HashValue,
-        address: Addr<StateSyncTaskActor>,
+        address: Addr<StateSyncTaskActor<N>>,
     ) {
         debug!(
             "reset state sync task with state root : {:?}, block accumulator root : {:?}.",
@@ -762,7 +782,7 @@ impl StateSyncTaskActor {
         }
     }
 
-    fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
+    fn activation_task(&mut self, address: Addr<StateSyncTaskActor<N>>) {
         if self.state.is_failed() {
             debug!("activation state sync task.");
             self.state = SyncTaskState::Syncing;
@@ -773,7 +793,10 @@ impl StateSyncTaskActor {
     }
 }
 
-impl Actor for StateSyncTaskActor {
+impl<N> Actor for StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -784,7 +807,10 @@ impl Actor for StateSyncTaskActor {
     }
 }
 
-impl Handler<TxnInfoEvent> for StateSyncTaskActor {
+impl<N> Handler<TxnInfoEvent> for StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -797,7 +823,10 @@ impl Handler<TxnInfoEvent> for StateSyncTaskActor {
     }
 }
 
-impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
+impl<N> Handler<StateSyncTaskEvent> for StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -841,7 +870,10 @@ struct ResetRoots {
     pivot_id: HashValue,
 }
 
-impl Handler<StateSyncEvent> for StateSyncTaskActor {
+impl<N> Handler<StateSyncEvent> for StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.
@@ -860,7 +892,10 @@ impl Handler<StateSyncEvent> for StateSyncTaskActor {
     }
 }
 
-impl Handler<SyncTaskRequest> for StateSyncTaskActor {
+impl<N> Handler<SyncTaskRequest> for StateSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, ctx: &mut Self::Context) -> Self::Result {
@@ -873,7 +908,10 @@ impl Handler<SyncTaskRequest> for StateSyncTaskActor {
     }
 }
 
-fn get_best_peer_info(network_service: NetworkAsyncService) -> Option<PeerInfo> {
+fn get_best_peer_info<N>(network_service: N) -> Option<PeerInfo>
+where
+    N: NetworkService + 'static,
+{
     block_on(async move {
         if let Ok(peer_info) = network_service.best_peer().await {
             peer_info

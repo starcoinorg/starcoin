@@ -17,7 +17,6 @@ use crypto::HashValue;
 use futures::channel::mpsc;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders};
 use starcoin_storage::Store;
@@ -41,11 +40,14 @@ pub enum SyncEvent {
 
 const _MIN_PEER_SIZE: usize = 5;
 
-pub struct DownloadActor {
-    downloader: Arc<Downloader>,
+pub struct DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
+    downloader: Arc<Downloader<N>>,
     self_peer_id: Arc<PeerId>,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    network: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<N>,
+    network: N,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
@@ -57,15 +59,18 @@ pub struct DownloadActor {
     node_config: Arc<NodeConfig>,
 }
 
-impl DownloadActor {
+impl<N> DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn launch(
         node_config: Arc<NodeConfig>,
         peer_id: Arc<PeerId>,
         chain_reader: ChainActorRef,
-        network: NetworkAsyncService,
+        network: N,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
-    ) -> Result<Addr<DownloadActor>> {
+    ) -> Result<Addr<DownloadActor<N>>> {
         let download_actor = DownloadActor::create(move |ctx| {
             let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
             ctx.add_message_stream(sync_event_receiver);
@@ -96,7 +101,10 @@ impl DownloadActor {
     }
 }
 
-impl Actor for DownloadActor {
+impl<N> Actor for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -111,7 +119,10 @@ impl Actor for DownloadActor {
     }
 }
 
-impl Handler<SyncTaskType> for DownloadActor {
+impl<N> Handler<SyncTaskType> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, task_type: SyncTaskType, _ctx: &mut Self::Context) -> Self::Result {
@@ -126,7 +137,10 @@ impl Handler<SyncTaskType> for DownloadActor {
     }
 }
 
-impl Handler<SystemStarted> for DownloadActor {
+impl<N> Handler<SystemStarted> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = ();
 
     fn handle(&mut self, _msg: SystemStarted, ctx: &mut Self::Context) -> Self::Result {
@@ -145,7 +159,10 @@ impl Handler<SystemStarted> for DownloadActor {
     }
 }
 
-impl Handler<SyncEvent> for DownloadActor {
+impl<N> Handler<SyncEvent> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
     fn handle(&mut self, item: SyncEvent, ctx: &mut Self::Context) -> Self::Result {
         match item {
@@ -184,7 +201,10 @@ impl Handler<SyncEvent> for DownloadActor {
     }
 }
 
-impl Handler<SyncNotify> for DownloadActor {
+impl<N> Handler<SyncNotify> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = ();
 
     fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
@@ -201,17 +221,20 @@ impl Handler<SyncNotify> for DownloadActor {
     }
 }
 
-impl DownloadActor {
+impl<N> DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
     fn sync_state_and_block(
         self_peer_id: PeerId,
         main_network: bool,
-        downloader: Arc<Downloader>,
-        rpc_client: NetworkRpcClient<NetworkAsyncService>,
-        network: NetworkAsyncService,
+        downloader: Arc<Downloader<N>>,
+        rpc_client: NetworkRpcClient<N>,
+        network: N,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
-        download_address: Addr<DownloadActor>,
+        download_address: Addr<DownloadActor<N>>,
     ) {
         Arbiter::spawn(async move {
             SYNC_METRICS
@@ -265,12 +288,12 @@ impl DownloadActor {
     async fn sync_state_and_block_inner(
         self_peer_id: PeerId,
         main_network: bool,
-        downloader: Arc<Downloader>,
-        rpc_client: NetworkRpcClient<NetworkAsyncService>,
-        network: NetworkAsyncService,
+        downloader: Arc<Downloader<N>>,
+        rpc_client: NetworkRpcClient<N>,
+        network: N,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
-        download_address: Addr<DownloadActor>,
+        download_address: Addr<DownloadActor<N>>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
@@ -374,12 +397,12 @@ impl DownloadActor {
     }
 
     fn sync_block_from_best_peer(
-        downloader: Arc<Downloader>,
-        rpc_client: NetworkRpcClient<NetworkAsyncService>,
-        network: NetworkAsyncService,
+        downloader: Arc<Downloader<N>>,
+        rpc_client: NetworkRpcClient<N>,
+        network: N,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
-        download_address: Addr<DownloadActor>,
+        download_address: Addr<DownloadActor<N>>,
     ) {
         if !syncing.load(Ordering::Relaxed) {
             syncing.store(true, Ordering::Relaxed);
@@ -412,11 +435,11 @@ impl DownloadActor {
     }
 
     async fn sync_block_from_best_peer_inner(
-        downloader: Arc<Downloader>,
-        rpc_client: NetworkRpcClient<NetworkAsyncService>,
-        network: NetworkAsyncService,
+        downloader: Arc<Downloader<N>>,
+        rpc_client: NetworkRpcClient<N>,
+        network: N,
         sync_task: SyncTask,
-        download_address: Addr<DownloadActor>,
+        download_address: Addr<DownloadActor<N>>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
@@ -480,15 +503,21 @@ impl DownloadActor {
 }
 
 /// Send download message
-pub struct Downloader {
+pub struct Downloader<N>
+where
+    N: NetworkService + 'static,
+{
     chain_reader: ChainActorRef,
-    block_connector: BlockConnector,
+    block_connector: BlockConnector<N>,
 }
 
 const MIN_BLOCKS_BEHIND: u64 = 50;
 const MAIN_MIN_BLOCKS_BEHIND: u64 = 100;
 
-impl Downloader {
+impl<N> Downloader<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn new(chain_reader: ChainActorRef) -> Self {
         Downloader {
             block_connector: BlockConnector::new(chain_reader.clone()),
@@ -503,8 +532,8 @@ impl Downloader {
     pub async fn find_ancestor_header(
         &self,
         peer_id: PeerId,
-        rpc_client: &NetworkRpcClient<NetworkAsyncService>,
-        network: NetworkAsyncService,
+        rpc_client: &NetworkRpcClient<N>,
+        network: N,
         block_number: BlockNumber,
         total_difficulty: U256,
         is_full_mode: bool,
@@ -594,7 +623,7 @@ impl Downloader {
     }
 
     async fn get_pivot(
-        rpc_client: &NetworkRpcClient<NetworkAsyncService>,
+        rpc_client: &NetworkRpcClient<N>,
         peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
         step: usize,
@@ -662,7 +691,7 @@ impl Downloader {
             .await;
     }
 
-    fn set_pivot(&self, pivot: Option<PivotBlock>) {
+    fn set_pivot(&self, pivot: Option<PivotBlock<N>>) {
         self.block_connector.update_pivot(pivot);
     }
 }

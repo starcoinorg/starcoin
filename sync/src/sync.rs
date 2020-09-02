@@ -6,31 +6,40 @@ use bus::{BusActor, Subscription};
 use chain::ChainActorRef;
 use config::NodeConfig;
 use logger::prelude::*;
-use network::NetworkAsyncService;
 use network::PeerEvent;
+use network_api::NetworkService;
 use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
 use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
-pub struct SyncActor {
-    download_address: Addr<DownloadActor>,
+pub struct SyncActor<N>
+where
+    N: NetworkService + 'static,
+{
+    download_address: Addr<DownloadActor<N>>,
     #[allow(dead_code)]
-    txn_sync_address: Addr<TxnSyncActor>,
+    txn_sync_address: Addr<TxnSyncActor<N>>,
     bus: Addr<BusActor>,
 }
 
-impl SyncActor {
+impl<N> SyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     pub fn launch(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
         chain: ChainActorRef,
         txpool: TxPoolService,
-        network: NetworkAsyncService,
+        network: N,
         storage: Arc<dyn Store>,
-    ) -> Result<Addr<SyncActor>> {
+    ) -> Result<Addr<SyncActor<N>>>
+    where
+        N: NetworkService + 'static,
+    {
         let txn_sync_addr = TxnSyncActor::launch(txpool, network.clone(), bus.clone());
         let download_address = DownloadActor::launch(
             node_config,
@@ -50,7 +59,10 @@ impl SyncActor {
     }
 }
 
-impl Actor for SyncActor {
+impl<N> Actor for SyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -79,7 +91,10 @@ impl Actor for SyncActor {
     }
 }
 
-impl Handler<PeerNewBlock> for SyncActor {
+impl<N> Handler<PeerNewBlock> for SyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = ();
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
         let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
@@ -91,7 +106,10 @@ impl Handler<PeerNewBlock> for SyncActor {
     }
 }
 
-impl Handler<PeerEvent> for SyncActor {
+impl<N> Handler<PeerEvent> for SyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = Result<()>;
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
