@@ -38,6 +38,7 @@ starcoin-miner-client = { path = "../cmd/miner_client" }
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-node-api = { path = "../node/api" }
+starcoin-open-block = { path = "../chain/open-block" }
 
 [dev-dependencies]
 sync = {path = "../sync", package="starcoin-sync" }

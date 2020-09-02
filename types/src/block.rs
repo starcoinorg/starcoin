@@ -295,6 +295,14 @@ impl BlockBody {
     pub fn get_txn(&self, index: usize) -> Option<&SignedUserTransaction> {
         self.transactions.get(index)
     }
+
+    /// Just for test
+    pub fn new_empty() -> BlockBody {
+        BlockBody {
+            transactions: Vec::new(),
+            uncles: None,
+        }
+    }
 }
 
 impl Into<BlockBody> for Vec<SignedUserTransaction> {

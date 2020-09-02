@@ -16,3 +16,4 @@ starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 serde = { version = "1.0", default-features = false }
 starcoin-state-tree={path = "../../state/state-tree"}
 starcoin-accumulator = {path = "../../core/accumulator"}
+starcoin-network-rpc-api = { path= "../../network-rpc/api" }
