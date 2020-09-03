@@ -1,12 +1,12 @@
 use crate::messages::PeerMessage;
 use anyhow::*;
-pub use libp2p::{multiaddr::Multiaddr, PeerId};
+pub use libp2p::multiaddr::Multiaddr;
 use starcoin_types::system_events::NewHeadBlock;
 use std::time::Duration;
 
 pub mod messages;
-
 use async_trait::async_trait;
+pub use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use std::borrow::Cow;
 
@@ -24,7 +24,7 @@ pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
         event: NewHeadBlock,
     ) -> Result<()>;
 
-    fn identify(&self) -> &PeerId;
+    fn identify(&self) -> PeerId;
 
     async fn send_request_bytes(
         &self,

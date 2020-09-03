@@ -540,7 +540,7 @@ where
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
         let peer_info = network
-            .get_peer(&peer_id.clone().into())
+            .get_peer(&peer_id.clone())
             .await?
             .ok_or_else(|| format_err!("get peer {:?} not exist.", peer_id))?;
 
@@ -687,7 +687,7 @@ where
 
     pub async fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
         self.block_connector
-            .do_block_and_child(block, peer_id.into())
+            .do_block_and_child(block, peer_id)
             .await;
     }
 

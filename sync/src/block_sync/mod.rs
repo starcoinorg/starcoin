@@ -217,9 +217,7 @@ where
 
                 let event =
                     match get_headers(&network, &rpc_client, get_headers_req, next_number).await {
-                        Ok((headers, peer_id)) => {
-                            SyncDataEvent::new_header_event(headers, peer_id.into())
-                        }
+                        Ok((headers, peer_id)) => SyncDataEvent::new_header_event(headers, peer_id),
                         Err(e) => {
                             error!("Sync headers err: {:?}", e);
                             Delay::new(Duration::from_secs(1)).await;
@@ -248,7 +246,7 @@ where
                 let event =
                     match get_body_by_hash(&rpc_client, &network, block_idlist, max_height).await {
                         Ok((bodies, peer_id)) => {
-                            SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id.into())
+                            SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id)
                         }
                         Err(e) => {
                             error!("Sync bodies err: {:?}", e);
@@ -324,9 +322,7 @@ where
             loop {
                 let block = blocks.pop();
                 if let Some(b) = block {
-                    downloader
-                        .connect_block_and_child(b, peer_id.clone().into())
-                        .await;
+                    downloader.connect_block_and_child(b, peer_id.clone()).await;
                 } else {
                     break;
                 }

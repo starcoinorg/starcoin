@@ -223,7 +223,7 @@ where
                             if block_id == current_block_id {
                                 self.chain_reader
                                     .clone()
-                                    .try_connect_without_execute(block.clone(), peer_id.into())
+                                    .try_connect_without_execute(block.clone(), peer_id)
                                     .await
                             } else {
                                 Err(ConnectBlockError::VerifyBlockFailed(
@@ -259,7 +259,7 @@ where
                     if pivot_id == &parent_id {
                         self.chain_reader
                             .clone()
-                            .try_connect_without_execute(block.clone(), peer_id.into())
+                            .try_connect_without_execute(block.clone(), peer_id)
                             .await
                     } else {
                         Err(ConnectBlockError::VerifyBlockFailed(

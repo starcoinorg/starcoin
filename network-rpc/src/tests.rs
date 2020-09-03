@@ -35,7 +35,7 @@ fn test_network_rpc() {
 
     let network_2 = handle2.start_handle().network.clone();
     // network rpc client for chain 1
-    let peer_id_2 = network_2.identify().clone();
+    let peer_id_2 = network_2.identify();
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
 
     let access_path =
@@ -44,7 +44,7 @@ fn test_network_rpc() {
     let req = GetBlockHeadersByNumber::new(1, 1, 1);
     let resp: Vec<BlockHeader> = block_on(async {
         client
-            .get_headers_by_number(peer_id_2.clone().into(), req)
+            .get_headers_by_number(peer_id_2.clone(), req)
             .await
             .unwrap()
     });
@@ -57,7 +57,7 @@ fn test_network_rpc() {
     };
     let state_with_proof: StateWithProof = block_on(async {
         client
-            .get_state_with_proof(peer_id_2.clone().into(), state_req)
+            .get_state_with_proof(peer_id_2.clone(), state_req)
             .await
             .unwrap()
     });
@@ -72,11 +72,7 @@ fn test_network_rpc() {
     let rpc_info = starcoin_gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);
 
-    let ping = block_on(async {
-        client
-            .ping(peer_id_2.clone().into(), "hello".to_string())
-            .await
-    });
+    let ping = block_on(async { client.ping(peer_id_2.clone(), "hello".to_string()).await });
     match ping {
         Err(e) => debug!("{}", e),
         Ok(_) => panic!(""),
