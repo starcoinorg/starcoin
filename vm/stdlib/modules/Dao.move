@@ -4,7 +4,7 @@ address 0x1 {
     use 0x1::Signer;
     use 0x1::Block;
     use 0x1::Option;
-    use 0x1::DaoConfig;
+    use 0x1::Config;
 
     /// make them into configs
     const VOTEING_DELAY: u64 = 100;
@@ -28,7 +28,7 @@ address 0x1 {
       next_proposal_id: u64,
     }
 
-    resource struct DaoConfig<TokenT> {
+    struct DaoConfig<TokenT: copyable> {
       voting_delay: u64,
       voting_period: u64,
       voting_quorum_rate: u8,
@@ -61,7 +61,7 @@ address 0x1 {
     /// plug_in function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this moudle by call this `register function`.
-    public fun plugin<TokenT>(signer: &signer) {
+    public fun plugin<TokenT: copyable>(signer: &signer) {
       // TODO: we can add a token manage cap in Token module.
       // and only token manager can register this.
       let token_issuer = Token::token_address<TokenT>();
@@ -71,23 +71,30 @@ address 0x1 {
         next_proposal_id: 0,
       };
       move_to(signer, gov_info);
-      DaoConfig::plugin<TokenT>(signer, VOTEING_DELAY, VOTEING_PERIOD, VOTEING_QUORUM_RATE, MIN_ACTION_DELAY);
+
+      let config = DaoConfig<TokenT> {
+        voting_delay: VOTEING_DELAY,
+        voting_period: VOTEING_PERIOD,
+        voting_quorum_rate: VOTEING_QUORUM_RATE,
+        min_action_delay: MIN_ACTION_DELAY,
+      };
+      Config::publish_new_config(signer, config);
     }
 
     /// propose a proposal.
     /// `action`: the actual action to execute.
     /// `action_delay`: the delay to execute after the proposal is agreed
-    public fun propose<TokenT, ActionT>(signer: &signer, action: ActionT, action_delay: u64)
+    public fun propose<TokenT: copyable, ActionT>(signer: &signer, action: ActionT, action_delay: u64)
     acquires GovGlobalInfo {
-      assert(action_delay >= DaoConfig::min_action_delay<TokenT>(), 401);
+      assert(action_delay >= min_action_delay<TokenT>(), 401);
       let proposal_id = generate_next_proposal_id<TokenT>();
       // TODO: make the delay configurable
-      let start_block = Block::get_current_block_number() + DaoConfig::voting_delay<TokenT>();
+      let start_block = Block::get_current_block_number() + voting_delay<TokenT>();
       let proposal = Proposal<TokenT, ActionT> {
         id: proposal_id,
         proposer: Signer::address_of(signer),
         start_block: start_block,
-        end_block: start_block + DaoConfig::voting_period<TokenT>(),
+        end_block: start_block + voting_period<TokenT>(),
         for_votes: 0,
         against_votes: 0,
         eta: 0,
@@ -102,7 +109,7 @@ address 0x1 {
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
     /// So think twice before casting vote.
-    public fun cast_vote<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64, stake: Token::Token<TokenT>, agree: bool)
+    public fun cast_vote<TokenT: copyable, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64, stake: Token::Token<TokenT>, agree: bool)
     acquires Proposal {
       {
         let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
@@ -128,7 +135,7 @@ address 0x1 {
     }
 
     /// Retrieve back my staked token voted for a proposal.
-    public fun unstake_votes<TokenT, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64): Token::Token<TokenT>
+    public fun unstake_votes<TokenT: copyable, ActionT>(signer: &signer, proposer_address: address, proposal_id: u64): Token::Token<TokenT>
     acquires Proposal, Vote {
       {
         let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
@@ -147,7 +154,7 @@ address 0x1 {
     }
 
     /// queue agreed proposal to execute.
-    public fun queue_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64)
+    public fun queue_proposal_action<TokenT: copyable, ActionT>(proposer_address: address, proposal_id: u64)
     acquires Proposal {
       // Only agreed proposal can be submitted.
       assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED, 601);
@@ -156,7 +163,7 @@ address 0x1 {
     }
 
     /// extract proposal action to execute.
-    public fun extract_proposal_action<TokenT, ActionT>(proposer_address: address, proposal_id: u64): ActionT
+    public fun extract_proposal_action<TokenT: copyable, ActionT>(proposer_address: address, proposal_id: u64): ActionT
     acquires Proposal {
       // Only executable proposal's action can be extracted.
       assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == EXECUTABLE, 601);
@@ -165,7 +172,7 @@ address 0x1 {
       action
     }
 
-    fun proposal_state<TokenT, ActionT>( proposer_address: address, proposal_id: u64): u8
+    fun proposal_state<TokenT: copyable, ActionT>( proposer_address: address, proposal_id: u64): u8
     acquires Proposal {
       let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
       assert(proposal.id == proposal_id, 500);
@@ -193,9 +200,9 @@ address 0x1 {
     }
 
     /// Quorum votes to make proposal pass.
-    public fun quorum_votes<TokenT>(): u128 {
+    public fun quorum_votes<TokenT: copyable>(): u128 {
       let supply = Token::market_cap<TokenT>();
-      supply / 100 * (DaoConfig::voting_quorum_rate<TokenT>() as u128)
+      supply / 100 * (voting_quorum_rate<TokenT>() as u128)
     }
 
     fun generate_next_proposal_id<TokenT>(): u64 acquires GovGlobalInfo {
@@ -203,6 +210,81 @@ address 0x1 {
       let proposal_id = gov_info.next_proposal_id;
       gov_info.next_proposal_id = proposal_id + 1;
       proposal_id
+    }
+
+
+    //// Query functions
+
+    public fun voting_delay<TokenT: copyable>(): u64 {
+      get_config<TokenT>().voting_delay
+    }
+    public fun voting_period<TokenT: copyable>(): u64 {
+      get_config<TokenT>().voting_period
+    }
+    public fun voting_quorum_rate<TokenT: copyable>(): u8  {
+      get_config<TokenT>().voting_quorum_rate
+    }
+    public fun min_action_delay<TokenT:copyable>(): u64  {
+      get_config<TokenT>().min_action_delay
+    }
+
+    fun get_config<TokenT: copyable>(): DaoConfig<TokenT> {
+      let token_issuer = Token::token_address<TokenT>();
+      Config::get_by_address<DaoConfig<TokenT>>(token_issuer)
+    }
+    /// update function
+    /// TODO: cap should not be mut to set data.
+    public fun modify_dao_config<TokenT: copyable>(
+      cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
+      voting_delay: Option::Option<u64>,
+      voting_period: Option::Option<u64>,
+      voting_quorum_rate: Option::Option<u8>,
+      min_action_delay: Option::Option<u64>,
+    ) {
+      let config = get_config<TokenT>();
+
+      if (Option::is_some(&voting_period)) {
+        let v = Option::extract(&mut voting_period);
+        config.voting_period = v;
+      };
+
+      if (Option::is_some(&voting_delay)) {
+        let v = Option::extract(&mut voting_delay);
+        config.voting_delay = v;
+      };
+      if (Option::is_some(&voting_quorum_rate)) {
+        let v = Option::extract(&mut voting_quorum_rate);
+        config.voting_quorum_rate = v;
+      };
+      if (Option::is_some(&min_action_delay)) {
+        let v = Option::extract(&mut min_action_delay);
+        config.min_action_delay = v;
+      };
+      Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    public fun set_voting_delay<TokenT: copyable>(cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>, value: u64) {
+      let config = get_config<TokenT>();
+      config.voting_delay = value;
+      Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    public fun set_voting_period<TokenT: copyable>(cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>, value: u64) {
+      let config = get_config<TokenT>();
+      config.voting_period = value;
+      Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    public fun set_voting_quorum_rate<TokenT: copyable>(cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>, value: u8) {
+      let config = get_config<TokenT>();
+      config.voting_quorum_rate = value;
+      Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
+    }
+
+    public fun set_min_action_delay<TokenT: copyable>(cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>, value: u64) {
+      let config = get_config<TokenT>();
+      config.min_action_delay = value;
+      Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
     }
   }
 }

@@ -1,5 +1,5 @@
 address 0x1 {
-  module DaoUpgradeModule {
+  module UpgradeModuleDaoProposal {
     use 0x1::PackageTxnManager;
     use 0x1::Token;
     use 0x1::Signer;
@@ -52,7 +52,7 @@ address 0x1 {
     }
 
     /// propose a module upgrade, called by proposer.
-    public fun propose_module_upgrade<TokenT>(signer: &signer, module_address: address, module_hash: vector<u8>)
+    public fun propose_module_upgrade<TokenT: copyable>(signer: &signer, module_address: address, module_hash: vector<u8>)
     acquires UpgradeModuleCapabilities {
       assert(able_to_upgrade<TokenT>(module_address), 400);
       Dao::propose<TokenT, UpgradeModule>(signer, UpgradeModule {
@@ -61,7 +61,7 @@ address 0x1 {
       }, 200); // TODO: replace 200 with DAO::MIN_ACTION_DELAY
     }
 
-    public fun submit_module_upgrade_plan<TokenT>(_signer: &signer, proposer_address: address, proposal_id: u64)
+    public fun submit_module_upgrade_plan<TokenT: copyable>(_signer: &signer, proposer_address: address, proposal_id: u64)
     acquires UpgradeModuleCapabilities {
       let UpgradeModule {
         module_address,

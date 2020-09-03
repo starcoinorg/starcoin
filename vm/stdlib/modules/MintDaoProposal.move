@@ -1,5 +1,5 @@
 address 0x1 {
-  module DaoMint {
+  module MintDaoProposal {
     use 0x1::Token;
     use 0x1::Signer;
     use 0x1::Dao;
@@ -22,13 +22,13 @@ address 0x1 {
 
     }
 
-    public fun propose_mint_to<TokenT>(signer: &signer, receiver: address, amount: u128) {
+    public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128) {
       Dao::propose<TokenT, MintToken>(signer, MintToken {
         receiver, amount
       }, 200); // TODO: replace 200 with DAO::MIN_ACTION_DELAY
     }
 
-    public fun execute_mint_proposal<TokenT>(signer: &signer,  proposer_address: address, proposal_id: u64)
+    public fun execute_mint_proposal<TokenT: copyable>(signer: &signer,  proposer_address: address, proposal_id: u64)
     acquires WrappedMintCapability {
       let MintToken {
         receiver,
