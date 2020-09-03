@@ -16,6 +16,7 @@ module Config {
     // Accounts with this privilege can modify config of type ConfigValue under account_address
     resource struct ModifyConfigCapability<ConfigValue: copyable> {
         account_address: address,
+        /// FIXME: events should put into Config resource.
         events: Event::EventHandle<ConfigChangeEvent<ConfigValue>>,
     }
 

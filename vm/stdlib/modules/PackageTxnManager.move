@@ -103,6 +103,10 @@ address 0x1 {
                       && !exists<TwoPhaseUpgrade>(Signer::address_of(account));
         }
 
+        public fun account_address(cap: &UpgradePlanCapability): address {
+            cap.account_address
+        }
+
         public fun destroy_upgrade_plan_cap(cap: UpgradePlanCapability){
             let UpgradePlanCapability{account_address:_} = cap;
         }
