@@ -14,7 +14,7 @@ check_errs() {
 }
 
 function docker_rebuild() {
-  echo -e "*\n"'!'"starcoin""\n!txfactory\n"'!'"start.sh" >$DIR/../target/debug/.dockerignore
+  echo -e "*\n"'!'"starcoin""\n!starcoin_txfactory\n"'!'"start.sh" >$DIR/../target/debug/.dockerignore
   cp $DIR/start.sh $DIR/../target/debug/
   docker build -f $DIR/DockerfileCi -t starcoin:latest $DIR/../target/debug/
   check_errs $? "Docker build error"
@@ -44,7 +44,7 @@ function start_txfactory() {
   eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  docker run -td --restart=on-failure:10 -v $cfg_root/$starcoin_name:/.starcoin --name $name --entrypoint "/starcoin/txfactory" starcoin:latest --ipc-path /.starcoin/$net/starcoin.ipc $@
+  docker run -td --restart=on-failure:10 -v $cfg_root/$starcoin_name:/.starcoin --name $name --entrypoint "/starcoin/starcoin_txfactory" starcoin:latest --ipc-path /.starcoin/$net/starcoin.ipc $@
   check_errs $? "Docker run txfactory error"
 }
 

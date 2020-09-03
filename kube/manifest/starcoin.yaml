@@ -88,7 +88,7 @@ spec:
           - bash
           - -c
         args:
-          -  /starcoin/txfactory --ipc-path /data/proxima/starcoin.ipc
+          - /starcoin/starcoin_txfactory --ipc-path /data/proxima/starcoin.ipc
         volumeMounts:
         - name: volume
           mountPath: /data
