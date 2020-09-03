@@ -4,6 +4,7 @@ address 0x1 {
     use 0x1::Signer;
     use 0x1::Block;
     use 0x1::Option;
+    use 0x1::DaoConfig;
 
     /// make them into configs
     const VOTEING_DELAY: u64 = 100;
@@ -22,8 +23,16 @@ address 0x1 {
     const EXECUTABLE: u8 = 6;
     const EXTRACTED: u8 = 7;
 
+
     resource struct GovGlobalInfo<Token> {
       next_proposal_id: u64,
+    }
+
+    resource struct DaoConfig<TokenT> {
+      voting_delay: u64,
+      voting_period: u64,
+      voting_quorum_rate: u8,
+      min_action_delay: u64,
     }
 
     /// TODO: support that one can propose mutli proposals.
@@ -62,6 +71,7 @@ address 0x1 {
         next_proposal_id: 0,
       };
       move_to(signer, gov_info);
+      DaoConfig::plugin<TokenT>(signer, VOTEING_DELAY, VOTEING_PERIOD, VOTEING_QUORUM_RATE, MIN_ACTION_DELAY);
     }
 
     /// propose a proposal.
@@ -69,15 +79,15 @@ address 0x1 {
     /// `action_delay`: the delay to execute after the proposal is agreed
     public fun propose<TokenT, ActionT>(signer: &signer, action: ActionT, action_delay: u64)
     acquires GovGlobalInfo {
-      assert(action_delay >= MIN_ACTION_DELAY, 401);
+      assert(action_delay >= DaoConfig::min_action_delay<TokenT>(), 401);
       let proposal_id = generate_next_proposal_id<TokenT>();
       // TODO: make the delay configurable
-      let start_block = Block::get_current_block_number() + VOTEING_DELAY;
+      let start_block = Block::get_current_block_number() + DaoConfig::voting_delay<TokenT>();
       let proposal = Proposal<TokenT, ActionT> {
         id: proposal_id,
         proposer: Signer::address_of(signer),
         start_block: start_block,
-        end_block: start_block + VOTEING_PERIOD,
+        end_block: start_block + DaoConfig::voting_period<TokenT>(),
         for_votes: 0,
         against_votes: 0,
         eta: 0,
@@ -185,7 +195,7 @@ address 0x1 {
     /// Quorum votes to make proposal pass.
     public fun quorum_votes<TokenT>(): u128 {
       let supply = Token::market_cap<TokenT>();
-      supply / 100 * (VOTEING_QUORUM_RATE as u128)
+      supply / 100 * (DaoConfig::voting_quorum_rate<TokenT>() as u128)
     }
 
     fun generate_next_proposal_id<TokenT>(): u64 acquires GovGlobalInfo {
