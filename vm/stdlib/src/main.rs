@@ -12,8 +12,8 @@ use std::{
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_transaction_script_abi, build_transaction_script_doc,
     compile_script, filter_move_files, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    STDLIB_DIR_NAME, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS,
-    LATEST_COMPILED_OUTPUT_PATH, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
+    COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
+    STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn compile_scripts(script_dir: &Path) {

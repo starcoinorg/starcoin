@@ -250,7 +250,7 @@ pub fn build_stdlib_package(
     stdlib_option: StdLibOptions,
     with_init_script: bool,
 ) -> Result<Package> {
-    let modules = stdlib_modules(stdlib_option);
+    let modules = stdlib_modules(stdlib_option, net);
     let mut package = Package::new_with_modules(
         modules
             .iter()

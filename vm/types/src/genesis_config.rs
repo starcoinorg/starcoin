@@ -503,6 +503,10 @@ impl ChainNetwork {
             &Self::MAIN,
         ]
     }
+
+    pub fn stdlib_version(&self) -> String {
+        self.genesis_config().stdlib_version.clone()
+    }
 }
 
 impl Default for ChainNetwork {
@@ -615,6 +619,7 @@ pub struct GenesisConfig {
     pub max_transaction_size_in_bytes: u64,
     pub gas_unit_scaling_factor: u64,
     pub default_account_size: u64,
+    pub stdlib_version: String,
 }
 
 impl GenesisConfig {
@@ -728,6 +733,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
+        stdlib_version: "latest".to_string(),
     }
 });
 
@@ -777,6 +783,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
+        stdlib_version: "latest".to_string(),
     }
 });
 
@@ -834,6 +841,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
+        stdlib_version: "latest".to_string(),
     }
 });
 
@@ -889,6 +897,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
+    stdlib_version: "latest".to_string(),
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -936,4 +945,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
+    stdlib_version: "latest".to_string(),
 });
