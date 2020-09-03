@@ -33,7 +33,7 @@ pub const COMPILED_OUTPUT_PATH: &str = "compiled";
 /// The latest output path under which compiled files will be put
 pub const LATEST_COMPILED_OUTPUT_PATH: &str = "compiled/latest";
 /// The output path for the compiled stdlib
-pub const COMPILED_STDLIB_PATH: &str = "stdlib";
+pub const STDLIB_DIR_NAME: &str = "stdlib";
 /// The extension for compiled files
 pub const COMPILED_EXTENSION: &str = "mv";
 
@@ -96,7 +96,7 @@ static COMPILED_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
 /// should be used.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StdLibOptions {
-    Staged,
+    Compiled,
     Fresh,
 }
 
@@ -105,7 +105,7 @@ pub enum StdLibOptions {
 /// will be used.
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
     match option {
-        StdLibOptions::Staged => &*COMPILED_MOVELANG_STDLIB,
+        StdLibOptions::Compiled => &*COMPILED_MOVELANG_STDLIB,
         StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
     }
 }
@@ -117,8 +117,8 @@ pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
 /// The defualt is to return a compiled version of the stdlib unless it is otherwise specified by the
 /// `MOVE_NO_USE_COMPILED` environment variable.
 pub fn env_stdlib_modules() -> &'static [CompiledModule] {
-    let option = if use_staged() {
-        StdLibOptions::Staged
+    let option = if use_compiled() {
+        StdLibOptions::Compiled
     } else {
         StdLibOptions::Fresh
     };
@@ -128,7 +128,7 @@ pub fn env_stdlib_modules() -> &'static [CompiledModule] {
 /// A predicate detailing whether the compiled versions of scripts and the stdlib should be used or
 /// not. The default is that the compiled versions of the stdlib and transaction scripts should be
 /// used.
-pub fn use_staged() -> bool {
+pub fn use_compiled() -> bool {
     std::env::var(NO_USE_COMPILED).is_err()
 }
 
