@@ -52,8 +52,9 @@ RUN set -eux; \
 ENV RELEASE_PATH="/starcoin/target/release"
 COPY --from=builder $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_miner \
-     $RELEASE_PATH/txfactory \
-     $RELEASE_PATH/faucet \
+     $RELEASE_PATH/starcoin_txfactory \
+     $RELEASE_PATH/starcoin_faucet \
+     $RELEASE_PATH/starcoin_generator \
      /starcoin/
      
 CMD ["/starcoin/starcoin"]
