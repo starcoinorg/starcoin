@@ -1,6 +1,7 @@
 use crate::state_sync::StateSyncTaskRef;
-use anyhow::format_err;
-use chain::ChainActorRef;
+use anyhow::{format_err, Result};
+use bus::BusActor;
+use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use network_api::{NetworkService, PeerId};
@@ -10,10 +11,21 @@ use starcoin_storage::Store;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
-use traits::{ChainAsyncService, ConnectBlockError, VerifyBlockField};
-use types::block::{Block, BlockInfo, BlockNumber};
+use traits::WriteableChainService;
+use traits::{ConnectBlockError, VerifyBlockField};
+use txpool::TxPoolService;
+use types::{
+    block::{Block, BlockInfo, BlockNumber},
+    startup_info::StartupInfo,
+};
 
 mod block_connect_test;
+mod metrics;
+mod write_block_chain;
+
+use actix::Addr;
+use starcoin_network_rpc_api::RemoteChainStateReader;
+pub use write_block_chain::WriteBlockChainService;
 
 #[derive(Clone)]
 pub struct PivotBlock<N>
@@ -132,7 +144,7 @@ pub struct BlockConnector<N>
 where
     N: NetworkService + 'static,
 {
-    chain_reader: ChainActorRef,
+    writeable_block_chain: Arc<RwLock<dyn WriteableChainService + 'static>>,
     future_blocks: FutureBlockPool,
     pivot: Arc<RwLock<Option<PivotBlock<N>>>>,
 }
@@ -141,10 +153,26 @@ impl<N> BlockConnector<N>
 where
     N: NetworkService + 'static,
 {
-    pub fn new(chain_reader: ChainActorRef) -> Self {
+    pub fn new(
+        config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
+        storage: Arc<dyn Store>,
+        txpool: TxPoolService,
+        bus: Addr<BusActor>,
+        remote_chain_state: Option<RemoteChainStateReader<N>>,
+    ) -> Self {
         let pivot: Option<PivotBlock<N>> = None;
+        let writeable_block_chain = WriteBlockChainService::new(
+            config,
+            startup_info,
+            storage,
+            txpool,
+            bus,
+            remote_chain_state,
+        )
+        .unwrap();
         BlockConnector {
-            chain_reader,
+            writeable_block_chain: Arc::new(RwLock::new(writeable_block_chain)),
             future_blocks: FutureBlockPool::new(),
             pivot: Arc::new(RwLock::new(pivot)),
         }
@@ -185,18 +213,22 @@ where
         })
     }
 
-    pub async fn do_block_and_child(&self, block: Block, peer_id: PeerId) {
+    pub fn do_block_and_child(&self, block: Block, peer_id: PeerId) {
         let block_id = block.header().id();
-        if self.do_block_connect(block, peer_id.clone()).await {
+        if self.do_block_connect(block, peer_id.clone()) {
             if let Some(child) = self.future_blocks.take_child(&block_id) {
                 for son_block in child {
-                    let _ = self.do_block_connect(son_block, peer_id.clone()).await;
+                    let _ = self.do_block_connect(son_block, peer_id.clone());
                 }
             }
         }
     }
 
-    async fn do_block_connect(&self, block: Block, peer_id: PeerId) -> bool {
+    pub fn connect_block(&self, block: Block) -> Result<()> {
+        self.writeable_block_chain.write().try_connect(block)
+    }
+
+    fn do_block_connect(&self, block: Block, peer_id: PeerId) -> bool {
         debug!(
             "connect begin block {:?} : {:?}",
             block.header().number(),
@@ -206,7 +238,9 @@ where
         let mut _state_sync_address = None;
         let current_block_id = block.id();
         let connect_result = if pivot.is_none() {
-            self.chain_reader.clone().try_connect(block.clone()).await
+            self.writeable_block_chain
+                .write()
+                .try_connect(block.clone())
         } else {
             let tmp = pivot.expect("pivot is none.");
             let pivot_number = tmp.number;
@@ -221,10 +255,9 @@ where
                     match block_accumulator.get_leaf(number) {
                         Ok(Some(block_id)) => {
                             if block_id == current_block_id {
-                                self.chain_reader
-                                    .clone()
+                                self.writeable_block_chain
+                                    .write()
                                     .try_connect_without_execute(block.clone(), peer_id)
-                                    .await
                             } else {
                                 Err(ConnectBlockError::VerifyBlockFailed(
                                     VerifyBlockField::Header,
@@ -257,10 +290,9 @@ where
                 Ordering::Equal => {
                     let parent_id = block.header().parent_hash();
                     if pivot_id == &parent_id {
-                        self.chain_reader
-                            .clone()
+                        self.writeable_block_chain
+                            .write()
                             .try_connect_without_execute(block.clone(), peer_id)
-                            .await
                     } else {
                         Err(ConnectBlockError::VerifyBlockFailed(
                             VerifyBlockField::Header,
@@ -274,7 +306,10 @@ where
                         .into())
                     }
                 }
-                Ordering::Less => self.chain_reader.clone().try_connect(block.clone()).await,
+                Ordering::Less => self
+                    .writeable_block_chain
+                    .write()
+                    .try_connect(block.clone()),
             }
         };
 

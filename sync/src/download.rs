@@ -18,17 +18,21 @@ use futures::channel::mpsc;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network_api::NetworkService;
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders};
+use starcoin_network_rpc_api::{
+    gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders, RemoteChainStateReader,
+};
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncNotify;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainAsyncService;
+use txpool::TxPoolService;
 use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
-    system_events::{SyncDone, SystemStarted},
+    startup_info::StartupInfo,
+    system_events::{MinedBlock, SyncDone, SystemStarted},
     U256,
 };
 
@@ -70,12 +74,22 @@ where
         network: N,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
+        txpool: TxPoolService,
+        startup_info: StartupInfo,
     ) -> Result<Addr<DownloadActor<N>>> {
         let download_actor = DownloadActor::create(move |ctx| {
             let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
             ctx.add_message_stream(sync_event_receiver);
             DownloadActor {
-                downloader: Arc::new(Downloader::new(chain_reader)),
+                downloader: Arc::new(Downloader::new(
+                    chain_reader,
+                    node_config.clone(),
+                    startup_info,
+                    storage.clone(),
+                    txpool,
+                    bus.clone(),
+                    None,
+                )),
                 self_peer_id: peer_id,
                 rpc_client: NetworkRpcClient::new(network.clone()),
                 network,
@@ -108,6 +122,14 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(1024);
+        let recipient = ctx.address().recipient::<MinedBlock>();
+        self.bus
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
         let sys_event_recipient = ctx.address().recipient::<SystemStarted>();
         self.bus
             .send(Subscription {
@@ -134,6 +156,24 @@ where
             self.downloader.set_pivot(None);
         }
         Ok(())
+    }
+}
+
+impl<N> Handler<MinedBlock> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
+    type Result = ();
+
+    fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
+        debug!("try connect mined block.");
+        let MinedBlock(new_block) = msg;
+        match self.downloader.connect_block(new_block.as_ref().clone()) {
+            Ok(_) => debug!("Process mined block success."),
+            Err(e) => {
+                warn!("Process mined block fail, error: {:?}", e);
+            }
+        }
     }
 }
 
@@ -494,11 +534,8 @@ where
         }
     }
 
-    pub fn do_block_and_child(&self, block: Block, peer_id: PeerId) {
-        let downloader = self.downloader.clone();
-        Arbiter::spawn(async move {
-            downloader.connect_block_and_child(block, peer_id).await;
-        });
+    fn do_block_and_child(&mut self, block: Block, peer_id: PeerId) {
+        self.downloader.connect_block_and_child(block, peer_id);
     }
 }
 
@@ -518,9 +555,24 @@ impl<N> Downloader<N>
 where
     N: NetworkService + 'static,
 {
-    pub fn new(chain_reader: ChainActorRef) -> Self {
+    pub fn new(
+        chain_reader: ChainActorRef,
+        config: Arc<NodeConfig>,
+        startup_info: StartupInfo,
+        storage: Arc<dyn Store>,
+        txpool: TxPoolService,
+        bus: Addr<BusActor>,
+        remote_chain_state: Option<RemoteChainStateReader<N>>,
+    ) -> Self {
         Downloader {
-            block_connector: BlockConnector::new(chain_reader.clone()),
+            block_connector: BlockConnector::new(
+                config,
+                startup_info,
+                storage,
+                txpool,
+                bus,
+                remote_chain_state,
+            ),
             chain_reader,
         }
     }
@@ -666,29 +718,24 @@ where
         }
     }
 
-    pub async fn do_blocks(
-        &self,
-        headers: Vec<BlockHeader>,
-        bodies: Vec<BlockBody>,
-        peer_id: PeerId,
-    ) {
-        let peer_id_clone = peer_id.clone();
+    pub fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>, peer_id: PeerId) {
         debug_assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
                     let block = Block::new(header.clone(), body.clone().transactions);
-                    self.connect_block_and_child(block, peer_id_clone.clone())
-                        .await;
+                    self.connect_block_and_child(block, peer_id.clone());
                 }
             }
         }
     }
 
-    pub async fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
-        self.block_connector
-            .do_block_and_child(block, peer_id)
-            .await;
+    pub fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
+        self.block_connector.do_block_and_child(block, peer_id)
+    }
+
+    fn connect_block(&self, block: Block) -> Result<()> {
+        self.block_connector.connect_block(block)
     }
 
     fn set_pivot(&self, pivot: Option<PivotBlock<N>>) {

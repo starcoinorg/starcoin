@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::ChainStateReader;
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::peer_info::PeerId;
@@ -17,16 +16,8 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
-/// implement ChainService
-pub trait ChainService {
-    /// chain service
-    fn try_connect(&mut self, block: Block) -> Result<()>;
-    fn try_connect_without_execute(
-        &mut self,
-        block: Block,
-        remote_chain_state: &dyn ChainStateReader,
-    ) -> Result<()>;
-
+/// Readable block chain service trait
+pub trait ReadableChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
@@ -74,9 +65,6 @@ pub trait ChainService {
 pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
-    /// chain service
-    async fn try_connect(&self, block: Block) -> Result<()>;
-    async fn try_connect_without_execute(&mut self, block: Block, peer_id: PeerId) -> Result<()>;
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
@@ -118,4 +106,15 @@ pub trait ChainAsyncService:
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
+}
+
+/// Writeable block chain service trait
+pub trait WriteableChainService {
+    fn try_connect(&mut self, block: Block) -> Result<()>;
+
+    fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        remote_peer_id_to_read_state: PeerId,
+    ) -> Result<()>;
 }

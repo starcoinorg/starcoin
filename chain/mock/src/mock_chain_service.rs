@@ -4,7 +4,6 @@
 use anyhow::{Error, Result};
 use crypto::HashValue;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -20,14 +19,6 @@ pub struct MockChainService;
 
 #[async_trait::async_trait]
 impl ChainAsyncService for MockChainService {
-    async fn try_connect(&self, _block: Block) -> Result<()> {
-        unimplemented!()
-    }
-
-    async fn try_connect_without_execute(&mut self, _block: Block, _peer_id: PeerId) -> Result<()> {
-        unimplemented!()
-    }
-
     async fn get_header_by_hash(&self, _hash: &HashValue) -> Result<Option<BlockHeader>> {
         unimplemented!()
     }

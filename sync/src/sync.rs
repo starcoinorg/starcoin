@@ -12,7 +12,7 @@ use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
 use txpool::TxPoolService;
-use types::peer_info::PeerId;
+use types::{peer_info::PeerId, startup_info::StartupInfo};
 
 pub struct SyncActor<N>
 where
@@ -36,11 +36,12 @@ where
         txpool: TxPoolService,
         network: N,
         storage: Arc<dyn Store>,
+        startup_info: StartupInfo,
     ) -> Result<Addr<SyncActor<N>>>
     where
         N: NetworkService + 'static,
     {
-        let txn_sync_addr = TxnSyncActor::launch(txpool, network.clone(), bus.clone());
+        let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
         let download_address = DownloadActor::launch(
             node_config,
             peer_id,
@@ -48,6 +49,8 @@ where
             network,
             bus.clone(),
             storage.clone(),
+            txpool,
+            startup_info,
         )?;
 
         let actor = SyncActor {
