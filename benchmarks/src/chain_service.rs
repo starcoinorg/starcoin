@@ -18,7 +18,7 @@ use starcoin_txpool::{TxPool, TxPoolService};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use traits::{ChainReader, ChainService};
+use traits::{ChainReader, ReadableChainService};
 
 /// Benchmarking support for chain.
 pub struct ChainServiceBencher {
@@ -78,7 +78,6 @@ impl ChainServiceBencher {
                 self.config.net().consensus(),
                 self.chain.read().get_master().head_block().header().id(),
                 self.storage.clone(),
-                None,
             )
             .unwrap();
 

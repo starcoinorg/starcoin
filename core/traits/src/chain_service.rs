@@ -17,8 +17,8 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
-/// implement ChainService
-pub trait ChainService {
+/// Readable block chain service trait
+pub trait ReadableChainService {
     /// chain service
     fn try_connect(&mut self, block: Block) -> Result<()>;
     fn try_connect_without_execute(
@@ -118,4 +118,15 @@ pub trait ChainAsyncService:
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
+}
+
+/// Writeable block chain service trait
+pub trait WriteableChainService {
+    fn try_connect(&mut self, block: Block) -> Result<()>;
+
+    fn try_connect_without_execute(
+        &mut self,
+        block: Block,
+        remote_peer_id_to_read_state: PeerId,
+    ) -> Result<()>;
 }

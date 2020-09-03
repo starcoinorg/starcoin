@@ -39,6 +39,8 @@ dyn-clone = "1.0.1"
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-network-rpc = { path = "../network-rpc/", package = "starcoin-network-rpc" }
 stest = { path = "../commons/stest"}
+starcoin-vm-types = { path = "../vm/types"}
+starcoin-state-api = { path = "../state/api" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

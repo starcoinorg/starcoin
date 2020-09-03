@@ -290,7 +290,7 @@ where
         bodies: Vec<BlockBody>,
         hashes: Vec<BlockIdAndNumber>,
         peer_id: PeerId,
-    ) -> Option<Box<impl Future<Output = ()>>> {
+    ) {
         if !bodies.is_empty() {
             let len = bodies.len();
             let mut blocks: Vec<Block> = Vec::new();
@@ -307,28 +307,24 @@ where
                 .with_label_values(&[LABEL_BLOCK_BODY])
                 .inc_by(len as i64);
 
-            Some(self.connect_blocks(blocks, peer_id))
+            self.connect_blocks(blocks, peer_id);
         } else {
             self.body_task.push_tasks(hashes);
-            None
         }
     }
 
-    fn connect_blocks(&self, blocks: Vec<Block>, peer_id: PeerId) -> Box<impl Future<Output = ()>> {
-        let downloader = self.downloader.clone();
-        let fut = async move {
-            let mut blocks = blocks;
-            blocks.reverse();
-            loop {
-                let block = blocks.pop();
-                if let Some(b) = block {
-                    downloader.connect_block_and_child(b, peer_id.clone()).await;
-                } else {
-                    break;
-                }
+    fn connect_blocks(&self, blocks: Vec<Block>, peer_id: PeerId) {
+        let mut blocks = blocks;
+        blocks.reverse();
+        loop {
+            let block = blocks.pop();
+            if let Some(b) = block {
+                self.downloader
+                    .connect_block_and_child(b, peer_id.clone());
+            } else {
+                break;
             }
-        };
-        Box::new(fut)
+        }
     }
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
@@ -364,18 +360,13 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, data: SyncDataEvent, ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, data: SyncDataEvent, _ctx: &mut Self::Context) -> Self::Result {
         match data.data_type {
             DataType::Header => {
                 self.handle_headers(data.headers);
             }
             DataType::Body => {
-                if let Some(fut) = self.handle_bodies(data.bodies, data.body_taskes, data.peer_id) {
-                    (*fut)
-                        .into_actor(self)
-                        .then(|_result, act, _ctx| async {}.into_actor(act))
-                        .wait(ctx);
-                }
+                self.handle_bodies(data.bodies, data.body_taskes, data.peer_id);
             }
         }
     }

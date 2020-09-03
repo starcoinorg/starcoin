@@ -10,7 +10,7 @@ mod chain;
 mod chain_service;
 
 pub use chain::{Chain, ChainReader, ChainWriter, ExcludedTxns};
-pub use chain_service::{ChainAsyncService, ChainService};
+pub use chain_service::{ChainAsyncService, ReadableChainService, WriteableChainService};
 
 #[macro_export]
 macro_rules! verify_block {

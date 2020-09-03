@@ -21,7 +21,7 @@ use message::ChainRequest;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
-use starcoin_traits::{ChainAsyncService, ChainService};
+use starcoin_traits::{ChainAsyncService, ReadableChainService};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,

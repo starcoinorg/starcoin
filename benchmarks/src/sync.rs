@@ -45,7 +45,15 @@ impl SyncBencher {
             let chain_2 = node_handle_2.chain_actor;
             let network_2 = node_handle_2.network;
 
-            let downloader = Arc::new(Downloader::new(chain_2.clone()));
+            let downloader = Arc::new(Downloader::new(
+                chain_2.clone(),
+                node_handle_2.config.clone(),
+                chain_2.clone().master_startup_info().await.unwrap(),
+                node_handle_2.storage,
+                node_handle_2.txpool.get_service(),
+                node_handle_2.bus,
+                None,
+            ));
             let rpc_client = NetworkRpcClient::new(network_2.clone());
 
             for i in 0..3 {
@@ -141,9 +149,7 @@ impl SyncBencher {
                             latest_number,
                             best_peer.get_peer_id()
                         );
-                        downloader
-                            .do_blocks(headers, bodies, best_peer.get_peer_id())
-                            .await;
+                        downloader.do_blocks(headers, bodies, best_peer.get_peer_id());
                     }
                 }
             }
@@ -170,7 +176,6 @@ async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<N
                 node_config.net().consensus(),
                 startup_info.master,
                 storage.clone(),
-                None,
             )
             .unwrap();
 

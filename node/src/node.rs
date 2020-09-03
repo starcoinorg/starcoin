@@ -286,6 +286,7 @@ pub async fn start(
     let sync_txpool = txpool_service.clone();
     let sync_network = network.clone();
     let sync_storage = storage.clone();
+    let sync_startup_info = startup_info.clone();
     let sync = Arbiter::new()
         .exec(move || -> Result<Addr<SyncActor<NetworkAsyncService>>> {
             SyncActor::launch(
@@ -296,6 +297,7 @@ pub async fn start(
                 sync_txpool,
                 sync_network,
                 sync_storage,
+                sync_startup_info,
             )
         })
         .await??;

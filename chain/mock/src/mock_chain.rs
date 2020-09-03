@@ -23,7 +23,7 @@ impl MockChain {
         let (storage, startup_info, _) =
             Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(net.consensus(), startup_info.master, storage, None)?;
+        let chain = BlockChain::new(net.consensus(), startup_info.master, storage)?;
         let miner = AccountInfo::random();
         Ok(Self { head: chain, miner })
     }
@@ -34,7 +34,7 @@ impl MockChain {
         head_block_hash: HashValue,
         miner: AccountInfo,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.consensus(), head_block_hash, storage, None)?;
+        let chain = BlockChain::new(net.consensus(), head_block_hash, storage)?;
         Ok(Self { head: chain, miner })
     }
 
