@@ -236,7 +236,7 @@
 //         Some(miner_account.get_auth_key().prefix().to_vec()),
 //         Some(header.id()),
 //         vec![],
-//         vec![],
+//         vec![],0
 //         None,
 //     )?;
 //
