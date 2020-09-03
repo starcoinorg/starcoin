@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::helper::{compute_arg_identifiers, compute_args, compute_returns};
-use anyhow::*;
 use proc_macro2::TokenStream;
 use syn::ItemTrait;
 
-pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
+pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStream> {
     let mut rpc_info = Vec::new();
     let client_methods: Vec<TokenStream> = rpc_trait
         .items
@@ -28,25 +27,29 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
                 let user_arg_indent = arg_names[1];
                 rpc_info.push(name.clone());
                 Some(quote! {
-                    pub fn #name(&self, #args)-> impl Future<Output=Result<#returns>> {
+                    pub fn #name(&self, #args)-> impl Future<Output=network_rpc_core::Result::<#returns>> {
                         let network = self.network.clone();
                         async move {
                             let input_arg_serialized = match #user_arg_indent.encode(){
                                 Ok(arg_ser) => arg_ser,
-                                Err(e) => return Err(format_err!("Failed to encode rpc input argument: {:?}", e))
+                                Err(e) => {return Err(anyhow::anyhow!("Failed to encode rpc input argument: {:?}", e).into())}
                             };
                             debug!("Network rpc call method: {:?}, args: {:?}", stringify!(#name), #user_arg_indent);
                             let peer_id = match PeerId::from_bytes(#peer_id_indent.into_bytes()){
                                 Ok(peer_id) => peer_id,
-                                Err(e) => return Err(format_err!("Invalid rpc peer id:{:?}",e))
+                                Err(e) => {return Err(anyhow::anyhow!("Invalid rpc peer id:{:?}",e).into())}
                             };
+
                             let rpc_path = stringify!(#name).to_string();
                             match Self::request(network, rpc_path, peer_id, input_arg_serialized).await{
-                                Ok(result) => from_bytes::<#returns>(&result),
-                                Err(e) => Err(e)
-                            }
-                        }
-                    }
+                                Ok(result) => {
+                                    match from_bytes::<network_rpc_core::Result::<#returns>>(&result){
+                                        Ok(r) => r,
+                                        Err(e) => Err(e.into()),
+                                    }
+                                },
+                                Err(e) => Err(e.into())
+                            }}}
                 })
             } else {
                 None
@@ -55,7 +58,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
         .collect();
     let get_rpc_info_method = quote! {
         pub fn get_rpc_info() -> (&'static [u8], Vec<String>) {
-           (CHAIN_PROTOCOL_NAME, vec![#(stringify!(#rpc_info).to_string()),*])
+            (CHAIN_PROTOCOL_NAME, vec![#(stringify!(#rpc_info).to_string()),*])
         }
     };
 
@@ -67,10 +70,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
         use starcoin_types::peer_info::{PeerId, PeerInfo};
         use starcoin_types::CHAIN_PROTOCOL_NAME;
         use scs::{SCSCodec,from_bytes};
-        use anyhow::{Result,format_err};
         use futures::prelude::*;
         use starcoin_logger::prelude::*;
-        pub struct Data(Vec<String>);
         #get_rpc_info_method
 
         #[derive(Clone)]
@@ -94,7 +95,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> Result<TokenStream> {
         where
             N: NetworkService,
         {
-            async fn request(network: N, path: String, peer_id: PeerId, request: Vec<u8>) -> Result<Vec<u8>> {
+            async fn request(network: N, path: String, peer_id: PeerId, request: Vec<u8>) -> anyhow::Result<Vec<u8>> {
                 network
                     .send_request_bytes(
                         CHAIN_PROTOCOL_NAME.into(),

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::Message;
-use anyhow::Result;
 use futures::future::BoxFuture;
+use network_rpc_core::Result;
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -15,9 +15,7 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
-
 mod remote_chain_state;
-
 pub use remote_chain_state::RemoteChainStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
@@ -154,6 +152,8 @@ pub(crate) const DELAY_TIME: u64 = 15;
 
 #[net_rpc]
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
+    fn ping(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
+
     fn get_txns(&self, peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>>;
 
     fn get_txn_infos(

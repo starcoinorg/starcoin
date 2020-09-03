@@ -60,14 +60,10 @@ impl StreamHandler<RawRpcRequestMessage> for NetworkRpcServer {
         if let Some(method) = self.methods.get(&path) {
             let method = method.clone();
             Arbiter::spawn(async move {
-                if let Ok(response) = method.call(peer_id, request).await {
-                    if let Err(e) = Self::do_response(responder, response).await {
-                        error!("{:?}", e);
-                    };
-                } else {
-                    // TODO: Do not handle for back compatibly
-                    error!("network rpc call return custom error");
-                }
+                let response = method.call(peer_id, request).await;
+                if let Err(e) = Self::do_response(responder, response).await {
+                    error!("Respond to rpc call failed:{:?}", e);
+                };
             })
         } else {
             warn!(
