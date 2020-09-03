@@ -33,7 +33,7 @@ async fn test_stratum_client() {
     };
     Delay::new(Duration::from_millis(1000)).await;
     info!("started stratum server");
-    let event_receiver = bus.oneshot::<MinedBlock>();
+    let event_receiver = bus.oneshot::<MinedBlock>().await.unwrap();
     let mine_ctx = {
         let header = BlockHeader::random();
         let body = BlockBody::default();

@@ -1,11 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
 use proc_macro2::TokenStream;
 use syn::{parse_quote, ItemTrait, TraitItem, TraitItemMethod};
 
-pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> Result<TokenStream> {
+pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> anyhow::Result<TokenStream> {
     let delegate_methods: Vec<TokenStream> = rpc_trait
         .items
         .iter()
@@ -39,6 +38,7 @@ pub fn generate_server_module(rpc_trait: &mut ItemTrait) -> Result<TokenStream> 
         pub mod gen_server {
             use super::*;
             use scs::{SCSCodec,from_bytes};
+            use network_rpc_core::NetRpcError;
             #rpc_server_trait
         }
     };
@@ -64,13 +64,20 @@ pub fn generate_to_delegate(method: &TraitItemMethod) -> TokenStream {
     let param_type = param_types
         .get(1)
         .expect("network rpc method need at least three argument");
+
     let param_type = quote!(#param_type);
     let closure = quote! {
         move | base, peer_id, params | {
             Box::pin(async move{
                 let method = &(Self::#method_ident as #method_sig);
-                let params = from_bytes::<#param_type>(&params)?;
-                method(&base, peer_id, params).await.and_then(|r| r.encode())
+                let params = match from_bytes::<#param_type>(&params) {
+                    Ok(p) => p,
+                    Err(e) => return NetRpcError::new(e.to_string()).encode().unwrap()//unreachable unwrap
+                };
+                match method(&base, peer_id, params).await.encode() {
+                    Ok(r) => r,
+                    Err(e) => NetRpcError::new(e.to_string()).encode().unwrap()//unreachable unwrap
+                }
             })
         }
     };

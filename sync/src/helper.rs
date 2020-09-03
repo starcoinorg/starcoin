@@ -2,7 +2,6 @@ use anyhow::{format_err, Result};
 use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
-use network::NetworkAsyncService;
 use network_api::NetworkService;
 use rand::prelude::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -100,11 +99,14 @@ impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
     }
 }
 
-pub async fn get_txns(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_txns<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     req: GetTxns,
-) -> Result<TransactionsData> {
+) -> Result<TransactionsData>
+where
+    N: NetworkService + 'static,
+{
     let data = client.get_txns(peer_id, req.clone()).await?;
     if req.ids.is_some() {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
@@ -120,19 +122,28 @@ pub async fn get_txns(
     }
 }
 
-pub async fn get_txn_infos(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_txn_infos<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     block_id: HashValue,
-) -> Result<Option<Vec<TransactionInfo>>> {
-    client.get_txn_infos(peer_id, block_id).await
+) -> Result<Option<Vec<TransactionInfo>>>
+where
+    N: NetworkService + 'static,
+{
+    client
+        .get_txn_infos(peer_id, block_id)
+        .await
+        .map_err(|e| e.into())
 }
 
-pub async fn get_headers_by_number(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_headers_by_number<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     req: GetBlockHeadersByNumber,
-) -> Result<Vec<BlockHeader>> {
+) -> Result<Vec<BlockHeader>>
+where
+    N: NetworkService + 'static,
+{
     let mut verify_condition: RpcEntryVerify<BlockNumber> = (&req).into();
     let data = client.get_headers_by_number(peer_id, req).await?;
     let verified_headers =
@@ -140,12 +151,15 @@ pub async fn get_headers_by_number(
     Ok(verified_headers)
 }
 
-pub async fn get_headers_with_peer(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_headers_with_peer<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     req: GetBlockHeaders,
     number: BlockNumber,
-) -> Result<Vec<BlockHeader>> {
+) -> Result<Vec<BlockHeader>>
+where
+    N: NetworkService + 'static,
+{
     let mut verify_condition: RpcEntryVerify<BlockNumber> =
         (&req.clone().into_numbers(number)).into();
     let data = client.get_headers_with_peer(peer_id, req).await?;
@@ -154,12 +168,15 @@ pub async fn get_headers_with_peer(
     Ok(verified_headers)
 }
 
-pub async fn get_headers(
-    network: &NetworkAsyncService,
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_headers<N>(
+    network: &N,
+    client: &NetworkRpcClient<N>,
     req: GetBlockHeaders,
     number: BlockNumber,
-) -> Result<(Vec<BlockHeader>, PeerId)> {
+) -> Result<(Vec<BlockHeader>, PeerId)>
+where
+    N: NetworkService + 'static,
+{
     let peers = network.best_peer_set().await?;
 
     // random select a peer has enough blocks to get from.
@@ -183,11 +200,14 @@ pub async fn get_headers(
     }
 }
 
-pub async fn _get_header_by_hash(
-    network: &NetworkAsyncService,
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn _get_header_by_hash<N>(
+    network: &N,
+    client: &NetworkRpcClient<N>,
     hashes: Vec<HashValue>,
-) -> Result<Vec<BlockHeader>> {
+) -> Result<Vec<BlockHeader>>
+where
+    N: NetworkService + 'static,
+{
     if let Some(peer_info) = network.best_peer().await? {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data = client
@@ -200,12 +220,15 @@ pub async fn _get_header_by_hash(
     }
 }
 
-pub async fn get_body_by_hash(
-    client: &NetworkRpcClient<NetworkAsyncService>,
-    network: &NetworkAsyncService,
+pub async fn get_body_by_hash<N>(
+    client: &NetworkRpcClient<N>,
+    network: &N,
     hashes: Vec<HashValue>,
     max_height: BlockNumber,
-) -> Result<(Vec<BlockBody>, PeerId)> {
+) -> Result<(Vec<BlockBody>, PeerId)>
+where
+    N: NetworkService + 'static,
+{
     let peers = network.best_peer_set().await?;
     // random select a peer who has enough block
     let random_peer = peers
@@ -227,22 +250,28 @@ pub async fn get_body_by_hash(
     }
 }
 
-pub async fn get_info_by_hash(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_info_by_hash<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     hashes: Vec<HashValue>,
-) -> Result<Vec<BlockInfo>> {
+) -> Result<Vec<BlockInfo>>
+where
+    N: NetworkService + 'static,
+{
     let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
     let data = client.get_info_by_hash(peer_id, hashes).await?;
     let verified_infos = verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
     Ok(verified_infos)
 }
 
-pub async fn get_state_node_by_node_hash(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_state_node_by_node_hash<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     node_key: HashValue,
-) -> Result<StateNode> {
+) -> Result<StateNode>
+where
+    N: NetworkService + 'static,
+{
     if let Some(state_node) = client
         .get_state_node_by_node_hash(peer_id, node_key)
         .await?
@@ -265,12 +294,15 @@ pub async fn get_state_node_by_node_hash(
     }
 }
 
-pub async fn get_accumulator_node_by_node_hash(
-    client: &NetworkRpcClient<NetworkAsyncService>,
+pub async fn get_accumulator_node_by_node_hash<N>(
+    client: &NetworkRpcClient<N>,
     peer_id: PeerId,
     node_key: HashValue,
     accumulator_type: AccumulatorStoreType,
-) -> Result<AccumulatorNode> {
+) -> Result<AccumulatorNode>
+where
+    N: NetworkService + 'static,
+{
     if let Some(accumulator_node) = client
         .get_accumulator_node_by_node_hash(
             peer_id,

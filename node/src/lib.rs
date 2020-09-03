@@ -124,7 +124,7 @@ impl NodeHandle {
     pub fn generate_block(&self) -> Result<BlockDetail> {
         let bus = self.start_handle.bus.clone();
         block_on(async move {
-            let receiver = bus.clone().oneshot::<NewHeadBlock>();
+            let receiver = bus.clone().oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new(false)).await?;
             let new_head_block = receiver.await?;
             Ok(new_head_block.0.as_ref().clone())

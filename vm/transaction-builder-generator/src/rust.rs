@@ -22,7 +22,6 @@ pub fn output(out: &mut dyn Write, abis: &[ScriptABI], local_types: bool) -> Res
 }
 
 fn output_preamble(out: &mut dyn Write, local_types: bool) -> Result<()> {
-    println!("local_type is {}", local_types);
     let preamble = if local_types {
         r#"
 // Copyright (c) The Libra Core Contributors

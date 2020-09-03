@@ -3,7 +3,6 @@ use actix::prelude::*;
 use anyhow::{bail, Result};
 use bus::{Bus, BusActor};
 use logger::prelude::*;
-use network::NetworkAsyncService;
 use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_sync_api::StartSyncTxnEvent;
@@ -12,17 +11,19 @@ use txpool::TxPoolService;
 use types::peer_info::PeerId;
 
 #[derive(Clone)]
-pub struct TxnSyncActor {
+pub struct TxnSyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     bus: Addr<BusActor>,
-    inner: Inner,
+    inner: Inner<N>,
 }
 
-impl TxnSyncActor {
-    pub fn launch(
-        txpool: TxPoolService,
-        network: NetworkAsyncService,
-        bus: Addr<BusActor>,
-    ) -> Addr<TxnSyncActor> {
+impl<N> TxnSyncActor<N>
+where
+    N: NetworkService + 'static,
+{
+    pub fn launch(txpool: TxPoolService, network: N, bus: Addr<BusActor>) -> Addr<TxnSyncActor<N>> {
         let actor = TxnSyncActor {
             inner: Inner {
                 pool: txpool,
@@ -35,7 +36,10 @@ impl TxnSyncActor {
     }
 }
 
-impl actix::Actor for TxnSyncActor {
+impl<N> actix::Actor for TxnSyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Context = actix::Context<Self>;
 
     /// when start, subscribe StartSyncTxnEvent.
@@ -57,7 +61,10 @@ impl actix::Actor for TxnSyncActor {
     }
 }
 
-impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
+impl<N> actix::Handler<StartSyncTxnEvent> for TxnSyncActor<N>
+where
+    N: NetworkService + 'static,
+{
     type Result = ();
 
     fn handle(
@@ -79,16 +86,26 @@ impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
 }
 
 #[derive(Clone)]
-struct Inner {
+struct Inner<N>
+where
+    N: NetworkService + 'static,
+{
     pool: TxPoolService,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
-    network_service: NetworkAsyncService,
+    rpc_client: NetworkRpcClient<N>,
+    network_service: N,
 }
 
-impl Inner {
+impl<N> Inner<N>
+where
+    N: NetworkService + 'static,
+{
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
         let best_peers = self.network_service.best_peer_set().await?;
+        if best_peers.is_empty() {
+            info!("No peer to sync txn.");
+            return Ok(());
+        }
         for peer in best_peers {
             match self.sync_txn_from_peer(peer.peer_id).await {
                 Ok(_) => {

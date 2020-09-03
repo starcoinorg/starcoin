@@ -4357,6 +4357,7 @@ dependencies = [
  "anyhow",
  "futures 0.3.5",
  "network-api",
+ "serde",
  "starcoin-logger",
  "starcoin-types",
 ]
@@ -6082,10 +6083,10 @@ dependencies = [
 
 [[package]]
 name = "serde-generate"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "582443c3fcb3fa68f2ee5776756ad183f28d10f6cf368b2c8bc60feed8d30d0b"
+version = "0.13.0"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=128903725d0e057f1c8675b413995cf2e4bdf26d#128903725d0e057f1c8675b413995cf2e4bdf26d"
 dependencies = [
+ "heck",
  "include_dir",
  "maplit",
  "serde",
@@ -6093,13 +6094,14 @@ dependencies = [
  "serde_bytes",
  "serde_yaml",
  "structopt 0.3.17",
+ "textwrap 0.12.1",
 ]
 
 [[package]]
 name = "serde-name"
-version = "0.1.1"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87442b7a30baedc6e8875cb7156cb0e2cf41cdd9f13c34de73090c463f028bd8"
+checksum = "92bb32dbe1df50291d7d00b5e573acb2c70b783baf3d1bce2d19c86be11c709e"
 dependencies = [
  "serde",
  "thiserror",
@@ -6107,9 +6109,8 @@ dependencies = [
 
 [[package]]
 name = "serde-reflection"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "695ca48311bdeac687d09bbd558de507f0874a401c56cce52ee5665705f817f3"
+version = "0.3.1"
+source = "git+https://github.com/starcoinorg/serde-reflection?rev=128903725d0e057f1c8675b413995cf2e4bdf26d#128903725d0e057f1c8675b413995cf2e4bdf26d"
 dependencies = [
  "serde",
  "thiserror",
@@ -7084,6 +7085,7 @@ dependencies = [
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node-api",
+ "starcoin-open-block",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
@@ -7718,6 +7720,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-network-rpc-api",
  "starcoin-state-tree",
  "starcoin-types",
 ]
@@ -8227,12 +8230,16 @@ dependencies = [
  "async-trait",
  "backtrace",
  "futures 0.3.5",
+ "libp2p",
+ "network-api",
  "network-rpc-core",
  "rand 0.7.3",
  "starcoin-account-api",
  "starcoin-account-service",
+ "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-bus",
+ "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-chain-notify",
  "starcoin-config",
@@ -8253,6 +8260,7 @@ dependencies = [
  "starcoin-rpc-server",
  "starcoin-state-api",
  "starcoin-state-service",
+ "starcoin-state-tree",
  "starcoin-storage",
  "starcoin-sync",
  "starcoin-sync-api",
