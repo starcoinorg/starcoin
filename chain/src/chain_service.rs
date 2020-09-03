@@ -65,6 +65,37 @@ where
         &self.master
     }
 
+    pub fn update_chain_head(&mut self, block: Block) -> Result<()> {
+        self.master.update_chain_head(block)
+    }
+
+    pub fn switch_master(&mut self, new_head_id: HashValue) -> Result<()> {
+        let old_head_id = self.get_master().current_header().id();
+        if old_head_id != new_head_id {
+            let old_difficulty = self
+                .storage
+                .get_block_info(old_head_id)?
+                .ok_or_else(|| {
+                    format_err!("block info not exist by old block id {:?}.", old_head_id)
+                })?
+                .get_total_difficulty();
+            let new_difficulty = self
+                .storage
+                .get_block_info(new_head_id)?
+                .ok_or_else(|| {
+                    format_err!("block info not exist by new block id {:?}.", new_head_id)
+                })?
+                .get_total_difficulty();
+            assert!(new_difficulty > old_difficulty);
+            self.master = BlockChain::new(
+                self.config.net().consensus(),
+                new_head_id,
+                self.storage.clone(),
+            )?;
+        }
+        Ok(())
+    }
+
     fn find_available_uncles(&self, epoch_start_number: BlockNumber) -> Result<Vec<BlockHeader>> {
         let mut exists_uncles =
             self.merge_exists_uncles(epoch_start_number, self.startup_info.master)?;

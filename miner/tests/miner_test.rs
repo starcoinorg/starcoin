@@ -71,6 +71,7 @@ fn test_miner_with_ondemand_pacemaker() {
             startup_info.clone(),
             storage.clone(),
             txpool_service.clone(),
+            bus.clone(),
         )
         .unwrap();
 

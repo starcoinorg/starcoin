@@ -232,6 +232,7 @@ pub async fn start(
 
     let chain_arbiter = Arbiter::new();
     let chain_startup_info = startup_info.clone();
+    let chain_bus = bus.clone();
     let chain = chain_arbiter
         .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
@@ -239,6 +240,7 @@ pub async fn start(
                 chain_startup_info,
                 chain_storage,
                 chain_txpool_service,
+                chain_bus,
             )
         })
         .await??;

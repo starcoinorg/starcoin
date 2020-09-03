@@ -13,11 +13,13 @@ pub use chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};
+use bus::{Bus, BusActor};
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
 use starcoin_config::NodeConfig;
-use starcoin_traits::{ChainAsyncService, ReadableChainService};
+use starcoin_traits::{ChainAsyncService, ChainReader, ReadableChainService};
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -33,6 +35,7 @@ use txpool::TxPoolService;
 /// actor for block chain.
 pub struct ChainActor {
     service: ChainServiceImpl<TxPoolService>,
+    bus: Addr<BusActor>,
 }
 
 impl ChainActor {
@@ -41,9 +44,11 @@ impl ChainActor {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
+        bus: Addr<BusActor>,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
             service: ChainServiceImpl::new(config, startup_info, storage, txpool)?,
+            bus,
         }
         .start();
         Ok(actor.into())
@@ -53,12 +58,34 @@ impl ChainActor {
 impl Actor for ChainActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let new_head_block_recipient = ctx.address().recipient::<NewHeadBlock>();
+        self.bus
+            .clone()
+            .subscribe(new_head_block_recipient)
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
         info!("ChainActor started");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         info!("ChainActor stopped");
+    }
+}
+
+impl Handler<NewHeadBlock> for ChainActor {
+    type Result = ();
+    fn handle(&mut self, event: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+        let new_head = event.0.get_block().header();
+        let old_head = self.service.get_master().current_header().id();
+        if let Err(e) = if new_head.parent_hash() == old_head {
+            self.service.update_chain_head(event.0.get_block().clone())
+        } else {
+            self.service.switch_master(new_head.id())
+        } {
+            warn!("err: {:?}", e);
+        }
     }
 }
 

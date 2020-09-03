@@ -37,6 +37,7 @@
 //         startup_info.clone(),
 //         storage.clone(),
 //         txpool_service,
+//         bus.clone(),
 //     )
 //     .unwrap();
 //     let miner_account = AccountInfo::random();
