@@ -731,8 +731,7 @@ where
     }
 
     pub fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
-        self.block_connector
-            .do_block_and_child(block, peer_id)
+        self.block_connector.do_block_and_child(block, peer_id)
     }
 
     fn connect_block(&self, block: Block) -> Result<()> {

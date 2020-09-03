@@ -319,8 +319,7 @@ where
         loop {
             let block = blocks.pop();
             if let Some(b) = block {
-                self.downloader
-                    .connect_block_and_child(b, peer_id.clone());
+                self.downloader.connect_block_and_child(b, peer_id.clone());
             } else {
                 break;
             }
