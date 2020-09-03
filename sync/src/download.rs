@@ -32,7 +32,7 @@ use types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     startup_info::StartupInfo,
-    system_events::{SyncDone, SystemStarted},
+    system_events::{MinedBlock, SyncDone, SystemStarted},
     U256,
 };
 
@@ -122,6 +122,14 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(1024);
+        let recipient = ctx.address().recipient::<MinedBlock>();
+        self.bus
+            .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+
         let sys_event_recipient = ctx.address().recipient::<SystemStarted>();
         self.bus
             .send(Subscription {
@@ -148,6 +156,24 @@ where
             self.downloader.set_pivot(None);
         }
         Ok(())
+    }
+}
+
+impl<N> Handler<MinedBlock> for DownloadActor<N>
+where
+    N: NetworkService + 'static,
+{
+    type Result = ();
+
+    fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
+        debug!("try connect mined block.");
+        let MinedBlock(new_block) = msg;
+        match self.downloader.connect_block(new_block.as_ref().clone()) {
+            Ok(_) => debug!("Process mined block success."),
+            Err(e) => {
+                warn!("Process mined block fail, error: {:?}", e);
+            }
+        }
     }
 }
 
@@ -707,6 +733,10 @@ where
     pub fn connect_block_and_child(&self, block: Block, peer_id: PeerId) {
         self.block_connector
             .do_block_and_child(block, peer_id)
+    }
+
+    fn connect_block(&self, block: Block) -> Result<()> {
+        self.block_connector.connect_block(block)
     }
 
     fn set_pivot(&self, pivot: Option<PivotBlock<N>>) {

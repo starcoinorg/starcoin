@@ -1,5 +1,5 @@
 use crate::state_sync::StateSyncTaskRef;
-use anyhow::format_err;
+use anyhow::{format_err, Result};
 use bus::BusActor;
 use config::NodeConfig;
 use crypto::HashValue;
@@ -222,6 +222,10 @@ where
                 }
             }
         }
+    }
+
+    pub fn connect_block(&self, block: Block) -> Result<()> {
+        self.writeable_block_chain.write().try_connect(block)
     }
 
     fn do_block_connect(&self, block: Block, peer_id: PeerId) -> bool {
