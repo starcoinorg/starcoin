@@ -22,13 +22,13 @@ netowrk-rpc-derive = {path = "derive", package = "network-rpc-derive"}
 network-rpc-core = { path = "core"}
 config = {path = "../config", package="starcoin-config"}
 bus = {path = "../bus", package="starcoin-bus"}
-logger = {path = "../commons/logger",package="starcoin-logger"}
+starcoin-logger = {path = "../commons/logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 prometheus = "0.10"
 network-api = { path="../network/api" }
 scs = { path = "../commons/scs", package = "starcoin-canonical-serialization" }
 block-relayer-api = { path = "../block-relayer/api/", package = "starcoin-block-relayer-api" }
-types = { path = "../types", package = "starcoin-types" }
+starcoin-types = { path = "../types", package = "starcoin-types" }
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 txpool = { path = "../txpool", package = "starcoin-txpool" }

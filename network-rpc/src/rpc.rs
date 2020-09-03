@@ -10,6 +10,12 @@ use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
 };
+use starcoin_types::{
+    account_state::AccountState,
+    block::{BlockHeader, BlockInfo, BlockNumber},
+    peer_info::PeerId,
+    transaction::TransactionInfo,
+};
 use state_api::{ChainStateAsyncService, StateWithProof};
 use state_tree::StateNode;
 use std::sync::Arc;
@@ -17,12 +23,6 @@ use storage::Store;
 use traits::ChainAsyncService;
 use txpool::TxPoolService;
 use txpool_api::TxPoolSyncService;
-use types::{
-    account_state::AccountState,
-    block::{BlockHeader, BlockInfo, BlockNumber},
-    peer_info::PeerId,
-    transaction::TransactionInfo,
-};
 
 const MAX_SIZE: usize = 10;
 
