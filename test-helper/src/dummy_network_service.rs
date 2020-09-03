@@ -1,7 +1,6 @@
 use accumulator::AccumulatorNode;
 use anyhow::*;
-use libp2p::PeerId;
-use network_api::{messages::PeerMessage, NetworkService};
+use network_api::{messages::PeerMessage, NetworkService, PeerId};
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
@@ -154,8 +153,8 @@ impl NetworkService for DummyNetworkService {
         Ok(())
     }
 
-    fn identify(&self) -> &PeerId {
-        &self.peer_id
+    fn identify(&self) -> PeerId {
+        self.peer_id.clone()
     }
 
     async fn send_request_bytes(

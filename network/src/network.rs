@@ -102,12 +102,12 @@ impl NetworkService for NetworkAsyncService {
     async fn send_peer_message(
         &self,
         protocol_name: Cow<'static, [u8]>,
-        peer_id: PeerId,
+        peer_id: types::peer_info::PeerId,
         msg: PeerMessage,
     ) -> Result<()> {
         let data = msg.encode()?;
         self.network_service
-            .send_message(peer_id, protocol_name, data)
+            .send_message(peer_id.into(), protocol_name, data)
             .await?;
 
         Ok(())
@@ -120,14 +120,14 @@ impl NetworkService for NetworkAsyncService {
         unimplemented!()
     }
 
-    fn identify(&self) -> &PeerId {
-        &self.peer_id
+    fn identify(&self) -> types::peer_info::PeerId {
+        self.peer_id.clone().into()
     }
 
     async fn send_request_bytes(
         &self,
         protocol_name: Cow<'static, [u8]>,
-        peer_id: PeerId,
+        peer_id: types::peer_info::PeerId,
         rpc_path: String,
         message: Vec<u8>,
         time_out: Duration,
@@ -136,13 +136,13 @@ impl NetworkService for NetworkAsyncService {
         let peer_msg = PeerMessage::RawRPCRequest(request_id, rpc_path, message);
         let data = peer_msg.encode()?;
         self.network_service
-            .send_message(peer_id.clone(), protocol_name, data)
+            .send_message(peer_id.clone().into(), protocol_name, data)
             .await?;
 
         let (tx, rx) = futures::channel::mpsc::channel(1);
         let message_future = MessageFuture::new(rx);
         self.raw_message_processor
-            .add_future(request_id, tx, peer_id.clone())
+            .add_future(request_id, tx, peer_id.clone().into())
             .await;
         debug!("send request to {} with id {}", peer_id, request_id);
         let processor = self.raw_message_processor.clone();
@@ -195,8 +195,9 @@ impl NetworkService for NetworkAsyncService {
         Ok(peer_infos)
     }
 
-    async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
-        match self.inner.peers.lock().await.get(peer_id) {
+    async fn get_peer(&self, peer_id: &types::peer_info::PeerId) -> Result<Option<PeerInfo>> {
+        let peer_id: PeerId = peer_id.clone().into();
+        match self.inner.peers.lock().await.get(&peer_id) {
             Some(peer) => Ok(Some(peer.peer_info.clone())),
             None => Ok(None),
         }
@@ -587,6 +588,7 @@ impl PeerMsgBroadcasterActor {
         })
     }
 }
+
 impl Actor for PeerMsgBroadcasterActor {
     type Context = Context<Self>;
 
@@ -639,7 +641,7 @@ impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
         let total_difficulty = msg.total_difficulty;
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
 
-        let self_id = self.network.identify().clone();
+        let self_id: PeerId = self.network.identify().into();
         Arbiter::spawn(async move {
             let peers = network.peers();
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
@@ -669,7 +671,11 @@ impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
                     continue;
                 }
                 network
-                    .send_peer_message(BLOCK_PROTOCOL_NAME.into(), peer_id.clone(), msg.clone())
+                    .send_peer_message(
+                        BLOCK_PROTOCOL_NAME.into(),
+                        peer_id.clone().into(),
+                        msg.clone(),
+                    )
                     .await
                     .expect("send message failed ,check network service please");
             }
@@ -697,13 +703,15 @@ impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
         for txn in txns {
             txn_map.insert(txn.crypto_hash(), txn);
         }
-        let self_peer_id = self.network.identify().clone();
+        let self_peer_id: PeerId = self.network.identify().into();
         Arbiter::spawn(async move {
             let peers = network_service.peers();
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
                 for (id, txn) in &txn_map {
-                    if !peer_info.known_transactions.contains(id) && !peer_id.eq(&self_peer_id) {
+                    if !peer_info.known_transactions.contains(id)
+                        && !peer_id.eq(&self_peer_id.clone())
+                    {
                         peer_info.known_transactions.put(*id, ());
                         txns_unhandled.push(txn.clone());
                     }
@@ -711,7 +719,7 @@ impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
                 network_service
                     .send_peer_message(
                         Cow::Borrowed(protocol_name),
-                        peer_id.clone(),
+                        peer_id.clone().into(),
                         PeerMessage::NewTransactions(txns_unhandled),
                     )
                     .await
