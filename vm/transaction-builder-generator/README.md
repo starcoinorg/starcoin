@@ -55,7 +55,7 @@ target/debug/generate-transaction-builders \
     --module-name starcoin_stdlib \
     --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/python" \
-    "vm/stdlib/staged/transaction_scripts/abi"
+    "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Python demo file](examples/python3/stdlib_demo.py) with:
 ```
@@ -72,7 +72,7 @@ target/debug/generate-transaction-builders \
     --module-name libra_stdlib \
     --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/cpp" \
-    "vm/stdlib/staged/transaction_scripts/abi"
+    "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [C++ demo file](examples/cpp/stdlib_demo.cpp) with:
 ```
@@ -90,7 +90,7 @@ target/debug/generate-transaction-builders \
     --module-name org.starcoin.stdlib.Stdlib \
     --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/java" \
-    "vm/stdlib/staged/transaction_scripts/abi"
+    "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Java demo file](examples/java/StdlibDemo.java) with:
 ```
@@ -108,7 +108,7 @@ target/debug/generate-transaction-builders \
     --module-name libra-stdlib \
     --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/rust" \
-    "vm/stdlib/staged/transaction_scripts/abi"
+    "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
 Next, you may copy and execute the [Rust demo file](examples/rust/stdlib_demo.rs). (See [unit test](tests/generation.rs) for details.)
 

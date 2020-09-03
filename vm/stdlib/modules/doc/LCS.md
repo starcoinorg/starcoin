@@ -38,6 +38,13 @@
 
 
 
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+
 <a name="0x1_LCS_serialize"></a>
 
 

@@ -15,8 +15,6 @@
     -  [Function `multiply_u64`](#0x1_FixedPoint32_Specification_multiply_u64)
     -  [Function `divide_u64`](#0x1_FixedPoint32_Specification_divide_u64)
     -  [Function `create_from_rational`](#0x1_FixedPoint32_Specification_create_from_rational)
-    -  [Function `create_from_raw_value`](#0x1_FixedPoint32_Specification_create_from_raw_value)
-    -  [Function `get_raw_value`](#0x1_FixedPoint32_Specification_get_raw_value)
 
 
 
@@ -206,6 +204,13 @@
 ## Specification
 
 
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
 <a name="0x1_FixedPoint32_Specification_multiply_u64"></a>
 
 ### Function `multiply_u64`
@@ -214,6 +219,22 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_FixedPoint32_multiply_u64">multiply_u64</a>(num: u64, multiplier: <a href="#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>): u64
 </code></pre>
 
+
+
+Currently, we ignore the actual implementation of this function in verification
+and treat it as uninterpreted, which simplifies the verification problem significantly.
+This way we avoid the non-linear arithmetic problem presented by this function.
+
+Abstracting this and related functions is possible because the correctness of currency
+conversion (where
+<code><a href="#0x1_FixedPoint32">FixedPoint32</a></code> is used for) is not relevant for the rest of the contract
+control flow, so we can assume some arbitrary (but fixed) behavior here.
+
+
+<pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
+<b>ensures</b> result == <a href="#0x1_FixedPoint32_spec_multiply_u64">spec_multiply_u64</a>(num, multiplier);
+</code></pre>
 
 
 
@@ -227,6 +248,16 @@
 
 
 
+See comment at
+<code>Self::multiply_64</code>.
+
+
+<pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
+<b>ensures</b> result == <a href="#0x1_FixedPoint32_spec_divide_u64">spec_divide_u64</a>(num, divisor);
+</code></pre>
+
+
 
 <a name="0x1_FixedPoint32_Specification_create_from_rational"></a>
 
@@ -238,35 +269,45 @@
 
 
 
-
-<a name="0x1_FixedPoint32_Specification_create_from_raw_value"></a>
-
-### Function `create_from_raw_value`
+See comment at
+<code>Self::multiply_64</code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_FixedPoint32_create_from_raw_value">create_from_raw_value</a>(value: u64): <a href="#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>
+<pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
+<b>ensures</b> result == <a href="#0x1_FixedPoint32_spec_create_from_rational">spec_create_from_rational</a>(numerator, denominator);
 </code></pre>
 
 
 
+Uninterpreted function for
+<code><a href="#0x1_FixedPoint32_multiply_u64">Self::multiply_u64</a></code>.
 
-<pre><code><b>aborts_if</b> <b>false</b>;
-<b>ensures</b> result == <a href="#0x1_FixedPoint32">FixedPoint32</a> { value };
+
+<a name="0x1_FixedPoint32_spec_multiply_u64"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_FixedPoint32_spec_multiply_u64">spec_multiply_u64</a>(val: u64, multiplier: <a href="#0x1_FixedPoint32">FixedPoint32</a>): u64;
 </code></pre>
 
 
-
-<a name="0x1_FixedPoint32_Specification_get_raw_value"></a>
-
-### Function `get_raw_value`
+Uninterpreted function for
+<code><a href="#0x1_FixedPoint32_divide_u64">Self::divide_u64</a></code>.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_FixedPoint32_get_raw_value">get_raw_value</a>(num: <a href="#0x1_FixedPoint32_FixedPoint32">FixedPoint32::FixedPoint32</a>): u64
+<a name="0x1_FixedPoint32_spec_divide_u64"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_FixedPoint32_spec_divide_u64">spec_divide_u64</a>(val: u64, divisor: <a href="#0x1_FixedPoint32">FixedPoint32</a>): u64;
 </code></pre>
 
 
+Uninterpreted function for
+<code><a href="#0x1_FixedPoint32_create_from_rational">Self::create_from_rational</a></code>.
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
-<b>ensures</b> result == num.value;
+<a name="0x1_FixedPoint32_spec_create_from_rational"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_FixedPoint32_spec_create_from_rational">spec_create_from_rational</a>(numerator: u64, denominator: u64): <a href="#0x1_FixedPoint32">FixedPoint32</a>;
 </code></pre>

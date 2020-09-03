@@ -8,6 +8,9 @@
 -  [Resource `ChainId`](#0x1_ChainId_ChainId)
 -  [Function `initialize`](#0x1_ChainId_initialize)
 -  [Function `get`](#0x1_ChainId_get)
+-  [Specification](#0x1_ChainId_Specification)
+    -  [Function `initialize`](#0x1_ChainId_Specification_initialize)
+    -  [Function `get`](#0x1_ChainId_Specification_get)
 
 
 
@@ -93,3 +96,49 @@ Return the chain ID of this chain
 
 
 </details>
+
+<a name="0x1_ChainId_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_ChainId_Specification_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_initialize">initialize</a>(account: &signer, id: u8)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> exists&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_ChainId_Specification_get"></a>
+
+### Function `get`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ChainId_get">get</a>(): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>ensures</b> exists&lt;<a href="#0x1_ChainId">ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>

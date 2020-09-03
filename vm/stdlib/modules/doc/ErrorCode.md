@@ -23,6 +23,7 @@
 -  [Function `EINVALID_ARGUMENT`](#0x1_ErrorCode_EINVALID_ARGUMENT)
 -  [Function `EUNREACHABLE`](#0x1_ErrorCode_EUNREACHABLE)
 -  [Function `ECODE_BASE`](#0x1_ErrorCode_ECODE_BASE)
+-  [Specification](#0x1_ErrorCode_Specification)
 
 
 
@@ -423,3 +424,13 @@ There code should unreacheable
 
 
 </details>
+
+<a name="0x1_ErrorCode_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>

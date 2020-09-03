@@ -10,6 +10,9 @@
 -  [Struct `GasConstants`](#0x1_VMConfig_GasConstants)
 -  [Function `initialize`](#0x1_VMConfig_initialize)
 -  [Function `set_publishing_option`](#0x1_VMConfig_set_publishing_option)
+-  [Specification](#0x1_VMConfig_Specification)
+    -  [Function `initialize`](#0x1_VMConfig_Specification_initialize)
+    -  [Function `set_publishing_option`](#0x1_VMConfig_Specification_set_publishing_option)
 
 
 
@@ -292,3 +295,49 @@
 
 
 </details>
+
+<a name="0x1_VMConfig_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_VMConfig_Specification_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_VMConfig_initialize">initialize</a>(account: &signer, publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> exists&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> exists&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="#0x1_VMConfig">VMConfig</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_VMConfig_Specification_set_publishing_option"></a>
+
+### Function `set_publishing_option`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_VMConfig_set_publishing_option">set_publishing_option</a>(account: &signer, publishing_option: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>

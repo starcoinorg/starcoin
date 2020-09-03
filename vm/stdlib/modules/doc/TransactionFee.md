@@ -10,6 +10,11 @@
 -  [Function `add_txn_fee_token`](#0x1_TransactionFee_add_txn_fee_token)
 -  [Function `pay_fee`](#0x1_TransactionFee_pay_fee)
 -  [Function `distribute_transaction_fees`](#0x1_TransactionFee_distribute_transaction_fees)
+-  [Specification](#0x1_TransactionFee_Specification)
+    -  [Function `initialize`](#0x1_TransactionFee_Specification_initialize)
+    -  [Function `add_txn_fee_token`](#0x1_TransactionFee_Specification_add_txn_fee_token)
+    -  [Function `pay_fee`](#0x1_TransactionFee_Specification_pay_fee)
+    -  [Function `distribute_transaction_fees`](#0x1_TransactionFee_Specification_distribute_transaction_fees)
 
 
 
@@ -180,3 +185,81 @@ underlying fiat.
 
 
 </details>
+
+<a name="0x1_TransactionFee_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_TransactionFee_Specification_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionFee_initialize">initialize</a>(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> exists&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_TransactionFee_Specification_add_txn_fee_token"></a>
+
+### Function `add_txn_fee_token`
+
+
+<pre><code><b>fun</b> <a href="#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_TransactionFee_Specification_pay_fee"></a>
+
+### Function `pay_fee`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).fee.value + token.value &gt; max_u128();
+</code></pre>
+
+
+
+<a name="0x1_TransactionFee_Specification_distribute_transaction_fees"></a>
+
+### Function `distribute_transaction_fees`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionFee_distribute_transaction_fees">distribute_transaction_fees</a>&lt;TokenType&gt;(account: &signer): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>

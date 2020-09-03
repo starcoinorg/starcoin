@@ -11,6 +11,9 @@
 -  [Struct `MintEvent`](#0x1_Token_MintEvent)
 -  [Struct `BurnEvent`](#0x1_Token_BurnEvent)
 -  [Resource `TokenInfo`](#0x1_Token_TokenInfo)
+-  [Const `ETOKEN_REGISTER`](#0x1_Token_ETOKEN_REGISTER)
+-  [Const `ETOKEN_NAME`](#0x1_Token_ETOKEN_NAME)
+-  [Const `EAMOUNT_EXCEEDS_COIN_VALUE`](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
 -  [Function `register_token`](#0x1_Token_register_token)
 -  [Function `remove_mint_capability`](#0x1_Token_remove_mint_capability)
 -  [Function `add_mint_capability`](#0x1_Token_add_mint_capability)
@@ -38,6 +41,34 @@
 -  [Function `token_code`](#0x1_Token_token_code)
 -  [Function `code_to_bytes`](#0x1_Token_code_to_bytes)
 -  [Function `name_of`](#0x1_Token_name_of)
+-  [Specification](#0x1_Token_Specification)
+    -  [Function `register_token`](#0x1_Token_Specification_register_token)
+    -  [Function `remove_mint_capability`](#0x1_Token_Specification_remove_mint_capability)
+    -  [Function `add_mint_capability`](#0x1_Token_Specification_add_mint_capability)
+    -  [Function `destroy_mint_capability`](#0x1_Token_Specification_destroy_mint_capability)
+    -  [Function `remove_burn_capability`](#0x1_Token_Specification_remove_burn_capability)
+    -  [Function `add_burn_capability`](#0x1_Token_Specification_add_burn_capability)
+    -  [Function `destroy_burn_capability`](#0x1_Token_Specification_destroy_burn_capability)
+    -  [Function `mint`](#0x1_Token_Specification_mint)
+    -  [Function `mint_with_capability`](#0x1_Token_Specification_mint_with_capability)
+    -  [Function `burn`](#0x1_Token_Specification_burn)
+    -  [Function `burn_with_capability`](#0x1_Token_Specification_burn_with_capability)
+    -  [Function `zero`](#0x1_Token_Specification_zero)
+    -  [Function `value`](#0x1_Token_Specification_value)
+    -  [Function `split`](#0x1_Token_Specification_split)
+    -  [Function `withdraw`](#0x1_Token_Specification_withdraw)
+    -  [Function `join`](#0x1_Token_Specification_join)
+    -  [Function `deposit`](#0x1_Token_Specification_deposit)
+    -  [Function `destroy_zero`](#0x1_Token_Specification_destroy_zero)
+    -  [Function `scaling_factor`](#0x1_Token_Specification_scaling_factor)
+    -  [Function `fractional_part`](#0x1_Token_Specification_fractional_part)
+    -  [Function `market_cap`](#0x1_Token_Specification_market_cap)
+    -  [Function `is_registered_in`](#0x1_Token_Specification_is_registered_in)
+    -  [Function `is_same_token`](#0x1_Token_Specification_is_same_token)
+    -  [Function `token_address`](#0x1_Token_Specification_token_address)
+    -  [Function `token_code`](#0x1_Token_Specification_token_code)
+    -  [Function `code_to_bytes`](#0x1_Token_Specification_code_to_bytes)
+    -  [Function `name_of`](#0x1_Token_Specification_name_of)
 
 
 
@@ -259,6 +290,41 @@ A minting capability allows tokens of type
 
 
 </details>
+
+<a name="0x1_Token_ETOKEN_REGISTER"></a>
+
+## Const `ETOKEN_REGISTER`
+
+Token register's address should same as TokenType's address.
+
+
+<pre><code><b>const</b> ETOKEN_REGISTER: u64 = 100;
+</code></pre>
+
+
+
+<a name="0x1_Token_ETOKEN_NAME"></a>
+
+## Const `ETOKEN_NAME`
+
+TokenType's name should same as Token's Module name.
+
+
+<pre><code><b>const</b> ETOKEN_NAME: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE"></a>
+
+## Const `EAMOUNT_EXCEEDS_COIN_VALUE`
+
+
+
+<pre><code><b>const</b> EAMOUNT_EXCEEDS_COIN_VALUE: u64 = 102;
+</code></pre>
+
+
 
 <a name="0x1_Token_register_token"></a>
 
@@ -1047,3 +1113,436 @@ Return Token's module address, module name, and type name of
 
 
 </details>
+
+<a name="0x1_Token_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify = <b>true</b>;
+pragma aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_register_token"></a>
+
+### Function `register_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, scaling_factor: u128, fractional_part: u128)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_remove_mint_capability"></a>
+
+### Function `remove_mint_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_remove_mint_capability">remove_mint_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> !exists&lt;<a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_add_mint_capability"></a>
+
+### Function `add_mint_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_add_mint_capability">add_mint_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> exists&lt;<a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_destroy_mint_capability"></a>
+
+### Function `destroy_mint_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_mint_capability">destroy_mint_capability</a>&lt;TokenType&gt;(cap: <a href="#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<a name="0x1_Token_Specification_remove_burn_capability"></a>
+
+### Function `remove_burn_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_remove_burn_capability">remove_burn_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> !exists&lt;<a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_add_burn_capability"></a>
+
+### Function `add_burn_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_add_burn_capability">add_burn_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> exists&lt;<a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_destroy_burn_capability"></a>
+
+### Function `destroy_burn_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_burn_capability">destroy_burn_capability</a>&lt;TokenType&gt;(cap: <a href="#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<a name="0x1_Token_Specification_mint"></a>
+
+### Function `mint`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_mint">mint</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_mint_with_capability"></a>
+
+### Function `mint_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_mint_with_capability">mint_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, value: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_burn"></a>
+
+### Function `burn`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_burn">burn</a>&lt;TokenType&gt;(account: &signer, tokens: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_burn_with_capability"></a>
+
+### Function `burn_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_burn_with_capability">burn_with_capability</a>&lt;TokenType&gt;(_capability: &<a href="#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;TokenType&gt;, tokens: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_zero"></a>
+
+### Function `zero`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_zero">zero</a>&lt;TokenType&gt;(): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<a name="0x1_Token_Specification_value"></a>
+
+### Function `value`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+
+<a name="0x1_Token_Specification_split"></a>
+
+### Function `split`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): (<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> token.<a href="#0x1_Token_value">value</a> &lt; amount;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_withdraw"></a>
+
+### Function `withdraw`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> token.<a href="#0x1_Token_value">value</a> &lt; amount;
+<b>ensures</b> result.value == amount;
+<b>ensures</b> token.value == <b>old</b>(token).value - amount;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_join"></a>
+
+### Function `join`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_join">join</a>&lt;TokenType&gt;(token1: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, token2: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> token1.value + token2.value &gt; max_u128();
+<b>ensures</b> <b>old</b>(token1).value + <b>old</b>(token2).value == result.value;
+<b>ensures</b> token1.value + token2.value == result.value;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_deposit"></a>
+
+### Function `deposit`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_deposit">deposit</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> token.value + check.value &gt; max_u128();
+<b>ensures</b> <b>old</b>(token).value + check.value == token.value;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_destroy_zero"></a>
+
+### Function `destroy_zero`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> token.value &gt; 0;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_scaling_factor"></a>
+
+### Function `scaling_factor`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_fractional_part"></a>
+
+### Function `fractional_part`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_market_cap"></a>
+
+### Function `market_cap`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_is_registered_in"></a>
+
+### Function `is_registered_in`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(token_address: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_is_same_token"></a>
+
+### Function `is_same_token`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_token_address"></a>
+
+### Function `token_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;(): address
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_token_code"></a>
+
+### Function `token_code`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_code_to_bytes"></a>
+
+### Function `code_to_bytes`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Token_code_to_bytes">code_to_bytes</a>(addr: address, module_name: vector&lt;u8&gt;, name: vector&lt;u8&gt;): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_name_of"></a>
+
+### Function `name_of`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma intrinsic = <b>true</b>;
+</code></pre>
