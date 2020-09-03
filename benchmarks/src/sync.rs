@@ -191,12 +191,12 @@ async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<N
                 )
                 .await
                 .unwrap();
-            let block = node_config
+            let _block = node_config
                 .net()
                 .consensus()
                 .create_block(&block_chain, block_template)
                 .unwrap();
-            chain.clone().try_connect(block).await.unwrap();
+            //chain.clone().try_connect(block).await.unwrap();
         }
     }
     Ok(node_handle)

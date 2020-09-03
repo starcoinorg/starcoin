@@ -39,20 +39,13 @@ impl ChainServiceBencher {
 
         let txpool = {
             let best_block_id = *startup_info.get_master();
-            TxPool::start(
-                node_config.clone(),
-                storage.clone(),
-                best_block_id,
-                bus.clone(),
-            )
+            TxPool::start(node_config.clone(), storage.clone(), best_block_id, bus)
         };
         let chain = ChainServiceImpl::<TxPoolService>::new(
             node_config.clone(),
             startup_info,
             storage.clone(),
             txpool.get_service(),
-            bus,
-            None,
         )
         .unwrap();
         let miner_account = AccountInfo::random();
@@ -110,7 +103,7 @@ impl ChainServiceBencher {
                 .create_block(&block_chain, block_template)
                 .unwrap();
             latest_id = Some(block.header().parent_hash());
-            self.chain.write().try_connect(block).unwrap();
+            //self.chain.write().try_connect(block).unwrap();
         }
     }
 

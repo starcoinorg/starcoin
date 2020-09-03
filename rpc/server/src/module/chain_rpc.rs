@@ -253,7 +253,7 @@ where
             let block = block_template.into_block(0, difficulty);
             let block_id = block.id();
 
-            let _ = service.clone().try_connect(block).await?;
+            //let _ = service.clone().try_connect(block).await?;
 
             Ok(block_id)
         }

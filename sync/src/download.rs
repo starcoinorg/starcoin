@@ -693,13 +693,12 @@ where
     }
 
     pub fn do_blocks(&self, headers: Vec<BlockHeader>, bodies: Vec<BlockBody>, peer_id: PeerId) {
-        let peer_id_clone = peer_id.clone();
         debug_assert_eq!(headers.len(), bodies.len());
         for i in 0..headers.len() {
             if let Some(header) = headers.get(i) {
                 if let Some(body) = bodies.get(i) {
                     let block = Block::new(header.clone(), body.clone().transactions);
-                    self.connect_block_and_child(block, peer_id_clone.clone());
+                    self.connect_block_and_child(block, peer_id.clone());
                 }
             }
         }

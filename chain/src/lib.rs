@@ -5,7 +5,6 @@ mod chain;
 
 pub use chain::BlockChain;
 
-mod chain_metrics;
 pub mod chain_service;
 pub mod message;
 
@@ -14,21 +13,16 @@ pub use chain_service::ChainServiceImpl;
 use crate::message::ChainResponse;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};
-use bus::{BusActor, Subscription};
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
 use starcoin_config::NodeConfig;
-use starcoin_network::NetworkAsyncService;
-use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_traits::{ChainAsyncService, ReadableChainService};
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
-    system_events::MinedBlock,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
@@ -39,7 +33,6 @@ use txpool::TxPoolService;
 /// actor for block chain.
 pub struct ChainActor {
     service: ChainServiceImpl<TxPoolService>,
-    bus: Addr<BusActor>,
 }
 
 impl ChainActor {
@@ -47,20 +40,10 @@ impl ChainActor {
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
-        bus: Addr<BusActor>,
         txpool: TxPoolService,
-        remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<ChainActorRef> {
         let actor = ChainActor {
-            service: ChainServiceImpl::new(
-                config,
-                startup_info,
-                storage,
-                txpool,
-                bus.clone(),
-                remote_chain_state,
-            )?,
-            bus,
+            service: ChainServiceImpl::new(config, startup_info, storage, txpool)?,
         }
         .start();
         Ok(actor.into())
@@ -70,14 +53,7 @@ impl ChainActor {
 impl Actor for ChainActor {
     type Context = Context<Self>;
 
-    fn started(&mut self, ctx: &mut Self::Context) {
-        ctx.set_mailbox_capacity(1024);
-        let recipient = ctx.address().recipient::<MinedBlock>();
-        self.bus
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+    fn started(&mut self, _ctx: &mut Self::Context) {
         info!("ChainActor started");
     }
 
@@ -151,21 +127,6 @@ impl Handler<ChainRequest> for ChainActor {
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(Box::new(
                 self.service.get_block_info_by_hash(hash)?,
             ))),
-            ChainRequest::ConnectBlock(block) => {
-                let conn_state = self.service.try_connect(*block);
-                Ok(ChainResponse::Conn(conn_state))
-            }
-            ChainRequest::ConnectBlockWithoutExe(block, peer_id) => {
-                let remote_chain_state = self
-                    .service
-                    .get_remote_chain_state()
-                    .expect("Remote chain state reader must set")
-                    .with(peer_id, block.header.state_root);
-                let conn_state = self
-                    .service
-                    .try_connect_without_execute(*block, &remote_chain_state);
-                Ok(ChainResponse::Conn(conn_state))
-            }
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(
                 self.service.master_startup_info(),
             )),
@@ -208,21 +169,6 @@ impl Handler<ChainRequest> for ChainActor {
     }
 }
 
-impl Handler<MinedBlock> for ChainActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
-        debug!("try connect mined block.");
-        let MinedBlock(new_block) = msg;
-        match self.service.try_connect(new_block.as_ref().clone()) {
-            Ok(_) => debug!("Process mined block success."),
-            Err(e) => {
-                warn!("Process mined block fail, error: {:?}", e);
-            }
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct ChainActorRef {
     pub address: Addr<ChainActor>,
@@ -242,35 +188,6 @@ impl Into<ChainActorRef> for Addr<ChainActor> {
 
 #[async_trait::async_trait]
 impl ChainAsyncService for ChainActorRef {
-    async fn try_connect(&self, block: Block) -> Result<()> {
-        if let ChainResponse::Conn(result) = self
-            .address
-            .send(ChainRequest::ConnectBlock(Box::new(block)))
-            .await
-            .map_err(Into::<Error>::into)??
-        {
-            result
-        } else {
-            Err(format_err!("error ChainResponse type."))
-        }
-    }
-
-    async fn try_connect_without_execute(&mut self, block: Block, peer_id: PeerId) -> Result<()> {
-        if let ChainResponse::Conn(conn_result) = self
-            .address
-            .send(ChainRequest::ConnectBlockWithoutExe(
-                Box::new(block),
-                peer_id,
-            ))
-            .await
-            .map_err(Into::<Error>::into)??
-        {
-            conn_result
-        } else {
-            Err(format_err!("error ChainResponse type."))
-        }
-    }
-
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>> {
         if let ChainResponse::BlockHeader(header) = self
             .address
