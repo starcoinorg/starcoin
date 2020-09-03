@@ -79,6 +79,8 @@ fn test_network_rpc() {
         Err(e) => debug!("{}", e),
         Ok(_) => panic!(""),
     }
+    handle2.stop().unwrap();
+    handle1.stop().unwrap();
 }
 
 fn gen_chain_env(config: NodeConfig) -> Result<NodeHandle> {
