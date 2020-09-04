@@ -118,6 +118,10 @@ impl BlockChain {
         Ok(chain)
     }
 
+    pub fn current_epoch_uncles_size(&self) -> usize {
+        self.uncles.len()
+    }
+
     pub fn consensus(&self) -> ConsensusStrategy {
         self.consensus
     }
