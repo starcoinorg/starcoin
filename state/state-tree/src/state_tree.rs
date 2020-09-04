@@ -214,8 +214,7 @@ impl StateTree {
             store: self.storage.as_ref(),
             cache,
         };
-        let iterator =
-            JellyfishMerkleIterator::new(Arc::new(reader), cur_root_hash, HashValue::zero())?;
+        let iterator = JellyfishMerkleIterator::new(&reader, cur_root_hash, HashValue::zero())?;
         let mut states = vec![];
         for item in iterator {
             let item = item?;
