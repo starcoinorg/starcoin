@@ -1,8 +1,8 @@
 use crate::module_cache::ModuleCache;
 use crate::resolver::Resolver;
 use crate::NullStateView;
-use once_cell::sync::Lazy;
 use anyhow::{bail, Result};
+use once_cell::sync::Lazy;
 use starcoin_config::ChainNetwork;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::StructDefinitionIndex;
