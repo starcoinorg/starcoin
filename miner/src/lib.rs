@@ -153,7 +153,7 @@ where
         let create_block_template_address = self.create_block_template_address.clone();
         let f = async move {
             let head = create_block_template_address.send(GetHeadRequest{}).await??.head;
-            let block_chain = BlockChain::new(config.net().consensus(), head, storage.clone(), None)?;
+            let block_chain = BlockChain::new(config.net().consensus(), head, storage.clone())?;
             let on_chain_block_gas_limit = block_chain.get_on_chain_block_gas_limit()?;
             let block_gas_limit = config.miner.block_gas_limit.map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit)).unwrap_or(on_chain_block_gas_limit);
             //TODO use a GasConstant value to replace 600.

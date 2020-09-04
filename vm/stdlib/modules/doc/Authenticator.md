@@ -6,11 +6,19 @@
 ### Table of Contents
 
 -  [Struct `MultiEd25519PublicKey`](#0x1_Authenticator_MultiEd25519PublicKey)
+-  [Const `ED25519_SCHEME_ID`](#0x1_Authenticator_ED25519_SCHEME_ID)
+-  [Const `MULTI_ED25519_SCHEME_ID`](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
 -  [Function `create_multi_ed25519`](#0x1_Authenticator_create_multi_ed25519)
 -  [Function `ed25519_authentication_key`](#0x1_Authenticator_ed25519_authentication_key)
 -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_multi_ed25519_authentication_key)
 -  [Function `public_keys`](#0x1_Authenticator_public_keys)
 -  [Function `threshold`](#0x1_Authenticator_threshold)
+-  [Specification](#0x1_Authenticator_Specification)
+    -  [Function `create_multi_ed25519`](#0x1_Authenticator_Specification_create_multi_ed25519)
+    -  [Function `ed25519_authentication_key`](#0x1_Authenticator_Specification_ed25519_authentication_key)
+    -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_Specification_multi_ed25519_authentication_key)
+    -  [Function `public_keys`](#0x1_Authenticator_Specification_public_keys)
+    -  [Function `threshold`](#0x1_Authenticator_Specification_threshold)
 
 
 
@@ -48,6 +56,28 @@
 
 
 </details>
+
+<a name="0x1_Authenticator_ED25519_SCHEME_ID"></a>
+
+## Const `ED25519_SCHEME_ID`
+
+
+
+<pre><code><b>const</b> ED25519_SCHEME_ID: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_MULTI_ED25519_SCHEME_ID"></a>
+
+## Const `MULTI_ED25519_SCHEME_ID`
+
+
+
+<pre><code><b>const</b> MULTI_ED25519_SCHEME_ID: u8 = 1;
+</code></pre>
+
+
 
 <a name="0x1_Authenticator_create_multi_ed25519"></a>
 
@@ -196,3 +226,95 @@
 
 
 </details>
+
+<a name="0x1_Authenticator_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_create_multi_ed25519"></a>
+
+### Function `create_multi_ed25519`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_create_multi_ed25519">create_multi_ed25519</a>(public_keys: vector&lt;vector&lt;u8&gt;&gt;, threshold: u8): <a href="#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> threshold == 0;
+<b>aborts_if</b> threshold &gt; <a href="Vector.md#0x1_Vector_length">Vector::length</a>(public_keys);
+<b>aborts_if</b> <a href="Vector.md#0x1_Vector_length">Vector::length</a>(public_keys) &gt; 32;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_ed25519_authentication_key"></a>
+
+### Function `ed25519_authentication_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_multi_ed25519_authentication_key"></a>
+
+### Function `multi_ed25519_authentication_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_multi_ed25519_authentication_key">multi_ed25519_authentication_key</a>(k: &<a href="#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_public_keys"></a>
+
+### Function `public_keys`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_public_keys">public_keys</a>(k: &<a href="#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): &vector&lt;vector&lt;u8&gt;&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_threshold"></a>
+
+### Function `threshold`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_threshold">threshold</a>(k: &<a href="#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>

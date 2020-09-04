@@ -208,7 +208,7 @@ impl Inner {
     }
 
     fn new(block_id: HashValue, storage: Arc<dyn Store>, net: &ChainNetwork) -> Result<Self> {
-        let chain = BlockChain::new(net.consensus(), block_id, storage.clone(), None)?;
+        let chain = BlockChain::new(net.consensus(), block_id, storage.clone())?;
 
         Ok(Inner {
             chain,
@@ -221,7 +221,7 @@ impl Inner {
 
     fn update_chain(&mut self, block: Block) -> Result<()> {
         if block.header().parent_hash() != self.chain.current_header().id() {
-            self.chain = BlockChain::new(self.consensus, block.id(), self.storage.clone(), None)?;
+            self.chain = BlockChain::new(self.consensus, block.id(), self.storage.clone())?;
         } else {
             self.chain.update_chain_head(block)?;
         }

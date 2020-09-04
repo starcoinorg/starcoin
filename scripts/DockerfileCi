@@ -3,7 +3,7 @@ FROM ubuntu:18.04
 RUN apt update && apt install openssl -y
 COPY starcoin /starcoin/
 COPY start.sh /starcoin/
-COPY txfactory /starcoin/
+COPY starcoin_txfactory /starcoin/
 WORKDIR /starcoin
 RUN ["chmod", "+x", "start.sh"]
 ENTRYPOINT ["./start.sh"]

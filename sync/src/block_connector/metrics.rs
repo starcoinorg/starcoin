@@ -5,9 +5,10 @@ use starcoin_metrics::{
 };
 
 const SC_NS: &str = "starcoin";
-const PRIFIX: &str = "starcoin_chain_";
+const PRIFIX: &str = "starcoin_write_block_chain_";
 
-pub static CHAIN_METRICS: Lazy<ChainMetrics> = Lazy::new(|| ChainMetrics::register().unwrap());
+pub static WRITE_BLOCK_CHAIN_METRICS: Lazy<ChainMetrics> =
+    Lazy::new(|| ChainMetrics::register().unwrap());
 
 #[derive(Clone)]
 pub struct ChainMetrics {

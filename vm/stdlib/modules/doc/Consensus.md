@@ -9,6 +9,9 @@
 -  [Resource `Epoch`](#0x1_Consensus_Epoch)
 -  [Struct `NewEpochEvent`](#0x1_Consensus_NewEpochEvent)
 -  [Resource `EpochData`](#0x1_Consensus_EpochData)
+-  [Const `THOUSAND`](#0x1_Consensus_THOUSAND)
+-  [Const `THOUSAND_U128`](#0x1_Consensus_THOUSAND_U128)
+-  [Const `HUNDRED`](#0x1_Consensus_HUNDRED)
 -  [Function `MAX_UNCLES_PER_BLOCK_IS_WRONG`](#0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG)
 -  [Function `UNCLES_IS_NOT_ZERO`](#0x1_Consensus_UNCLES_IS_NOT_ZERO)
 -  [Function `initialize`](#0x1_Consensus_initialize)
@@ -295,6 +298,39 @@
 
 
 </details>
+
+<a name="0x1_Consensus_THOUSAND"></a>
+
+## Const `THOUSAND`
+
+
+
+<pre><code><b>const</b> THOUSAND: u64 = 1000;
+</code></pre>
+
+
+
+<a name="0x1_Consensus_THOUSAND_U128"></a>
+
+## Const `THOUSAND_U128`
+
+
+
+<pre><code><b>const</b> THOUSAND_U128: u128 = 1000;
+</code></pre>
+
+
+
+<a name="0x1_Consensus_HUNDRED"></a>
+
+## Const `HUNDRED`
+
+
+
+<pre><code><b>const</b> HUNDRED: u64 = 100;
+</code></pre>
+
+
 
 <a name="0x1_Consensus_MAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
 

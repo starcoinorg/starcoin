@@ -2,7 +2,6 @@
 use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
@@ -29,8 +28,6 @@ pub enum ChainRequest {
     GetBlockByHash(HashValue),
     GetBlockByUncle(HashValue),
     GetBlockInfoByHash(HashValue),
-    ConnectBlock(Box<Block>),
-    ConnectBlockWithoutExe(Box<Block>, PeerId),
     GetStartupInfo(),
     GetHeadChainInfo(),
     GetEpochInfo(),

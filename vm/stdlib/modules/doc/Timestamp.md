@@ -16,6 +16,7 @@
     -  [Function `initialize`](#0x1_Timestamp_Specification_initialize)
     -  [Function `update_global_time`](#0x1_Timestamp_Specification_update_global_time)
     -  [Function `now_seconds`](#0x1_Timestamp_Specification_now_seconds)
+    -  [Function `set_time_has_started`](#0x1_Timestamp_Specification_set_time_has_started)
     -  [Function `is_genesis`](#0x1_Timestamp_Specification_is_genesis)
 
 
@@ -219,6 +220,13 @@ Helper function to determine if the blockchain is in genesis state.
 ## Specification
 
 
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
 <a name="0x1_Timestamp_Specification_initialize"></a>
 
 ### Function `initialize`
@@ -233,7 +241,6 @@ Helper function to determine if the blockchain is in genesis state.
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>ensures</b> exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).seconds == 0;
 </code></pre>
 
 
@@ -249,7 +256,9 @@ Helper function to determine if the blockchain is in genesis state.
 
 
 
-<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> timestamp &lt;= <b>global</b>&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).seconds;
 <b>ensures</b> <b>global</b>&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).seconds == timestamp;
 </code></pre>
 
@@ -268,6 +277,25 @@ Helper function to determine if the blockchain is in genesis state.
 
 <pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>ensures</b> result == <b>global</b>&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).seconds;
+</code></pre>
+
+
+
+<a name="0x1_Timestamp_Specification_set_time_has_started"></a>
+
+### Function `set_time_has_started`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Timestamp_set_time_has_started">set_time_has_started</a>(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Timestamp_CurrentTimeSeconds">CurrentTimeSeconds</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> exists&lt;<a href="#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 </code></pre>
 
 

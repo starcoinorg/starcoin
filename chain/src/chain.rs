@@ -8,8 +8,6 @@ use logger::prelude::*;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
-use starcoin_network::NetworkAsyncService;
-use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -46,7 +44,6 @@ pub struct BlockChain {
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
-    remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     storage: Arc<dyn Store>,
     uncles: HashSet<HashValue>,
     epoch: Option<EpochResource>,
@@ -57,7 +54,6 @@ impl BlockChain {
         consensus: ConsensusStrategy,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
-        remote_chain_state: Option<RemoteChainStateReader<NetworkAsyncService>>,
     ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
@@ -83,7 +79,6 @@ impl BlockChain {
             )?,
             head: Some(head),
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
-            remote_chain_state,
             storage,
             uncles: HashSet::new(),
             epoch: None,
@@ -107,7 +102,6 @@ impl BlockChain {
             block_accumulator,
             head: None,
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
-            remote_chain_state: None,
             storage,
             uncles: HashSet::new(),
             epoch: None,
@@ -116,12 +110,7 @@ impl BlockChain {
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        let mut chain = Self::new(
-            self.consensus,
-            head_block_hash,
-            self.storage.clone(),
-            self.remote_chain_state.clone(),
-        )?;
+        let mut chain = Self::new(self.consensus, head_block_hash, self.storage.clone())?;
         chain.update_epoch_and_uncle_cache()?;
         Ok(chain)
     }
@@ -759,6 +748,25 @@ impl BlockChain {
     }
 
     pub fn update_chain_head(&mut self, block: Block) -> Result<()> {
+        let block_info = self
+            .storage
+            .get_block_info(block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
+        let txn_accumulator_info = block_info.get_txn_accumulator_info();
+        let block_accumulator_info = block_info.get_block_accumulator_info();
+        let state_root = block.header().state_root();
+        self.txn_accumulator = info_2_accumulator(
+            txn_accumulator_info,
+            AccumulatorStoreType::Transaction,
+            self.storage.clone().into_super_arc(),
+        )?;
+        self.block_accumulator = info_2_accumulator(
+            block_accumulator_info.clone(),
+            AccumulatorStoreType::Block,
+            self.storage.clone().into_super_arc(),
+        )?;
+        self.chain_state =
+            ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         if self.epoch.is_some()
             && self
                 .epoch
@@ -767,27 +775,7 @@ impl BlockChain {
                 .end_number()
                 == block.header().number()
         {
-            let block_info = self
-                .storage
-                .get_block_info(block.id())?
-                .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
-            let txn_accumulator_info = block_info.get_txn_accumulator_info();
-            let block_accumulator_info = block_info.get_block_accumulator_info();
-            let state_root = block.header().state_root();
             self.head = Some(block);
-            self.txn_accumulator = info_2_accumulator(
-                txn_accumulator_info,
-                AccumulatorStoreType::Transaction,
-                self.storage.clone().into_super_arc(),
-            )?;
-            self.block_accumulator = info_2_accumulator(
-                block_accumulator_info.clone(),
-                AccumulatorStoreType::Block,
-                self.storage.clone().into_super_arc(),
-            )?;
-            self.chain_state =
-                ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-            self.remote_chain_state = None;
             self.update_epoch_and_uncle_cache()?;
         } else {
             if let Some(block_uncles) = block.uncles() {

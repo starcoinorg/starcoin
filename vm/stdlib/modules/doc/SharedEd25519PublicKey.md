@@ -6,11 +6,18 @@
 ### Table of Contents
 
 -  [Resource `SharedEd25519PublicKey`](#0x1_SharedEd25519PublicKey_SharedEd25519PublicKey)
+-  [Const `EMALFORMED_PUBLIC_KEY`](#0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY)
 -  [Function `publish`](#0x1_SharedEd25519PublicKey_publish)
 -  [Function `rotate_key_`](#0x1_SharedEd25519PublicKey_rotate_key_)
 -  [Function `rotate_key`](#0x1_SharedEd25519PublicKey_rotate_key)
 -  [Function `key`](#0x1_SharedEd25519PublicKey_key)
 -  [Function `exists_at`](#0x1_SharedEd25519PublicKey_exists_at)
+-  [Specification](#0x1_SharedEd25519PublicKey_Specification)
+    -  [Function `publish`](#0x1_SharedEd25519PublicKey_Specification_publish)
+    -  [Function `rotate_key_`](#0x1_SharedEd25519PublicKey_Specification_rotate_key_)
+    -  [Function `rotate_key`](#0x1_SharedEd25519PublicKey_Specification_rotate_key)
+    -  [Function `key`](#0x1_SharedEd25519PublicKey_Specification_key)
+    -  [Function `exists_at`](#0x1_SharedEd25519PublicKey_Specification_exists_at)
 
 
 
@@ -48,6 +55,17 @@
 
 
 </details>
+
+<a name="0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY"></a>
+
+## Const `EMALFORMED_PUBLIC_KEY`
+
+
+
+<pre><code><b>const</b> EMALFORMED_PUBLIC_KEY: u64 = 100;
+</code></pre>
+
+
 
 <a name="0x1_SharedEd25519PublicKey_publish"></a>
 
@@ -182,3 +200,104 @@
 
 
 </details>
+
+<a name="0x1_SharedEd25519PublicKey_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_SharedEd25519PublicKey_Specification_publish"></a>
+
+### Function `publish`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SharedEd25519PublicKey_publish">publish</a>(account: &signer, key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> !exists&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(
+          <a href="Option.md#0x1_Option_spec_get">0x1::Option::spec_get</a>&lt;<a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>&gt;(
+              <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account))
+              .key_rotation_capability
+          ).account_address);
+<b>aborts_if</b> !<a href="Signature.md#0x1_Signature_ed25519_validate_pubkey">Signature::ed25519_validate_pubkey</a>(key);
+<b>aborts_if</b> exists&lt;<a href="#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_SharedEd25519PublicKey_Specification_rotate_key_"></a>
+
+### Function `rotate_key_`
+
+
+<pre><code><b>fun</b> <a href="#0x1_SharedEd25519PublicKey_rotate_key_">rotate_key_</a>(shared_key: &<b>mut</b> <a href="#0x1_SharedEd25519PublicKey_SharedEd25519PublicKey">SharedEd25519PublicKey::SharedEd25519PublicKey</a>, new_public_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(shared_key.rotation_cap.account_address);
+<b>aborts_if</b> !<a href="Signature.md#0x1_Signature_ed25519_validate_pubkey">Signature::ed25519_validate_pubkey</a>(new_public_key);
+</code></pre>
+
+
+
+<a name="0x1_SharedEd25519PublicKey_Specification_rotate_key"></a>
+
+### Function `rotate_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SharedEd25519PublicKey_rotate_key">rotate_key</a>(account: &signer, new_public_key: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> !exists&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(<b>global</b>&lt;<a href="#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).rotation_cap.account_address);
+<b>aborts_if</b> !<a href="Signature.md#0x1_Signature_ed25519_validate_pubkey">Signature::ed25519_validate_pubkey</a>(new_public_key);
+</code></pre>
+
+
+
+<a name="0x1_SharedEd25519PublicKey_Specification_key"></a>
+
+### Function `key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SharedEd25519PublicKey_key">key</a>(addr: address): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a>&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_SharedEd25519PublicKey_Specification_exists_at"></a>
+
+### Function `exists_at`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SharedEd25519PublicKey_exists_at">exists_at</a>(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>

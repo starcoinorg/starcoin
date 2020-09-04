@@ -8,6 +8,8 @@
 -  [Struct `DummyToken`](#0x1_DummyToken_DummyToken)
 -  [Resource `SharedBurnCapability`](#0x1_DummyToken_SharedBurnCapability)
 -  [Resource `SharedMintCapability`](#0x1_DummyToken_SharedMintCapability)
+-  [Const `SCALING_FACTOR`](#0x1_DummyToken_SCALING_FACTOR)
+-  [Const `FRACTIONAL_PART`](#0x1_DummyToken_FRACTIONAL_PART)
 -  [Function `initialize`](#0x1_DummyToken_initialize)
 -  [Function `is_dummy_token`](#0x1_DummyToken_is_dummy_token)
 -  [Function `burn`](#0x1_DummyToken_burn)
@@ -99,6 +101,28 @@
 
 
 </details>
+
+<a name="0x1_DummyToken_SCALING_FACTOR"></a>
+
+## Const `SCALING_FACTOR`
+
+
+
+<pre><code><b>const</b> SCALING_FACTOR: u128 = 1000000;
+</code></pre>
+
+
+
+<a name="0x1_DummyToken_FRACTIONAL_PART"></a>
+
+## Const `FRACTIONAL_PART`
+
+
+
+<pre><code><b>const</b> FRACTIONAL_PART: u128 = 1000;
+</code></pre>
+
+
 
 <a name="0x1_DummyToken_initialize"></a>
 

@@ -7,6 +7,7 @@
 
 -  [Function `print`](#0x1_Debug_print)
 -  [Function `print_stack_trace`](#0x1_Debug_print_stack_trace)
+-  [Specification](#0x1_Debug_Specification)
 
 
 
@@ -53,3 +54,13 @@
 
 
 </details>
+
+<a name="0x1_Debug_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
