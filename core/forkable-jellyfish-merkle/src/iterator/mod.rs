@@ -21,7 +21,6 @@ use crate::{
 };
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
-use std::sync::Arc;
 
 type Version = HashValue;
 /// `NodeVisitInfo` keeps track of the status of an internal node during the iteration process. It
@@ -95,9 +94,9 @@ impl NodeVisitInfo {
 }
 
 /// The `JellyfishMerkleIterator` implementation.
-pub struct JellyfishMerkleIterator<R: TreeReader> {
+pub struct JellyfishMerkleIterator<'a, R: 'a + TreeReader> {
     /// The storage engine from which we can read nodes using node keys.
-    reader: Arc<R>,
+    reader: &'a R,
 
     /// The version of the tree this iterator is running on.
     state_root_hash: Version,
@@ -111,14 +110,14 @@ pub struct JellyfishMerkleIterator<R: TreeReader> {
     done: bool,
 }
 
-impl<R> JellyfishMerkleIterator<R>
+impl<'a, R> JellyfishMerkleIterator<'a, R>
 where
-    R: TreeReader,
+    R: 'a + TreeReader,
 {
     /// Constructs a new iterator. This puts the internal state in the correct position, so the
     /// following `next` call will yield the smallest key that is greater or equal to
     /// `starting_key`.
-    pub fn new(reader: Arc<R>, state_root_hash: Version, starting_key: HashValue) -> Result<Self> {
+    pub fn new(reader: &'a R, state_root_hash: Version, starting_key: HashValue) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 
@@ -195,11 +194,23 @@ where
             }
         }
     }
+
+    #[cfg(test)]
+    pub fn print(&self) -> Result<()> {
+        let nodes = &self.parent_stack;
+        for node in nodes {
+            println!("internal node key: {:?}", node.node_key.short_str());
+            if let Ok(Node::Internal(internal)) = self.reader.get_node(&node.node_key) {
+                println!("child: {:?}", internal.all_child());
+            }
+        }
+        Ok(())
+    }
 }
 
-impl<R> Iterator for JellyfishMerkleIterator<R>
+impl<'a, R> Iterator for JellyfishMerkleIterator<'a, R>
 where
-    R: TreeReader,
+    R: 'a + TreeReader,
 {
     type Item = Result<(HashValue, Blob)>;
 

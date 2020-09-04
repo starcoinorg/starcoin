@@ -1,10 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
 use std::fmt;
+
 #[derive(Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct Blob {
     blob: Vec<u8>,
 }
