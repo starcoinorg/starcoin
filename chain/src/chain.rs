@@ -5,6 +5,7 @@ use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
+use scs::SCSCodec;
 use starcoin_accumulator::{
     node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
 };
@@ -37,6 +38,8 @@ use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashSet, convert::TryInto, sync::Arc};
 use storage::Store;
+
+const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
 pub struct BlockChain {
     consensus: ConsensusStrategy,
@@ -579,6 +582,117 @@ impl BlockChain {
         Ok(())
     }
 
+    fn blocks_since(&self, epoch_start_number: BlockNumber) -> Result<HashSet<HashValue>> {
+        let mut hashs = HashSet::new();
+        let latest_number = self.current_header().number();
+
+        let mut number = epoch_start_number;
+        loop {
+            if let Some(id) = self.block_accumulator.get_leaf(number)? {
+                hashs.insert(id);
+            } else {
+                return Err(format_err!("Block accumulator leaf {:?} is none.", number));
+            }
+
+            number += 1;
+            if number > latest_number {
+                break;
+            }
+        }
+
+        Ok(hashs)
+    }
+
+    fn check_common_ancestor(
+        &self,
+        header_id: HashValue,
+        epoch_start_number: BlockNumber,
+        blocks: &HashSet<HashValue>,
+    ) -> Result<bool> {
+        let mut result = false;
+        let block_header = self.storage.get_block_header_by_hash(header_id)?;
+
+        if let Some(block_header) = block_header {
+            if blocks.contains(&header_id) && block_header.number < epoch_start_number {
+                result = true;
+            }
+        } else {
+            return Err(format_err!("Uncle parent {:?} is none.", header_id));
+        }
+        Ok(result)
+    }
+
+    fn verify_uncles(&self, uncles: &[BlockHeader], header: &BlockHeader) -> Result<()> {
+        verify_block!(
+            VerifyBlockField::Uncle,
+            uncles.len() <= MAX_UNCLE_COUNT_PER_BLOCK,
+            "too many uncles {} in block {}",
+            uncles.len(),
+            header.id()
+        );
+        for uncle in uncles {
+            verify_block!(
+                VerifyBlockField::Uncle,
+                uncle.number < header.number ,
+               "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number
+            );
+        }
+
+        match header.uncle_hash {
+            Some(uncle_hash) => {
+                let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
+                verify_block!(
+                    VerifyBlockField::Uncle,
+                    calculated_hash.eq(&uncle_hash),
+                    "uncle hash in header is {},uncle hash calculated is {}",
+                    uncle_hash,
+                    calculated_hash
+                );
+            }
+            None => {
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!("Unexpect uncles, header's uncle hash is None"),
+                )
+                .into());
+            }
+        }
+
+        let epoch_start_number = if let Some(epoch) = &self.epoch {
+            epoch.start_number()
+        } else {
+            header.number()
+        };
+
+        for uncle in uncles {
+            if self.uncles.contains(&uncle.id()) {
+                debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!("uncle block exists in master,uncle id is {:?}", uncle.id()),
+                )
+                .into());
+            }
+        }
+
+        let blocks = self.blocks_since(epoch_start_number)?;
+        for uncle in uncles {
+            if !self.check_common_ancestor(uncle.parent_hash(), epoch_start_number, &blocks)? {
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!(
+                        "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
+                        uncle.id(),
+                        header.number
+                    ),
+                )
+                .into());
+            }
+        }
+
+        Ok(())
+    }
+
     fn apply_inner(
         &mut self,
         block: Block,
@@ -852,6 +966,9 @@ impl BlockChain {
 
 impl ChainWriter for BlockChain {
     fn apply(&mut self, block: Block) -> Result<()> {
+        if let Some(uncles) = block.uncles() {
+            self.verify_uncles(uncles, &block.header)?;
+        }
         self.apply_inner(block, true, None)
     }
 
@@ -860,6 +977,9 @@ impl ChainWriter for BlockChain {
         block: Block,
         remote_chain_state: &dyn ChainStateReader,
     ) -> Result<()> {
+        if let Some(uncles) = block.uncles() {
+            self.verify_uncles(uncles, &block.header)?;
+        }
         self.apply_inner(block, false, Some(remote_chain_state))
     }
 
