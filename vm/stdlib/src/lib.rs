@@ -8,12 +8,12 @@ use log::LevelFilter;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 use starcoin_config::ChainNetwork;
+pub use starcoin_config::StdlibVersion;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::genesis_config::BuiltinNetwork;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -53,169 +53,85 @@ static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> =
 // This needs to be a string literal due to restrictions imposed by include_bytes.
 /// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
-const COMPILED_STDLIB_DIR: Dir = include_dir!("compiled");
+pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
 
 const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "compiled/latest/transaction_scripts";
 pub const LATEST_VERSION: &str = "latest";
 
-static CHAIN_NETWORK_DEV_STDLIB_VERSION: Lazy<String> =
-    Lazy::new(|| ChainNetwork::DEV.stdlib_version());
-static CHAIN_NETWORK_HALLEY_STDLIB_VERSION: Lazy<String> =
-    Lazy::new(|| ChainNetwork::HALLEY.stdlib_version());
-static CHAIN_NETWORK_PROXIMA_STDLIB_VERSION: Lazy<String> =
-    Lazy::new(|| ChainNetwork::PROXIMA.stdlib_version());
-static CHAIN_NETWORK_MAIN_STDLIB_VERSION: Lazy<String> =
-    Lazy::new(|| ChainNetwork::MAIN.stdlib_version());
-
-static COMPILED_MOVELANG_STDLIB_FOR_DEV_NETWORK: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let sub_dir = format!(
-        "{}/{}",
-        CHAIN_NETWORK_DEV_STDLIB_VERSION.to_string(),
-        STDLIB_DIR_NAME
-    );
-    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
-        .get_dir(Path::new(sub_dir.as_str()))
-        .unwrap()
-        .files()
-        .iter()
-        .map(|file| {
-            (
-                file.path().to_str().unwrap().to_string(),
-                CompiledModule::deserialize(&file.contents()).unwrap(),
-            )
-        })
-        .collect();
-
-    // We need to verify modules based on their dependency order.
-    modules.sort_by_key(|(module_name, _)| module_name.clone());
-
-    let mut verified_modules = vec![];
-    for (_, module) in modules.into_iter() {
-        verify_module(&module).expect("stdlib module failed to verify");
-        DependencyChecker::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
-        verified_modules.push(module)
-    }
-    verified_modules
+static CHAIN_NETWORK_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
+    vec![
+        ChainNetwork::DEV.stdlib_version(),
+        ChainNetwork::HALLEY.stdlib_version(),
+        ChainNetwork::PROXIMA.stdlib_version(),
+        ChainNetwork::MAIN.stdlib_version(),
+    ]
 });
 
-static COMPILED_MOVELANG_STDLIB_FOR_HALLEY_NETWORK: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let sub_dir = format!(
-        "{}/{}",
-        CHAIN_NETWORK_HALLEY_STDLIB_VERSION.to_string(),
-        STDLIB_DIR_NAME
-    );
-    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
-        .get_dir(Path::new(sub_dir.as_str()))
-        .unwrap()
-        .files()
-        .iter()
-        .map(|file| {
-            (
-                file.path().to_str().unwrap().to_string(),
-                CompiledModule::deserialize(&file.contents()).unwrap(),
-            )
-        })
-        .collect();
-
-    // We need to verify modules based on their dependency order.
-    modules.sort_by_key(|(module_name, _)| module_name.clone());
-
-    let mut verified_modules = vec![];
-    for (_, module) in modules.into_iter() {
-        verify_module(&module).expect("stdlib module failed to verify");
-        DependencyChecker::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
-        verified_modules.push(module)
-    }
-    verified_modules
+static STDLIB_TYPE: Lazy<Vec<StdlibType>> = Lazy::new(|| {
+    vec![
+        StdlibType::Stdlib,
+        StdlibType::InitScripts,
+        StdlibType::TransactionScripts,
+    ]
 });
 
-static COMPILED_MOVELANG_STDLIB_FOR_PROXIMA_NETWORK: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let sub_dir = format!(
-        "{}/{}",
-        CHAIN_NETWORK_PROXIMA_STDLIB_VERSION.to_string(),
-        STDLIB_DIR_NAME
-    );
-    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
-        .get_dir(Path::new(sub_dir.as_str()))
-        .unwrap()
-        .files()
-        .iter()
-        .map(|file| {
-            (
-                file.path().to_str().unwrap().to_string(),
-                CompiledModule::deserialize(&file.contents()).unwrap(),
-            )
-        })
-        .collect();
+static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<CompiledModule>>> =
+    Lazy::new(|| {
+        let mut map = HashMap::new();
+        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
+            let sub_dir = format!("{}/{}", version.to_string(), STDLIB_DIR_NAME);
+            let mut modules: Vec<(String, CompiledModule)> = COMPILED_MOVE_CODE_DIR
+                .get_dir(Path::new(sub_dir.as_str()))
+                .unwrap()
+                .files()
+                .iter()
+                .map(|file| {
+                    (
+                        file.path().to_str().unwrap().to_string(),
+                        CompiledModule::deserialize(&file.contents()).unwrap(),
+                    )
+                })
+                .collect();
 
-    // We need to verify modules based on their dependency order.
-    modules.sort_by_key(|(module_name, _)| module_name.clone());
+            // We need to verify modules based on their dependency order.
+            modules.sort_by_key(|(module_name, _)| module_name.clone());
 
-    let mut verified_modules = vec![];
-    for (_, module) in modules.into_iter() {
-        verify_module(&module).expect("stdlib module failed to verify");
-        DependencyChecker::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
-        verified_modules.push(module)
-    }
-    verified_modules
-});
+            let mut verified_modules = vec![];
+            for (_, module) in modules.into_iter() {
+                verify_module(&module).expect("stdlib module failed to verify");
+                DependencyChecker::verify_module(&module, &verified_modules)
+                    .expect("stdlib module dependency failed to verify");
+                verified_modules.push(module)
+            }
+            map.insert((*version, StdlibType::Stdlib), verified_modules);
+        }
+        map
+    });
 
-static COMPILED_MOVELANG_STDLIB_FOR_MAIN_NETWORK: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let sub_dir = format!(
-        "{}/{}",
-        CHAIN_NETWORK_MAIN_STDLIB_VERSION.to_string(),
-        STDLIB_DIR_NAME
-    );
-    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
-        .get_dir(Path::new(sub_dir.as_str()))
-        .unwrap()
-        .files()
-        .iter()
-        .map(|file| {
-            (
-                file.path().to_str().unwrap().to_string(),
-                CompiledModule::deserialize(&file.contents()).unwrap(),
-            )
-        })
-        .collect();
+#[derive(Debug, Eq, Hash, PartialEq)]
+pub enum StdlibType {
+    Stdlib,
+    InitScripts,
+    TransactionScripts,
+}
 
-    // We need to verify modules based on their dependency order.
-    modules.sort_by_key(|(module_name, _)| module_name.clone());
-
-    let mut verified_modules = vec![];
-    for (_, module) in modules.into_iter() {
-        verify_module(&module).expect("stdlib module failed to verify");
-        DependencyChecker::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
-        verified_modules.push(module)
-    }
-    verified_modules
-});
 /// An enum specifying whether the compiled stdlib/scripts should be used or freshly built versions
 /// should be used.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StdLibOptions {
-    Compiled,
+    Compiled(StdlibVersion),
     Fresh,
 }
 
 /// Returns a reference to the standard library. Depending upon the `option` flag passed in
 /// either a compiled version of the standard library will be returned or a new freshly built stdlib
 /// will be used.
-pub fn stdlib_modules(option: StdLibOptions, net: &ChainNetwork) -> &'static [CompiledModule] {
-    match (option, net) {
-        (StdLibOptions::Fresh, _) => &*FRESH_MOVELANG_STDLIB,
-        (StdLibOptions::Compiled, ChainNetwork::Builtin(net)) => match net {
-            BuiltinNetwork::Test => &*FRESH_MOVELANG_STDLIB,
-            BuiltinNetwork::Dev => &*COMPILED_MOVELANG_STDLIB_FOR_DEV_NETWORK,
-            BuiltinNetwork::Halley => &*COMPILED_MOVELANG_STDLIB_FOR_HALLEY_NETWORK,
-            BuiltinNetwork::Proxima => &*COMPILED_MOVELANG_STDLIB_FOR_PROXIMA_NETWORK,
-            BuiltinNetwork::Main => &*COMPILED_MOVELANG_STDLIB_FOR_MAIN_NETWORK,
-        },
-        (StdLibOptions::Compiled, _) => &*FRESH_MOVELANG_STDLIB, // ToDo: fix Custom network config
+pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
+    match option {
+        StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
+        StdLibOptions::Compiled(version) => &*COMPILED_MOVELANG_STDLIB
+            .get(&(version, StdlibType::Stdlib))
+            .expect("compiled modules should not be none"),
     }
 }
 

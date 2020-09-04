@@ -16,7 +16,7 @@ pub static COMPILED_TYPE_MAP: Lazy<BTreeMap<Vec<u8>, StructTag>> =
 
 /// NOTICE: this does not support generic struct type.
 fn generate_stdlib_type_mapping(net: &ChainNetwork) -> Result<BTreeMap<Vec<u8>, StructTag>> {
-    let compiled_modules = &*stdlib_modules(StdLibOptions::Compiled, net);
+    let compiled_modules = &*stdlib_modules(StdLibOptions::Compiled(net.stdlib_version()));
     let cache = ModuleCache::new();
     for m in compiled_modules {
         cache.insert(m.self_id(), m.clone());

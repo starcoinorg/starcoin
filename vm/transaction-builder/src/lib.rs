@@ -17,7 +17,7 @@ use starcoin_vm_types::transaction::{
 };
 use stdlib::init_scripts::InitScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
-pub use stdlib::{stdlib_modules, StdLibOptions};
+pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
@@ -250,7 +250,7 @@ pub fn build_stdlib_package(
     stdlib_option: StdLibOptions,
     with_init_script: bool,
 ) -> Result<Package> {
-    let modules = stdlib_modules(stdlib_option, net);
+    let modules = stdlib_modules(stdlib_option);
     let mut package = Package::new_with_modules(
         modules
             .iter()
