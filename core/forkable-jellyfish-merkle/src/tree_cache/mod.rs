@@ -179,6 +179,16 @@ where
         self.root_node_key = root_node_key;
     }
 
+    #[cfg(test)]
+    pub fn get_root_node(&self) -> Result<Node> {
+        self.get_node(&self.root_node_key)
+    }
+
+    #[cfg(test)]
+    pub fn get_node_num(&self) -> usize {
+        self.node_cache.len()
+    }
+
     /// Puts the node with given hash as key into node_cache.
     pub fn put_node(&mut self, node_key: NodeKey, new_node: Node) -> Result<()> {
         match self.node_cache.entry(node_key) {

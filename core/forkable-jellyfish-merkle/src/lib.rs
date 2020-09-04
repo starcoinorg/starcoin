@@ -84,6 +84,8 @@ pub mod restore;
 pub mod test_helper;
 pub mod tree_cache;
 
+#[cfg(test)]
+use crate::iterator::JellyfishMerkleIterator;
 use anyhow::{bail, ensure, format_err, Result};
 use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
@@ -186,6 +188,12 @@ where
             .map(|(k, v)| (k, Some(v)))
             .collect::<Vec<_>>();
         self.updates(state_root_hash, blob_set)
+    }
+
+    #[cfg(test)]
+    pub fn print_tree(&self, state_root_hash: HashValue, start_key: HashValue) -> Result<()> {
+        let iter = JellyfishMerkleIterator::new(self.reader, state_root_hash, start_key).unwrap();
+        iter.print()
     }
 
     /// Delete a key from the tree. If the key is not found in the tree, nothing happens.
@@ -671,10 +679,4 @@ where
     pub fn get(&self, state_root_hash: HashValue, key: HashValue) -> Result<Option<Blob>> {
         Ok(self.get_with_proof(state_root_hash, key)?.0)
     }
-    // #[cfg(any(test, feature = "fuzzing"))]
-    // pub fn get_root_hash(&self, version: Version) -> Result<HashValue> {
-    //     let root_node_key = NodeKey::new_empty_path(version);
-    //     let root_node = self.reader.get_node(&root_node_key)?;
-    //     Ok(root_node.hash())
-    // }
 }
