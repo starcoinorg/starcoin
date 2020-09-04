@@ -67,8 +67,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         use super::*;
         use std::time::Duration;
         use network_api::{NetworkService};
-        use starcoin_types::peer_info::{PeerId, PeerInfo};
         use starcoin_types::CHAIN_PROTOCOL_NAME;
+        use starcoin_types::peer_info::{PeerId, PeerInfo};
         use scs::{SCSCodec,from_bytes};
         use futures::prelude::*;
         use starcoin_logger::prelude::*;

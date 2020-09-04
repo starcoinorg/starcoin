@@ -20,6 +20,16 @@
 -  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#0x1_Config_Specification)
+    -  [Function `get`](#0x1_Config_Specification_get)
+    -  [Function `get_by_address`](#0x1_Config_Specification_get_by_address)
+    -  [Function `set`](#0x1_Config_Specification_set)
+    -  [Function `set_with_capability`](#0x1_Config_Specification_set_with_capability)
+    -  [Function `publish_new_config_with_capability`](#0x1_Config_Specification_publish_new_config_with_capability)
+    -  [Function `publish_new_config`](#0x1_Config_Specification_publish_new_config)
+    -  [Function `extract_modify_config_capability`](#0x1_Config_Specification_extract_modify_config_capability)
+    -  [Function `restore_modify_config_capability`](#0x1_Config_Specification_restore_modify_config_capability)
+    -  [Function `destory_modify_config_capability`](#0x1_Config_Specification_destory_modify_config_capability)
+    -  [Function `emit_config_change_event`](#0x1_Config_Specification_emit_config_change_event)
 
 
 
@@ -301,7 +311,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_publish_new_config">publish_new_config</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) {
-    move_to(account, <a href="#0x1_Config">Config</a>{ payload });
+    move_to(account, <a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;{ payload });
     <b>let</b> cap = <a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt; {account_address: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;(account)};
     move_to(account, <a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{cap: <a href="Option.md#0x1_Option_some">Option::some</a>(cap)});
 }
@@ -423,5 +433,219 @@
 
 
 
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_get"></a>
+
+### Function `get`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get">get</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): ConfigValue
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+
+<a name="0x1_Config_spec_get"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Config_spec_get">spec_get</a>&lt;ConfigValue&gt;(addr: address): ConfigValue {
+    <b>global</b>&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Config_Get"></a>
+
+
+<pre><code><b>schema</b> <a href="#0x1_Config_Get">Get</a>&lt;ConfigValue&gt; {
+    account: &signer;
+    <b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+}
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_get_by_address"></a>
+
+### Function `get_by_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
+<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_set"></a>
+
+### Function `set`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_set">set</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue)
+</code></pre>
+
+
+
+
 <pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> !<a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<a href="#0x1_Config_spec_cap">spec_cap</a>&lt;ConfigValue&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)));
+<b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<a href="#0x1_Config_spec_cap">spec_cap</a>&lt;ConfigValue&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account))).account_address);
+<b>ensures</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+
+<a name="0x1_Config_spec_cap"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Config_spec_cap">spec_cap</a>&lt;ConfigValue&gt;(addr: address): <a href="Option.md#0x1_Option">Option</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt; {
+    <b>global</b>&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(addr).cap
+}
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_set_with_capability"></a>
+
+### Function `set_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
+<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_publish_new_config_with_capability"></a>
+
+### Function `publish_new_config_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_publish_new_config_with_capability">publish_new_config_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue): <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_Config">Config</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_publish_new_config"></a>
+
+### Function `publish_new_config`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_publish_new_config">publish_new_config</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_extract_modify_config_capability"></a>
+
+### Function `extract_modify_config_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_extract_modify_config_capability">extract_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<b>global</b>&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).cap);
+<b>ensures</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<b>global</b>&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).cap);
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_restore_modify_config_capability"></a>
+
+### Function `restore_modify_config_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_restore_modify_config_capability">restore_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<b>global</b>&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address).cap);
+<b>ensures</b> exists&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address);
+<b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<b>global</b>&lt;<a href="#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(cap.account_address).cap);
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_destory_modify_config_capability"></a>
+
+### Function `destory_modify_config_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Config_Specification_emit_config_change_event"></a>
+
+### Function `emit_config_change_event`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Config_emit_config_change_event">emit_config_change_event</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;, value: ConfigValue)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>

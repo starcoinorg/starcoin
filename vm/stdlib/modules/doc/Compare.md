@@ -8,6 +8,10 @@
 -  [Function `cmp_lcs_bytes`](#0x1_Compare_cmp_lcs_bytes)
 -  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
 -  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
+-  [Specification](#0x1_Compare_Specification)
+    -  [Function `cmp_lcs_bytes`](#0x1_Compare_Specification_cmp_lcs_bytes)
+    -  [Function `cmp_u8`](#0x1_Compare_Specification_cmp_u8)
+    -  [Function `cmp_u64`](#0x1_Compare_Specification_cmp_u64)
 
 
 
@@ -101,3 +105,61 @@
 
 
 </details>
+
+<a name="0x1_Compare_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_Compare_Specification_cmp_lcs_bytes"></a>
+
+### Function `cmp_lcs_bytes`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Compare_cmp_lcs_bytes">cmp_lcs_bytes</a>(v1: &vector&lt;u8&gt;, v2: &vector&lt;u8&gt;): u8
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Compare_Specification_cmp_u8"></a>
+
+### Function `cmp_u8`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Compare_cmp_u8">cmp_u8</a>(i1: u8, i2: u8): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Compare_Specification_cmp_u64"></a>
+
+### Function `cmp_u64`
+
+
+<pre><code><b>fun</b> <a href="#0x1_Compare_cmp_u64">cmp_u64</a>(i1: u64, i2: u64): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>

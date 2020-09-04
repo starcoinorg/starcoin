@@ -18,7 +18,7 @@ use std::{convert::TryFrom, fmt, path::PathBuf};
 // a problem with Docker, which does not copy over the Move source files that would be be used to
 // produce these binaries at runtime.
 #[allow(dead_code)]
-const STAGED_TXN_SCRIPTS_DIR: Dir = include_dir!("staged/transaction_scripts");
+const COMPILED_TXN_SCRIPTS_DIR: Dir = include_dir!("compiled/latest/transaction_scripts");
 
 /// All of the Move transaction scripts that can be executed on the Libra blockchain
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -74,7 +74,7 @@ impl StdlibScript {
         let mut path = PathBuf::from(self.name());
         path.set_extension("mv");
         CompiledBytes(
-            STAGED_TXN_SCRIPTS_DIR
+            COMPILED_TXN_SCRIPTS_DIR
                 .get_file(path)
                 .unwrap()
                 .contents()
@@ -163,7 +163,7 @@ mod test {
     fn test_file_correspondence() {
         // make sure that every file under transaction_scripts/ is represented in
         // StdlibScript::all() (and vice versa)
-        let files = STAGED_TXN_SCRIPTS_DIR.files();
+        let files = COMPILED_TXN_SCRIPTS_DIR.files();
         let scripts = StdlibScript::all();
         for file in files {
             assert!(

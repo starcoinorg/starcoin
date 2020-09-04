@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use stdlib::{stdlib_modules, StdLibOptions};
 
 #[allow(unused)]
-pub static STAGED_TYPE_MAP: Lazy<BTreeMap<Vec<u8>, StructTag>> =
+pub static COMPILED_TYPE_MAP: Lazy<BTreeMap<Vec<u8>, StructTag>> =
     Lazy::new(|| generate_stdlib_type_mapping().unwrap());
 
 /// NOTICE: this does not support generic struct type.

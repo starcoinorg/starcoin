@@ -256,6 +256,13 @@
 ## Specification
 
 
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
 <a name="0x1_SignedInteger64_Specification_multiply_u64"></a>
 
 ### Function `multiply_u64`
@@ -264,6 +271,11 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_SignedInteger64_multiply_u64">multiply_u64</a>(num: u64, multiplier: <a href="#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
 </code></pre>
 
+
+
+
+<pre><code><b>aborts_if</b> multiplier.value * num &gt; max_u64();
+</code></pre>
 
 
 
@@ -278,6 +290,11 @@
 
 
 
+<pre><code><b>aborts_if</b> divisor.value == 0;
+</code></pre>
+
+
+
 <a name="0x1_SignedInteger64_Specification_sub_u64"></a>
 
 ### Function `sub_u64`
@@ -289,6 +306,11 @@
 
 
 
+<pre><code><b>aborts_if</b> minus.is_negative && num + minus.value &gt; max_u64();
+</code></pre>
+
+
+
 <a name="0x1_SignedInteger64_Specification_add_u64"></a>
 
 ### Function `add_u64`
@@ -297,6 +319,11 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_SignedInteger64_add_u64">add_u64</a>(num: u64, addend: <a href="#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>): <a href="#0x1_SignedInteger64_SignedInteger64">SignedInteger64::SignedInteger64</a>
 </code></pre>
 
+
+
+
+<pre><code><b>aborts_if</b> !addend.is_negative && num + addend.value &gt; max_u64();
+</code></pre>
 
 
 

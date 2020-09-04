@@ -38,6 +38,22 @@
 -  [Function `finish_upgrade_plan`](#0x1_PackageTxnManager_finish_upgrade_plan)
 -  [Function `package_txn_prologue`](#0x1_PackageTxnManager_package_txn_prologue)
 -  [Function `package_txn_epilogue`](#0x1_PackageTxnManager_package_txn_epilogue)
+-  [Specification](#0x1_PackageTxnManager_Specification)
+    -  [Function `grant_maintainer`](#0x1_PackageTxnManager_Specification_grant_maintainer)
+    -  [Function `update_module_upgrade_strategy`](#0x1_PackageTxnManager_Specification_update_module_upgrade_strategy)
+    -  [Function `destroy_upgrade_plan_cap`](#0x1_PackageTxnManager_Specification_destroy_upgrade_plan_cap)
+    -  [Function `extract_submit_upgrade_plan_cap`](#0x1_PackageTxnManager_Specification_extract_submit_upgrade_plan_cap)
+    -  [Function `submit_upgrade_plan`](#0x1_PackageTxnManager_Specification_submit_upgrade_plan)
+    -  [Function `submit_upgrade_plan_with_cap`](#0x1_PackageTxnManager_Specification_submit_upgrade_plan_with_cap)
+    -  [Function `cancel_upgrade_plan`](#0x1_PackageTxnManager_Specification_cancel_upgrade_plan)
+    -  [Function `cancel_upgrade_plan_with_cap`](#0x1_PackageTxnManager_Specification_cancel_upgrade_plan_with_cap)
+    -  [Function `get_module_maintainer`](#0x1_PackageTxnManager_Specification_get_module_maintainer)
+    -  [Function `get_module_upgrade_strategy`](#0x1_PackageTxnManager_Specification_get_module_upgrade_strategy)
+    -  [Function `get_upgrade_plan`](#0x1_PackageTxnManager_Specification_get_upgrade_plan)
+    -  [Function `check_package_txn`](#0x1_PackageTxnManager_Specification_check_package_txn)
+    -  [Function `finish_upgrade_plan`](#0x1_PackageTxnManager_Specification_finish_upgrade_plan)
+    -  [Function `package_txn_prologue`](#0x1_PackageTxnManager_Specification_package_txn_prologue)
+    -  [Function `package_txn_epilogue`](#0x1_PackageTxnManager_Specification_package_txn_epilogue)
 
 
 
@@ -916,3 +932,263 @@ Package txn finished, and clean UpgradePlan
 
 
 </details>
+
+<a name="0x1_PackageTxnManager_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify = <b>true</b>;
+pragma aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_grant_maintainer"></a>
+
+### Function `grant_maintainer`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_grant_maintainer">grant_maintainer</a>(account: &signer, maintainer: address)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_update_module_upgrade_strategy"></a>
+
+### Function `update_module_upgrade_strategy`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(account: &signer, strategy: u8)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> strategy &lt; 0 || strategy &gt; 3;
+<b>aborts_if</b> strategy &lt;= <b>global</b>&lt;<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy;
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy == 1
+          && !exists&lt;<a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_destroy_upgrade_plan_cap"></a>
+
+### Function `destroy_upgrade_plan_cap`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_destroy_upgrade_plan_cap">destroy_upgrade_plan_cap</a>(cap: <a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_extract_submit_upgrade_plan_cap"></a>
+
+### Function `extract_submit_upgrade_plan_cap`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap">extract_submit_upgrade_plan_cap</a>(account: &signer): <a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy != 1;
+<b>aborts_if</b> !exists&lt;<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_submit_upgrade_plan"></a>
+
+### Function `submit_upgrade_plan`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, active_after_number: u64)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_submit_upgrade_plan_with_cap"></a>
+
+### Function `submit_upgrade_plan_with_cap`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, active_after_number: u64)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_cancel_upgrade_plan"></a>
+
+### Function `cancel_upgrade_plan`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_cancel_upgrade_plan">cancel_upgrade_plan</a>(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_cancel_upgrade_plan_with_cap"></a>
+
+### Function `cancel_upgrade_plan_with_cap`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap">cancel_upgrade_plan_with_cap</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_get_module_maintainer"></a>
+
+### Function `get_module_maintainer`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(addr: address): address
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_get_module_upgrade_strategy"></a>
+
+### Function `get_module_upgrade_strategy`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(module_address: address): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_get_upgrade_plan"></a>
+
+### Function `get_upgrade_plan`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_get_upgrade_plan">get_upgrade_plan</a>(module_address: address): <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="#0x1_PackageTxnManager_UpgradePlan">PackageTxnManager::UpgradePlan</a>&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_check_package_txn"></a>
+
+### Function `check_package_txn`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_finish_upgrade_plan"></a>
+
+### Function `finish_upgrade_plan`
+
+
+<pre><code><b>fun</b> <a href="#0x1_PackageTxnManager_finish_upgrade_plan">finish_upgrade_plan</a>(package_address: address)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_package_txn_prologue"></a>
+
+### Function `package_txn_prologue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, txn_sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_Specification_package_txn_epilogue"></a>
+
+### Function `package_txn_epilogue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_package_txn_epilogue">package_txn_epilogue</a>(account: &signer, _txn_sender: address, package_address: address, success: bool)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b>  <b>global</b>&lt;<a href="#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(package_address).strategy == 1
+           && success && !exists&lt;<a href="#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
+</code></pre>

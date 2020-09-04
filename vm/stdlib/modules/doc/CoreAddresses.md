@@ -98,6 +98,13 @@ is no signer for the transaction.
 
 ## Specification
 
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
 Specification version of
 <code>Self::GENESIS_ACCOUNT</code>.
 

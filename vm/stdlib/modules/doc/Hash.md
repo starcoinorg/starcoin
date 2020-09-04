@@ -7,6 +7,7 @@
 
 -  [Function `sha2_256`](#0x1_Hash_sha2_256)
 -  [Function `sha3_256`](#0x1_Hash_sha3_256)
+-  [Specification](#0x1_Hash_Specification)
 
 
 
@@ -53,3 +54,13 @@
 
 
 </details>
+
+<a name="0x1_Hash_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>

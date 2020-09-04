@@ -24,7 +24,7 @@ popd || exit 1
 echo "Converting trace file..."
 cargo run --bin move-trace-conversion -- -f "$TRACE_PATH" -o trace.mvcov
 echo "Producing coverage summaries..."
-cargo run --bin coverage-summaries -- --summarize-functions -t trace.mvcov -s ../stdlib/staged/stdlib -o "$1"
+cargo run --bin coverage-summaries -- --summarize-functions -t trace.mvcov -s ../stdlib/compiled/latest/stdlib -o "$1"
 
 unset MOVE_VM_TRACE
 

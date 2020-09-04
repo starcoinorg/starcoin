@@ -7,10 +7,17 @@
 
 -  [Struct `STC`](#0x1_STC_STC)
 -  [Resource `SharedBurnCapability`](#0x1_STC_SharedBurnCapability)
+-  [Const `SCALING_FACTOR`](#0x1_STC_SCALING_FACTOR)
+-  [Const `FRACTIONAL_PART`](#0x1_STC_FRACTIONAL_PART)
 -  [Function `initialize`](#0x1_STC_initialize)
 -  [Function `is_stc`](#0x1_STC_is_stc)
 -  [Function `burn`](#0x1_STC_burn)
 -  [Function `token_address`](#0x1_STC_token_address)
+-  [Specification](#0x1_STC_Specification)
+    -  [Function `initialize`](#0x1_STC_Specification_initialize)
+    -  [Function `is_stc`](#0x1_STC_Specification_is_stc)
+    -  [Function `burn`](#0x1_STC_Specification_burn)
+    -  [Function `token_address`](#0x1_STC_Specification_token_address)
 
 
 
@@ -69,6 +76,28 @@
 
 
 </details>
+
+<a name="0x1_STC_SCALING_FACTOR"></a>
+
+## Const `SCALING_FACTOR`
+
+
+
+<pre><code><b>const</b> SCALING_FACTOR: u128 = 1000000;
+</code></pre>
+
+
+
+<a name="0x1_STC_FRACTIONAL_PART"></a>
+
+## Const `FRACTIONAL_PART`
+
+
+
+<pre><code><b>const</b> FRACTIONAL_PART: u128 = 1000;
+</code></pre>
+
+
 
 <a name="0x1_STC_initialize"></a>
 
@@ -176,3 +205,66 @@ Returns true if
 
 
 </details>
+
+<a name="0x1_STC_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_STC_Specification_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_initialize">initialize</a>(account: &signer)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_STC_Specification_is_stc"></a>
+
+### Function `is_stc`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool
+</code></pre>
+
+
+
+
+<a name="0x1_STC_Specification_burn"></a>
+
+### Function `burn`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_burn">burn</a>(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="#0x1_STC_STC">STC::STC</a>&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_STC_Specification_token_address"></a>
+
+### Function `token_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_token_address">token_address</a>(): address
+</code></pre>

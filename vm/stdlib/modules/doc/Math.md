@@ -7,6 +7,9 @@
 
 -  [Function `sqrt`](#0x1_Math_sqrt)
 -  [Function `pow`](#0x1_Math_pow)
+-  [Specification](#0x1_Math_Specification)
+    -  [Function `sqrt`](#0x1_Math_Specification_sqrt)
+    -  [Function `pow`](#0x1_Math_Specification_pow)
 
 
 
@@ -81,3 +84,48 @@
 
 
 </details>
+
+<a name="0x1_Math_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="0x1_Math_Specification_sqrt"></a>
+
+### Function `sqrt`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_sqrt">sqrt</a>(y: u128): u64
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+pragma timeout = 120;
+<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) + y/2 +1 &gt; max_u128();
+<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) &gt; max_u128();
+</code></pre>
+
+
+
+<a name="0x1_Math_Specification_pow"></a>
+
+### Function `pow`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>

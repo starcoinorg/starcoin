@@ -20,10 +20,7 @@ use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::MinerActor;
 use starcoin_miner::MinerClientActor;
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
-use starcoin_network_rpc_api::{
-    gen_client::{get_rpc_info, NetworkRpcClient},
-    RemoteChainStateReader,
-};
+use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_node_api::service_registry::ServiceRegistry;
 use starcoin_rpc_server::module::PubSubService;
@@ -231,23 +228,19 @@ pub async fn start(
 
     let chain_config = config.clone();
     let chain_storage = storage.clone();
-    let chain_bus = bus.clone();
     let chain_txpool_service = txpool_service.clone();
 
-    let remote_state_reader = Some(RemoteChainStateReader::new(NetworkRpcClient::new(
-        network.clone(),
-    )));
     let chain_arbiter = Arbiter::new();
     let chain_startup_info = startup_info.clone();
+    let chain_bus = bus.clone();
     let chain = chain_arbiter
         .exec(move || -> Result<ChainActorRef> {
             ChainActor::launch(
                 chain_config,
                 chain_startup_info,
                 chain_storage,
-                chain_bus,
                 chain_txpool_service,
-                remote_state_reader,
+                chain_bus,
             )
         })
         .await??;
@@ -286,6 +279,7 @@ pub async fn start(
     let sync_txpool = txpool_service.clone();
     let sync_network = network.clone();
     let sync_storage = storage.clone();
+    let sync_startup_info = startup_info.clone();
     let sync = Arbiter::new()
         .exec(move || -> Result<Addr<SyncActor<NetworkAsyncService>>> {
             SyncActor::launch(
@@ -296,6 +290,7 @@ pub async fn start(
                 sync_txpool,
                 sync_network,
                 sync_storage,
+                sync_startup_info,
             )
         })
         .await??;

@@ -7,13 +7,13 @@ A binary to gen real user txn for dev/testing env.
 
 
 ```bash
-$ ./target/debug/txfactory --ipc-path node/dev/starcoin.ipc
+$ ./target/debug/starcoin_txfactory --ipc-path node/dev/starcoin.ipc
 ```
 
 
 ```
 USAGE:
-    txfactory [OPTIONS] --ipc-path <ipc-path>
+    starcoin_txfactory [OPTIONS] --ipc-path <ipc-path>
 
 FLAGS:
     -h, --help       Prints help information

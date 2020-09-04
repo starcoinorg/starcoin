@@ -4,6 +4,7 @@ use crate::AccountManager;
 use actix::clock::Duration;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
+use starcoin_crypto::SigningKey;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::{RawUserTransaction, Script, TransactionPayload};
@@ -86,5 +87,30 @@ pub fn test_wallet_unlock() -> Result<()> {
         ChainId::new(1),
     );
     let _signed = manager.sign_txn(*wallet.address(), fake_txn)?;
+    Ok(())
+}
+
+#[test]
+pub fn test_libra_wallet() -> Result<()> {
+    use core::convert::{From, TryFrom};
+    use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+    use starcoin_crypto::HashValue;
+    use starcoin_types::transaction::authenticator::AuthenticationKey;
+
+    let bytes = hex::decode("2c78c6fd8829de80451cda02310250b27307360ddc972d614fa0c8462ae41b3e")?;
+    let private_key = Ed25519PrivateKey::try_from(&bytes[..])?;
+    let public_key = Ed25519PublicKey::from(&private_key);
+
+    let message = [1, 2, 3, 4];
+    let result = private_key.sign_arbitrary_message(&message);
+
+    let address = starcoin_types::account_address::from_public_key(&public_key);
+    let hash_value = HashValue::sha3_256_of(&public_key.to_bytes());
+    let key = AuthenticationKey::new(*HashValue::sha3_256_of(&public_key.to_bytes()).as_ref());
+
+    println!("public key is {:?}", public_key.to_bytes().as_ref());
+    println!("hash value is {:?}", hash_value.as_ref());
+    println!("key is {:?}", key.derived_address());
+    println!("address is {:?},result is {:?}", address, result);
     Ok(())
 }

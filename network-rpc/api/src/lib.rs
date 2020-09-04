@@ -150,7 +150,7 @@ impl Message for GetStateWithProof {
 
 pub(crate) const DELAY_TIME: u64 = 15;
 
-#[net_rpc]
+#[net_rpc(client, server)]
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
 

@@ -60,14 +60,7 @@ Contains functions for [ed25519](https://en.wikipedia.org/wiki/EdDSA) digital si
 
 ## Specification
 
-The signature verification functions are treated as uninterpreted. The uninterpreted semantics of
-the Move functions aligns with that of the specification functions below.
 
 
-<a name="0x1_Signature_spec_ed25519_validate_pubkey"></a>
-
-
-<pre><code><b>native</b> <b>define</b> <a href="#0x1_Signature_spec_ed25519_validate_pubkey">spec_ed25519_validate_pubkey</a>(public_key: vector&lt;u8&gt;): bool;
-<a name="0x1_Signature_spec_ed25519_verify"></a>
-<b>native</b> <b>define</b> <a href="#0x1_Signature_spec_ed25519_verify">spec_ed25519_verify</a>(signature: vector&lt;u8&gt;, public_key: vector&lt;u8&gt;, message: vector&lt;u8&gt;): bool;
+<pre><code>pragma intrinsic = <b>true</b>;
 </code></pre>
