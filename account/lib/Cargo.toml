@@ -28,4 +28,5 @@ starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-logger = {path = "../../commons/logger"}
 
 [dev-dependencies]
+hex= "0.4.2"
 tempfile="3"

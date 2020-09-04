@@ -6494,6 +6494,7 @@ dependencies = [
  "async-trait",
  "dashmap",
  "futures 0.3.5",
+ "hex",
  "parking_lot 0.9.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
