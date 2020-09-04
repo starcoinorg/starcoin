@@ -589,7 +589,11 @@ impl BlockChain {
             if let Some(id) = self.block_accumulator.get_leaf(number)? {
                 hashs.insert(id);
             } else {
-                return Err(format_err!("Block accumulator leaf {:?} is none.", number));
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!("Block accumulator leaf {:?} is none.", number),
+                )
+                .into());
             }
 
             number += 1;
@@ -611,11 +615,15 @@ impl BlockChain {
         let block_header = self.storage.get_block_header_by_hash(header_id)?;
 
         if let Some(block_header) = block_header {
-            if blocks.contains(&header_id) && block_header.number < epoch_start_number {
+            if blocks.contains(&header_id) && block_header.number >= epoch_start_number {
                 result = true;
             }
         } else {
-            return Err(format_err!("Uncle parent {:?} is none.", header_id));
+            return Err(ConnectBlockError::VerifyBlockFailed(
+                VerifyBlockField::Uncle,
+                format_err!("Uncle parent {:?} is none.", header_id),
+            )
+            .into());
         }
         Ok(result)
     }
@@ -657,6 +665,17 @@ impl BlockChain {
         }
 
         let epoch_start_number = if let Some(epoch) = &self.epoch {
+            if header.number() >= epoch.end_number() {
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!(
+                        "block number is {:?}, epoch end number is {:?}",
+                        header.number(),
+                        epoch.end_number(),
+                    ),
+                )
+                .into());
+            }
             epoch.start_number()
         } else {
             header.number()
@@ -681,7 +700,7 @@ impl BlockChain {
                     format_err!(
                         "can't find ancestor in master uncle id is {:?},epoch start number is {:?}",
                         uncle.id(),
-                        header.number
+                        epoch_start_number
                     ),
                 )
                 .into());
