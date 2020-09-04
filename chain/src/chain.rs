@@ -526,14 +526,9 @@ impl BlockChain {
         Ok(())
     }
 
-    fn verify_header(
-        &self,
-        header: &BlockHeader,
-        verify_head_id: bool,
-        epoch: &EpochInfo,
-    ) -> Result<()> {
+    fn verify_header(&self, header: &BlockHeader, is_uncle: bool, epoch: &EpochInfo) -> Result<()> {
         let parent_hash = header.parent_hash();
-        if verify_head_id {
+        if !is_uncle {
             verify_block!(
                 VerifyBlockField::Header,
                 self.head_block().id() == parent_hash,
@@ -571,14 +566,17 @@ impl BlockChain {
         );
 
         // TODO 最小值是否需要
-        // TODO: Skip C::verify in uncle block since the difficulty recalculate now work in uncle block
-        if verify_head_id {
-            if let Err(err) = self.consensus.verify(self, epoch, header) {
-                return Err(
-                    ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, err).into(),
-                );
-            };
-        }
+        if let Err(err) = if is_uncle {
+            let uncle_branch =
+                BlockChain::new(self.consensus(), parent_hash, self.storage.clone())?;
+            self.consensus.verify(&uncle_branch, epoch, header)
+        } else {
+            self.consensus.verify(self, epoch, header)
+        } {
+            return Err(
+                ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, err).into(),
+            );
+        };
         Ok(())
     }
 
@@ -715,7 +713,7 @@ impl BlockChain {
                 None => AccountStateReader::new(&self.chain_state),
             };
             let epoch_info = account_reader.epoch()?;
-            self.verify_header(&header, true, &epoch_info)?;
+            self.verify_header(&header, false, &epoch_info)?;
 
             if header.number() == epoch_info.end_number() {
                 switch_epoch = true;
@@ -736,7 +734,7 @@ impl BlockChain {
                         "invalid block: block {} can not be uncle.",
                         uncle_header.id()
                     );
-                    self.verify_header(uncle_header, false, &epoch_info)?;
+                    self.verify_header(uncle_header, true, &epoch_info)?;
                 }
             }
         }
