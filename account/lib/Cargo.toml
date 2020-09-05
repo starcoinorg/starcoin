@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-account-lib"
-version = "0.4.5"
+version = "0.4.6"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -28,4 +28,5 @@ starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-logger = {path = "../../commons/logger"}
 
 [dev-dependencies]
+hex= "0.4.2"
 tempfile="3"

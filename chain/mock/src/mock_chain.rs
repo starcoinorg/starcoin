@@ -42,6 +42,15 @@ impl MockChain {
         &self.head
     }
 
+    pub fn fork_new_branch(&self, head_id: Option<HashValue>) -> Result<BlockChain> {
+        let block_id = match head_id {
+            Some(id) => id,
+            None => self.head.current_header().id(),
+        };
+        assert!(self.head.exist_block(block_id));
+        BlockChain::new(self.head.consensus(), block_id, self.head.get_storage())
+    }
+
     pub fn produce(&self) -> Result<Block> {
         let (template, _) = self.head.create_block_template(
             *self.miner.address(),
@@ -70,5 +79,9 @@ impl MockChain {
             self.produce_and_apply()?;
         }
         Ok(())
+    }
+
+    pub fn miner(&self) -> &AccountInfo {
+        &self.miner
     }
 }

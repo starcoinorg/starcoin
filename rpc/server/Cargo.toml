@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-server"
-version = "0.4.5"
+version = "0.4.6"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -19,7 +19,7 @@ serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
-jsonrpc-derive = "14.0"
+jsonrpc-derive = "14.2"
 jsonrpc-http-server = "14.0"
 jsonrpc-tcp-server = "14.0"
 jsonrpc-ipc-server = "14.0"

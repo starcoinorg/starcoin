@@ -30,10 +30,8 @@ fn random_63nibblepath() -> NibblePath {
 // nibble to be appended.
 fn gen_leaf_keys(nibble_path: &NibblePath, nibble: Nibble) -> HashValue {
     assert_eq!(nibble_path.num_nibbles(), 63);
-    dbg!(nibble_path.bytes());
     let mut np = nibble_path.clone();
     np.push(nibble);
-    dbg!(np.bytes());
     HashValue::from_slice(np.bytes()).unwrap()
 }
 
