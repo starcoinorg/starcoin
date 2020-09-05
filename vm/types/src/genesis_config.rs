@@ -34,12 +34,10 @@ impl StdlibVersion {
     pub fn new(major: u32, minor: u32) -> Self {
         StdlibVersion::Version(VersionNumber { major, minor })
     }
-    pub fn to_string(self) -> String {
+    pub fn as_string(self) -> String {
         match self {
             StdlibVersion::Latest => "latest".to_string(),
-            StdlibVersion::Version(version) => {
-                format!("{}.{}", version.major, version.minor).to_string()
-            }
+            StdlibVersion::Version(version) => format!("{}.{}", version.major, version.minor),
         }
     }
 }
@@ -537,7 +535,7 @@ impl ChainNetwork {
     }
 
     pub fn stdlib_version(&self) -> StdlibVersion {
-        self.genesis_config().stdlib_version.clone()
+        self.genesis_config().stdlib_version
     }
 }
 
@@ -567,6 +565,22 @@ impl ChainId {
 
     pub fn dev() -> Self {
         BuiltinNetwork::Dev.chain_id()
+    }
+
+    pub fn net(self) -> Option<ChainNetwork> {
+        if self.id() == BuiltinNetwork::Test.chain_id().id() {
+            Some(ChainNetwork::TEST)
+        } else if self.id() == BuiltinNetwork::Dev.chain_id().id() {
+            Some(ChainNetwork::DEV)
+        } else if self.id() == BuiltinNetwork::Halley.chain_id().id() {
+            Some(ChainNetwork::HALLEY)
+        } else if self.id() == BuiltinNetwork::Proxima.chain_id().id() {
+            Some(ChainNetwork::PROXIMA)
+        } else if self.id() == BuiltinNetwork::Main.chain_id().id() {
+            Some(ChainNetwork::MAIN)
+        } else {
+            None // ToDo: handle custom network
+        }
     }
 }
 
@@ -873,7 +887,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
-        stdlib_version: StdlibVersion::default(),
+        stdlib_version: StdlibVersion::new(0, 1),
     }
 });
 

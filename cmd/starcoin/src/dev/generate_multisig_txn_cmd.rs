@@ -12,7 +12,7 @@ use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_transaction_builder::StdlibScript;
+use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
 use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
@@ -128,7 +128,9 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
 
         let bytecode = match (ctx.opt().stdlib_script, ctx.opt().script_file.clone()) {
-            (Some(s), None) => s.compiled_bytes().into_vec(),
+            (Some(s), None) => {
+                compiled_transaction_script(ctx.state().net().stdlib_version(), s).into_vec()
+            }
             (None, Some(bytecode_path)) => {
                 let mut file = OpenOptions::new()
                     .read(true)

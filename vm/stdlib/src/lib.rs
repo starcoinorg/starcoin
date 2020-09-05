@@ -67,19 +67,11 @@ static CHAIN_NETWORK_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
     ]
 });
 
-static STDLIB_TYPE: Lazy<Vec<StdlibType>> = Lazy::new(|| {
-    vec![
-        StdlibType::Stdlib,
-        StdlibType::InitScripts,
-        StdlibType::TransactionScripts,
-    ]
-});
-
 static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<CompiledModule>>> =
     Lazy::new(|| {
         let mut map = HashMap::new();
         for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
-            let sub_dir = format!("{}/{}", version.to_string(), STDLIB_DIR_NAME);
+            let sub_dir = format!("{}/{}", version.as_string(), STDLIB_DIR_NAME);
             let mut modules: Vec<(String, CompiledModule)> = COMPILED_MOVE_CODE_DIR
                 .get_dir(Path::new(sub_dir.as_str()))
                 .unwrap()

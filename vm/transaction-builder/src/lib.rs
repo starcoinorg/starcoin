@@ -15,7 +15,8 @@ use starcoin_vm_types::transaction::{
     Module, Package, RawUserTransaction, Script, SignedUserTransaction, Transaction,
     TransactionArgument, TransactionPayload,
 };
-use stdlib::init_scripts::InitScript;
+pub use stdlib::init_scripts::{compiled_init_script, InitScript};
+pub use stdlib::transaction_scripts::compiled_transaction_script;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -127,6 +128,7 @@ pub fn raw_peer_to_peer_txn(
         sender,
         seq_num,
         TransactionPayload::Script(encode_transfer_script_by_token_code(
+            chain_id.net().unwrap().stdlib_version(),
             receiver,
             receiver_auth_key_prefix,
             transfer_amount,
@@ -152,7 +154,11 @@ pub fn raw_accept_token_txn(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
-            StdlibScript::AcceptToken.compiled_bytes().into_vec(),
+            compiled_transaction_script(
+                chain_id.net().unwrap().stdlib_version(),
+                StdlibScript::AcceptToken,
+            )
+            .into_vec(),
             vec![token_code.into()],
             vec![],
         )),
@@ -164,12 +170,13 @@ pub fn raw_accept_token_txn(
 }
 
 pub fn encode_create_account_script(
+    version: StdlibVersion,
     account_address: &AccountAddress,
     auth_key_prefix: Vec<u8>,
     initial_balance: u64,
 ) -> Script {
     Script::new(
-        StdlibScript::CreateAccount.compiled_bytes().into_vec(),
+        compiled_transaction_script(version, StdlibScript::CreateAccount).into_vec(),
         vec![],
         vec![
             TransactionArgument::Address(*account_address),
@@ -180,21 +187,29 @@ pub fn encode_create_account_script(
 }
 
 pub fn encode_transfer_script(
+    version: StdlibVersion,
     recipient: AccountAddress,
     auth_key_prefix: Vec<u8>,
     amount: u128,
 ) -> Script {
-    encode_transfer_script_by_token_code(recipient, auth_key_prefix, amount, STC_TOKEN_CODE.clone())
+    encode_transfer_script_by_token_code(
+        version,
+        recipient,
+        auth_key_prefix,
+        amount,
+        STC_TOKEN_CODE.clone(),
+    )
 }
 
 pub fn encode_transfer_script_by_token_code(
+    version: StdlibVersion,
     recipient: AccountAddress,
     auth_key_prefix: Vec<u8>,
     amount: u128,
     token_code: TokenCode,
 ) -> Script {
     Script::new(
-        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
+        compiled_transaction_script(version, StdlibScript::PeerToPeer).into_vec(),
         vec![token_code.into()],
         vec![
             TransactionArgument::Address(recipient),
@@ -213,7 +228,12 @@ pub fn peer_to_peer_txn_sent_as_association(
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
+        TransactionPayload::Script(encode_transfer_script(
+            net.stdlib_version(),
+            recipient,
+            auth_key_prefix,
+            amount,
+        )),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
@@ -292,7 +312,7 @@ pub fn build_stdlib_package(
             .expect("Cannot serialize gas schedule");
 
         package.set_init_script(Script::new(
-            InitScript::GenesisInit.compiled_bytes().into_vec(),
+            compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
                 TransactionArgument::U8Vector(publish_option_bytes),
