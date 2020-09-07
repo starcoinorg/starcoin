@@ -105,7 +105,7 @@ where
         }
     }
 
-    fn get_master(&self) -> &BlockChain {
+    pub fn get_master(&self) -> &BlockChain {
         &self.master
     }
 
