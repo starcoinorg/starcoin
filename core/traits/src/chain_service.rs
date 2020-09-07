@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
@@ -9,7 +10,6 @@ use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     startup_info::StartupInfo,
     transaction::SignedUserTransaction,
@@ -53,8 +53,7 @@ pub trait ReadableChainService {
     /// just for test
     fn create_block_template(
         &self,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Ed25519PublicKey,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;
@@ -101,8 +100,7 @@ pub trait ChainAsyncService:
     /// just for test
     async fn create_block_template(
         &self,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Ed25519PublicKey,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate>;

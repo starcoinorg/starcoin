@@ -177,8 +177,8 @@ where
                 let final_block_gas_limit = config.miner.block_gas_limit
                     .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
                     .unwrap_or(on_chain_block_gas_limit);
-                let response = create_block_template_address.send(CreateBlockTemplateRequest::new(final_block_gas_limit, *miner_account.address(),
-                                                              Some(miner_account.get_auth_key().prefix().to_vec()),txns))
+                let response = create_block_template_address.send(
+                    CreateBlockTemplateRequest::new(final_block_gas_limit, miner_account.public_key,txns))
                     .await??;
 
                 let (block_template, excluded_txns) = response.into();

@@ -5,8 +5,9 @@
 use crate::account::{Account, AccountData};
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::HashValue;
-use starcoin_genesis::Genesis;
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::{Genesis, HashValue, PrivateKey};
+use starcoin_genesis::Genesis as Starcoin_Genesis;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
@@ -18,7 +19,7 @@ use starcoin_types::{
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::{
-    account_config::{association_address, AccountResource, BalanceResource},
+    account_config::{AccountResource, BalanceResource},
     file_format::CompiledModule,
     language_storage::ModuleId,
     state_view::StateView,
@@ -39,9 +40,9 @@ impl Default for FakeExecutor {
 
 impl FakeExecutor {
     pub fn new() -> Self {
-        let genesis_txn = Genesis::build_genesis_transaction(&ChainNetwork::TEST).unwrap();
+        let genesis_txn = Starcoin_Genesis::build_genesis_transaction(&ChainNetwork::TEST).unwrap();
         let data_store = ChainStateDB::mock();
-        Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
+        Starcoin_Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
         Self {
             data_store,
             block_time: 0,
@@ -207,8 +208,10 @@ impl FakeExecutor {
         let new_block = BlockMetadata::new(
             HashValue::zero(),
             0,
-            association_address(),
-            None,
+            Ed25519PrivateKey::genesis()
+                .public_key()
+                .to_bytes()
+                .to_vec(), //TODO association key
             0,
             self.block_time,
         );

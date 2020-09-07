@@ -6752,6 +6752,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
  "hex",
+ "rand 0.7.3",
  "scmd",
  "serde",
  "serde_json",

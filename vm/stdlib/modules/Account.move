@@ -130,19 +130,16 @@ module Account {
         aborts_if false;
     }
 
-    // Creates a new account at `fresh_address` with a balance of zero and authentication
-    // key `auth_key_prefix` | `fresh_address`.
-    // Creating an account at address 0x1 will cause runtime failure as it is a
-    // reserved address for the MoveVM.
-    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>) acquires Account {
-        let new_account = create_signer(fresh_address);
+    // Creates a new account from the account public key.
 
-        let authentication_key = auth_key_prefix;
-        Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
+    public fun create_account<TokenType>(public_key_vec: vector<u8>) acquires Account {
+        let new_address = LCS::from_public_key_vec(public_key_vec);
+        let new_account = create_signer(new_address);
+        let authentication_key = Hash::sha3_256(public_key_vec);
 
         make_account(&new_account, authentication_key);
         // Make sure all account accept STC.
-        if (!STC::is_stc<TokenType>()){
+         if (!STC::is_stc<TokenType>()){
             accept_token<STC>(&new_account);
         };
         accept_token<TokenType>(&new_account);

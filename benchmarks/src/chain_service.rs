@@ -92,12 +92,7 @@ impl ChainServiceBencher {
             let block_template = self
                 .chain
                 .read()
-                .create_block_template(
-                    *self.account.address(),
-                    Some(self.account.get_auth_key().prefix().to_vec()),
-                    parent,
-                    txn_vec,
-                )
+                .create_block_template(self.account.public_key.clone(), parent, txn_vec)
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(&block_chain, block_template)

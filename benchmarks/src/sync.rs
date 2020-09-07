@@ -183,12 +183,7 @@ async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<N
             txn_vec.push(random_txn(i + 1));
             let block_template = chain
                 .clone()
-                .create_block_template(
-                    *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
-                    None,
-                    txn_vec,
-                )
+                .create_block_template(miner_account.public_key.clone(), None, txn_vec)
                 .await
                 .unwrap();
             let _block = node_config

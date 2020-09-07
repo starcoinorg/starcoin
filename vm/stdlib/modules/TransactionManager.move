@@ -84,8 +84,7 @@ module TransactionManager {
         account: &signer,
         parent_hash: vector<u8>,
         timestamp: u64,
-        author: address,
-        auth_key_prefix: vector<u8>,
+        public_key_vec: vector<u8>,
         uncles: u64,
         number: u64,
     ){
@@ -98,8 +97,8 @@ module TransactionManager {
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
         distribute(account, txn_fee, previous_author);
 
-        let reward = Block::process_block_metadata(account, parent_hash, author, timestamp, uncles, number);
-        BlockReward::process_block_reward(account, number, reward, author, auth_key_prefix);
+        let reward = Block::process_block_metadata(account, parent_hash, public_key_vec, timestamp, uncles, number);
+        BlockReward::process_block_reward(account, number, reward, public_key_vec);
     }
 
     fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {

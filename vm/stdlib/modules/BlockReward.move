@@ -40,7 +40,7 @@ module BlockReward {
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-        current_author: address, auth_key_prefix: vector<u8>) acquires RewardQueue {
+        public_key_vec: vector<u8>) acquires RewardQueue {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         if (current_number > 0) {
@@ -65,7 +65,7 @@ module BlockReward {
 
             if (!Account::exists_at(current_author)) {
                 assert(!Vector::is_empty(&auth_key_prefix), AUTH_KEY_PREFIX_IS_NOT_EMPTY());
-                Account::create_account<STC>(current_author, auth_key_prefix);
+                Account::create_account<STC>(public_key_vec);
             };
             let current_info = RewardInfo {
                 number: current_number,

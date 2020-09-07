@@ -109,8 +109,7 @@ impl TransactionGenerator {
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
                 self.net.consensus().now(),
-                minter_account.address,
-                Some(minter_account.auth_key_prefix()),
+                minter_account.public_key.to_bytes().to_vec(),
                 0,
                 self.block_number,
             );
@@ -148,8 +147,7 @@ impl TransactionGenerator {
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
                 self.net.consensus().now(),
-                minter_account.address,
-                Some(minter_account.auth_key_prefix()),
+                minter_account.public_key.to_bytes().to_vec(),
                 0,
                 self.block_number,
             );

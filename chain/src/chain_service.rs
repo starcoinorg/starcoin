@@ -3,6 +3,7 @@
 
 use crate::chain::BlockChain;
 use anyhow::{format_err, Error, Result};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -11,7 +12,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ReadableChainService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
@@ -349,8 +349,7 @@ where
 
     fn create_block_template(
         &self,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Ed25519PublicKey,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
@@ -375,8 +374,7 @@ where
             let uncles = self.find_available_uncles(epoch_start_number)?;
             debug!("uncles len: {}", uncles.len());
             let (block_template, excluded_txns) = block_chain.create_block_template(
-                author,
-                auth_key_prefix,
+                author_public_key,
                 Some(block_id),
                 user_txns,
                 uncles,

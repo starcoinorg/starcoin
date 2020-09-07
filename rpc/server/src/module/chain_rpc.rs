@@ -3,11 +3,11 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
@@ -187,8 +187,7 @@ where
 
     fn create_dev_block(
         &self,
-        author: AccountAddress,
-        auth_key_prefix: Vec<u8>,
+        author_public_key: Ed25519PublicKey,
         parent_id: Option<HashValue>,
         head: bool,
     ) -> FutureResult<HashValue> {
@@ -224,7 +223,7 @@ where
 
             let block_template = service
                 .clone()
-                .create_block_template(author, Some(auth_key_prefix), Some(p_id), brother_txns)
+                .create_block_template(author_public_key, Some(p_id), brother_txns)
                 .await?;
 
             let difficulty = if head {

@@ -4,6 +4,7 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::BlockChain;
 use consensus::Consensus;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -12,7 +13,6 @@ use std::{collections::HashMap, sync::Arc};
 use storage::Store;
 use traits::{ChainReader, ExcludedTxns};
 use types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockTemplate},
     system_events::{NewBranch, NewHeadBlock},
     transaction::SignedUserTransaction,
@@ -34,47 +34,29 @@ impl Message for GetHeadRequest {
 
 pub struct CreateBlockTemplateRequest {
     final_block_gas_limit: u64,
-    author: AccountAddress,
-    auth_key_prefix: Option<Vec<u8>>,
+    author_public_key: Ed25519PublicKey,
     user_txns: Vec<SignedUserTransaction>,
 }
 
 impl CreateBlockTemplateRequest {
     pub fn new(
         final_block_gas_limit: u64,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Ed25519PublicKey,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Self {
         Self {
             final_block_gas_limit,
-            author,
-            auth_key_prefix,
+            author_public_key,
             user_txns,
         }
     }
 }
 
-impl
-    Into<(
-        u64,
-        AccountAddress,
-        Option<Vec<u8>>,
-        Vec<SignedUserTransaction>,
-    )> for CreateBlockTemplateRequest
-{
-    fn into(
-        self,
-    ) -> (
-        u64,
-        AccountAddress,
-        Option<Vec<u8>>,
-        Vec<SignedUserTransaction>,
-    ) {
+impl Into<(u64, Ed25519PublicKey, Vec<SignedUserTransaction>)> for CreateBlockTemplateRequest {
+    fn into(self) -> (u64, Ed25519PublicKey, Vec<SignedUserTransaction>) {
         (
             self.final_block_gas_limit,
-            self.author,
-            self.auth_key_prefix,
+            self.author_public_key,
             self.user_txns,
         )
     }
@@ -166,11 +148,10 @@ impl Handler<CreateBlockTemplateRequest> for CreateBlockTemplateActor {
         msg: CreateBlockTemplateRequest,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        let (final_block_gas_limit, author, auth_key_prefix, user_txns) = msg.into();
+        let (final_block_gas_limit, author_public_key, user_txns) = msg.into();
         let (block_template, txns) = self.inner.create_block_template(
             final_block_gas_limit,
-            author,
-            auth_key_prefix,
+            author_public_key,
             user_txns,
         )?;
         Ok(CreateBlockTemplateResponse {
@@ -246,8 +227,7 @@ impl Inner {
     pub fn create_block_template(
         &self,
         final_block_gas_limit: u64,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Ed25519PublicKey,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let previous_header = self.chain.current_header();
@@ -256,8 +236,7 @@ impl Inner {
             self.storage.clone(),
             previous_header,
             final_block_gas_limit,
-            author,
-            auth_key_prefix,
+            author_public_key,
             self.consensus.now(),
             uncles,
         )?;

@@ -7,7 +7,8 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
+rand = "0.7.3"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.4.4"

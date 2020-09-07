@@ -1,9 +1,9 @@
 /// message for chain actor
 use actix::prelude::*;
 use anyhow::Result;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use starcoin_types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
@@ -19,8 +19,7 @@ pub enum ChainRequest {
     GetBlockByNumber(BlockNumber),
     GetBlockHeaderByNumber(BlockNumber),
     CreateBlockTemplate(
-        AccountAddress,
-        Option<Vec<u8>>,
+        Ed25519PublicKey,
         Option<HashValue>,
         Vec<SignedUserTransaction>,
     ),
