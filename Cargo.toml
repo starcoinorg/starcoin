@@ -83,4 +83,25 @@ members = [
 panic = "unwind"
 
 [profile.release]
+debug = false
 panic = "unwind"
+debug-assertions = false
+
+[profile.release.package]
+starcoin-chain.debug = 1
+starcoin-bus.debug = 1
+starcoin-consensus.debug = 1
+starcoin-miner.debug = 1
+starcoin-network.debug = 1
+network-p2p.debug = 1
+starcoin-network-rpc.debug = 1
+starcoin-node.debug = 1
+starcoin-storage.debug = 1
+starcoin-sync.debug = 1
+starcoin-txpool.debug = 1
+starcoin-executor.debug = 1
+starcoin-genesis.debug = 1
+starcoin-vm-runtime.debug = 1
+
+[profile.release.package."*"]
+debug = false
