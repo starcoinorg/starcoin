@@ -21,6 +21,8 @@ use types::{
 
 mod block_connect_test;
 mod metrics;
+#[cfg(test)]
+mod test_write_block_chain;
 mod write_block_chain;
 
 use actix::Addr;
