@@ -2263,12 +2263,12 @@ dependencies = [
 
 [[package]]
 name = "gherkin_rust"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "796f748e34e209bc7abf09008608f3f8b51dff9777f87b93da47a7009d3d1e8d"
+checksum = "f80699e24afe5188930ae74427575088633e80455b073fa101892aa1571b66f1"
 dependencies = [
  "peg",
- "textwrap 0.11.0",
+ "textwrap 0.12.1",
  "thiserror",
  "typed-builder",
 ]
@@ -4870,9 +4870,9 @@ dependencies = [
 
 [[package]]
 name = "peg"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9075875c14bb21f25f11cad4b6ad2e4dd443b8fb83900b2fbdd6ebd744b82e97"
+checksum = "9f76678828272f177ac33b7e2ac2e3e73cc6c1cd1e3e387928aa69562fa51367"
 dependencies = [
  "peg-macros",
  "peg-runtime",
@@ -4880,9 +4880,9 @@ dependencies = [
 
 [[package]]
 name = "peg-macros"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c24c165fd39e995246140cc78df55c56c6733ba87e6658cb3e197b8856c62852"
+checksum = "636d60acf97633e48d266d7415a9355d4389cea327a193f87df395d88cd2b14d"
 dependencies = [
  "peg-runtime",
  "proc-macro2 1.0.20",
@@ -4891,9 +4891,9 @@ dependencies = [
 
 [[package]]
 name = "peg-runtime"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c1a2897e69d986c7986747ebad425cf03746ec5e3e09bb3b2600f91301ba864"
+checksum = "9555b1514d2d99d78150d3c799d4c357a3e2c2a8062cd108e93a06d9057629c5"
 
 [[package]]
 name = "percent-encoding"
@@ -8297,7 +8297,7 @@ dependencies = [
  "clap",
  "cucumber_rust",
  "data-encoding",
- "gherkin_rust 0.8.0",
+ "gherkin_rust 0.8.1",
  "indexmap",
  "jsonpath",
  "lazy_static",
@@ -8935,9 +8935,9 @@ checksum = "0685c84d5d54d1c26f7d3eb96cd41550adb97baed141a761cf335d3d33bcd0ae"
 
 [[package]]
 name = "typed-builder"
-version = "0.5.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78cea224ddd4282dfc40d1edabbd0c020a12e946e3a48e2c2b8f6ff167ad29fe"
+checksum = "d942c3f63d40f62b3fece2ab34a5bfc0d427ef148010fa732f5d56da0ac6d6ec"
 dependencies = [
  "proc-macro2 1.0.20",
  "quote 1.0.7",
