@@ -43,7 +43,7 @@ spec:
           - -c
         args:
           -
-            rm -rf /data/proxima/starcoin.ipc /data/proxima/starcoindb/db/starcoindb/LOCK;
+            rm -rf /data/proxima/starcoin.ipc /data/proxima/starcoindb/db/starcoindb/LOCK /data/proxima/config.toml;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
@@ -82,7 +82,7 @@ spec:
                 name: starcoin-config
                 key: start_disable_seed_node
       - name: txfactory
-        image: starcoin/starcoin:v0.4.4
+        image: starcoin/starcoin:v0.4.6
         imagePullPolicy: IfNotPresent
         command:
           - bash
