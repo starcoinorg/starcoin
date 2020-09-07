@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-crossbeam-channel = "0.4.3"
+crossbeam-channel = "0.4.4"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
