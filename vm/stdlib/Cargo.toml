@@ -8,8 +8,8 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.32"
-bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="41d1a942973087d65bbe31f94f822f634d0eadb0" }
-datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/libra", rev="41d1a942973087d65bbe31f94f822f634d0eadb0" }
+bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="931029fae9438a3e3949adf61fd783caebfc589b" }
+datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/libra", rev="931029fae9438a3e3949adf61fd783caebfc589b" }
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-vm-types = { path = "../types"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
