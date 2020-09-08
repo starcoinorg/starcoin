@@ -5,17 +5,14 @@ use crate::block_metadata::BlockMetadata;
 use crate::transaction::SignedUserTransaction;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher, PlainCryptoHash},
-    Genesis, HashValue, PrivateKey, Uniform,
+    Genesis, HashValue, PrivateKey,
 };
 
 use crate::accumulator_info::AccumulatorInfo;
 use crate::U256;
-use rand::rngs::{OsRng, StdRng};
-use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::test_utils::KeyPair;
+use starcoin_crypto::ed25519::{random_public_key, Ed25519PrivateKey, Ed25519PublicKey};
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -185,15 +182,12 @@ impl BlockHeader {
     }
 
     pub fn random() -> Self {
-        let mut rng = StdRng::seed_from_u64(OsRng.gen());
-        let keypair: KeyPair<Ed25519PrivateKey, Ed25519PublicKey> =
-            Ed25519PrivateKey::generate(&mut rng).into();
         Self {
             parent_hash: HashValue::random(),
             parent_block_accumulator_root: HashValue::random(),
             timestamp: rand::random(),
             number: rand::random(),
-            author_public_key: keypair.public_key,
+            author_public_key: random_public_key(),
             accumulator_root: HashValue::random(),
             state_root: HashValue::random(),
             gas_used: rand::random(),
@@ -383,7 +377,7 @@ impl Block {
         BlockMetadata::new(
             self.header.parent_hash(),
             self.header.timestamp,
-            Vec::from(self.header.author_public_key.to_bytes()),
+            self.header.author_public_key.to_bytes().to_vec(),
             uncles,
             self.header.number,
         )

@@ -10,7 +10,7 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
-use starcoin_types::account_address::AccountAddress;
+use crypto::ed25519::random_public_key;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
@@ -30,7 +30,7 @@ fn test_block() {
         HashValue::random(),
         dt.timestamp_nanos() as u64,
         1,
-        AccountAddress::random(),
+        random_public_key(),
         HashValue::zero(),
         HashValue::zero(),
         0,
@@ -91,7 +91,7 @@ fn test_block_number() {
         HashValue::random(),
         dt.timestamp_nanos() as u64,
         0,
-        AccountAddress::random(),
+        random_public_key(),
         HashValue::zero(),
         HashValue::zero(),
         0,

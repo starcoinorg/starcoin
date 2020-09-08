@@ -20,8 +20,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     let txn_normal = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         0,
         1,
     ));
@@ -35,8 +34,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     let txn1 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         0,
         3, //EBLOCK_NUMBER_MISMATCH
     ));
@@ -50,8 +48,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         0, //EINVALID_TIMESTAMP
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         0,
         2,
     ));
@@ -65,8 +62,7 @@ fn test_block_metadata_error_code() -> Result<()> {
     let txn3 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         net.genesis_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
     ));

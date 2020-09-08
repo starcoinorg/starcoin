@@ -4,12 +4,9 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
-use rand::rngs::OsRng;
-use rand::{prelude::StdRng, Rng, SeedableRng};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::test_utils::KeyPair;
-use starcoin_crypto::{HashValue, Uniform};
+use starcoin_crypto::ed25519::random_public_key;
+use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
 ///Generate block with dev consensus
@@ -41,10 +38,7 @@ impl CommandAction for GenDevBlockCommand {
 
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let mut rng = StdRng::seed_from_u64(OsRng.gen());
-        let keypair: KeyPair<Ed25519PrivateKey, Ed25519PublicKey> =
-            Ed25519PrivateKey::generate(&mut rng).into();
-        let new_block_id = client.create_dev_block(keypair.public_key, opt.parent, opt.head)?;
+        let new_block_id = client.create_dev_block(random_public_key(), opt.parent, opt.head)?;
 
         Ok(new_block_id)
     }

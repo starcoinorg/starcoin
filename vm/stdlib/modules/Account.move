@@ -101,6 +101,7 @@ module Account {
     fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
+    fun AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY(): u64 { ErrorCode::ECODE_BASE() + 4}
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -131,27 +132,30 @@ module Account {
     }
 
     // Creates a new account from the account public key.
+    public fun create_account<TokenType>(public_key_vec: vector<u8>): address acquires Account {
+        assert(!Vector::is_empty(&public_key_vec), AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY());
+        let new_address = LCS::from_public_key_vec(copy public_key_vec);
+        if (!exists_at(new_address)) {
+            let new_account = create_signer(new_address);
+            let authentication_key = Hash::sha3_256(copy public_key_vec);
 
-    public fun create_account<TokenType>(public_key_vec: vector<u8>) acquires Account {
-        let new_address = LCS::from_public_key_vec(public_key_vec);
-        let new_account = create_signer(new_address);
-        let authentication_key = Hash::sha3_256(public_key_vec);
-
-        make_account(&new_account, authentication_key);
-        // Make sure all account accept STC.
+            make_account(&new_account, authentication_key);
+            // Make sure all account accept STC.
          if (!STC::is_stc<TokenType>()){
-            accept_token<STC>(&new_account);
+                accept_token<STC>(&new_account);
+            };
+            accept_token<TokenType>(&new_account);
+            destroy_signer(new_account);
         };
-        accept_token<TokenType>(&new_account);
-        destroy_signer(new_account);
+        new_address
     }
 
     spec fun create_account {
         pragma verify = false;
         // missing spec_token_code()
         //aborts_if token_code<TokenType>() != token_code<STC>() && exists<Balance<TokenType>>(fresh_address);
-        aborts_if len(auth_key_prefix) + len(LCS::serialize(fresh_address)) != 32;
-        aborts_if exists<Account>(fresh_address);
+        aborts_if len(public_key_vec) != 32;
+//        aborts_if exists<Account>(fresh_address);
     }
 
     fun make_account(

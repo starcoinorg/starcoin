@@ -13,13 +13,6 @@ pub mod account_address {
         AuthenticationKey::ed25519(public_key).derived_address()
     }
 
-    pub fn from_public_key_vec(key_vec: Vec<u8>) -> AccountAddress {
-        // ensure!(key_vec.len() == 32, "public key vec length must is 32");
-        let mut array = [0u8; AccountAddress::LENGTH];
-        array.copy_from_slice(&key_vec[AccountAddress::LENGTH..]);
-        AccountAddress::new(array)
-    }
-
     /// Try parse hex literal or hex str to AccountAddress
     pub fn parse_address(s: &str) -> Result<AccountAddress> {
         if s.starts_with("0x") {

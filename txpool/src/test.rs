@@ -1,6 +1,6 @@
 use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
-use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use crypto::{ed25519::random_public_key, hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
 use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
@@ -143,9 +143,6 @@ async fn test_rollback() -> Result<()> {
     };
 
     let pack_txn_to_block = |txn: SignedUserTransaction| {
-        let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-        let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let storage = storage.clone();
         let master = storage.get_startup_info()?.unwrap().master;
         let block_header = storage.get_block_header_by_hash(master)?.unwrap();
@@ -154,8 +151,7 @@ async fn test_rollback() -> Result<()> {
             storage,
             block_header,
             u64::MAX,
-            account_address,
-            Some(auth_prefix),
+            random_public_key(),
             start_timestamp + 60 * 10,
             vec![],
         )?;

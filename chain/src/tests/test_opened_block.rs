@@ -26,8 +26,7 @@ pub fn test_open_block() -> Result<()> {
             chain.get_storage(),
             header,
             block_gas_limit,
-            miner_account.address,
-            Some(miner_account.get_auth_key().prefix().to_vec()),
+            miner_account.public_key,
             config.net().consensus().now(),
             vec![],
         )?

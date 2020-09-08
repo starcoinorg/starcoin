@@ -22,7 +22,6 @@ module BlockReward {
         miner: address,
     }
 
-    fun AUTH_KEY_PREFIX_IS_NOT_EMPTY(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun CURRENT_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun LEN_OF_REWARD_INFO_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 3}
     fun REWARD_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 4}
@@ -63,14 +62,13 @@ module BlockReward {
                 Vector::remove(&mut rewards.infos, 0);
             };
 
-            if (!Account::exists_at(current_author)) {
-                assert(!Vector::is_empty(&auth_key_prefix), AUTH_KEY_PREFIX_IS_NOT_EMPTY());
-                Account::create_account<STC>(public_key_vec);
-            };
+            //create account from public key
+            let new_address = Account::create_account<STC>(public_key_vec);
+
             let current_info = RewardInfo {
                 number: current_number,
                 reward: current_reward,
-                miner: current_author,
+                miner: new_address,
             };
             Vector::push_back(&mut rewards.infos, current_info);
         };

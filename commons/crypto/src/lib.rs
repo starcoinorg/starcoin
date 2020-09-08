@@ -7,7 +7,16 @@
 // just wrap libra-crypto.
 
 pub mod ed25519 {
+    use crate::keygen::KeyGen;
+    // use crate::test_utils::KeyPair;
+    // use crate::Uniform;
     pub use libra_crypto::ed25519::*;
+    // use rand::rngs::{OsRng, StdRng};
+    // use rand::{Rng, SeedableRng};
+
+    pub fn random_public_key() -> Ed25519PublicKey {
+        KeyGen::from_os_rng().generate_keypair().1
+    }
 }
 
 pub mod multi_ed25519 {

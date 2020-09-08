@@ -70,7 +70,7 @@ fn gen_header(
         parent_header.accumulator_root(),
         parent_header.timestamp() + 1,
         parent_header.number() + 1,
-        parent_header.author,
+        parent_header.author_public_key,
         acc_root,
         state_root,
         0,
@@ -144,8 +144,7 @@ prop_compose! {
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
         ChainNetwork::TEST.consensus().now(),
-        p_header.author,
-        p_header.auth_key_prefix,
+        p_header.author_public_key.to_bytes().to_vec(),
         0,
         p_header.number + 1,
         );

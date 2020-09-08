@@ -31,7 +31,7 @@ types = { package = "starcoin-types", path = "../types"}
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
 starcoin-state-api = {path = "../state/api"}
 starcoin_bus = {path = "../bus", package="starcoin-bus"}
-common_crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
+crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
 #transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
 transaction-pool = "2.0.2"
 storage = {path = "../storage", package="starcoin-storage"}

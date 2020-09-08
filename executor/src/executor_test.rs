@@ -69,8 +69,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let block_meta = BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         0,
         1,
     );
@@ -134,8 +133,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let block_meta2 = BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
+        account1.pubkey.to_bytes().to_vec(),
         0,
         2,
     );
@@ -580,8 +578,7 @@ fn test_block_metadata() -> Result<()> {
         let txn = Transaction::BlockMetadata(BlockMetadata::new(
             starcoin_crypto::HashValue::random(),
             timestamp,
-            *account1.address(),
-            Some(account1.auth_key_prefix()),
+            account1.pubkey.to_bytes().to_vec(),
             0,
             i + 1,
         ));
