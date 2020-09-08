@@ -6,7 +6,6 @@ use crate::{print_action_result, Command, CommandAction, CommandExec, OutputForm
 use anyhow::Result;
 use clap::{crate_authors, crate_version, App, Arg, SubCommand};
 use git_version::git_version;
-use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -34,10 +33,15 @@ pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
 
 static OUTPUT_FORMAT_ARG: &str = "output-format";
 static VERSION: &str = crate_version!();
-static GIT_VERSION: &str = git_version!();
-lazy_static! {
-    static ref LONG_VERSION: String = format!("{} (build:{})", VERSION, GIT_VERSION);
-}
+static GIT_VERSION: &str = git_version!(fallback = "unknown");
+
+static LONG_VERSION: Lazy<String> = Lazy::new(|| {
+    if GIT_VERSION != "unknown" {
+        format!("{} (build:{})", VERSION, GIT_VERSION)
+    } else {
+        VERSION.to_string()
+    }
+});
 
 pub struct CmdContext<State, GlobalOpt>
 where
