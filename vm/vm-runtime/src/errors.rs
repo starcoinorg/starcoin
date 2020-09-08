@@ -25,6 +25,7 @@ const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
 pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
+    info!("{:?}", status);
     match status {
         VMStatus::MoveAbort(_location, code) => {
             let new_major_status = match code {
@@ -60,6 +61,7 @@ pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
 }
 
 pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
+    info!("{:?}", status);
     match status {
         VMStatus::MoveAbort(location, code @ EINSUFFICIENT_BALANCE) => {
             if location != account_module_abort() {

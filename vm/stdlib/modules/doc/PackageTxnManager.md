@@ -25,6 +25,7 @@
 -  [Function `EUNKNOWN_STRATEGY`](#0x1_PackageTxnManager_EUNKNOWN_STRATEGY)
 -  [Function `grant_maintainer`](#0x1_PackageTxnManager_grant_maintainer)
 -  [Function `update_module_upgrade_strategy`](#0x1_PackageTxnManager_update_module_upgrade_strategy)
+-  [Function `account_address`](#0x1_PackageTxnManager_account_address)
 -  [Function `destroy_upgrade_plan_cap`](#0x1_PackageTxnManager_destroy_upgrade_plan_cap)
 -  [Function `extract_submit_upgrade_plan_cap`](#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap)
 -  [Function `submit_upgrade_plan`](#0x1_PackageTxnManager_submit_upgrade_plan)
@@ -558,6 +559,30 @@
             <a href="#0x1_PackageTxnManager_destroy_upgrade_plan_cap">destroy_upgrade_plan_cap</a>(cap);
         };
     };
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_PackageTxnManager_account_address"></a>
+
+## Function `account_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_account_address">account_address</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_PackageTxnManager_account_address">account_address</a>(cap: &<a href="#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>): address {
+    cap.account_address
 }
 </code></pre>
 

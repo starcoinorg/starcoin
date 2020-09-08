@@ -89,7 +89,7 @@
 <code>events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Config_ConfigChangeEvent">Config::ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;</code>
 </dt>
 <dd>
-
+ FIXME: events should put into Config resource.
 </dd>
 </dl>
 

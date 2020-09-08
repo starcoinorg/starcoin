@@ -6885,6 +6885,7 @@ name = "starcoin-executor"
 version = "0.4.6"
 dependencies = [
  "anyhow",
+ "log 0.4.11",
  "once_cell",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
@@ -7498,6 +7499,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
+ "libra-canonical-serialization",
  "log 0.4.11",
  "network-api",
  "num_cpus",

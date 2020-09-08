@@ -1,5 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+#[macro_use]
+extern crate log;
 
 pub use block_executor::{block_execute, BlockExecutedData};
 pub use executor::*;
