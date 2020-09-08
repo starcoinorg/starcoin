@@ -16,6 +16,9 @@ pub trait StateApi {
     #[rpc(name = "state.get")]
     fn get(&self, access_path: AccessPath) -> FutureResult<Option<Vec<u8>>>;
 
+    #[rpc(name = "state_hex.get")]
+    fn get_hex(&self, access_path: String) -> FutureResult<Option<Vec<u8>>>;
+
     #[rpc(name = "state.get_with_proof")]
     fn get_with_proof(&self, access_path: AccessPath) -> FutureResult<StateWithProof>;
 

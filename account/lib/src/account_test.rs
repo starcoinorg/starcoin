@@ -5,8 +5,11 @@ use actix::clock::Duration;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
 use starcoin_crypto::SigningKey;
+use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
+use starcoin_types::identifier::{IdentStr, Identifier};
+use starcoin_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
 use starcoin_types::transaction::{RawUserTransaction, Script, TransactionPayload};
 
 #[test]
@@ -156,5 +159,15 @@ pub fn test_libra_wallet() -> Result<()> {
             0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 0u8, 1u8,
         ])
     );
+
+    let path = StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: Identifier::from(IdentStr::new("Account")?),
+        name: Identifier::from(IdentStr::new("Account")?),
+        type_params: vec![],
+    };
+    println!("path hash is {:?}", path.hash());
+    let access_path = AccessPath::new(address, path.access_vector());
+    println!("access path is {:?}", access_path);
     Ok(())
 }

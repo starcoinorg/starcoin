@@ -76,9 +76,7 @@ where
 mod tests {
     use super::*;
     use jsonrpc_core::IoHandler;
-    use starcoin_crypto::hash::*;
     use starcoin_txpool_mock_service::MockTxPoolService;
-    use starcoin_types::transaction::RawUserTransaction;
     use tokio01::prelude::Future;
 
     #[test]

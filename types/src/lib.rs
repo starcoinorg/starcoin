@@ -59,7 +59,7 @@ pub mod language_storage {
 }
 
 pub mod identifier {
-    pub use starcoin_vm_types::identifier::Identifier;
+    pub use starcoin_vm_types::identifier::{IdentStr, Identifier};
 }
 
 pub mod write_set {
