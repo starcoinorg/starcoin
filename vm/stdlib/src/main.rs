@@ -56,6 +56,14 @@ fn main() {
         version_number = matches.value_of("version").unwrap().to_string();
     }
 
+    // Make sure that the current directory is `vm/stdlib` from now on.
+    let exec_path = std::env::args().next().expect("path of the executable");
+    let base_path = std::path::Path::new(&exec_path)
+        .parent()
+        .unwrap()
+        .join("../../vm/stdlib");
+    std::env::set_current_dir(&base_path).expect("failed to change directory");
+
     let mut txn_scripts_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     txn_scripts_path.push(TRANSACTION_SCRIPTS);
     std::fs::create_dir_all(&txn_scripts_path).unwrap();
