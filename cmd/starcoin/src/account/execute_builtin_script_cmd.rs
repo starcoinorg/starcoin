@@ -8,6 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_transaction_builder::compiled_transaction_script;
 use starcoin_transaction_builder::StdlibScript;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
@@ -104,7 +105,10 @@ impl CommandAction for ExecuteBuildInCommand {
         let account_resource = account_resource.unwrap();
         let expiration_time = opt.expiration_time + node_info.now;
 
-        let bytecode = opt.script_name.compiled_bytes().into_vec();
+        let bytecode =
+            compiled_transaction_script(ctx.state().net().stdlib_version(), opt.script_name)
+                .into_vec();
+
         let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();
 

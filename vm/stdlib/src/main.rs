@@ -12,8 +12,8 @@ use std::{
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_transaction_script_abi, build_transaction_script_doc,
     compile_script, filter_move_files, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    COMPILED_STDLIB_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS,
-    LATEST_COMPILED_OUTPUT_PATH, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
+    COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
+    STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn compile_scripts(script_dir: &Path) {
@@ -66,7 +66,7 @@ fn main() {
 
     // Write the stdlib blob
     let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    module_path.push(COMPILED_STDLIB_PATH);
+    module_path.push(STDLIB_DIR_NAME);
     std::fs::remove_dir_all(&module_path).unwrap();
     std::fs::create_dir_all(&module_path).unwrap();
     for (name, module) in build_stdlib().into_iter() {
@@ -99,7 +99,7 @@ fn main() {
         let options = fs_extra::dir::CopyOptions::new();
 
         let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-        stdlib_src.push(COMPILED_STDLIB_PATH);
+        stdlib_src.push(STDLIB_DIR_NAME);
 
         let mut init_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
         init_scripts_src.push(INIT_SCRIPTS);

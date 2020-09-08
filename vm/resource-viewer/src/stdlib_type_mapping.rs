@@ -3,6 +3,7 @@ use crate::resolver::Resolver;
 use crate::NullStateView;
 use anyhow::{bail, Result};
 use once_cell::sync::Lazy;
+use starcoin_config::ChainNetwork;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::file_format::StructDefinitionIndex;
 use starcoin_vm_types::language_storage::StructTag;
@@ -11,11 +12,11 @@ use stdlib::{stdlib_modules, StdLibOptions};
 
 #[allow(unused)]
 pub static COMPILED_TYPE_MAP: Lazy<BTreeMap<Vec<u8>, StructTag>> =
-    Lazy::new(|| generate_stdlib_type_mapping().unwrap());
+    Lazy::new(|| generate_stdlib_type_mapping(&ChainNetwork::TEST).unwrap());
 
 /// NOTICE: this does not support generic struct type.
-fn generate_stdlib_type_mapping() -> Result<BTreeMap<Vec<u8>, StructTag>> {
-    let compiled_modules = stdlib_modules(StdLibOptions::Staged);
+fn generate_stdlib_type_mapping(net: &ChainNetwork) -> Result<BTreeMap<Vec<u8>, StructTag>> {
+    let compiled_modules = &*stdlib_modules(StdLibOptions::Compiled(net.stdlib_version()));
     let cache = ModuleCache::new();
     for m in compiled_modules {
         cache.insert(m.self_id(), m.clone());
@@ -68,7 +69,7 @@ fn generate_stdlib_type_mapping() -> Result<BTreeMap<Vec<u8>, StructTag>> {
 
 #[test]
 pub fn test_type_mapping() -> Result<()> {
-    let mappings = generate_stdlib_type_mapping()?;
+    let mappings = generate_stdlib_type_mapping(&ChainNetwork::TEST)?;
     assert!(!mappings.is_empty());
     for m in mappings {
         println!("{:?}", m.1);

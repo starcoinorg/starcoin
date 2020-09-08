@@ -7389,6 +7389,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
+ "starcoin-config",
  "starcoin-vm-types",
  "stdlib",
 ]
@@ -7966,6 +7967,7 @@ dependencies = [
  "once_cell",
  "sha2 0.9.1",
  "starcoin-canonical-serialization",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-move-compiler",
  "starcoin-vm-types",
