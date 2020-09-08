@@ -18,6 +18,9 @@ use types::{
     transaction::SignedUserTransaction,
 };
 
+#[cfg(test)]
+mod test_create_block_template;
+
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
 pub type CreateBlockTemplateActorAddress = Addr<CreateBlockTemplateActor>;
@@ -145,7 +148,7 @@ impl Handler<NewHeadBlock> for CreateBlockTemplateActor {
 
     fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
         if let Err(e) = self.inner.update_chain(msg.0.get_block().clone()) {
-            error!("err : {:?}", e);
+            error!("err : {:?}", e)
         }
     }
 }
@@ -154,7 +157,7 @@ impl Handler<NewBranch> for CreateBlockTemplateActor {
     type Result = ();
 
     fn handle(&mut self, msg: NewBranch, _ctx: &mut Self::Context) -> Self::Result {
-        self.inner.insert_uncle((&*msg.0).clone());
+        self.inner.insert_uncle((&*msg.0).clone())
     }
 }
 
@@ -199,7 +202,7 @@ pub struct Inner {
 }
 
 impl Inner {
-    fn insert_uncle(&mut self, uncle: BlockHeader) {
+    pub fn insert_uncle(&mut self, uncle: BlockHeader) {
         self.parent_uncle
             .entry(uncle.parent_hash())
             .or_insert_with(Vec::new)
@@ -207,7 +210,7 @@ impl Inner {
         self.uncles.insert(uncle.id(), uncle);
     }
 
-    fn new(block_id: HashValue, storage: Arc<dyn Store>, net: &ChainNetwork) -> Result<Self> {
+    pub fn new(block_id: HashValue, storage: Arc<dyn Store>, net: &ChainNetwork) -> Result<Self> {
         let chain = BlockChain::new(net.consensus(), block_id, storage.clone())?;
 
         Ok(Inner {
@@ -219,7 +222,7 @@ impl Inner {
         })
     }
 
-    fn update_chain(&mut self, block: Block) -> Result<()> {
+    pub fn update_chain(&mut self, block: Block) -> Result<()> {
         if block.header().parent_hash() != self.chain.current_header().id() {
             self.chain = BlockChain::new(self.consensus, block.id(), self.storage.clone())?;
         } else {
@@ -229,7 +232,7 @@ impl Inner {
         Ok(())
     }
 
-    fn do_uncles(&self) -> Vec<BlockHeader> {
+    pub fn do_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
         for maybe_uncle in self.uncles.values() {
             if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
