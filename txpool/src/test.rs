@@ -56,7 +56,12 @@ async fn test_txn_expire() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(account_address, auth_prefix, 10000)),
+        TransactionPayload::Script(encode_transfer_script(
+            config.net().stdlib_version(),
+            account_address,
+            auth_prefix,
+            10000,
+        )),
         0,
         DEFAULT_MAX_GAS_AMOUNT,
         1,

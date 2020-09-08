@@ -164,7 +164,7 @@ impl Genesis {
             if net.is_test() {
                 StdLibOptions::Fresh
             } else {
-                StdLibOptions::Staged
+                StdLibOptions::Compiled(net.stdlib_version())
             },
             true,
         )?;

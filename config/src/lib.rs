@@ -46,8 +46,8 @@ pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 use starcoin_vm_types::genesis_config::BuiltinNetwork;
 pub use starcoin_vm_types::genesis_config::{
-    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, DEV_CONFIG, HALLEY_CONFIG,
-    MAIN_CONFIG, PROXIMA_CONFIG,
+    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, StdlibVersion, DEV_CONFIG,
+    HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
 };
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
