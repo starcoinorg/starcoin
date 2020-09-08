@@ -35,7 +35,10 @@ fn do_execute_block_transactions(
     let result = vm
         .execute_block_transactions(chain_state, txns, block_gas_limit)?
         .into_iter()
-        .map(|(_, output)| output)
+        .map(|(_, output)| {
+            debug!{"{:?}", output};
+            output
+        })
         .collect();
     timer.observe_duration();
     Ok(result)
