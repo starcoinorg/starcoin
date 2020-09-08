@@ -10,7 +10,6 @@ use scs::SCSCodec;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
 use starcoin_types::account_address::AccountAddress;
-use std::hash::Hash;
 
 pub struct TxPoolRpcImpl<S>
 where

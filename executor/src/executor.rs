@@ -36,7 +36,7 @@ fn do_execute_block_transactions(
         .execute_block_transactions(chain_state, txns, block_gas_limit)?
         .into_iter()
         .map(|(_, output)| {
-            debug!{"{:?}", output};
+            debug! {"{:?}", output};
             output
         })
         .collect();
