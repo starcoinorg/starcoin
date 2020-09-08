@@ -14,6 +14,9 @@ pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
     fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<Result<(), String>>;
 
+    #[rpc(name = "txpool.submit_hex_transaction")]
+    fn submit_hex_transaction(&self, tx: String) -> FutureResult<Result<(), String>>;
+
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender in txpool.
     #[rpc(name = "txpool.next_sequence_number")]
