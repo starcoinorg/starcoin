@@ -1,6 +1,6 @@
 [package]
 name = "testsuite"
-version = "0.4.5"
+version = "0.4.6"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
-indexmap = "1.5.2"
+indexmap = "1.6.0"
 lazy_static = "1.4.0"
 static_assertions = "1.1.0"
 sha2 = "0.9.1"
@@ -47,7 +47,7 @@ starcoin-vm-types = {path = "../vm/types"}
 starcoin-account-api= {path ="../account/api"}
 starcoin-state-api = {path = "../state/api"}
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
-gherkin_rust ="0.8.0"
+gherkin_rust ="0.8.1"
 jsonpath = "0.1.1"
 
 

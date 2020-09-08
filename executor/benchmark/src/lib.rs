@@ -121,6 +121,7 @@ impl TransactionGenerator {
                 let txn = create_transaction(
                     self.sequence,
                     encode_create_account_script(
+                        ChainNetwork::TEST.stdlib_version(),
                         &account.address,
                         account.auth_key_prefix(),
                         init_account_balance,
@@ -166,6 +167,7 @@ impl TransactionGenerator {
                 let txn = create_transaction(
                     self.sequence,
                     encode_transfer_script(
+                        self.net.stdlib_version(),
                         receiver.address,
                         receiver.auth_key_prefix(),
                         1, /* amount */

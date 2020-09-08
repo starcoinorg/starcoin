@@ -101,3 +101,71 @@ impl Into<Vec<ChainInfo>> for StartupInfo {
         branches
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_startup_head() {
+        let head = BlockHeader::random();
+        let startup = StartupInfo::new(head.id(), Vec::new());
+        assert_eq!(head.id(), *startup.get_master());
+    }
+
+    #[test]
+    fn test_startup_head_parent() {
+        let parent = BlockHeader::random();
+        let mut startup = StartupInfo::new(parent.id(), Vec::new());
+        assert_eq!(parent.id(), *startup.get_master());
+        let mut son = BlockHeader::random();
+        son.parent_hash = parent.id();
+        startup.update_master(&son);
+        assert_eq!(son.id(), *startup.get_master());
+        assert!(!startup.branch_exist_exclude(&parent.id()));
+    }
+
+    #[test]
+    fn test_startup_head_not_parent() {
+        let parent = BlockHeader::random();
+        let mut startup = StartupInfo::new(parent.id(), Vec::new());
+        assert_eq!(parent.id(), *startup.get_master());
+        let son = BlockHeader::random();
+        startup.update_master(&son);
+        assert_eq!(son.id(), *startup.get_master());
+        assert!(startup.branch_exist_exclude(&parent.id()));
+    }
+
+    #[test]
+    fn test_startup_branch_parent() {
+        let head = BlockHeader::random();
+        let mut startup = StartupInfo::new(head.id(), Vec::new());
+        assert_eq!(head.id(), *startup.get_master());
+
+        let parent = BlockHeader::random();
+        startup.insert_branch(&parent);
+        assert!(startup.branch_exist_exclude(&parent.id()));
+
+        let mut son = BlockHeader::random();
+        son.parent_hash = parent.id();
+        startup.insert_branch(&son);
+        assert!(!startup.branch_exist_exclude(&parent.id()));
+        assert!(startup.branch_exist_exclude(&son.id()));
+    }
+
+    #[test]
+    fn test_startup_branch_not_parent() {
+        let head = BlockHeader::random();
+        let mut startup = StartupInfo::new(head.id(), Vec::new());
+        assert_eq!(head.id(), *startup.get_master());
+
+        let branch1 = BlockHeader::random();
+        startup.insert_branch(&branch1);
+        assert!(startup.branch_exist_exclude(&branch1.id()));
+
+        let branch2 = BlockHeader::random();
+        startup.insert_branch(&branch2);
+        assert!(startup.branch_exist_exclude(&branch2.id()));
+        assert!(startup.branch_exist_exclude(&branch1.id()));
+    }
+}

@@ -7,21 +7,121 @@
 //! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
 //! on.
 
-use anyhow::{anyhow, bail, Error, Result};
-use include_dir::{include_dir, Dir};
+use crate::{CHAIN_NETWORK_STDLIB_VERSIONS, COMPILED_MOVE_CODE_DIR, TRANSACTION_SCRIPTS};
+use anyhow::{anyhow, bail};
+use once_cell::sync::Lazy;
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::on_chain_config::SCRIPT_HASH_LENGTH;
+use std::collections::HashMap;
 use std::str::FromStr;
-use std::{convert::TryFrom, fmt, path::PathBuf};
+use std::{fmt, path::PathBuf};
 
-// This includes the compiled transaction scripts as binaries. We must use this hack to work around
-// a problem with Docker, which does not copy over the Move source files that would be be used to
-// produce these binaries at runtime.
-#[allow(dead_code)]
-const COMPILED_TXN_SCRIPTS_DIR: Dir = include_dir!("compiled/latest/transaction_scripts");
+static COMPILED_TRANSACTION_SCRIPTS: Lazy<HashMap<(StdlibVersion, StdlibScript), CompiledBytes>> =
+    Lazy::new(|| {
+        let mut map = HashMap::new();
+        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
+            let sub_dir = format!("{}/{}", version.as_string(), TRANSACTION_SCRIPTS);
+            for script in StdlibScript::all() {
+                let mut path = PathBuf::from(sub_dir.as_str());
+                path.push(script.name());
+                path.set_extension("mv");
+                let code_file = COMPILED_MOVE_CODE_DIR.get_file(path);
+                if code_file.is_none() {
+                    continue;
+                } // file doesn't exist, skip
+                let compiled_bytes = CompiledBytes(code_file.unwrap().contents().to_vec());
+                map.insert((*version, script), compiled_bytes);
+            }
+        }
+        map
+    });
 
+static TRANSACTION_SCRIPTS_LIST: Lazy<HashMap<StdlibVersion, Vec<StdlibScript>>> =
+    Lazy::new(|| {
+        let mut map = HashMap::new();
+        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
+            let sub_dir = format!("{}/{}", version.as_string(), TRANSACTION_SCRIPTS);
+            let mut scripts = Vec::new();
+            for script in StdlibScript::all() {
+                let mut path = PathBuf::from(sub_dir.as_str());
+                path.push(script.name());
+                path.set_extension("mv");
+                let code_file = COMPILED_MOVE_CODE_DIR.get_file(path);
+                if code_file.is_some() {
+                    scripts.push(script)
+                }
+            }
+            map.insert(*version, scripts);
+        }
+        map
+    });
+
+pub fn compiled_transaction_script(version: StdlibVersion, script: StdlibScript) -> CompiledBytes {
+    COMPILED_TRANSACTION_SCRIPTS
+        .get(&(version, script))
+        .expect("compiled script should exist")
+        .clone()
+}
+
+pub struct VersionedStdlibScript {
+    version: StdlibVersion,
+    scripts: Vec<StdlibScript>,
+}
+
+impl VersionedStdlibScript {
+    pub fn new(version: StdlibVersion) -> Self {
+        VersionedStdlibScript {
+            version,
+            scripts: TRANSACTION_SCRIPTS_LIST
+                .get(&version)
+                .expect("script list should exist")
+                .clone(),
+        }
+    }
+    pub fn all(&self) -> &Vec<StdlibScript> {
+        &self.scripts
+    }
+
+    pub fn whitelist(&self) -> Vec<[u8; SCRIPT_HASH_LENGTH]> {
+        StdlibScript::all()
+            .iter()
+            .map(|script| {
+                *COMPILED_TRANSACTION_SCRIPTS
+                    .get(&(self.version, *script))
+                    .expect("compiled script should exist")
+                    .clone()
+                    .hash()
+                    .as_ref()
+            })
+            .collect()
+    }
+
+    pub fn compiled_bytes(&self, script: StdlibScript) -> CompiledBytes {
+        COMPILED_TRANSACTION_SCRIPTS
+            .get(&(self.version, script))
+            .expect("compiled script should exist")
+            .clone()
+    }
+
+    /// Return the sha3-256 hash of the compiled script bytes
+    pub fn hash(&self, script: &StdlibScript) -> HashValue {
+        self.compiled_bytes(*script).hash()
+    }
+
+    pub fn is_one_of(&self, code_bytes: &[u8]) -> bool {
+        let hash = CompiledBytes::hash_bytes(code_bytes);
+        self.all()
+            .clone()
+            .iter()
+            .find(|script| self.hash(*script) == hash)
+            .cloned()
+            .ok_or_else(|| anyhow!("Could not create standard library script from bytes"))
+            .is_ok()
+    }
+}
 /// All of the Move transaction scripts that can be executed on the Libra blockchain
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StdlibScript {
     AcceptToken,
     CreateAccount,
@@ -48,43 +148,9 @@ impl StdlibScript {
         ]
     }
 
-    /// Construct the whitelist of script hashes used to determine whether a transaction script can
-    /// be executed on the Libra blockchain
-    pub fn whitelist() -> Vec<[u8; SCRIPT_HASH_LENGTH]> {
-        StdlibScript::all()
-            .iter()
-            .map(|script| *script.compiled_bytes().hash().as_ref())
-            .collect()
-    }
-
     /// Return a lowercase-underscore style name for this script
     pub fn name(self) -> String {
         self.to_string()
-    }
-
-    /// Return true if `code_bytes` is the bytecode of one of the standard library scripts
-    pub fn is(code_bytes: &[u8]) -> bool {
-        Self::try_from(code_bytes).is_ok()
-    }
-
-    /// Return the Move bytecode produced by compiling this script. This will almost always read
-    /// from disk rather invoking the compiler; genesis is the only exception.
-    pub fn compiled_bytes(self) -> CompiledBytes {
-        // read from disk
-        let mut path = PathBuf::from(self.name());
-        path.set_extension("mv");
-        CompiledBytes(
-            COMPILED_TXN_SCRIPTS_DIR
-                .get_file(path)
-                .unwrap()
-                .contents()
-                .to_vec(),
-        )
-    }
-
-    /// Return the sha3-256 hash of the compiled script bytes
-    pub fn hash(self) -> HashValue {
-        self.compiled_bytes().hash()
     }
 }
 
@@ -106,21 +172,6 @@ impl CompiledBytes {
     /// Convert this newtype wrapper into a vector of bytes
     pub fn into_vec(self) -> Vec<u8> {
         self.0
-    }
-}
-
-impl TryFrom<&[u8]> for StdlibScript {
-    type Error = Error;
-
-    /// Return `Some(<script_name>)` if  `code_bytes` is the bytecode of one of the standard library
-    /// scripts, None otherwise.
-    fn try_from(code_bytes: &[u8]) -> Result<Self> {
-        let hash = CompiledBytes::hash_bytes(code_bytes);
-        Self::all()
-            .iter()
-            .find(|script| script.hash() == hash)
-            .cloned()
-            .ok_or_else(|| anyhow!("Could not create standard library script from bytes"))
     }
 }
 
@@ -158,29 +209,37 @@ impl FromStr for StdlibScript {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::path::Path;
 
     #[test]
     fn test_file_correspondence() {
         // make sure that every file under transaction_scripts/ is represented in
         // StdlibScript::all() (and vice versa)
-        let files = COMPILED_TXN_SCRIPTS_DIR.files();
-        let scripts = StdlibScript::all();
-        for file in files {
-            assert!(
-                StdlibScript::is(file.contents()),
-                "File {} missing from StdlibScript enum",
-                file.path().display()
-            )
-        }
-        assert_eq!(
-            files.len(),
-            scripts.len(),
-            "Mismatch between stdlib script files and StdlibScript enum. {}",
-            if files.len() > scripts.len() {
-                "Did you forget to extend the StdlibScript enum?"
-            } else {
-                "Did you forget to rebuild the standard library?"
+        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
+            let sub_dir = format!("{}/{}", version.as_string(), TRANSACTION_SCRIPTS);
+            let files = COMPILED_MOVE_CODE_DIR
+                .get_dir(Path::new(sub_dir.as_str()))
+                .unwrap()
+                .files();
+            let scripts = VersionedStdlibScript::new(*version);
+
+            for file in files {
+                assert!(
+                    scripts.is_one_of(file.contents()),
+                    "File {} missing from StdlibScript enum",
+                    file.path().display()
+                )
             }
-        );
+            assert_eq!(
+                files.len(),
+                scripts.all().len(),
+                "Mismatch between stdlib script files and StdlibScript enum. {}",
+                if files.len() > scripts.all().len() {
+                    "Did you forget to extend the StdlibScript enum?"
+                } else {
+                    "Did you forget to rebuild the standard library?"
+                }
+            );
+        }
     }
 }
