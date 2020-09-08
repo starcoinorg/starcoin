@@ -292,7 +292,7 @@ module Token {
     }
 
     spec fun split_share {
-        aborts_if token.value < amount;
+        aborts_if token.value < share;
         // TODO: ensure result
     }
 
@@ -324,9 +324,9 @@ module Token {
     }
 
     spec fun withdraw_share {
-        aborts_if token.value < amount;
-        ensures result.value == amount;
-        ensures token.value == old(token).value - amount;
+        aborts_if token.value < share;
+        ensures result.value == share;
+        ensures token.value == old(token).value - share;
     }
 
     /// Merges two tokens of the same token and returns a new token whose
