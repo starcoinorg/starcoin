@@ -4,10 +4,12 @@
 #![forbid(unsafe_code)]
 
 use clap::{App, Arg};
+use starcoin_move_compiler::check_compiled_module_compat;
+use starcoin_vm_types::file_format::CompiledModule;
 use std::{
+    collections::BTreeMap,
     fs::File,
     io::{Read, Write},
-    collections::BTreeMap,
     path::{Path, PathBuf},
 };
 use stdlib::{
@@ -16,8 +18,6 @@ use stdlib::{
     COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
     STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
-use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_move_compiler::check_compiled_module_compat;
 
 fn compile_scripts(script_dir: &Path) {
     let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
@@ -85,8 +85,8 @@ fn main() {
                 .expect("Failed to open module bytecode file")
                 .read_to_end(&mut bytes)
                 .expect("Failed to read module bytecode file");
-            let m = CompiledModule::deserialize(&bytes)
-                .expect("Failed to deserialize module bytecode");
+            let m =
+                CompiledModule::deserialize(&bytes).expect("Failed to deserialize module bytecode");
             old_module_apis.insert(m.self_id(), m);
         }
     }
