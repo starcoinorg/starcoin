@@ -6,7 +6,8 @@
 use clap::{App, Arg};
 use std::{
     fs::File,
-    io::Write,
+    io::{Read, Write},
+    collections::BTreeMap,
     path::{Path, PathBuf},
 };
 use stdlib::{
@@ -15,6 +16,8 @@ use stdlib::{
     COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
     STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
+use starcoin_vm_types::file_format::CompiledModule;
+use starcoin_move_compiler::check_compiled_module_compat;
 
 fn compile_scripts(script_dir: &Path) {
     let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
@@ -47,7 +50,13 @@ fn main() {
                 .takes_value(true)
                 .value_name("VERSION")
                 .help("version number for compiled stdlib: major.minor, don't forget to record the release note"),
+        )
+        .arg(
+            Arg::with_name("no-check-compatibility")
+                .long("no-check-compatibility")
+                .help("don't check compatibility between the old and new standard library"),
         );
+
     let matches = cli.get_matches();
     let mut generate_new_version = false;
     let mut version_number = "0.0".to_string();
@@ -56,6 +65,8 @@ fn main() {
         version_number = matches.value_of("version").unwrap().to_string();
     }
 
+    let no_check_compatibility = matches.is_present("no_check_compatibility");
+
     // Make sure that the current directory is `vm/stdlib` from now on.
     let exec_path = std::env::args().next().expect("path of the executable");
     let base_path = std::path::Path::new(&exec_path)
@@ -63,6 +74,22 @@ fn main() {
         .unwrap()
         .join("../../vm/stdlib");
     std::env::set_current_dir(&base_path).expect("failed to change directory");
+
+    let mut old_module_apis = BTreeMap::new();
+    if !no_check_compatibility {
+        let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
+        module_path.push(STDLIB_DIR_NAME);
+        for f in datatest_stable::utils::iterate_directory(&module_path) {
+            let mut bytes = Vec::new();
+            File::open(f)
+                .expect("Failed to open module bytecode file")
+                .read_to_end(&mut bytes)
+                .expect("Failed to read module bytecode file");
+            let m = CompiledModule::deserialize(&bytes)
+                .expect("Failed to deserialize module bytecode");
+            old_module_apis.insert(m.self_id(), m);
+        }
+    }
 
     let mut txn_scripts_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     txn_scripts_path.push(TRANSACTION_SCRIPTS);
@@ -75,9 +102,26 @@ fn main() {
     // Write the stdlib blob
     let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
     module_path.push(STDLIB_DIR_NAME);
+    let new_modules = build_stdlib();
+
+    let mut is_linking_layout_compatible = true;
+    if !no_check_compatibility {
+        for module in new_modules.values() {
+            // extract new linking/layout API and check compatibility with old
+            let new_module_id = module.self_id();
+            if let Some(old_module) = old_module_apis.get(&new_module_id) {
+                let compatibility = check_compiled_module_compat(old_module, module);
+                if is_linking_layout_compatible && !compatibility {
+                    println!("Found incompatible changes!");
+                    is_linking_layout_compatible = false
+                }
+            }
+        }
+    }
+
     std::fs::remove_dir_all(&module_path).unwrap();
     std::fs::create_dir_all(&module_path).unwrap();
-    for (name, module) in build_stdlib().into_iter() {
+    for (name, module) in new_modules {
         let mut bytes = Vec::new();
         module.serialize(&mut bytes).unwrap();
         module_path.push(name);
