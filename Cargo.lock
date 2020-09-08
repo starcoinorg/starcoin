@@ -7119,6 +7119,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
+ "starcoin-node",
  "starcoin-node-api",
  "starcoin-open-block",
  "starcoin-state-api",
@@ -7136,6 +7137,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "test-helper",
  "thiserror",
  "tokio 0.2.22",
 ]

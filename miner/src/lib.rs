@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::stratum::mint;
 use actix::prelude::*;
 use anyhow::Result;
 use bus::{BusActor, Subscription};
@@ -13,7 +12,6 @@ use create_block_template::{
 use crypto::hash::PlainCryptoHash;
 use futures::prelude::*;
 use logger::prelude::*;
-use sc_stratum::Stratum;
 use starcoin_account_api::AccountInfo;
 pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
@@ -28,31 +26,31 @@ pub mod headblock_pacemaker;
 mod metrics;
 pub mod miner;
 pub mod ondemand_pacemaker;
-pub mod stratum;
 
 use crate::create_block_template::GetHeadRequest;
-pub use types::system_events::GenerateBlockEvent;
+pub use types::system_events::{SubmitSealEvent, GenerateBlockEvent, MintBlockEvent};
+use consensus::Consensus;
+use config::ConsensusStrategy;
 
 pub struct MinerActor<P, S>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-    S: Store + Sync + Send + 'static,
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
     txpool: P,
     storage: Arc<S>,
     miner: miner::Miner,
-    stratum: Arc<Stratum>,
     miner_account: AccountInfo,
     arbiter: Arbiter,
     create_block_template_address: CreateBlockTemplateActorAddress,
 }
 
 impl<P, S> MinerActor<P, S>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-    S: Store + Sync + Send + 'static,
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -70,12 +68,6 @@ where
         )?;
         let actor = MinerActor::create(move |_ctx| {
             let miner = miner::Miner::new(bus.clone(), config.clone());
-            let stratum = sc_stratum::Stratum::start(
-                &config.miner.stratum_server,
-                Arc::new(stratum::StratumManager::new(miner.clone())),
-                None,
-            )
-            .unwrap();
             let arbiter = Arbiter::new();
             MinerActor {
                 config,
@@ -83,7 +75,6 @@ where
                 txpool,
                 storage,
                 miner,
-                stratum,
                 miner_account,
                 arbiter,
                 create_block_template_address,
@@ -94,17 +85,25 @@ where
 }
 
 impl<P, S> Actor for MinerActor<P, S>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-    S: Store + Sync + Send + 'static,
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         let recipient = ctx.address().recipient::<GenerateBlockEvent>();
+        let recipient_submit_seal = ctx.address().recipient::<SubmitSealEvent>();
+
         self.bus
             .clone()
             .send(Subscription { recipient })
+            .into_actor(self)
+            .then(|_res, act, _ctx| async {}.into_actor(act))
+            .wait(ctx);
+        self.bus
+            .clone()
+            .send(Subscription { recipient: recipient_submit_seal })
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
@@ -117,9 +116,9 @@ where
 }
 
 impl<P, S> Handler<ActorStop> for MinerActor<P, S>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-    S: Store + Sync + Send + 'static,
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
 {
     type Result = ();
 
@@ -128,16 +127,39 @@ where
     }
 }
 
+impl<P, S> Handler<SubmitSealEvent> for MinerActor<P, S>
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
+{
+    type Result = Result<()>;
+
+    fn handle(&mut self, event: SubmitSealEvent, _ctx: &mut Self::Context) -> Self::Result {
+        let miner = self.miner.clone();
+        let fut = async move {
+            if let Err(e) = miner.submit(
+                event.nonce,
+                event.header_hash,
+            ) {
+                warn!("Failed to submit seal: {}", e);
+            }
+        };
+        self.arbiter.send(Box::pin(fut));
+        Ok(())
+    }
+}
+
+
 impl<P, S> Handler<GenerateBlockEvent> for MinerActor<P, S>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-    S: Store + Sync + Send + 'static,
+    where
+        P: TxPoolSyncService + Sync + Send + 'static,
+        S: Store + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
     fn handle(&mut self, event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
         debug!("Handle GenerateBlockEvent:{:?}", event);
-        if !event.force && self.miner.has_mint_job() {
+        if !event.force && self.miner.is_minting() {
             debug!("Miner has mint job so just ignore this event.");
             return Ok(());
         }
@@ -145,14 +167,13 @@ where
         let storage = self.storage.clone();
         let config = self.config.clone();
         let miner = self.miner.clone();
-        let stratum = self.stratum.clone();
         let miner_account = self.miner_account.clone();
 
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let self_address = ctx.address();
         let create_block_template_address = self.create_block_template_address.clone();
         let f = async move {
-            let head = create_block_template_address.send(GetHeadRequest{}).await??.head;
+            let head = create_block_template_address.send(GetHeadRequest {}).await??.head;
             let block_chain = BlockChain::new(config.net().consensus(), head, storage.clone())?;
             let on_chain_block_gas_limit = block_chain.get_on_chain_block_gas_limit()?;
             let block_gas_limit = config.miner.block_gas_limit.map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit)).unwrap_or(on_chain_block_gas_limit);
@@ -186,8 +207,11 @@ where
                 for invalid_txn in excluded_txns.discarded_txns {
                     let _ = txpool.remove_txn(invalid_txn.crypto_hash(), true);
                 }
-
-                mint(stratum, miner, config.net().consensus(), &block_chain, block_template)?;
+                let strategy = config.net().consensus();
+                let epoch = ConsensusStrategy::epoch(&block_chain)?;
+                let difficulty =
+                    strategy.calculate_next_difficulty(&block_chain, &epoch)?;
+                miner.set_mint(block_template, difficulty);
                 Ok(())
             }
         }.map(move |result: Result<()>| {

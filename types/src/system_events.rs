@@ -5,6 +5,8 @@ use crate::block::{Block, BlockDetail, BlockHeader};
 use actix::prelude::*;
 use anyhow::Result;
 use std::sync::Arc;
+use starcoin_crypto::HashValue;
+use crate::U256;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
 #[derive(Clone, Debug, Message)]
@@ -56,3 +58,27 @@ impl GenerateBlockEvent {
         Self { force }
     }
 }
+
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "Result<()>")]
+pub struct MintBlockEvent {
+    pub header_hash: HashValue,
+    pub difficulty: U256,
+}
+
+impl MintBlockEvent {
+    pub fn new(header_hash: HashValue, difficulty: U256) -> Self {
+        Self {
+            header_hash,
+            difficulty,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "Result<()>")]
+pub struct SubmitSealEvent {
+    pub nonce: u64,
+    pub header_hash: HashValue,
+}
+
