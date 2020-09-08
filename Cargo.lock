@@ -6001,7 +6001,6 @@ dependencies = [
  "cli-table",
  "ctrlc",
  "git-version",
- "lazy_static",
  "once_cell",
  "rand 0.7.3",
  "rust-flatten-json",
