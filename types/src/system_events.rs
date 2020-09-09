@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{Block, BlockDetail, BlockHeader};
+use crate::U256;
 use actix::prelude::*;
 use anyhow::Result;
-use std::sync::Arc;
 use starcoin_crypto::HashValue;
-use crate::U256;
+use std::sync::Arc;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
 #[derive(Clone, Debug, Message)]
@@ -81,4 +81,3 @@ pub struct SubmitSealEvent {
     pub nonce: u64,
     pub header_hash: HashValue,
 }
-

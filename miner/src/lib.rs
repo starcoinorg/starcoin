@@ -28,14 +28,14 @@ pub mod miner;
 pub mod ondemand_pacemaker;
 
 use crate::create_block_template::GetHeadRequest;
-pub use types::system_events::{SubmitSealEvent, GenerateBlockEvent, MintBlockEvent};
-use consensus::Consensus;
 use config::ConsensusStrategy;
+use consensus::Consensus;
+pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     config: Arc<NodeConfig>,
     bus: Addr<BusActor>,
@@ -48,9 +48,9 @@ pub struct MinerActor<P, S>
 }
 
 impl<P, S> MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     pub fn launch(
         config: Arc<NodeConfig>,
@@ -85,9 +85,9 @@ impl<P, S> MinerActor<P, S>
 }
 
 impl<P, S> Actor for MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     type Context = Context<Self>;
 
@@ -103,7 +103,9 @@ impl<P, S> Actor for MinerActor<P, S>
             .wait(ctx);
         self.bus
             .clone()
-            .send(Subscription { recipient: recipient_submit_seal })
+            .send(Subscription {
+                recipient: recipient_submit_seal,
+            })
             .into_actor(self)
             .then(|_res, act, _ctx| async {}.into_actor(act))
             .wait(ctx);
@@ -116,9 +118,9 @@ impl<P, S> Actor for MinerActor<P, S>
 }
 
 impl<P, S> Handler<ActorStop> for MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     type Result = ();
 
@@ -128,19 +130,16 @@ impl<P, S> Handler<ActorStop> for MinerActor<P, S>
 }
 
 impl<P, S> Handler<SubmitSealEvent> for MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
     fn handle(&mut self, event: SubmitSealEvent, _ctx: &mut Self::Context) -> Self::Result {
         let miner = self.miner.clone();
         let fut = async move {
-            if let Err(e) = miner.submit(
-                event.nonce,
-                event.header_hash,
-            ) {
+            if let Err(e) = miner.submit(event.nonce, event.header_hash).await {
                 warn!("Failed to submit seal: {}", e);
             }
         };
@@ -149,11 +148,10 @@ impl<P, S> Handler<SubmitSealEvent> for MinerActor<P, S>
     }
 }
 
-
 impl<P, S> Handler<GenerateBlockEvent> for MinerActor<P, S>
-    where
-        P: TxPoolSyncService + Sync + Send + 'static,
-        S: Store + Sync + Send + 'static,
+where
+    P: TxPoolSyncService + Sync + Send + 'static,
+    S: Store + Sync + Send + 'static,
 {
     type Result = Result<()>;
 
@@ -211,7 +209,7 @@ impl<P, S> Handler<GenerateBlockEvent> for MinerActor<P, S>
                 let epoch = ConsensusStrategy::epoch(&block_chain)?;
                 let difficulty =
                     strategy.calculate_next_difficulty(&block_chain, &epoch)?;
-                miner.set_mint(block_template, difficulty);
+                miner.set_mint(block_template, difficulty).await?;
                 Ok(())
             }
         }.map(move |result: Result<()>| {

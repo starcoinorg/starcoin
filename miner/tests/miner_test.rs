@@ -1,12 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::sync::Arc;
 use bus::Bus;
-use types::{block::BlockTemplate, system_events::{MintBlockEvent, SubmitSealEvent, GenerateBlockEvent, NewHeadBlock}};
 use consensus::Consensus;
-use futures::executor::block_on;
 use crypto::hash::CryptoHash;
+use futures::executor::block_on;
+use std::sync::Arc;
+use types::{
+    block::BlockTemplate,
+    system_events::{GenerateBlockEvent, MintBlockEvent, NewHeadBlock, SubmitSealEvent},
+};
 #[stest::test]
 fn test_miner() {
     let mut config = config::NodeConfig::random_for_test();
@@ -15,16 +18,39 @@ fn test_miner() {
     let fut = async move {
         let bus = handle.start_handle().bus.clone();
         let new_block_receiver = bus.clone().oneshot::<NewHeadBlock>().await.unwrap();
-        bus.clone().broadcast(GenerateBlockEvent::new(false)).await.unwrap();
+        bus.clone()
+            .broadcast(GenerateBlockEvent::new(false))
+            .await
+            .unwrap();
         // mint client handle mint block event
-        let mint_block_event = bus.clone().oneshot::<MintBlockEvent>().await.unwrap().await.unwrap();
-        let nonce = handle.start_handle().config.net().consensus().solve_consensus_nonce(&mint_block_event.header_hash.to_vec(), mint_block_event.difficulty);
+        let mint_block_event = bus
+            .clone()
+            .oneshot::<MintBlockEvent>()
+            .await
+            .unwrap()
+            .await
+            .unwrap();
+        let nonce = handle
+            .start_handle()
+            .config
+            .net()
+            .consensus()
+            .solve_consensus_nonce(
+                &mint_block_event.header_hash.to_vec(),
+                mint_block_event.difficulty,
+            );
         // mint client submit seal
-        bus.broadcast(SubmitSealEvent { nonce, header_hash: mint_block_event.header_hash }).await.unwrap();
+        bus.broadcast(SubmitSealEvent {
+            nonce,
+            header_hash: mint_block_event.header_hash,
+        })
+        .await
+        .unwrap();
         let mined_block = new_block_receiver.await.unwrap().0.get_block().clone();
         assert_eq!(mined_block.header.nonce, nonce);
-        let raw_header = BlockTemplate::from_block(mined_block).as_raw_block_header(mint_block_event.difficulty);
-        assert_eq!(mint_block_event.header_hash,raw_header.hash());
+        let raw_header =
+            BlockTemplate::from_block(mined_block).as_raw_block_header(mint_block_event.difficulty);
+        assert_eq!(mint_block_event.header_hash, raw_header.hash());
         handle.stop().unwrap();
     };
     block_on(fut);

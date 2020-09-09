@@ -325,6 +325,7 @@ pub async fn start(
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
+        bus.clone(),
         txpool_service.clone(),
         chain.clone(),
         account_service,
