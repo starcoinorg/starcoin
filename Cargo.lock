@@ -2263,9 +2263,9 @@ dependencies = [
 
 [[package]]
 name = "gherkin_rust"
-version = "0.8.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f80699e24afe5188930ae74427575088633e80455b073fa101892aa1571b66f1"
+checksum = "53418b6c9c3c05928f426ac13a7ea3f77f03ffb03d62fa42b076eb71665965f5"
 dependencies = [
  "peg",
  "textwrap 0.12.1",
@@ -8306,7 +8306,7 @@ dependencies = [
  "clap",
  "cucumber_rust",
  "data-encoding",
- "gherkin_rust 0.8.1",
+ "gherkin_rust 0.8.2",
  "indexmap",
  "jsonpath",
  "lazy_static",

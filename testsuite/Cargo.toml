@@ -47,7 +47,7 @@ starcoin-vm-types = {path = "../vm/types"}
 starcoin-account-api= {path ="../account/api"}
 starcoin-state-api = {path = "../state/api"}
 cucumber = { package = "cucumber_rust", version = "^0.6.0" }
-gherkin_rust ="0.8.1"
+gherkin_rust ="0.8.2"
 jsonpath = "0.1.1"
 
 
