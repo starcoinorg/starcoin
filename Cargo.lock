@@ -3553,7 +3553,7 @@ dependencies = [
  "libp2p-core",
  "parking_lot 0.10.2",
  "thiserror",
- "yamux",
+ "yamux 0.4.9",
 ]
 
 [[package]]
@@ -7205,7 +7205,7 @@ dependencies = [
  "stest",
  "tempfile",
  "tokio 0.2.22",
- "yamux",
+ "yamux 0.8.0",
  "zeroize",
 ]
 
@@ -9583,6 +9583,20 @@ dependencies = [
  "log 0.4.11",
  "nohash-hasher",
  "parking_lot 0.10.2",
+ "rand 0.7.3",
+ "static_assertions 1.1.0",
+]
+
+[[package]]
+name = "yamux"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9aeb8c4043cac71c3c299dff107171c220d179492350ea198e109a414981b83c"
+dependencies = [
+ "futures 0.3.5",
+ "log 0.4.11",
+ "nohash-hasher",
+ "parking_lot 0.11.0",
  "rand 0.7.3",
  "static_assertions 1.1.0",
 ]
