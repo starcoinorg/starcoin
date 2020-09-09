@@ -4,9 +4,7 @@
 use crate::executor_test::{execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use starcoin_consensus::Consensus;
-use starcoin_functional_tests::account::{
-    create_account_txn_sent_as_association, Account,
-};
+use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
