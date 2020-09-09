@@ -86,9 +86,9 @@ struct BlockIdAndNumber {
 #[rtype(result = "()")]
 struct SyncDataEvent {
     data_type: DataType,
-    body_taskes: Vec<BlockIdAndNumber>,
-    headers: Vec<BlockHeader>,
-    bodies: Vec<BlockBody>,
+    body_taskes: Option<Vec<BlockIdAndNumber>>,
+    headers: Option<Vec<BlockHeader>>,
+    bodies: Option<Vec<BlockBody>>,
     peer_id: PeerId,
 }
 
@@ -96,9 +96,9 @@ impl SyncDataEvent {
     fn new_header_event(headers: Vec<BlockHeader>, peer_id: PeerId) -> Self {
         SyncDataEvent {
             data_type: DataType::Header,
-            body_taskes: Vec::new(),
-            headers,
-            bodies: Vec::new(),
+            body_taskes: None,
+            headers: Some(headers),
+            bodies: None,
             peer_id,
         }
     }
@@ -110,9 +110,9 @@ impl SyncDataEvent {
     ) -> Self {
         SyncDataEvent {
             data_type: DataType::Body,
-            body_taskes,
-            headers: Vec::new(),
-            bodies,
+            body_taskes: Some(body_taskes),
+            headers: None,
+            bodies: Some(bodies),
             peer_id,
         }
     }
@@ -217,6 +217,14 @@ where
         }
     }
 
+    fn _header_size(&self) -> usize {
+        self.headers.len()
+    }
+
+    fn _body_task_size(&self) -> usize {
+        self.body_task.len()
+    }
+
     fn do_finish(&mut self) -> bool {
         if !self.state.is_finish() {
             info!("Block sync task info : {:?}", &self);
@@ -232,7 +240,6 @@ where
         self.state.is_finish()
     }
 
-    // fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
     fn sync_blocks(&mut self, handler: Box<dyn EventHandler>) {
         let sync_header_flag =
             !(self.body_task.len() > MAX_LEN || self.next.number >= self.target_number);
@@ -443,11 +450,15 @@ where
     fn handle(&mut self, data: SyncDataEvent, _ctx: &mut Self::Context) -> Self::Result {
         match data.data_type {
             DataType::Header => {
-                self.inner.handle_headers(data.headers);
+                if let Some(headers) = data.headers {
+                    self.inner.handle_headers(headers);
+                }
             }
             DataType::Body => {
-                if let Some(blocks) = self.inner.handle_bodies(data.bodies, data.body_taskes) {
-                    self.connect_blocks(blocks, data.peer_id);
+                if let (Some(bodies), Some(body_taskes)) = (data.bodies, data.body_taskes) {
+                    if let Some(blocks) = self.inner.handle_bodies(bodies, body_taskes) {
+                        self.connect_blocks(blocks, data.peer_id);
+                    }
                 }
             }
         }

@@ -121,7 +121,10 @@ impl DummyNetworkService {
     }
 
     fn get_state_node_by_node_hash(&self, state_node_key: HashValue) -> Result<Option<StateNode>> {
-        self.chain.get_storage().get(&state_node_key).map_err(|e| e.into())
+        self.chain
+            .get_storage()
+            .get(&state_node_key)
+            .map_err(|e| e.into())
     }
 
     fn get_accumulator_node_by_node_hash(
@@ -130,7 +133,8 @@ impl DummyNetworkService {
     ) -> Result<Option<AccumulatorNode>> {
         self.chain
             .get_storage()
-            .get_node(req.accumulator_storage_type, req.node_hash).map_err(|e| e.into())
+            .get_node(req.accumulator_storage_type, req.node_hash)
+            .map_err(|e| e.into())
     }
 }
 
