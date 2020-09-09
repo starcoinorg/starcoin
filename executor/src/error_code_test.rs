@@ -4,7 +4,10 @@
 use crate::executor_test::{execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use starcoin_consensus::Consensus;
-use starcoin_functional_tests::account::Account;
+use starcoin_functional_tests::account::{
+    create_account_txn_sent_as_association, Account,
+};
+use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
 };
@@ -74,6 +77,41 @@ fn test_block_metadata_error_code() -> Result<()> {
     assert_eq!(
         TransactionStatus::Discard(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION),
         *output3.status()
+    );
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+
+    let account1 = Account::new();
+    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+        &account1, 0, 50_000_000, 1, net,
+    ));
+    let output1 = execute_and_apply(&chain_state, txn1);
+    assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());
+
+    let account2 = Account::new();
+
+    let raw_txn = crate::build_transfer_txn_with_wrong_token_code(
+        *account1.address(),
+        *account2.address(),
+        account2.auth_key_prefix(),
+        0,
+        1000,
+        1,
+        DEFAULT_MAX_GAS_AMOUNT,
+        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.chain_id(),
+    );
+
+    let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
+    let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
+    assert_eq!(
+        KeptVMStatus::VerificationError,
+        output[0].status().status().unwrap()
     );
 
     Ok(())
