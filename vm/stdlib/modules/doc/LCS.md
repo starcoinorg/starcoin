@@ -1,0 +1,75 @@
+
+<a name="0x1_LCS"></a>
+
+# Module `0x1::LCS`
+
+### Table of Contents
+
+-  [Function `to_bytes`](#0x1_LCS_to_bytes)
+-  [Function `from_public_key_vec`](#0x1_LCS_from_public_key_vec)
+-  [Specification](#0x1_LCS_Specification)
+
+
+
+<a name="0x1_LCS_to_bytes"></a>
+
+## Function `to_bytes`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_LCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="#0x1_LCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_LCS_from_public_key_vec"></a>
+
+## Function `from_public_key_vec`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_LCS_from_public_key_vec">from_public_key_vec</a>(pub_key_vec: vector&lt;u8&gt;): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="#0x1_LCS_from_public_key_vec">from_public_key_vec</a>(pub_key_vec: vector&lt;u8&gt;): address;
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_LCS_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify;
+pragma aborts_if_is_strict;
+</code></pre>
+
+
+
+
+<a name="0x1_LCS_serialize"></a>
+
+
+<pre><code><b>native</b> <b>define</b> <a href="#0x1_LCS_serialize">serialize</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+</code></pre>
