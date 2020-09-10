@@ -3,14 +3,21 @@
 
 use crate::executor_test::{execute_and_apply, prepare_genesis};
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use starcoin_consensus::Consensus;
 use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
 };
+use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::StatusCode;
+use std::str::FromStr;
+
+pub static WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
+    TokenCode::from_str("0x1::ABC::ABC").expect("Parse wrong token code should success.")
+});
 
 #[stest::test]
 fn test_block_metadata_error_code() -> Result<()> {
@@ -93,7 +100,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
 
     let account2 = Account::new();
 
-    let raw_txn = crate::build_transfer_txn_with_wrong_token_code(
+    let raw_txn = crate::build_transfer_txn_by_token_type(
         *account1.address(),
         *account2.address(),
         account2.auth_key_prefix(),
@@ -101,6 +108,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
+        WRONG_TOKEN_CODE_FOR_TEST.clone(),
         net.consensus().now() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );

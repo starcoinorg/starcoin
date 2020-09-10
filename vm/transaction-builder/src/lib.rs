@@ -8,7 +8,7 @@ use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::token::stc::{STC_TOKEN_CODE, WRONG_TOKEN_CODE_FOR_TEST};
+use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
@@ -61,31 +61,6 @@ pub fn build_transfer_txn(
         gas_price,
         max_gas,
         STC_TOKEN_CODE.clone(),
-        expiration_timestamp_secs,
-        chain_id,
-    )
-}
-
-pub fn build_transfer_txn_with_wrong_token_code(
-    sender: AccountAddress,
-    receiver: AccountAddress,
-    receiver_auth_key_prefix: Vec<u8>,
-    seq_num: u64,
-    amount: u128,
-    gas_price: u64,
-    max_gas: u64,
-    expiration_timestamp_secs: u64,
-    chain_id: ChainId,
-) -> RawUserTransaction {
-    build_transfer_txn_by_token_type(
-        sender,
-        receiver,
-        receiver_auth_key_prefix,
-        seq_num,
-        amount,
-        gas_price,
-        max_gas,
-        WRONG_TOKEN_CODE_FOR_TEST.clone(),
         expiration_timestamp_secs,
         chain_id,
     )

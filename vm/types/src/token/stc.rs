@@ -12,15 +12,9 @@ use std::str::FromStr;
 
 pub const STC_NAME: &str = "STC";
 pub const STC_TOKEN_CODE_STR: &str = "0x1::STC::STC";
-pub const WRONG_TOKEN_CODE_STR_FOR_TEST: &str = "0x1::ABC::ABC";
 
 pub static STC_TOKEN_CODE: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str(STC_TOKEN_CODE_STR).expect("Parse STC token code should success.")
-});
-
-pub static WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
-    TokenCode::from_str(WRONG_TOKEN_CODE_STR_FOR_TEST)
-        .expect("Parse wrong token code should success.")
 });
 
 static STC_IDENTIFIER: Lazy<Identifier> = Lazy::new(|| Identifier::new(STC_NAME).unwrap());
