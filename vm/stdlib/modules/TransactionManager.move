@@ -14,7 +14,6 @@ module TransactionManager {
     use 0x1::Timestamp;
     use 0x1::ChainId;
     use 0x1::ErrorCode;
-    use 0x1::LCS;
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 =0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -85,6 +84,7 @@ module TransactionManager {
         account: &signer,
         parent_hash: vector<u8>,
         timestamp: u64,
+        author: address,
         public_key_vec: vector<u8>,
         uncles: u64,
         number: u64,
@@ -98,9 +98,8 @@ module TransactionManager {
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
         distribute(account, txn_fee, previous_author);
 
-        let new_address = LCS::from_public_key_vec(copy public_key_vec);//TODO
-        let reward = Block::process_block_metadata(account, parent_hash, new_address, timestamp, uncles, number);
-        BlockReward::process_block_reward(account, number, reward, copy public_key_vec);
+        let reward = Block::process_block_metadata(account, parent_hash, author, timestamp, uncles, number);
+        BlockReward::process_block_reward(account, number, reward, author, public_key_vec);
     }
 
     fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {

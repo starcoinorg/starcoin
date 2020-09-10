@@ -51,7 +51,8 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let (block_template, _) = block_chain.create_block_template(
-        miner_account.public_key.clone(),
+        *miner_account.address(),
+        Some(miner_account.public_key.clone()),
         None,
         vec![txn.clone()],
         vec![],

@@ -12,6 +12,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ReadableChainService};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::StartupInfo,
@@ -349,7 +350,8 @@ where
 
     fn create_block_template(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
@@ -374,6 +376,7 @@ where
             let uncles = self.find_available_uncles(epoch_start_number)?;
             debug!("uncles len: {}", uncles.len());
             let (block_template, excluded_txns) = block_chain.create_block_template(
+                author,
                 author_public_key,
                 Some(block_id),
                 user_txns,

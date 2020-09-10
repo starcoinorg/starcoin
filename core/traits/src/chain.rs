@@ -6,6 +6,7 @@ use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
 use starcoin_types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockTemplate},
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
@@ -38,7 +39,8 @@ pub trait ChainReader {
 
     fn create_block_template(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,

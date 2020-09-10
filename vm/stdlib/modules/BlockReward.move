@@ -22,6 +22,7 @@ module BlockReward {
         miner: address,
     }
 
+    fun AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun CURRENT_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun LEN_OF_REWARD_INFO_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 3}
     fun REWARD_NUMBER_IS_WRONG(): u64 { ErrorCode::ECODE_BASE() + 4}
@@ -39,7 +40,7 @@ module BlockReward {
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-        public_key_vec: vector<u8>) acquires RewardQueue {
+                                    current_author: address, public_key_vec: vector<u8>) acquires RewardQueue {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
         if (current_number > 0) {
@@ -62,13 +63,15 @@ module BlockReward {
                 Vector::remove(&mut rewards.infos, 0);
             };
 
-            //create account from public key
-            let new_address = Account::create_account<STC>(public_key_vec);
-
+            if (!Account::exists_at(current_author)) {
+                //create account from public key
+                assert(!Vector::is_empty(&public_key_vec), AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY());
+                Account::create_account<STC>(current_author, public_key_vec);
+            };
             let current_info = RewardInfo {
                 number: current_number,
                 reward: current_reward,
-                miner: new_address,
+                miner: current_author,
             };
             Vector::push_back(&mut rewards.infos, current_info);
         };

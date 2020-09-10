@@ -16,7 +16,7 @@
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
 -  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
--  [Function `AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY`](#0x1_Account_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY)
+-  [Function `ADDRESS_PUBLIC_KEY_INCONSISTENT`](#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT)
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
 -  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
 -  [Function `create_account`](#0x1_Account_create_account)
@@ -448,13 +448,13 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
+<a name="0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT"></a>
 
-## Function `AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY`
+## Function `ADDRESS_PUBLIC_KEY_INCONSISTENT`
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Account_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>(): u64
+<pre><code><b>fun</b> <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64
 </code></pre>
 
 
@@ -463,7 +463,7 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Account_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
+<pre><code><b>fun</b> <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
 </code></pre>
 
 
@@ -529,7 +529,7 @@ Message for accept token events
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(public_key_vec: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -538,22 +538,20 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(public_key_vec: vector&lt;u8&gt;): address <b>acquires</b> <a href="#0x1_Account">Account</a> {
-    <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&public_key_vec), <a href="#0x1_Account_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>());
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> new_address = <a href="LCS.md#0x1_LCS_from_public_key_vec">LCS::from_public_key_vec</a>(<b>copy</b> public_key_vec);
-    <b>if</b> (!<a href="#0x1_Account_exists_at">exists_at</a>(new_address)) {
-        <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_address);
-        <b>let</b> authentication_key = <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(<b>copy</b> public_key_vec);
+    <b>assert</b>(new_address == fresh_address, <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>());
 
-        <a href="#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
-        // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
-     <b>if</b> (!<a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;()){
-            <a href="#0x1_Account_accept_token">accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
-        };
-        <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(&new_account);
-        <a href="#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
+    <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
+    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(fresh_address);
+
+    <a href="#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
+    // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
+    <b>if</b> (!<a href="STC.md#0x1_STC_is_stc">STC::is_stc</a>&lt;TokenType&gt;()){
+        <a href="#0x1_Account_accept_token">accept_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(&new_account);
     };
-    new_address
+    <a href="#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(&new_account);
+    <a href="#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
 }
 </code></pre>
 
@@ -580,7 +578,7 @@ Message for accept token events
     new_account: &signer,
     authentication_key: vector&lt;u8&gt;,
 ) {
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, 88888);
     <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(new_account);
     move_to(new_account, <a href="#0x1_Account">Account</a> {
@@ -1608,7 +1606,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `create_account`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(public_key_vec: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1616,6 +1614,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 <pre><code>pragma verify = <b>false</b>;
 <b>aborts_if</b> len(public_key_vec) != 32;
+<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(fresh_address);
 </code></pre>
 
 

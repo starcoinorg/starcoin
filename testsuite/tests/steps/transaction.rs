@@ -63,8 +63,7 @@ fn transfer_txn(
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = starcoin_executor::build_transfer_txn(
         from,
-        to.address,
-        to_auth_key_prefix.to_vec(),
+        to.public_key.to_bytes().to_vec(),
         account_resource.sequence_number(),
         amount,
         1,

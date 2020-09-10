@@ -21,7 +21,7 @@ use types::{
     account_address,
     account_address::AccountAddress,
     block_metadata::BlockMetadata,
-    transaction::{authenticator::AuthenticationKey, Script, Transaction, TransactionPayload},
+    transaction::{Script, Transaction, TransactionPayload},
 };
 
 struct AccountData {
@@ -30,10 +30,8 @@ struct AccountData {
 }
 
 impl AccountData {
-    pub fn auth_key_prefix(&self) -> Vec<u8> {
-        AuthenticationKey::ed25519(&self.public_key)
-            .prefix()
-            .to_vec()
+    pub fn public_key_vec(&self) -> Vec<u8> {
+        self.public_key.to_bytes().to_vec()
     }
     pub fn random() -> Self {
         let seed = [1u8; 32];
@@ -109,7 +107,8 @@ impl TransactionGenerator {
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
                 self.net.consensus().now(),
-                minter_account.public_key.to_bytes().to_vec(),
+                minter_account.address,
+                Some(minter_account.public_key),
                 0,
                 self.block_number,
             );
@@ -121,7 +120,7 @@ impl TransactionGenerator {
                     self.sequence,
                     encode_create_account_script(
                         &account.address,
-                        account.auth_key_prefix(),
+                        account.public_key_vec(),
                         init_account_balance,
                     ),
                     self.net.consensus().now() + j as u64 + 1,
@@ -147,7 +146,8 @@ impl TransactionGenerator {
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
                 self.net.consensus().now(),
-                minter_account.public_key.to_bytes().to_vec(),
+                minter_account.address,
+                Some(minter_account.public_key),
                 0,
                 self.block_number,
             );
@@ -165,7 +165,7 @@ impl TransactionGenerator {
                     self.sequence,
                     encode_transfer_script(
                         receiver.address,
-                        receiver.auth_key_prefix(),
+                        receiver.public_key.to_bytes().to_vec(),
                         1, /* amount */
                     ),
                     self.net.consensus().now() + j as u64 + 1,

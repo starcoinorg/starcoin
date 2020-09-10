@@ -578,14 +578,15 @@ impl RpcClient {
 
     pub fn create_dev_block(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_id: Option<HashValue>,
         head: bool,
     ) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
-                .create_dev_block(author_public_key, parent_id, head)
+                .create_dev_block(author, author_public_key, parent_id, head)
                 .compat()
                 .await
         })

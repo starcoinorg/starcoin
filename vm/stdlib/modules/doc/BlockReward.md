@@ -7,6 +7,7 @@
 
 -  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
 -  [Struct `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Function `AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY`](#0x1_BlockReward_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY)
 -  [Function `CURRENT_NUMBER_IS_WRONG`](#0x1_BlockReward_CURRENT_NUMBER_IS_WRONG)
 -  [Function `LEN_OF_REWARD_INFO_IS_WRONG`](#0x1_BlockReward_LEN_OF_REWARD_INFO_IS_WRONG)
 -  [Function `REWARD_NUMBER_IS_WRONG`](#0x1_BlockReward_REWARD_NUMBER_IS_WRONG)
@@ -96,6 +97,28 @@
 
 </dd>
 </dl>
+
+
+</details>
+
+<a name="0x1_BlockReward_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
+
+## Function `AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_BlockReward_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+</code></pre>
+
 
 
 </details>
@@ -225,7 +248,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, public_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -235,7 +258,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128,
-    public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a> {
+                                current_author: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_BlockReward_RewardQueue">RewardQueue</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>if</b> (current_number &gt; 0) {
@@ -258,13 +281,15 @@
             <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>(&<b>mut</b> rewards.infos, 0);
         };
 
-        //create account from <b>public</b> key
-        <b>let</b> new_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(public_key_vec);
-
+        <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
+            //create account from <b>public</b> key
+            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&public_key_vec), <a href="#0x1_BlockReward_AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>());
+            <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(current_author, public_key_vec);
+        };
         <b>let</b> current_info = <a href="#0x1_BlockReward_RewardInfo">RewardInfo</a> {
             number: current_number,
             reward: current_reward,
-            miner: new_address,
+            miner: current_author,
         };
         <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> rewards.infos, current_info);
     };

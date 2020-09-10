@@ -4,13 +4,13 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_address::AccountAddress;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
 };
-use std::convert::TryFrom;
 
 /// Struct that will be persisted on chain to store the information of the current block.
 ///
@@ -28,7 +28,8 @@ pub struct BlockMetadata {
     /// Parent block hash.
     parent_hash: HashValue,
     timestamp: u64,
-    author_public_key: Ed25519PublicKey,
+    author: AccountAddress,
+    author_public_key: Option<Ed25519PublicKey>,
     uncles: u64,
     number: u64,
 }
@@ -37,25 +38,35 @@ impl BlockMetadata {
     pub fn new(
         parent_hash: HashValue,
         timestamp: u64,
-        public_key_vec: Vec<u8>,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         uncles: u64,
         number: u64,
     ) -> Self {
-        let author_public_key =
-            Ed25519PublicKey::try_from(public_key_vec.as_slice()).expect("public key vec error");
         Self {
             parent_hash,
             timestamp,
+            author,
             author_public_key,
             uncles,
             number,
         }
     }
 
-    pub fn into_inner(self) -> (HashValue, u64, Ed25519PublicKey, u64, u64) {
+    pub fn into_inner(
+        self,
+    ) -> (
+        HashValue,
+        u64,
+        AccountAddress,
+        Option<Ed25519PublicKey>,
+        u64,
+        u64,
+    ) {
         (
             self.parent_hash,
             self.timestamp,
+            self.author,
             self.author_public_key,
             self.uncles,
             self.number,

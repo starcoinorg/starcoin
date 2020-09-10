@@ -385,18 +385,26 @@ impl Arbitrary for Package {
 impl Arbitrary for BlockMetadata {
     type Parameters = SizeRange;
     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        let public_key_strategy = ed25519::keypair_strategy()
-            .prop_map(|key_pair| key_pair.public_key.to_bytes().to_vec());
+        let public_key_strategy =
+            ed25519::keypair_strategy().prop_map(|key_pair| key_pair.public_key);
         (
             any::<HashValue>(),
             any::<u64>(),
+            any::<AccountAddress>(),
             public_key_strategy,
             any::<u64>(),
             any::<u64>(),
         )
             .prop_map(
-                |(parent_hash, timestamp, author_public_key, uncles, number)| {
-                    BlockMetadata::new(parent_hash, timestamp, author_public_key, uncles, number)
+                |(parent_hash, timestamp, addresses, author_public_key, uncles, number)| {
+                    BlockMetadata::new(
+                        parent_hash,
+                        timestamp,
+                        addresses,
+                        Some(author_public_key),
+                        uncles,
+                        number,
+                    )
                 },
             )
             .boxed()

@@ -17,6 +17,7 @@ use starcoin_traits::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
 };
 use starcoin_types::{
+    account_address::AccountAddress,
     accumulator_info::AccumulatorInfo,
     block::{
         Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
@@ -181,7 +182,8 @@ impl BlockChain {
 
     fn create_block_template_inner(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -195,6 +197,7 @@ impl BlockChain {
             self.storage.clone(),
             previous_header,
             final_block_gas_limit,
+            author,
             author_public_key,
             self.consensus.now(),
             uncles,
@@ -392,7 +395,8 @@ impl ChainReader for BlockChain {
 
     fn create_block_template(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -408,6 +412,7 @@ impl ChainReader for BlockChain {
             .get_header(block_id)?
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
         self.create_block_template_inner(
+            author,
             author_public_key,
             previous_header,
             user_txns,

@@ -27,7 +27,7 @@ impl Faucet {
         &self,
         amount: u128,
         receiver: AccountAddress,
-        auth_key: Vec<u8>,
+        public_key: Vec<u8>,
     ) -> Result<Result<(), anyhow::Error>> {
         let chain_state_reader = RemoteStateReader::new(&self.client);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
@@ -43,7 +43,7 @@ impl Faucet {
         let raw_tx = starcoin_executor::build_transfer_txn(
             self.faucet_account.address,
             receiver,
-            auth_key,
+            public_key,
             account_resource.sequence_number(),
             amount,
             DEFAULT_GAS_PRICE,

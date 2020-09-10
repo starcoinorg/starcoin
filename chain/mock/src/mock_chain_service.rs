@@ -6,6 +6,7 @@ use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
@@ -110,7 +111,8 @@ impl ChainAsyncService for MockChainService {
 
     async fn create_block_template(
         &self,
-        _author_public_key: Ed25519PublicKey,
+        _author: AccountAddress,
+        _author_public_key: Option<Ed25519PublicKey>,
         _parent_hash: Option<HashValue>,
         _txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {

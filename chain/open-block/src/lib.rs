@@ -8,6 +8,7 @@ use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
+    account_address::AccountAddress,
     block::{BlockBody, BlockHeader, BlockInfo, BlockTemplate},
     block_metadata::BlockMetadata,
     error::BlockExecutorError,
@@ -37,7 +38,8 @@ impl OpenedBlock {
         storage: Arc<dyn Store>,
         previous_header: BlockHeader,
         block_gas_limit: u64,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
@@ -60,7 +62,8 @@ impl OpenedBlock {
         let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
-            author_public_key.to_bytes().to_vec(),
+            author,
+            author_public_key,
             uncles.len() as u64,
             previous_header.number + 1,
         );
@@ -221,7 +224,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author_public_key, _uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, _uncles, number) =
             self.block_meta.into_inner();
 
         let (uncle_hash, uncles) = if !self.uncles.is_empty() {
@@ -240,6 +243,7 @@ impl OpenedBlock {
                 .accumulator_root,
             timestamp,
             number,
+            author,
             author_public_key,
             accumulator_root,
             state_root,

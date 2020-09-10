@@ -6,7 +6,6 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_config::ChainNetwork;
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_state_api::StateWithProof;
@@ -68,7 +67,7 @@ pub struct BlockHeaderView {
     pub parent_hash: HashValue,
     pub number: u64,
     pub id: HashValue,
-    pub author: Ed25519PublicKey,
+    pub author: AccountAddress,
     pub accumulator_root: HashValue,
     pub state_root: HashValue,
     pub gas_used: u64,
@@ -87,7 +86,7 @@ impl From<BlockHeader> for BlockHeaderView {
             parent_hash: header.parent_hash,
             number: header.number,
             id: header.id(),
-            author: header.author_public_key,
+            author: header.author,
             accumulator_root: header.accumulator_root,
             state_root: header.state_root,
             gas_used: header.gas_used,

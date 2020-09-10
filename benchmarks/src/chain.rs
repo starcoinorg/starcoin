@@ -65,7 +65,14 @@ impl ChainBencher {
             let (block_template, _) = self
                 .chain
                 .read()
-                .create_block_template(self.account.public_key.clone(), None, vec![], vec![], None)
+                .create_block_template(
+                    *self.account.address(),
+                    Some(self.account.public_key.clone()),
+                    None,
+                    vec![],
+                    vec![],
+                    None,
+                )
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(self.chain.read().deref(), block_template)

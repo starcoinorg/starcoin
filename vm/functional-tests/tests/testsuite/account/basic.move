@@ -109,3 +109,15 @@ script {
     }
 }
 // check: EXECUTED
+
+//! new-transaction
+script {
+use 0x1::Account;
+use 0x1::STC::STC;
+fun main() {
+    let dummy_auth_public_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
+    Account::create_account<STC>(0x7a8e385f898968d4ecfba49609a13461, dummy_auth_public_key);
+    assert(Account::exists_at(0x7a8e385f898968d4ecfba49609a13461), 1000);
+}
+}
+// check: EXECUTED

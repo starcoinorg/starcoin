@@ -24,7 +24,7 @@ pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
 
 pub fn build_transfer_from_association(
     addr: AccountAddress,
-    auth_key_prefix: Vec<u8>,
+    recipient_public_key_vec: Vec<u8>,
     association_sequence_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
@@ -32,7 +32,7 @@ pub fn build_transfer_from_association(
 ) -> Transaction {
     Transaction::UserTransaction(peer_to_peer_txn_sent_as_association(
         addr,
-        auth_key_prefix,
+        recipient_public_key_vec,
         association_sequence_num,
         amount,
         expiration_timestamp_secs,
@@ -43,7 +43,7 @@ pub fn build_transfer_from_association(
 pub fn build_transfer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    receiver_auth_key_prefix: Vec<u8>,
+    receiver_public_key_vec: Vec<u8>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -54,7 +54,7 @@ pub fn build_transfer_txn(
     build_transfer_txn_by_token_type(
         sender,
         receiver,
-        receiver_auth_key_prefix,
+        receiver_public_key_vec,
         seq_num,
         amount,
         gas_price,
@@ -68,7 +68,7 @@ pub fn build_transfer_txn(
 pub fn build_transfer_txn_by_token_type(
     sender: AccountAddress,
     receiver: AccountAddress,
-    receiver_auth_key_prefix: Vec<u8>,
+    receiver_public_key_vec: Vec<u8>,
     seq_num: u64,
     amount: u128,
     gas_price: u64,
@@ -80,7 +80,7 @@ pub fn build_transfer_txn_by_token_type(
     raw_peer_to_peer_txn(
         sender,
         receiver,
-        receiver_auth_key_prefix,
+        receiver_public_key_vec,
         amount,
         seq_num,
         gas_price,
@@ -114,7 +114,7 @@ pub fn build_accept_token_txn(
 pub fn raw_peer_to_peer_txn(
     sender: AccountAddress,
     receiver: AccountAddress,
-    receiver_auth_key_prefix: Vec<u8>,
+    recipient_public_key_vec: Vec<u8>,
     transfer_amount: u128,
     seq_num: u64,
     gas_price: u64,
@@ -128,7 +128,7 @@ pub fn raw_peer_to_peer_txn(
         seq_num,
         TransactionPayload::Script(encode_transfer_script_by_token_code(
             receiver,
-            receiver_auth_key_prefix,
+            recipient_public_key_vec,
             transfer_amount,
             token_code,
         )),
@@ -165,7 +165,7 @@ pub fn raw_accept_token_txn(
 
 pub fn encode_create_account_script(
     account_address: &AccountAddress,
-    auth_key_prefix: Vec<u8>,
+    public_key_vec: Vec<u8>,
     initial_balance: u64,
 ) -> Script {
     Script::new(
@@ -173,7 +173,7 @@ pub fn encode_create_account_script(
         vec![],
         vec![
             TransactionArgument::Address(*account_address),
-            TransactionArgument::U8Vector(auth_key_prefix),
+            TransactionArgument::U8Vector(public_key_vec),
             TransactionArgument::U64(initial_balance),
         ],
     )
@@ -181,15 +181,20 @@ pub fn encode_create_account_script(
 
 pub fn encode_transfer_script(
     recipient: AccountAddress,
-    auth_key_prefix: Vec<u8>,
+    recipient_public_key_vec: Vec<u8>,
     amount: u128,
 ) -> Script {
-    encode_transfer_script_by_token_code(recipient, auth_key_prefix, amount, STC_TOKEN_CODE.clone())
+    encode_transfer_script_by_token_code(
+        recipient,
+        recipient_public_key_vec,
+        amount,
+        STC_TOKEN_CODE.clone(),
+    )
 }
 
 pub fn encode_transfer_script_by_token_code(
     recipient: AccountAddress,
-    auth_key_prefix: Vec<u8>,
+    recipient_public_key_vec: Vec<u8>,
     amount: u128,
     token_code: TokenCode,
 ) -> Script {
@@ -198,7 +203,7 @@ pub fn encode_transfer_script_by_token_code(
         vec![token_code.into()],
         vec![
             TransactionArgument::Address(recipient),
-            TransactionArgument::U8Vector(auth_key_prefix),
+            TransactionArgument::U8Vector(recipient_public_key_vec),
             TransactionArgument::U128(amount),
         ],
     )
@@ -206,14 +211,18 @@ pub fn encode_transfer_script_by_token_code(
 
 pub fn peer_to_peer_txn_sent_as_association(
     recipient: AccountAddress,
-    auth_key_prefix: Vec<u8>,
+    recipient_public_key_vec: Vec<u8>,
     seq_num: u64,
     amount: u128,
     expiration_timestamp_secs: u64,
     net: &ChainNetwork,
 ) -> SignedUserTransaction {
     crate::create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(recipient, auth_key_prefix, amount)),
+        TransactionPayload::Script(encode_transfer_script(
+            recipient,
+            recipient_public_key_vec,
+            amount,
+        )),
         seq_num,
         DEFAULT_MAX_GAS_AMOUNT,
         1,

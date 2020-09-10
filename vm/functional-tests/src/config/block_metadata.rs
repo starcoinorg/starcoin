@@ -68,6 +68,7 @@ impl Entry {
 
 pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<BlockMetadata> {
     let mut timestamp = None;
+    let mut author = None;
     let mut author_public_key = None;
     let mut number = None;
     let mut uncles = 0u64;
@@ -76,6 +77,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
         match entry {
             Entry::Author(s) => {
                 let account = config.get_account_for_name(s)?;
+                author = Some(*account.address());
                 author_public_key = Some(account.clone().pubkey);
             }
             Entry::Timestamp(new_timestamp) => timestamp = Some(new_timestamp),
@@ -83,12 +85,12 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             Entry::Uncles(new_uncles) => uncles = *new_uncles,
         }
     }
-    if let (Some(t), Some(author_public_key), Some(number)) = (timestamp, author_public_key, number)
-    {
+    if let (Some(t), Some(author), Some(number)) = (timestamp, author, number) {
         Ok(BlockMetadata::new(
             HashValue::random(),
             *t,
-            author_public_key.to_bytes().to_vec(),
+            author,
+            author_public_key,
             uncles,
             *number,
         ))

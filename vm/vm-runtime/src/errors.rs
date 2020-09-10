@@ -25,6 +25,7 @@ const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
 pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
+    dbg!(status.clone());
     match status {
         VMStatus::MoveAbort(_location, code) => {
             let new_major_status = match code {

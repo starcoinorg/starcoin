@@ -22,6 +22,7 @@ use starcoin_config::NodeConfig;
 use starcoin_traits::{ChainAsyncService, ChainReader, ReadableChainService};
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
+    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
@@ -122,12 +123,14 @@ impl Handler<ChainRequest> for ChainActor {
                         })?,
                 ))))
             }
-            ChainRequest::CreateBlockTemplate(author_public_key, parent_hash, txs) => {
-                Ok(ChainResponse::BlockTemplate(Box::new(
-                    self.service
-                        .create_block_template(author_public_key, parent_hash, txs)?,
-                )))
-            }
+            ChainRequest::CreateBlockTemplate(author, author_public_key, parent_hash, txs) => Ok(
+                ChainResponse::BlockTemplate(Box::new(self.service.create_block_template(
+                    author,
+                    author_public_key,
+                    parent_hash,
+                    txs,
+                )?)),
+            ),
             ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
                 if let Some(block) = self.service.get_block_by_hash(hash)? {
                     Some(Box::new(block))
@@ -487,13 +490,15 @@ impl ChainAsyncService for ChainActorRef {
 
     async fn create_block_template(
         &self,
-        author_public_key: Ed25519PublicKey,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
         let address = self.address.clone();
         if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplate(
+                author,
                 author_public_key,
                 parent_hash,
                 txs,

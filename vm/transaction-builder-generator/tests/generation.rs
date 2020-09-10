@@ -136,6 +136,7 @@ serde_bytes = "0.11"
 lcs = {{ package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="931029fae9438a3e3949adf61fd783caebfc589b"}}
 starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
 
+
 [[bin]]
 name = "stdlib_demo"
 path = "src/stdlib_demo.rs"

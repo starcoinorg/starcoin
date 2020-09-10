@@ -12,7 +12,7 @@ use starcoin_types::transaction::RawUserTransaction;
 pub struct MockTxnGenerator {
     chain_id: ChainId,
     receiver_address: AccountAddress,
-    receiver_auth_key_prefix: Vec<u8>,
+    receiver_public_key: Vec<u8>,
     account: AccountInfo,
 }
 
@@ -21,12 +21,12 @@ impl MockTxnGenerator {
         chain_id: ChainId,
         account: AccountInfo,
         receiver_address: AccountAddress,
-        receiver_auth_key_prefix: Vec<u8>,
+        receiver_public_key: Vec<u8>,
     ) -> Self {
         MockTxnGenerator {
             chain_id,
             receiver_address,
-            receiver_auth_key_prefix,
+            receiver_public_key,
             account,
         }
     }
@@ -37,7 +37,7 @@ impl MockTxnGenerator {
         let transfer_txn = starcoin_executor::build_transfer_txn(
             self.account.address,
             self.receiver_address,
-            self.receiver_auth_key_prefix.clone(),
+            self.receiver_public_key.clone(),
             sequence_number,
             amount_to_transfer,
             1,
