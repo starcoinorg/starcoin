@@ -12,6 +12,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum ChainRequest {
     CurrentHeader(),
