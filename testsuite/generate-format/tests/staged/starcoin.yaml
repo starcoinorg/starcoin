@@ -193,7 +193,7 @@ Package:
         SEQ:
           TYPENAME: Module
     - init_script:
-          TYPENAME: Script
+        TYPENAME: Script
 
 TravelRuleMetadata:
   ENUM:
@@ -261,3 +261,32 @@ WriteSetPayload:
               TYPENAME: AccountAddress
           - script:
               TYPENAME: Script
+AccountResource:
+  STRUCT:
+    - authentication_key: BYTES
+    - withdrawal_capability:
+        OPTION:
+          TYPENAME: WithdrawCapabilityResource
+    - key_rotation_capability:
+        OPTION:
+          TYPENAME: KeyRotationCapabilityResource
+    - received_events:
+        TYPENAME: EventHandle
+    - sent_events :
+        TYPENAME: EventHandle
+    - accept_token_events :
+        TYPENAME: EventHandle
+    - sequence_number : U64
+EventHandle:
+  STRUCT:
+    - count : U64
+    - key :
+        TYPENAME: EventKey
+WithdrawCapabilityResource:
+  STRUCT:
+    - account_address :
+        TYPENAME: AccountAddress
+KeyRotationCapabilityResource:
+  STRUCT:
+    - account_address :
+        TYPENAME: AccountAddress

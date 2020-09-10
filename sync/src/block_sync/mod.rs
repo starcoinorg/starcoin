@@ -19,6 +19,9 @@ use std::sync::Arc;
 use std::time::Duration;
 use types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 
+#[cfg(test)]
+mod test_block_sync;
+
 const MAX_LEN: usize = 100;
 const MAX_SIZE: usize = 10;
 
@@ -36,19 +39,56 @@ enum DataType {
     Body,
 }
 
+trait SendEventHandler {
+    fn send_event(&self, event: SyncDataEvent);
+    fn next_time(&self);
+}
+
+trait CloneEventHandler {
+    fn clone_handler(&self) -> Box<dyn SendEventHandler>;
+}
+
+trait EventHandler: CloneEventHandler + SendEventHandler {}
+
+impl<N> SendEventHandler for Addr<BlockSyncTaskActor<N>>
+where
+    N: NetworkService + 'static,
+{
+    fn send_event(&self, event: SyncDataEvent) {
+        self.do_send(event);
+    }
+
+    fn next_time(&self) {
+        if let Err(err) = self.try_send(NextTimeEvent {}) {
+            error!("Send NextTimeEvent failed when sync : {:?}", err);
+        };
+    }
+}
+
+impl<N> CloneEventHandler for Addr<BlockSyncTaskActor<N>>
+where
+    N: NetworkService + 'static,
+{
+    fn clone_handler(&self) -> Box<dyn SendEventHandler> {
+        Box::new(self.clone())
+    }
+}
+
+impl<N> EventHandler for Addr<BlockSyncTaskActor<N>> where N: NetworkService + 'static {}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct BlockIdAndNumber {
     pub id: HashValue,
-    pub height: BlockNumber,
+    pub number: BlockNumber,
 }
 
 #[derive(Debug, Message)]
 #[rtype(result = "()")]
 struct SyncDataEvent {
     data_type: DataType,
-    body_taskes: Vec<BlockIdAndNumber>,
-    headers: Vec<BlockHeader>,
-    bodies: Vec<BlockBody>,
+    body_taskes: Option<Vec<BlockIdAndNumber>>,
+    headers: Option<Vec<BlockHeader>>,
+    bodies: Option<Vec<BlockBody>>,
     peer_id: PeerId,
 }
 
@@ -56,9 +96,9 @@ impl SyncDataEvent {
     fn new_header_event(headers: Vec<BlockHeader>, peer_id: PeerId) -> Self {
         SyncDataEvent {
             data_type: DataType::Header,
-            body_taskes: Vec::new(),
-            headers,
-            bodies: Vec::new(),
+            body_taskes: None,
+            headers: Some(headers),
+            bodies: None,
             peer_id,
         }
     }
@@ -70,9 +110,9 @@ impl SyncDataEvent {
     ) -> Self {
         SyncDataEvent {
             data_type: DataType::Body,
-            body_taskes,
-            headers: Vec::new(),
-            bodies,
+            body_taskes: Some(body_taskes),
+            headers: None,
+            bodies: Some(bodies),
             peer_id,
         }
     }
@@ -99,7 +139,8 @@ impl BlockSyncTask {
     }
 
     pub fn push_back(&mut self, height: BlockNumber, id: HashValue) {
-        self.wait_2_sync.push_back(BlockIdAndNumber { height, id })
+        self.wait_2_sync
+            .push_back(BlockIdAndNumber { number: height, id })
     }
 
     pub fn push_tasks(&mut self, hashes: Vec<BlockIdAndNumber>) {
@@ -119,24 +160,31 @@ pub struct BlockSyncTaskActor<N>
 where
     N: NetworkService + 'static,
 {
+    inner: Inner<N>,
+    downloader: Arc<Downloader<N>>,
+    download_address: Addr<DownloadActor<N>>,
+}
+
+pub struct Inner<N>
+where
+    N: NetworkService + 'static,
+{
     ancestor_number: BlockNumber,
     target_number: BlockNumber,
     next: BlockIdAndNumber,
     headers: HashMap<HashValue, BlockHeader>,
     body_task: BlockSyncTask,
-    downloader: Arc<Downloader<N>>,
     network: N,
     rpc_client: NetworkRpcClient<N>,
     state: SyncTaskState,
-    download_address: Addr<DownloadActor<N>>,
 }
 
-impl<N> Debug for BlockSyncTaskActor<N>
+impl<N> Debug for Inner<N>
 where
     N: NetworkService + 'static,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        f.debug_tuple("BlockSyncTask")
+        f.debug_tuple("Inner")
             .field(&self.ancestor_number)
             .field(&self.target_number)
             .field(&self.next)
@@ -146,45 +194,41 @@ where
     }
 }
 
-impl<N> BlockSyncTaskActor<N>
+impl<N> Inner<N>
 where
     N: NetworkService + 'static,
 {
-    pub fn launch(
-        ancestor_header: &BlockHeader,
+    fn new(
+        ancestor_number: BlockNumber,
         target_number: BlockNumber,
-        downloader: Arc<Downloader<N>>,
+        next: BlockIdAndNumber,
         network: N,
-        start: bool,
-        download_address: Addr<DownloadActor<N>>,
-    ) -> BlockSyncTaskRef<N> {
-        debug_assert!(ancestor_header.number() < target_number);
-        let address = BlockSyncTaskActor::create(move |_ctx| Self {
-            ancestor_number: ancestor_header.number(),
+        state: SyncTaskState,
+    ) -> Self {
+        Self {
+            ancestor_number,
             target_number,
-            next: BlockIdAndNumber {
-                id: ancestor_header.id(),
-                height: ancestor_header.number(),
-            },
+            next,
             headers: HashMap::new(),
             body_task: BlockSyncTask::new(),
-            downloader,
             network: network.clone(),
             rpc_client: NetworkRpcClient::new(network),
-            state: if start {
-                SyncTaskState::Ready
-            } else {
-                SyncTaskState::NotReady
-            },
-            download_address,
-        });
-        BlockSyncTaskRef { address }
+            state,
+        }
+    }
+
+    fn _header_size(&self) -> usize {
+        self.headers.len()
+    }
+
+    fn _body_task_size(&self) -> usize {
+        self.body_task.len()
     }
 
     fn do_finish(&mut self) -> bool {
         if !self.state.is_finish() {
             info!("Block sync task info : {:?}", &self);
-            if self.next.height >= self.target_number
+            if self.next.number >= self.target_number
                 && self.headers.is_empty()
                 && self.body_task.is_empty()
             {
@@ -196,14 +240,14 @@ where
         self.state.is_finish()
     }
 
-    fn sync_blocks(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
+    fn sync_blocks(&mut self, handler: Box<dyn EventHandler>) {
         let sync_header_flag =
-            !(self.body_task.len() > MAX_LEN || self.next.height >= self.target_number);
+            !(self.body_task.len() > MAX_LEN || self.next.number >= self.target_number);
 
         let body_tasks = self.body_task.take_tasks();
 
         let next = self.next.id;
-        let next_number = self.next.height;
+        let next_number = self.next.number;
         let network = self.network.clone();
         let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
@@ -225,7 +269,7 @@ where
                         }
                     };
 
-                address.clone().do_send(event);
+                handler.clone_handler().send_event(event);
                 hash_timer.observe_duration();
             }
 
@@ -238,7 +282,7 @@ where
                 debug_assert!(!tasks.is_empty());
                 let max_height = tasks
                     .iter()
-                    .map(|t| t.height)
+                    .map(|t| t.number)
                     .max()
                     .expect("body tasks is not empty");
                 let block_idlist = tasks.iter().map(|t| t.id).collect();
@@ -255,23 +299,25 @@ where
                         }
                     };
 
-                address.clone().do_send(event);
+                handler.clone_handler().send_event(event);
                 block_body_timer.observe_duration();
             }
 
-            if let Err(err) = address.try_send(NextTimeEvent {}) {
-                error!("Send NextTimeEvent failed when sync : {:?}", err);
-            };
+            handler.next_time();
         });
+    }
+
+    fn update_next(&mut self, last_header: &BlockHeader) {
+        self.next = BlockIdAndNumber {
+            id: last_header.id(),
+            number: last_header.number(),
+        };
     }
 
     fn handle_headers(&mut self, headers: Vec<BlockHeader>) {
         if !headers.is_empty() {
             let last_header = headers.last().unwrap();
-            self.next = BlockIdAndNumber {
-                id: last_header.id(),
-                height: last_header.number(),
-            };
+            self.update_next(last_header);
             let len = headers.len();
             for block_header in headers {
                 self.body_task
@@ -289,8 +335,7 @@ where
         &mut self,
         bodies: Vec<BlockBody>,
         hashes: Vec<BlockIdAndNumber>,
-        peer_id: PeerId,
-    ) {
+    ) -> Option<Vec<Block>> {
         if !bodies.is_empty() {
             let len = bodies.len();
             let mut blocks: Vec<Block> = Vec::new();
@@ -306,11 +351,56 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_BLOCK_BODY])
                 .inc_by(len as i64);
-
-            self.connect_blocks(blocks, peer_id);
+            Some(blocks)
         } else {
             self.body_task.push_tasks(hashes);
+            None
         }
+    }
+}
+
+impl<N> Debug for BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        f.debug_tuple("BlockSyncTask").field(&self.inner).finish()
+    }
+}
+
+impl<N> BlockSyncTaskActor<N>
+where
+    N: NetworkService + 'static,
+{
+    pub fn launch(
+        ancestor_header: &BlockHeader,
+        target_number: BlockNumber,
+        downloader: Arc<Downloader<N>>,
+        network: N,
+        start: bool,
+        download_address: Addr<DownloadActor<N>>,
+    ) -> BlockSyncTaskRef<N> {
+        debug_assert!(ancestor_header.number() < target_number);
+        let inner = Inner::new(
+            ancestor_header.number(),
+            target_number,
+            BlockIdAndNumber {
+                id: ancestor_header.id(),
+                number: ancestor_header.number(),
+            },
+            network,
+            if start {
+                SyncTaskState::Ready
+            } else {
+                SyncTaskState::NotReady
+            },
+        );
+        let address = BlockSyncTaskActor::create(move |_ctx| Self {
+            inner,
+            downloader,
+            download_address,
+        });
+        BlockSyncTaskRef { address }
     }
 
     fn connect_blocks(&self, blocks: Vec<Block>, peer_id: PeerId) {
@@ -327,13 +417,11 @@ where
     }
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
-        // self.sync_headers(address.clone());
-        // self.sync_bodies(address);
-        self.sync_blocks(address);
+        self.inner.sync_blocks(Box::new(address));
     }
 
     fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
-        self.state = SyncTaskState::Syncing;
+        self.inner.state = SyncTaskState::Syncing;
         if let Err(err) = address.try_send(NextTimeEvent {}) {
             error!("Send NextTimeEvent failed when start : {:?}", err);
         };
@@ -347,7 +435,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
-        if self.state.is_ready() {
+        if self.inner.state.is_ready() {
             self.start_sync_task(ctx.address());
         }
     }
@@ -362,10 +450,16 @@ where
     fn handle(&mut self, data: SyncDataEvent, _ctx: &mut Self::Context) -> Self::Result {
         match data.data_type {
             DataType::Header => {
-                self.handle_headers(data.headers);
+                if let Some(headers) = data.headers {
+                    self.inner.handle_headers(headers);
+                }
             }
             DataType::Body => {
-                self.handle_bodies(data.bodies, data.body_taskes, data.peer_id);
+                if let (Some(bodies), Some(body_taskes)) = (data.bodies, data.body_taskes) {
+                    if let Some(blocks) = self.inner.handle_bodies(bodies, body_taskes) {
+                        self.connect_blocks(blocks, data.peer_id);
+                    }
+                }
             }
         }
     }
@@ -378,7 +472,7 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, _event: NextTimeEvent, ctx: &mut Self::Context) -> Self::Result {
-        let finish = self.do_finish();
+        let finish = self.inner.do_finish();
         if !finish {
             self.block_sync(ctx.address());
         } else {
@@ -397,8 +491,8 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, _event: BlockSyncBeginEvent, ctx: &mut Self::Context) -> Self::Result {
-        if !self.state.is_ready() {
-            self.state = SyncTaskState::Ready;
+        if !self.inner.state.is_ready() {
+            self.inner.state = SyncTaskState::Ready;
             self.start_sync_task(ctx.address());
         }
 

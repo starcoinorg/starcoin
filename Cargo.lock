@@ -2263,9 +2263,9 @@ dependencies = [
 
 [[package]]
 name = "gherkin_rust"
-version = "0.8.1"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f80699e24afe5188930ae74427575088633e80455b073fa101892aa1571b66f1"
+checksum = "ebdbe052fa0b6bf539bed8e72e99af2e0d96d6605ff54d9144885ad77ae43bdf"
 dependencies = [
  "peg",
  "textwrap 0.12.1",
@@ -3553,7 +3553,7 @@ dependencies = [
  "libp2p-core",
  "parking_lot 0.10.2",
  "thiserror",
- "yamux",
+ "yamux 0.4.9",
 ]
 
 [[package]]
@@ -6886,6 +6886,7 @@ name = "starcoin-executor"
 version = "0.4.6"
 dependencies = [
  "anyhow",
+ "log 0.4.11",
  "once_cell",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
@@ -7205,7 +7206,7 @@ dependencies = [
  "stest",
  "tempfile",
  "tokio 0.2.22",
- "yamux",
+ "yamux 0.8.0",
  "zeroize",
 ]
 
@@ -7499,6 +7500,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
+ "libra-canonical-serialization",
  "log 0.4.11",
  "network-api",
  "num_cpus",
@@ -8305,7 +8307,7 @@ dependencies = [
  "clap",
  "cucumber_rust",
  "data-encoding",
- "gherkin_rust 0.8.1",
+ "gherkin_rust 0.8.3",
  "indexmap",
  "jsonpath",
  "lazy_static",
@@ -9582,6 +9584,20 @@ dependencies = [
  "log 0.4.11",
  "nohash-hasher",
  "parking_lot 0.10.2",
+ "rand 0.7.3",
+ "static_assertions 1.1.0",
+]
+
+[[package]]
+name = "yamux"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9aeb8c4043cac71c3c299dff107171c220d179492350ea198e109a414981b83c"
+dependencies = [
+ "futures 0.3.5",
+ "log 0.4.11",
+ "nohash-hasher",
+ "parking_lot 0.11.0",
  "rand 0.7.3",
  "static_assertions 1.1.0",
 ]

@@ -58,6 +58,7 @@ starcoin-vm-types = { path = "../../vm/types"}
 starcoin-consensus= {path = "../../consensus"}
 starcoin-dev= {path = "../../vm/dev"}
 network-api = {path="../../network/api"}
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="b660407697decb9719c071e71e47991f78b4e903"}
 
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}
