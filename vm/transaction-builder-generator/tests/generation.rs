@@ -133,7 +133,7 @@ edition = "2018"
 
 [dependencies]
 serde_bytes = "0.11"
-lcs = {{ package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="931029fae9438a3e3949adf61fd783caebfc589b"}}
+lcs = {{ package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="d8a5eea1295097e8dc5ea955714e5bfe3fc5661f"}}
 starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
 
 

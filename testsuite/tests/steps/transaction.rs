@@ -51,7 +51,6 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<(), Error> {
-    let to_auth_key_prefix = AuthenticationKey::ed25519(&to.public_key).prefix();
     let chain_state_reader = RemoteStateReader::new(client);
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
@@ -63,6 +62,7 @@ fn transfer_txn(
     let amount = amount.unwrap_or(balance * 20 / 100);
     let raw_txn = starcoin_executor::build_transfer_txn(
         from,
+        to.address,
         to.public_key.to_bytes().to_vec(),
         account_resource.sequence_number(),
         amount,

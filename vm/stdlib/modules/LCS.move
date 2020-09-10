@@ -12,8 +12,8 @@ module LCS {
     // Return the binary representation of `v` in LCS (Libra Canonical Serialization) format
     native public fun to_bytes<MoveValue>(v: &MoveValue): vector<u8>;
 
-    // Return the address of the account from public key
-    native public fun from_public_key_vec(pub_key_vec: vector<u8>): address;
+    // Return the address of key bytes
+    native public fun to_address(key_bytes: vector<u8>): address;
     // ------------------------------------------------------------------------
     // Specification
     // ------------------------------------------------------------------------

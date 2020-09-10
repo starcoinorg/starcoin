@@ -5,7 +5,6 @@ module Account {
     use 0x1::Authenticator;
     use 0x1::Event;
     use 0x1::Hash;
-    use 0x1::LCS;
     use 0x1::Token::{Self, Token};
     use 0x1::Vector;
     use 0x1::Signer;
@@ -137,7 +136,7 @@ module Account {
     // reserved address for the MoveVM.
     public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
         let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
-        let new_address = LCS::from_public_key_vec(copy authentication_key);
+        let new_address = Authenticator::convert_address(copy authentication_key);
         assert(new_address == fresh_address, ADDRESS_PUBLIC_KEY_INCONSISTENT());
 
         let new_account = create_signer(new_address);

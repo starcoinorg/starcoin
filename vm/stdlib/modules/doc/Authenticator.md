@@ -10,12 +10,14 @@
 -  [Const `MULTI_ED25519_SCHEME_ID`](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
 -  [Function `create_multi_ed25519`](#0x1_Authenticator_create_multi_ed25519)
 -  [Function `ed25519_authentication_key`](#0x1_Authenticator_ed25519_authentication_key)
+-  [Function `convert_address`](#0x1_Authenticator_convert_address)
 -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_multi_ed25519_authentication_key)
 -  [Function `public_keys`](#0x1_Authenticator_public_keys)
 -  [Function `threshold`](#0x1_Authenticator_threshold)
 -  [Specification](#0x1_Authenticator_Specification)
     -  [Function `create_multi_ed25519`](#0x1_Authenticator_Specification_create_multi_ed25519)
     -  [Function `ed25519_authentication_key`](#0x1_Authenticator_Specification_ed25519_authentication_key)
+    -  [Function `convert_address`](#0x1_Authenticator_Specification_convert_address)
     -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_Specification_multi_ed25519_authentication_key)
     -  [Function `public_keys`](#0x1_Authenticator_Specification_public_keys)
     -  [Function `threshold`](#0x1_Authenticator_Specification_threshold)
@@ -133,6 +135,39 @@
     // TODO: add constant ED25519_SCHEME_ID = 0u8
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> public_key, ED25519_SCHEME_ID);
     <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(public_key)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Authenticator_convert_address"></a>
+
+## Function `convert_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;):address {
+    <b>let</b> address_bytes = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
+
+    <b>let</b> i = 16;
+    <b>while</b> (i &lt; 32) {
+        <b>let</b> b = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&authentication_key, i);
+        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> address_bytes, b);
+        i = i + 1;
+    };
+
+    <a href="LCS.md#0x1_LCS_to_address">LCS::to_address</a>(address_bytes)
 }
 </code></pre>
 
@@ -263,6 +298,22 @@ pragma aborts_if_is_strict;
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_Specification_convert_address"></a>
+
+### Function `convert_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 

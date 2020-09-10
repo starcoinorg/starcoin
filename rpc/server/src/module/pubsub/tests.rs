@@ -20,9 +20,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address;
-use starcoin_types::{
-    block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
-};
+use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
@@ -39,10 +37,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let public_key = pri_key.public_key();
     let account_address = account_address::from_public_key(&public_key);
     let txn = {
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             0,
             10000,
             config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
@@ -172,12 +169,10 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 
     // Send new transactions
     let txn = {
-        let auth_key = AuthenticationKey::random();
-        let account_address = auth_key.derived_address();
-        let auth_prefix = auth_key.prefix().to_vec();
+        let account = AccountInfo::random();
         let txn = starcoin_executor::build_transfer_from_association(
-            account_address,
-            auth_prefix,
+            account.address,
+            account.public_key.to_bytes().to_vec(),
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,
