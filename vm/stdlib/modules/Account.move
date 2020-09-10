@@ -11,7 +11,6 @@ module Account {
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
-    //use 0x1::SignedInteger64::{Self};
     use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
     use 0x1::ErrorCode;
@@ -137,12 +136,11 @@ module Account {
     // Creating an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
     public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
-        let new_address = LCS::from_public_key_vec(copy public_key_vec);
+        let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
+        let new_address = LCS::from_public_key_vec(copy authentication_key);
         assert(new_address == fresh_address, ADDRESS_PUBLIC_KEY_INCONSISTENT());
 
-        let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
-        let new_account = create_signer(fresh_address);
-
+        let new_account = create_signer(new_address);
         make_account(&new_account, authentication_key);
         // Make sure all account accept STC.
         if (!STC::is_stc<TokenType>()){

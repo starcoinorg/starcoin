@@ -13,6 +13,7 @@
 -  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
 -  [Const `DUMMY_AUTH_KEY`](#0x1_Account_DUMMY_AUTH_KEY)
+-  [Function `test1`](#0x1_Account_test1)
 -  [Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
 -  [Function `EMALFORMED_AUTHENTICATION_KEY`](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
 -  [Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
@@ -382,6 +383,28 @@ Message for accept token events
 
 
 
+<a name="0x1_Account_test1"></a>
+
+## Function `test1`
+
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_test1">test1</a>()
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="#0x1_Account_test1">test1</a>(){}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
 
 ## Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
@@ -529,7 +552,7 @@ Message for accept token events
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(_fresh_address: address, public_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -538,12 +561,12 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(_fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> new_address = <a href="LCS.md#0x1_LCS_from_public_key_vec">LCS::from_public_key_vec</a>(<b>copy</b> public_key_vec);
-    <b>assert</b>(new_address == fresh_address, <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>());
+//        <b>assert</b>(new_address == fresh_address, <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>());
 
     <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
-    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(fresh_address);
+    <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_address);
 
     <a href="#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
     // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
@@ -1606,7 +1629,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `create_account`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(_fresh_address: address, public_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1614,7 +1637,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 <pre><code>pragma verify = <b>false</b>;
 <b>aborts_if</b> len(public_key_vec) != 32;
-<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(fresh_address);
+<b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(_fresh_address);
 </code></pre>
 
 

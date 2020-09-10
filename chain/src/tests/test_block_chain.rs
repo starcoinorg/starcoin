@@ -10,7 +10,6 @@ use starcoin_config::NodeConfig;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 
@@ -235,10 +234,9 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let public_key = pri_key.public_key();
     let account_address = account_address::from_public_key(&public_key);
     let signed_txn_t2 = {
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = executor::build_transfer_from_association(
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             0,
             10000,
             config.net().consensus().now() + 40000,
