@@ -31,6 +31,7 @@ use starcoin_vm_types::{
 };
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use stdlib::transaction_scripts::compiled_transaction_script;
 use stdlib::transaction_scripts::StdlibScript;
 
 // TTL is 86400s. Initial time was set to 0.
@@ -678,7 +679,11 @@ pub fn peer_to_peer_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
+        compiled_transaction_script(
+            chain_id.net().unwrap().stdlib_version(),
+            StdlibScript::PeerToPeer,
+        )
+        .into_vec(),
         vec![stc_type_tag()],
         args,
         seq_num,
@@ -706,7 +711,8 @@ pub fn create_account_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         TransactionPayload::Script(Script::new(
-            StdlibScript::CreateAccount.compiled_bytes().into_vec(),
+            compiled_transaction_script(net.stdlib_version(), StdlibScript::CreateAccount)
+                .into_vec(),
             vec![DEFAULT_CURRENCY_TY.clone()],
             args,
         )),

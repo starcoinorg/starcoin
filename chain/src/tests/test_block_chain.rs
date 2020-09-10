@@ -1,12 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use consensus::Consensus;
+use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
+use starcoin_config::NodeConfig;
 use starcoin_traits::{ChainReader, ChainWriter};
+use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::genesis_config::ChainNetwork;
+use std::sync::Arc;
 
 #[stest::test]
 fn test_block_chain_head() {
@@ -195,4 +201,87 @@ fn test_uncle_in_diff_epoch() {
     uncles.push(uncle_block_header);
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     assert!(mock_chain.apply(block).is_err());
+}
+
+#[stest::test(timeout = 480)]
+///             ╭--> b3(t2)
+/// Genesis--> b1--> b2(t2)
+///
+async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
+    let header = block_chain.current_header();
+    let miner_account = AccountInfo::random();
+
+    let (template_b1, _) = block_chain.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(header.id()),
+        vec![],
+        vec![],
+        None,
+    )?;
+
+    let block_b1 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, template_b1)?;
+    block_chain.apply(block_b1.clone())?;
+
+    let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
+
+    // create transaction
+    let pri_key = Ed25519PrivateKey::genesis();
+    let public_key = pri_key.public_key();
+    let account_address = account_address::from_public_key(&public_key);
+    let signed_txn_t2 = {
+        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
+        let txn = executor::build_transfer_from_association(
+            account_address,
+            auth_prefix,
+            0,
+            10000,
+            config.net().consensus().now() + 40000,
+            config.net(),
+        );
+        txn.as_signed_user_txn()?.clone()
+    };
+    let tnx_hash = signed_txn_t2.crypto_hash();
+    let (template_b2, _) = block_chain.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(block_b1.id()),
+        vec![signed_txn_t2.clone()],
+        vec![],
+        None,
+    )?;
+    let block_b2 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain, template_b2)?;
+
+    block_chain.apply(block_b2)?;
+    let (template_b3, _) = block_chain2.create_block_template(
+        *miner_account.address(),
+        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(block_b1.id()),
+        vec![signed_txn_t2],
+        vec![],
+        None,
+    )?;
+    let block_b3 = config
+        .net()
+        .consensus()
+        .create_block(&block_chain2, template_b3)?;
+    block_chain2.apply(block_b3)?;
+
+    let vec_txn = block_chain2
+        .get_storage()
+        .get_transaction_info_ids_by_hash(tnx_hash)?;
+
+    assert_eq!(vec_txn.len(), 2);
+    let txn_info = block_chain.get_transaction_info(tnx_hash)?;
+    assert!(txn_info.is_some());
+    assert_eq!(txn_info.unwrap().transaction_hash(), tnx_hash);
+    Ok(())
 }

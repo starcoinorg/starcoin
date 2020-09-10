@@ -7,11 +7,13 @@ use include_dir::{include_dir, Dir};
 use log::LevelFilter;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
+use starcoin_config::ChainNetwork;
+pub use starcoin_config::StdlibVersion;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -33,7 +35,7 @@ pub const COMPILED_OUTPUT_PATH: &str = "compiled";
 /// The latest output path under which compiled files will be put
 pub const LATEST_COMPILED_OUTPUT_PATH: &str = "compiled/latest";
 /// The output path for the compiled stdlib
-pub const COMPILED_STDLIB_PATH: &str = "stdlib";
+pub const STDLIB_DIR_NAME: &str = "stdlib";
 /// The extension for compiled files
 pub const COMPILED_EXTENSION: &str = "mv";
 
@@ -51,52 +53,65 @@ static FRESH_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> =
 // This needs to be a string literal due to restrictions imposed by include_bytes.
 /// The compiled library needs to be included in the Rust binary due to Docker deployment issues.
 /// This is why we include it here.
-const COMPILED_STDLIB_DIR: Dir = include_dir!("compiled/latest/stdlib");
+pub const COMPILED_MOVE_CODE_DIR: Dir = include_dir!("compiled");
+
 const COMPILED_TRANSACTION_SCRIPTS_DIR: &str = "compiled/latest/transaction_scripts";
+pub const LATEST_VERSION: &str = "latest";
 
-// The compiled version of the move standard library.
-// Similarly to genesis, we keep a compiled version of the standard library and scripts around, and
-// only periodically update these. This has the effect of decoupling the current leading edge of
-// compiler development from the current stdlib used in genesis/scripts.  In particular, changes in
-// the compiler will not affect the script hashes or stdlib until we have tested the changes to our
-// satisfaction. Then we can generate a new compiled version of the stdlib/scripts (and will need to
-// regenerate genesis). The compiled version of the stdlib/scripts are used unless otherwise
-// specified either by the MOVE_NO_USE_COMPILED env var, or by passing the "StdLibOptions::Fresh"
-// option to `stdlib_modules`.
-static COMPILED_MOVELANG_STDLIB: Lazy<Vec<CompiledModule>> = Lazy::new(|| {
-    let mut modules: Vec<(String, CompiledModule)> = COMPILED_STDLIB_DIR
-        .files()
-        .iter()
-        .map(|file| {
-            (
-                file.path().to_str().unwrap().to_string(),
-                CompiledModule::deserialize(&file.contents()).unwrap(),
-            )
-        })
-        .collect();
+static CHAIN_NETWORK_STDLIB_VERSIONS: Lazy<Vec<StdlibVersion>> = Lazy::new(|| {
+    vec![
+        ChainNetwork::DEV.stdlib_version(),
+        ChainNetwork::HALLEY.stdlib_version(),
+        ChainNetwork::PROXIMA.stdlib_version(),
+        ChainNetwork::MAIN.stdlib_version(),
+    ]
+});
 
-    // We need to verify modules based on their dependency order.
-    modules.sort_by_key(|(path, _)| {
-        let splits: Vec<_> = path.split('_').collect();
-        assert!(splits.len() == 2, "Invalid module name encountered");
-        splits[0].parse::<u64>().unwrap()
+static COMPILED_MOVELANG_STDLIB: Lazy<HashMap<(StdlibVersion, StdlibType), Vec<CompiledModule>>> =
+    Lazy::new(|| {
+        let mut map = HashMap::new();
+        for version in &*CHAIN_NETWORK_STDLIB_VERSIONS {
+            let sub_dir = format!("{}/{}", version.as_string(), STDLIB_DIR_NAME);
+            let mut modules: Vec<(String, CompiledModule)> = COMPILED_MOVE_CODE_DIR
+                .get_dir(Path::new(sub_dir.as_str()))
+                .unwrap()
+                .files()
+                .iter()
+                .map(|file| {
+                    (
+                        file.path().to_str().unwrap().to_string(),
+                        CompiledModule::deserialize(&file.contents()).unwrap(),
+                    )
+                })
+                .collect();
+
+            // We need to verify modules based on their dependency order.
+            modules.sort_by_key(|(module_name, _)| module_name.clone());
+
+            let mut verified_modules = vec![];
+            for (_, module) in modules.into_iter() {
+                verify_module(&module).expect("stdlib module failed to verify");
+                DependencyChecker::verify_module(&module, &verified_modules)
+                    .expect("stdlib module dependency failed to verify");
+                verified_modules.push(module)
+            }
+            map.insert((*version, StdlibType::Stdlib), verified_modules);
+        }
+        map
     });
 
-    let mut verified_modules = vec![];
-    for (_, module) in modules.into_iter() {
-        verify_module(&module).expect("stdlib module failed to verify");
-        DependencyChecker::verify_module(&module, &verified_modules)
-            .expect("stdlib module dependency failed to verify");
-        verified_modules.push(module)
-    }
-    verified_modules
-});
+#[derive(Debug, Eq, Hash, PartialEq)]
+pub enum StdlibType {
+    Stdlib,
+    InitScripts,
+    TransactionScripts,
+}
 
 /// An enum specifying whether the compiled stdlib/scripts should be used or freshly built versions
 /// should be used.
 #[derive(Debug, Eq, PartialEq)]
 pub enum StdLibOptions {
-    Staged,
+    Compiled(StdlibVersion),
     Fresh,
 }
 
@@ -105,30 +120,34 @@ pub enum StdLibOptions {
 /// will be used.
 pub fn stdlib_modules(option: StdLibOptions) -> &'static [CompiledModule] {
     match option {
-        StdLibOptions::Staged => &*COMPILED_MOVELANG_STDLIB,
         StdLibOptions::Fresh => &*FRESH_MOVELANG_STDLIB,
+        StdLibOptions::Compiled(version) => &*COMPILED_MOVELANG_STDLIB
+            .get(&(version, StdlibType::Stdlib))
+            .expect("compiled modules should not be none"),
     }
 }
 
-/// Returns a reference to the standard library built by move-lang compiler, compiled with the
-/// [default address](account_config::core_code_address).
-///
-/// The order the modules are presented in is important: later modules depend on earlier ones.
-/// The defualt is to return a compiled version of the stdlib unless it is otherwise specified by the
-/// `MOVE_NO_USE_COMPILED` environment variable.
-pub fn env_stdlib_modules() -> &'static [CompiledModule] {
-    let option = if use_staged() {
-        StdLibOptions::Staged
-    } else {
-        StdLibOptions::Fresh
-    };
-    stdlib_modules(option)
+pub fn filter_compiled_mv_files(
+    dir_iter: impl Iterator<Item = PathBuf>,
+) -> impl Iterator<Item = String> {
+    dir_iter.flat_map(|path| {
+        if path.extension()?.to_str()? == COMPILED_EXTENSION {
+            path.into_os_string().into_string().ok()
+        } else {
+            None
+        }
+    })
+}
+
+pub fn compiled_stdlib_files(path: &Path) -> Vec<String> {
+    let dirfiles = datatest_stable::utils::iterate_directory(&path);
+    filter_compiled_mv_files(dirfiles).collect::<Vec<_>>()
 }
 
 /// A predicate detailing whether the compiled versions of scripts and the stdlib should be used or
 /// not. The default is that the compiled versions of the stdlib and transaction scripts should be
 /// used.
-pub fn use_staged() -> bool {
+pub fn use_compiled() -> bool {
     std::env::var(NO_USE_COMPILED).is_err()
 }
 

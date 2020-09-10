@@ -13,7 +13,7 @@ use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
-use starcoin_types::genesis_config::ChainNetwork;
+use starcoin_types::genesis_config::{ChainNetwork, StdlibVersion};
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
 use starcoin_types::{
@@ -22,6 +22,7 @@ use starcoin_types::{
 };
 use std::convert::TryFrom;
 use std::sync::Arc;
+use stdlib::transaction_scripts::compiled_transaction_script;
 use stdlib::transaction_scripts::StdlibScript;
 use storage::storage::StorageInstance;
 use storage::Storage;
@@ -81,9 +82,9 @@ fn gen_header(
     )
 }
 
-fn gen_scrit_payload() -> TransactionPayload {
+fn gen_scrit_payload(version: StdlibVersion) -> TransactionPayload {
     TransactionPayload::Script(Script::new(
-        StdlibScript::EmptyScript.compiled_bytes().into_vec(),
+        compiled_transaction_script(version, StdlibScript::EmptyScript).into_vec(),
         vec![],
         vec![],
     ))
@@ -105,7 +106,7 @@ fn txn_transfer(
                     temp_index.unwrap(),
                     &mut universe,
                     expired,
-                    Some(gen_scrit_payload()),
+                    Some(gen_scrit_payload(ChainNetwork::TEST.stdlib_version())),
                 )
                 .into_inner(),
             )

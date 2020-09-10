@@ -27,7 +27,7 @@ use starcoin_types::{
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use statedb::ChainStateDB;
-use stdlib::{stdlib_files, StdLibOptions};
+use stdlib::{stdlib_files, transaction_scripts::compiled_transaction_script, StdLibOptions};
 
 pub fn prepare_genesis() -> (ChainStateDB, &'static ChainNetwork) {
     let net = &ChainNetwork::TEST;
@@ -276,7 +276,7 @@ fn test_gas_charge_for_invalid_script_argument_txn() -> Result<()> {
 
     let sequence_number2 = get_sequence_number(*account1.address(), &chain_state);
     let txn2 = Transaction::UserTransaction(account1.create_signed_txn_with_args(
-        StdlibScript::PeerToPeer.compiled_bytes().into_vec(),
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::PeerToPeer).into_vec(),
         vec![],
         //Do not pass any argument.
         vec![],

@@ -56,6 +56,7 @@ async fn test_txn_expire() -> Result<()> {
     let account_address = account_address::from_public_key(&public_key);
     let txn = create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(
+            config.net().stdlib_version(),
             account_address,
             public_key.to_bytes().to_vec(),
             10000,
