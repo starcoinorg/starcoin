@@ -3,7 +3,7 @@
 
 use actix::Message;
 use futures::future::BoxFuture;
-use network_rpc_core::Result;
+pub use network_rpc_core::Result;
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
