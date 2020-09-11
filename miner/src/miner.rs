@@ -14,6 +14,7 @@ use starcoin_metrics::HistogramTimer;
 use std::sync::Arc;
 use std::sync::Mutex;
 use types::{block::BlockTemplate, system_events::MinedBlock, U256};
+
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
@@ -76,12 +77,14 @@ impl Miner {
             .unwrap()
             .take()
             .ok_or_else(|| format_err!("Empty mine ctx"))?;
+        debug!("miner receive submit with hash:{}", header_hash);
+        // TODO:FIX ME
+        /*
         if ctx.header_hash != header_hash {
             self.reset_ctx(Some(ctx));
             return Err(format_err!("Header hash mismatch"));
-        }
+        }*/
         let block = ctx.block_template.into_block(nonce, ctx.difficulty);
-        self.reset_ctx(None);
         info!("Mint new block with id: {:?}", block.id());
         self.bus
             .clone()
@@ -92,7 +95,7 @@ impl Miner {
         Ok(())
     }
 
-    fn reset_ctx(&self, ctx: Option<MineCtx>) {
+    fn _reset_ctx(&self, ctx: Option<MineCtx>) {
         *(self.state.lock().unwrap()) = ctx;
     }
 }

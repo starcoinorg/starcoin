@@ -157,9 +157,9 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, event: GenerateBlockEvent, ctx: &mut Self::Context) -> Self::Result {
-        debug!("Handle GenerateBlockEvent:{:?}", event);
+        info!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.miner.is_minting() {
-            debug!("Miner has mint job so just ignore this event.");
+            info!("Miner has mint job so just ignore this event.");
             return Ok(());
         }
         let txpool = self.txpool.clone();

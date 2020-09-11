@@ -18,7 +18,6 @@ tokio = { version = "0.2", features = ["full"] }
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
 crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
-sc_stratum = { path = "../../miner/stratum", package = "starcoin-stratum" }
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
 jsonrpc-tcp-server = "14.0"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }

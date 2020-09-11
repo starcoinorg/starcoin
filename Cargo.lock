@@ -1756,21 +1756,8 @@ checksum = "f240172b976e2421fa5485e45cd45287bbdb56d742aa3a1d77005c49071a8518"
 dependencies = [
  "crunchy 0.1.6",
  "ethereum-types-serialize",
- "fixed-hash 0.1.3",
+ "fixed-hash",
  "serde",
- "tiny-keccak 1.5.0",
-]
-
-[[package]]
-name = "ethbloom"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3932e82d64d347a045208924002930dc105a138995ccdc1479d0f05f0359f17c"
-dependencies = [
- "crunchy 0.2.2",
- "fixed-hash 0.3.2",
- "impl-rlp",
- "impl-serde",
  "tiny-keccak 1.5.0",
 ]
 
@@ -1781,26 +1768,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5cff74129deda8a155b729cad1a22dc3cdd08115abd1165079c519d0cab6917a"
 dependencies = [
  "crunchy 0.1.6",
- "ethbloom 0.4.2",
+ "ethbloom",
  "ethereum-types-serialize",
- "fixed-hash 0.1.3",
+ "fixed-hash",
  "rustc_version",
  "serde",
  "uint 0.1.2",
-]
-
-[[package]]
-name = "ethereum-types"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62d1bc682337e2c5ec98930853674dd2b4bd5d0d246933a9e98e5280f7c76c5f"
-dependencies = [
- "ethbloom 0.6.4",
- "fixed-hash 0.3.2",
- "impl-rlp",
- "impl-serde",
- "primitive-types",
- "uint 0.7.1",
 ]
 
 [[package]]
@@ -1868,19 +1841,6 @@ dependencies = [
  "libc",
  "rand 0.4.6",
  "rustc-hex 1.0.0",
-]
-
-[[package]]
-name = "fixed-hash"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1a683d1234507e4f3bf2736eeddf0de1dc65996dc0164d57eba0a74bcf29489"
-dependencies = [
- "byteorder 1.3.4",
- "heapsize",
- "rand 0.5.6",
- "rustc-hex 2.1.0",
- "static_assertions 0.2.5",
 ]
 
 [[package]]
@@ -2716,33 +2676,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "impl-codec"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2050d823639fbeae26b2b5ba09aca8907793117324858070ade0673c49f793b"
-dependencies = [
- "parity-codec",
-]
-
-[[package]]
-name = "impl-rlp"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f7a72f11830b52333f36e3b09a288333888bf54380fd0ac0790a3c31ab0f3c5"
-dependencies = [
- "rlp",
-]
-
-[[package]]
-name = "impl-serde"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58e3cae7e99c7ff5a995da2cf78dd0a5383740eda71d98cf7b1910c301ac69b8"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "include_dir"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3063,16 +2996,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67c21572b4949434e4fc1e1978b99c5f77064153c59d998bf13ecd96fb5ecba7"
 
 [[package]]
-name = "keccak-hash"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69e8ee697b9aa6dcc34d7657565fa5052763a1627a5b59e4c3c0ae3ed0d70a65"
-dependencies = [
- "primitive-types",
- "tiny-keccak 1.5.0",
-]
-
-[[package]]
 name = "kernel32-sys"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3370,7 +3293,7 @@ dependencies = [
  "rand 0.7.3",
  "sha2 0.8.2",
  "snow",
- "static_assertions 1.1.0",
+ "static_assertions",
  "x25519-dalek 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "zeroize",
 ]
@@ -3459,7 +3382,7 @@ dependencies = [
  "ring",
  "rw-stream-sink",
  "sha2 0.8.2",
- "static_assertions 1.1.0",
+ "static_assertions",
  "twofish",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -3603,7 +3526,7 @@ dependencies = [
  "serde-name",
  "serde_bytes",
  "sha2 0.9.1",
- "static_assertions 1.1.0",
+ "static_assertions",
  "thiserror",
  "tiny-keccak 2.0.2",
  "x25519-dalek 0.6.0 (git+https://github.com/novifinancial/x25519-dalek.git?branch=fiat2)",
@@ -3652,7 +3575,7 @@ dependencies = [
  "proptest-derive",
  "serde",
  "serde_bytes",
- "static_assertions 1.1.0",
+ "static_assertions",
  "thiserror",
 ]
 
@@ -4700,7 +4623,7 @@ dependencies = [
  "multihash",
  "percent-encoding 2.1.0",
  "serde",
- "static_assertions 1.1.0",
+ "static_assertions",
  "unsigned-varint 0.4.0",
  "url 2.1.1",
 ]
@@ -5140,19 +5063,6 @@ dependencies = [
  "lazy_static",
  "term",
  "unicode-width",
-]
-
-[[package]]
-name = "primitive-types"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2288eb2a39386c4bc817974cc413afe173010dc80e470fcb1e9a35580869f024"
-dependencies = [
- "fixed-hash 0.3.2",
- "impl-codec",
- "impl-rlp",
- "impl-serde",
- "uint 0.7.1",
 ]
 
 [[package]]
@@ -5774,15 +5684,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rlp"
-version = "0.4.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a7d3f9bed94764eac15b8f14af59fac420c236adaff743b7bcc88e265cb4345"
-dependencies = [
- "rustc-hex 2.1.0",
-]
-
-[[package]]
 name = "rmp"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5965,7 +5866,7 @@ checksum = "4da5fcb054c46f5a5dff833b129285a93d3f0179531735e6c866e8cc307d2020"
 dependencies = [
  "futures 0.3.5",
  "pin-project",
- "static_assertions 1.1.0",
+ "static_assertions",
 ]
 
 [[package]]
@@ -6672,7 +6573,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "ethereum-types 0.2.3",
+ "ethereum-types",
  "futures 0.3.5",
  "futures-timer",
  "once_cell",
@@ -6718,7 +6619,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "async-trait",
- "ethereum-types 0.2.3",
+ "ethereum-types",
  "futures 0.3.5",
  "futures-timer",
  "once_cell",
@@ -7127,7 +7028,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-stratum",
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
@@ -7171,7 +7071,6 @@ dependencies = [
  "starcoin-miner",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
- "starcoin-stratum",
  "starcoin-traits",
  "starcoin-types",
  "stest",
@@ -7682,23 +7581,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-stratum"
-version = "0.4.6"
-dependencies = [
- "anyhow",
- "ethereum-types 0.6.0",
- "jsonrpc-core",
- "jsonrpc-tcp-server",
- "keccak-hash",
- "log 0.4.11",
- "parking_lot 0.11.0",
- "starcoin-config",
- "starcoin-logger",
- "tokio 0.2.22",
- "tokio-io",
-]
-
-[[package]]
 name = "starcoin-sync"
 version = "0.4.6"
 dependencies = [
@@ -7900,7 +7782,7 @@ dependencies = [
  "anyhow",
  "byteorder 1.3.4",
  "bytes 0.5.6",
- "ethereum-types 0.2.3",
+ "ethereum-types",
  "futures 0.3.5",
  "hex",
  "itertools 0.9.0",
@@ -7955,7 +7837,7 @@ dependencies = [
  "anyhow",
  "bytecode-verifier",
  "chrono",
- "ethereum-types 0.2.3",
+ "ethereum-types",
  "hex",
  "libp2p",
  "libra-state-view",
@@ -7974,12 +7856,6 @@ dependencies = [
  "starcoin-proptest-helpers",
  "vm",
 ]
-
-[[package]]
-name = "static_assertions"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c19be23126415861cb3a23e501d34a708f7f9b2183c5252d690941c2e69199d5"
 
 [[package]]
 name = "static_assertions"
@@ -8373,7 +8249,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "static_assertions 1.1.0",
+ "static_assertions",
  "structopt 0.3.17",
  "tokio-compat",
 ]
@@ -9021,18 +8897,6 @@ dependencies = [
 
 [[package]]
 name = "uint"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2143cded94692b156c356508d92888acc824db5bffc0b4089732264c6fcf86d4"
-dependencies = [
- "byteorder 1.3.4",
- "crunchy 0.2.2",
- "heapsize",
- "rustc-hex 2.1.0",
-]
-
-[[package]]
-name = "uint"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "173cd16430c206dc1a430af8a89a0e9c076cf15cb42b4aedb10e8cc8fee73681"
@@ -9040,7 +8904,7 @@ dependencies = [
  "byteorder 1.3.4",
  "crunchy 0.2.2",
  "rustc-hex 2.1.0",
- "static_assertions 1.1.0",
+ "static_assertions",
 ]
 
 [[package]]
@@ -9617,7 +9481,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.10.2",
  "rand 0.7.3",
- "static_assertions 1.1.0",
+ "static_assertions",
 ]
 
 [[package]]
@@ -9631,7 +9495,7 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.11.0",
  "rand 0.7.3",
- "static_assertions 1.1.0",
+ "static_assertions",
 ]
 
 [[package]]

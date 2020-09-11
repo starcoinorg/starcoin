@@ -11,6 +11,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::{ConsensusStrategy, MinerClientConfig};
 use starcoin_types::U256;
+use std::sync::Mutex;
 use std::thread;
 
 pub struct MinerClient<C>
@@ -21,7 +22,7 @@ where
     worker_controller: WorkerController,
     job_client: C,
     pb: Option<ProgressBar>,
-    num_seals_found: u64,
+    num_seals_found: Mutex<u64>,
 }
 
 impl<C> MinerClient<C>
@@ -52,7 +53,7 @@ where
             worker_controller,
             job_client,
             pb,
-            num_seals_found: 0,
+            num_seals_found: Mutex::new(0),
         }
     }
 
@@ -68,6 +69,7 @@ where
                         Ok(job)=>{
                             let (pow_hash, diff) =job;
                             self.start_mint_work(pow_hash, diff).await;
+
                         }
                         Err(e)=>{error!("read subscribed job error:{}",e)}
                     }
@@ -75,7 +77,7 @@ where
 
                 seal = self.nonce_rx.select_next_some() => {
                     let (pow_header, nonce) = seal;
-                    let hash = HashValue::from_slice(&pow_header)?;
+                    let hash = HashValue::from_slice(&pow_header).expect("Inner error, invalid hash");
                     self.submit_seal(hash, nonce).await;
                 }
             }
@@ -91,11 +93,10 @@ where
             return;
         }
         {
-            //TODO: Fix it
-            //self.num_seals_found += 1;
+            *self.num_seals_found.lock().unwrap() += 1;
             let msg = format!(
                 "Miner client Total seals found: {:>3}",
-                self.num_seals_found
+                *self.num_seals_found.lock().unwrap()
             );
             if let Some(pb) = self.pb.as_ref() {
                 pb.set_message(&msg);
