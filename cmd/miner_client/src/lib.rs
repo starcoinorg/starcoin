@@ -1,14 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+pub mod job_client;
 pub mod miner;
-mod stratum;
-#[cfg(test)]
-mod test;
 mod worker;
 
+use anyhow::Result;
+use crypto::HashValue;
+use futures::stream::BoxStream;
 use rand::Rng;
+use starcoin_types::U256;
 use std::ops::Range;
+
+pub trait JobClient {
+    fn subscribe(&self) -> Result<BoxStream<Result<(HashValue, U256)>>>;
+    fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()>;
+}
 
 fn partition_nonce(id: u64, total: u64) -> Range<u64> {
     let span = u64::max_value() / total;

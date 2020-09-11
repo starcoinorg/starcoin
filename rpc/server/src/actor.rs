@@ -3,14 +3,15 @@
 
 use crate::metadata::Metadata;
 use crate::module::{
-    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService,
-    StateRpcImpl, TxPoolRpcImpl,
+    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NodeRpcImpl, PubSubImpl,
+    PubSubService, StateRpcImpl, TxPoolRpcImpl,
 };
 use crate::service::RpcService;
 use actix::prelude::*;
 use anyhow::Result;
 use jsonrpc_core::{MetaIoHandler, RemoteProcedure};
 use starcoin_account_api::AccountAsyncService;
+use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
@@ -19,6 +20,7 @@ use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::account::AccountApi;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::debug::DebugApi;
+use starcoin_rpc_api::miner::MinerApi;
 use starcoin_rpc_api::{
     dev::DevApi, node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
@@ -37,6 +39,7 @@ pub struct RpcActor {
 impl RpcActor {
     pub fn launch<CS, TS, AS, SS>(
         config: Arc<NodeConfig>,
+        bus: Addr<BusActor>,
         txpool_service: TS,
         chain_service: CS,
         account_service: AS,
@@ -62,6 +65,7 @@ impl RpcActor {
             Some(StateRpcImpl::new(state_service.clone())),
             pubsub_service.map(PubSubImpl::new),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
+            Some(MinerRpcImpl::new(bus)),
         )?;
 
         if let Some(dev_playgroud) = dev_playground_service {
@@ -74,7 +78,7 @@ impl RpcActor {
         Self::launch_with_handler(config, io_handler)
     }
 
-    pub fn extend_apis<C, N, T, A, S, D, P>(
+    pub fn extend_apis<C, N, T, A, S, D, P, M>(
         node_api: N,
         chain_api: Option<C>,
         txpool_api: Option<T>,
@@ -82,6 +86,7 @@ impl RpcActor {
         state_api: Option<S>,
         pubsub_api: Option<P>,
         debug_api: Option<D>,
+        miner_api: Option<M>,
     ) -> Result<MetaIoHandler<Metadata, MetricMiddleware>>
     where
         N: NodeApi,
@@ -91,6 +96,7 @@ impl RpcActor {
         S: StateApi,
         P: StarcoinPubSub<Metadata = Metadata>,
         D: DebugApi,
+        M: MinerApi,
     {
         let mut io_handler =
             MetaIoHandler::<Metadata, MetricMiddleware>::with_middleware(MetricMiddleware);
@@ -112,6 +118,9 @@ impl RpcActor {
         }
         if let Some(debug_api) = debug_api {
             io_handler.extend_with(DebugApi::to_delegate(debug_api));
+        }
+        if let Some(miner_api) = miner_api {
+            io_handler.extend_with(MinerApi::to_delegate(miner_api));
         }
         Ok(io_handler)
         // Self::launch_with_handler(config, io_handler)
@@ -184,6 +193,7 @@ mod tests {
     use starcoin_state_api::mock::MockChainStateService;
     use starcoin_state_tree::mock::MockStateNodeStore;
     use starcoin_txpool_mock_service::MockTxPoolService;
+
     #[stest::test]
     async fn test_start() {
         let logger_handle = starcoin_logger::init_for_test();
@@ -193,8 +203,10 @@ mod tests {
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
         let playground_service = PlaygroudService::new(Arc::new(MockStateNodeStore::new()));
+        let bus = BusActor::launch();
         let _rpc_actor = RpcActor::launch(
             config,
+            bus,
             txpool,
             chain_service,
             account_service,

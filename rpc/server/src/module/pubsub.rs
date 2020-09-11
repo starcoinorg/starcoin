@@ -12,7 +12,7 @@ use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
-use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
+use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
@@ -23,6 +23,7 @@ use txpool::TxPoolService;
 
 use futures::compat::Sink01CompatExt;
 use starcoin_crypto::HashValue;
+use starcoin_types::system_events::MintBlockEvent;
 use std::fmt::Debug;
 
 #[cfg(test)]
@@ -73,7 +74,11 @@ impl StarcoinPubSub for PubSubImpl {
             }
             (pubsub::Kind::Events, _) => {
                 errors::invalid_params("events", "Expected a filter object.")
-            } // _ => errors::unimplemented(None),
+            }
+            (pubsub::Kind::NewMintBlock, _) => {
+                self.service.add_mint_block_subscription(subscriber);
+                return;
+            }
         };
 
         let _ = subscriber.reject(error);
@@ -173,6 +178,24 @@ impl PubSubService {
         }));
     }
 
+    pub fn add_mint_block_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
+        let myself = self.clone();
+        self.spawner.send(Box::pin(async move {
+            let channel = myself.bus.clone().channel().await;
+            match channel {
+                Err(_e) => {
+                    let _ = subscriber
+                        .reject_async(jsonrpc_core::Error::internal_error())
+                        .compat()
+                        .await;
+                }
+                Ok(receiver) => {
+                    myself.start_subscription(receiver, subscriber, NewMintBlockHandler);
+                }
+            }
+        }));
+    }
+
     pub fn add_event_subscription(&self, subscriber: Subscriber<pubsub::Result>, filter: Filter) {
         let myself = self.clone();
         self.spawner.send(Box::pin(async move {
@@ -220,6 +243,7 @@ impl EventHandler<Arc<Vec<HashValue>>> for TxnEventHandler {
 
 #[derive(Copy, Clone, Debug)]
 pub struct NewHeadHandler;
+
 impl EventHandler<Notification<ThinBlock>> for NewHeadHandler {
     fn handle(&self, msg: Notification<ThinBlock>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         let Notification(block) = msg;
@@ -229,6 +253,19 @@ impl EventHandler<Notification<ThinBlock>> for NewHeadHandler {
         ))))]
     }
 }
+
+#[derive(Copy, Clone, Debug)]
+pub struct NewMintBlockHandler;
+
+impl EventHandler<MintBlockEvent> for NewMintBlockHandler {
+    fn handle(&self, msg: MintBlockEvent) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+        vec![Ok(pubsub::Result::MintBlock(Box::new(MintBlock {
+            header_hash: msg.header_hash,
+            difficulty: msg.difficulty,
+        })))]
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct ContractEventHandler {
     filter: Filter,
