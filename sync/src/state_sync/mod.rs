@@ -375,6 +375,10 @@ where
         }
     }
 
+    fn _get_network_client(&self) -> &NetworkRpcClient<N> {
+        &self.rpc_client
+    }
+
     fn do_finish(&mut self) -> bool {
         if !self.state.is_finish() {
             info!(

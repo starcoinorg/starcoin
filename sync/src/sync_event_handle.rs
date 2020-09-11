@@ -1,7 +1,7 @@
 use actix::dev::ToEnvelope;
 use actix::{Actor, Addr, Handler, Message};
 
-pub trait SendSyncEventHandler<M> {
+pub trait SendSyncEventHandler<M>: Send {
     fn send_event(&self, event: M);
 }
 
