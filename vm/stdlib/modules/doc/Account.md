@@ -540,7 +540,7 @@ Message for accept token events
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="#0x1_Account">Account</a> {
     <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
-    <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_convert_address">Authenticator::convert_address</a>(<b>copy</b> authentication_key);
+    <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
     <b>assert</b>(new_address == fresh_address, <a href="#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>());
 
     <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_address);

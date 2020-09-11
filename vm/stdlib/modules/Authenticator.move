@@ -75,7 +75,7 @@ module Authenticator {
         LCS::to_address(address_bytes)
     }
 
-    spec fun convert_address {
+    spec fun derived_address {
         aborts_if false;
     }
 

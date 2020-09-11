@@ -10,14 +10,14 @@
 -  [Const `MULTI_ED25519_SCHEME_ID`](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
 -  [Function `create_multi_ed25519`](#0x1_Authenticator_create_multi_ed25519)
 -  [Function `ed25519_authentication_key`](#0x1_Authenticator_ed25519_authentication_key)
--  [Function `convert_address`](#0x1_Authenticator_convert_address)
+-  [Function `derived_address`](#0x1_Authenticator_derived_address)
 -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_multi_ed25519_authentication_key)
 -  [Function `public_keys`](#0x1_Authenticator_public_keys)
 -  [Function `threshold`](#0x1_Authenticator_threshold)
 -  [Specification](#0x1_Authenticator_Specification)
     -  [Function `create_multi_ed25519`](#0x1_Authenticator_Specification_create_multi_ed25519)
     -  [Function `ed25519_authentication_key`](#0x1_Authenticator_Specification_ed25519_authentication_key)
-    -  [Function `convert_address`](#0x1_Authenticator_Specification_convert_address)
+    -  [Function `derived_address`](#0x1_Authenticator_Specification_derived_address)
     -  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_Specification_multi_ed25519_authentication_key)
     -  [Function `public_keys`](#0x1_Authenticator_Specification_public_keys)
     -  [Function `threshold`](#0x1_Authenticator_Specification_threshold)
@@ -142,13 +142,13 @@
 
 </details>
 
-<a name="0x1_Authenticator_convert_address"></a>
+<a name="0x1_Authenticator_derived_address"></a>
 
-## Function `convert_address`
+## Function `derived_address`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
@@ -157,7 +157,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;):address {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;):address {
     <b>let</b> address_bytes = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
 
     <b>let</b> i = 16;
@@ -308,12 +308,12 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="0x1_Authenticator_Specification_convert_address"></a>
+<a name="0x1_Authenticator_Specification_derived_address"></a>
 
-### Function `convert_address`
+### Function `derived_address`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_convert_address">convert_address</a>(authentication_key: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
