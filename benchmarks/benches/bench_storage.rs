@@ -3,8 +3,9 @@
 use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
-use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_accumulator::{
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
+};
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -42,11 +43,8 @@ fn accumulator_append(c: &mut Criterion) {
         let leaves = create_leaves(0..100);
         b.iter_batched(
             || {
-                MerkleAccumulator::new(
-                    *ACCUMULATOR_PLACEHOLDER_HASH,
-                    vec![],
-                    0,
-                    0,
+                MerkleAccumulator::new_with_info(
+                    AccumulatorInfo::default(),
                     AccumulatorStoreType::Transaction,
                     storage.clone().into_super_arc(),
                 )

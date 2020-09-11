@@ -3,10 +3,7 @@ use forkable_jellyfish_merkle::blob::Blob;
 use forkable_jellyfish_merkle::iterator::JellyfishMerkleIterator;
 use forkable_jellyfish_merkle::node_type::{Node, NodeKey};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
-use forkable_jellyfish_merkle::{
-    JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch,
-    SPARSE_MERKLE_PLACEHOLDER_HASH,
-};
+use forkable_jellyfish_merkle::{JellyfishMerkleTree, StaleNodeIndex, TreeReader, TreeUpdateBatch};
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::*;
 use starcoin_types::state_set::StateSet;

@@ -3,10 +3,10 @@
 
 use crate::node::AccumulatorStoreType;
 use crate::{
-    node::ACCUMULATOR_PLACEHOLDER_HASH, node_index::NodeIndex, tree_store::MockAccumulatorStore,
-    Accumulator, AccumulatorNode, LeafCount, MerkleAccumulator,
+    node_index::NodeIndex, tree_store::MockAccumulatorStore, Accumulator, AccumulatorNode,
+    LeafCount, MerkleAccumulator,
 };
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
 use std::time::SystemTime;
 use std::{collections::HashMap, sync::Arc};
 

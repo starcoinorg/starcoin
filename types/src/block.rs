@@ -9,12 +9,12 @@ use starcoin_crypto::{
     HashValue,
 };
 
-use crate::accumulator_info::AccumulatorInfo;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::node::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
+use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 /// Type for block number.
 pub type BlockNumber = u64;
 
@@ -399,15 +399,8 @@ impl Into<BlockMetadata> for Block {
 pub struct BlockInfo {
     /// Block id
     pub block_id: HashValue,
-    //TODO group txn accumulator's fields.
-    /// Accumulator root hash
-    pub accumulator_root: HashValue,
-    /// Frozen subtree roots of this accumulator.
-    pub frozen_subtree_roots: Vec<HashValue>,
-    /// The total number of leaves in this accumulator.
-    pub num_leaves: u64,
-    /// The total number of nodes in this accumulator.
-    pub num_nodes: u64,
+    /// The transaction accumulator info
+    pub txn_accumulator_info: AccumulatorInfo,
     /// The total difficulty.
     pub total_difficulty: U256,
     /// The block accumulator info.
@@ -417,19 +410,13 @@ pub struct BlockInfo {
 impl BlockInfo {
     pub fn new(
         block_id: HashValue,
-        accumulator_root: HashValue,
-        frozen_subtree_roots: Vec<HashValue>,
-        num_leaves: u64,
-        num_nodes: u64,
+        txn_accumulator_info: AccumulatorInfo,
         total_difficulty: U256,
         block_accumulator_info: AccumulatorInfo,
     ) -> Self {
         Self {
             block_id,
-            accumulator_root,
-            frozen_subtree_roots,
-            num_leaves,
-            num_nodes,
+            txn_accumulator_info,
             total_difficulty,
             block_accumulator_info,
         }
@@ -443,26 +430,13 @@ impl BlockInfo {
     ) -> Self {
         Self {
             block_id,
-            accumulator_root: *txn_accumulator_info.get_accumulator_root(),
-            frozen_subtree_roots: txn_accumulator_info.get_frozen_subtree_roots().clone(),
-            num_leaves: txn_accumulator_info.get_num_leaves(),
-            num_nodes: txn_accumulator_info.get_num_nodes(),
+            txn_accumulator_info,
             total_difficulty,
             block_accumulator_info,
         }
     }
 
-    pub fn into_inner(
-        self,
-    ) -> (
-        HashValue,
-        HashValue,
-        Vec<HashValue>,
-        u64,
-        u64,
-        U256,
-        AccumulatorInfo,
-    ) {
+    pub fn into_inner(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
         self.into()
     }
 
@@ -478,13 +452,8 @@ impl BlockInfo {
         &self.block_accumulator_info
     }
 
-    pub fn get_txn_accumulator_info(&self) -> AccumulatorInfo {
-        AccumulatorInfo::new(
-            self.accumulator_root,
-            self.frozen_subtree_roots.clone(),
-            self.num_leaves,
-            self.num_nodes,
-        )
+    pub fn get_txn_accumulator_info(&self) -> &AccumulatorInfo {
+        &self.txn_accumulator_info
     }
 
     pub fn block_id(&self) -> &HashValue {
@@ -492,34 +461,11 @@ impl BlockInfo {
     }
 }
 
-impl
-    Into<(
-        HashValue,
-        HashValue,
-        Vec<HashValue>,
-        u64,
-        u64,
-        U256,
-        AccumulatorInfo,
-    )> for BlockInfo
-{
-    fn into(
-        self,
-    ) -> (
-        HashValue,
-        HashValue,
-        Vec<HashValue>,
-        u64,
-        u64,
-        U256,
-        AccumulatorInfo,
-    ) {
+impl Into<(HashValue, AccumulatorInfo, U256, AccumulatorInfo)> for BlockInfo {
+    fn into(self) -> (HashValue, AccumulatorInfo, U256, AccumulatorInfo) {
         (
             self.block_id,
-            self.accumulator_root,
-            self.frozen_subtree_roots,
-            self.num_leaves,
-            self.num_nodes,
+            self.txn_accumulator_info,
             self.total_difficulty,
             self.block_accumulator_info,
         )

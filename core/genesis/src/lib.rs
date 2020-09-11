@@ -4,7 +4,7 @@
 use anyhow::{ensure, format_err, Result};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
+use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_config::{genesis_key_pair, ChainNetwork};
@@ -33,6 +33,7 @@ use traits::{ChainReader, ChainWriter};
 mod errors;
 
 pub use errors::GenesisError;
+use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_consensus::Consensus;
 use starcoin_vm_types::genesis_config::BuiltinNetwork;
 
@@ -135,11 +136,8 @@ impl Genesis {
 
         let transaction_info = Self::execute_genesis_txn(&chain_state_db, txn.clone())?;
 
-        let accumulator = MerkleAccumulator::new(
-            *ACCUMULATOR_PLACEHOLDER_HASH,
-            vec![],
-            0,
-            0,
+        let accumulator = MerkleAccumulator::new_with_info(
+            AccumulatorInfo::default(),
             AccumulatorStoreType::Transaction,
             storage,
         )?;
@@ -480,11 +478,8 @@ mod tests {
             .expect("Genesis block info must exist.");
 
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let txn_accumulator = MerkleAccumulator::new(
-            *txn_accumulator_info.get_accumulator_root(),
-            txn_accumulator_info.get_frozen_subtree_roots().clone(),
-            txn_accumulator_info.get_num_leaves(),
-            txn_accumulator_info.get_num_nodes(),
+        let txn_accumulator = MerkleAccumulator::new_with_info(
+            txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
             storage2.clone().into_super_arc(),
         )?;
@@ -493,11 +488,8 @@ mod tests {
         txn_accumulator.flush()?;
 
         let block_accumulator_info = block_info.get_block_accumulator_info();
-        let block_accumulator = MerkleAccumulator::new(
-            *block_accumulator_info.get_accumulator_root(),
-            block_accumulator_info.get_frozen_subtree_roots().clone(),
-            block_accumulator_info.get_num_leaves(),
-            block_accumulator_info.get_num_nodes(),
+        let block_accumulator = MerkleAccumulator::new_with_info(
+            block_accumulator_info.clone(),
             AccumulatorStoreType::Block,
             storage2.into_super_arc(),
         )?;

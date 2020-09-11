@@ -8,7 +8,8 @@ use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{
-    node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
+    AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
@@ -18,7 +19,6 @@ use starcoin_traits::{
 };
 use starcoin_types::{
     account_address::AccountAddress,
-    accumulator_info::AccumulatorInfo,
     block::{
         Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
         ALLOWED_FUTURE_BLOCKTIME,
@@ -72,7 +72,7 @@ impl BlockChain {
         let mut chain = Self {
             consensus,
             txn_accumulator: info_2_accumulator(
-                txn_accumulator_info,
+                txn_accumulator_info.clone(),
                 AccumulatorStoreType::Transaction,
                 storage.clone().into_super_arc(),
             )?,
@@ -892,7 +892,7 @@ impl BlockChain {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
         self.txn_accumulator = info_2_accumulator(
-            txn_accumulator_info,
+            txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
             self.storage.clone().into_super_arc(),
         )?;
@@ -1015,12 +1015,5 @@ pub(crate) fn info_2_accumulator(
     store_type: AccumulatorStoreType,
     node_store: Arc<dyn AccumulatorTreeStore>,
 ) -> Result<MerkleAccumulator> {
-    MerkleAccumulator::new(
-        *accumulator_info.get_accumulator_root(),
-        accumulator_info.get_frozen_subtree_roots().clone(),
-        accumulator_info.get_num_leaves(),
-        accumulator_info.get_num_nodes(),
-        store_type,
-        node_store,
-    )
+    MerkleAccumulator::new_with_info(accumulator_info, store_type, node_store)
 }

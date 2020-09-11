@@ -3,16 +3,11 @@
 
 use crate::node_index::{NodeIndex, NODE_ERROR_INDEX};
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
-    hash::{create_literal_hash, CryptoHash, CryptoHasher},
+    hash::{CryptoHash, CryptoHasher, ACCUMULATOR_PLACEHOLDER_HASH},
     HashValue,
 };
-
-/// Placeholder hash of `Accumulator`.
-pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =
-    Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));
 
 //TODO should eliminate this type.
 #[derive(

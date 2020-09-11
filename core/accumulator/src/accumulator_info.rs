@@ -1,6 +1,7 @@
+use crate::{Accumulator, MerkleAccumulator};
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
@@ -56,7 +57,7 @@ impl AccumulatorInfo {
 impl Default for AccumulatorInfo {
     fn default() -> Self {
         AccumulatorInfo {
-            accumulator_root: HashValue::default(),
+            accumulator_root: *ACCUMULATOR_PLACEHOLDER_HASH,
             frozen_subtree_roots: Vec::new(),
             num_leaves: 0,
             num_nodes: 0,
