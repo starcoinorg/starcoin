@@ -9,7 +9,6 @@ use crate::{ServiceRef, ServiceRequest};
 use actix::fut::{wrap_future, IntoActorFuture};
 use actix::{ActorContext, ActorFuture, AsyncContext, Context};
 use anyhow::Result;
-use futures::executor::block_on;
 use log::error;
 use std::any::type_name;
 use std::fmt::Debug;
@@ -62,11 +61,11 @@ where
         self.cache.service_ref::<DepS>()
     }
 
-    pub fn get_shared<T>(&self) -> Result<Option<Arc<T>>>
+    pub fn get_shared<T>(&self) -> Result<Arc<T>>
     where
         T: Send + Sync + 'static,
     {
-        block_on(async { self.registry_ref().get_shared::<T>().await })
+        self.registry_ref().get_shared_sync::<T>()
     }
 
     pub fn subscribe<M>(&mut self)
@@ -74,14 +73,33 @@ where
         M: Send + Clone + Debug + 'static,
         S: EventHandler<S, M>,
     {
-        let recipient = self.ctx.address().recipient::<EventMessage<M>>();
-        //TODO avoid clone.
+        let notifier = self.self_ref().event_notifier();
         let bus = self.bus_ref().clone();
-        let fut = wrap_future::<_, ServiceActor<S>>(async move { bus.subscribe(recipient).await })
+        let fut = wrap_future::<_, ServiceActor<S>>(async move { bus.subscribe(notifier).await })
             .map(|r, _act, _ctx| {
                 if let Err(e) = r {
                     error!(
                         "Subscribe {} for service {} error: {:?}",
+                        type_name::<M>(),
+                        S::service_name(),
+                        e
+                    );
+                }
+            });
+        self.ctx.wait(fut.into_future());
+    }
+
+    pub fn unsubscribe<M>(&mut self)
+    where
+        M: Send + Clone + Debug + 'static,
+        S: EventHandler<S, M>,
+    {
+        let bus = self.bus_ref().clone();
+        let fut = wrap_future::<_, ServiceActor<S>>(async move { bus.unsubscribe::<S, M>().await })
+            .map(|r, _act, _ctx| {
+                if let Err(e) = r {
+                    error!(
+                        "Unsubscribe {} for service {} error: {:?}",
                         type_name::<M>(),
                         S::service_name(),
                         e
@@ -127,7 +145,7 @@ where
         S: EventHandler<S, M>,
         M: Clone + Debug + Send + 'static,
     {
-        self.ctx.notify(EventMessage { msg })
+        self.ctx.notify(EventMessage::new(msg))
     }
 
     pub fn stop_actor(&mut self) {

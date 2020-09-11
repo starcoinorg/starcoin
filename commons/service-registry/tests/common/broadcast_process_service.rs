@@ -30,6 +30,11 @@ impl ActorService for BroadcastProcessService {
         ctx.subscribe::<BMessage1>();
         ctx.subscribe::<BMessage2>();
     }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<BMessage1>();
+        ctx.unsubscribe::<BMessage2>();
+    }
 }
 
 #[derive(Clone, Debug)]

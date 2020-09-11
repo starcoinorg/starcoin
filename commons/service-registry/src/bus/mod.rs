@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service_actor::EventMessage;
-use crate::{ServiceRef, ServiceRequest};
-use actix::prelude::*;
+use crate::{ActorService, EventHandler, EventNotifier, ServiceRef, ServiceRequest};
 use anyhow::Result;
 use futures::channel::{mpsc, oneshot};
 use std::fmt::Debug;
@@ -16,14 +14,42 @@ pub use service::BusService;
 pub use sys_bus::SysBus;
 
 #[derive(Clone, Debug)]
-pub struct Subscription<M>
+pub struct SubscribeRequest<M>
 where
     M: Send + Clone + Debug + 'static,
 {
-    pub recipient: Recipient<EventMessage<M>>,
+    pub notifier: EventNotifier<M>,
 }
 
-impl<M> ServiceRequest for Subscription<M>
+impl<M> ServiceRequest for SubscribeRequest<M>
+where
+    M: Send + Clone + Debug,
+{
+    type Response = ();
+}
+
+#[derive(Clone, Debug)]
+pub struct UnsubscribeRequest<M>
+where
+    M: Send + Clone + Debug + 'static,
+{
+    pub target_service: &'static str,
+    msg: PhantomData<M>,
+}
+
+impl<M> UnsubscribeRequest<M>
+where
+    M: Send + Clone + Debug,
+{
+    pub fn new(target_service: &'static str) -> Self {
+        Self {
+            target_service,
+            msg: PhantomData,
+        }
+    }
+}
+
+impl<M> ServiceRequest for UnsubscribeRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -31,14 +57,14 @@ where
 }
 
 #[derive(Debug, Default)]
-pub struct Channel<M>
+pub struct ChannelRequest<M>
 where
     M: Send + Clone + Debug + 'static,
 {
     m: PhantomData<M>,
 }
 
-impl<M> Channel<M>
+impl<M> ChannelRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -49,7 +75,7 @@ where
     }
 }
 
-impl<M> ServiceRequest for Channel<M>
+impl<M> ServiceRequest for ChannelRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -57,14 +83,14 @@ where
 }
 
 #[derive(Debug, Default)]
-pub struct Oneshot<M>
+pub struct OneshotRequest<M>
 where
     M: Send + Clone + Debug + 'static,
 {
     m: PhantomData<M>,
 }
 
-impl<M> Oneshot<M>
+impl<M> OneshotRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -75,7 +101,7 @@ where
     }
 }
 
-impl<M> ServiceRequest for Oneshot<M>
+impl<M> ServiceRequest for OneshotRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -83,14 +109,14 @@ where
 }
 
 #[derive(Debug, Clone)]
-pub struct Broadcast<M>
+pub struct BroadcastRequest<M>
 where
     M: Send + Clone + Debug + 'static,
 {
     pub msg: M,
 }
 
-impl<M> Broadcast<M>
+impl<M> BroadcastRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -99,7 +125,7 @@ where
     }
 }
 
-impl<M> ServiceRequest for Broadcast<M>
+impl<M> ServiceRequest for BroadcastRequest<M>
 where
     M: Send + Clone + Debug,
 {
@@ -108,8 +134,13 @@ where
 
 #[async_trait::async_trait]
 pub trait Bus {
-    async fn subscribe<M>(&self, recipient: Recipient<EventMessage<M>>) -> Result<()>
+    async fn subscribe<M>(&self, notifier: EventNotifier<M>) -> Result<()>
     where
+        M: Send + Clone + Debug + 'static;
+
+    async fn unsubscribe<S, M>(&self) -> Result<()>
+    where
+        S: ActorService + EventHandler<S, M>,
         M: Send + Clone + Debug + 'static;
 
     async fn channel<M>(&self) -> Result<mpsc::UnboundedReceiver<M>>
@@ -127,11 +158,21 @@ pub trait Bus {
 
 #[async_trait::async_trait]
 impl Bus for ServiceRef<BusService> {
-    async fn subscribe<M>(&self, recipient: Recipient<EventMessage<M>>) -> Result<()>
+    async fn subscribe<M>(&self, notifier: EventNotifier<M>) -> Result<()>
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.send(Subscription { recipient })
+        self.send(SubscribeRequest { notifier })
+            .await
+            .map_err(Into::<anyhow::Error>::into)
+    }
+
+    async fn unsubscribe<S, M>(&self) -> Result<()>
+    where
+        S: ActorService + EventHandler<S, M>,
+        M: Send + Clone + Debug + 'static,
+    {
+        self.send(UnsubscribeRequest::<M>::new(S::service_name()))
             .await
             .map_err(Into::<anyhow::Error>::into)
     }
@@ -140,7 +181,7 @@ impl Bus for ServiceRef<BusService> {
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.send(Channel::<M>::new())
+        self.send(ChannelRequest::<M>::new())
             .await
             .map_err(Into::<anyhow::Error>::into)?
     }
@@ -149,7 +190,7 @@ impl Bus for ServiceRef<BusService> {
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.send(Oneshot::<M>::new())
+        self.send(OneshotRequest::<M>::new())
             .await
             .map_err(Into::<anyhow::Error>::into)?
     }
@@ -158,7 +199,7 @@ impl Bus for ServiceRef<BusService> {
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.send(Broadcast { msg })
+        self.send(BroadcastRequest { msg })
             .await
             .map_err(Into::<anyhow::Error>::into)
     }
@@ -166,182 +207,54 @@ impl Bus for ServiceRef<BusService> {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
-    // use actix::clock::delay_for;
-    // use futures::executor::block_on;
-    // use futures::StreamExt;
-    // use starcoin_logger::prelude::*;
-    // use std::thread::sleep;
-    // use std::time::Duration;
-    //
-    // #[derive(Debug, Message, Clone)]
-    // #[rtype(result = "()")]
-    // struct MyMessage {}
-    //
-    // #[derive(Debug, Message, Clone)]
-    // #[rtype(result = "u64")]
-    // struct GetCounterMessage {}
-    //
-    // #[derive(Debug, Message, Clone)]
-    // #[rtype(result = "()")]
-    // struct DoBroadcast {}
-    //
-    // #[derive(Debug, Message, Clone)]
-    // #[rtype(result = "Result<()>")]
-    // struct DoBroadcast2 {}
-    //
-    // struct MyActor {
-    //     counter: u64,
-    //     bus: Addr<BusActor>,
-    // }
-    //
-    // impl Actor for MyActor {
-    //     type Context = Context<Self>;
-    // }
-    //
-    // impl Handler<MyMessage> for MyActor {
-    //     type Result = ();
-    //
-    //     fn handle(&mut self, msg: MyMessage, _ctx: &mut Self::Context) {
-    //         info!("handle MyMessage: {:?}", msg);
-    //         self.counter += 1;
-    //     }
-    // }
-    //
-    // impl Handler<GetCounterMessage> for MyActor {
-    //     type Result = u64;
-    //
-    //     fn handle(&mut self, _msg: GetCounterMessage, _ctx: &mut Self::Context) -> Self::Result {
-    //         info!("handle GetCounterMessage: {:?}", self.counter);
-    //         self.counter
-    //     }
-    // }
-    //
-    // impl Handler<DoBroadcast> for MyActor {
-    //     type Result = ();
-    //
-    //     fn handle(&mut self, _msg: DoBroadcast, ctx: &mut Self::Context) {
-    //         info!("handle DoBroadcast");
-    //         self.bus
-    //             .send(Broadcast { msg: MyMessage {} })
-    //             .into_actor(self)
-    //             //need convert act to static ActorFuture and call wait.
-    //             .then(|_result, act, _ctx| async {}.into_actor(act))
-    //             .wait(ctx);
-    //     }
-    // }
-    //
-    // impl Handler<DoBroadcast2> for MyActor {
-    //     type Result = ResponseActFuture<Self, Result<()>>;
-    //
-    //     fn handle(&mut self, _msg: DoBroadcast2, _ctx: &mut Self::Context) -> Self::Result {
-    //         let f = self.bus.clone().broadcast(MyMessage {});
-    //         let f = actix::fut::wrap_future::<_, Self>(f);
-    //         Box::pin(f)
-    //     }
-    // }
-    //
-    // #[stest::test]
-    // async fn test_bus_actor() {
-    //     let bus_actor = BusActor::launch();
-    //
-    //     let actor = MyActor {
-    //         counter: 0,
-    //         bus: bus_actor.clone(),
-    //     };
-    //     let addr = actor.start();
-    //     let recipient = addr.clone().recipient::<MyMessage>();
-    //
-    //     bus_actor.send(Subscription { recipient }).await.unwrap();
-    //     bus_actor
-    //         .send(Broadcast { msg: MyMessage {} })
-    //         .await
-    //         .unwrap();
-    //     delay_for(Duration::from_millis(100)).await;
-    //     let counter = addr.send(GetCounterMessage {}).await.unwrap();
-    //     assert_eq!(counter, 1);
-    // }
-    //
-    // #[stest::test]
-    // async fn test_bus_actor_send_message_in_handle() {
-    //     let bus_actor = BusActor::launch();
-    //     let actor = MyActor {
-    //         counter: 0,
-    //         bus: bus_actor.clone(),
-    //     };
-    //     let addr = actor.start();
-    //     let recipient = addr.clone().recipient::<MyMessage>();
-    //
-    //     bus_actor.send(Subscription { recipient }).await.unwrap();
-    //     addr.send(DoBroadcast {}).await.unwrap();
-    //     delay_for(Duration::from_millis(100)).await;
-    //     let counter = addr.send(GetCounterMessage {}).await.unwrap();
-    //     assert_eq!(counter, 1);
-    // }
-    //
-    // #[stest::test]
-    // async fn test_bus_actor_async_trait() {
-    //     let bus_actor = BusActor::launch();
-    //     let actor = MyActor {
-    //         counter: 0,
-    //         bus: bus_actor.clone(),
-    //     };
-    //     let addr = actor.start();
-    //     let recipient = addr.clone().recipient::<MyMessage>();
-    //
-    //     bus_actor.subscribe(recipient).await.unwrap();
-    //     addr.send(DoBroadcast2 {}).await.unwrap().unwrap();
-    //     delay_for(Duration::from_millis(100)).await;
-    //     let counter = addr.send(GetCounterMessage {}).await.unwrap();
-    //     assert_eq!(counter, 1);
-    // }
-    //
-    // #[stest::test]
-    // async fn test_onshot() {
-    //     let bus_actor = BusActor::launch();
-    //     let bus_actor2 = bus_actor.clone();
-    //     let arbiter = Arbiter::new();
-    //     arbiter.exec_fn(move || loop {
-    //         let result =
-    //             block_on(async { bus_actor2.clone().broadcast(MyMessage {}).await.is_ok() });
-    //         debug!("broadcast result: {}", result);
-    //         sleep(Duration::from_millis(50));
-    //     });
-    //     let msg = bus_actor
-    //         .clone()
-    //         .oneshot::<MyMessage>()
-    //         .await
-    //         .unwrap()
-    //         .await;
-    //     assert!(msg.is_ok());
-    //     let msg = bus_actor
-    //         .clone()
-    //         .oneshot::<MyMessage>()
-    //         .await
-    //         .unwrap()
-    //         .await;
-    //     assert!(msg.is_ok());
-    // }
-    //
-    // #[stest::test]
-    // async fn test_channel() {
-    //     let bus_actor = BusActor::launch();
-    //     let bus_actor2 = bus_actor.clone();
-    //     let arbiter = Arbiter::new();
-    //     arbiter.exec_fn(move || loop {
-    //         let result =
-    //             block_on(async { bus_actor2.clone().broadcast(MyMessage {}).await.is_ok() });
-    //         debug!("broadcast result: {}", result);
-    //         sleep(Duration::from_millis(50));
-    //     });
-    //     let result = bus_actor.clone().channel::<MyMessage>().await;
-    //     assert!(result.is_ok());
-    //     let receiver = result.unwrap();
-    //     let msgs: Vec<MyMessage> = receiver.take(3).collect().await;
-    //     assert_eq!(3, msgs.len());
-    //
-    //     let receiver2 = bus_actor.clone().channel::<MyMessage>().await.unwrap();
-    //     let msgs: Vec<MyMessage> = receiver2.take(3).collect().await;
-    //     assert_eq!(3, msgs.len());
-    // }
+    use super::*;
+    use crate::{RegistryAsyncService, RegistryService};
+    use actix::Arbiter;
+    use futures::executor::block_on;
+    use futures::StreamExt;
+    use log::debug;
+    use std::thread::sleep;
+    use std::time::Duration;
+
+    #[derive(Debug, Clone)]
+    struct MyMessage {}
+
+    #[stest::test]
+    async fn test_onshot() {
+        let registry = RegistryService::launch();
+        let bus = registry.service_ref::<BusService>().await.unwrap();
+        let bus2 = bus.clone();
+        let arbiter = Arbiter::new();
+        arbiter.exec_fn(move || loop {
+            let result = block_on(async { bus2.broadcast(MyMessage {}).await.is_ok() });
+            debug!("broadcast result: {}", result);
+            sleep(Duration::from_millis(50));
+        });
+        let msg = bus.oneshot::<MyMessage>().await.unwrap().await;
+        assert!(msg.is_ok());
+        let msg = bus.oneshot::<MyMessage>().await.unwrap().await;
+        assert!(msg.is_ok());
+    }
+
+    #[stest::test]
+    async fn test_channel() {
+        let registry = RegistryService::launch();
+        let bus = registry.service_ref::<BusService>().await.unwrap();
+        let bus2 = bus.clone();
+        let arbiter = Arbiter::new();
+        arbiter.exec_fn(move || loop {
+            let result = block_on(async { bus2.broadcast(MyMessage {}).await.is_ok() });
+            debug!("broadcast result: {}", result);
+            sleep(Duration::from_millis(50));
+        });
+        let result = bus.channel::<MyMessage>().await;
+        assert!(result.is_ok());
+        let receiver = result.unwrap();
+        let msgs: Vec<MyMessage> = receiver.take(3).collect().await;
+        assert_eq!(3, msgs.len());
+
+        let receiver2 = bus.channel::<MyMessage>().await.unwrap();
+        let msgs: Vec<MyMessage> = receiver2.take(3).collect().await;
+        assert_eq!(3, msgs.len());
+    }
 }

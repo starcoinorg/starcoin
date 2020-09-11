@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
 };
@@ -32,9 +32,7 @@ impl ActorService for GetService {}
 impl ServiceFactory<Self> for GetService {
     fn create(ctx: &mut ServiceContext<GetService>) -> Result<GetService> {
         Ok(Self {
-            db: ctx
-                .get_shared::<DB>()?
-                .ok_or_else(|| format_err!("DB should exist before service registry."))?,
+            db: ctx.get_shared::<DB>()?,
         })
     }
 }
@@ -68,9 +66,7 @@ impl ActorService for PutService {}
 impl ServiceFactory<Self> for PutService {
     fn create(ctx: &mut ServiceContext<PutService>) -> Result<PutService> {
         Ok(Self {
-            db: ctx
-                .get_shared::<DB>()?
-                .ok_or_else(|| format_err!("DB should exist before service registry."))?,
+            db: ctx.get_shared::<DB>()?,
         })
     }
 }

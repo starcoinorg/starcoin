@@ -28,8 +28,31 @@ async fn test_broadcast() {
     bus_ref.broadcast(BMessage2 {}).await.unwrap();
     //wait broadcast message processed.
     Delay::new(Duration::from_millis(500)).await;
+
     let result = service_ref.get_msg_count().await.unwrap();
     assert_eq!(result.b1_count, 2);
     assert_eq!(result.b2_count, 1);
+
+    service_ref.stop_service().unwrap();
+
+    Delay::new(Duration::from_millis(500)).await;
+
+    // broadcast message after service stop will process fail.
+    bus_ref.broadcast(BMessage1 {}).await.unwrap();
+
+    service_ref.start_service().unwrap();
+
+    Delay::new(Duration::from_millis(500)).await;
+
+    //broadcast service worked after restart
+
+    bus_ref.broadcast(BMessage1 {}).await.unwrap();
+
+    Delay::new(Duration::from_millis(500)).await;
+
+    let result = service_ref.get_msg_count().await.unwrap();
+    assert_eq!(result.b1_count, 1);
+    assert_eq!(result.b2_count, 0);
+
     registry.shutdown().await.unwrap();
 }

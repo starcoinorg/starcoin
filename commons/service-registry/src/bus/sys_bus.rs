@@ -1,21 +1,21 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::service_actor::EventMessage;
-use actix::Recipient;
+use crate::EventNotifier;
 use anyhow::Result;
 use futures::channel::mpsc::UnboundedReceiver;
 use futures::channel::{mpsc, oneshot};
-use log::{debug, error, warn};
-use std::any::{Any, TypeId};
+use log::{debug, error, info, warn};
+use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::{self, Debug};
+use std::sync::mpsc::TrySendError;
 
-pub enum SubscriptionRecord<M>
+enum SubscriptionRecord<M>
 where
     M: Send + Clone + Debug,
 {
-    Recipient(Recipient<EventMessage<M>>),
+    Notifier(EventNotifier<M>),
     Channel(mpsc::UnboundedSender<M>),
     Oneshot(Option<oneshot::Sender<M>>),
 }
@@ -24,19 +24,16 @@ impl<M> SubscriptionRecord<M>
 where
     M: Send + Clone + Debug,
 {
-    pub fn get_subscription_type(&self) -> &str {
-        match self {
-            SubscriptionRecord::Channel(_) => "channel",
-            SubscriptionRecord::Recipient(_) => "recipient",
-            SubscriptionRecord::Oneshot(_) => "oneshot",
-        }
-    }
-
     pub fn get_subscription_id(&self) -> String {
         match self {
-            SubscriptionRecord::Channel(s) => format!("{:p}", s),
-            SubscriptionRecord::Recipient(s) => format!("{:p}", s),
-            SubscriptionRecord::Oneshot(s) => format!("{:p}", s),
+            SubscriptionRecord::Channel(s) => format!("{:p}::{}::Channel", s, type_name::<M>()),
+            SubscriptionRecord::Notifier(s) => format!(
+                "{:p}::{}::Notifier({})",
+                s,
+                type_name::<M>(),
+                s.target_service()
+            ),
+            SubscriptionRecord::Oneshot(s) => format!("{:p}::{}::Oneshot", s, type_name::<M>()),
         }
     }
 }
@@ -46,14 +43,7 @@ where
     M: Send + Clone + Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let sub_id = self.get_subscription_id();
-        let sub_type = self.get_subscription_type();
-        let msg_type = std::any::type_name::<M>();
-        write!(
-            f,
-            "Subscription by {}@{} for {}",
-            sub_id, sub_type, msg_type
-        )
+        write!(f, "{}", self.get_subscription_id())
     }
 }
 
@@ -99,15 +89,15 @@ impl SysBus {
     {
         let type_id = TypeId::of::<M>();
         let topic_subscribes = self.subscriptions.entry(type_id).or_insert_with(Vec::new);
-        debug!("{:?}", subscription);
+        debug!("do_subscribe: {:?}", subscription);
         topic_subscribes.push(Box::new(subscription));
     }
 
-    pub fn subscribe<M>(&mut self, recipient: Recipient<EventMessage<M>>)
+    pub fn subscribe<M>(&mut self, notifier: EventNotifier<M>)
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.do_subscribe(SubscriptionRecord::Recipient(recipient));
+        self.do_subscribe(SubscriptionRecord::Notifier(notifier));
     }
 
     pub fn channel<M>(&mut self) -> UnboundedReceiver<M>
@@ -128,6 +118,39 @@ impl SysBus {
         receiver
     }
 
+    // remove subscription when F return true.
+    fn remove_subscription<M, F>(&mut self, f: F)
+    where
+        M: Send + Clone + Debug + 'static,
+        F: Fn(&SubscriptionRecord<M>) -> bool,
+    {
+        let type_id = TypeId::of::<M>();
+        if let Some(topic_subscriptions) = self.subscriptions.get_mut(&type_id) {
+            topic_subscriptions.retain(move |subscription| {
+                match subscription.downcast_ref::<SubscriptionRecord<M>>() {
+                    Some(subscription) => !f(subscription),
+                    _ => false,
+                }
+            });
+        }
+    }
+
+    /// Only Notifier supported unsubscribe, channel and onshot just close receiver.
+    pub fn unsubscribe<M>(&mut self, target_service: &str)
+    where
+        M: Send + Clone + Debug + 'static,
+    {
+        debug!("unsubscribe: {:?}", target_service);
+        self.remove_subscription(|record: &SubscriptionRecord<M>| {
+            if let SubscriptionRecord::Notifier(notifier) = record {
+                if notifier.target_service() == target_service {
+                    return true;
+                }
+            }
+            false
+        });
+    }
+
     pub fn broadcast<M>(&mut self, msg: M)
     where
         M: Send + Clone + Debug + 'static,
@@ -143,13 +166,19 @@ impl SysBus {
                     Some(subscription) => {
                         debug!("send message to {:?}", subscription);
                         match subscription {
-                            SubscriptionRecord::Recipient(recipient) => recipient
-                                .do_send(EventMessage { msg: msg.clone() })
-                                .map_err(|e| {
-                                    clear = true;
-                                    warn!("Send message to recipient error:{:?}", e);
-                                    (subscription.get_subscription_id(), e.into_inner().msg)
-                                }),
+                            SubscriptionRecord::Notifier(notifier) => {
+                                notifier.notify(msg.clone()).map_err(|e| match e {
+                                    TrySendError::Full(m) => {
+                                        warn!("Send message to notifier error: TrySendError::Full");
+                                        (subscription.get_subscription_id(), m)
+                                    }
+                                    TrySendError::Disconnected(m) => {
+                                        clear = true;
+                                        warn!("Send message to notifier error TrySendError::Disconnected");
+                                        (subscription.get_subscription_id(), m)
+                                    }
+                                })
+                            }
                             SubscriptionRecord::Channel(sender) => {
                                 sender.unbounded_send(msg.clone()).map_err(|e| {
                                     clear = true;
@@ -176,25 +205,20 @@ impl SysBus {
                 }
             }
         }
-        // clear used oneshot subscription.
+        //TODO buffer SendError full message and retry.
+        // clear used oneshot or closed subscription.
         if clear {
-            if let Some(topic_subscriptions) = self.subscriptions.get_mut(type_id) {
-                topic_subscriptions.retain(|subscription| -> bool {
-                    let result = match subscription.downcast_ref::<SubscriptionRecord<M>>() {
-                        Some(SubscriptionRecord::Oneshot(sender)) => sender.is_some(),
-                        Some(SubscriptionRecord::Channel(sender)) => !sender.is_closed(),
-                        Some(SubscriptionRecord::Recipient(recipient)) => recipient.connected(),
-                        _ => true,
-                    };
-                    if !result {
-                        debug!(
-                            "Clear subscription: {:?}",
-                            subscription.downcast_ref::<SubscriptionRecord<M>>()
-                        );
-                    }
-                    result
-                });
-            }
+            self.remove_subscription(|record: &SubscriptionRecord<M>| {
+                let result = match record {
+                    SubscriptionRecord::Oneshot(sender) => sender.is_none(),
+                    SubscriptionRecord::Channel(sender) => sender.is_closed(),
+                    SubscriptionRecord::Notifier(notifier) => notifier.is_closed(),
+                };
+                if result {
+                    info!("Clear subscription: {:?}", record);
+                }
+                result
+            });
         }
     }
 }

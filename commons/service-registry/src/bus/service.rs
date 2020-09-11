@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::bus::sys_bus::SysBus;
-use crate::bus::{Broadcast, Channel, Oneshot, Subscription};
+use crate::bus::{
+    BroadcastRequest, ChannelRequest, OneshotRequest, SubscribeRequest, UnsubscribeRequest,
+};
 use crate::{ActorService, ServiceContext, ServiceHandler};
 use anyhow::Result;
 use futures::channel::{mpsc, oneshot};
@@ -15,44 +17,53 @@ pub struct BusService {
 
 impl ActorService for BusService {}
 
-impl<M> ServiceHandler<Self, Subscription<M>> for BusService
+impl<M> ServiceHandler<Self, SubscribeRequest<M>> for BusService
 where
     M: Send + Clone + Debug,
 {
-    fn handle(&mut self, msg: Subscription<M>, _ctx: &mut ServiceContext<Self>) {
-        self.bus.subscribe(msg.recipient);
+    fn handle(&mut self, msg: SubscribeRequest<M>, _ctx: &mut ServiceContext<Self>) {
+        self.bus.subscribe(msg.notifier);
     }
 }
 
-impl<M> ServiceHandler<Self, Broadcast<M>> for BusService
+impl<M> ServiceHandler<Self, UnsubscribeRequest<M>> for BusService
 where
     M: Send + Clone + Debug,
 {
-    fn handle(&mut self, msg: Broadcast<M>, _ctx: &mut ServiceContext<Self>) {
+    fn handle(&mut self, msg: UnsubscribeRequest<M>, _ctx: &mut ServiceContext<Self>) {
+        self.bus.unsubscribe::<M>(msg.target_service);
+    }
+}
+
+impl<M> ServiceHandler<Self, BroadcastRequest<M>> for BusService
+where
+    M: Send + Clone + Debug,
+{
+    fn handle(&mut self, msg: BroadcastRequest<M>, _ctx: &mut ServiceContext<Self>) {
         self.bus.broadcast(msg.msg);
     }
 }
 
-impl<M> ServiceHandler<Self, Channel<M>> for BusService
+impl<M> ServiceHandler<Self, ChannelRequest<M>> for BusService
 where
     M: Send + Clone + Debug,
 {
     fn handle(
         &mut self,
-        _msg: Channel<M>,
+        _msg: ChannelRequest<M>,
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<mpsc::UnboundedReceiver<M>> {
         Ok(self.bus.channel())
     }
 }
 
-impl<M> ServiceHandler<Self, Oneshot<M>> for BusService
+impl<M> ServiceHandler<Self, OneshotRequest<M>> for BusService
 where
     M: Send + Clone + Debug,
 {
     fn handle(
         &mut self,
-        _msg: Oneshot<M>,
+        _msg: OneshotRequest<M>,
         _ctx: &mut ServiceContext<Self>,
     ) -> Result<oneshot::Receiver<M>> {
         Ok(self.bus.oneshot())

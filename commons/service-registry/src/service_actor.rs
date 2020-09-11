@@ -91,6 +91,10 @@ impl<R: ServiceRequest> ServiceMessage<R> {
     pub fn new(request: R) -> Self {
         Self { request }
     }
+
+    pub fn into_inner(self) -> R {
+        self.request
+    }
 }
 
 impl<R> From<R> for ServiceMessage<R>
@@ -164,7 +168,20 @@ pub struct EventMessage<M>
 where
     M: Clone + Debug + Send,
 {
-    pub msg: M,
+    msg: M,
+}
+
+impl<M> EventMessage<M>
+where
+    M: Clone + Debug + Send,
+{
+    pub fn new(msg: M) -> Self {
+        Self { msg }
+    }
+
+    pub fn into_inner(self) -> M {
+        self.msg
+    }
 }
 
 impl<M> Message for EventMessage<M>

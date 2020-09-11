@@ -606,9 +606,30 @@ pub trait RegistryAsyncService {
     async fn put_shared<T>(&self, t: T) -> Result<()>
     where
         T: Send + Sync + 'static;
-    async fn get_shared<T>(&self) -> Result<Option<Arc<T>>>
+
+    async fn get_shared_opt<T>(&self) -> Result<Option<Arc<T>>>
     where
         T: Send + Sync + 'static;
+
+    async fn get_shared<T>(&self) -> Result<Arc<T>>
+    where
+        T: Send + Sync + 'static,
+    {
+        self.get_shared_opt()
+            .await?
+            .ok_or_else(|| format_err!("Can not find shared data by type: {}", type_name::<T>()))
+    }
+
+    fn get_shared_sync<T>(&self) -> Result<Arc<T>>
+    where
+        T: Send + Sync + 'static,
+    {
+        block_on(async {
+            self.get_shared_opt().await?.ok_or_else(|| {
+                format_err!("Can not find shared data by type: {}", type_name::<T>())
+            })
+        })
+    }
 
     async fn shutdown(&self) -> Result<()>;
 }
@@ -678,7 +699,7 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
         self.send(PutShardRequest::new(value)).await
     }
 
-    async fn get_shared<T>(&self) -> Result<Option<Arc<T>>>
+    async fn get_shared_opt<T>(&self) -> Result<Option<Arc<T>>>
     where
         T: Send + Sync + 'static,
     {
