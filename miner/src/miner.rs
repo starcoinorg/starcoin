@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::MINER_METRICS;
+use crate::MintBlockEvent;
 use actix::prelude::*;
 use anyhow::{format_err, Result};
-use bus::{Broadcast, BusActor};
+use bus::{Bus, BusActor};
 use config::NodeConfig;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
@@ -52,46 +53,49 @@ impl Miner {
             config,
         }
     }
-    pub fn set_mint_job(&mut self, t: MineCtx) {
-        let mut state = self.state.lock().unwrap();
-        *state = Some(t)
+
+    pub async fn set_mint(&self, block_template: BlockTemplate, difficulty: U256) -> Result<()> {
+        let ctx = MineCtx::new(block_template, difficulty);
+        let header_hash = ctx.header_hash;
+        if self.is_minting() {
+            warn!("force set mint job, since mint ctx is not empty");
+        }
+        *self.state.lock().unwrap() = Some(ctx);
+        let bus = self.bus.clone();
+        bus.broadcast(MintBlockEvent::new(header_hash, difficulty))
+            .await
     }
 
-    pub fn get_mint_job(&mut self) -> Option<String> {
-        let state = self.state.lock().unwrap();
-        state.as_ref().map(|x|
-            //TODO move message format to json rpc protocol layer.
-            format!(r#"["{:x}","{:x}"]"#, x.header_hash, x.difficulty))
-    }
-
-    pub fn has_mint_job(&self) -> bool {
+    pub fn is_minting(&self) -> bool {
         self.state.lock().unwrap().is_some()
     }
 
-    pub fn submit(&self, payload: String) -> Result<()> {
-        let state = self
+    pub async fn submit(&self, nonce: u64, header_hash: HashValue) -> Result<()> {
+        let ctx = self
             .state
             .lock()
             .unwrap()
             .take()
-            .ok_or_else(|| format_err!("Invalid state, job state is empty on submit."))?;
-        let metrics_timer = state.metrics_timer;
-        let block_template = state.block_template.clone();
-        let nonce = u64::from_str_radix(&payload, 16).map_err(|e| {
-            format_err!(
-                "Invalid payload submit: {}, decode failed:{}",
-                payload,
-                e.to_string()
-            )
-        })?;
-        let difficulty = state.difficulty;
-        let block = block_template.into_block(nonce, difficulty);
-        info!("Miner new block with id: {:?}", block.id());
-        self.bus.do_send(Broadcast {
-            msg: MinedBlock(Arc::new(block)),
-        });
+            .ok_or_else(|| format_err!("Empty mine ctx"))?;
+        debug!("miner receive submit with hash:{}", header_hash);
+        // TODO:FIX ME
+        /*
+        if ctx.header_hash != header_hash {
+            self.reset_ctx(Some(ctx));
+            return Err(format_err!("Header hash mismatch"));
+        }*/
+        let block = ctx.block_template.into_block(nonce, ctx.difficulty);
+        info!("Mint new block with id: {:?}", block.id());
+        self.bus
+            .clone()
+            .broadcast(MinedBlock(Arc::new(block)))
+            .await?;
         MINER_METRICS.block_mint_count.inc();
-        metrics_timer.observe_duration();
+        ctx.metrics_timer.observe_duration();
         Ok(())
+    }
+
+    fn _reset_ctx(&self, ctx: Option<MineCtx>) {
+        *(self.state.lock().unwrap()) = ctx;
     }
 }

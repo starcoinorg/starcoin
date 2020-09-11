@@ -1,34 +1,39 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
-
-use crate::stratum::StratumClient;
 use crate::worker::{start_worker, WorkerController, WorkerMessage};
-use actix::{Actor, Arbiter, Context, System};
+use crate::JobClient;
+use actix::{Actor, Arbiter, Context};
 use anyhow::Result;
+use crypto::HashValue;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::{ConsensusStrategy, MinerClientConfig};
 use starcoin_types::U256;
+use std::sync::Mutex;
 use std::thread;
 
-pub struct Miner {
-    job_rx: mpsc::UnboundedReceiver<(Vec<u8>, U256)>,
+pub struct MinerClient<C>
+where
+    C: JobClient,
+{
     nonce_rx: mpsc::UnboundedReceiver<(Vec<u8>, u64)>,
     worker_controller: WorkerController,
-    stratum_client: StratumClient,
+    job_client: C,
     pb: Option<ProgressBar>,
-    num_seals_found: u64,
+    num_seals_found: Mutex<u64>,
 }
 
-impl Miner {
-    pub async fn new(
+impl<C> MinerClient<C>
+where
+    C: JobClient,
+{
+    pub fn new(
         config: MinerClientConfig,
         consensus_strategy: ConsensusStrategy,
-    ) -> Result<Self> {
-        let mut stratum_client = StratumClient::new(&config)?;
-        let job_rx = stratum_client.subscribe().await?;
+        job_client: C,
+    ) -> Self {
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
         let (worker_controller, pb) = if config.enable_stderr {
             let mp = MultiProgress::new();
@@ -43,51 +48,55 @@ impl Miner {
             let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, None);
             (worker_controller, None)
         };
-
-        Ok(Self {
-            job_rx,
+        Self {
             nonce_rx,
             worker_controller,
-            stratum_client,
+            job_client,
             pb,
-            num_seals_found: 0,
-        })
+            num_seals_found: Mutex::new(0),
+        }
     }
 
-    pub async fn start(&mut self) {
+    pub async fn start(&mut self) -> Result<()> {
         info!("Miner client started");
+        let mut job_rx = self.job_client.subscribe()?.fuse();
+
         loop {
             debug!("In miner client select loop");
             futures::select! {
-                job = self.job_rx.select_next_some() => {
-                     let (pow_header, diff) = job;
-                     self.start_mint_work(pow_header, diff).await;
+                job = job_rx.select_next_some() => {
+                    match job{
+                        Ok(job)=>{
+                            let (pow_hash, diff) =job;
+                            self.start_mint_work(pow_hash, diff).await;
+
+                        }
+                        Err(e)=>{error!("read subscribed job error:{}",e)}
+                    }
                 },
+
                 seal = self.nonce_rx.select_next_some() => {
-                     let (pow_header, nonce) = seal;
-                     self.submit_seal(pow_header, nonce).await;
+                    let (pow_header, nonce) = seal;
+                    let hash = HashValue::from_slice(&pow_header).expect("Inner error, invalid hash");
+                    self.submit_seal(hash, nonce).await;
                 }
             }
         }
     }
 
-    async fn submit_seal(&mut self, pow_header: Vec<u8>, nonce: u64) {
+    async fn submit_seal(&self, pow_header: HashValue, nonce: u64) {
         self.worker_controller
             .send_message(WorkerMessage::Stop)
             .await;
-        if let Err(err) = self
-            .stratum_client
-            .submit_seal((pow_header.clone(), nonce))
-            .await
-        {
-            error!("Submit seal to stratum failed: {:?}", err);
+        if let Err(err) = self.job_client.submit_seal(pow_header, nonce) {
+            error!("Submit seal to failed: {:?}", err);
             return;
         }
         {
-            self.num_seals_found += 1;
+            *self.num_seals_found.lock().unwrap() += 1;
             let msg = format!(
                 "Miner client Total seals found: {:>3}",
-                self.num_seals_found
+                *self.num_seals_found.lock().unwrap()
             );
             if let Some(pb) = self.pb.as_ref() {
                 pb.set_message(&msg);
@@ -98,42 +107,55 @@ impl Miner {
         }
     }
 
-    async fn start_mint_work(&mut self, pow_header: Vec<u8>, diff: U256) {
+    async fn start_mint_work(&self, pow_header: HashValue, diff: U256) {
         self.worker_controller
-            .send_message(WorkerMessage::NewWork { pow_header, diff })
+            .send_message(WorkerMessage::NewWork {
+                pow_header: pow_header.to_vec(),
+                diff,
+            })
             .await
     }
 }
 
-pub struct MinerClientActor {
+pub struct MinerClientActor<C>
+where
+    C: JobClient,
+{
     config: MinerClientConfig,
     consensus_strategy: ConsensusStrategy,
+    job_client: C,
 }
 
-impl MinerClientActor {
-    pub fn new(config: MinerClientConfig, consensus_strategy: ConsensusStrategy) -> Self {
+impl<C> MinerClientActor<C>
+where
+    C: JobClient,
+{
+    pub fn new(
+        config: MinerClientConfig,
+        consensus_strategy: ConsensusStrategy,
+        job_client: C,
+    ) -> Self {
         MinerClientActor {
             config,
             consensus_strategy,
+            job_client,
         }
     }
 }
 
-impl Actor for MinerClientActor {
+impl<C> Actor for MinerClientActor<C>
+where
+    C: JobClient + Unpin + 'static + Clone + Send + Sync,
+{
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {
         let config = self.config.clone();
         let consensus_strategy = self.consensus_strategy;
+        let job_client = self.job_client.clone();
         let arbiter = Arbiter::new();
         let fut = async move {
-            let miner_cli = Miner::new(config, consensus_strategy).await;
-            match miner_cli {
-                Err(e) => {
-                    error!("Start miner client failed: {:?}", e);
-                    System::current().stop();
-                }
-                Ok(mut miner_cli) => miner_cli.start().await,
-            }
+            let mut miner_cli = MinerClient::new(config, consensus_strategy, job_client);
+            miner_cli.start().await.unwrap();
         };
         arbiter.send(Box::pin(fut));
         info!("MinerClientActor started");

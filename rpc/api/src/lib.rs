@@ -10,6 +10,7 @@ pub mod chain;
 pub mod debug;
 pub mod dev;
 pub mod errors;
+pub mod miner;
 pub mod node;
 pub mod pubsub;
 pub mod state;

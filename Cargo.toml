@@ -44,7 +44,6 @@ members = [
     "block-relayer",
     "block-relayer/api",
     "miner",
-    "miner/stratum",
     "node",
     "network-p2p",
     "network-p2p/peerset",

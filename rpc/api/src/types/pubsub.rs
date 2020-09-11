@@ -12,6 +12,7 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::U256;
 use std::convert::{TryFrom, TryInto};
 
 /// Subscription kind.
@@ -25,6 +26,8 @@ pub enum Kind {
     Events,
     /// New Pending Transactions subscription.
     NewPendingTransactions,
+    /// New block for minting
+    NewMintBlock,
 }
 
 /// Subscription result.
@@ -35,6 +38,7 @@ pub enum Result {
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
     Event(Box<Event>),
+    MintBlock(Box<MintBlock>),
 }
 
 impl Serialize for Result {
@@ -46,7 +50,7 @@ impl Serialize for Result {
             Result::Block(ref header) => header.serialize(serializer),
             Result::Event(ref evt) => evt.serialize(serializer),
             Result::TransactionHash(ref hash) => hash.serialize(serializer),
-            // Result::SyncState(ref sync) => sync.serialize(serializer),
+            Result::MintBlock(ref block) => block.serialize(serializer), // Result::SyncState(ref sync) => sync.serialize(serializer),
         }
     }
 }
@@ -170,6 +174,7 @@ where
 {
     s.serialize_str(format!("{:#x}", key).as_str())
 }
+
 pub fn deserialize_event_key<'de, D>(d: D) -> std::result::Result<EventKey, D::Error>
 where
     D: Deserializer<'de>,
@@ -203,6 +208,7 @@ pub struct ThinHeadBlock {
     #[serde(rename = "txn_hashes")]
     body: Vec<HashValue>,
 }
+
 impl ThinHeadBlock {
     pub fn new(header: BlockHeader, txn_hashes: Vec<HashValue>) -> Self {
         Self {
@@ -216,4 +222,13 @@ impl ThinHeadBlock {
     pub fn body(&self) -> &[HashValue] {
         &self.body
     }
+}
+
+/// Block for minting
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
+pub struct MintBlock {
+    pub header_hash: HashValue,
+    pub difficulty: U256,
 }

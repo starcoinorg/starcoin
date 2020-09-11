@@ -4,6 +4,7 @@
 use futures03::compat::Future01CompatExt;
 use jsonrpc_core_client::*;
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     pubsub::Event, pubsub::EventFilter, pubsub::Kind, pubsub::ThinHeadBlock,
 };
@@ -70,6 +71,20 @@ impl PubSubClient {
                 STARCOIN_SUBSCRIPTION,
                 STARCOIN_UNSUBSCRIBE,
                 "Vec<HashValue>",
+            )
+            .compat()
+            .await
+    }
+    pub async fn subscribe_new_mint_block(
+        &self,
+    ) -> Result<TypedSubscriptionStream<MintBlock>, RpcError> {
+        self.client
+            .subscribe(
+                STARCOIN_SUBSCRIBE,
+                vec![Kind::NewMintBlock],
+                STARCOIN_SUBSCRIPTION,
+                STARCOIN_UNSUBSCRIBE,
+                "MintBlock",
             )
             .compat()
             .await

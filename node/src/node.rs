@@ -16,9 +16,9 @@ use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
+use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
-use starcoin_miner::MinerActor;
-use starcoin_miner::MinerClientActor;
+use starcoin_miner::{MinerActor, MinerClientActor};
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
@@ -50,7 +50,7 @@ pub struct NodeStartedHandle {
     pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
-    pub miner_client: Option<Addr<MinerClientActor>>,
+    pub miner_client: Option<Addr<MinerClientActor<JobBusClient>>>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
@@ -67,7 +67,7 @@ pub struct Node {
     pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
-    pub miner_client: Option<Addr<MinerClientActor>>,
+    pub miner_client: Option<Addr<MinerClientActor<JobBusClient>>>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
@@ -311,11 +311,13 @@ pub async fn start(
     )?;
     let miner_client_config = config.miner.client_config.clone();
     let consensus_strategy = config.net().consensus();
+    let job_client = JobBusClient::new(bus.clone());
     let miner_client = if config.miner.enable_miner_client {
         Some(
             Arbiter::new()
                 .exec(move || {
-                    MinerClientActor::new(miner_client_config, consensus_strategy).start()
+                    MinerClientActor::new(miner_client_config, consensus_strategy, job_client)
+                        .start()
                 })
                 .await?,
         )
@@ -325,6 +327,7 @@ pub async fn start(
 
     let (json_rpc, _io_handler) = RpcActor::launch(
         config.clone(),
+        bus.clone(),
         txpool_service.clone(),
         chain.clone(),
         account_service,
