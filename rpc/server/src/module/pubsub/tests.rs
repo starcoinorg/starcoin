@@ -13,7 +13,9 @@ use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::ChainNotifyHandlerActor;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use starcoin_crypto::{
+    ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, HashValue, PrivateKey,
+};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
@@ -23,10 +25,6 @@ use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::{account_address, U256};
-use starcoin_types::{
-    block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
-};
-use starcoin_types::account_address;
 use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
 use std::sync::Arc;
 use tokio::time::timeout;

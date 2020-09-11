@@ -22,7 +22,7 @@ fn main() {
     let opts: StarcoinOpt = StarcoinOpt::from_args();
     let config = {
         MinerClientConfig {
-            stratum_server: opts.stratum_server.clone(),
+            server: Some(opts.stratum_server.clone()),
             thread_num: opts.thread_num,
             enable_stderr: true,
         }

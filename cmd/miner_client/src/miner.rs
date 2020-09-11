@@ -14,8 +14,8 @@ use starcoin_types::U256;
 use std::thread;
 
 pub struct MinerClient<C>
-    where
-        C: JobClient,
+where
+    C: JobClient,
 {
     nonce_rx: mpsc::UnboundedReceiver<(Vec<u8>, u64)>,
     worker_controller: WorkerController,
@@ -25,8 +25,8 @@ pub struct MinerClient<C>
 }
 
 impl<C> MinerClient<C>
-    where
-        C: JobClient,
+where
+    C: JobClient,
 {
     pub fn new(
         config: MinerClientConfig,
@@ -117,8 +117,8 @@ impl<C> MinerClient<C>
 }
 
 pub struct MinerClientActor<C>
-    where
-        C: JobClient,
+where
+    C: JobClient,
 {
     config: MinerClientConfig,
     consensus_strategy: ConsensusStrategy,
@@ -126,8 +126,8 @@ pub struct MinerClientActor<C>
 }
 
 impl<C> MinerClientActor<C>
-    where
-        C: JobClient,
+where
+    C: JobClient,
 {
     pub fn new(
         config: MinerClientConfig,
@@ -143,8 +143,8 @@ impl<C> MinerClientActor<C>
 }
 
 impl<C> Actor for MinerClientActor<C>
-    where
-        C: JobClient + Unpin + 'static + Clone + Send + Sync,
+where
+    C: JobClient + Unpin + 'static + Clone + Send + Sync,
 {
     type Context = Context<Self>;
     fn started(&mut self, _ctx: &mut Self::Context) {

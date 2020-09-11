@@ -18,8 +18,7 @@ impl JobRpcClient {
 
 impl JobClient for JobRpcClient {
     fn subscribe(&self) -> Result<BoxStream<Result<(HashValue, U256)>>> {
-        self
-            .rpc_client
+        self.rpc_client
             .subscribe_new_mint_blocks()
             .map(|stream| stream.map_ok(|b| (b.header_hash, b.difficulty)))
             .map(|s| s.boxed())

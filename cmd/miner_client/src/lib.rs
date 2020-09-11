@@ -3,8 +3,6 @@
 
 pub mod job_client;
 pub mod miner;
-#[allow(dead_code)]
-mod stratum;
 mod worker;
 
 use anyhow::Result;
