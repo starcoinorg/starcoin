@@ -3,6 +3,7 @@
 
 use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
@@ -182,7 +183,7 @@ impl BlockChain {
     fn create_block_template_inner(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -197,7 +198,7 @@ impl BlockChain {
             previous_header,
             final_block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             self.consensus.now(),
             uncles,
         )?;
@@ -395,7 +396,7 @@ impl ChainReader for BlockChain {
     fn create_block_template(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -412,7 +413,7 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
         self.create_block_template_inner(
             author,
-            auth_key_prefix,
+            author_public_key,
             previous_header,
             user_txns,
             uncles,

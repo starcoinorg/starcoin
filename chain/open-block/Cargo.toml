@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 starcoin-types = {path = "../../types"}
 executor = {path = "../../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}

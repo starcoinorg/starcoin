@@ -6,11 +6,12 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::ed25519::random_public_key;
 use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::time::Duration;
 use structopt::StructOpt;
@@ -72,8 +73,9 @@ impl CommandAction for GenTxnCommand {
         let node_info = client.node_info()?;
         let account_provider: Box<dyn Fn() -> (AccountAddress, Vec<u8>)> = if opt.random {
             Box::new(|| -> (AccountAddress, Vec<u8>) {
-                let auth_key = AuthenticationKey::random();
-                (auth_key.derived_address(), auth_key.prefix().to_vec())
+                let public_key = random_public_key();
+                let addr = account_address::from_public_key(&public_key);
+                (addr, public_key.to_bytes().to_vec())
             })
         } else {
             let to_account = match opt.to {
@@ -85,10 +87,8 @@ impl CommandAction for GenTxnCommand {
                 None => client.account_create("".to_string()),
             })?;
             let address = to_account.address;
-            let auth_prefix = AuthenticationKey::ed25519(&to_account.public_key)
-                .prefix()
-                .to_vec();
-            Box::new(move || -> (AccountAddress, Vec<u8>) { (address, auth_prefix.clone()) })
+            let public_key_vec = to_account.public_key.to_bytes().to_vec();
+            Box::new(move || -> (AccountAddress, Vec<u8>) { (address, public_key_vec.clone()) })
         };
         let sender = client
             .account_default()?

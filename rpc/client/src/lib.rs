@@ -46,6 +46,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
@@ -578,14 +579,14 @@ impl RpcClient {
     pub fn create_dev_block(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Vec<u8>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_id: Option<HashValue>,
         head: bool,
     ) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
-                .create_dev_block(author, auth_key_prefix, parent_id, head)
+                .create_dev_block(author, author_public_key, parent_id, head)
                 .compat()
                 .await
         })

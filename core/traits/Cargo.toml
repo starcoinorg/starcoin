@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 async-trait = "0.1"
 starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}

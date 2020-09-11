@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 chain = {path = "../chain", package="starcoin-chain" }
-anyhow = "1.0"
+anyhow = "1.0.32"
 actix = "0.10.0-alpha.3"
 rand = "0.7.3"
 config = {path = "../config", package="starcoin-config"}

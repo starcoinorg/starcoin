@@ -20,7 +20,7 @@ fn test_create_block_template() {
         .create_block_template(
             1_000_000,
             *miner_account.address(),
-            Some(miner_account.get_auth_key().prefix().to_vec()),
+            Some(miner_account.public_key),
             Vec::new(),
         )
         .unwrap();
@@ -48,7 +48,7 @@ fn test_do_uncles() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key.clone()),
                 Vec::new(),
             )
             .unwrap();
@@ -72,7 +72,7 @@ fn test_do_uncles() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key.clone()),
                 Vec::new(),
             )
             .unwrap();
@@ -99,7 +99,7 @@ fn test_do_uncles() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key),
                 Vec::new(),
             )
             .unwrap();
@@ -126,7 +126,7 @@ fn test_new_head() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key.clone()),
                 Vec::new(),
             )
             .unwrap();
@@ -158,7 +158,7 @@ fn test_new_branch() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key.clone()),
                 Vec::new(),
             )
             .unwrap();
@@ -180,7 +180,7 @@ fn test_new_branch() {
             .create_block_template(
                 1_000_000,
                 *miner_account.address(),
-                Some(miner_account.get_auth_key().prefix().to_vec()),
+                Some(miner_account.public_key.clone()),
                 Vec::new(),
             )
             .unwrap();
@@ -212,7 +212,7 @@ async fn test_create_block_template_actor() {
         .send(CreateBlockTemplateRequest::new(
             1_000_000,
             *miner_account.address(),
-            Some(miner_account.get_auth_key().prefix().to_vec()),
+            Some(miner_account.public_key),
             Vec::new(),
         ))
         .await

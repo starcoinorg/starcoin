@@ -12,7 +12,7 @@ use crate::{
 };
 
 use anyhow::Result;
-use common_crypto::hash::HashValue;
+use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;

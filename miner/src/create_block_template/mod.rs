@@ -4,6 +4,7 @@ use anyhow::Result;
 use bus::{BusActor, Subscription};
 use chain::BlockChain;
 use consensus::Consensus;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
@@ -38,7 +39,7 @@ impl Message for GetHeadRequest {
 pub struct CreateBlockTemplateRequest {
     final_block_gas_limit: u64,
     author: AccountAddress,
-    auth_key_prefix: Option<Vec<u8>>,
+    author_public_key: Option<Ed25519PublicKey>,
     user_txns: Vec<SignedUserTransaction>,
 }
 
@@ -46,13 +47,13 @@ impl CreateBlockTemplateRequest {
     pub fn new(
         final_block_gas_limit: u64,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Self {
         Self {
             final_block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             user_txns,
         }
     }
@@ -62,7 +63,7 @@ impl
     Into<(
         u64,
         AccountAddress,
-        Option<Vec<u8>>,
+        Option<Ed25519PublicKey>,
         Vec<SignedUserTransaction>,
     )> for CreateBlockTemplateRequest
 {
@@ -71,13 +72,13 @@ impl
     ) -> (
         u64,
         AccountAddress,
-        Option<Vec<u8>>,
+        Option<Ed25519PublicKey>,
         Vec<SignedUserTransaction>,
     ) {
         (
             self.final_block_gas_limit,
             self.author,
-            self.auth_key_prefix,
+            self.author_public_key,
             self.user_txns,
         )
     }
@@ -169,11 +170,11 @@ impl Handler<CreateBlockTemplateRequest> for CreateBlockTemplateActor {
         msg: CreateBlockTemplateRequest,
         _ctx: &mut Self::Context,
     ) -> Self::Result {
-        let (final_block_gas_limit, author, auth_key_prefix, user_txns) = msg.into();
+        let (final_block_gas_limit, author, author_public_key, user_txns) = msg.into();
         let (block_template, txns) = self.inner.create_block_template(
             final_block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             user_txns,
         )?;
         Ok(CreateBlockTemplateResponse {
@@ -250,7 +251,7 @@ impl Inner {
         &self,
         final_block_gas_limit: u64,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
         let previous_header = self.chain.current_header();
@@ -260,7 +261,7 @@ impl Inner {
             previous_header,
             final_block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             self.consensus.now(),
             uncles,
         )?;

@@ -11,7 +11,7 @@ extern crate prometheus;
 extern crate transaction_pool as tx_pool;
 
 use actix::prelude::*;
-use common_crypto::hash::HashValue;
+use crypto::hash::HashValue;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::NodeConfig;
 use starcoin_txpool_api::TxnStatusFullEvent;

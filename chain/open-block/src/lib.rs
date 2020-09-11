@@ -1,4 +1,5 @@
 use anyhow::{bail, format_err, Result};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
@@ -38,7 +39,7 @@ impl OpenedBlock {
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
@@ -55,7 +56,6 @@ impl OpenedBlock {
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
-        // let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
@@ -63,7 +63,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            auth_key_prefix,
+            author_public_key,
             uncles.len() as u64,
             previous_header.number + 1,
         );
@@ -224,7 +224,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix, _uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, _uncles, number) =
             self.block_meta.into_inner();
 
         let (uncle_hash, uncles) = if !self.uncles.is_empty() {
@@ -244,7 +244,7 @@ impl OpenedBlock {
             timestamp,
             number,
             author,
-            auth_key_prefix,
+            author_public_key,
             accumulator_root,
             state_root,
             self.gas_used,

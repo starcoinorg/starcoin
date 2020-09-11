@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 actix = "0.10.0-alpha.3"
 actix-rt = "1.1"
 starcoin-types = {path = "../../types" }

@@ -185,7 +185,7 @@ async fn create_node(num: Option<u64>, node_config: Arc<NodeConfig>) -> Result<N
                 .clone()
                 .create_block_template(
                     *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
+                    Some(miner_account.clone().public_key),
                     None,
                     txn_vec,
                 )

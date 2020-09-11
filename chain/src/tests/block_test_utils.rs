@@ -146,7 +146,7 @@ prop_compose! {
         p_header.parent_hash(),
         ChainNetwork::TEST.consensus().now(),
         p_header.author,
-        p_header.auth_key_prefix,
+        p_header.author_public_key,
         0,
         p_header.number + 1,
         );

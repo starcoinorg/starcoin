@@ -29,7 +29,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
         *account1.address(),
-        Some(account1.auth_key_prefix()),
+        Some(account1.clone().pubkey),
         0,
         1,
     ));
@@ -44,7 +44,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
         *account1.address(),
-        Some(account1.auth_key_prefix()),
+        Some(account1.clone().pubkey),
         0,
         3, //EBLOCK_NUMBER_MISMATCH
     ));
@@ -59,7 +59,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         0, //EINVALID_TIMESTAMP
         *account1.address(),
-        Some(account1.auth_key_prefix()),
+        Some(account1.clone().pubkey),
         0,
         2,
     ));
@@ -74,7 +74,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
         *account1.address(),
-        Some(account1.auth_key_prefix()),
+        Some(account1.clone().pubkey),
         net.genesis_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
     ));
@@ -103,7 +103,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     let raw_txn = crate::build_transfer_txn_by_token_type(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,

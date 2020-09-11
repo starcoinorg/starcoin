@@ -4,7 +4,7 @@
 use std::{fmt, sync::Arc};
 
 use super::{TxStatus, VerifiedTransaction as Transaction};
-use common_crypto::hash::HashValue as H256;
+use crypto::hash::HashValue as H256;
 use futures_channel::mpsc;
 use transaction_pool as tx_pool;
 use tx_pool::VerifiedTransaction;
@@ -144,7 +144,7 @@ impl tx_pool::Listener<Transaction> for TransactionsPoolNotifier {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use common_crypto::{ed25519, Uniform};
+    use crypto::{ed25519, Uniform};
     use rand::SeedableRng;
 
     use tx_pool::Listener;

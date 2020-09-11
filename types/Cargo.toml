@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 byteorder = { version = "1.3.2", default-features = false }
 bytes = "0.5"
 hex = { version = "0.4.2", default-features = false }
@@ -28,7 +28,7 @@ num_enum = "0.5.1"
 actix = "0.10.0-alpha.3"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="b660407697decb9719c071e71e47991f78b4e903" }
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="d8a5eea1295097e8dc5ea955714e5bfe3fc5661f" }
 libp2p = "0.22.0"
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"

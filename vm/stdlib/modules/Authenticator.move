@@ -61,6 +61,24 @@ module Authenticator {
         aborts_if false;
     }
 
+    //convert authentication key to address
+    public fun derived_address(authentication_key: vector<u8>):address {
+        let address_bytes = Vector::empty<u8>();
+
+        let i = 16;
+        while (i < 32) {
+            let b = *Vector::borrow(&authentication_key, i);
+            Vector::push_back(&mut address_bytes, b);
+            i = i + 1;
+        };
+
+        LCS::to_address(address_bytes)
+    }
+
+    spec fun derived_address {
+        aborts_if false;
+    }
+
     // Compute a multied25519 account authentication key for the policy `k`
     public fun multi_ed25519_authentication_key(k: &MultiEd25519PublicKey): vector<u8> {
         let public_keys = &k.public_keys;

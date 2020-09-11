@@ -82,7 +82,7 @@ fn main() {
         version_number = matches.value_of("version").unwrap().to_string();
     }
 
-    let no_check_compatibility = matches.is_present("no_check_compatibility");
+    let no_check_compatibility = matches.is_present("no-check-compatibility");
 
     // Make sure that the current directory is `vm/stdlib` from now on.
     let exec_path = std::env::args().next().expect("path of the executable");

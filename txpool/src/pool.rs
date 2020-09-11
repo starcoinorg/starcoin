@@ -11,7 +11,7 @@ pub(crate) mod scoring;
 pub(crate) mod verifier;
 
 pub use client::{AccountSeqNumberClient, Client};
-use common_crypto::hash::{HashValue, PlainCryptoHash};
+use crypto::hash::{HashValue, PlainCryptoHash};
 pub use queue::{Status, TransactionQueue};
 use std::ops::Deref;
 use transaction_pool as tx_pool;
