@@ -12,16 +12,16 @@ futures = { version = "0.3" }
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 traits = { path = "../../core/traits", package = "starcoin-traits" }
-consensus = {path = "../../consensus", package="starcoin-consensus" }
-bus = {path = "../../bus", package="starcoin-bus" }
+consensus = { path = "../../consensus", package = "starcoin-consensus" }
+bus = { path = "../../bus", package = "starcoin-bus" }
 tokio = { version = "0.2", features = ["full"] }
-logger = {path = "../../commons/logger", package="starcoin-logger"}
+logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
-sc_stratum = {path = "../../miner/stratum", package ="starcoin-stratum"}
+crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
+sc_stratum = { path = "../../miner/stratum", package = "starcoin-stratum" }
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
-jsonrpc-tcp-server= "14.0"
-serde_json = { version="1.0", features = ["arbitrary_precision"]}
+jsonrpc-tcp-server = "14.0"
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0", features = ["derive"] }
 rust-argon2 = "0.8"
 rand = "0.7.3"
@@ -33,6 +33,9 @@ hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
 structopt = "0.3.17"
 indicatif = "0.15"
+starcoin-rpc-client = { path = "../../rpc/client" }
+starcoin-rpc-api = { path = "../../rpc/api" }
+tokio-compat = "0.1.5"
 
 [[bin]]
 name = "starcoin_miner"

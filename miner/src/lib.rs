@@ -13,7 +13,7 @@ use crypto::hash::PlainCryptoHash;
 use futures::prelude::*;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
-pub use starcoin_miner_client::miner::{Miner as MinerClient, MinerClientActor};
+pub use starcoin_miner_client::miner::{MinerClient, MinerClientActor};
 use starcoin_txpool_api::TxPoolSyncService;
 use std::cmp::min;
 use std::sync::Arc;
@@ -23,6 +23,7 @@ use types::system_events::ActorStop;
 
 mod create_block_template;
 pub mod headblock_pacemaker;
+pub mod job_bus_client;
 mod metrics;
 pub mod miner;
 pub mod ondemand_pacemaker;

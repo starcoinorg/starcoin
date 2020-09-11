@@ -14,7 +14,7 @@ use types::{
 fn test_miner() {
     let mut config = config::NodeConfig::random_for_test();
     config.miner.enable_miner_client = false;
-    let handle = test_helper::run_node_by_config(Arc::new(config.clone())).unwrap();
+    let handle = test_helper::run_node_by_config(Arc::new(config)).unwrap();
     let fut = async move {
         let bus = handle.start_handle().bus.clone();
         let new_block_receiver = bus.clone().oneshot::<NewHeadBlock>().await.unwrap();

@@ -7169,6 +7169,8 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-miner",
+ "starcoin-rpc-api",
+ "starcoin-rpc-client",
  "starcoin-stratum",
  "starcoin-traits",
  "starcoin-types",
@@ -7176,6 +7178,7 @@ dependencies = [
  "structopt 0.3.17",
  "thiserror",
  "tokio 0.2.22",
+ "tokio-compat",
 ]
 
 [[package]]

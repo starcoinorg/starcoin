@@ -81,3 +81,9 @@ pub struct SubmitSealEvent {
     pub nonce: u64,
     pub header_hash: HashValue,
 }
+
+impl SubmitSealEvent {
+    pub fn new(header_hash: HashValue, nonce: u64) -> Self {
+        Self { header_hash, nonce }
+    }
+}

@@ -6,14 +6,13 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 
 pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
-    pub stratum_server: SocketAddr,
+    pub stratum_server: String,
     pub enable_mint_empty_block: bool,
     pub block_gas_limit: Option<u64>,
     pub enable_miner_client: bool,
@@ -23,7 +22,7 @@ pub struct MinerConfig {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct MinerClientConfig {
-    pub stratum_server: SocketAddr,
+    pub stratum_server: String,
     pub thread_num: u16,
     #[serde(skip)]
     pub enable_stderr: bool,
@@ -45,10 +44,10 @@ impl ConfigModule for MinerConfig {
         } else {
             DEFAULT_STRATUM_SERVER_PORT
         };
-        let stratum_server = format!("127.0.0.1:{}", port).parse::<SocketAddr>()?;
+        let stratum_server = format!("127.0.0.1:{}", port);
 
         Ok(Self {
-            stratum_server,
+            stratum_server: stratum_server.clone(),
             enable_mint_empty_block: !disable_mint_empty_block,
             block_gas_limit: None,
             enable_miner_client: !opt.disable_miner_client,

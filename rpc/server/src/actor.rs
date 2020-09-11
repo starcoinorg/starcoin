@@ -203,8 +203,10 @@ mod tests {
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
         let playground_service = PlaygroudService::new(Arc::new(MockStateNodeStore::new()));
+        let bus = BusActor::launch();
         let _rpc_actor = RpcActor::launch(
             config,
+            bus,
             txpool,
             chain_service,
             account_service,

@@ -77,7 +77,7 @@ impl PubSubClient {
     }
     pub async fn subscribe_new_mint_block(
         &self,
-    ) -> Result<TypedSubscriptionStream<Vec<MintBlock>>, RpcError> {
+    ) -> Result<TypedSubscriptionStream<MintBlock>, RpcError> {
         self.client
             .subscribe(
                 STARCOIN_SUBSCRIBE,

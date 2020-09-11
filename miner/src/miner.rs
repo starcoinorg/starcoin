@@ -14,7 +14,6 @@ use starcoin_metrics::HistogramTimer;
 use std::sync::Arc;
 use std::sync::Mutex;
 use types::{block::BlockTemplate, system_events::MinedBlock, U256};
-
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,

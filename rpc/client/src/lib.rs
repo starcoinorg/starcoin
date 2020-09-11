@@ -635,7 +635,7 @@ impl RpcClient {
     }
     pub fn subscribe_new_mint_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = Vec<MintBlock>, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_mint_block().await;
             res.map(|s| s.compat().map_err(map_err))

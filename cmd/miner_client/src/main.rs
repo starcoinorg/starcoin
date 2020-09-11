@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-
-use futures::executor;
-use logger::{self, prelude::*};
 use starcoin_config::{ConsensusStrategy, MinerClientConfig};
-use starcoin_miner_client::miner::Miner;
+use starcoin_miner_client::job_client::JobRpcClient;
+use starcoin_miner_client::miner::MinerClient;
+use starcoin_rpc_client::RpcClient;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -23,18 +22,17 @@ fn main() {
     let opts: StarcoinOpt = StarcoinOpt::from_args();
     let config = {
         MinerClientConfig {
-            stratum_server: opts
-                .stratum_server
-                .parse()
-                .expect("Invalid stratum server address"),
+            stratum_server: opts.stratum_server.clone(),
             thread_num: opts.thread_num,
             enable_stderr: true,
         }
     };
-    executor::block_on(async move {
-        match Miner::new(config, opts.consensus).await {
-            Err(e) => error!("Start miner client failed:{:?}", e),
-            Ok(mut miner_client) => miner_client.start().await,
-        }
+    let mut rt = tokio_compat::runtime::Runtime::new().unwrap();
+    let client =
+        RpcClient::connect_websocket(&format!("ws://{}", opts.stratum_server), &mut rt).unwrap();
+    rt.block_on_std(async move {
+        let job_client = JobRpcClient::new(client);
+        let mut miner_client = MinerClient::new(config, opts.consensus, job_client);
+        miner_client.start().await.unwrap();
     });
 }
