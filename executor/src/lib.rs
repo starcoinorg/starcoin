@@ -13,8 +13,8 @@ pub use starcoin_transaction_builder::{
 };
 
 mod block_executor;
+#[cfg(test)]
+pub mod error_code_test;
 mod executor;
 #[cfg(test)]
 pub mod executor_test;
-#[cfg(test)]
-pub mod prolog_error_code_test;
