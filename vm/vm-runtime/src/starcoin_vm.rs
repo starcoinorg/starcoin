@@ -624,10 +624,12 @@ impl StarcoinVM {
                 match result {
                     Ok(status_and_output) => status_and_output,
                     Err(err) => {
+                        info!("move vm execution status {:?}", err);
                         let txn_status = TransactionStatus::from(err.clone());
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
                         } else {
+                            info!("vm execution error, but txn is kept");
                             self.failed_transaction_cleanup(
                                 err,
                                 gas_schedule,
