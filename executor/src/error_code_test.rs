@@ -103,7 +103,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     let raw_txn = crate::build_transfer_txn_by_token_type(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
