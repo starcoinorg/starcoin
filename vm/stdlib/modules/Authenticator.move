@@ -62,7 +62,7 @@ module Authenticator {
     }
 
     //convert authentication key to address
-    public fun convert_address(authentication_key: vector<u8>):address {
+    public fun derived_address(authentication_key: vector<u8>):address {
         let address_bytes = Vector::empty<u8>();
 
         let i = 16;
