@@ -1,5 +1,6 @@
 use crate::download::DownloadActor;
 use crate::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
+use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_HASH, SYNC_METRICS};
 use crate::sync_task::{
     SyncTaskAction, SyncTaskRequest, SyncTaskResponse, SyncTaskState, SyncTaskType,
@@ -30,7 +31,7 @@ const MAX_SIZE: usize = 10;
 pub struct BlockSyncBeginEvent;
 
 #[derive(Default, Debug, Message)]
-#[rtype(result = "Result<()>")]
+#[rtype(result = "()")]
 pub struct NextTimeEvent;
 
 #[derive(Debug, Clone)]
@@ -38,43 +39,6 @@ enum DataType {
     Header,
     Body,
 }
-
-trait SendEventHandler {
-    fn send_event(&self, event: SyncDataEvent);
-    fn next_time(&self);
-}
-
-trait CloneEventHandler {
-    fn clone_handler(&self) -> Box<dyn SendEventHandler>;
-}
-
-trait EventHandler: CloneEventHandler + SendEventHandler {}
-
-impl<N> SendEventHandler for Addr<BlockSyncTaskActor<N>>
-where
-    N: NetworkService + 'static,
-{
-    fn send_event(&self, event: SyncDataEvent) {
-        self.do_send(event);
-    }
-
-    fn next_time(&self) {
-        if let Err(err) = self.try_send(NextTimeEvent {}) {
-            error!("Send NextTimeEvent failed when sync : {:?}", err);
-        };
-    }
-}
-
-impl<N> CloneEventHandler for Addr<BlockSyncTaskActor<N>>
-where
-    N: NetworkService + 'static,
-{
-    fn clone_handler(&self) -> Box<dyn SendEventHandler> {
-        Box::new(self.clone())
-    }
-}
-
-impl<N> EventHandler for Addr<BlockSyncTaskActor<N>> where N: NetworkService + 'static {}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct BlockIdAndNumber {
@@ -240,7 +204,11 @@ where
         self.state.is_finish()
     }
 
-    fn sync_blocks(&mut self, handler: Box<dyn EventHandler>) {
+    fn sync_blocks(
+        &mut self,
+        sync_data_handler: Box<dyn SendSyncEventHandler<SyncDataEvent>>,
+        next_time_handler: Box<dyn SendSyncEventHandler<NextTimeEvent>>,
+    ) {
         let sync_header_flag =
             !(self.body_task.len() > MAX_LEN || self.next.number >= self.target_number);
 
@@ -269,7 +237,7 @@ where
                         }
                     };
 
-                handler.clone_handler().send_event(event);
+                sync_data_handler.send_event(event);
                 hash_timer.observe_duration();
             }
 
@@ -299,11 +267,11 @@ where
                         }
                     };
 
-                handler.clone_handler().send_event(event);
+                sync_data_handler.send_event(event);
                 block_body_timer.observe_duration();
             }
 
-            handler.next_time();
+            next_time_handler.send_event(NextTimeEvent {});
         });
     }
 
@@ -417,7 +385,8 @@ where
     }
 
     fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
-        self.inner.sync_blocks(Box::new(address));
+        self.inner
+            .sync_blocks(Box::new(address.clone()), Box::new(address));
     }
 
     fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
@@ -469,7 +438,7 @@ impl<N> Handler<NextTimeEvent> for BlockSyncTaskActor<N>
 where
     N: NetworkService + 'static,
 {
-    type Result = Result<()>;
+    type Result = ();
 
     fn handle(&mut self, _event: NextTimeEvent, ctx: &mut Self::Context) -> Self::Result {
         let finish = self.inner.do_finish();
@@ -479,8 +448,6 @@ where
             self.download_address.do_send(SyncTaskType::BLOCK);
             ctx.stop();
         }
-
-        Ok(())
     }
 }
 

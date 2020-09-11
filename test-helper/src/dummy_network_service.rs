@@ -10,6 +10,7 @@ use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -136,6 +137,18 @@ impl DummyNetworkService {
             .get_node(req.accumulator_storage_type, req.node_hash)
             .map_err(|e| e.into())
     }
+
+    fn get_txn_infos(&self, block_id: HashValue) -> Result<Option<Vec<TransactionInfo>>> {
+        if let Ok(txn_infos) = self
+            .chain
+            .get_storage()
+            .get_block_transaction_infos(block_id)
+        {
+            Ok(Some(txn_infos))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -171,7 +184,11 @@ impl NetworkService for DummyNetworkService {
     ) -> anyhow::Result<Vec<u8>> {
         match rpc_path.to_lowercase().as_str() {
             // "get_txns" => {}
-            // "get_txn_infos" => {}
+            "get_txn_infos" => {
+                let block_id: HashValue = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_txn_infos(block_id);
+                Ok(scs::to_bytes(&resp)?)
+            }
             "get_headers_by_number" => {
                 let req: GetBlockHeadersByNumber = scs::from_bytes(message.as_slice())?;
                 let resp = self.get_headers_by_number(req);

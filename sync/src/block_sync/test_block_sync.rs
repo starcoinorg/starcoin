@@ -1,7 +1,5 @@
-use crate::block_sync::{
-    BlockIdAndNumber, CloneEventHandler, DataType, EventHandler, Inner, SendEventHandler,
-    SyncDataEvent,
-};
+use crate::block_sync::{BlockIdAndNumber, DataType, Inner, NextTimeEvent, SyncDataEvent};
+use crate::sync_event_handle::{CloneSyncEventHandler, SendSyncEventHandler};
 use crate::sync_task::SyncTaskState;
 use chain::BlockChain;
 use config::NodeConfig;
@@ -9,6 +7,7 @@ use crypto::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_network_rpc_api::BlockBody;
+use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use test_helper::chain::gen_blockchain_with_blocks_for_test;
@@ -17,23 +16,23 @@ use traits::ChainReader;
 use types::block::BlockHeader;
 
 #[derive(Clone)]
-struct TestEventHandler {
+struct TestSyncDataEventHandler {
     sync_header_event_count: Arc<Mutex<u64>>,
     sync_body_event_count: Arc<Mutex<u64>>,
-    next_time_count: Arc<Mutex<u64>>,
+    event: PhantomData<SyncDataEvent>,
 }
 
-impl TestEventHandler {
+impl TestSyncDataEventHandler {
     fn new() -> Self {
-        TestEventHandler {
+        TestSyncDataEventHandler {
             sync_header_event_count: Arc::new(Mutex::new(0)),
             sync_body_event_count: Arc::new(Mutex::new(0)),
-            next_time_count: Arc::new(Mutex::new(0)),
+            event: PhantomData,
         }
     }
 }
 
-impl SendEventHandler for TestEventHandler {
+impl SendSyncEventHandler<SyncDataEvent> for TestSyncDataEventHandler {
     fn send_event(&self, event: SyncDataEvent) {
         match event.data_type {
             DataType::Header => {
@@ -66,30 +65,48 @@ impl SendEventHandler for TestEventHandler {
             DataType::Body => {}
         }
     }
-
-    fn next_time(&self) {
-        let old_ct: u64 = *self.next_time_count.lock().unwrap();
-        let count = old_ct + 1;
-        *self.next_time_count.lock().unwrap() = count;
-        let header_count: u64 = *self.sync_header_event_count.lock().unwrap();
-        let ct = if header_count % 10 == 0 {
-            header_count / 10
-        } else {
-            header_count / 10 + 1
-        };
-
-        info!("next_time:{}:{}", ct, count);
-        assert_eq!(ct, count);
-    }
 }
 
-impl CloneEventHandler for TestEventHandler {
-    fn clone_handler(&self) -> Box<dyn SendEventHandler> {
+impl CloneSyncEventHandler<SyncDataEvent> for TestSyncDataEventHandler {
+    fn clone_handler(&self) -> Box<dyn SendSyncEventHandler<SyncDataEvent>> {
         Box::new(self.clone())
     }
 }
 
-impl EventHandler for TestEventHandler {}
+// impl SyncEventHandler<SyncDataEvent> for TestSyncDataEventHandler {}
+
+#[derive(Clone)]
+struct TestNextTimeEventHandler {
+    next_time_count: Arc<Mutex<u64>>,
+    event: PhantomData<NextTimeEvent>,
+}
+
+impl TestNextTimeEventHandler {
+    fn new() -> Self {
+        TestNextTimeEventHandler {
+            next_time_count: Arc::new(Mutex::new(0)),
+            event: PhantomData,
+        }
+    }
+
+    fn get_count(&self) -> u64 {
+        *self.next_time_count.lock().unwrap()
+    }
+}
+
+impl SendSyncEventHandler<NextTimeEvent> for TestNextTimeEventHandler {
+    fn send_event(&self, _event: NextTimeEvent) {
+        let old_ct: u64 = *self.next_time_count.lock().unwrap();
+        let count = old_ct + 1;
+        *self.next_time_count.lock().unwrap() = count;
+    }
+}
+
+impl CloneSyncEventHandler<NextTimeEvent> for TestNextTimeEventHandler {
+    fn clone_handler(&self) -> Box<dyn SendSyncEventHandler<NextTimeEvent>> {
+        Box::new(self.clone())
+    }
+}
 
 fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetworkService>) {
     let node_config = Arc::new(NodeConfig::random_for_test());
@@ -107,19 +124,26 @@ fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetwork
     (block_chain, inner)
 }
 
+fn gen_handlers() -> (TestSyncDataEventHandler, TestNextTimeEventHandler) {
+    let handler_1 = TestSyncDataEventHandler::new();
+    let handler_2 = TestNextTimeEventHandler::new();
+    (handler_1, handler_2)
+}
+
 #[stest::test]
 async fn test_block_sync_inner() {
-    let handler = TestEventHandler::new();
+    let (handler_1, handler_2) = gen_handlers();
     let times = 15;
+    let per = 10;
     let (block_chain, mut inner) = gen_block_chain_and_inner(times);
     assert!(!inner.do_finish());
-    let ct = if times / 10 == 0 {
-        times / 10
+    let ct = if times / per == 0 {
+        times / per
     } else {
-        times / 10 + 1
+        times / per + 1
     };
     for i in 0..ct {
-        inner.sync_blocks(Box::new(handler.clone()));
+        inner.sync_blocks(Box::new(handler_1.clone()), Box::new(handler_2.clone()));
         Delay::new(Duration::from_millis(1000)).await;
         let next_number = if i != (ct - 1) { (i + 1) * 10 } else { times };
 
@@ -129,6 +153,9 @@ async fn test_block_sync_inner() {
             .unwrap();
         inner.update_next(&next);
     }
+
+    let count = handler_2.get_count();
+    assert_eq!(count, ct);
     assert!(inner.do_finish());
 }
 

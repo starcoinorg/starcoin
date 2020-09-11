@@ -9,6 +9,7 @@ mod sync_task;
 mod txn_sync;
 pub use download::Downloader;
 pub use sync::SyncActor;
+mod sync_event_handle;
 
 use crypto::HashValue;
 use dyn_clone::DynClone;
