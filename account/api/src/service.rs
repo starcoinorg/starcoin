@@ -4,8 +4,7 @@
 use crate::error::AccountServiceError;
 use crate::message::{AccountRequest, AccountResponse};
 use crate::AccountInfo;
-use actix::dev::ToEnvelope;
-use actix::{Actor, Addr, Handler};
+use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -57,18 +56,16 @@ pub trait AccountAsyncService:
 }
 
 #[async_trait::async_trait]
-impl<A> AccountAsyncService for Addr<A>
+impl<S> AccountAsyncService for ServiceRef<S>
 where
-    A: Actor,
-    A: Handler<AccountRequest>,
-    A::Context: ToEnvelope<A, AccountRequest>,
-    A: std::marker::Send,
+    S: ActorService,
+    S: ServiceHandler<S, AccountRequest>,
 {
     async fn create_account(&self, password: String) -> ServiceResult<AccountInfo> {
         let response = self
             .send(AccountRequest::CreateAccount(password))
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountInfo(account) = response {
             Ok(*account)
         } else {
@@ -80,7 +77,7 @@ where
         let response = self
             .send(AccountRequest::GetDefaultAccount())
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountInfoOption(account) = response {
             Ok(*account)
         } else {
@@ -94,7 +91,7 @@ where
         let response = self
             .send(AccountRequest::SetDefaultAccount(address))
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountInfoOption(account) = response {
             Ok(*account)
         } else {
@@ -106,7 +103,7 @@ where
         let response = self
             .send(AccountRequest::GetAccounts())
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountList(accounts) = response {
             Ok(accounts)
         } else {
@@ -118,7 +115,7 @@ where
         let response = self
             .send(AccountRequest::GetAccount(address))
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountInfoOption(account) = response {
             Ok(*account)
         } else {
@@ -137,7 +134,7 @@ where
                 signer: signer_address,
             })
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::SignedTxn(txn) = response {
             Ok(*txn)
         } else {
@@ -154,7 +151,7 @@ where
         let response = self
             .send(AccountRequest::UnlockAccount(address, password, duration))
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::UnlockAccountResponse = response {
             Ok(())
         } else {
@@ -166,7 +163,7 @@ where
         let response = self
             .send(AccountRequest::LockAccount(address))
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::None = response {
             Ok(())
         } else {
@@ -187,7 +184,7 @@ where
                 private_key,
             })
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AccountInfo(account) = response {
             Ok(*account)
         } else {
@@ -203,7 +200,7 @@ where
         let response = self
             .send(AccountRequest::ExportAccount { address, password })
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::ExportAccountResponse(data) = response {
             Ok(data)
         } else {
@@ -215,7 +212,7 @@ where
         let response = self
             .send(AccountRequest::AccountAcceptedTokens { address })
             .await
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))??;
+            .map_err(AccountServiceError::OtherError)??;
         if let AccountResponse::AcceptedTokens(data) = response {
             Ok(data)
         } else {

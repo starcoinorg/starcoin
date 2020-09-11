@@ -14,10 +14,10 @@ use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
 use log::info;
-use serde::export::PhantomData;
+use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::fmt::Debug;
 use std::time::Duration;
 
 struct ServiceHolder<S>
@@ -85,7 +85,7 @@ where
 
 pub struct Registry {
     service_ref: ServiceRef<RegistryService>,
-    shared: HashMap<TypeId, Arc<dyn Any + Send + Sync>>,
+    shared: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
     //use vec to keep service registry order.
     services: Vec<Box<dyn ServiceRefProxy>>,
 }
@@ -105,26 +105,26 @@ impl Registry {
 
     pub fn put_shared<T>(&mut self, t: T)
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
-        self.shared.insert(TypeId::of::<T>(), Arc::new(t));
+        self.shared.insert(TypeId::of::<T>(), Box::new(t));
     }
 
-    pub fn get_shared<T>(&self) -> Result<Arc<T>>
+    pub fn get_shared<T>(&self) -> Result<T>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         self.get_shared_opt::<T>()
             .ok_or_else(|| format_err!("Can not find shared by type: {}", type_name::<T>()))
     }
 
-    pub fn get_shared_opt<T>(&self) -> Option<Arc<T>>
+    pub fn get_shared_opt<T>(&self) -> Option<T>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         self.shared
             .get(&TypeId::of::<T>())
-            .and_then(|t| t.clone().downcast::<T>().ok())
+            .and_then(|t| t.downcast_ref::<T>().cloned())
     }
 
     pub fn has_service(&self, service_name: &str) -> bool {
@@ -261,7 +261,8 @@ impl ServiceFactory<RegistryService> for RegistryService {
 
 impl RegistryService {
     pub fn launch() -> ServiceRef<Self> {
-        let addr = ServiceActor::create(|ctx| {
+        let arbiter = Arbiter::new();
+        let addr = ServiceActor::start_in_arbiter(&arbiter, |ctx| {
             let service_ref: ServiceRef<RegistryService> = ctx.address().into();
             ServiceActor::new::<RegistryService>(service_ref)
         });
@@ -282,6 +283,15 @@ where
     S: ActorService + ServiceFactory<S> + 'static,
 {
     phantom: PhantomData<S>,
+}
+
+impl<S> Debug for RegistryRequest<S>
+where
+    S: ActorService + ServiceFactory<S>,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+    }
 }
 
 #[allow(clippy::new_without_default)]
@@ -323,6 +333,15 @@ where
     mocker: Box<dyn MockHandler<S>>,
 }
 
+impl<S> Debug for RegistryMockerRequest<S>
+where
+    S: ActorService,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+    }
+}
+
 impl<S> RegistryMockerRequest<S>
 where
     S: ActorService,
@@ -352,6 +371,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct ListRequest;
 
 impl ServiceRequest for ListRequest {
@@ -373,6 +393,15 @@ where
     S: ActorService + 'static,
 {
     phantom: PhantomData<S>,
+}
+
+impl<S> Debug for ServiceRefRequest<S>
+where
+    S: ActorService,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+    }
 }
 
 impl<S> ServiceRefRequest<S>
@@ -409,14 +438,23 @@ where
 
 pub struct PutShardRequest<T>
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
     value: T,
 }
 
+impl<T> Debug for PutShardRequest<T>
+where
+    T: Send + Sync + Clone,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<T>())
+    }
+}
+
 impl<T> PutShardRequest<T>
 where
-    T: Send + Sync,
+    T: Send + Sync + Clone,
 {
     pub fn new(value: T) -> Self {
         Self { value }
@@ -425,14 +463,14 @@ where
 
 impl<T> ServiceRequest for PutShardRequest<T>
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
     type Response = ();
 }
 
 impl<T> ServiceHandler<Self, PutShardRequest<T>> for RegistryService
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
     fn handle(&mut self, msg: PutShardRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
         self.registry.put_shared(msg.value);
@@ -441,14 +479,23 @@ where
 
 pub struct GetShardRequest<T>
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
     phantom: PhantomData<T>,
 }
 
+impl<T> Debug for GetShardRequest<T>
+where
+    T: Send + Sync + Clone,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<T>())
+    }
+}
+
 impl<T> GetShardRequest<T>
 where
-    T: Send + Sync,
+    T: Send + Sync + Clone,
 {
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
@@ -460,24 +507,25 @@ where
 
 impl<T> ServiceRequest for GetShardRequest<T>
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
-    type Response = Option<Arc<T>>;
+    type Response = Option<T>;
 }
 
 impl<T> ServiceHandler<Self, GetShardRequest<T>> for RegistryService
 where
-    T: Send + Sync + 'static,
+    T: Send + Sync + Clone + 'static,
 {
     fn handle(
         &mut self,
         _msg: GetShardRequest<T>,
         _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Option<Arc<T>> {
+    ) -> Option<T> {
         self.registry.get_shared_opt::<T>()
     }
 }
 
+#[derive(Debug)]
 pub struct ServiceStatusRequest {
     service_name: String,
 }
@@ -502,6 +550,7 @@ impl ServiceHandler<Self, ServiceStatusRequest> for RegistryService {
     }
 }
 
+#[derive(Debug)]
 pub struct ServiceCmdRequest {
     service_name: String,
     service_cmd: ServiceCmd,
@@ -531,10 +580,12 @@ impl ServiceHandler<Self, ServiceCmdRequest> for RegistryService {
     }
 }
 
+#[derive(Debug)]
 pub enum SystemCmd {
     Shutdown,
 }
 
+#[derive(Debug)]
 pub struct SystemCmdRequest {
     cmd: SystemCmd,
 }
@@ -598,31 +649,60 @@ pub trait RegistryAsyncService {
     }
 
     async fn list_service(&self) -> Result<Vec<ServiceInfo>>;
+
+    fn list_service_sync(&self) -> Result<Vec<ServiceInfo>> {
+        block_on(async move { self.list_service().await })
+    }
     async fn stop_service(&self, service_name: &str) -> Result<()>;
+
+    fn stop_service_sync(&self, service_name: &str) -> Result<()> {
+        block_on(async move { self.stop_service(service_name).await })
+    }
+
     async fn start_service(&self, service_name: &str) -> Result<()>;
+
+    fn start_service_sync(&self, service_name: &str) -> Result<()> {
+        block_on(async move { self.start_service(service_name).await })
+    }
+
     async fn restart_service(&self, service_name: &str) -> Result<()>;
+
+    fn restart_service_sync(&self, service_name: &str) -> Result<()> {
+        block_on(async move { self.restart_service(service_name).await })
+    }
     async fn get_service_status(&self, service_name: &str) -> Result<Option<ServiceStatus>>;
+
+    fn get_service_status_sync(&self, service_name: &str) -> Result<Option<ServiceStatus>> {
+        block_on(async move { self.get_service_status(service_name).await })
+    }
 
     async fn put_shared<T>(&self, t: T) -> Result<()>
     where
-        T: Send + Sync + 'static;
+        T: Send + Sync + Clone + 'static;
 
-    async fn get_shared_opt<T>(&self) -> Result<Option<Arc<T>>>
+    fn put_shared_sync<T>(&self, t: T) -> Result<()>
     where
-        T: Send + Sync + 'static;
+        T: Send + Sync + Clone + 'static,
+    {
+        block_on(async move { self.put_shared(t).await })
+    }
 
-    async fn get_shared<T>(&self) -> Result<Arc<T>>
+    async fn get_shared_opt<T>(&self) -> Result<Option<T>>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static;
+
+    async fn get_shared<T>(&self) -> Result<T>
+    where
+        T: Send + Sync + Clone + 'static,
     {
         self.get_shared_opt()
             .await?
             .ok_or_else(|| format_err!("Can not find shared data by type: {}", type_name::<T>()))
     }
 
-    fn get_shared_sync<T>(&self) -> Result<Arc<T>>
+    fn get_shared_sync<T>(&self) -> Result<T>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         block_on(async {
             self.get_shared_opt().await?.ok_or_else(|| {
@@ -632,6 +712,10 @@ pub trait RegistryAsyncService {
     }
 
     async fn shutdown(&self) -> Result<()>;
+
+    fn shutdown_sync(&self) -> Result<()> {
+        block_on(async { self.shutdown().await })
+    }
 }
 
 #[async_trait::async_trait]
@@ -694,14 +778,14 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
 
     async fn put_shared<T>(&self, value: T) -> Result<()>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         self.send(PutShardRequest::new(value)).await
     }
 
-    async fn get_shared_opt<T>(&self) -> Result<Option<Arc<T>>>
+    async fn get_shared_opt<T>(&self) -> Result<Option<T>>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         self.send(GetShardRequest::new()).await
     }

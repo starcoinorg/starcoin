@@ -2,16 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::GenerateBlockEvent;
-use actix::{
-    Actor, ActorContext, ActorFuture, Addr, AsyncContext, Context, ContextFutureSpawner, Handler,
-    WrapFuture,
-};
+use actix::Addr;
 use anyhow::Result;
-use bus::{Broadcast, BusActor, Subscription};
+use bus::{Broadcast, BusActor};
 use logger::prelude::*;
-use starcoin_node_api::service_registry::{ServiceRegistry, SystemService};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use tx_relay::PropagateNewTransactions;
-use types::system_events::ActorStop;
 
 /// On-demand generate block, only generate block when new transaction add to tx-pool.
 pub struct OndemandPacemaker {
@@ -19,10 +15,8 @@ pub struct OndemandPacemaker {
 }
 
 impl OndemandPacemaker {
-    pub fn new(service_registry: &ServiceRegistry) -> Result<Self> {
-        Ok(Self {
-            bus: service_registry.bus(),
-        })
+    pub fn new(bus: Addr<BusActor>) -> Self {
+        Self { bus }
     }
 
     pub fn send_event(&mut self) {
@@ -33,39 +27,28 @@ impl OndemandPacemaker {
     }
 }
 
-impl Actor for OndemandPacemaker {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<PropagateNewTransactions>();
-        self.bus
-            .clone()
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-        info!("Ondemand Pacemaker started.");
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("Ondemand Pacemaker stopped");
+impl ServiceFactory<Self> for OndemandPacemaker {
+    fn create(ctx: &mut ServiceContext<OndemandPacemaker>) -> Result<OndemandPacemaker> {
+        Ok(Self::new(ctx.get_shared::<Addr<BusActor>>()?))
     }
 }
 
-impl SystemService for OndemandPacemaker {}
+impl ActorService for OndemandPacemaker {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<PropagateNewTransactions>();
+    }
 
-impl Handler<ActorStop> for OndemandPacemaker {
-    type Result = ();
-
-    fn handle(&mut self, _msg: ActorStop, ctx: &mut Self::Context) -> Self::Result {
-        ctx.stop()
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<PropagateNewTransactions>();
     }
 }
 
-impl Handler<PropagateNewTransactions> for OndemandPacemaker {
-    type Result = ();
-
-    fn handle(&mut self, _msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, PropagateNewTransactions> for OndemandPacemaker {
+    fn handle_event(
+        &mut self,
+        _msg: PropagateNewTransactions,
+        _ctx: &mut ServiceContext<OndemandPacemaker>,
+    ) {
         self.send_event()
     }
 }

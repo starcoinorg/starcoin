@@ -113,24 +113,18 @@ where
     }
 
     pub(crate) fn exec_service_cmd(&self, cmd: ServiceCmd) -> Result<()> {
-        block_on(async move {
-            self.addr
-                .send(cmd)
-                .timeout(Duration::from_millis(2000))
-                .await
-                .map_err(anyhow::Error::new)
-        })?
+        self.addr.try_send(cmd).map_err(anyhow::Error::new)
     }
 
-    pub fn start_service(&self) -> Result<()> {
+    pub fn start_self(&self) -> Result<()> {
         self.exec_service_cmd(ServiceCmd::Start)
     }
 
-    pub fn stop_service(&self) -> Result<()> {
+    pub fn stop_self(&self) -> Result<()> {
         self.exec_service_cmd(ServiceCmd::Stop)
     }
 
-    pub fn restart_service(&self) -> Result<()> {
+    pub fn restart_self(&self) -> Result<()> {
         self.exec_service_cmd(ServiceCmd::Restart)
     }
 

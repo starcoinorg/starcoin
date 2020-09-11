@@ -4,4 +4,6 @@
 mod account_events;
 mod actor;
 
-pub use actor::*;
+pub use account_events::AccountEventService;
+pub use actor::AccountService;
+pub use starcoin_account_lib::account_storage::AccountStorage;

@@ -12,7 +12,6 @@ use anyhow::Result;
 use log::error;
 use std::any::type_name;
 use std::fmt::Debug;
-use std::sync::Arc;
 use std::time::Duration;
 
 #[allow(unused_variables)]
@@ -61,9 +60,9 @@ where
         self.cache.service_ref::<DepS>()
     }
 
-    pub fn get_shared<T>(&self) -> Result<Arc<T>>
+    pub fn get_shared<T>(&self) -> Result<T>
     where
-        T: Send + Sync + 'static,
+        T: Send + Sync + Clone + 'static,
     {
         self.registry_ref().get_shared_sync::<T>()
     }

@@ -3,7 +3,3 @@
 
 pub mod message;
 pub mod node_service;
-pub mod service_registry;
-
-#[cfg(test)]
-mod unit_tests;
