@@ -11,6 +11,7 @@ members = [
     "commons/metrics",
     "commons/utils",
     "commons/proptest-helpers",
+    "commons/service-registry",
     "types",
     "core/traits",
     "core/accumulator",
