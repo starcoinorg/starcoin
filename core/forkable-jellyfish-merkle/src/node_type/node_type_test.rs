@@ -5,9 +5,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::*;
-use crate::{nibble_path::NibblePath, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::nibble_path::NibblePath;
 use proptest::prelude::*;
-use starcoin_crypto::{hash::CryptoHash, HashValue};
+use starcoin_crypto::{
+    hash::{CryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH},
+    HashValue,
+};
 use std::{panic, rc::Rc};
 
 fn hash_internal(left: HashValue, right: HashValue) -> HashValue {

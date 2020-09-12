@@ -197,14 +197,8 @@ where
         lock.map(|pivot_block| -> Arc<MerkleAccumulator> {
             let block_accumulator_info = pivot_block.block_info.get_block_accumulator_info();
             if pivot_block.block_accumulator.is_none() {
-                let block_accumulator = MerkleAccumulator::new(
-                    *block_accumulator_info.get_accumulator_root(),
-                    block_accumulator_info
-                        .get_frozen_subtree_roots()
-                        .clone()
-                        .to_vec(),
-                    block_accumulator_info.get_num_leaves(),
-                    block_accumulator_info.get_num_nodes(),
+                let block_accumulator = MerkleAccumulator::new_with_info(
+                    block_accumulator_info.clone(),
                     AccumulatorStoreType::Block,
                     pivot_block.storage.clone().into_super_arc(),
                 )

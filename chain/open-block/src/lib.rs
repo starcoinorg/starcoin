@@ -48,11 +48,8 @@ impl OpenedBlock {
             .get_block_info(previous_block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", previous_block_id))?;
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let txn_accumulator = MerkleAccumulator::new(
-            *txn_accumulator_info.get_accumulator_root(),
-            txn_accumulator_info.get_frozen_subtree_roots().clone(),
-            txn_accumulator_info.get_num_leaves(),
-            txn_accumulator_info.get_num_nodes(),
+        let txn_accumulator = MerkleAccumulator::new_with_info(
+            txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;

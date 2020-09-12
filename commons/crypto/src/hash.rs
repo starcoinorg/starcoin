@@ -3,6 +3,7 @@
 
 pub use crypto_macro::{CryptoHash, CryptoHasher};
 pub use libra_crypto::hash::{CryptoHash, CryptoHasher, DefaultHasher, HashValue, TestOnlyHash};
+use once_cell::sync::Lazy;
 
 /// A type that implements `PlainCryptoHash` can be hashed by a cryptographic hash function and produce
 /// a `HashValue`.
@@ -28,3 +29,11 @@ pub fn create_literal_hash(word: &str) -> HashValue {
     s.resize(HashValue::LENGTH, 0);
     HashValue::from_slice(&s).expect("Cannot fail")
 }
+
+/// Placeholder hash of `Accumulator`.
+pub static ACCUMULATOR_PLACEHOLDER_HASH: Lazy<HashValue> =
+    Lazy::new(|| create_literal_hash("ACCUMULATOR_PLACEHOLDER_HASH"));
+
+/// Placeholder hash of `SparseMerkleTree`.
+pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<HashValue> =
+    Lazy::new(|| create_literal_hash("SPARSE_MERKLE_PLACEHOLDER_HASH"));

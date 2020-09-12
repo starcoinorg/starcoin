@@ -90,7 +90,6 @@ use anyhow::{bail, ensure, format_err, Result};
 use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
-use once_cell::sync::Lazy;
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
@@ -102,10 +101,6 @@ fn create_literal_hash(word: &str) -> HashValue {
     s.resize(HashValue::LENGTH, 0);
     HashValue::from_slice(&s).expect("Cannot fail")
 }
-
-/// Placeholder hash of `SparseMerkleTree`.
-pub static SPARSE_MERKLE_PLACEHOLDER_HASH: Lazy<HashValue> =
-    Lazy::new(|| create_literal_hash("SPARSE_MERKLE_PLACEHOLDER_HASH"));
 
 /// The hardcoded maximum height of a [`JellyfishMerkleTree`] in nibbles.
 pub const ROOT_NIBBLE_HEIGHT: usize = HashValue::LENGTH * 2;

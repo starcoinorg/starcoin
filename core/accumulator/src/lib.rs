@@ -1,16 +1,19 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
+use crate::accumulator_info::AccumulatorInfo;
+use crate::node::AccumulatorStoreType;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
 use anyhow::{ensure, Error, Result};
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
+use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
 
+pub mod accumulator_info;
 #[cfg(test)]
 mod accumulator_test;
 pub mod node;
@@ -107,6 +110,23 @@ impl MerkleAccumulator {
                 num_leaves,
                 num_notes,
                 root_hash,
+                store_type,
+                node_store.clone(),
+            )),
+        })
+    }
+
+    pub fn new_with_info(
+        acc_info: AccumulatorInfo,
+        store_type: AccumulatorStoreType,
+        node_store: Arc<dyn AccumulatorTreeStore>,
+    ) -> Result<Self> {
+        Ok(Self {
+            tree: Mutex::new(AccumulatorTree::new(
+                acc_info.frozen_subtree_roots,
+                acc_info.num_leaves,
+                acc_info.num_nodes,
+                acc_info.accumulator_root,
                 store_type,
                 node_store.clone(),
             )),

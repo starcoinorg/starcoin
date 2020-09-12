@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0s
 
-use crate::node::{AccumulatorStoreType, ACCUMULATOR_PLACEHOLDER_HASH};
+use crate::node::AccumulatorStoreType;
 use crate::node_index::FrozenSubTreeIterator;
 use crate::node_index::{NodeIndex, MAX_ACCUMULATOR_PROOF_DEPTH};
 use crate::tree_store::NodeCacheKey;
@@ -11,6 +11,7 @@ use logger::prelude::*;
 use lru::LruCache;
 use mirai_annotations::*;
 use parking_lot::Mutex;
+use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use std::collections::HashMap;
 use std::sync::Arc;
