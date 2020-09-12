@@ -27,7 +27,6 @@ tokio = { version = "0.2", features = ["full"] }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
-sc_stratum = {path = "./stratum", package ="starcoin-stratum"}
 starcoin-account-api = { path = "../account/api"}
 starcoin-txpool-api = {path = "../txpool/api"}
 hex = { version = "0.4.2", default-features = false }
@@ -48,3 +47,5 @@ stest = { path = "../commons/stest" }
 network-rpc = {path="../network-rpc", package = "starcoin-network-rpc"}
 starcoin-network-rpc-api = {path="../network-rpc/api"}
 starcoin-state-service = {path="../state/service"}
+starcoin-node = { path = "../node" }
+test-helper = { path = "../test-helper" }
