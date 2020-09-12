@@ -58,8 +58,8 @@ module Token {
 
     /// Token register's address should same as TokenType's address.
     const ETOKEN_REGISTER: u64 = 100;
-    /// TokenType's name should same as Token's Module name.
-    const ETOKEN_NAME: u64 = 101;
+    // TokenType's name should same as Token's Module name.
+    // const ETOKEN_NAME: u64 = 101;
     const EAMOUNT_EXCEEDS_COIN_VALUE: u64 = 102;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
@@ -68,9 +68,9 @@ module Token {
         base_scaling_factor: u128,
         fractional_part: u128,
     ) {
-        let (token_address, module_name, token_name) = name_of<TokenType>();
+        let (token_address, _module_name, _token_name) = name_of<TokenType>();
         assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER);
-        assert(module_name == token_name, ETOKEN_NAME);
+        // assert(module_name == token_name, ETOKEN_NAME);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
         move_to(account, ScalingFactorModifyCapability<TokenType> {});
