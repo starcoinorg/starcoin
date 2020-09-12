@@ -13,7 +13,6 @@
 -  [Struct `BurnEvent`](#0x1_Token_BurnEvent)
 -  [Resource `TokenInfo`](#0x1_Token_TokenInfo)
 -  [Const `ETOKEN_REGISTER`](#0x1_Token_ETOKEN_REGISTER)
--  [Const `ETOKEN_NAME`](#0x1_Token_ETOKEN_NAME)
 -  [Const `EAMOUNT_EXCEEDS_COIN_VALUE`](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
 -  [Function `register_token`](#0x1_Token_register_token)
 -  [Function `remove_scaling_factor_modify_capability`](#0x1_Token_remove_scaling_factor_modify_capability)
@@ -351,18 +350,6 @@ Token register's address should same as TokenType's address.
 
 
 
-<a name="0x1_Token_ETOKEN_NAME"></a>
-
-## Const `ETOKEN_NAME`
-
-TokenType's name should same as Token's Module name.
-
-
-<pre><code><b>const</b> ETOKEN_NAME: u64 = 101;
-</code></pre>
-
-
-
 <a name="0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE"></a>
 
 ## Const `EAMOUNT_EXCEEDS_COIN_VALUE`
@@ -396,9 +383,9 @@ Register the type
     base_scaling_factor: u128,
     fractional_part: u128,
 ) {
-    <b>let</b> (token_address, module_name, token_name) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> (token_address, _module_name, _token_name) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, ETOKEN_REGISTER);
-    <b>assert</b>(module_name == token_name, ETOKEN_NAME);
+    // <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt; {});
