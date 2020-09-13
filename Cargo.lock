@@ -18,9 +18,9 @@ dependencies = [
 
 [[package]]
 name = "actix"
-version = "0.10.0-alpha.3"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9028932f36d45df020c92317ccb879ab77d8f066f57ff143dd5bee93ba3de0d"
+checksum = "1be241f88f3b1e7e9a3fbe3b5a8a0f6915b5a1d7ee0d9a248d3376d01068cc60"
 dependencies = [
  "actix-rt",
  "actix_derive",
@@ -32,7 +32,7 @@ dependencies = [
  "futures-util",
  "log 0.4.11",
  "once_cell",
- "parking_lot 0.10.2",
+ "parking_lot 0.11.0",
  "pin-project",
  "smallvec 1.4.2",
  "tokio 0.2.22",

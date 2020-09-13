@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.32"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 futures = { version = "0.3" }
 starcoin-config = { path = "../../config" }
