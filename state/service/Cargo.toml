@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.32"
 futures = "0.3"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 async-trait = "0.1"
 starcoin-logger = {path = "../../commons/logger"}

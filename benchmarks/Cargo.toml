@@ -28,7 +28,7 @@ starcoin-node = { path = "../node" }
 traits = { path = "../core/traits", package = "starcoin-traits" }
 starcoin-account-api = { path = "../account/api"}
 parking_lot = "0.11"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-state-tree = {path = "../state/state-tree"}

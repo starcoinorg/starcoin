@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.32"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 futures = "0.3"
 once_cell = "1.4.1"
 crypto = {package="starcoin-crypto", path = "../../commons/crypto"}

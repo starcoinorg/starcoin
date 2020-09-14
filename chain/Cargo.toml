@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.32"
 thiserror = "1.0"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 starcoin-types = { path = "../types", package = "starcoin-types" }
 starcoin-config = { path = "../config" }

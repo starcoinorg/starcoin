@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.32"
 thiserror = "1.0"
 backtrace = "0.3.46"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"

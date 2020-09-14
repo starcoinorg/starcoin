@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.32"
 futures = "0.3"
 
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 yamux = "0.8.0"
 futures-timer = "3.0"
