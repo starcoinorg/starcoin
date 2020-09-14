@@ -29,6 +29,8 @@ use starcoin_vm_types::account_config::{
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
+use starcoin_vm_types::identifier::IdentStr;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
 use starcoin_vm_types::transaction::{Module, Package, Script, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
@@ -715,6 +717,44 @@ impl StarcoinVM {
         transactions: Vec<Transaction>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         self.execute_block_transactions(state_view, transactions, None)
+    }
+
+    pub fn execute_readonly_function(
+        &mut self,
+        state_view: &dyn StateView,
+        module: &ModuleId,
+        function_name: &IdentStr,
+        type_params: Vec<TypeTag>,
+        args: Vec<Value>,
+        sender: &AccountAddress,
+    ) -> Result<Vec<Value>, VMStatus> {
+        let data_cache = StateViewCache::new(state_view);
+        if let Err(err) = self.load_configs(&data_cache) {
+            panic!("Load config error at verify_transaction: {}", err);
+        }
+        let cost_table = zero_cost_schedule();
+        let mut cost_strategy = CostStrategy::system(&cost_table, GasUnits::new(100_000_000)); //Todo: fix me
+        let mut session = self.move_vm.new_session(&data_cache);
+        let result = session.execute_readonly_function(
+            module,
+            function_name,
+            type_params,
+            args,
+            *sender,
+            &mut cost_strategy,
+            |e| e,
+        )?;
+
+        let effects = session
+            .finish()
+            .expect("Failed to generate session effects");
+        let (writeset, _events) =
+            txn_effects_to_writeset_and_events(effects).expect("Failed to generate writeset");
+        if writeset.is_empty() {
+            Ok(result)
+        } else {
+            panic!("Readonly function {} changes state", function_name)
+        }
     }
 
     fn success_transaction_cleanup<R: RemoteCache>(
