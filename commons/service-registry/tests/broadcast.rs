@@ -33,14 +33,14 @@ async fn test_broadcast() {
     assert_eq!(result.b1_count, 2);
     assert_eq!(result.b2_count, 1);
 
-    service_ref.stop_service().unwrap();
+    service_ref.stop_self().unwrap();
 
     Delay::new(Duration::from_millis(500)).await;
 
     // broadcast message after service stop will process fail.
     bus_ref.broadcast(BMessage1 {}).await.unwrap();
 
-    service_ref.start_service().unwrap();
+    service_ref.start_self().unwrap();
 
     Delay::new(Duration::from_millis(500)).await;
 

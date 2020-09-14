@@ -41,6 +41,7 @@ tokio-compat = "0.1.5"
 starcoin-txpool-api = { path = "../../txpool/api" }
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
 [[bin]]
 name = "starcoin"
 path = "src/main.rs"

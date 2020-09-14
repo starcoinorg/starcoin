@@ -145,7 +145,7 @@ impl AccountAsyncService for MockAccountService {
         password: String,
     ) -> ServiceResult<AccountInfo> {
         let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
-            .map_err(|e| AccountServiceError::OtherError(Box::new(e)))?;
+            .map_err(|e| AccountServiceError::OtherError(e.into()))?;
         let public_key = private_key.public_key();
         self.accounts.insert(
             address,

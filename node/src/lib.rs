@@ -12,7 +12,7 @@ use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_node_api::message::NodeRequest;
 use starcoin_node_api::node_service::NodeAsyncService;
-use starcoin_node_api::service_registry::ServiceInfo;
+use starcoin_service_registry::ServiceInfo;
 use starcoin_types::block::BlockDetail;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;

@@ -6422,7 +6422,6 @@ dependencies = [
 name = "starcoin-account-api"
 version = "0.4.6"
 dependencies = [
- "actix",
  "anyhow",
  "async-trait",
  "dashmap",
@@ -6431,6 +6430,7 @@ dependencies = [
  "rand_core 0.5.1",
  "serde",
  "starcoin-crypto",
+ "starcoin-service-registry",
  "starcoin-types",
  "thiserror",
 ]
@@ -6439,8 +6439,6 @@ dependencies = [
 name = "starcoin-account-lib"
 version = "0.4.6"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "dashmap",
@@ -6466,8 +6464,6 @@ dependencies = [
 name = "starcoin-account-service"
 version = "0.4.6"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "bstr",
@@ -6480,7 +6476,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
- "starcoin-node-api",
+ "starcoin-service-registry",
  "starcoin-txpool",
  "starcoin-types",
  "stest",
@@ -6564,6 +6560,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.5",
  "starcoin-logger",
+ "starcoin-service-registry",
  "stest",
  "tokio 0.2.22",
 ]
@@ -6710,6 +6707,7 @@ dependencies = [
  "starcoin-resource-viewer",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-transaction-builder",
  "starcoin-txpool-api",
@@ -7035,6 +7033,7 @@ dependencies = [
  "starcoin-node",
  "starcoin-node-api",
  "starcoin-open-block",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
@@ -7254,6 +7253,7 @@ dependencies = [
  "starcoin-network-rpc-api",
  "starcoin-node-api",
  "starcoin-rpc-server",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-storage",
@@ -7285,6 +7285,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-genesis",
  "starcoin-logger",
+ "starcoin-service-registry",
  "starcoin-storage",
  "starcoin-types",
  "stest",

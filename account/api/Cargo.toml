@@ -17,7 +17,7 @@ rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 futures = "0.3"
 dashmap = { version = "3.11" }
-actix = "0.10.0"
+starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]
 

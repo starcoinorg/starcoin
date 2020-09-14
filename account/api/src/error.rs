@@ -21,7 +21,7 @@ pub enum AccountServiceError {
     #[error("account error, {0:?}")]
     AccountError(anyhow::Error),
     #[error("other error: {0:?}")]
-    OtherError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    OtherError(anyhow::Error),
 }
 
 impl From<AccountError> for AccountServiceError {

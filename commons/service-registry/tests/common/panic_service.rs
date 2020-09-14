@@ -10,6 +10,7 @@ pub struct PanicService {
 
 impl ActorService for PanicService {}
 
+#[derive(Debug)]
 pub struct PingRequest;
 
 impl ServiceRequest for PingRequest {
@@ -23,6 +24,7 @@ impl ServiceHandler<Self, PingRequest> for PanicService {
     }
 }
 
+#[derive(Debug)]
 pub struct PanicRequest;
 
 impl ServiceRequest for PanicRequest {

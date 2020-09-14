@@ -9,15 +9,13 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.32"
 futures = "0.3"
-actix = "0.10.0"
-actix-rt = "1.1"
 async-trait = "0.1"
 bstr = "0.2"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
 starcoin-canonical-serialization = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 starcoin-config = { path = "../../config" }
-starcoin-node-api = { path = "../../node/api" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-account-api = { path = "../api", features = ["mock"] }
 starcoin-account-lib = { path = "../lib" }
 starcoin-crypto = { path = "../../commons/crypto" }
