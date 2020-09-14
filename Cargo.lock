@@ -7083,6 +7083,7 @@ dependencies = [
  "starcoin-miner",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
+ "starcoin-service-registry",
  "starcoin-traits",
  "starcoin-types",
  "stest",

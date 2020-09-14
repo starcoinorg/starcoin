@@ -176,7 +176,8 @@ mod tests {
         registry.put_shared(account_storage).await?;
         let service_ref = registry.registry::<AccountService>().await?;
         let account = service_ref.get_default_account().await?;
-        assert!(account.is_none());
+        //default account will auto create
+        assert!(account.is_some());
         Ok(())
     }
 }

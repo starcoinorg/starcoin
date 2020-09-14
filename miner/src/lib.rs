@@ -11,7 +11,7 @@ use futures::prelude::*;
 use logger::prelude::*;
 use starcoin_config::ConsensusStrategy;
 use starcoin_config::NodeConfig;
-pub use starcoin_miner_client::miner::{MinerClient, MinerClientActor};
+pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };

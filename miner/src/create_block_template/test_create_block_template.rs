@@ -153,11 +153,11 @@ fn test_new_head() {
 
     let mut master_inner = Inner::new(
         node_config.net(),
-        storage.clone(),
+        storage,
         genesis_id,
-        txpool.clone(),
+        txpool,
         None,
-        miner_account.clone(),
+        miner_account,
     )
     .unwrap();
 

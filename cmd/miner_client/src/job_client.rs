@@ -4,6 +4,7 @@ use crypto::HashValue;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, TryStreamExt};
 use starcoin_rpc_client::RpcClient;
+use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::U256;
 
 pub struct JobRpcClient {
@@ -26,5 +27,11 @@ impl JobClient for JobRpcClient {
 
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
         self.rpc_client.miner_submit(pow_hash, nonce)
+    }
+
+    fn consensus(&self) -> Result<ConsensusStrategy> {
+        self.rpc_client
+            .node_info()
+            .map(|node_info| node_info.consensus)
     }
 }

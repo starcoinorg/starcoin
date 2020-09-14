@@ -17,7 +17,7 @@ use std::fmt::Debug;
 use std::time::Duration;
 
 #[allow(unused_variables)]
-pub trait ActorService: Send + Unpin + Sized {
+pub trait ActorService: Send + Sized {
     fn service_name() -> &'static str {
         type_name::<Self>()
     }
