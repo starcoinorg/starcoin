@@ -211,6 +211,11 @@ impl AccountStorage {
             global_value_store: GlobalSettingStore::new(store),
         }
     }
+
+    pub fn mock() -> Self {
+        let storage_instance = StorageInstance::new_cache_instance();
+        Self::new(storage_instance)
+    }
 }
 
 impl AccountStorage {

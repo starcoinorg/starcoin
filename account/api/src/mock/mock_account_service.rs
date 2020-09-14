@@ -1,8 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::AccountServiceError;
-use crate::{AccountAsyncService, AccountInfo, ServiceResult};
+use crate::error::AccountError;
+use crate::{AccountAsyncService, AccountInfo};
 use anyhow::Result;
 use dashmap::DashMap;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
@@ -43,7 +43,7 @@ impl MockAccountService {
 
 #[async_trait::async_trait]
 impl AccountAsyncService for MockAccountService {
-    async fn create_account(&self, password: String) -> ServiceResult<AccountInfo> {
+    async fn create_account(&self, password: String) -> Result<AccountInfo> {
         let mut key_gen = KeyGen::from_os_rng();
         let (private_key, public_key) = key_gen.generate_keypair();
         let addr = account_address::from_public_key(&public_key);
@@ -60,7 +60,7 @@ impl AccountAsyncService for MockAccountService {
         Ok(self.get_account_info(addr).unwrap())
     }
 
-    async fn get_default_account(&self) -> ServiceResult<Option<AccountInfo>> {
+    async fn get_default_account(&self) -> Result<Option<AccountInfo>> {
         for r in self.accounts.as_ref() {
             if r.is_default {
                 return Ok(Some(AccountInfo {
@@ -73,10 +73,7 @@ impl AccountAsyncService for MockAccountService {
         Ok(None)
     }
 
-    async fn set_default_account(
-        &self,
-        address: AccountAddress,
-    ) -> ServiceResult<Option<AccountInfo>> {
+    async fn set_default_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>> {
         for mut r in self.accounts.iter_mut() {
             if r.is_default {
                 r.is_default = false;
@@ -95,7 +92,7 @@ impl AccountAsyncService for MockAccountService {
         }
     }
 
-    async fn get_accounts(&self) -> ServiceResult<Vec<AccountInfo>> {
+    async fn get_accounts(&self) -> Result<Vec<AccountInfo>> {
         Ok(self
             .accounts
             .iter()
@@ -107,7 +104,7 @@ impl AccountAsyncService for MockAccountService {
             .collect())
     }
 
-    async fn get_account(&self, address: AccountAddress) -> ServiceResult<Option<AccountInfo>> {
+    async fn get_account(&self, address: AccountAddress) -> Result<Option<AccountInfo>> {
         Ok(self.get_account_info(address))
     }
 
@@ -115,11 +112,11 @@ impl AccountAsyncService for MockAccountService {
         &self,
         raw_txn: RawUserTransaction,
         signer_address: AccountAddress,
-    ) -> ServiceResult<SignedUserTransaction> {
+    ) -> Result<SignedUserTransaction> {
         let r = self
             .accounts
             .get(&signer_address)
-            .ok_or_else(|| AccountServiceError::AccountNotExist(signer_address))?;
+            .ok_or_else(|| AccountError::AccountNotExist(signer_address))?;
         Ok(raw_txn
             .sign(&r.private_key, r.public_key.clone())
             .unwrap()
@@ -131,10 +128,10 @@ impl AccountAsyncService for MockAccountService {
         _address: AccountAddress,
         _password: String,
         _duration: Duration,
-    ) -> ServiceResult<()> {
+    ) -> Result<()> {
         Ok(())
     }
-    async fn lock_account(&self, _address: AccountAddress) -> ServiceResult<()> {
+    async fn lock_account(&self, _address: AccountAddress) -> Result<()> {
         Ok(())
     }
 
@@ -143,9 +140,8 @@ impl AccountAsyncService for MockAccountService {
         address: AccountAddress,
         private_key: Vec<u8>,
         password: String,
-    ) -> ServiceResult<AccountInfo> {
-        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
-            .map_err(|e| AccountServiceError::OtherError(e.into()))?;
+    ) -> Result<AccountInfo> {
+        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())?;
         let public_key = private_key.public_key();
         self.accounts.insert(
             address,
@@ -160,19 +156,15 @@ impl AccountAsyncService for MockAccountService {
     }
 
     /// Return the private key as bytes for `address`
-    async fn export_account(
-        &self,
-        address: AccountAddress,
-        _password: String,
-    ) -> ServiceResult<Vec<u8>> {
+    async fn export_account(&self, address: AccountAddress, _password: String) -> Result<Vec<u8>> {
         let r = self
             .accounts
             .get(&address)
-            .ok_or_else(|| AccountServiceError::AccountNotExist(address))?;
+            .ok_or_else(|| AccountError::AccountNotExist(address))?;
         Ok(r.private_key.to_bytes().to_vec())
     }
 
-    async fn accepted_tokens(&self, _address: AccountAddress) -> ServiceResult<Vec<TokenCode>> {
+    async fn accepted_tokens(&self, _address: AccountAddress) -> Result<Vec<TokenCode>> {
         Ok(vec![])
     }
 }

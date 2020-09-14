@@ -4,7 +4,6 @@
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use network_rpc_core::server::NetworkRpcServer;
-use starcoin_account_api::AccountAsyncService;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
@@ -18,7 +17,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
-use starcoin_miner::{MinerActor, MinerClientActor};
+use starcoin_miner::{CreateBlockTemplateService, MinerClientActor, MinerService};
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
@@ -35,7 +34,6 @@ use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPool, TxPoolService};
-use starcoin_types::account_config::association_address;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -48,7 +46,6 @@ pub struct NodeStartedHandle {
     pub storage: Arc<Storage>,
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
-    pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor<JobBusClient>>>,
@@ -65,7 +62,6 @@ pub struct Node {
     //TODO remove there fields, after register all service to registry.
     pub chain_arbiter: Arbiter,
     pub chain_actor: ChainActorRef,
-    pub miner_actor: Addr<MinerActor<TxPoolService, Storage>>,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub miner_client: Option<Addr<MinerClientActor<JobBusClient>>>,
@@ -159,33 +155,6 @@ pub async fn start(
     let account_service = registry.registry::<AccountService>().await?;
     registry.registry::<AccountEventService>().await?;
 
-    //Init default account
-    let default_account = match account_service.get_default_account().await? {
-        Some(account) => account,
-        None => {
-            let wallet_account = account_service.create_account("".to_string()).await?;
-            info!("Create default account: {}", wallet_account.address);
-            wallet_account
-        }
-    };
-
-    //Only dev network association_key_pair contains private_key.
-    if let (Some(association_private_key), _) = &config.net().genesis_config().association_key_pair
-    {
-        let association_account = account_service.get_account(association_address()).await?;
-        if association_account.is_none() {
-            account_service
-                .clone()
-                .import_account(
-                    association_address(),
-                    association_private_key.to_bytes().to_vec(),
-                    "".to_string(),
-                )
-                .await?;
-            info!("Import association account to wallet.");
-        }
-    }
-
     let head_block_hash = *startup_info.get_master();
 
     let txpool = TxPool::start(
@@ -195,6 +164,9 @@ pub async fn start(
         bus.clone(),
     );
     let txpool_service = txpool.get_service();
+
+    // put tx pool service as shared data, remove this after refactor txpool service.
+    registry.put_shared(txpool_service.clone()).await?;
 
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
@@ -319,18 +291,9 @@ pub async fn start(
 
     delay_for(Duration::from_secs(1)).await;
 
-    let miner_config = config.clone();
-    let miner_bus = bus.clone();
-    let miner_storage = storage.clone();
-    let miner_txpool = txpool.get_service();
-    let miner = MinerActor::<TxPoolService, Storage>::launch(
-        miner_config,
-        miner_bus,
-        miner_storage,
-        miner_txpool,
-        default_account,
-        startup_info,
-    )?;
+    registry.registry::<CreateBlockTemplateService>().await?;
+    registry.registry::<MinerService>().await?;
+
     let miner_client_config = config.miner.client_config.clone();
     let consensus_strategy = config.net().consensus();
     let job_client = JobBusClient::new(bus.clone());
@@ -368,7 +331,6 @@ pub async fn start(
     let node = Node {
         chain_arbiter: chain_arbiter.clone(),
         chain_actor: chain.clone(),
-        miner_actor: miner.clone(),
         sync_actor: sync.clone(),
         rpc_actor: json_rpc.clone(),
         miner_client: miner_client.clone(),
@@ -387,7 +349,6 @@ pub async fn start(
         storage,
         chain_arbiter,
         chain_actor: chain,
-        miner_actor: miner,
         sync_actor: sync,
         rpc_actor: json_rpc,
         miner_client,

@@ -22,7 +22,7 @@ pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
-use starcoin_account_api::error::AccountServiceError;
+use starcoin_account_api::error::AccountError;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     //TODO error convert.
@@ -52,12 +52,11 @@ pub enum RpcError {
     InvalidRequest(String),
 }
 
-impl From<AccountServiceError> for RpcError {
-    fn from(err: AccountServiceError) -> Self {
+impl From<AccountError> for RpcError {
+    fn from(err: AccountError) -> Self {
         match err {
-            AccountServiceError::AccountError(_) => RpcError::InternalError,
-            AccountServiceError::OtherError(_) => RpcError::InternalError,
-            e => RpcError::InvalidRequest(format!("{}", e)),
+            AccountError::StoreError(_) => RpcError::InternalError,
+            e => RpcError::InvalidRequest(format!("{:?}", e)),
         }
     }
 }

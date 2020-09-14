@@ -407,6 +407,10 @@ impl SignedUserTransaction {
         let raw_txn = RawUserTransaction::mock_from(compiled_script);
         raw_txn.sign(&private_key, public_key).unwrap().into_inner()
     }
+
+    pub fn id(&self) -> HashValue {
+        self.crypto_hash()
+    }
 }
 
 /// The status of executing a transaction. The VM decides whether or not we should `Keep` the
@@ -613,9 +617,8 @@ impl Transaction {
     }
 
     pub fn id(&self) -> HashValue {
-        //TODO rethink txn id's represent.
         match self {
-            Transaction::UserTransaction(signed) => signed.crypto_hash(),
+            Transaction::UserTransaction(signed) => signed.id(),
             _ => self.crypto_hash(),
         }
     }
