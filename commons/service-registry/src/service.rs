@@ -9,13 +9,15 @@ use crate::{ServiceRef, ServiceRequest};
 use actix::fut::{wrap_future, IntoActorFuture};
 use actix::{ActorContext, ActorFuture, AsyncContext, Context};
 use anyhow::Result;
+use futures::channel::oneshot::{channel, Receiver};
+use futures::Future;
 use log::error;
 use std::any::type_name;
 use std::fmt::Debug;
 use std::time::Duration;
 
 #[allow(unused_variables)]
-pub trait ActorService: Send + Unpin + Sized {
+pub trait ActorService: Send + Sized {
     fn service_name() -> &'static str {
         type_name::<Self>()
     }
@@ -60,11 +62,12 @@ where
         self.cache.service_ref::<DepS>()
     }
 
-    pub fn get_shared<T>(&self) -> Result<T>
+    pub fn get_shared<T>(&mut self) -> Result<T>
     where
         T: Send + Sync + Clone + 'static,
     {
-        self.registry_ref().get_shared_sync::<T>()
+        let registry_ref = self.registry_ref().clone();
+        registry_ref.get_shared_sync()
     }
 
     pub fn subscribe<M>(&mut self)
@@ -136,6 +139,30 @@ where
             let mut service_ctx = ServiceContext::new(&mut this.cache, ctx);
             f(&mut service_ctx)
         });
+    }
+
+    /// Exec a future and get result.
+    pub fn exec<F, R>(&mut self, fut: F) -> Receiver<R>
+    where
+        F: Future<Output = R> + 'static,
+        R: 'static,
+    {
+        let (sender, receiver) = channel();
+        let fut = wrap_future::<_, ServiceActor<S>>(async move {
+            let result = fut.await;
+            if sender.send(result).is_err() {
+                error!("ServiceContext exec future send result error.");
+            }
+        });
+        self.ctx.wait(fut);
+        receiver
+    }
+
+    pub fn wait<F>(&mut self, fut: F)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+        self.ctx.wait(wrap_future::<_, ServiceActor<S>>(fut))
     }
 
     /// Notify self a event msg.

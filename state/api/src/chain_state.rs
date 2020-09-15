@@ -108,6 +108,10 @@ pub trait ChainStateReader: StateView {
     /// Gets account state
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>>;
 
+    fn exist_account(&self, address: &AccountAddress) -> Result<bool> {
+        self.get_account_state(address).map(|state| state.is_some())
+    }
+
     /// Gets current state root.
     fn state_root(&self) -> HashValue;
 

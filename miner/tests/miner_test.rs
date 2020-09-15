@@ -3,16 +3,18 @@
 
 use bus::Bus;
 use consensus::Consensus;
-use crypto::hash::CryptoHash;
+use crypto::hash::PlainCryptoHash;
 use futures::executor::block_on;
+use starcoin_config::NodeConfig;
 use std::sync::Arc;
 use types::{
     block::BlockTemplate,
     system_events::{GenerateBlockEvent, MintBlockEvent, NewHeadBlock, SubmitSealEvent},
 };
+
 #[stest::test]
 fn test_miner() {
-    let mut config = config::NodeConfig::random_for_test();
+    let mut config = NodeConfig::random_for_test();
     config.miner.enable_miner_client = false;
     let handle = test_helper::run_node_by_config(Arc::new(config)).unwrap();
     let fut = async move {
@@ -50,7 +52,7 @@ fn test_miner() {
         assert_eq!(mined_block.header.nonce, nonce);
         let raw_header =
             BlockTemplate::from_block(mined_block).as_raw_block_header(mint_block_event.difficulty);
-        assert_eq!(mint_block_event.header_hash, raw_header.hash());
+        assert_eq!(mint_block_event.header_hash, raw_header.crypto_hash());
         handle.stop().unwrap();
     };
     block_on(fut);
