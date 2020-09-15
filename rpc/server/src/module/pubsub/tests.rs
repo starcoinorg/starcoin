@@ -60,10 +60,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         vec![],
         None,
     )?;
-    debug!(
-        "block_template: gas_used: {}, gas_limit: {}",
-        block_template.gas_used, block_template.gas_limit
-    );
+    debug!("block_template: gas_used: {}", block_template.gas_used);
     let new_block = config
         .net()
         .consensus()

@@ -562,14 +562,6 @@ impl BlockChain {
             );
         }
 
-        verify_block!(
-            VerifyBlockField::Header,
-            header.gas_used <= header.gas_limit,
-            "gas used {} in transaction is bigger than gas limit {}",
-            header.gas_used,
-            header.gas_limit
-        );
-
         // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
             let uncle_branch =
@@ -724,9 +716,15 @@ impl BlockChain {
         let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
+        let gas_limit = if is_genesis {
+            u64::MIN
+        } else {
+            self.get_on_chain_block_gas_limit()?
+        };
+
         verify_block!(
             VerifyBlockField::Header,
-            header.gas_used() <= header.gas_limit(),
+            header.gas_used() <= gas_limit,
             "invalid block: gas_used should not greater than gas_limit"
         );
 
@@ -781,7 +779,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), header.gas_limit())?
+            executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };
