@@ -11,7 +11,6 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
     AccumulatorTreeStore, MerkleAccumulator,
 };
-use starcoin_config::GenesisConfig;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -532,13 +531,7 @@ impl BlockChain {
         Ok(())
     }
 
-    fn verify_header(
-        &self,
-        header: &BlockHeader,
-        gas_limit: u64,
-        is_uncle: bool,
-        epoch: &EpochInfo,
-    ) -> Result<()> {
+    fn verify_header(&self, header: &BlockHeader, is_uncle: bool, epoch: &EpochInfo) -> Result<()> {
         let parent_hash = header.parent_hash();
         if !is_uncle {
             verify_block!(
@@ -566,16 +559,6 @@ impl BlockChain {
                 VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
                 "Invalid block: block timestamp too new"
-            );
-        }
-
-        if is_uncle {
-            verify_block!(
-                VerifyBlockField::Header,
-                header.gas_used <= gas_limit,
-                "gas used {} in transaction is bigger than gas limit {}",
-                header.gas_used,
-                gas_limit
             );
         }
 
@@ -728,14 +711,13 @@ impl BlockChain {
         &mut self,
         block: Block,
         execute: bool,
-        genesis_gas_limit: u64,
         state_reader: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
         let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
         let gas_limit = if is_genesis {
-            genesis_gas_limit
+            u64::MIN
         } else {
             self.get_on_chain_block_gas_limit()?
         };
@@ -753,7 +735,7 @@ impl BlockChain {
                 None => AccountStateReader::new(&self.chain_state),
             };
             let epoch_info = account_reader.epoch()?;
-            self.verify_header(&header, gas_limit, false, &epoch_info)?;
+            self.verify_header(&header, false, &epoch_info)?;
 
             if header.number() == epoch_info.end_number() {
                 switch_epoch = true;
@@ -774,7 +756,7 @@ impl BlockChain {
                         "invalid block: block {} can not be uncle.",
                         uncle_header.id()
                     );
-                    self.verify_header(uncle_header, gas_limit, true, &epoch_info)?;
+                    self.verify_header(uncle_header, true, &epoch_info)?;
                 }
             }
         }
@@ -1007,11 +989,7 @@ impl ChainWriter for BlockChain {
         if let Some(uncles) = block.uncles() {
             self.verify_uncles(uncles, &block.header)?;
         }
-        self.apply_inner(block, true, 0, None)
-    }
-
-    fn apply_genesis(&mut self, block: Block, config: &GenesisConfig) -> Result<()> {
-        self.apply_inner(block, true, config.vm_config.block_gas_limit, None)
+        self.apply_inner(block, true, None)
     }
 
     fn apply_without_execute(
@@ -1022,7 +1000,7 @@ impl ChainWriter for BlockChain {
         if let Some(uncles) = block.uncles() {
             self.verify_uncles(uncles, &block.header)?;
         }
-        self.apply_inner(block, false, 0, Some(remote_chain_state))
+        self.apply_inner(block, false, Some(remote_chain_state))
     }
 
     fn chain_state(&mut self) -> &dyn ChainState {

@@ -11,7 +11,6 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
-use starcoin_vm_types::genesis_config::GenesisConfig;
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 /// TODO: figure out a better place for it.
@@ -59,9 +58,6 @@ pub trait ChainReader {
 pub trait ChainWriter {
     /// execute and insert block to current chain.
     fn apply(&mut self, block: Block) -> Result<()>;
-
-    /// execute and insert genesis block for init current chain.
-    fn apply_genesis(&mut self, block: Block, config: &GenesisConfig) -> Result<()>;
 
     /// insert block to current chain.
     fn apply_without_execute(
