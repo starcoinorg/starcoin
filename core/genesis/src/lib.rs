@@ -253,7 +253,8 @@ impl Genesis {
     ) -> Result<StartupInfo> {
         let Genesis { block } = self;
         let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone())?;
-        genesis_chain.apply(block)?;
+        let config = net.genesis_config();
+        genesis_chain.apply_genesis(block, config)?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
