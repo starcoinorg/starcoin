@@ -26,6 +26,7 @@ jobs:
           toolchain: stable
           components: rustfmt,clippy
       - name: run fmt check
+        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -33,6 +34,7 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
       - name: run cargo check
+        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         env:
           RUSTFLAGS: -D warnings
@@ -45,6 +47,7 @@ jobs:
           command: build
           args: --all
       - name: test
+        if: github.ref != 'refs/heads/master'
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
@@ -54,6 +57,7 @@ jobs:
       - name: check changed files
         run: bash ./scripts/changed-files.sh
       - name: integration test dev environment
+        if: github.ref != 'refs/heads/master'
         env:
           RUST_LOG: info
           RUST_BACKTRACE: full
