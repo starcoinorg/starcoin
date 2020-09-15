@@ -277,8 +277,7 @@ impl Display for CustomNetwork {
 impl CustomNetwork {
     pub const GENESIS_CONFIG_FILE_NAME: &'static str = "genesis_config.json";
 
-    pub fn new(chain_name: String, chain_id: ChainId, genesis_config_name: Option<String>) -> Self {
-        assert!(!chain_id.is_builtin());
+    fn new(chain_name: String, chain_id: ChainId, genesis_config_name: Option<String>) -> Self {
         Self {
             chain_name,
             chain_id,
