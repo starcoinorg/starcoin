@@ -678,12 +678,14 @@ impl BlockChain {
             header.number()
         };
 
-        for uncle in uncles {
-            if self.uncles.contains(&uncle.id()) {
-                debug!("uncle block exists in master,uncle id is {:?}", uncle.id(),);
+        let uncle_ids: Vec<_> = uncles.iter().map(|uncle| uncle.id()).collect();
+        debug!("verify block : {:?} uncle ids {:?}", header.id(), uncle_ids);
+        for uncle_id in uncle_ids {
+            if self.uncles.contains(&uncle_id) {
+                debug!("uncle block exists in master,uncle id is {:?}", uncle_id,);
                 return Err(ConnectBlockError::VerifyBlockFailed(
                     VerifyBlockField::Uncle,
-                    format_err!("uncle block exists in master,uncle id is {:?}", uncle.id()),
+                    format_err!("uncle block exists in master,uncle id is {:?}", uncle_id),
                 )
                 .into());
             }

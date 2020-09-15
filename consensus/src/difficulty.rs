@@ -84,7 +84,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
                 debug!("target increase too fast, limit to 2 times");
                 avg_target * 2
             } else if new_target < avg_target / 2.into() {
-                debug!("target reduce too fase, limit to 2 times");
+                debug!("target reduce too fast, limit to 2 times");
                 avg_target / 2.into()
             } else {
                 new_target
