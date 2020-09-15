@@ -11,7 +11,7 @@ use crate::{
 };
 use actix::{Actor, Context, Handler, Message, MessageResult, Supervised};
 use anyhow::{format_err, Result};
-use log::{error, info};
+use log::{debug, error, info};
 use std::fmt::Debug;
 
 pub struct ServiceActor<S>
@@ -83,6 +83,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct ServiceMessage<R: ServiceRequest + 'static> {
     request: R,
 }
@@ -118,6 +119,7 @@ where
     type Result = MessageResult<ServiceMessage<R>>;
 
     fn handle(&mut self, msg: ServiceMessage<R>, ctx: &mut Self::Context) -> Self::Result {
+        debug!("{} handle request: {:?}", S::service_name(), &msg.request);
         if self.proxy.status().is_stopped() {
             return MessageResult(Err(format_err!("Service {} is stopped", S::service_name())));
         }
@@ -141,6 +143,7 @@ where
     type Result = Result<()>;
 
     fn handle(&mut self, msg: ServiceCmd, ctx: &mut Self::Context) -> Self::Result {
+        debug!("{} Actor handle ServiceCmd: {:?}", S::service_name(), msg);
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
         match msg {
             ServiceCmd::Stop => self.proxy.stop(&mut service_ctx),
@@ -199,6 +202,7 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: EventMessage<M>, ctx: &mut Self::Context) -> Self::Result {
+        debug!("{} handle event: {:?}", S::service_name(), &msg.msg);
         if self.proxy.status().is_stopped() {
             error!("Service {} is stopped", S::service_name());
             return;

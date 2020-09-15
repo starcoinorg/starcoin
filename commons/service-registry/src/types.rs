@@ -4,6 +4,7 @@
 use actix::Message;
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ServiceStatus {
@@ -64,6 +65,6 @@ impl Message for ServiceQuery {
     type Result = ServiceQueryResult;
 }
 
-pub trait ServiceRequest: Send {
+pub trait ServiceRequest: Send + Debug {
     type Response: Send;
 }

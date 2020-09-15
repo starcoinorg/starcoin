@@ -5,6 +5,7 @@ use anyhow::Result;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
+use std::cell::RefCell;
 
 #[async_trait::async_trait]
 pub trait CalAsyncService {
@@ -25,17 +26,17 @@ impl CalAsyncService for ServiceRef<CalService> {
 
 #[derive(Default, Clone)]
 pub struct CalService {
-    value: u64,
+    value: RefCell<u64>,
 }
 
 impl CalService {
     pub fn add(&mut self, value: u64) -> u64 {
-        self.value += value;
-        self.value
+        *self.value.borrow_mut() += value;
+        *self.value.borrow()
     }
     pub fn sub(&mut self, value: u64) -> u64 {
-        self.value -= value;
-        self.value
+        *self.value.borrow_mut() -= value;
+        *self.value.borrow()
     }
 }
 

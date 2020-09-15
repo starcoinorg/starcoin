@@ -57,6 +57,7 @@ impl EventHandler<Self, BMessage2> for BroadcastProcessService {
     }
 }
 
+#[derive(Debug)]
 pub struct GetMsgCount;
 
 pub struct MsgCountResult {

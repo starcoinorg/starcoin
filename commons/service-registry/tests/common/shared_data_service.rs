@@ -32,11 +32,12 @@ impl ActorService for GetService {}
 impl ServiceFactory<Self> for GetService {
     fn create(ctx: &mut ServiceContext<GetService>) -> Result<GetService> {
         Ok(Self {
-            db: ctx.get_shared::<DB>()?,
+            db: ctx.get_shared::<Arc<DB>>()?,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct GetRequest {
     key: String,
 }
@@ -66,11 +67,12 @@ impl ActorService for PutService {}
 impl ServiceFactory<Self> for PutService {
     fn create(ctx: &mut ServiceContext<PutService>) -> Result<PutService> {
         Ok(Self {
-            db: ctx.get_shared::<DB>()?,
+            db: ctx.get_shared::<Arc<DB>>()?,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct PutRequest {
     key: String,
     value: String,

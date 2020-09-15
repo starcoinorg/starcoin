@@ -23,6 +23,7 @@ pub struct AdvanceCalService {
     cal_service: ServiceRef<CalService>,
 }
 
+#[derive(Debug)]
 pub struct BatchAddRequest {
     values: Vec<u64>,
 }

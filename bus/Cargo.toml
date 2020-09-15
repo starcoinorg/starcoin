@@ -16,5 +16,6 @@ async-trait = "0.1"
 starcoin-logger = {path = "../commons/logger"}
 stest = {path = "../commons/stest"}
 async-std = "1.6"
+starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]

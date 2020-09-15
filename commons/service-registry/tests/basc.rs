@@ -32,12 +32,12 @@ async fn test_basic() {
 
     let status = service_ref.self_status();
     assert_eq!(status, ServiceStatus::Started);
-    service_ref.stop_service().unwrap();
+    service_ref.stop_self().unwrap();
 
     let status = service_ref.self_status();
     assert_eq!(status, ServiceStatus::Stopped);
 
-    service_ref.start_service().unwrap();
+    service_ref.start_self().unwrap();
 
     let status = service_ref.self_status();
     assert_eq!(status, ServiceStatus::Started);

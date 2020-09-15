@@ -7,7 +7,7 @@ use crate::{
     ServiceStatus,
 };
 use anyhow::{bail, Result};
-use log::{info, warn};
+use log::{error, info, warn};
 use std::any::{type_name, Any};
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -64,7 +64,13 @@ where
         if self.status().is_started() {
             bail!("Service {} has bean started", S::service_name())
         }
-        let mut service = (self.service_creator)(ctx)?;
+        let mut service = match (self.service_creator)(ctx) {
+            Err(e) => {
+                error!("Create service {} error: {:?}", S::service_name(), e);
+                return Err(e);
+            }
+            Ok(service) => service,
+        };
         service.started(ctx);
         self.service.replace(service);
         info!("Service {} start.", S::service_name());
