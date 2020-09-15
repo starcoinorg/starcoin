@@ -531,7 +531,13 @@ impl BlockChain {
         Ok(())
     }
 
-    fn verify_header(&self, header: &BlockHeader, is_uncle: bool, epoch: &EpochInfo) -> Result<()> {
+    fn verify_header(
+        &self,
+        header: &BlockHeader,
+        gas_limit: u64,
+        is_uncle: bool,
+        epoch: &EpochInfo,
+    ) -> Result<()> {
         let parent_hash = header.parent_hash();
         if !is_uncle {
             verify_block!(
@@ -562,13 +568,15 @@ impl BlockChain {
             );
         }
 
-        verify_block!(
-            VerifyBlockField::Header,
-            header.gas_used <= header.gas_limit,
-            "gas used {} in transaction is bigger than gas limit {}",
-            header.gas_used,
-            header.gas_limit
-        );
+        if is_uncle {
+            verify_block!(
+                VerifyBlockField::Header,
+                header.gas_used <= gas_limit,
+                "gas used {} in transaction is bigger than gas limit {}",
+                header.gas_used,
+                gas_limit
+            );
+        }
 
         // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
@@ -724,9 +732,11 @@ impl BlockChain {
         let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
+        let gas_limit = self.get_on_chain_block_gas_limit()?;
+
         verify_block!(
             VerifyBlockField::Header,
-            header.gas_used() <= header.gas_limit(),
+            header.gas_used() <= gas_limit,
             "invalid block: gas_used should not greater than gas_limit"
         );
 
@@ -737,7 +747,7 @@ impl BlockChain {
                 None => AccountStateReader::new(&self.chain_state),
             };
             let epoch_info = account_reader.epoch()?;
-            self.verify_header(&header, false, &epoch_info)?;
+            self.verify_header(&header, gas_limit, false, &epoch_info)?;
 
             if header.number() == epoch_info.end_number() {
                 switch_epoch = true;
@@ -758,7 +768,7 @@ impl BlockChain {
                         "invalid block: block {} can not be uncle.",
                         uncle_header.id()
                     );
-                    self.verify_header(uncle_header, true, &epoch_info)?;
+                    self.verify_header(uncle_header, gas_limit, true, &epoch_info)?;
                 }
             }
         }
@@ -781,7 +791,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), header.gas_limit())?
+            executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };

@@ -278,6 +278,7 @@ impl CustomNetwork {
     pub const GENESIS_CONFIG_FILE_NAME: &'static str = "genesis_config.json";
 
     pub fn new(chain_name: String, chain_id: ChainId, genesis_config_name: Option<String>) -> Self {
+        assert!(!chain_id.is_builtin());
         Self {
             chain_name,
             chain_id,
@@ -581,6 +582,10 @@ impl ChainId {
         } else {
             None // ToDo: handle custom network
         }
+    }
+
+    pub fn is_builtin(self) -> bool {
+        self.net().is_some()
     }
 }
 

@@ -6,6 +6,7 @@ use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -31,6 +32,7 @@ pub struct OpenedBlock {
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
     uncles: Vec<BlockHeader>,
+    chain_id: ChainId,
 }
 
 impl OpenedBlock {
@@ -74,6 +76,7 @@ impl OpenedBlock {
             gas_used: 0,
             included_user_txns: vec![],
             uncles,
+            chain_id: previous_header.chain_id,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -245,9 +248,9 @@ impl OpenedBlock {
             accumulator_root,
             state_root,
             self.gas_used,
-            self.gas_limit,
             uncle_hash,
             body,
+            self.chain_id,
         );
         Ok(block_template)
     }
