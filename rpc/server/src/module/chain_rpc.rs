@@ -101,6 +101,21 @@ where
         Box::new(fut.boxed().compat())
     }
 
+    fn get_transaction_hex(&self, transaction_id: String) -> FutureResult<Transaction> {
+        let txn_hash = match HashValue::from_hex(&transaction_id) {
+            Ok(t) => t,
+            Err(e) => return Box::new(jsonrpc_core::futures::failed(map_err(e))),
+        };
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.get_transaction(txn_hash).await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
+
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
