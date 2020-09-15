@@ -8,7 +8,7 @@ use super::{
     PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
 use crate::{pool, pool::PoolTransaction};
-use common_crypto::hash::HashValue;
+use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_txpool_api::TxPoolStatus;

@@ -24,7 +24,7 @@ impl std::error::Error for NetRpcError {}
 
 impl std::fmt::Display for NetRpcError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Rpc error: {}", self.message)
+        write!(f, "Network Rpc error: {}", self.message)
     }
 }
 

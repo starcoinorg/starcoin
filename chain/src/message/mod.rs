@@ -1,6 +1,7 @@
 /// message for chain actor
 use actix::prelude::*;
 use anyhow::Result;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -11,6 +12,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum ChainRequest {
     CurrentHeader(),
@@ -20,7 +22,7 @@ pub enum ChainRequest {
     GetBlockHeaderByNumber(BlockNumber),
     CreateBlockTemplate(
         AccountAddress,
-        Option<Vec<u8>>,
+        Option<Ed25519PublicKey>,
         Option<HashValue>,
         Vec<SignedUserTransaction>,
     ),

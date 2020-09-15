@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_node_api::service_registry::ServiceInfo;
+use starcoin_service_registry::ServiceInfo;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]

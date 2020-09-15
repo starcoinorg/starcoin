@@ -16,7 +16,7 @@
 
 #[cfg(test)]
 mod node_type_test;
-use crate::{blob::Blob, nibble::Nibble, SPARSE_MERKLE_PLACEHOLDER_HASH};
+use crate::{blob::Blob, nibble::Nibble};
 use anyhow::{ensure, Context, Result};
 use bincode::{deserialize, serialize};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};

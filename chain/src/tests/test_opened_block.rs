@@ -8,9 +8,7 @@ use starcoin_config::NodeConfig;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::ChainReader;
-use starcoin_types::{
-    account_address, account_config, transaction::authenticator::AuthenticationKey,
-};
+use starcoin_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
 #[stest::test]
@@ -27,7 +25,7 @@ pub fn test_open_block() -> Result<()> {
             header,
             block_gas_limit,
             miner_account.address,
-            Some(miner_account.get_auth_key().prefix().to_vec()),
+            Some(miner_account.public_key),
             config.net().consensus().now(),
             vec![],
         )?
@@ -36,11 +34,11 @@ pub fn test_open_block() -> Result<()> {
     let account_reader = AccountStateReader::new(chain.chain_state_reader());
     let association_sequence_num =
         account_reader.get_sequence_number(account_config::association_address())?;
-    let (sender_prikey, sender_pubkey) = KeyGen::from_os_rng().generate_keypair();
-    let sender = account_address::from_public_key(&sender_pubkey);
+    let (receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
+    let receiver = account_address::from_public_key(&receive_public_key);
     let txn1 = executor::build_transfer_from_association(
-        sender,
-        AuthenticationKey::ed25519(&sender_pubkey).prefix().to_vec(),
+        receiver,
+        receive_public_key.to_bytes().to_vec(),
         association_sequence_num,
         50_000_000,
         config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
@@ -54,10 +52,10 @@ pub fn test_open_block() -> Result<()> {
     // check state changed
     {
         let account_reader = AccountStateReader::new(opened_block.state_reader());
-        let account_balance = account_reader.get_balance(&sender)?;
+        let account_balance = account_reader.get_balance(&receiver)?;
         assert_eq!(account_balance, Some(50_000_000));
 
-        let account_resource = account_reader.get_account_resource(&sender)?.unwrap();
+        let account_resource = account_reader.get_account_resource(&receiver)?.unwrap();
         assert_eq!(account_resource.sequence_number(), 0);
     }
 
@@ -68,9 +66,9 @@ pub fn test_open_block() -> Result<()> {
         let (_prikey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         let address = account_address::from_public_key(&pubkey);
         executor::build_transfer_txn(
-            sender,
+            receiver,
             address,
-            AuthenticationKey::ed25519(&pubkey).prefix().to_vec(),
+            pubkey.to_bytes().to_vec(),
             seq_number,
             10_000,
             1,
@@ -78,7 +76,7 @@ pub fn test_open_block() -> Result<()> {
             config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id(),
         )
-        .sign(&sender_prikey, sender_pubkey.clone())
+        .sign(&receive_prikey, receive_public_key.clone())
         .unwrap()
         .into_inner()
     };

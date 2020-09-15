@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::{
@@ -111,7 +112,7 @@ impl ChainAsyncService for MockChainService {
     async fn create_block_template(
         &self,
         _author: AccountAddress,
-        _auth_key_prefix: Option<Vec<u8>>,
+        _author_public_key: Option<Ed25519PublicKey>,
         _parent_hash: Option<HashValue>,
         _txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {

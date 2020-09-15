@@ -4,6 +4,7 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
@@ -80,7 +81,7 @@ pub trait ChainApi {
     fn create_dev_block(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Vec<u8>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_id: Option<HashValue>,
         head: bool,
     ) -> FutureResult<HashValue>;

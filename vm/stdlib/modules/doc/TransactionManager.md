@@ -134,7 +134,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, auth_key_prefix: vector&lt;u8&gt;, uncles: u64, number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, public_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64)
 </code></pre>
 
 
@@ -148,7 +148,7 @@
     parent_hash: vector&lt;u8&gt;,
     timestamp: u64,
     author: address,
-    auth_key_prefix: vector&lt;u8&gt;,
+    public_key_vec: vector&lt;u8&gt;,
     uncles: u64,
     number: u64,
 ){
@@ -162,7 +162,7 @@
     <a href="#0x1_TransactionManager_distribute">distribute</a>(account, txn_fee, previous_author);
 
     <b>let</b> reward = <a href="Block.md#0x1_Block_process_block_metadata">Block::process_block_metadata</a>(account, parent_hash, author, timestamp, uncles, number);
-    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, auth_key_prefix);
+    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, public_key_vec);
 }
 </code></pre>
 

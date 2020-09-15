@@ -1,21 +1,29 @@
-use actix::prelude::*;
-use actix::{Actor, Addr, Context};
-use anyhow::Result;
-use bus::{BusActor, Subscription};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use anyhow::{format_err, Result};
 use chain::BlockChain;
 use consensus::Consensus;
 use crypto::hash::HashValue;
+use futures::executor::block_on;
 use logger::prelude::*;
+use starcoin_account_api::{AccountAsyncService, AccountInfo};
+use starcoin_account_service::AccountService;
+use starcoin_config::NodeConfig;
 use starcoin_open_block::OpenedBlock;
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
+};
+use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_txpool::TxPoolService;
+use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
+use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
-use storage::Store;
-use traits::{ChainReader, ExcludedTxns};
+use traits::ChainReader;
 use types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockTemplate},
     system_events::{NewBranch, NewHeadBlock},
-    transaction::SignedUserTransaction,
 };
 
 #[cfg(test)]
@@ -23,182 +31,117 @@ mod test_create_block_template;
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
-pub type CreateBlockTemplateActorAddress = Addr<CreateBlockTemplateActor>;
-
+#[derive(Debug)]
 pub struct GetHeadRequest;
 
-pub struct GetHeadResponse {
-    pub head: HashValue,
+impl ServiceRequest for GetHeadRequest {
+    type Response = HashValue;
 }
 
-impl Message for GetHeadRequest {
-    type Result = Result<GetHeadResponse>;
+#[derive(Debug)]
+pub struct CreateBlockTemplateRequest;
+
+impl ServiceRequest for CreateBlockTemplateRequest {
+    type Response = Result<BlockTemplate>;
 }
 
-pub struct CreateBlockTemplateRequest {
-    final_block_gas_limit: u64,
-    author: AccountAddress,
-    auth_key_prefix: Option<Vec<u8>>,
-    user_txns: Vec<SignedUserTransaction>,
-}
-
-impl CreateBlockTemplateRequest {
-    pub fn new(
-        final_block_gas_limit: u64,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
-        user_txns: Vec<SignedUserTransaction>,
-    ) -> Self {
-        Self {
-            final_block_gas_limit,
-            author,
-            auth_key_prefix,
-            user_txns,
-        }
-    }
-}
-
-impl
-    Into<(
-        u64,
-        AccountAddress,
-        Option<Vec<u8>>,
-        Vec<SignedUserTransaction>,
-    )> for CreateBlockTemplateRequest
-{
-    fn into(
-        self,
-    ) -> (
-        u64,
-        AccountAddress,
-        Option<Vec<u8>>,
-        Vec<SignedUserTransaction>,
-    ) {
-        (
-            self.final_block_gas_limit,
-            self.author,
-            self.auth_key_prefix,
-            self.user_txns,
-        )
-    }
-}
-
-pub struct CreateBlockTemplateResponse {
-    block_template: BlockTemplate,
-    txns: ExcludedTxns,
-}
-
-impl Into<(BlockTemplate, ExcludedTxns)> for CreateBlockTemplateResponse {
-    fn into(self) -> (BlockTemplate, ExcludedTxns) {
-        (self.block_template, self.txns)
-    }
-}
-
-impl Message for CreateBlockTemplateRequest {
-    type Result = Result<CreateBlockTemplateResponse>;
-}
-
-pub struct CreateBlockTemplateActor {
-    bus: Addr<BusActor>,
+pub struct CreateBlockTemplateService {
     inner: Inner,
 }
 
-impl CreateBlockTemplateActor {
-    pub fn launch(
-        block_id: HashValue,
-        net: &ChainNetwork,
-        bus: Addr<BusActor>,
-        storage: Arc<dyn Store>,
-    ) -> Result<CreateBlockTemplateActorAddress> {
-        let inner = Inner::new(block_id, storage, net)?;
-        Ok(CreateBlockTemplateActor::create(move |_ctx| {
-            CreateBlockTemplateActor { bus, inner }
-        }))
+impl CreateBlockTemplateService {}
+
+impl ServiceFactory<Self> for CreateBlockTemplateService {
+    fn create(
+        ctx: &mut ServiceContext<CreateBlockTemplateService>,
+    ) -> Result<CreateBlockTemplateService> {
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let startup_info = storage
+            .get_startup_info()?
+            .expect("Startup info should exist when service start.");
+        //TODO support get service ref by AsyncAPI;
+        let account_service = ctx.service_ref::<AccountService>()?;
+        let miner_account = block_on(async { account_service.get_default_account().await })?
+            .ok_or_else(|| {
+                format_err!("Default account should exist when CreateBlockTemplateService start.")
+            })?;
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let inner = Inner::new(
+            config.net(),
+            storage,
+            startup_info.master,
+            txpool,
+            config.miner.block_gas_limit,
+            miner_account,
+        )?;
+        Ok(Self { inner })
     }
 }
 
-impl Actor for CreateBlockTemplateActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let recipient = ctx.address().recipient::<NewHeadBlock>();
-        self.bus
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
-        let recipient = ctx.address().recipient::<NewBranch>();
-        self.bus
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
-        info!("CreateBlockTemplateActor started");
+impl ActorService for CreateBlockTemplateService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<NewBranch>();
     }
 
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("CreateBlockTemplateActor stopped");
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<NewBranch>();
     }
 }
 
-impl Handler<NewHeadBlock> for CreateBlockTemplateActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: NewHeadBlock, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, NewHeadBlock> for CreateBlockTemplateService {
+    fn handle_event(
+        &mut self,
+        msg: NewHeadBlock,
+        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+    ) {
         if let Err(e) = self.inner.update_chain(msg.0.get_block().clone()) {
             error!("err : {:?}", e)
         }
     }
 }
 
-impl Handler<NewBranch> for CreateBlockTemplateActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: NewBranch, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, NewBranch> for CreateBlockTemplateService {
+    fn handle_event(
+        &mut self,
+        msg: NewBranch,
+        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+    ) {
         self.inner.insert_uncle((&*msg.0).clone())
     }
 }
 
-impl Handler<CreateBlockTemplateRequest> for CreateBlockTemplateActor {
-    type Result = Result<CreateBlockTemplateResponse>;
-
+impl ServiceHandler<Self, CreateBlockTemplateRequest> for CreateBlockTemplateService {
     fn handle(
         &mut self,
-        msg: CreateBlockTemplateRequest,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
-        let (final_block_gas_limit, author, auth_key_prefix, user_txns) = msg.into();
-        let (block_template, txns) = self.inner.create_block_template(
-            final_block_gas_limit,
-            author,
-            auth_key_prefix,
-            user_txns,
-        )?;
-        Ok(CreateBlockTemplateResponse {
-            block_template,
-            txns,
-        })
+        _msg: CreateBlockTemplateRequest,
+        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+    ) -> Result<BlockTemplate> {
+        self.inner.create_block_template()
     }
 }
 
-impl Handler<GetHeadRequest> for CreateBlockTemplateActor {
-    type Result = Result<GetHeadResponse>;
-
-    fn handle(&mut self, _msg: GetHeadRequest, _ctx: &mut Self::Context) -> Self::Result {
-        Ok(GetHeadResponse {
-            head: self.inner.chain.current_header().id(),
-        })
+impl ServiceHandler<Self, GetHeadRequest> for CreateBlockTemplateService {
+    fn handle(
+        &mut self,
+        _msg: GetHeadRequest,
+        _ctx: &mut ServiceContext<CreateBlockTemplateService>,
+    ) -> HashValue {
+        self.inner.chain.current_header().id()
     }
 }
 
 pub struct Inner {
+    consensus: ConsensusStrategy,
+    storage: Arc<dyn Store>,
     chain: BlockChain,
+    txpool: TxPoolService,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
-    storage: Arc<dyn Store>,
-    consensus: ConsensusStrategy,
+    local_block_gas_limit: Option<u64>,
+    miner_account: AccountInfo,
 }
 
 impl Inner {
@@ -210,15 +153,25 @@ impl Inner {
         self.uncles.insert(uncle.id(), uncle);
     }
 
-    pub fn new(block_id: HashValue, storage: Arc<dyn Store>, net: &ChainNetwork) -> Result<Self> {
+    pub fn new(
+        net: &ChainNetwork,
+        storage: Arc<dyn Store>,
+        block_id: HashValue,
+        txpool: TxPoolService,
+        local_block_gas_limit: Option<u64>,
+        miner_account: AccountInfo,
+    ) -> Result<Self> {
         let chain = BlockChain::new(net.consensus(), block_id, storage.clone())?;
 
         Ok(Inner {
+            consensus: net.consensus(),
+            storage,
             chain,
+            txpool,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
-            storage,
-            consensus: net.consensus(),
+            local_block_gas_limit,
+            miner_account,
         })
     }
 
@@ -246,26 +199,52 @@ impl Inner {
         new_uncle
     }
 
-    pub fn create_block_template(
-        &self,
-        final_block_gas_limit: u64,
-        author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
-        user_txns: Vec<SignedUserTransaction>,
-    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+    pub fn create_block_template(&self) -> Result<BlockTemplate> {
+        let on_chain_block_gas_limit = self.chain.get_on_chain_block_gas_limit()?;
+        let block_gas_limit = self
+            .local_block_gas_limit
+            .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
+            .unwrap_or(on_chain_block_gas_limit);
+
+        //TODO use a GasConstant value to replace 600.
+        // block_gas_limit / min_gas_per_txn
+        let max_txns = block_gas_limit / 600;
+
+        let txns = self.txpool.get_pending_txns(Some(max_txns), None);
+
+        let chain_state = self.chain.chain_state_reader();
+        let author = *self.miner_account.address();
+        let author_public_key = if chain_state.exist_account(self.miner_account.address())? {
+            None
+        } else {
+            Some(self.miner_account.public_key.clone())
+        };
+
         let previous_header = self.chain.current_header();
         let uncles = self.do_uncles();
+
+        debug!(
+            "CreateBlockTemplate, previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",
+            previous_header,
+            block_gas_limit,
+            max_txns,
+            txns.len()
+        );
+
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header,
-            final_block_gas_limit,
+            block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             self.consensus.now(),
             uncles,
         )?;
-        let excluded_txns = opened_block.push_txns(user_txns)?;
+        let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;
-        Ok((template, excluded_txns))
+        for invalid_txn in excluded_txns.discarded_txns {
+            let _ = self.txpool.remove_txn(invalid_txn.id(), true);
+        }
+        Ok(template)
     }
 }

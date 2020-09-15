@@ -35,7 +35,7 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
         faucet.transfer(
             query_param.amount,
             query_param.address,
-            query_param.auth_key
+            query_param.public_key
         ),
         response_custom(500, "Inner error")
     );
@@ -77,7 +77,7 @@ pub async fn run(server: Server, faucet: Faucet) {
 struct QueryParam {
     address: AccountAddress,
     amount: u128,
-    auth_key: Vec<u8>,
+    public_key: Vec<u8>,
 }
 
 impl Debug for QueryParam {
@@ -87,7 +87,7 @@ impl Debug for QueryParam {
             "address: {:?}, amount: {:?}, prefix_key: {:?}",
             self.address,
             self.amount,
-            hex::encode(&self.auth_key)
+            hex::encode(&self.public_key)
         )
     }
 }
@@ -97,25 +97,25 @@ fn parse_query(query: &str) -> Result<QueryParam> {
     pairs.sort();
     let mut address = "";
     let mut amount = "";
-    let mut auth_key = "";
+    let mut public_key = "";
     for pair in pairs {
         let kv: Vec<&str> = pair.split('=').collect();
         if kv.len() == 2 {
             match kv[0] {
                 "address" => address = kv[1],
                 "amount" => amount = kv[1],
-                "auth_key" => auth_key = kv[1],
+                "public_key" => public_key = kv[1],
                 _ => {}
             };
         }
     }
     let address = AccountAddress::from_str(address)?;
     let amount = u128::from_str(amount)?;
-    let auth_key = hex::decode(auth_key).unwrap_or_default();
+    let public_key = hex::decode(public_key).unwrap_or_default();
     let query_param = QueryParam {
         address,
         amount,
-        auth_key,
+        public_key,
     };
     Ok(query_param)
 }

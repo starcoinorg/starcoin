@@ -12,7 +12,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -93,11 +92,12 @@ fn main() {
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
-    let receiver_auth_key_prefix = receiver_public_key
+    let public_key = receiver_public_key
         .map(|k| {
-            let k = Ed25519PublicKey::from_encoded_string(&k)
-                .expect("public key should be hex encoded");
-            AuthenticationKey::ed25519(&k).prefix().to_vec()
+            Ed25519PublicKey::from_encoded_string(&k)
+                .expect("public key should be hex encoded")
+                .to_bytes()
+                .to_vec()
         })
         .unwrap_or_default();
     let net = client.node_info().unwrap().net;
@@ -105,7 +105,7 @@ fn main() {
         net.chain_id(),
         account.clone(),
         receiver_address,
-        receiver_auth_key_prefix,
+        public_key,
     );
     let tx_mocker = TxnMocker::new(
         client,

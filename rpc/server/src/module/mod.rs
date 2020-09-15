@@ -7,20 +7,22 @@ mod account_rpc;
 mod chain_rpc;
 mod debug_rpc;
 mod dev_rpc;
+mod miner_rpc;
 mod node_rpc;
 mod pubsub;
 mod state_rpc;
 mod txpool_rpc;
+
 pub use self::account_rpc::AccountRpcImpl;
 pub use self::chain_rpc::ChainRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
 pub use self::dev_rpc::DevRpcImpl;
+pub use self::miner_rpc::MinerRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
-
-use starcoin_account_api::error::AccountServiceError;
+use starcoin_account_api::error::AccountError;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     //TODO error convert.
@@ -50,12 +52,11 @@ pub enum RpcError {
     InvalidRequest(String),
 }
 
-impl From<AccountServiceError> for RpcError {
-    fn from(err: AccountServiceError) -> Self {
+impl From<AccountError> for RpcError {
+    fn from(err: AccountError) -> Self {
         match err {
-            AccountServiceError::AccountError(_) => RpcError::InternalError,
-            AccountServiceError::OtherError(_) => RpcError::InternalError,
-            e => RpcError::InvalidRequest(format!("{}", e)),
+            AccountError::StoreError(_) => RpcError::InternalError,
+            e => RpcError::InvalidRequest(format!("{:?}", e)),
         }
     }
 }

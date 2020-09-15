@@ -74,10 +74,10 @@ mod tree_cache_test;
 
 use crate::{
     node_type::{Node, NodeKey},
-    StaleNodeIndex, TreeReader, TreeUpdateBatch, SPARSE_MERKLE_PLACEHOLDER_HASH,
+    StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
 use anyhow::{bail, Result};
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{hash::SPARSE_MERKLE_PLACEHOLDER_HASH, HashValue};
 use std::{
     collections::{hash_map::Entry, BTreeMap, BTreeSet, HashMap, HashSet},
     convert::Into,

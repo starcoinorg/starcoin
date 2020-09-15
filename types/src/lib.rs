@@ -15,7 +15,6 @@ pub mod account_config {
 }
 
 pub mod account_state;
-pub mod accumulator_info;
 pub mod block;
 pub mod cmpact_block;
 pub mod block_metadata {

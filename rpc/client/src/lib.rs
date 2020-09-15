@@ -14,12 +14,12 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
-use starcoin_rpc_api::types::pubsub::Event;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
+use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
-    node::NodeClient, state::StateClient, txpool::TxPoolClient,
+    miner::MinerClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -45,7 +45,9 @@ use tokio_compat::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
+
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
@@ -574,18 +576,24 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
             .map_err(map_err)
     }
+    pub fn miner_submit(&self, header_hash: HashValue, nonce: u64) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.miner_client.submit(header_hash, nonce).compat().await
+        })
+        .map_err(map_err)
+    }
 
     pub fn create_dev_block(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Vec<u8>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_id: Option<HashValue>,
         head: bool,
     ) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
-                .create_dev_block(author, auth_key_prefix, parent_id, head)
+                .create_dev_block(author, author_public_key, parent_id, head)
                 .compat()
                 .await
         })
@@ -625,7 +633,15 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
-
+    pub fn subscribe_new_mint_blocks(
+        &self,
+    ) -> anyhow::Result<impl TryStream<Ok = MintBlock, Error = anyhow::Error>> {
+        self.call_rpc_blocking(|inner| async move {
+            let res = inner.pubsub_client.subscribe_new_mint_block().await;
+            res.map(|s| s.compat().map_err(map_err))
+        })
+        .map_err(map_err)
+    }
     fn call_rpc_blocking<F, T>(
         &self,
         f: impl FnOnce(RpcClientInner) -> F + Send,
@@ -672,7 +688,7 @@ impl RpcClient {
     }
 
     pub fn close(self) {
-        if let Err(e) = futures03::executor::block_on(self.chain_watcher.send(SystemStop)) {
+        if let Err(e) = self.chain_watcher.try_send(SystemStop) {
             error!("Try to stop chain watcher error: {:?}", e);
         }
         if let Err(e) = self.watcher_handle.join() {
@@ -691,6 +707,7 @@ pub(crate) struct RpcClientInner {
     chain_client: ChainClient,
     pubsub_client: PubSubClient,
     dev_client: DevClient,
+    miner_client: MinerClient,
 }
 
 impl RpcClientInner {
@@ -703,7 +720,8 @@ impl RpcClientInner {
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
             dev_client: channel.clone().into(),
-            pubsub_client: channel.into(),
+            pubsub_client: channel.clone().into(),
+            miner_client: channel.into(),
         }
     }
 }

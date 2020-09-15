@@ -5,6 +5,9 @@ use crate::bus::SysBus;
 use actix::prelude::*;
 use anyhow::Result;
 use futures::channel::{mpsc, oneshot};
+use starcoin_logger::prelude::*;
+use starcoin_service_registry::bus::{Bus as NewBus, BusService};
+use starcoin_service_registry::ServiceRef;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -123,11 +126,23 @@ pub trait Bus {
 
 pub struct BusActor {
     bus: SysBus,
+    new_bus: Option<ServiceRef<BusService>>,
 }
 
 impl BusActor {
     pub fn launch() -> Addr<BusActor> {
-        let bus = BusActor { bus: SysBus::new() };
+        let bus = BusActor {
+            bus: SysBus::new(),
+            new_bus: None,
+        };
+        bus.start()
+    }
+
+    pub fn launch2(new_bus: ServiceRef<BusService>) -> Addr<BusActor> {
+        let bus = BusActor {
+            bus: SysBus::new(),
+            new_bus: Some(new_bus),
+        };
         bus.start()
     }
 }
@@ -179,8 +194,19 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, msg: Broadcast<M>, _ctx: &mut Self::Context) -> Self::Result {
-        self.bus.broadcast(msg.msg)
+    fn handle(&mut self, msg: Broadcast<M>, ctx: &mut Self::Context) -> Self::Result {
+        //forward message to new bus.
+        if let Some(new_bus) = self.new_bus.clone() {
+            let msg = msg.msg.clone();
+            async move {
+                if let Err(e) = new_bus.broadcast(msg).await {
+                    error!("Forward msg to new bus error: {:?}", e);
+                };
+            }
+            .into_actor(self)
+            .wait(ctx)
+        }
+        self.bus.broadcast(msg.msg);
     }
 }
 
@@ -231,7 +257,6 @@ mod tests {
     use actix::clock::delay_for;
     use futures::executor::block_on;
     use futures::StreamExt;
-    use starcoin_logger::prelude::*;
     use std::thread::sleep;
     use std::time::Duration;
 

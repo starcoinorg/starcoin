@@ -3,11 +3,13 @@
 
 use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{
-    node::AccumulatorStoreType, Accumulator, AccumulatorTreeStore, MerkleAccumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
+    AccumulatorTreeStore, MerkleAccumulator,
 };
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
@@ -17,7 +19,6 @@ use starcoin_traits::{
 };
 use starcoin_types::{
     account_address::AccountAddress,
-    accumulator_info::AccumulatorInfo,
     block::{
         Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
         ALLOWED_FUTURE_BLOCKTIME,
@@ -71,7 +72,7 @@ impl BlockChain {
         let mut chain = Self {
             consensus,
             txn_accumulator: info_2_accumulator(
-                txn_accumulator_info,
+                txn_accumulator_info.clone(),
                 AccumulatorStoreType::Transaction,
                 storage.clone().into_super_arc(),
             )?,
@@ -182,7 +183,7 @@ impl BlockChain {
     fn create_block_template_inner(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -197,7 +198,7 @@ impl BlockChain {
             previous_header,
             final_block_gas_limit,
             author,
-            auth_key_prefix,
+            author_public_key,
             self.consensus.now(),
             uncles,
         )?;
@@ -395,7 +396,7 @@ impl ChainReader for BlockChain {
     fn create_block_template(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -412,7 +413,7 @@ impl ChainReader for BlockChain {
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
         self.create_block_template_inner(
             author,
-            auth_key_prefix,
+            author_public_key,
             previous_header,
             user_txns,
             uncles,
@@ -560,14 +561,6 @@ impl BlockChain {
                 "Invalid block: block timestamp too new"
             );
         }
-
-        verify_block!(
-            VerifyBlockField::Header,
-            header.gas_used <= header.gas_limit,
-            "gas used {} in transaction is bigger than gas limit {}",
-            header.gas_used,
-            header.gas_limit
-        );
 
         // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
@@ -723,9 +716,15 @@ impl BlockChain {
         let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
+        let gas_limit = if is_genesis {
+            u64::MIN
+        } else {
+            self.get_on_chain_block_gas_limit()?
+        };
+
         verify_block!(
             VerifyBlockField::Header,
-            header.gas_used() <= header.gas_limit(),
+            header.gas_used() <= gas_limit,
             "invalid block: gas_used should not greater than gas_limit"
         );
 
@@ -780,7 +779,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), header.gas_limit())?
+            executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };
@@ -891,7 +890,7 @@ impl BlockChain {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
         self.txn_accumulator = info_2_accumulator(
-            txn_accumulator_info,
+            txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
             self.storage.clone().into_super_arc(),
         )?;
@@ -1014,12 +1013,5 @@ pub(crate) fn info_2_accumulator(
     store_type: AccumulatorStoreType,
     node_store: Arc<dyn AccumulatorTreeStore>,
 ) -> Result<MerkleAccumulator> {
-    MerkleAccumulator::new(
-        *accumulator_info.get_accumulator_root(),
-        accumulator_info.get_frozen_subtree_roots().clone(),
-        accumulator_info.get_num_leaves(),
-        accumulator_info.get_num_nodes(),
-        store_type,
-        node_store,
-    )
+    MerkleAccumulator::new_with_info(accumulator_info, store_type, node_store)
 }

@@ -1,19 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    get_available_port_from, get_random_available_port, BaseConfig, ConfigModule, StarcoinOpt,
-};
+use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
-
-pub static DEFAULT_STRATUM_SERVER_PORT: u16 = 9940;
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
-    pub stratum_server: SocketAddr,
     pub enable_mint_empty_block: bool,
     pub block_gas_limit: Option<u64>,
     pub enable_miner_client: bool,
@@ -23,7 +17,7 @@ pub struct MinerConfig {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct MinerClientConfig {
-    pub stratum_server: SocketAddr,
+    pub server: Option<String>,
     pub thread_num: u16,
     #[serde(skip)]
     pub enable_stderr: bool,
@@ -37,23 +31,12 @@ impl ConfigModule for MinerConfig {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
-
-        let port = if base.net.is_test() {
-            get_random_available_port()
-        } else if base.net.is_dev() {
-            get_available_port_from(DEFAULT_STRATUM_SERVER_PORT)
-        } else {
-            DEFAULT_STRATUM_SERVER_PORT
-        };
-        let stratum_server = format!("127.0.0.1:{}", port).parse::<SocketAddr>()?;
-
         Ok(Self {
-            stratum_server,
             enable_mint_empty_block: !disable_mint_empty_block,
             block_gas_limit: None,
             enable_miner_client: !opt.disable_miner_client,
             client_config: MinerClientConfig {
-                stratum_server,
+                server: None,
                 thread_num: opt.miner_thread.unwrap_or(1),
                 enable_stderr: false,
             },
@@ -67,9 +50,7 @@ impl ConfigModule for MinerConfig {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
-
         self.enable_mint_empty_block = !disable_mint_empty_block;
-
         if let Some(thread) = opt.miner_thread {
             self.client_config.thread_num = thread;
         }

@@ -1,15 +1,16 @@
 use accumulator::AccumulatorNode;
-use anyhow::*;
+//use anyhow::*;
 use network_api::{messages::PeerMessage, NetworkService, PeerId};
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber,
+    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber, Result,
 };
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::NewHeadBlock;
+use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -121,7 +122,10 @@ impl DummyNetworkService {
     }
 
     fn get_state_node_by_node_hash(&self, state_node_key: HashValue) -> Result<Option<StateNode>> {
-        self.chain.get_storage().get(&state_node_key)
+        self.chain
+            .get_storage()
+            .get(&state_node_key)
+            .map_err(|e| e.into())
     }
 
     fn get_accumulator_node_by_node_hash(
@@ -131,6 +135,19 @@ impl DummyNetworkService {
         self.chain
             .get_storage()
             .get_node(req.accumulator_storage_type, req.node_hash)
+            .map_err(|e| e.into())
+    }
+
+    fn get_txn_infos(&self, block_id: HashValue) -> Result<Option<Vec<TransactionInfo>>> {
+        if let Ok(txn_infos) = self
+            .chain
+            .get_storage()
+            .get_block_transaction_infos(block_id)
+        {
+            Ok(Some(txn_infos))
+        } else {
+            Ok(None)
+        }
     }
 }
 
@@ -141,7 +158,7 @@ impl NetworkService for DummyNetworkService {
         _protocol_name: Cow<'static, [u8]>,
         _peer_id: PeerId,
         _msg: PeerMessage,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -149,7 +166,7 @@ impl NetworkService for DummyNetworkService {
         &self,
         _protocol_name: Cow<'static, [u8]>,
         _event: NewHeadBlock,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -164,43 +181,47 @@ impl NetworkService for DummyNetworkService {
         rpc_path: String,
         message: Vec<u8>,
         _time_out: Duration,
-    ) -> Result<Vec<u8>> {
+    ) -> anyhow::Result<Vec<u8>> {
         match rpc_path.to_lowercase().as_str() {
             // "get_txns" => {}
-            // "get_txn_infos" => {}
+            "get_txn_infos" => {
+                let block_id: HashValue = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_txn_infos(block_id);
+                Ok(scs::to_bytes(&resp)?)
+            }
             "get_headers_by_number" => {
                 let req: GetBlockHeadersByNumber = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_headers_by_number(req)?;
+                let resp = self.get_headers_by_number(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_header_by_hash" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_header_by_hash(req)?;
+                let resp = self.get_header_by_hash(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_headers_with_peer" => {
                 let req: GetBlockHeaders = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_headers_with_peer(req)?;
+                let resp = self.get_headers_with_peer(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_info_by_hash" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_info_by_hash(req)?;
+                let resp = self.get_info_by_hash(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_body_by_hash" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_body_by_hash(req)?;
+                let resp = self.get_body_by_hash(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_state_node_by_node_hash" => {
                 let req: HashValue = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_state_node_by_node_hash(req)?;
+                let resp = self.get_state_node_by_node_hash(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             "get_accumulator_node_by_node_hash" => {
                 let req: GetAccumulatorNodeByNodeHash = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_accumulator_node_by_node_hash(req)?;
+                let resp = self.get_accumulator_node_by_node_hash(req);
                 Ok(scs::to_bytes(&resp)?)
             }
             // "get_state_with_proof" => {
@@ -211,27 +232,27 @@ impl NetworkService for DummyNetworkService {
         }
     }
 
-    async fn peer_set(&self) -> Result<Vec<PeerInfo>> {
+    async fn peer_set(&self) -> anyhow::Result<Vec<PeerInfo>> {
         Ok(self.peers.clone())
     }
 
-    async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
+    async fn best_peer_set(&self) -> anyhow::Result<Vec<PeerInfo>> {
         Ok(self.peers.clone())
     }
 
-    async fn get_peer(&self, _peer_id: &PeerId) -> Result<Option<PeerInfo>> {
+    async fn get_peer(&self, _peer_id: &PeerId) -> anyhow::Result<Option<PeerInfo>> {
         self.best_peer().await
     }
 
-    async fn get_self_peer(&self) -> Result<PeerInfo> {
+    async fn get_self_peer(&self) -> anyhow::Result<PeerInfo> {
         Ok(self.peers.get(0).expect("should have").clone())
     }
 
-    async fn best_peer(&self) -> Result<Option<PeerInfo>> {
+    async fn best_peer(&self) -> anyhow::Result<Option<PeerInfo>> {
         Ok(Some(self.peers.get(1).expect("should have").clone()))
     }
 
-    async fn get_peer_set_size(&self) -> Result<usize> {
+    async fn get_peer_set_size(&self) -> anyhow::Result<usize> {
         Ok(2)
     }
 
@@ -239,7 +260,7 @@ impl NetworkService for DummyNetworkService {
         &self,
         _proto_name: Cow<'static, [u8]>,
         _rpc_info: RpcInfo,
-    ) -> Result<()> {
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 }

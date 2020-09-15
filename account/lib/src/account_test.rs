@@ -1,7 +1,6 @@
 use crate::account_storage::AccountStorage;
 use crate::Account;
 use crate::AccountManager;
-use actix::clock::Duration;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
 use starcoin_crypto::SigningKey;
@@ -13,6 +12,7 @@ use starcoin_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
 use starcoin_types::transaction::{
     RawUserTransaction, Script, SignedUserTransaction, TransactionPayload,
 };
+use std::time::Duration;
 
 #[test]
 pub fn test_import_account() -> Result<()> {

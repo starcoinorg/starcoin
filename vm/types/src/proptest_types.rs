@@ -5,7 +5,6 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
 use crate::genesis_config::{BuiltinNetwork, ChainId};
-use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
@@ -386,26 +385,23 @@ impl Arbitrary for Package {
 impl Arbitrary for BlockMetadata {
     type Parameters = SizeRange;
     fn arbitrary_with(_args: Self::Parameters) -> Self::Strategy {
-        let key_prefix_strategy = ed25519::keypair_strategy().prop_map(|key_pair| {
-            AuthenticationKey::ed25519(&key_pair.public_key)
-                .prefix()
-                .to_vec()
-        });
+        let public_key_strategy =
+            ed25519::keypair_strategy().prop_map(|key_pair| key_pair.public_key);
         (
             any::<HashValue>(),
             any::<u64>(),
             any::<AccountAddress>(),
-            key_prefix_strategy,
+            public_key_strategy,
             any::<u64>(),
             any::<u64>(),
         )
             .prop_map(
-                |(parent_hash, timestamp, addresses, auth_key_prefix, uncles, number)| {
+                |(parent_hash, timestamp, addresses, author_public_key, uncles, number)| {
                     BlockMetadata::new(
                         parent_hash,
                         timestamp,
                         addresses,
-                        Some(auth_key_prefix),
+                        Some(author_public_key),
                         uncles,
                         number,
                     )

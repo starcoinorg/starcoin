@@ -7,22 +7,25 @@ use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
+use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::ChainNotifyHandlerActor;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use starcoin_crypto::{
+    ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, HashValue, PrivateKey,
+};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
+use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::account_address;
-use starcoin_types::{
-    block::BlockDetail, system_events::NewHeadBlock, transaction::authenticator::AuthenticationKey,
-};
+use starcoin_types::system_events::MintBlockEvent;
+use starcoin_types::{account_address, U256};
+use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
@@ -39,10 +42,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let public_key = pri_key.public_key();
     let account_address = account_address::from_public_key(&public_key);
     let txn = {
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             0,
             10000,
             config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
@@ -52,16 +54,13 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     };
     let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
-        Some(miner_account.get_auth_key().prefix().to_vec()),
+        Some(miner_account.public_key.clone()),
         None,
         vec![txn.clone()],
         vec![],
         None,
     )?;
-    debug!(
-        "block_template: gas_used: {}, gas_limit: {}",
-        block_template.gas_used, block_template.gas_limit
-    );
+    debug!("block_template: gas_used: {}", block_template.gas_used);
     let new_block = config
         .net()
         .consensus()
@@ -172,12 +171,10 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 
     // Send new transactions
     let txn = {
-        let auth_key = AuthenticationKey::random();
-        let account_address = auth_key.derived_address();
-        let auth_prefix = auth_key.prefix().to_vec();
+        let account = AccountInfo::random();
         let txn = starcoin_executor::build_transfer_from_association(
-            account_address,
-            auth_prefix,
+            account.address,
+            account.public_key.to_bytes().to_vec(),
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,
@@ -204,5 +201,49 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         .transpose();
 
     assert_eq!(res, Ok(None));
+    Ok(())
+}
+
+#[stest::test]
+pub async fn test_subscribe_to_mint_block() -> Result<()> {
+    let bus = BusActor::launch();
+    let (txpool, _, _config) = test_helper::start_txpool();
+    let txpool_service = txpool.get_service();
+    let service = PubSubService::new(bus.clone(), txpool_service.clone());
+    let pubsub = PubSubImpl::new(service);
+    let pubsub = pubsub.to_delegate();
+
+    let mut io = MetaIoHandler::default();
+    io.extend_with(pubsub);
+
+    let mut metadata = Metadata::default();
+    let (sender, receiver) = futures01::sync::mpsc::channel(8);
+    metadata.session = Some(Arc::new(Session::new(sender)));
+
+    // Subscribe
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newMintBlock"], "id": 1}"#;
+    let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
+    let resp = io.handle_request(request, metadata.clone()).compat().await;
+    assert_eq!(resp, Ok(Some(response.to_owned())));
+    // Generate a event
+    let diff = U256::from(1024);
+    let header_hash = HashValue::random();
+    let mint_block_event = MintBlockEvent::new(header_hash, diff);
+    bus.broadcast(mint_block_event.clone()).await.unwrap();
+    let res = timeout(Duration::from_secs(1), receiver.compat().next())
+        .await?
+        .transpose()
+        .unwrap()
+        .unwrap();
+    let r: Value = serde_json::from_str(&res).unwrap();
+    let v = r["params"]["result"].clone();
+    let mint_block: MintBlock = serde_json::from_value(v).unwrap();
+    assert_eq!(mint_block.difficulty, diff);
+    assert_eq!(mint_block.header_hash, header_hash);
+    // Unsubscribe
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
+    let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;
+    let resp = io.handle_request(request, metadata).compat().await;
+    assert_eq!(resp, Ok(Some(response.to_owned())));
     Ok(())
 }

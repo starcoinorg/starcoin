@@ -2,15 +2,14 @@ address 0x1 {
 
 // The module for the account resource that governs every account
 module Account {
+    use 0x1::Authenticator;
     use 0x1::Event;
     use 0x1::Hash;
-    use 0x1::LCS;
     use 0x1::Token::{Self, Token};
     use 0x1::Vector;
     use 0x1::Signer;
     use 0x1::Timestamp;
     use 0x1::Option::{Self, Option};
-    //use 0x1::SignedInteger64::{Self};
     use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
     use 0x1::ErrorCode;
@@ -101,6 +100,7 @@ module Account {
     fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 1}
     fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
     fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
+    fun ADDRESS_PUBLIC_KEY_INCONSISTENT(): u64 { ErrorCode::ECODE_BASE() + 4}
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -130,16 +130,16 @@ module Account {
         aborts_if false;
     }
 
-    // Creates a new account at `fresh_address` with a balance of zero and authentication
-    // key `auth_key_prefix` | `fresh_address`.
+    // Creates a new account at `fresh_address` with a balance of zero and public
+    // key `public_key_vec` | `fresh_address`.
     // Creating an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
-    public fun create_account<TokenType>(fresh_address: address, auth_key_prefix: vector<u8>) acquires Account {
-        let new_account = create_signer(fresh_address);
+    public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
+        let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
+        let new_address = Authenticator::derived_address(copy authentication_key);
+        assert(new_address == fresh_address, ADDRESS_PUBLIC_KEY_INCONSISTENT());
 
-        let authentication_key = auth_key_prefix;
-        Vector::append(&mut authentication_key, LCS::to_bytes(&fresh_address));
-
+        let new_account = create_signer(new_address);
         make_account(&new_account, authentication_key);
         // Make sure all account accept STC.
         if (!STC::is_stc<TokenType>()){
@@ -153,7 +153,7 @@ module Account {
         pragma verify = false;
         // missing spec_token_code()
         //aborts_if token_code<TokenType>() != token_code<STC>() && exists<Balance<TokenType>>(fresh_address);
-        aborts_if len(auth_key_prefix) + len(LCS::serialize(fresh_address)) != 32;
+        aborts_if len(public_key_vec) != 32;
         aborts_if exists<Account>(fresh_address);
     }
 
@@ -161,7 +161,7 @@ module Account {
         new_account: &signer,
         authentication_key: vector<u8>,
     ) {
-        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
+        assert(Vector::length(&authentication_key) == 32, 88888);
         let new_account_addr = Signer::address_of(new_account);
         Event::publish_generator(new_account);
         move_to(new_account, Account {

@@ -58,7 +58,7 @@ fn gen_blocks(
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
+                    Some(miner_account.public_key.clone()),
                     None,
                     Vec::new(),
                     vec![],
@@ -112,7 +112,7 @@ fn gen_fork_block_chain(
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
-                    Some(miner_account.get_auth_key().prefix().to_vec()),
+                    Some(miner_account.public_key.clone()),
                     None,
                     Vec::new(),
                     vec![],

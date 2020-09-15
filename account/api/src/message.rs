@@ -1,8 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{AccountInfo, AccountResult};
-use actix::Message;
+use crate::AccountInfo;
+use anyhow::Result;
+use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -35,8 +36,8 @@ pub enum AccountRequest {
     },
 }
 
-impl Message for AccountRequest {
-    type Result = AccountResult<AccountResponse>;
+impl ServiceRequest for AccountRequest {
+    type Response = Result<AccountResponse>;
 }
 
 #[derive(Debug, Clone)]

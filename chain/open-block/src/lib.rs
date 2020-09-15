@@ -1,10 +1,12 @@
 use anyhow::{bail, format_err, Result};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -30,6 +32,7 @@ pub struct OpenedBlock {
     gas_used: u64,
     included_user_txns: Vec<SignedUserTransaction>,
     uncles: Vec<BlockHeader>,
+    chain_id: ChainId,
 }
 
 impl OpenedBlock {
@@ -38,7 +41,7 @@ impl OpenedBlock {
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
@@ -47,15 +50,11 @@ impl OpenedBlock {
             .get_block_info(previous_block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", previous_block_id))?;
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
-        let txn_accumulator = MerkleAccumulator::new(
-            *txn_accumulator_info.get_accumulator_root(),
-            txn_accumulator_info.get_frozen_subtree_roots().clone(),
-            txn_accumulator_info.get_num_leaves(),
-            txn_accumulator_info.get_num_nodes(),
+        let txn_accumulator = MerkleAccumulator::new_with_info(
+            txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
             storage.clone().into_super_arc(),
         )?;
-        // let block_timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
@@ -63,7 +62,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            auth_key_prefix,
+            author_public_key,
             uncles.len() as u64,
             previous_header.number + 1,
         );
@@ -77,6 +76,7 @@ impl OpenedBlock {
             gas_used: 0,
             included_user_txns: vec![],
             uncles,
+            chain_id: previous_header.chain_id,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -224,7 +224,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, auth_key_prefix, _uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, _uncles, number) =
             self.block_meta.into_inner();
 
         let (uncle_hash, uncles) = if !self.uncles.is_empty() {
@@ -244,13 +244,13 @@ impl OpenedBlock {
             timestamp,
             number,
             author,
-            auth_key_prefix,
+            author_public_key,
             accumulator_root,
             state_root,
             self.gas_used,
-            self.gas_limit,
             uncle_hash,
             body,
+            self.chain_id,
         );
         Ok(block_template)
     }

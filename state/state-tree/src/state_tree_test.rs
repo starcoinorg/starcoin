@@ -1,7 +1,6 @@
 use super::*;
 use crate::mock::MockStateNodeStore;
 use anyhow::Result;
-use forkable_jellyfish_merkle::SPARSE_MERKLE_PLACEHOLDER_HASH;
 use starcoin_crypto::hash::*;
 use std::sync::Arc;
 

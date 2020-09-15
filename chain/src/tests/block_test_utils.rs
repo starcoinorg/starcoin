@@ -75,10 +75,10 @@ fn gen_header(
         acc_root,
         state_root,
         0,
-        parent_header.gas_limit, //block_gas_limit
         U256::zero(),
         0,
         None,
+        parent_header.chain_id,
     )
 }
 
@@ -146,7 +146,7 @@ prop_compose! {
         p_header.parent_hash(),
         ChainNetwork::TEST.consensus().now(),
         p_header.author,
-        p_header.auth_key_prefix,
+        p_header.author_public_key,
         0,
         p_header.number + 1,
         );
@@ -158,7 +158,7 @@ prop_compose! {
             parent_header.accumulator_root(),
             parent_header.state_root(),
             txns,
-            parent_header.gas_limit(), /*block_gas_limit*/
+            u64::max_value(), /*block_gas_limit*/
         );
         let header = gen_header(parent_header, state_root, acc_root);
         let body = BlockBody::new(user_txns, None);

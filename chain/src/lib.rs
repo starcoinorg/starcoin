@@ -14,6 +14,7 @@ use crate::message::ChainResponse;
 use actix::prelude::*;
 use anyhow::{bail, format_err, Error, Result};
 use bus::{Bus, BusActor};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use message::ChainRequest;
@@ -122,10 +123,10 @@ impl Handler<ChainRequest> for ChainActor {
                         })?,
                 ))))
             }
-            ChainRequest::CreateBlockTemplate(author, auth_key_prefix, parent_hash, txs) => Ok(
+            ChainRequest::CreateBlockTemplate(author, author_public_key, parent_hash, txs) => Ok(
                 ChainResponse::BlockTemplate(Box::new(self.service.create_block_template(
                     author,
-                    auth_key_prefix,
+                    author_public_key,
                     parent_hash,
                     txs,
                 )?)),
@@ -490,7 +491,7 @@ impl ChainAsyncService for ChainActorRef {
     async fn create_block_template(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         txs: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
@@ -498,7 +499,7 @@ impl ChainAsyncService for ChainActorRef {
         if let ChainResponse::BlockTemplate(block_template) = address
             .send(ChainRequest::CreateBlockTemplate(
                 author,
-                auth_key_prefix,
+                author_public_key,
                 parent_hash,
                 txs,
             ))

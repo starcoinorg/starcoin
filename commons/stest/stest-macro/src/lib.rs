@@ -56,12 +56,12 @@ struct TestAttributeOpts {
 ///
 /// #[stest::test(timeout = 1)]
 /// async fn test_async_timeout() {
-///     actix_rt::time::delay_for(Duration::from_secs(6)).await;
+///     stest::actix_export::time::delay_for(Duration::from_secs(6)).await;
 /// }
 ///
 /// #[stest::test(timeout = 1)]
 /// async fn test_async_timeout_result() -> anyhow::Result<()> {
-///     actix_rt::time::delay_for(Duration::from_secs(6)).await;
+///     stest::actix_export::time::delay_for(Duration::from_secs(6)).await;
 ///     Ok(())
 /// }
 ///
@@ -162,11 +162,11 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 let mut rt = stest::Runtime::new().unwrap();
 
                 let local = stest::LocalSet::new();
-                let future = actix_rt::System::run_in_tokio("test", &local);
+                let future = stest::actix_export::System::run_in_tokio("test", &local);
                 local.spawn_local(future);
 
-                actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
-                actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
+                stest::actix_export::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                stest::actix_export::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
                 local.block_on(&mut rt,stest::wait_result(rx))
             }
@@ -182,11 +182,11 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
                 let mut rt = stest::Runtime::new().unwrap();
 
                 let local = stest::LocalSet::new();
-                let future = actix_rt::System::run_in_tokio("test", &local);
+                let future = stest::actix_export::System::run_in_tokio("test", &local);
                 local.spawn_local(future);
 
-                actix_rt::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
-                actix_rt::Arbiter::spawn(stest::test_future(async{ #body },tx));
+                stest::actix_export::Arbiter::spawn(stest::timeout_future(#timeout,tx.clone()));
+                stest::actix_export::Arbiter::spawn(stest::test_future(async{ #body },tx));
 
                 local.block_on(&mut rt,stest::wait_result(rx))
              }

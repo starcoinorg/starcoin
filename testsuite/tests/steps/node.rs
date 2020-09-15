@@ -60,8 +60,9 @@ pub fn steps() -> Steps<MyWorld> {
             // stop node
             if world.node_handle.is_some() {
                 let node_handle = world.node_handle.take().unwrap();
-                let result = node_handle.stop();
-                assert!(result.is_ok());
+                if let Err(e) = node_handle.stop() {
+                    error!("Node stop error: {:?}", e)
+                }
                 info!("node stopped.");
             }
         })

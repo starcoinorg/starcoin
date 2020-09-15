@@ -7,10 +7,10 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 thiserror = "1.0"
 backtrace = "0.3.46"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
 async-trait = "0.1"
@@ -23,6 +23,7 @@ starcoin-crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-types = { path = "../../types" }
 starcoin-genesis = { path = "../../core/genesis" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }

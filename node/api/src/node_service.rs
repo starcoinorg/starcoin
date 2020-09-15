@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{NodeRequest, NodeResponse};
-use crate::service_registry::ServiceInfo;
 use actix::dev::ToEnvelope;
 use actix::{Actor, Addr, Handler};
 use anyhow::Result;
+use starcoin_service_registry::ServiceInfo;
 
 #[async_trait::async_trait]
 pub trait NodeAsyncService:

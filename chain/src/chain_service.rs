@@ -3,6 +3,7 @@
 
 use crate::chain::BlockChain;
 use anyhow::{format_err, Error, Result};
+use crypto::ed25519::Ed25519PublicKey;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -350,7 +351,7 @@ where
     fn create_block_template(
         &self,
         author: AccountAddress,
-        auth_key_prefix: Option<Vec<u8>>,
+        author_public_key: Option<Ed25519PublicKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
     ) -> Result<BlockTemplate> {
@@ -376,7 +377,7 @@ where
             debug!("uncles len: {}", uncles.len());
             let (block_template, excluded_txns) = block_chain.create_block_template(
                 author,
-                auth_key_prefix,
+                author_public_key,
                 Some(block_id),
                 user_txns,
                 uncles,

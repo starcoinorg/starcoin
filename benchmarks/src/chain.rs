@@ -67,7 +67,7 @@ impl ChainBencher {
                 .read()
                 .create_block_template(
                     *self.account.address(),
-                    Some(self.account.get_auth_key().prefix().to_vec()),
+                    Some(self.account.public_key.clone()),
                     None,
                     vec![],
                     vec![],

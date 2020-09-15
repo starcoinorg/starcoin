@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 thiserror = "1.0"
 # for RpcError convert.
 failure = "0.1"
@@ -16,7 +16,7 @@ tokio01 = { version="0.1", package="tokio"}
 tokio-compat = "0.1.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 tokio = "0.2"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }

@@ -5,10 +5,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use std::time::Duration;
 use test_helper::run_node_by_config;
-use types::{
-    account_address,
-    transaction::{authenticator::AuthenticationKey, SignedUserTransaction},
-};
+use types::{account_address, transaction::SignedUserTransaction};
 
 #[stest::test]
 fn test_txn_sync_actor() {
@@ -52,10 +49,9 @@ fn test_txn_sync_actor() {
 fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
-    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = executor::build_transfer_from_association(
         account_address,
-        auth_prefix,
+        public_key.to_bytes().to_vec(),
         0,
         10000,
         config.net().consensus().now() + 40000,

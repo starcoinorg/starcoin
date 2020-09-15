@@ -672,7 +672,9 @@ pub fn peer_to_peer_txn(
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(receiver.auth_key_prefix()));
+    args.push(TransactionArgument::U8Vector(
+        receiver.pubkey.to_bytes().to_vec(),
+    ));
     args.push(TransactionArgument::U128(transfer_amount));
 
     // get a SignedTransaction
@@ -702,7 +704,9 @@ pub fn create_account_txn_sent_as_association(
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
-    args.push(TransactionArgument::U8Vector(new_account.auth_key_prefix()));
+    args.push(TransactionArgument::U8Vector(
+        new_account.pubkey.to_bytes().to_vec(),
+    ));
     args.push(TransactionArgument::U128(initial_amount));
 
     create_signed_txn_with_association_account(

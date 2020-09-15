@@ -5,8 +5,9 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_crypto::ed25519::random_public_key;
 use starcoin_crypto::HashValue;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
+use starcoin_vm_types::account_address;
 use structopt::StructOpt;
 
 ///Generate block with dev consensus
@@ -38,13 +39,10 @@ impl CommandAction for GenDevBlockCommand {
 
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let auth_key = AuthenticationKey::random();
-        let new_block_id = client.create_dev_block(
-            auth_key.derived_address(),
-            auth_key.prefix().to_vec(),
-            opt.parent,
-            opt.head,
-        )?;
+        let public_key = random_public_key();
+        let address = account_address::from_public_key(&public_key);
+        let new_block_id =
+            client.create_dev_block(address, Some(public_key), opt.parent, opt.head)?;
 
         Ok(new_block_id)
     }

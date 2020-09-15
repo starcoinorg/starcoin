@@ -7,10 +7,10 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 thiserror = "1.0"
 backtrace = "0.3.46"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 actix-rt = "1.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
@@ -45,6 +45,7 @@ starcoin-network-rpc-api = { path = "../network-rpc/api" }
 network-rpc-core = { path = "../network-rpc/core" }
 starcoin-node-api = { path = "./api" }
 starcoin-dev = { path = "../vm/dev" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}

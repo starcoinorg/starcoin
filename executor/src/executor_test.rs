@@ -66,14 +66,6 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let output = execute_and_apply(&chain_state, txn1);
     info!("output: {:?}", output.gas_used());
     net.consensus().time().sleep(1);
-    let block_meta = BlockMetadata::new(
-        starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
-        *account1.address(),
-        Some(account1.auth_key_prefix()),
-        0,
-        1,
-    );
 
     // pre-run a txn to get gas_used
     // transferring to an non-exists account uses about 700 gas.
@@ -95,6 +87,15 @@ fn test_block_execute_gas_limit() -> Result<()> {
     assert!(
         transfer_txn_gas > 0,
         "transfer_txn_gas used must not be zero."
+    );
+
+    let block_meta = BlockMetadata::new(
+        starcoin_crypto::HashValue::random(),
+        net.consensus().now(),
+        *account1.address(),
+        Some(account1.clone().pubkey),
+        0,
+        1,
     );
     let block_gas_limit = 10_000;
     let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
@@ -135,7 +136,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.consensus().now(),
         *account1.address(),
-        Some(account1.auth_key_prefix()),
+        Some(account1.clone().pubkey),
         0,
         2,
     );
@@ -222,7 +223,7 @@ fn test_validate_txn() -> Result<()> {
     let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
@@ -341,7 +342,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        account.auth_key_prefix(),
+        account.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
@@ -369,7 +370,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
@@ -401,7 +402,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
     let txn2 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
@@ -413,7 +414,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
     let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        account2.auth_key_prefix(),
+        account2.pubkey.to_bytes().to_vec(),
         1,
         1000,
         1,
@@ -441,7 +442,7 @@ fn test_sequence_number() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        account.auth_key_prefix(),
+        account.pubkey.to_bytes().to_vec(),
         old_sequence_number,
         1000,
         1,
@@ -465,7 +466,7 @@ fn test_gas_used() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        account.auth_key_prefix(),
+        account.pubkey.to_bytes().to_vec(),
         0,
         1000,
         1,
@@ -581,7 +582,7 @@ fn test_block_metadata() -> Result<()> {
             starcoin_crypto::HashValue::random(),
             timestamp,
             *account1.address(),
-            Some(account1.auth_key_prefix()),
+            Some(account1.clone().pubkey),
             0,
             i + 1,
         ));

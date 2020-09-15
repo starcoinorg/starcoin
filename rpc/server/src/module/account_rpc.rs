@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::map_rpc_err;
+use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
-use starcoin_account_api::error::AccountServiceError;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_rpc_api::{account::AccountApi, FutureResult};
 use starcoin_types::account_address::AccountAddress;
@@ -37,7 +36,7 @@ where
             let result = service.get_default_account().await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -47,7 +46,7 @@ where
             let result = service.set_default_account(addr).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -57,7 +56,7 @@ where
             let result = service.create_account(password).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -67,7 +66,7 @@ where
             let result = service.get_accounts().await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -77,7 +76,7 @@ where
             let result = service.get_account(address).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -91,7 +90,7 @@ where
             let result = service.sign_txn(raw_txn, signer).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -103,14 +102,13 @@ where
     ) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move { service.unlock_account(address, password, duration).await }
-            .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+            .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
     fn lock(&self, address: AccountAddress) -> FutureResult<()> {
         let service = self.service.clone();
-        let fut = async move { service.lock_account(address).await }
-            .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        let fut = async move { service.lock_account(address).await }.map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -128,7 +126,7 @@ where
                 .await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -139,7 +137,7 @@ where
             let result = service.export_account(address, password).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
@@ -149,7 +147,7 @@ where
             let result = service.accepted_tokens(address).await?;
             Ok(result)
         }
-        .map_err(|e: AccountServiceError| map_rpc_err(e.into()));
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 }

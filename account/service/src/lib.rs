@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod account_events;
-mod actor;
+mod service;
 
-pub use actor::*;
+pub use account_events::AccountEventService;
+pub use service::AccountService;
+pub use starcoin_account_lib::account_storage::AccountStorage;

@@ -169,6 +169,13 @@ pub fn check_module_compat(pre_code: &[u8], new_code: &[u8]) -> Result<CompiledM
     Ok(new_module)
 }
 
+/// check module compatibility
+pub fn check_compiled_module_compat(pre: &CompiledModule, new: &CompiledModule) -> bool {
+    let pre_contract = ModuleContract::new(pre);
+    let new_contract = ModuleContract::new(new);
+    new_contract.is_compat_with(&pre_contract)
+}
+
 /// Load bytecode file, return the bytecode bytes, and whether it's script.
 pub fn load_bytecode_file<P: AsRef<Path>>(file_path: P) -> Result<(Vec<u8>, bool)> {
     let mut file = OpenOptions::new().read(true).write(false).open(file_path)?;

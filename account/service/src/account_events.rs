@@ -1,63 +1,47 @@
-use actix::prelude::*;
 use anyhow::{Error, Result};
 use bstr::ByteSlice;
 use starcoin_account_lib::account_storage::AccountStorage;
-use starcoin_bus::{Bus, BusActor};
 use starcoin_canonical_serialization::SCSCodec;
 use starcoin_chain_notify::message::ContractEventNotification;
 use starcoin_logger::prelude::*;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
 use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
-use starcoin_types::system_events::ActorStop;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 
 #[derive(Clone)]
-pub struct AccountEventActor {
-    bus: Addr<BusActor>,
+pub struct AccountEventService {
     storage: AccountStorage,
 }
 
-impl AccountEventActor {
-    pub fn launch(bus: Addr<BusActor>, storage: AccountStorage) -> Addr<Self> {
-        AccountEventActor { bus, storage }.start()
+impl ActorService for AccountEventService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<ContractEventNotification>();
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<ContractEventNotification>();
     }
 }
 
-impl Actor for AccountEventActor {
-    type Context = Context<Self>;
-    fn started(&mut self, ctx: &mut Self::Context) {
-        self.bus.clone()
-            .channel::<ContractEventNotification>()
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Err(e) => {
-                        error!(target: "account-events", "fail to start event subscription actor, err: {}", &e);
-                        ctx.terminate();
-                    }
-                    Ok(r) => {
-                        ctx.add_stream(r);
-                    }
-                };
-                async {}.into_actor(act)
-            }).wait(ctx);
+impl ServiceFactory<AccountEventService> for AccountEventService {
+    fn create(ctx: &mut ServiceContext<AccountEventService>) -> Result<AccountEventService> {
+        Ok(Self {
+            storage: ctx.get_shared::<AccountStorage>()?,
+        })
     }
 }
 
-impl Handler<ActorStop> for AccountEventActor {
-    type Result = ();
-
-    fn handle(&mut self, _msg: ActorStop, ctx: &mut Self::Context) -> Self::Result {
-        ctx.stop()
-    }
-}
-
-impl actix::StreamHandler<ContractEventNotification> for AccountEventActor {
-    fn handle(&mut self, item: ContractEventNotification, _ctx: &mut Self::Context) {
+impl EventHandler<Self, ContractEventNotification> for AccountEventService {
+    fn handle_event(
+        &mut self,
+        item: ContractEventNotification,
+        _ctx: &mut ServiceContext<AccountEventService>,
+    ) {
         let addrs = match self.storage.list_addresses() {
             Ok(addresses) => addresses,
             Err(e) => {
@@ -88,7 +72,7 @@ impl actix::StreamHandler<ContractEventNotification> for AccountEventActor {
     }
 }
 
-impl AccountEventActor {
+impl AccountEventService {
     fn handle_contract_event(&self, event: &ContractEvent) -> Result<(), Error> {
         let evt = AcceptTokenEvent::try_from(event)?;
         let addr = event.key().get_creator_address();

@@ -9,7 +9,7 @@
 use std::{fmt, sync::Arc};
 
 use crate::pool::{ScoredTransaction, VerifiedTransaction as Transaction};
-use common_crypto::hash::HashValue;
+use crypto::hash::HashValue;
 use linked_hash_map::LinkedHashMap;
 use tx_pool::{self, VerifiedTransaction};
 

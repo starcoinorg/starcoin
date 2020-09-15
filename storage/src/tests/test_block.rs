@@ -12,6 +12,7 @@ use crate::storage::StorageInstance;
 use crate::Storage;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
+use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::U256;
 
@@ -34,10 +35,10 @@ fn test_block() {
         HashValue::zero(),
         HashValue::zero(),
         0,
-        0,
         U256::zero(),
         0,
         None,
+        ChainId::test(),
     );
     storage
         .block_storage
@@ -95,10 +96,10 @@ fn test_block_number() {
         HashValue::zero(),
         HashValue::zero(),
         0,
-        0,
         U256::zero(),
         0,
         None,
+        ChainId::test(),
     );
     storage
         .block_storage

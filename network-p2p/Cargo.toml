@@ -7,14 +7,14 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 
 bitflags = "1.2.0"
 bytes = "0.5.0"
 codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive"] }
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
-derive_more = "0.99.2"
+derive_more = "0.99.10"
 either = "1.6.0"
 erased-serde = "0.3.9"
 fnv = "1.0.6"

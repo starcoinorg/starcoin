@@ -69,7 +69,7 @@ impl Entry {
 pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<BlockMetadata> {
     let mut timestamp = None;
     let mut author = None;
-    let mut auth_key_prefix = None;
+    let mut author_public_key = None;
     let mut number = None;
     let mut uncles = 0u64;
 
@@ -78,7 +78,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             Entry::Author(s) => {
                 let account = config.get_account_for_name(s)?;
                 author = Some(*account.address());
-                auth_key_prefix = Some(account.auth_key_prefix());
+                author_public_key = Some(account.clone().pubkey);
             }
             Entry::Timestamp(new_timestamp) => timestamp = Some(new_timestamp),
             Entry::Number(new_number) => number = Some(new_number),
@@ -90,7 +90,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             HashValue::random(),
             *t,
             author,
-            auth_key_prefix,
+            author_public_key,
             uncles,
             *number,
         ))

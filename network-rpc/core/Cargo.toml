@@ -7,9 +7,9 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.32"
 futures = "0.3"
-actix = "0.10.0-alpha.3"
+actix = "0.10.0"
 
 starcoin-types = { path = "../../types", package = "starcoin-types" }
 network-api = { path = "../../network/api"}

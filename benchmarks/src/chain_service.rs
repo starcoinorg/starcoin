@@ -94,7 +94,7 @@ impl ChainServiceBencher {
                 .read()
                 .create_block_template(
                     *self.account.address(),
-                    Some(self.account.get_auth_key().prefix().to_vec()),
+                    Some(self.account.public_key.clone()),
                     parent,
                     txn_vec,
                 )

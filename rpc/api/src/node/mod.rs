@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -18,16 +19,19 @@ pub struct NodeInfo {
     pub peer_info: PeerInfo,
     pub self_address: String,
     pub net: ChainNetwork,
+    pub consensus: ConsensusStrategy,
     pub now: u64,
 }
 
 impl NodeInfo {
     pub fn new(peer_info: PeerInfo, self_address: String, net: ChainNetwork) -> Self {
-        let now = net.consensus().now();
+        let consensus = net.consensus();
+        let now = consensus.now();
         Self {
             peer_info,
             self_address,
             net,
+            consensus,
             now,
         }
     }

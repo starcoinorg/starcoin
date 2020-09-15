@@ -1,6 +1,6 @@
 use crate::pool::AccountSeqNumberClient;
 use anyhow::Result;
-use common_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
 use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
@@ -15,9 +15,7 @@ use storage::BlockStore;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
-    transaction::{
-        authenticator::AuthenticationKey, SignedUserTransaction, Transaction, TransactionPayload,
-    },
+    transaction::{SignedUserTransaction, Transaction, TransactionPayload},
     U256,
 };
 
@@ -54,12 +52,11 @@ async fn test_txn_expire() -> Result<()> {
 
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
-    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = create_signed_txn_with_association_account(
         TransactionPayload::Script(encode_transfer_script(
             config.net().stdlib_version(),
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             10000,
         )),
         0,
@@ -84,10 +81,9 @@ async fn test_tx_pool() -> Result<()> {
     let txpool_service = pool.get_service();
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
-    let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
     let txn = starcoin_executor::build_transfer_from_association(
         account_address,
-        auth_prefix,
+        public_key.to_bytes().to_vec(),
         0,
         10000,
         1,
@@ -119,10 +115,9 @@ async fn test_rollback() -> Result<()> {
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             0,
             10000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
@@ -135,10 +130,9 @@ async fn test_rollback() -> Result<()> {
     let enacted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let txn = starcoin_executor::build_transfer_from_association(
             account_address,
-            auth_prefix,
+            public_key.to_bytes().to_vec(),
             0,
             20000,
             start_timestamp + DEFAULT_EXPIRATION_TIME,
@@ -150,7 +144,6 @@ async fn test_rollback() -> Result<()> {
     let pack_txn_to_block = |txn: SignedUserTransaction| {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
-        let auth_prefix = AuthenticationKey::ed25519(&public_key).prefix().to_vec();
         let storage = storage.clone();
         let master = storage.get_startup_info()?.unwrap().master;
         let block_header = storage.get_block_header_by_hash(master)?.unwrap();
@@ -160,7 +153,7 @@ async fn test_rollback() -> Result<()> {
             block_header,
             u64::MAX,
             account_address,
-            Some(auth_prefix),
+            Some(public_key),
             start_timestamp + 60 * 10,
             vec![],
         )?;
@@ -190,12 +183,7 @@ async fn test_rollback() -> Result<()> {
             0,
             Transaction::BlockMetadata(enacted_block.clone().into_metadata()),
         );
-        let root = starcoin_executor::block_execute(
-            &chain_state,
-            txns,
-            enacted_block.header().gas_limit(),
-        )?
-        .state_root;
+        let root = starcoin_executor::block_execute(&chain_state, txns, u64::MAX)?.state_root;
 
         assert_eq!(root, enacted_block.header().state_root());
         chain_state.flush()?;
