@@ -161,7 +161,7 @@ module Account {
         new_account: &signer,
         authentication_key: vector<u8>,
     ) {
-        assert(Vector::length(&authentication_key) == 32, 88888);
+        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
         let new_account_addr = Signer::address_of(new_account);
         Event::publish_generator(new_account);
         move_to(new_account, Account {
@@ -456,17 +456,6 @@ module Account {
             payer: Signer::address_of(account),
             to_deposit: Token<TokenType> { value: amount }
         };
-    }
-
-    fun rotate_authentication_key_for_account(account: &mut Account, new_authentication_key: vector<u8>) {
-      // Don't allow rotating to clearly invalid key
-      assert(Vector::length(&new_authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
-      account.authentication_key = new_authentication_key;
-    }
-
-    spec fun rotate_authentication_key_for_account {
-        aborts_if len(new_authentication_key) != 32;
-        ensures account.authentication_key == new_authentication_key;
     }
 
     // Rotate the authentication key for the account under cap.account_address

@@ -99,6 +99,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
                 Ok(())
             } else {
+                debug!("Mint block template: {:?}", block_template);
                 let strategy = config.net().consensus();
                 let block_chain = BlockChain::new(strategy, block_template.parent_hash, storage)?;
                 let epoch = ConsensusStrategy::epoch(&block_chain)?;
