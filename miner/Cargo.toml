@@ -8,9 +8,9 @@ edition = "2018"
 anyhow = "1.0.32"
 actix = "0.10.0"
 actix-rt = "1.1"
-futures = { version = "0.3"}
-config = {path = "../config", package="starcoin-config"}
-network = {path = "../network", package="starcoin-network"}
+futures = { version = "0.3" }
+starcoin-config = { path = "../config" }
+network = { path = "../network", package = "starcoin-network" }
 chain = {path = "../chain", package="starcoin-chain" }
 types = {path = "../types", package="starcoin-types" }
 traits = {path = "../core/traits", package="starcoin-traits" }
@@ -18,17 +18,18 @@ starcoin-state-api = {path = "../state/api"}
 statedb = {path = "../state/statedb", package="starcoin-statedb" }
 state_tree = {path = "../state/state-tree", package="starcoin-state-tree" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
-bus = {path = "../bus", package="starcoin-bus" }
-storage = {path = "../storage", package="starcoin-storage" }
-executor = {path = "../executor", package="starcoin-executor" }
-txpool = {path = "../txpool", package="starcoin-txpool"}
-tx-relay = {path="../txpool/tx-relay", package="starcoin-tx-relay"}
+bus = { path = "../bus", package = "starcoin-bus" }
+starcoin-storage = { path = "../storage" }
+executor = { path = "../executor", package = "starcoin-executor" }
+starcoin-txpool = { path = "../txpool" }
+tx-relay = { path = "../txpool/tx-relay", package = "starcoin-tx-relay" }
 tokio = { version = "0.2", features = ["full"] }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
-starcoin-account-api = { path = "../account/api"}
-starcoin-txpool-api = {path = "../txpool/api"}
+starcoin-account-api = { path = "../account/api" }
+starcoin-account-service = { path = "../account/service" }
+starcoin-txpool-api = { path = "../txpool/api" }
 hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
 once_cell = "1.4.1"

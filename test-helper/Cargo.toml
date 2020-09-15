@@ -45,7 +45,8 @@ network-rpc-core = { path = "../network-rpc/core" }
 starcoin-dev = { path = "../vm/dev" }
 starcoin-node = { path = "../node" }
 starcoin-node-api = { path = "../node/api" }
-starcoin-functional-tests = { path = "../vm/functional-tests"}
+starcoin-functional-tests = { path = "../vm/functional-tests" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 rand = "0.7.3"
 network-api = { path = "../network/api" }
 libp2p = "0.22.0"

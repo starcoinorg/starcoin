@@ -261,9 +261,9 @@ pub struct RawBlockHeader {
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockBody {
     /// The transactions in this block.
-    transactions: Vec<SignedUserTransaction>,
+    pub transactions: Vec<SignedUserTransaction>,
     /// uncles block header
-    uncles: Option<Vec<BlockHeader>>,
+    pub uncles: Option<Vec<BlockHeader>>,
 }
 
 impl BlockBody {

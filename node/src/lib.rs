@@ -16,16 +16,17 @@ use starcoin_service_registry::ServiceInfo;
 use starcoin_types::block::BlockDetail;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
-use std::thread::JoinHandle;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 use tokio::sync::oneshot;
 
 pub mod crash_handler;
 pub mod node;
+pub mod timeout_join_handler;
 
 pub struct NodeHandle {
     runtime: Runtime,
-    thread_handle: JoinHandle<Result<()>>,
+    join_handle: timeout_join_handler::TimeoutJoinHandle<Result<()>>,
     node_addr: Addr<Node>,
     //TODO remove this field after refactor node
     start_handle: NodeStartedHandle,
@@ -67,13 +68,13 @@ mod platform {
 
 impl NodeHandle {
     pub fn new(
-        thread_handle: std::thread::JoinHandle<Result<()>>,
+        join_handle: timeout_join_handler::TimeoutJoinHandle<Result<()>>,
         node_addr: Addr<Node>,
         start_handle: NodeStartedHandle,
     ) -> Self {
         Self {
             runtime: Runtime::new().unwrap(),
-            thread_handle,
+            join_handle,
             node_addr,
             start_handle,
         }
@@ -90,9 +91,9 @@ impl NodeHandle {
         self.node_addr
             .try_send(NodeRequest::StopSystem)
             .map_err(|_| format_err!("Stop message send fail."))?;
-        self.thread_handle
-            .join()
-            .map_err(|e| format_err!("Waiting thread exist fail. {:?}", e))??;
+        self.join_handle
+            .join(Duration::from_millis(5000))
+            .map_err(|_| format_err!("Waiting thread exist timeout."))??;
         println!("Starcoin node shutdown success.");
         Ok(())
     }
@@ -181,7 +182,7 @@ pub fn run_node_with_log(
     }
 
     let (start_sender, start_receiver) = oneshot::channel();
-    let thread_handle = std::thread::spawn(move || {
+    let join_handle = timeout_join_handler::spawn(move || {
         setup_panic_handler();
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
@@ -203,7 +204,7 @@ pub fn run_node_with_log(
     });
     let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
     Ok(NodeHandle::new(
-        thread_handle,
+        join_handle,
         start_handle.node_addr.clone(),
         start_handle,
     ))

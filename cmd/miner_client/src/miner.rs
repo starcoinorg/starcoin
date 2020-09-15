@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2
 use crate::worker::{start_worker, WorkerController, WorkerMessage};
 use crate::JobClient;
-use actix::{Actor, Arbiter, Context};
+use actix_rt::Arbiter;
 use anyhow::Result;
 use crypto::HashValue;
 use futures::channel::mpsc;
 use futures::stream::StreamExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
-use starcoin_config::{ConsensusStrategy, MinerClientConfig};
+use starcoin_config::MinerClientConfig;
+use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory};
 use starcoin_types::U256;
 use std::sync::Mutex;
 use std::thread;
@@ -29,11 +30,8 @@ impl<C> MinerClient<C>
 where
     C: JobClient,
 {
-    pub fn new(
-        config: MinerClientConfig,
-        consensus_strategy: ConsensusStrategy,
-        job_client: C,
-    ) -> Self {
+    pub fn new(config: MinerClientConfig, job_client: C) -> Result<Self> {
+        let consensus_strategy = job_client.consensus()?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
         let (worker_controller, pb) = if config.enable_stderr {
             let mp = MultiProgress::new();
@@ -48,13 +46,13 @@ where
             let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, None);
             (worker_controller, None)
         };
-        Self {
+        Ok(Self {
             nonce_rx,
             worker_controller,
             job_client,
             pb,
             num_seals_found: Mutex::new(0),
-        }
+        })
     }
 
     pub async fn start(&mut self) -> Result<()> {
@@ -117,51 +115,57 @@ where
     }
 }
 
-pub struct MinerClientActor<C>
+pub struct MinerClientService<C>
 where
-    C: JobClient,
+    C: JobClient + Send + Unpin + Clone + Sync + 'static,
 {
     config: MinerClientConfig,
-    consensus_strategy: ConsensusStrategy,
     job_client: C,
 }
 
-impl<C> MinerClientActor<C>
+impl<C> ActorService for MinerClientService<C>
 where
-    C: JobClient,
+    C: JobClient + Send + Unpin + Clone + Sync,
 {
-    pub fn new(
-        config: MinerClientConfig,
-        consensus_strategy: ConsensusStrategy,
-        job_client: C,
-    ) -> Self {
-        MinerClientActor {
-            config,
-            consensus_strategy,
-            job_client,
-        }
-    }
-}
-
-impl<C> Actor for MinerClientActor<C>
-where
-    C: JobClient + Unpin + 'static + Clone + Send + Sync,
-{
-    type Context = Context<Self>;
-    fn started(&mut self, _ctx: &mut Self::Context) {
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) {
         let config = self.config.clone();
-        let consensus_strategy = self.consensus_strategy;
         let job_client = self.job_client.clone();
         let arbiter = Arbiter::new();
         let fut = async move {
-            let mut miner_cli = MinerClient::new(config, consensus_strategy, job_client);
-            miner_cli.start().await.unwrap();
+            let mut miner_cli = match MinerClient::new(config, job_client) {
+                Err(e) => {
+                    error!("Create MinerClient error: {:?}", e);
+                    return;
+                }
+                Ok(cli) => cli,
+            };
+            if let Err(e) = miner_cli.start().await {
+                error!("Start MinerClient error: {:?}", e);
+            }
         };
         arbiter.send(Box::pin(fut));
-        info!("MinerClientActor started");
+        //FIXME if use cxt.wait, actor can not quit graceful, because MinerClient.start is a loop
+        //TODO refactor MinerClient, and support graceful quit.
+        //ctx.wait(fut)
     }
+}
 
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("MinerClientActor stopped");
+impl<C> MinerClientService<C>
+where
+    C: JobClient + Send + Unpin + Clone + Sync,
+{
+    pub fn new(config: MinerClientConfig, job_client: C) -> Self {
+        MinerClientService { config, job_client }
+    }
+}
+
+impl<C> ServiceFactory<Self> for MinerClientService<C>
+where
+    C: JobClient + Send + Unpin + Clone + Sync,
+{
+    fn create(ctx: &mut ServiceContext<MinerClientService<C>>) -> Result<MinerClientService<C>> {
+        let config = ctx.get_shared::<MinerClientConfig>()?;
+        let job_client = ctx.get_shared::<C>()?;
+        Ok(Self::new(config, job_client))
     }
 }
