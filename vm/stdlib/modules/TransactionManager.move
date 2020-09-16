@@ -88,10 +88,15 @@ module TransactionManager {
         public_key_vec: vector<u8>,
         uncles: u64,
         number: u64,
+        chain_id: u8,
     ){
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         Timestamp::update_global_time(account, timestamp);
+
+        // Check that the chain ID stored on-chain matches the chain ID
+        // specified by the transaction
+        assert(ChainId::get() == chain_id, ErrorCode::PROLOGUE_BAD_CHAIN_ID());
 
         //get previous author for distribute txn_fee
         let previous_author = Block::get_current_author();

@@ -111,6 +111,7 @@ impl TransactionGenerator {
                 Some(minter_account.public_key),
                 0,
                 self.block_number,
+                self.net.chain_id(),
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
@@ -151,6 +152,7 @@ impl TransactionGenerator {
                 Some(minter_account.public_key),
                 0,
                 self.block_number,
+                self.net.chain_id(),
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));

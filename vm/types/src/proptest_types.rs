@@ -4,7 +4,7 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
-use crate::genesis_config::{BuiltinNetwork, ChainId};
+use crate::genesis_config::{BuiltinNetwork, ChainId, ChainNetwork};
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
@@ -404,6 +404,7 @@ impl Arbitrary for BlockMetadata {
                         Some(author_public_key),
                         uncles,
                         number,
+                        ChainNetwork::TEST.chain_id(),
                     )
                 },
             )

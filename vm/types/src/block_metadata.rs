@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use crate::genesis_config::ChainId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{
@@ -32,6 +33,7 @@ pub struct BlockMetadata {
     author_public_key: Option<Ed25519PublicKey>,
     uncles: u64,
     number: u64,
+    pub chain_id: ChainId,
 }
 
 impl BlockMetadata {
@@ -42,6 +44,7 @@ impl BlockMetadata {
         author_public_key: Option<Ed25519PublicKey>,
         uncles: u64,
         number: u64,
+        chain_id: ChainId,
     ) -> Self {
         Self {
             parent_hash,
@@ -50,6 +53,7 @@ impl BlockMetadata {
             author_public_key,
             uncles,
             number,
+            chain_id,
         }
     }
 
@@ -62,6 +66,7 @@ impl BlockMetadata {
         Option<Ed25519PublicKey>,
         u64,
         u64,
+        ChainId,
     ) {
         (
             self.parent_hash,
@@ -70,6 +75,7 @@ impl BlockMetadata {
             self.author_public_key,
             self.uncles,
             self.number,
+            self.chain_id,
         )
     }
 
@@ -83,5 +89,9 @@ impl BlockMetadata {
 
     pub fn number(&self) -> u64 {
         self.number
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
     }
 }

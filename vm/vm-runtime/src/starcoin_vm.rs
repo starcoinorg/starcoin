@@ -547,7 +547,7 @@ impl StarcoinVM {
         let gas_schedule = zero_cost_schedule();
         let mut cost_strategy = CostStrategy::system(&gas_schedule, txn_data.max_gas_amount());
 
-        let (parent_id, timestamp, author, author_public_key, uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, uncles, number, chain_id) =
             block_metadata.into_inner();
         let args = vec![
             Value::transaction_argument_signer_reference(txn_data.sender),
@@ -560,6 +560,7 @@ impl StarcoinVM {
             },
             Value::u64(uncles),
             Value::u64(number),
+            Value::u8(chain_id.id()),
         ];
         let mut session = self.move_vm.new_session(remote_cache);
         session.execute_function(
