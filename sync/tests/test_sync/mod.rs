@@ -1,6 +1,7 @@
 use config::{NodeConfig, SyncMode};
 use futures::executor::block_on;
 use logger::prelude::*;
+use std::thread::sleep;
 use std::{sync::Arc, time::Duration};
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
@@ -8,11 +9,13 @@ use traits::ChainAsyncService;
 pub fn test_sync(sync_mode: SyncMode) {
     let first_config = Arc::new(NodeConfig::random_for_test());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
-    let first_chain = first_node.start_handle().chain_actor.clone();
+    let first_chain = block_on(async { first_node.start_handle().chain_service().await });
     let count = 5;
     for _i in 0..count {
         first_node.generate_block().unwrap();
     }
+    //wait block generate.
+    sleep(Duration::from_millis(500));
     let block_1 = block_on(async {
         first_chain
             .clone()
@@ -23,6 +26,7 @@ pub fn test_sync(sync_mode: SyncMode) {
     });
     let number_1 = block_1.header().number();
     debug!("first chain head block number is {}", number_1);
+    assert_eq!(number_1, count);
 
     let mut second_config = NodeConfig::random_for_test();
     second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
@@ -30,7 +34,7 @@ pub fn test_sync(sync_mode: SyncMode) {
     second_config.sync.set_mode(sync_mode);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
-    let second_chain = second_node.start_handle().chain_actor.clone();
+    let second_chain = block_on(async { second_node.start_handle().chain_service().await });
 
     //TODO add more check.
     let mut number_2 = 0;

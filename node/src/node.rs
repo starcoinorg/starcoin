@@ -7,8 +7,8 @@ use network_rpc_core::server::NetworkRpcServer;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
-use starcoin_chain::{ChainActor, ChainActorRef};
 use starcoin_chain_notify::ChainNotifyHandlerActor;
+use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_genesis::Genesis;
@@ -25,7 +25,7 @@ use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{ActorService, RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_state_service::ChainStateActor;
+use starcoin_state_service::ChainStateService;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -44,8 +44,6 @@ pub struct NodeStartedHandle {
     pub config: Arc<NodeConfig>,
     pub bus: Addr<BusActor>,
     pub storage: Arc<Storage>,
-    pub chain_arbiter: Arbiter,
-    pub chain_actor: ChainActorRef,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
@@ -55,12 +53,19 @@ pub struct NodeStartedHandle {
     pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
     pub txpool: TxPool,
     pub node_addr: Addr<Node>,
+    pub registry: ServiceRef<RegistryService>,
+}
+
+impl NodeStartedHandle {
+    pub async fn chain_service(&self) -> ServiceRef<ChainReaderService> {
+        self.registry
+            .service_ref::<ChainReaderService>()
+            .await
+            .expect("Get ChainReaderService should success.")
+    }
 }
 
 pub struct Node {
-    //TODO remove there fields, after register all service to registry.
-    pub chain_arbiter: Arbiter,
-    pub chain_actor: ChainActorRef,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
@@ -208,34 +213,10 @@ pub async fn start(
         })
         .await?;
 
-    let head_block = storage
-        .get_block(*startup_info.get_master())?
-        .expect("Head block must exist.");
     let block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
-    let chain_state_service = ChainStateActor::launch(
-        bus.clone(),
-        storage.clone(),
-        Some(head_block.header().state_root()),
-    )?;
+    let chain_state_service = registry.registry::<ChainStateService>().await?;
 
-    let chain_config = config.clone();
-    let chain_storage = storage.clone();
-    let chain_txpool_service = txpool_service.clone();
-
-    let chain_arbiter = Arbiter::new();
-    let chain_startup_info = startup_info.clone();
-    let chain_bus = bus.clone();
-    let chain = chain_arbiter
-        .exec(move || -> Result<ChainActorRef> {
-            ChainActor::launch(
-                chain_config,
-                chain_startup_info,
-                chain_storage,
-                chain_txpool_service,
-                chain_bus,
-            )
-        })
-        .await??;
+    let chain = registry.registry::<ChainReaderService>().await?;
 
     // running in background
     let chain_notify_handler = {
@@ -325,8 +306,6 @@ pub async fn start(
     registry.registry::<HeadBlockPacemaker>().await?;
 
     let node = Node {
-        chain_arbiter: chain_arbiter.clone(),
-        chain_actor: chain.clone(),
         sync_actor: sync.clone(),
         rpc_actor: json_rpc.clone(),
         chain_notifier: chain_notify_handler.clone(),
@@ -334,7 +313,7 @@ pub async fn start(
         network_rpc_server: network_rpc_server.clone(),
         block_relayer: block_relayer.clone(),
         txpool: txpool.clone(),
-        registry,
+        registry: registry.clone(),
     };
     let node_addr = node.start();
     //TODO remove NodeStartedHandle after refactor finished.
@@ -342,8 +321,6 @@ pub async fn start(
         config,
         bus,
         storage,
-        chain_arbiter,
-        chain_actor: chain,
         sync_actor: sync,
         rpc_actor: json_rpc,
         chain_notifier: chain_notify_handler,
@@ -353,5 +330,6 @@ pub async fn start(
         peer_msg_broadcaster,
         txpool,
         node_addr,
+        registry,
     })
 }

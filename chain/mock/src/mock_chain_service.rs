@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::{
-    account_address::AccountAddress,
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    transaction::{Transaction, TransactionInfo},
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
@@ -106,16 +104,6 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn get_global_time_by_number(&self, _number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        unimplemented!()
-    }
-
-    async fn create_block_template(
-        &self,
-        _author: AccountAddress,
-        _author_public_key: Option<Ed25519PublicKey>,
-        _parent_hash: Option<HashValue>,
-        _txs: Vec<SignedUserTransaction>,
-    ) -> Result<BlockTemplate> {
         unimplemented!()
     }
 }

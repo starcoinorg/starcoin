@@ -97,7 +97,6 @@ pub fn add_command(
                 .subcommand(debug::GenTxnCommand)
                 .subcommand(debug::PanicCommand)
                 .subcommand(debug::GetBlockByUncleCommand)
-                .subcommand(debug::GenDevBlockCommand)
                 .subcommand(TxPoolStatusCommand),
         )
 }

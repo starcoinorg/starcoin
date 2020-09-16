@@ -13,10 +13,12 @@ proptest = "0.10.1"
 futures-timer = "3.0"
 types = { path = "../types", package = "starcoin-types" }
 starcoin-storage = { path = "../storage" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-config = { path = "../config"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}
-starcoin-chain = { path = "../chain"}
+starcoin-chain = { path = "../chain" }
+starcoin-chain-service = { path = "../chain/service" }
 starcoin-consensus = { path = "../consensus" }
 starcoin-txpool = { path = "../txpool"}
 starcoin-genesis = {path = "../core/genesis"}
@@ -55,15 +57,7 @@ name = "bench_chain"
 harness = false
 
 [[bench]]
-name = "bench_chain_service"
-harness = false
-
-[[bench]]
 name = "bench_state_tree"
-harness = false
-
-[[bench]]
-name = "bench_sync"
 harness = false
 
 [[bench]]
