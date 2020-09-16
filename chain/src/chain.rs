@@ -11,12 +11,12 @@ use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
     AccumulatorTreeStore, MerkleAccumulator,
 };
+use starcoin_chain_api::{
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
+};
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_traits::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
-};
 use starcoin_types::{
     account_address::AccountAddress,
     block::{
@@ -178,6 +178,34 @@ impl BlockChain {
             .storage
             .get_block_info(block_id)?
             .ok_or_else(|| format_err!("Can not find block info by hash {}", block_id))?)
+    }
+
+    pub fn create_block_template(
+        &self,
+        author: AccountAddress,
+        author_public_key: Option<Ed25519PublicKey>,
+        parent_hash: Option<HashValue>,
+        user_txns: Vec<SignedUserTransaction>,
+        uncles: Vec<BlockHeader>,
+        block_gas_limit: Option<u64>,
+    ) -> Result<(BlockTemplate, ExcludedTxns)> {
+        let block_id = match parent_hash {
+            Some(hash) => hash,
+            None => self.current_header().id(),
+        };
+        ensure!(self.exist_block(block_id), "Block id not exist");
+
+        let previous_header = self
+            .get_header(block_id)?
+            .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
+        self.create_block_template_inner(
+            author,
+            author_public_key,
+            previous_header,
+            user_txns,
+            uncles,
+            block_gas_limit,
+        )
     }
 
     fn create_block_template_inner(
@@ -391,34 +419,6 @@ impl ChainReader for BlockChain {
             None => Ok(None),
             Some(hash) => self.storage.get_transaction_info(hash),
         }
-    }
-
-    fn create_block_template(
-        &self,
-        author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
-        parent_hash: Option<HashValue>,
-        user_txns: Vec<SignedUserTransaction>,
-        uncles: Vec<BlockHeader>,
-        block_gas_limit: Option<u64>,
-    ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        let block_id = match parent_hash {
-            Some(hash) => hash,
-            None => self.current_header().id(),
-        };
-        ensure!(self.exist_block(block_id), "Block id not exist");
-
-        let previous_header = self
-            .get_header(block_id)?
-            .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
-        self.create_block_template_inner(
-            author,
-            author_public_key,
-            previous_header,
-            user_txns,
-            uncles,
-            block_gas_limit,
-        )
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {

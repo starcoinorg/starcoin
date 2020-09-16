@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use accumulator::AccumulatorNode;
-use chain::ChainActorRef;
 use crypto::HashValue;
 use futures::future::BoxFuture;
 use network_rpc_core::Result;
+use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
 };
+use starcoin_service_registry::ServiceRef;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -30,7 +31,7 @@ pub struct NetworkRpcImpl<S>
 where
     S: ChainStateAsyncService + 'static,
 {
-    chain_reader: ChainActorRef,
+    chain_reader: ServiceRef<ChainReaderService>,
     txpool: TxPoolService,
     storage: Arc<dyn Store>,
     state_service: S,
@@ -41,7 +42,7 @@ where
     S: ChainStateAsyncService + 'static,
 {
     pub fn new(
-        chain_reader: ChainActorRef,
+        chain_reader: ServiceRef<ChainReaderService>,
         txpool: TxPoolService,
         state_service: S,
         storage: Arc<dyn Store>,

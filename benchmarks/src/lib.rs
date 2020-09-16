@@ -10,10 +10,8 @@ use starcoin_vm_types::genesis_config::ChainNetwork;
 use types::transaction::SignedUserTransaction;
 
 pub mod chain;
-pub mod chain_service;
 pub mod helper;
 pub mod storage;
-pub mod sync;
 
 pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
     let random_public_key = random_public_key();

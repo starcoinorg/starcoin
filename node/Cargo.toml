@@ -21,9 +21,9 @@ starcoin-bus = {path = "../bus"}
 starcoin-consensus = {path = "../consensus"}
 starcoin-executor = {path = "../executor"}
 starcoin-network = {path = "../network"}
-starcoin-txpool = {path = "../txpool"}
-starcoin-chain = {path = "../chain"}
-starcoin-chain-notify = {path = "../chain/chain-notify"}
+starcoin-txpool = { path = "../txpool" }
+starcoin-chain-service = { path = "../chain/service" }
+starcoin-chain-notify = { path = "../chain/chain-notify" }
 starcoin-rpc-server = {path = "../rpc/server"}
 starcoin-storage = {path = "../storage"}
 starcoin-miner = {path = "../miner"}

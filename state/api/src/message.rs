@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::Message;
+use crate::StateWithProof;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::StateWithProof;
+use starcoin_service_registry::ServiceRequest;
 use starcoin_types::{
     access_path::AccessPath, account_address::AccountAddress, account_state::AccountState,
 };
@@ -19,8 +19,8 @@ pub enum StateRequest {
     StateRoot(),
 }
 
-impl Message for StateRequest {
-    type Result = Result<StateResponse>;
+impl ServiceRequest for StateRequest {
+    type Response = Result<StateResponse>;
 }
 
 #[derive(Debug, Clone)]
