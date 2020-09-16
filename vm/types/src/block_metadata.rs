@@ -33,7 +33,7 @@ pub struct BlockMetadata {
     author_public_key: Option<Ed25519PublicKey>,
     uncles: u64,
     number: u64,
-    pub chain_id: ChainId,
+    chain_id: ChainId,
 }
 
 impl BlockMetadata {

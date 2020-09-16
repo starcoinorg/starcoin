@@ -687,8 +687,6 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
-        _state_cost_amount: u64,
-        _cost_is_negative: bool,
     ) acquires Account, Balance {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
@@ -702,12 +700,6 @@ module Account {
             balance_for(sender_balance) >= transaction_fee_amount,
             ErrorCode::EINSUFFICIENT_BALANCE()
         );
-
-        // Todo: remove the abandoned code
-        // let cost = SignedInteger64::create_from_raw_value(state_cost_amount, cost_is_negative);
-        // assert(
-        //     SignedInteger64::get_value(cost) >= 0, 7
-        // );
 
         // Bump the sequence number
         sender_account.sequence_number = txn_sequence_number + 1;

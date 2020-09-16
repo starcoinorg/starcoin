@@ -62,8 +62,6 @@ module TransactionManager {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
-        state_cost_amount: u64,
-        cost_is_negative: bool,
         txn_payload_type: u8,
         _txn_script_or_package_hash: vector<u8>,
         txn_package_address: address,
@@ -72,7 +70,7 @@ module TransactionManager {
     ){
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
-        Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
+        Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
            PackageTxnManager::package_txn_epilogue(account, txn_sender, txn_package_address, success);
         }
