@@ -182,7 +182,11 @@ impl OpenedBlock {
 
         match output.status() {
             TransactionStatus::Discard(status) => {
-                bail!("block_metadata txn is discarded, vm status: {:?}", status);
+                bail!(
+                    "block_metadata txn {:?} is discarded, vm status: {:?}",
+                    self.block_meta,
+                    status
+                );
             }
             TransactionStatus::Keep(_) => {
                 let _ = self.push_txn_and_state(block_meta_txn_hash, output)?;

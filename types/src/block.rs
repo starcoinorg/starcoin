@@ -472,7 +472,7 @@ impl Into<(HashValue, AccumulatorInfo, U256, AccumulatorInfo)> for BlockInfo {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BlockTemplate {
     /// Parent hash.
     pub parent_hash: HashValue,
