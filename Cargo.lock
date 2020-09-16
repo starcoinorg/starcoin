@@ -1752,9 +1752,9 @@ dependencies = [
 
 [[package]]
 name = "ethbloom"
-version = "0.4.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f240172b976e2421fa5485e45cd45287bbdb56d742aa3a1d77005c49071a8518"
+checksum = "a6294da962646baa738414e8e718d1a1f0360a51d92de89ccbf91870418f5360"
 dependencies = [
  "crunchy 0.1.6",
  "ethereum-types-serialize",
@@ -1765,17 +1765,16 @@ dependencies = [
 
 [[package]]
 name = "ethereum-types"
-version = "0.2.3"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cff74129deda8a155b729cad1a22dc3cdd08115abd1165079c519d0cab6917a"
+checksum = "6e742184dc63a01c8ea0637369f8faa27c40f537949908a237f95c05e68d2c96"
 dependencies = [
  "crunchy 0.1.6",
  "ethbloom",
  "ethereum-types-serialize",
  "fixed-hash",
- "rustc_version",
  "serde",
- "uint 0.1.2",
+ "uint 0.4.1",
 ]
 
 [[package]]
@@ -1835,14 +1834,13 @@ checksum = "0f6ab97095615857b6ad00a8330fff0e443f1def9fd357cef82d0ca0677b616b"
 
 [[package]]
 name = "fixed-hash"
-version = "0.1.3"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21c520ebc46522d519aec9cba2b7115d49cea707d771b772c46bec61aa0daeb8"
+checksum = "7afe6ce860afb14422711595a7b26ada9ed7de2f43c0b2ab79d09ee196287273"
 dependencies = [
  "heapsize",
- "libc",
  "rand 0.4.6",
- "rustc-hex 1.0.0",
+ "rustc-hex",
 ]
 
 [[package]]
@@ -4286,7 +4284,7 @@ dependencies = [
  "prometheus 0.10.0",
  "prost",
  "rand 0.7.3",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "serde",
  "serde_json",
  "slog",
@@ -5806,12 +5804,6 @@ name = "rustc-hash"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-
-[[package]]
-name = "rustc-hex"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ceb8ce7a5e520de349e1fa172baeba4a9e8d5ef06c47471863530bc4972ee1e"
 
 [[package]]
 name = "rustc-hex"
@@ -8969,14 +8961,14 @@ checksum = "56dee185309b50d1f11bfedef0fe6d036842e3fb77413abef29f8f8d1c5d4c1c"
 
 [[package]]
 name = "uint"
-version = "0.1.2"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53a4340c35703f926ec365c6797bb4a7a10bb6b9affe29ca385c9d804401f5e3"
+checksum = "754ba11732b9161b94c41798e5197e5e75388d012f760c42adb5000353e98646"
 dependencies = [
  "byteorder 1.3.4",
+ "crunchy 0.1.6",
  "heapsize",
- "rustc-hex 1.0.0",
- "rustc_version",
+ "rustc-hex",
 ]
 
 [[package]]
@@ -8987,7 +8979,7 @@ checksum = "173cd16430c206dc1a430af8a89a0e9c076cf15cb42b4aedb10e8cc8fee73681"
 dependencies = [
  "byteorder 1.3.4",
  "crunchy 0.2.2",
- "rustc-hex 2.1.0",
+ "rustc-hex",
  "static_assertions",
 ]
 
