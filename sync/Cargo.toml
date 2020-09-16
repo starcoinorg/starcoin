@@ -56,3 +56,4 @@ starcoin-statedb = {path = "../state/statedb"}
 starcoin-state-service = { path = "../state/service" }
 starcoin-node = { path = "../node" }
 test-helper = { path = "../test-helper" }
+starcoin-txpool-mock-service = { path = "../txpool/mock-service" }

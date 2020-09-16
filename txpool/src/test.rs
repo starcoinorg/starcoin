@@ -47,8 +47,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
-    let (pool, _storage, config) = test_helper::start_txpool();
-    let txpool_service = pool.get_service();
+    let (txpool_service, _storage, config, _) = test_helper::start_txpool().await;
 
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
@@ -77,8 +76,7 @@ async fn test_txn_expire() -> Result<()> {
 
 #[stest::test]
 async fn test_tx_pool() -> Result<()> {
-    let (pool, _storage, config) = test_helper::start_txpool();
-    let txpool_service = pool.get_service();
+    let (txpool_service, _storage, config, _) = test_helper::start_txpool().await;
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_executor::build_transfer_from_association(
@@ -104,13 +102,13 @@ async fn test_tx_pool() -> Result<()> {
 
 #[stest::test]
 async fn test_subscribe_txns() {
-    let (pool, _storage, _config) = test_helper::start_txpool();
-    let _ = pool.get_service().subscribe_txns();
+    let (pool, ..) = test_helper::start_txpool().await;
+    let _ = pool.subscribe_txns();
 }
 
 #[stest::test]
 async fn test_rollback() -> Result<()> {
-    let (pool, storage, config) = test_helper::start_txpool();
+    let (pool, storage, config, _) = test_helper::start_txpool().await;
     let start_timestamp = 0;
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -125,7 +123,7 @@ async fn test_rollback() -> Result<()> {
         );
         txn.as_signed_user_txn()?.clone()
     };
-    let _ = pool.get_service().add_txns(vec![retracted_txn.clone()]);
+    let _ = pool.add_txns(vec![retracted_txn.clone()]);
 
     let enacted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -188,12 +186,9 @@ async fn test_rollback() -> Result<()> {
         assert_eq!(root, enacted_block.header().state_root());
         chain_state.flush()?;
     }
-    pool.get_service()
-        .chain_new_block(vec![enacted_block], vec![retracted_block])
+    pool.chain_new_block(vec![enacted_block], vec![retracted_block])
         .unwrap();
-    let txns = pool
-        .get_service()
-        .get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
+    let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
     assert_eq!(txns.len(), 0);
     Ok(())
 }

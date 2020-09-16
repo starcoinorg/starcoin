@@ -3,6 +3,7 @@
 
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
+use futures_timer::Delay;
 use network_rpc_core::server::NetworkRpcServer;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
@@ -33,7 +34,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::StartSyncTxnEvent;
-use starcoin_txpool::TxPool;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -48,7 +49,6 @@ pub struct NodeStartedHandle {
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
-    pub txpool: TxPool,
     pub node_addr: Addr<Node>,
     pub registry: ServiceRef<RegistryService>,
 }
@@ -67,7 +67,6 @@ pub struct Node {
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
-    pub txpool: TxPool,
     pub registry: ServiceRef<RegistryService>,
 }
 
@@ -155,16 +154,12 @@ pub async fn start(
 
     let head_block_hash = *startup_info.get_master();
 
-    let txpool = TxPool::start(
-        config.clone(),
-        storage.clone(),
-        head_block_hash,
-        bus.clone(),
-    );
-    let txpool_service = txpool.get_service();
+    registry.registry::<TxPoolActorService>().await?;
 
-    // put tx pool service as shared data, remove this after refactor txpool service.
-    registry.put_shared(txpool_service.clone()).await?;
+    //wait TxPoolService put shared..
+    Delay::new(Duration::from_millis(200)).await;
+    // TxPoolActorService auto put shared TxPoolService,
+    let txpool_service = registry.get_shared::<TxPoolService>().await?;
 
     let head_block = match storage.get_block(head_block_hash)? {
         Some(block) => block,
@@ -292,7 +287,6 @@ pub async fn start(
         rpc_actor: json_rpc.clone(),
         network: network.clone(),
         network_rpc_server: network_rpc_server.clone(),
-        txpool: txpool.clone(),
         registry: registry.clone(),
     };
     let node_addr = node.start();
@@ -305,7 +299,6 @@ pub async fn start(
         rpc_actor: json_rpc,
         network,
         network_rpc_server,
-        txpool,
         node_addr,
         registry,
     })
