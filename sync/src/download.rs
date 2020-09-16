@@ -11,16 +11,17 @@ use actix::prelude::*;
 use actix::{Actor, Addr, AsyncContext, Context, Handler};
 use anyhow::{format_err, Result};
 use bus::{Broadcast, BusActor, Subscription};
-use chain::ChainActorRef;
 use config::NodeConfig;
 use crypto::HashValue;
 use futures::channel::mpsc;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network_api::NetworkService;
+use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders, RemoteChainStateReader,
 };
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncNotify;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -70,7 +71,7 @@ where
     pub fn launch(
         node_config: Arc<NodeConfig>,
         peer_id: Arc<PeerId>,
-        chain_reader: ChainActorRef,
+        chain_reader: ServiceRef<ChainReaderService>,
         network: N,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
@@ -544,7 +545,7 @@ pub struct Downloader<N>
 where
     N: NetworkService + 'static,
 {
-    chain_reader: ChainActorRef,
+    chain_reader: ServiceRef<ChainReaderService>,
     block_connector: BlockConnector<N>,
 }
 
@@ -556,7 +557,7 @@ where
     N: NetworkService + 'static,
 {
     pub fn new(
-        chain_reader: ChainActorRef,
+        chain_reader: ServiceRef<ChainReaderService>,
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
@@ -577,7 +578,7 @@ where
         }
     }
 
-    pub fn get_chain_reader(&self) -> ChainActorRef {
+    pub fn get_chain_reader(&self) -> ServiceRef<ChainReaderService> {
         self.chain_reader.clone()
     }
 

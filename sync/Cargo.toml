@@ -31,16 +31,18 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle"}
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
 async-trait = "0.1"
-starcoin-canonical-serialization = { package="starcoin-canonical-serialization", path = "../commons/scs"}
-starcoin-accumulator = {package="starcoin-accumulator", path = "../core/accumulator"}
-starcoin-metrics = {path = "../commons/metrics"}
+starcoin-canonical-serialization = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
+starcoin-accumulator = { package = "starcoin-accumulator", path = "../core/accumulator" }
+starcoin-metrics = { path = "../commons/metrics" }
 once_cell = "1.4.1"
 dyn-clone = "1.0.1"
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-network-rpc = { path = "../network-rpc/", package = "starcoin-network-rpc" }
-stest = { path = "../commons/stest"}
-starcoin-vm-types = { path = "../vm/types"}
+stest = { path = "../commons/stest" }
+starcoin-vm-types = { path = "../vm/types" }
 starcoin-state-api = { path = "../state/api" }
+starcoin-service-registry = { path = "../commons/service-registry" }
+starcoin-chain-service = { path = "../chain/service" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
