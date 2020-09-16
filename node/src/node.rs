@@ -25,7 +25,7 @@ use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{ActorService, RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_state_service::ChainStateActor;
+use starcoin_state_service::ChainStateService;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -208,15 +208,8 @@ pub async fn start(
         })
         .await?;
 
-    let head_block = storage
-        .get_block(*startup_info.get_master())?
-        .expect("Head block must exist.");
     let block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
-    let chain_state_service = ChainStateActor::launch(
-        bus.clone(),
-        storage.clone(),
-        Some(head_block.header().state_root()),
-    )?;
+    let chain_state_service = registry.registry::<ChainStateService>().await?;
 
     let chain_config = config.clone();
     let chain_storage = storage.clone();

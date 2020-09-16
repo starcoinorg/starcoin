@@ -7520,6 +7520,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-service-registry",
  "starcoin-state-tree",
  "starcoin-types",
  "starcoin-vm-types",
@@ -7529,20 +7530,19 @@ dependencies = [
 name = "starcoin-state-service"
 version = "0.4.6"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "futures 0.3.5",
- "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
+ "starcoin-storage",
  "starcoin-types",
  "stest",
- "tokio 0.2.22",
+ "test-helper",
 ]
 
 [[package]]
