@@ -290,3 +290,6 @@ KeyRotationCapabilityResource:
   STRUCT:
     - account_address :
         TYPENAME: AccountAddress
+BalanceResource:
+  STRUCT:
+    - token : U128
