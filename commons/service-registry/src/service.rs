@@ -165,6 +165,13 @@ where
         self.ctx.wait(wrap_future::<_, ServiceActor<S>>(fut))
     }
 
+    pub fn spawn<F>(&mut self, fut: F)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+        self.ctx.spawn(wrap_future::<_, ServiceActor<S>>(fut));
+    }
+
     /// Notify self a event msg.
     pub fn notify<M>(&mut self, msg: M)
     where

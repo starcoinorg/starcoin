@@ -33,7 +33,7 @@ use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::StartSyncTxnEvent;
-use starcoin_txpool::{TxPool, TxPoolService};
+use starcoin_txpool::TxPool;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -49,7 +49,6 @@ pub struct NodeStartedHandle {
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
-    pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
     pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
     pub txpool: TxPool,
     pub node_addr: Addr<Node>,
@@ -71,7 +70,6 @@ pub struct Node {
     pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
-    pub block_relayer: Addr<BlockRelayer<TxPoolService>>,
     pub txpool: TxPool,
     pub registry: ServiceRef<RegistryService>,
 }
@@ -205,6 +203,8 @@ pub async fn start(
         genesis_hash,
         self_info,
     );
+    registry.put_shared(network.clone()).await?;
+
     let peer_msg_broadcaster = Arbiter::new()
         .exec({
             let network = network.clone();
@@ -213,7 +213,7 @@ pub async fn start(
         })
         .await?;
 
-    let block_relayer = BlockRelayer::new(bus.clone(), txpool.get_service(), network.clone())?;
+    registry.registry::<BlockRelayer>().await?;
     let chain_state_service = registry.registry::<ChainStateService>().await?;
 
     let chain = registry.registry::<ChainReaderService>().await?;
@@ -311,7 +311,6 @@ pub async fn start(
         chain_notifier: chain_notify_handler.clone(),
         network: network.clone(),
         network_rpc_server: network_rpc_server.clone(),
-        block_relayer: block_relayer.clone(),
         txpool: txpool.clone(),
         registry: registry.clone(),
     };
@@ -326,7 +325,6 @@ pub async fn start(
         chain_notifier: chain_notify_handler,
         network,
         network_rpc_server,
-        block_relayer,
         peer_msg_broadcaster,
         txpool,
         node_addr,
