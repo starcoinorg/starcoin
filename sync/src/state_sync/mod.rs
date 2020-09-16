@@ -525,6 +525,7 @@ where
             }
         } else {
             debug!("discard state event : {:?}", task_event);
+            return;
         };
 
         if done {
@@ -652,6 +653,7 @@ where
             }
         } else {
             debug!("discard state event : {:?}", task_event);
+            return;
         };
 
         if done {
