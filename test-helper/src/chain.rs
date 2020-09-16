@@ -6,7 +6,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
-use starcoin_traits::{ChainReader, ChainWriter};
+use starcoin_traits::ChainWriter;
 use starcoin_types::genesis_config::ChainNetwork;
 
 pub fn gen_blockchain_for_test(net: &ChainNetwork) -> Result<BlockChain> {

@@ -3,11 +3,12 @@ use crate::txn_sync::TxnSyncActor;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
-use chain::ChainActorRef;
 use config::NodeConfig;
 use logger::prelude::*;
 use network::PeerEvent;
 use network_api::NetworkService;
+use starcoin_chain_service::ChainReaderService;
+use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use std::sync::Arc;
@@ -32,7 +33,7 @@ where
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
-        chain: ChainActorRef,
+        chain: ServiceRef<ChainReaderService>,
         txpool: TxPoolService,
         network: N,
         storage: Arc<dyn Store>,

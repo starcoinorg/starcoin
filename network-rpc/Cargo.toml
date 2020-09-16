@@ -32,14 +32,15 @@ starcoin-types = { path = "../types", package = "starcoin-types" }
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 txpool = { path = "../txpool", package = "starcoin-txpool" }
-chain = { path = "../chain",package = "starcoin-chain" }
+starcoin-chain-service = { path = "../chain/service" }
 traits = { path = "../core/traits", package = "starcoin-traits" }
 storage = { path = "../storage", package = "starcoin-storage" }
 genesis = { path = "../core/genesis", package = "starcoin-genesis" }
 txpool-api = {path = "../txpool/api", package = "starcoin-txpool-api"}
 state_api = { path="../state/api", package = "starcoin-state-api" }
 state-service = { path = "../state/service", package = "starcoin-state-service"}
-starcoin-network-rpc-api = { path= "api" }
+starcoin-network-rpc-api = { path = "api" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
 network = {path = "../network", package = "starcoin-network" }

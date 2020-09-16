@@ -533,6 +533,7 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-bus",
  "starcoin-chain",
+ "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -543,6 +544,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc",
  "starcoin-node",
+ "starcoin-service-registry",
  "starcoin-state-service",
  "starcoin-state-store-api",
  "starcoin-state-tree",
@@ -6578,21 +6580,15 @@ dependencies = [
 name = "starcoin-chain"
 version = "0.4.6"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
- "async-trait",
  "ethereum-types",
- "futures 0.3.5",
- "futures-timer",
  "once_cell",
- "parking_lot 0.11.0",
  "proptest",
  "proptest-derive",
  "starcoin-account-api",
  "starcoin-accumulator",
- "starcoin-bus",
  "starcoin-canonical-serialization",
+ "starcoin-chain-api",
  "starcoin-chain-mock",
  "starcoin-config",
  "starcoin-consensus",
@@ -6601,16 +6597,13 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
- "starcoin-network",
- "starcoin-network-rpc-api",
  "starcoin-open-block",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
  "starcoin-traits",
- "starcoin-txpool",
- "starcoin-txpool-api",
  "starcoin-types",
  "starcoin-vm-types",
  "stdlib",
@@ -6618,6 +6611,25 @@ dependencies = [
  "test-helper",
  "thiserror",
  "tokio 0.2.22",
+]
+
+[[package]]
+name = "starcoin-chain-api"
+version = "0.4.6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dashmap",
+ "futures 0.3.5",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "serde",
+ "starcoin-crypto",
+ "starcoin-service-registry",
+ "starcoin-state-api",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "thiserror",
 ]
 
 [[package]]
@@ -6677,6 +6689,32 @@ dependencies = [
  "starcoin-logger",
  "starcoin-storage",
  "starcoin-types",
+]
+
+[[package]]
+name = "starcoin-chain-service"
+version = "0.4.6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "dashmap",
+ "futures 0.3.5",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "serde",
+ "starcoin-chain",
+ "starcoin-chain-api",
+ "starcoin-config",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-service-registry",
+ "starcoin-state-api",
+ "starcoin-storage",
+ "starcoin-types",
+ "starcoin-vm-types",
+ "stest",
+ "test-helper",
+ "thiserror",
 ]
 
 [[package]]
@@ -7178,7 +7216,7 @@ dependencies = [
  "starcoin-block-relayer-api",
  "starcoin-bus",
  "starcoin-canonical-serialization",
- "starcoin-chain",
+ "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7188,6 +7226,7 @@ dependencies = [
  "starcoin-network",
  "starcoin-network-rpc-api",
  "starcoin-node",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
@@ -7239,8 +7278,8 @@ dependencies = [
  "starcoin-account-service",
  "starcoin-block-relayer",
  "starcoin-bus",
- "starcoin-chain",
  "starcoin-chain-notify",
+ "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7520,6 +7559,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-service-registry",
  "starcoin-state-tree",
  "starcoin-types",
  "starcoin-vm-types",
@@ -7529,20 +7569,19 @@ dependencies = [
 name = "starcoin-state-service"
 version = "0.4.6"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "futures 0.3.5",
- "starcoin-bus",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-statedb",
+ "starcoin-storage",
  "starcoin-types",
  "stest",
- "tokio 0.2.22",
+ "test-helper",
 ]
 
 [[package]]
@@ -7639,6 +7678,7 @@ dependencies = [
  "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
+ "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7651,6 +7691,7 @@ dependencies = [
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-node",
+ "starcoin-service-registry",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-state-tree",
@@ -7691,6 +7732,7 @@ version = "0.4.6"
 dependencies = [
  "anyhow",
  "async-trait",
+ "starcoin-chain-api",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-state-api",
