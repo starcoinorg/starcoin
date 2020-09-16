@@ -57,7 +57,7 @@ impl FakeExecutor {
         let mut executor = FakeExecutor {
             data_store: ChainStateDB::mock(),
             block_time: 0,
-            chain_id: *&ChainNetwork::TEST.chain_id(),
+            chain_id: ChainNetwork::TEST.chain_id(),
         };
         executor.apply_write_set(write_set);
         executor
@@ -68,7 +68,7 @@ impl FakeExecutor {
         FakeExecutor {
             data_store: ChainStateDB::mock(),
             block_time: 0,
-            chain_id: *&ChainNetwork::TEST.chain_id(),
+            chain_id: ChainNetwork::TEST.chain_id(),
         }
     }
 
