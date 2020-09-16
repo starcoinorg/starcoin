@@ -30,11 +30,21 @@ fn test_readonly_function_call() -> Result<()> {
             f1: u64,
         }
 
+        resource struct R {
+            f1: u64,
+        }
+
         public fun new(): S { Self::S { f1: 20 } }
 
         public fun get_s(): S {
             let s = Self::new();
             s
+        }
+
+        public fun set_s(account: &signer): u64 {
+            let r = Self::R { f1: 20 };
+            move_to(account, r);
+            1u64
         }
         }
         "#;
@@ -73,5 +83,16 @@ fn test_readonly_function_call() -> Result<()> {
         .equals(&value)
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
 
+    let value = Value::transaction_argument_signer_reference(*account1.address());
+    let result = crate::execute_readonly_function(
+        &chain_state,
+        &compiled_module.self_id(),
+        &Identifier::new("set_s").unwrap(),
+        vec![],
+        vec![value],
+        *account1.address(),
+    )?;
+
+    assert!(result[0].equals(&Value::u64(1)).map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
     Ok(())
 }
