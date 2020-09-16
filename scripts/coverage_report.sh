@@ -68,6 +68,10 @@ fi
 export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Coverflow-checks=off"
 export RUSTC_BOOTSTRAP=1
 export CARGO_INCREMENTAL=0
+export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
+
+echo check ulimits
+ulimit -a
 
 # Clean the project
 echo "Cleaning project..."

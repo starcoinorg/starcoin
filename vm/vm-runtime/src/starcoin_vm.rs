@@ -499,9 +499,6 @@ impl StarcoinVM {
         let txn_gas_price = txn_data.gas_unit_price().get();
         let txn_max_gas_amount = txn_data.max_gas_amount().get();
         let gas_remaining = cost_strategy.remaining_gas().get();
-        let data_size = 0i64; //data_store.get_size(txn_data.sender);
-        let cost_is_negative = data_size.is_negative();
-        let state_cost_amount = data_size.wrapping_abs() as u64;
         let (payload_type, script_or_package_hash, package_address) = match txn_data.payload() {
             TransactionPayloadMetadata::Script(hash) => {
                 (TransactionPayloadType::Script, *hash, AccountAddress::ZERO)
@@ -522,8 +519,6 @@ impl StarcoinVM {
                 Value::u64(txn_gas_price),
                 Value::u64(txn_max_gas_amount),
                 Value::u64(gas_remaining),
-                Value::u64(state_cost_amount),
-                Value::bool(cost_is_negative),
                 Value::u8(payload_type.into()),
                 Value::vector_u8(script_or_package_hash.to_vec()),
                 Value::address(package_address),
@@ -547,7 +542,7 @@ impl StarcoinVM {
         let gas_schedule = zero_cost_schedule();
         let mut cost_strategy = CostStrategy::system(&gas_schedule, txn_data.max_gas_amount());
 
-        let (parent_id, timestamp, author, author_public_key, uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, uncles, number, chain_id) =
             block_metadata.into_inner();
         let args = vec![
             Value::transaction_argument_signer_reference(txn_data.sender),
@@ -560,6 +555,7 @@ impl StarcoinVM {
             },
             Value::u64(uncles),
             Value::u64(number),
+            Value::u8(chain_id.id()),
         ];
         let mut session = self.move_vm.new_session(remote_cache);
         session.execute_function(

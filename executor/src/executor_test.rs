@@ -96,6 +96,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         Some(account1.clone().pubkey),
         0,
         1,
+        net.chain_id(),
     );
     let block_gas_limit = 10_000;
     let max_include_txn_num: u64 = block_gas_limit / transfer_txn_gas;
@@ -139,6 +140,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         Some(account1.clone().pubkey),
         0,
         2,
+        net.chain_id(),
     );
 
     let max_block_gas_limit = 1_000_000;
@@ -585,6 +587,7 @@ fn test_block_metadata() -> Result<()> {
             Some(account1.clone().pubkey),
             0,
             i + 1,
+            net.chain_id(),
         ));
         let output = execute_and_apply(&chain_state, txn);
         assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
