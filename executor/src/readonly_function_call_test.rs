@@ -11,7 +11,8 @@ use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-
+use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
+use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
 #[stest::test]
 fn test_readonly_function_call() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -79,7 +80,10 @@ fn test_readonly_function_call() -> Result<()> {
     )?;
 
     let value = Value::struct_(Struct::pack(vec![Value::u64(20)], false));
-    assert!(result[0]
+    assert!(
+        result[0].0 == MoveTypeLayout::Struct(MoveStructLayout::new(vec![MoveTypeLayout::U64]))
+    );
+    assert!(result[0].1
         .equals(&value)
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
 
@@ -91,8 +95,7 @@ fn test_readonly_function_call() -> Result<()> {
         vec![],
         vec![value],
         *account1.address(),
-    )?;
-
-    assert!(result[0].equals(&Value::u64(1)).map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
+    );
+    //assert_eq!(result, Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET)));
     Ok(())
 }
