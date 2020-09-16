@@ -38,7 +38,7 @@ mod test_state_sync;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "()")]
-struct TxnInfoEvent(Option<HashValue>);
+struct TxnInfoEvent;
 
 struct Roots {
     state: HashValue,
@@ -660,7 +660,7 @@ where
                 AccumulatorNode::Leaf(leaf) => {
                     self.txn_info_sync_task.push_back(leaf.value());
                     self.total_txn_info_task.fetch_add(1, Ordering::Relaxed);
-                    txn_info_event_handler.send_event(TxnInfoEvent(None));
+                    txn_info_event_handler.send_event(TxnInfoEvent);
                 }
                 AccumulatorNode::Internal(n) => {
                     if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
@@ -732,21 +732,24 @@ where
         task_event: StateSyncTaskEvent,
         txn_info_event_handler: Box<dyn SendSyncEventHandler<TxnInfoEvent>>,
     ) {
+        let current_block_id = task_event.key;
+        let mut done = false;
         if !task_event.local() {
-            let current_block_id = task_event.key;
             let _ = self.txn_info_sync_task.remove(&task_event.peer_id);
             if let TaskType::TxnInfo(Some(txn_infos)) = task_event.task_type {
                 if let Err(e) = self.save_txn_infos(current_block_id, txn_infos) {
                     debug!("{:?}, retry {:?}.", e, current_block_id);
-                    self.txn_info_sync_task.push_back(current_block_id);
-                    txn_info_event_handler.send_event(TxnInfoEvent(None));
                 } else {
-                    self.txn_info_sync_task.do_one_task();
+                    done = true;
                 }
-            } else {
-                self.txn_info_sync_task.push_back(current_block_id);
-                txn_info_event_handler.send_event(TxnInfoEvent(None));
             }
+        }
+
+        if done {
+            self.txn_info_sync_task.do_one_task();
+        } else {
+            self.txn_info_sync_task.push_back(current_block_id);
+            txn_info_event_handler.send_event(TxnInfoEvent);
         }
     }
 
@@ -917,13 +920,7 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
-        if let Some(block_id) = event.0 {
-            self.inner.txn_info_sync_task.push_back(block_id);
-            self.inner
-                .total_txn_info_task
-                .fetch_add(1, Ordering::Relaxed);
-        }
+    fn handle(&mut self, _event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
         self.inner.exe_txn_info_sync_task(Box::new(ctx.address()));
     }
 }
