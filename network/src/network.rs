@@ -24,6 +24,7 @@ use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -573,67 +574,43 @@ impl Inner {
 
 // TODO: figure out a better place for the actor.
 /// Used to manage broadcast new txn and new block event to other network peers.
-pub struct PeerMsgBroadcasterActor {
+pub struct PeerMsgBroadcasterService {
     network: NetworkAsyncService,
-    bus: Addr<BusActor>,
 }
 
-impl PeerMsgBroadcasterActor {
-    pub fn launch(
-        network: NetworkAsyncService,
-        bus: Addr<BusActor>,
-    ) -> Addr<PeerMsgBroadcasterActor> {
-        PeerMsgBroadcasterActor::create(move |_ctx: &mut Context<PeerMsgBroadcasterActor>| {
-            PeerMsgBroadcasterActor { network, bus }
-        })
+impl PeerMsgBroadcasterService {
+    pub fn new(network: NetworkAsyncService) -> Self {
+        Self { network }
     }
 }
 
-impl Actor for PeerMsgBroadcasterActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let txn_propagate_recipient = ctx.address().recipient::<PropagateNewTransactions>();
-        self.bus
-            .clone()
-            .subscribe(txn_propagate_recipient)
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                if let Err(e) = res {
-                    warn!("fail to subscribe txn propagate events, err: {:?}", e);
-                    ctx.terminate();
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
-        let block_relayer_recipient = ctx.address().recipient::<NetCmpctBlockMessage>();
-        self.bus
-            .clone()
-            .subscribe(block_relayer_recipient)
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                if let Err(err) = res {
-                    error!(
-                        "Failed to subscribe block block-relayer message, err: {:?}",
-                        err
-                    );
-                    ctx.terminate();
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
-        info!("NetworkActor started");
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("NetworkActor stopped");
+impl ServiceFactory<Self> for PeerMsgBroadcasterService {
+    fn create(
+        ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
+    ) -> Result<PeerMsgBroadcasterService> {
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        Ok(Self::new(network))
     }
 }
 
-impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
-    type Result = ();
+impl ActorService for PeerMsgBroadcasterService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<PropagateNewTransactions>();
+        ctx.subscribe::<NetCmpctBlockMessage>();
+    }
 
-    fn handle(&mut self, msg: NetCmpctBlockMessage, _ctx: &mut Self::Context) -> Self::Result {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<PropagateNewTransactions>();
+        ctx.unsubscribe::<NetCmpctBlockMessage>();
+    }
+}
+
+impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
+    fn handle_event(
+        &mut self,
+        msg: NetCmpctBlockMessage,
+        ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
+    ) {
         let id = msg.compact_block.header.id();
         debug!("broadcast new compact block message {:?}", id);
         let network = self.network.clone();
@@ -642,7 +619,7 @@ impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
 
         let self_id: PeerId = self.network.identify().into();
-        Arbiter::spawn(async move {
+        ctx.spawn(async move {
             let peers = network.peers();
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
                 debug!(
@@ -684,10 +661,12 @@ impl Handler<NetCmpctBlockMessage> for PeerMsgBroadcasterActor {
 }
 
 /// handle txn relayer
-impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
-    type Result = <PropagateNewTransactions as Message>::Result;
-
-    fn handle(&mut self, msg: PropagateNewTransactions, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService {
+    fn handle_event(
+        &mut self,
+        msg: PropagateNewTransactions,
+        ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
+    ) {
         let (protocol_name, txns) = {
             (TXN_PROTOCOL_NAME, msg.propagate_transaction())
             // new version of txn message can come here
@@ -704,7 +683,7 @@ impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
             txn_map.insert(txn.crypto_hash(), txn);
         }
         let self_peer_id: PeerId = self.network.identify().into();
-        Arbiter::spawn(async move {
+        ctx.spawn(async move {
             let peers = network_service.peers();
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
                 let mut txns_unhandled = Vec::new();
@@ -732,14 +711,13 @@ impl Handler<PropagateNewTransactions> for PeerMsgBroadcasterActor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bus::Subscription;
     use futures::sink::SinkExt;
     use futures_timer::Delay;
     use network_p2p::Multiaddr;
     use serde::{Deserialize, Serialize};
     use tokio::runtime::Runtime;
     use tokio::task;
-    use types::{block::BlockHeader, transaction::SignedUserTransaction};
+    use types::block::BlockHeader;
 
     #[rtype(result = "Result<()>")]
     #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
@@ -810,99 +788,6 @@ mod tests {
                 )
                 .await;
             assert_eq!(request, resp.unwrap());
-            _delay(Duration::from_millis(100)).await;
-
-            System::current().stop();
-        });
-
-        local.block_on(&mut rt, future).unwrap();
-    }
-
-    #[ignore]
-    #[stest::test]
-    fn test_network_with_mock() {
-        use std::time::Duration;
-
-        let mut rt = Runtime::new().unwrap();
-
-        let local = task::LocalSet::new();
-        let future = System::run_in_tokio("test", &local);
-
-        let mut node_config1 = NodeConfig::random_for_test();
-        node_config1.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-                .parse()
-                .unwrap();
-        let node_config1 = Arc::new(node_config1);
-
-        let bus1 = BusActor::launch();
-        let (network1, _rpc_rx_1) = build_network(node_config1.clone(), bus1.clone());
-        let network1_msg_broadcaster = PeerMsgBroadcasterActor::launch(network1.clone(), bus1);
-
-        let mut node_config2 = NodeConfig::random_for_test();
-        let addr1_hex = network1.identify().to_base58();
-        let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
-            .parse()
-            .unwrap();
-        node_config2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-                .parse()
-                .unwrap();
-        node_config2.network.seeds = vec![seed];
-        let node_config2 = Arc::new(node_config2);
-
-        let bus2 = BusActor::launch();
-        let (network2, rpc_rx_2) = build_network(node_config2, bus2.clone());
-        let network2_msg_broadcaster =
-            PeerMsgBroadcasterActor::launch(network2.clone(), bus2.clone());
-
-        Arbiter::spawn(async move {
-            let network_clone2 = network2.clone();
-
-            let (tx2, mut rx2) = mpsc::unbounded();
-            let response_actor2 = TestResponseActor::launch(network_clone2, tx2, rpc_rx_2, None);
-            //let addr = response_actor.start();
-
-            // subscribe peer txns for network2
-            bus2.send(Subscription {
-                recipient: response_actor2.clone().recipient::<PeerTransactions>(),
-            })
-            .await
-            .unwrap();
-
-            network1_msg_broadcaster
-                .send(PropagateNewTransactions::new(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-
-            network2_msg_broadcaster
-                .send(PropagateNewTransactions::new(vec![
-                    SignedUserTransaction::mock(),
-                ]))
-                .await
-                .unwrap();
-
-            let _ = rx2.next().await;
-            let txns = response_actor2.send(GetPeerTransactions).await.unwrap();
-            assert_eq!(1, txns.len());
-
-            let request = TestRequest {
-                data: HashValue::random(),
-            };
-            info!("req :{:?}", request);
-            let resp = network1
-                .send_request_bytes(
-                    network_p2p::PROTOCOL_NAME.into(),
-                    network2.identify().clone(),
-                    "test".to_string(),
-                    request.encode().unwrap(),
-                    Duration::from_secs(1),
-                )
-                .await;
-            info!("resp :{:?}", resp);
-
             _delay(Duration::from_millis(100)).await;
 
             System::current().stop();

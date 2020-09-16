@@ -10,7 +10,8 @@ use actix::fut::{wrap_future, IntoActorFuture};
 use actix::{ActorContext, ActorFuture, AsyncContext, Context};
 use anyhow::Result;
 use futures::channel::oneshot::{channel, Receiver};
-use futures::Future;
+use futures::executor::block_on;
+use futures::{Future, Stream, StreamExt};
 use log::error;
 use std::any::type_name;
 use std::fmt::Debug;
@@ -70,6 +71,25 @@ where
         registry_ref.get_shared_sync()
     }
 
+    pub fn get_shared_or_put<T, F>(&mut self, f: F) -> Result<T>
+    where
+        T: Send + Sync + Clone + 'static,
+        F: FnOnce() -> Result<T>,
+    {
+        let registry_ref = self.registry_ref().clone();
+        block_on(async {
+            let result = registry_ref.get_shared_opt::<T>().await?;
+            match result {
+                Some(r) => Ok(r),
+                None => {
+                    let r = f()?;
+                    registry_ref.put_shared(r.clone()).await?;
+                    Ok(r)
+                }
+            }
+        })
+    }
+
     pub fn subscribe<M>(&mut self)
     where
         M: Send + Clone + Debug + 'static,
@@ -89,6 +109,15 @@ where
                 }
             });
         self.ctx.wait(fut.into_future());
+    }
+
+    pub fn add_stream<M, MS>(&mut self, stream: MS)
+    where
+        M: Send + Clone + Debug + 'static,
+        S: EventHandler<S, M>,
+        MS: Stream<Item = M> + 'static,
+    {
+        self.ctx.add_message_stream(stream.map(EventMessage::new))
     }
 
     pub fn unsubscribe<M>(&mut self)
@@ -163,6 +192,13 @@ where
         F: Future<Output = ()> + 'static,
     {
         self.ctx.wait(wrap_future::<_, ServiceActor<S>>(fut))
+    }
+
+    pub fn spawn<F>(&mut self, fut: F)
+    where
+        F: Future<Output = ()> + 'static,
+    {
+        self.ctx.spawn(wrap_future::<_, ServiceActor<S>>(fut));
     }
 
     /// Notify self a event msg.

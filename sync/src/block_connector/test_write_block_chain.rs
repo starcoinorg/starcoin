@@ -6,12 +6,12 @@ use consensus::Consensus;
 use network::NetworkAsyncService;
 use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_txpool_mock_service::MockTxPoolService;
 use std::sync::Arc;
 use traits::{ChainReader, WriteableChainService};
-use txpool::{TxPool, TxPoolService};
 
 fn create_writeable_block_chain() -> (
-    WriteBlockChainService<TxPoolService, NetworkAsyncService>,
+    WriteBlockChainService<MockTxPoolService, NetworkAsyncService>,
     Arc<NodeConfig>,
 ) {
     let node_config = NodeConfig::random_for_test();
@@ -21,16 +21,7 @@ fn create_writeable_block_chain() -> (
         .expect("init storage by genesis fail.");
 
     let bus = BusActor::launch();
-    let txpool_service = {
-        let best_block_id = *startup_info.get_master();
-        TxPool::start(
-            node_config.clone(),
-            storage.clone(),
-            best_block_id,
-            bus.clone(),
-        )
-        .get_service()
-    };
+    let txpool_service = MockTxPoolService::new();
     (
         WriteBlockChainService::new(
             node_config.clone(),
@@ -48,7 +39,10 @@ fn create_writeable_block_chain() -> (
 fn gen_blocks(
     node_config: Arc<NodeConfig>,
     times: u64,
-    writeable_block_chain_service: &mut WriteBlockChainService<TxPoolService, NetworkAsyncService>,
+    writeable_block_chain_service: &mut WriteBlockChainService<
+        MockTxPoolService,
+        NetworkAsyncService,
+    >,
 ) {
     let miner_account = AccountInfo::random();
     let consensus_strategy = node_config.net().consensus();
@@ -93,7 +87,10 @@ fn gen_fork_block_chain(
     fork_number: u64,
     node_config: Arc<NodeConfig>,
     times: u64,
-    writeable_block_chain_service: &mut WriteBlockChainService<TxPoolService, NetworkAsyncService>,
+    writeable_block_chain_service: &mut WriteBlockChainService<
+        MockTxPoolService,
+        NetworkAsyncService,
+    >,
 ) {
     let miner_account = AccountInfo::random();
     if let Some(block_header) = writeable_block_chain_service
