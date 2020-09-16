@@ -62,8 +62,6 @@ module TransactionManager {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
-        state_cost_amount: u64,
-        cost_is_negative: bool,
         txn_payload_type: u8,
         _txn_script_or_package_hash: vector<u8>,
         txn_package_address: address,
@@ -72,7 +70,7 @@ module TransactionManager {
     ){
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
-        Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining, state_cost_amount, cost_is_negative);
+        Account::txn_epilogue<TokenType>(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining);
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
            PackageTxnManager::package_txn_epilogue(account, txn_sender, txn_package_address, success);
         }
@@ -88,10 +86,15 @@ module TransactionManager {
         public_key_vec: vector<u8>,
         uncles: u64,
         number: u64,
+        chain_id: u8,
     ){
         // Can only be invoked by genesis account
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         Timestamp::update_global_time(account, timestamp);
+
+        // Check that the chain ID stored on-chain matches the chain ID
+        // specified by the transaction
+        assert(ChainId::get() == chain_id, ErrorCode::PROLOGUE_BAD_CHAIN_ID());
 
         //get previous author for distribute txn_fee
         let previous_author = Block::get_current_author();

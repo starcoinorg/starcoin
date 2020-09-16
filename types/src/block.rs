@@ -383,6 +383,7 @@ impl Block {
             self.header.author_public_key,
             uncles,
             self.header.number,
+            self.header.chain_id,
         )
     }
 }

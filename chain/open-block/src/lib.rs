@@ -58,6 +58,7 @@ impl OpenedBlock {
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));
+        let chain_id = previous_header.chain_id;
         let block_meta = BlockMetadata::new(
             previous_block_id,
             block_timestamp,
@@ -65,6 +66,7 @@ impl OpenedBlock {
             author_public_key,
             uncles.len() as u64,
             previous_header.number + 1,
+            chain_id,
         );
         let mut opened_block = Self {
             previous_block_info: block_info,
@@ -76,7 +78,7 @@ impl OpenedBlock {
             gas_used: 0,
             included_user_txns: vec![],
             uncles,
-            chain_id: previous_header.chain_id,
+            chain_id,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -228,7 +230,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, author_public_key, _uncles, number) =
+        let (parent_id, timestamp, author, author_public_key, _uncles, number, _) =
             self.block_meta.into_inner();
 
         let (uncle_hash, uncles) = if !self.uncles.is_empty() {
