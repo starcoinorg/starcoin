@@ -18,7 +18,7 @@ use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
-use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterActor};
+use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_rpc_server::module::PubSubService;
@@ -48,7 +48,6 @@ pub struct NodeStartedHandle {
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
-    pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
     pub txpool: TxPool,
     pub node_addr: Addr<Node>,
     pub registry: ServiceRef<RegistryService>,
@@ -203,14 +202,7 @@ pub async fn start(
     );
     registry.put_shared(network.clone()).await?;
 
-    let peer_msg_broadcaster = Arbiter::new()
-        .exec({
-            let network = network.clone();
-            let network_bus = network_bus.clone();
-            move || PeerMsgBroadcasterActor::launch(network, network_bus)
-        })
-        .await?;
-
+    registry.registry::<PeerMsgBroadcasterService>().await?;
     registry.registry::<BlockRelayer>().await?;
     let chain_state_service = registry.registry::<ChainStateService>().await?;
 
@@ -313,7 +305,6 @@ pub async fn start(
         rpc_actor: json_rpc,
         network,
         network_rpc_server,
-        peer_msg_broadcaster,
         txpool,
         node_addr,
         registry,

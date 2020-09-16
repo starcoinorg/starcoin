@@ -7183,6 +7183,7 @@ dependencies = [
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-service-registry",
  "starcoin-sync-api",
  "starcoin-tx-relay",
  "starcoin-types",
