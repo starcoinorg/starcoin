@@ -9,9 +9,9 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.32"
 actix = "0.10.0"
-actix-rt = "1.1"
 starcoin-types = {path = "../../types" }
 starcoin-bus = {path = "../../bus" }
 starcoin-crypto = {path = "../../commons/crypto"}
 starcoin-logger = {path = "../../commons/logger"}
-starcoin-storage = {path = "../../storage"}
+starcoin-storage = { path = "../../storage" }
+starcoin-service-registry = { path = "../../commons/service-registry" }

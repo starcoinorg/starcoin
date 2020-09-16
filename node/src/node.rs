@@ -7,7 +7,7 @@ use network_rpc_core::server::NetworkRpcServer;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
-use starcoin_chain_notify::ChainNotifyHandlerActor;
+use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
@@ -46,7 +46,6 @@ pub struct NodeStartedHandle {
     pub storage: Arc<Storage>,
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
-    pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
     pub peer_msg_broadcaster: Addr<PeerMsgBroadcasterActor>,
@@ -67,7 +66,6 @@ impl NodeStartedHandle {
 pub struct Node {
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
-    pub chain_notifier: Addr<ChainNotifyHandlerActor>,
     pub network: NetworkAsyncService,
     pub network_rpc_server: Addr<NetworkRpcServer>,
     pub txpool: TxPool,
@@ -217,15 +215,7 @@ pub async fn start(
     let chain_state_service = registry.registry::<ChainStateService>().await?;
 
     let chain = registry.registry::<ChainReaderService>().await?;
-
-    // running in background
-    let chain_notify_handler = {
-        let bus = bus.clone();
-        let storage = storage.clone();
-        Actor::start_in_arbiter(&Arbiter::new(), |_ctx| {
-            ChainNotifyHandlerActor::new(bus, storage)
-        })
-    };
+    registry.registry::<ChainNotifyHandlerService>().await?;
 
     // network rpc server
     let network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
@@ -308,7 +298,6 @@ pub async fn start(
     let node = Node {
         sync_actor: sync.clone(),
         rpc_actor: json_rpc.clone(),
-        chain_notifier: chain_notify_handler.clone(),
         network: network.clone(),
         network_rpc_server: network_rpc_server.clone(),
         txpool: txpool.clone(),
@@ -322,7 +311,6 @@ pub async fn start(
         storage,
         sync_actor: sync,
         rpc_actor: json_rpc,
-        chain_notifier: chain_notify_handler,
         network,
         network_rpc_server,
         peer_msg_broadcaster,

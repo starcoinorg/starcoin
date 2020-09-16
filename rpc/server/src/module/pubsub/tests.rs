@@ -10,7 +10,7 @@ use jsonrpc_pubsub::Session;
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_bus::{Bus, BusActor};
-use starcoin_chain_notify::ChainNotifyHandlerActor;
+use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_config::NodeConfig;
 use starcoin_consensus::Consensus;
 use starcoin_crypto::{
@@ -77,7 +77,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let (txpool, _, _config) = test_helper::start_txpool();
     let txpool_service = txpool.get_service();
     let _chain_notify_handler =
-        ChainNotifyHandlerActor::new(bus.clone(), block_chain.get_storage()).start();
+        ChainNotifyHandlerService::new(bus.clone(), block_chain.get_storage()).start();
 
     let service = PubSubService::new(bus.clone(), txpool_service);
 
