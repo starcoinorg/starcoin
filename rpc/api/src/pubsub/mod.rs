@@ -35,6 +35,19 @@ pub trait StarcoinPubSub {
         params: Option<pubsub::Params>,
     );
 
+    #[pubsub(
+        subscription = "starcoin_subscription_hex",
+        subscribe,
+        name = "starcoin_subscribe_hex"
+    )]
+    fn subscribe_hex(
+        &self,
+        meta: Self::Metadata,
+        subscriber: typed::Subscriber<pubsub::Result>,
+        kind: String,
+        params: Option<String>,
+    );
+
     /// Unsubscribe from existing Starcoin subscription.
     #[pubsub(
         subscription = "starcoin_subscription",
@@ -42,4 +55,12 @@ pub trait StarcoinPubSub {
         name = "starcoin_unsubscribe"
     )]
     fn unsubscribe(&self, meta: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool>;
+
+    /// Unsubscribe from existing Starcoin subscription.
+    #[pubsub(
+        subscription = "starcoin_subscription_hex",
+        unsubscribe,
+        name = "starcoin_unsubscribe_hex"
+    )]
+    fn unsubscribe_hex(&self, meta: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool>;
 }
