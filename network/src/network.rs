@@ -6,8 +6,8 @@ use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::network_metrics::NetworkMetrics;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
-use actix::prelude::*;
-use anyhow::{bail, Result};
+use actix::Addr;
+use anyhow::{bail, format_err, Result};
 use async_trait::async_trait;
 use bitflags::_core::ops::Deref;
 use bitflags::_core::sync::atomic::Ordering;
@@ -24,7 +24,13 @@ use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
 use scs::SCSCodec;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
-use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_network_rpc::NetworkRpcService;
+use starcoin_network_rpc_api::gen_client::get_rpc_info;
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+};
+use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::{BlockStore, Storage};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -69,7 +75,7 @@ struct Inner {
     need_send_event: AtomicBool,
     node_config: Arc<NodeConfig>,
     peer_id: PeerId,
-    rpc_tx: mpsc::UnboundedSender<RawRpcRequestMessage>,
+    network_rpc_service: ServiceRef<NetworkRpcService>,
 }
 
 #[derive(Debug)]
@@ -258,13 +264,36 @@ impl NetworkAsyncService {
 impl NetworkAsyncService {
     pub fn start(
         node_config: Arc<NodeConfig>,
-        bus: Addr<BusActor>,
         genesis_hash: HashValue,
-        self_info: PeerInfo,
-    ) -> (
-        NetworkAsyncService,
-        mpsc::UnboundedReceiver<RawRpcRequestMessage>,
-    ) {
+        bus: Addr<BusActor>,
+        storage: Arc<Storage>,
+        network_rpc_service: ServiceRef<NetworkRpcService>,
+    ) -> Result<NetworkAsyncService> {
+        let peer_id = node_config.network.self_peer_id()?;
+        let startup_info = storage
+            .get_startup_info()?
+            .ok_or_else(|| format_err!("Can not find startup info."))?;
+        let head_block_hash = startup_info.master;
+        let head_block = storage
+            .get_block(head_block_hash)?
+            .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
+        let head_block_info = storage
+            .get_block_info(head_block_hash)?
+            .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
+
+        let mut rpc_proto_info = Vec::new();
+        let chain_rpc_proto_info = get_rpc_info();
+        rpc_proto_info.push((
+            chain_rpc_proto_info.0.into(),
+            RpcInfo::new(chain_rpc_proto_info.1),
+        ));
+        let self_info = PeerInfo::new_with_proto(
+            peer_id,
+            head_block_info.get_total_difficulty(),
+            head_block.header().clone(),
+            rpc_proto_info,
+        );
+
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
@@ -306,7 +335,6 @@ impl NetworkAsyncService {
         }
 
         let metrics = NetworkMetrics::register().ok();
-        let (rpc_tx, rpc_rx) = mpsc::unbounded();
 
         let inner = Inner {
             network_service: service.clone(),
@@ -317,7 +345,7 @@ impl NetworkAsyncService {
             need_send_event,
             node_config,
             peer_id: peer_id.clone(),
-            rpc_tx,
+            network_rpc_service,
         };
         let inner = Arc::new(inner);
 
@@ -327,22 +355,22 @@ impl NetworkAsyncService {
         if has_seed {
             info!("Seed was in configuration and not ignored.So wait for connection open event.");
             futures::executor::block_on(async move {
-                let event = connected_rx.next().await.unwrap();
-                info!("receive event {:?},network started.", event);
+                if let Some(event) = connected_rx.next().await {
+                    info!("Receive event {:?}, network started.", event);
+                } else {
+                    error!("Wait peer event return None.");
+                }
             });
         }
 
-        (
-            NetworkAsyncService {
-                raw_message_processor,
-                network_service: service,
-                tx,
-                peer_id,
-                inner,
-                metrics,
-            },
-            rpc_rx,
-        )
+        Ok(NetworkAsyncService {
+            raw_message_processor,
+            network_service: service,
+            tx,
+            peer_id,
+            inner,
+            metrics,
+        })
     }
 }
 
@@ -446,7 +474,7 @@ impl Inner {
             PeerMessage::RawRPCRequest(id, rpc_path, request) => {
                 debug!("do request {} from peer {}", id, peer_id);
                 let (tx, rx) = mpsc::channel(1);
-                self.rpc_tx.unbounded_send(RawRpcRequestMessage {
+                self.network_rpc_service.try_send(RawRpcRequestMessage {
                     responder: tx,
                     request: (rpc_path, request, peer_id.clone().into()),
                 })?;
@@ -711,19 +739,7 @@ impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::sink::SinkExt;
-    use futures_timer::Delay;
-    use network_p2p::Multiaddr;
-    use serde::{Deserialize, Serialize};
-    use tokio::runtime::Runtime;
-    use tokio::task;
     use types::block::BlockHeader;
-
-    #[rtype(result = "Result<()>")]
-    #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Message, Clone)]
-    pub struct TestRequest {
-        pub data: HashValue,
-    }
 
     #[test]
     fn test_peer_info() {
@@ -732,170 +748,5 @@ mod tests {
         let data = peer_info.encode().unwrap();
         let peer_info_decode = PeerInfo::decode(&data).unwrap();
         assert_eq!(peer_info, peer_info_decode);
-    }
-
-    #[stest::test]
-    fn test_network_first_rpc() {
-        use std::time::Duration;
-
-        let mut rt = Runtime::new().unwrap();
-
-        let local = task::LocalSet::new();
-        let future = System::run_in_tokio("test", &local);
-
-        let mut node_config1 = NodeConfig::random_for_test();
-        node_config1.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-                .parse()
-                .unwrap();
-        let node_config1 = Arc::new(node_config1);
-
-        let bus = BusActor::launch();
-        let (network1, rpc_rx_1) = build_network(node_config1.clone(), bus);
-        // let _msg_broadcaster = NetworkActor::launch(network1.clone(), bus.clone());
-
-        let mut node_config2 = NodeConfig::random_for_test();
-        let addr1_hex = network1.identify().to_base58();
-        let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.network.listen, addr1_hex)
-            .parse()
-            .unwrap();
-        node_config2.network.listen =
-            format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-                .parse()
-                .unwrap();
-        node_config2.network.seeds = vec![seed];
-        let node_config2 = Arc::new(node_config2);
-
-        let bus2 = BusActor::launch();
-        let (network2, _rpc_rx_2) = build_network(node_config2, bus2);
-
-        Arbiter::spawn(async move {
-            let (tx, _rx) = mpsc::unbounded();
-            let _response_actor = TestResponseActor::launch(network1.clone(), tx, rpc_rx_1, None);
-
-            let request = TestRequest {
-                data: HashValue::random(),
-            };
-            let request = request.encode().unwrap();
-            info!("req :{:?}", request);
-            let resp = network2
-                .send_request_bytes(
-                    network_p2p::PROTOCOL_NAME.into(),
-                    network1.identify().clone(),
-                    "test".to_string(),
-                    request.clone(),
-                    Duration::from_secs(1),
-                )
-                .await;
-            assert_eq!(request, resp.unwrap());
-            _delay(Duration::from_millis(100)).await;
-
-            System::current().stop();
-        });
-
-        local.block_on(&mut rt, future).unwrap();
-    }
-
-    async fn _delay(duration: Duration) {
-        Delay::new(duration).await;
-    }
-
-    fn build_network(
-        node_config: Arc<NodeConfig>,
-        bus: Addr<BusActor>,
-    ) -> (
-        NetworkAsyncService,
-        mpsc::UnboundedReceiver<RawRpcRequestMessage>,
-    ) {
-        NetworkAsyncService::start(node_config, bus, HashValue::default(), PeerInfo::random())
-        // let (network, rpc_rx) =
-        //     NetworkActor::launch(node_config, bus, HashValue::default(), PeerInfo::random());
-        // (network, rpc_rx)
-    }
-
-    struct TestResponseActor {
-        _network_service: NetworkAsyncService,
-        peer_txns: Vec<PeerTransactions>,
-        event_tx: mpsc::UnboundedSender<()>,
-        peer_event_tx: Option<mpsc::UnboundedSender<PeerEvent>>,
-    }
-
-    impl TestResponseActor {
-        fn launch(
-            network_service: NetworkAsyncService,
-            event_tx: mpsc::UnboundedSender<()>,
-            rpc_rx: mpsc::UnboundedReceiver<RawRpcRequestMessage>,
-            peer_event_tx: Option<mpsc::UnboundedSender<PeerEvent>>,
-        ) -> Addr<TestResponseActor> {
-            TestResponseActor::create(move |ctx: &mut Context<TestResponseActor>| {
-                ctx.add_stream(rpc_rx);
-                TestResponseActor {
-                    _network_service: network_service,
-                    peer_txns: vec![],
-                    event_tx,
-                    peer_event_tx,
-                }
-            })
-        }
-    }
-
-    impl Actor for TestResponseActor {
-        type Context = Context<Self>;
-
-        fn started(&mut self, _ctx: &mut Self::Context) {
-            info!("Test actor started ",);
-        }
-    }
-
-    impl Handler<PeerTransactions> for TestResponseActor {
-        type Result = ();
-
-        fn handle(&mut self, msg: PeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
-            self.peer_txns.push(msg);
-            self.event_tx.unbounded_send(()).unwrap();
-        }
-    }
-
-    struct GetPeerTransactions;
-
-    impl Message for GetPeerTransactions {
-        type Result = Vec<PeerTransactions>;
-    }
-
-    impl Handler<GetPeerTransactions> for TestResponseActor {
-        type Result = MessageResult<GetPeerTransactions>;
-
-        fn handle(&mut self, _msg: GetPeerTransactions, _ctx: &mut Self::Context) -> Self::Result {
-            MessageResult(self.peer_txns.clone())
-        }
-    }
-
-    impl StreamHandler<RawRpcRequestMessage> for TestResponseActor {
-        fn handle(&mut self, msg: RawRpcRequestMessage, ctx: &mut Self::Context) {
-            let mut responder = msg.responder.clone();
-            let f = async move {
-                responder
-                    .send((network_p2p::PROTOCOL_NAME.into(), msg.request.1))
-                    .await
-                    .unwrap();
-            };
-            let f = actix::fut::wrap_future(f);
-            ctx.spawn(Box::pin(f));
-        }
-    }
-
-    impl Handler<PeerEvent> for TestResponseActor {
-        type Result = Result<()>;
-
-        fn handle(&mut self, msg: PeerEvent, _ctx: &mut Self::Context) -> Self::Result {
-            info!("PeerEvent is {:?}", msg);
-            match &self.peer_event_tx {
-                Some(tx) => {
-                    tx.unbounded_send(msg).unwrap();
-                }
-                None => {}
-            };
-            Ok(())
-        }
     }
 }

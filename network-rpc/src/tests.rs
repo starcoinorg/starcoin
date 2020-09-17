@@ -10,8 +10,8 @@ use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetStateWithProof,
 };
 use starcoin_node::NodeHandle;
+use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
-use state_api::StateWithProof;
 use std::sync::Arc;
 use vm_types::move_resource::MoveResource;
 use vm_types::on_chain_config::EpochResource;

@@ -7,13 +7,15 @@ publish = false
 edition = "2018"
 
 [dependencies]
+once_cell = "1.4.1"
+
 starcoin-types = { path = "../../types" }
-starcoin-txpool = { path = "../../txpool"}
-network-api = { path="../../network/api" }
-network-rpc-core = { path = "../core"}
+starcoin-txpool = { path = "../../txpool" }
+network-api = { path = "../../network/api" }
+network-rpc-core = { path = "../core" }
 starcoin-accumulator = { path = "../../core/accumulator" }
 starcoin-crypto = { path = "../../commons/crypto" }
-starcoin-state-api = { path="../../state/api" }
+starcoin-state-api = { path = "../../state/api" }
 starcoin-state-tree = { path = "../../state/state-tree" }
 network-rpc-derive = { path = "../derive" }
 scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }

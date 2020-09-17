@@ -3,12 +3,14 @@
 
 pub mod chain;
 pub mod dummy_network_service;
+pub mod network;
 pub mod node;
 pub mod txn;
 pub mod txpool;
 
 pub use chain::gen_blockchain_for_test;
 pub use dummy_network_service::DummyNetworkService;
+pub use network::build_network;
 pub use node::{run_node_by_config, run_test_node};
 pub use starcoin_genesis::{Genesis, GenesisOpt};
 pub use starcoin_node::{node::NodeStartedHandle, NodeHandle};
