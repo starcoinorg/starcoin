@@ -56,7 +56,7 @@ impl Serialize for Result {
 }
 
 /// Subscription kind.
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize)]
 pub enum Params {
     /// No parameters passed.
     None,

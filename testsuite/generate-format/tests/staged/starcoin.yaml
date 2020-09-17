@@ -293,3 +293,13 @@ KeyRotationCapabilityResource:
 BalanceResource:
   STRUCT:
     - token : U128
+Kind:
+  ENUM:
+    0:
+      NewHeads: UNIT
+    1:
+      Events: UNIT
+    2:
+      NewPendingTransactions: UNIT
+    3:
+      NewMintBlock: UNIT
