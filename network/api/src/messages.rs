@@ -10,11 +10,6 @@ use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
-use std::borrow::Cow;
-
-#[derive(Message)]
-#[rtype(result = "u64")]
-pub struct GetCounterMessage {}
 
 /// message from peer
 #[rtype(result = "Result<()>")]
@@ -30,8 +25,8 @@ pub enum PeerMessage {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Message, Clone)]
 pub struct RawRpcRequestMessage {
-    pub request: (String, Vec<u8>, PeerId),
-    pub responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+    pub request: (PeerId, String, Vec<u8>),
+    pub responder: Sender<Vec<u8>>,
 }
 
 // TODO remove RawRpcRequestMessage responder and set response.

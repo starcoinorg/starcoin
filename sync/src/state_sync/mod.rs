@@ -68,14 +68,12 @@ impl Roots {
     }
 }
 
-async fn sync_accumulator_node<N>(
+async fn sync_accumulator_node(
     node_key: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
-) where
-    N: NetworkService + 'static,
-{
+) {
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_ACCUMULATOR])
@@ -127,15 +125,13 @@ async fn sync_accumulator_node<N>(
     ));
 }
 
-async fn sync_state_node<N>(
+async fn sync_state_node(
     is_state_root: bool,
     node_key: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
-) where
-    N: NetworkService + 'static,
-{
+) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
@@ -182,14 +178,12 @@ async fn sync_state_node<N>(
     ));
 }
 
-async fn sync_txn_info<N>(
+async fn sync_txn_info(
     block_id: HashValue,
     peer_id: PeerId,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
-) where
-    N: NetworkService + 'static,
-{
+) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
@@ -377,7 +371,7 @@ where
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     network_service: N,
     state_sync_task: StateSyncTask<(HashValue, bool)>,
     txn_info_sync_task: StateSyncTask<HashValue>,
@@ -419,7 +413,7 @@ where
         }
     }
 
-    fn _get_network_client(&self) -> &NetworkRpcClient<N> {
+    fn _get_network_client(&self) -> &NetworkRpcClient {
         &self.rpc_client
     }
 

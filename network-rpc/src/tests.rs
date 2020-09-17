@@ -7,7 +7,7 @@ use futures::executor::block_on;
 use network_api::NetworkService;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
-    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetStateWithProof,
+    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetStateWithProof, Ping,
 };
 use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
@@ -41,6 +41,29 @@ fn test_network_rpc() {
     let access_path =
         access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
 
+    //ping ok
+    let req = Ping {
+        msg: "ping_test".to_string(),
+        err: false,
+    };
+    let resp: String =
+        block_on(async { client.ping(peer_id_2.clone(), req.clone()).await.unwrap() });
+    assert_eq!(req.msg, resp);
+
+    //ping err
+    let ping = block_on(async {
+        client
+            .ping(
+                peer_id_2.clone(),
+                Ping {
+                    msg: "ping_test".to_string(),
+                    err: true,
+                },
+            )
+            .await
+    });
+    assert!(ping.is_err(), "expect return err, but return ok");
+
     let req = GetBlockHeadersByNumber::new(1, 1, 1);
     let resp: Vec<BlockHeader> = block_on(async {
         client
@@ -72,11 +95,6 @@ fn test_network_rpc() {
     let rpc_info = starcoin_gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);
 
-    let ping = block_on(async { client.ping(peer_id_2.clone(), "hello".to_string()).await });
-    match ping {
-        Err(e) => debug!("{}", e),
-        Ok(_) => panic!(""),
-    }
     handle2.stop().unwrap();
     handle1.stop().unwrap();
 }

@@ -161,7 +161,7 @@ where
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
         bus: Addr<BusActor>,
-        remote_chain_state: Option<RemoteChainStateReader<N>>,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Self {
         let pivot: Option<PivotBlock<N>> = None;
         let writeable_block_chain = WriteBlockChainService::new(

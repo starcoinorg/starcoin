@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 const CLIENT_META_WORD: &str = "client";
 const SERVER_META_WORD: &str = "server";
 

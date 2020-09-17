@@ -9,7 +9,6 @@ use starcoin_crypto::ed25519::Ed25519PublicKey;
 use crate::block::BlockHeader;
 use crate::{block::BlockNumber, U256};
 use starcoin_crypto::HashValue;
-use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
@@ -146,14 +145,11 @@ pub struct PeerInfo {
     pub peer_id: PeerId,
     pub latest_header: BlockHeader,
     pub total_difficulty: U256,
-    pub rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
+    pub rpc_protocols: Vec<RpcInfo>,
 }
 
 impl PeerInfo {
-    pub fn new_for_test(
-        peer_id: PeerId,
-        rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
-    ) -> Self {
+    pub fn new_for_test(peer_id: PeerId, rpc_protocols: Vec<RpcInfo>) -> Self {
         PeerInfo {
             peer_id,
             latest_header: BlockHeader::random(),
@@ -166,7 +162,7 @@ impl PeerInfo {
         peer_id: PeerId,
         total_difficulty: U256,
         latest_header: BlockHeader,
-        rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>,
+        rpc_protocols: Vec<RpcInfo>,
     ) -> Self {
         PeerInfo {
             peer_id,
@@ -176,7 +172,7 @@ impl PeerInfo {
         }
     }
 
-    pub fn new_only_proto(rpc_protocols: Vec<(Cow<'static, [u8]>, RpcInfo)>) -> Self {
+    pub fn new_only_proto(rpc_protocols: Vec<RpcInfo>) -> Self {
         let mut only_proto = Self::random();
         only_proto.rpc_protocols = rpc_protocols;
         only_proto
@@ -216,25 +212,9 @@ impl PeerInfo {
         self.total_difficulty
     }
 
-    pub fn exist_rpc_proto(&self, rpc_proto_name: &[u8]) -> bool {
-        let mut exist = false;
-        for (name, _) in &self.rpc_protocols {
-            if name == &Cow::Borrowed(rpc_proto_name) {
-                exist = true;
-                break;
-            }
-        }
-
-        exist
-    }
-
-    pub fn register_rpc_proto(&mut self, rpc_proto_name: Cow<'static, [u8]>, rpc_info: RpcInfo) {
+    pub fn register_rpc_proto(&mut self, rpc_info: RpcInfo) {
         assert!(!rpc_info.is_empty());
-        // self.rpc_protocols
-        //     .retain(|(name, _)| name != &rpc_proto_name);
-        if !self.exist_rpc_proto(&rpc_proto_name) {
-            self.rpc_protocols.push((rpc_proto_name, rpc_info));
-        }
+        self.rpc_protocols.push(rpc_info);
     }
 
     pub fn random() -> Self {

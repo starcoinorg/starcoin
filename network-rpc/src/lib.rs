@@ -5,10 +5,10 @@ use crate::rpc::NetworkRpcImpl;
 use anyhow::Result;
 use network_api::messages::RawRpcRequestMessage;
 use network_rpc_core::server::NetworkRpcServer;
+use network_rpc_core::RawRpcServer;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::gen_server::NetworkRpc;
-use starcoin_network_rpc_api::CHAIN_PROTOCOL_NAME;
 use starcoin_service_registry::{
     ActorService, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
@@ -35,7 +35,7 @@ impl NetworkRpcService {
         state_service: ServiceRef<ChainStateService>,
     ) -> Self {
         let rpc_impl = NetworkRpcImpl::new(storage, chain_service, txpool_service, state_service);
-        let rpc_server = NetworkRpcServer::new(CHAIN_PROTOCOL_NAME.into(), rpc_impl.to_delegate());
+        let rpc_server = NetworkRpcServer::new(rpc_impl.to_delegate());
         Self {
             rpc_server: Arc::new(rpc_server),
         }
@@ -66,10 +66,17 @@ impl ServiceHandler<Self, RawRpcRequestMessage> for NetworkRpcService {
         ctx: &mut ServiceContext<NetworkRpcService>,
     ) {
         let rpc_server = self.rpc_server.clone();
+        let (peer_id, rpc_path, message) = req_msg.request;
+        let mut responder = req_msg.responder;
         ctx.spawn(async move {
-            if let Err(e) = rpc_server.handle_request(req_msg).await {
-                error!("Respond to rpc call failed:{:?}", e);
-            };
+            let result = rpc_server
+                .handle_raw_request(peer_id, rpc_path, message)
+                .await;
+            let resp = scs::to_bytes(&result).expect("NetRpc Result must encode success.");
+
+            if let Err(e) = responder.try_send(resp) {
+                error!("Send response to rpc call failed:{:?}", e);
+            }
         });
     }
 }
