@@ -80,6 +80,7 @@ pub fn add_command(
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
                 .subcommand(dev::UpgradeStdlibCommand)
+                .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
                         .subcommand(dev::SubscribeBlockCommand)

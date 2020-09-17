@@ -62,7 +62,7 @@ impl<'a> Resolver<'a> {
         Ok(self.cache.insert(module_id, compiled_module))
     }
 
-    pub fn resolve_type(&self, type_tag: &TypeTag) -> Result<FatType> {
+    pub(crate) fn resolve_type(&self, type_tag: &TypeTag) -> Result<FatType> {
         Ok(match type_tag {
             TypeTag::Address => FatType::Address,
             TypeTag::Signer => FatType::Signer,
@@ -75,7 +75,7 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    pub fn resolve_struct(&self, struct_tag: &StructTag) -> Result<FatStructType> {
+    pub(crate) fn resolve_struct(&self, struct_tag: &StructTag) -> Result<FatStructType> {
         let module = self.get_module(&struct_tag.address, &struct_tag.module)?;
         let struct_def =
             find_struct_def_in_module(module.as_ref(), struct_tag.name.as_ident_str())?;
@@ -90,7 +90,7 @@ impl<'a> Resolver<'a> {
         })
     }
 
-    pub fn get_field_names(&self, ty: &FatStructType) -> Result<Vec<Identifier>> {
+    pub(crate) fn get_field_names(&self, ty: &FatStructType) -> Result<Vec<Identifier>> {
         let module = self.get_module(&ty.address, ty.module.as_ident_str())?;
         let struct_def_idx = find_struct_def_in_module(module.as_ref(), ty.name.as_ident_str())?;
         let struct_def = module.struct_def_at(struct_def_idx);

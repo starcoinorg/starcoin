@@ -498,7 +498,7 @@ fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u128 {
         .unwrap_or_default()
 }
 
-fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
+pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
     let stdlib_files = stdlib_files();
     let compiled_result =
         starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)

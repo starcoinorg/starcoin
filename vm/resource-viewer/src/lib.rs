@@ -9,11 +9,10 @@ use crate::{
     resolver::Resolver,
 };
 use anyhow::{anyhow, Result};
-use serde::{
-    ser::{SerializeMap, SerializeSeq},
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
+use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::value::MoveTypeLayout;
 use starcoin_vm_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -32,11 +31,11 @@ use std::{
 mod fat_type;
 mod module_cache;
 mod resolver;
-mod stdlib_type_mapping;
+
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AnnotatedMoveStruct {
     is_resource: bool,
     type_: StructTag,
@@ -47,7 +46,8 @@ pub struct AnnotatedMoveStruct {
 /// for debugging/client purpose right now and just for a better visualization of on chain data. In
 /// the long run, we would like to transform this struct to a Json value so that we can have a cross
 /// platform interpretation of the on chain data.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(tag = "type", content = "value")]
 pub enum AnnotatedMoveValue {
     U8(u8),
     U64(u64),
@@ -59,43 +59,43 @@ pub enum AnnotatedMoveValue {
     Struct(AnnotatedMoveStruct),
 }
 
-impl Serialize for AnnotatedMoveValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Self::U8(v) => serializer.serialize_u8(*v),
-            Self::U64(v) => serializer.serialize_u64(*v),
-            Self::U128(v) => serializer.serialize_u128(*v),
-            Self::Bool(v) => serializer.serialize_bool(*v),
-            AnnotatedMoveValue::Address(addr) => <AccountAddress>::serialize(addr, serializer),
-            AnnotatedMoveValue::Vector(values) => {
-                let mut seq = serializer.serialize_seq(Some(values.len()))?;
-                for v in values {
-                    seq.serialize_element(v)?;
-                }
-                seq.end()
-            }
-            AnnotatedMoveValue::Bytes(data) => serializer.serialize_str(hex::encode(data).as_str()),
-            AnnotatedMoveValue::Struct(s) => AnnotatedMoveStruct::serialize(s, serializer),
-        }
-    }
-}
-
-// TODO: better serialize as a real struct, instead of map.
-impl Serialize for AnnotatedMoveStruct {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(self.value.len()))?;
-        for (f, v) in &self.value {
-            map.serialize_entry(f.as_str(), v)?;
-        }
-        map.end()
-    }
-}
+// impl Serialize for AnnotatedMoveValue {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         match self {
+//             Self::U8(v) => serializer.serialize_u8(*v),
+//             Self::U64(v) => serializer.serialize_u64(*v),
+//             Self::U128(v) => serializer.serialize_u128(*v),
+//             Self::Bool(v) => serializer.serialize_bool(*v),
+//             AnnotatedMoveValue::Address(addr) => <AccountAddress>::serialize(addr, serializer),
+//             AnnotatedMoveValue::Vector(values) => {
+//                 let mut seq = serializer.serialize_seq(Some(values.len()))?;
+//                 for v in values {
+//                     seq.serialize_element(v)?;
+//                 }
+//                 seq.end()
+//             }
+//             AnnotatedMoveValue::Bytes(data) => serializer.serialize_str(hex::encode(data).as_str()),
+//             AnnotatedMoveValue::Struct(s) => AnnotatedMoveStruct::serialize(s, serializer),
+//         }
+//     }
+// }
+//
+// // TODO: better serialize as a real struct, instead of map.
+// impl Serialize for AnnotatedMoveStruct {
+//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: serde::Serializer,
+//     {
+//         let mut map = serializer.serialize_map(Some(self.value.len()))?;
+//         for (f, v) in &self.value {
+//             map.serialize_entry(f.as_str(), v)?;
+//         }
+//         map.end()
+//     }
+// }
 
 pub struct MoveValueAnnotator<'a> {
     cache: Resolver<'a>,
@@ -108,6 +108,24 @@ impl<'a> MoveValueAnnotator<'a> {
             cache: Resolver::new(view),
             _data_view: view,
         }
+    }
+
+    pub fn type_tag_to_type_layout(&self, ty: &TypeTag) -> Result<MoveTypeLayout> {
+        let ty = self.cache.resolve_type(ty)?;
+        let layout = (&ty)
+            .try_into()
+            .map_err(|e: PartialVMError| e.finish(Location::Undefined).into_vm_status())?;
+        Ok(layout)
+    }
+
+    pub fn view_value(&self, type_tag: &TypeTag, blob: &[u8]) -> Result<AnnotatedMoveValue> {
+        let ty = self.cache.resolve_type(&type_tag)?;
+        let move_ty = (&ty)
+            .try_into()
+            .map_err(|e: PartialVMError| e.finish(Location::Undefined).into_vm_status())?;
+
+        let move_value = MoveValue::simple_deserialize(blob, &move_ty)?;
+        self.annotate_value(&move_value, &ty)
     }
 
     pub fn view_struct(&self, struct_tag: StructTag, blob: &[u8]) -> Result<AnnotatedMoveStruct> {
@@ -128,32 +146,6 @@ impl<'a> MoveValueAnnotator<'a> {
         let move_value = MoveValue::simple_deserialize(event.event_data(), &move_ty)?;
         self.annotate_value(&move_value, &ty)
     }
-
-    // pub fn view_account_state(&self, state: &AccountState) -> Result<AnnotatedAccountStateBlob> {
-    //     let mut output = BTreeMap::new();
-    //     for (k, v) in state.iter() {
-    //         let ty = if let Ok(ty) = resource_vec_to_type_tag(k.as_slice()) {
-    //             ty
-    //         } else {
-    //             println!("Uncached AccessPath: {:?}", k);
-    //             continue;
-    //         };
-    //         let ty = self.cache.resolve_struct(&ty)?;
-    //         let struct_def = (&ty)
-    //             .try_into()
-    //             .map_err(|e: PartialVMError| e.finish(Location::Undefined).into_vm_status())?;
-    //
-    //         let move_struct = MoveStruct::simple_deserialize(v.as_slice(), &struct_def)?;
-    //         println!("annotaing: {:?}, {:?}", ty, move_struct);
-    //         output.insert(
-    //             ty.struct_tag()
-    //                 .map_err(|e| e.finish(Location::Undefined).into_vm_status())
-    //                 .unwrap(),
-    //             self.annotate_struct(&move_struct, &ty)?,
-    //         );
-    //     }
-    //     Ok(AnnotatedAccountStateBlob(output))
-    // }
 
     fn annotate_struct(
         &self,

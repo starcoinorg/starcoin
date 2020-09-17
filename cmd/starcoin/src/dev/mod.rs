@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+mod call_contract_cmd;
 mod compile_cmd;
 mod deploy_cmd;
 mod derive_account_address_cmd;
@@ -11,6 +12,7 @@ mod submit_multisig_txn_cmd;
 mod subscribe_cmd;
 mod upgrade_stdlib_cmd;
 
+pub use call_contract_cmd::*;
 pub use compile_cmd::*;
 pub use deploy_cmd::*;
 pub use derive_account_address_cmd::*;

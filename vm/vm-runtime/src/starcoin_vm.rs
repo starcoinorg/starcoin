@@ -29,6 +29,8 @@ use starcoin_vm_types::account_config::{
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
+use starcoin_vm_types::identifier::IdentStr;
+use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
 use starcoin_vm_types::transaction::{Module, Package, Script, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
@@ -49,8 +51,8 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 //// The value should be tuned carefully
-//pub static MAXIMUM_NUMBER_OF_GAS_UNITS: Lazy<GasUnits<GasCarrier>> =
-//    Lazy::new(|| GasUnits::new(100_000_000));
+pub static MAXIMUM_GAS_UNITS_FOR_READONLY_CALL: Lazy<GasUnits<GasCarrier>> =
+    Lazy::new(|| GasUnits::new(100_000_000));
 
 #[derive(Clone, Default)]
 /// Wrapper of MoveVM
@@ -715,6 +717,45 @@ impl StarcoinVM {
         transactions: Vec<Transaction>,
     ) -> Result<Vec<(VMStatus, TransactionOutput)>> {
         self.execute_block_transactions(state_view, transactions, None)
+    }
+
+    pub fn execute_readonly_function(
+        &mut self,
+        state_view: &dyn StateView,
+        module: &ModuleId,
+        function_name: &IdentStr,
+        type_params: Vec<TypeTag>,
+        args: Vec<Value>,
+    ) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
+        let data_cache = StateViewCache::new(state_view);
+        if let Err(err) = self.load_configs(&data_cache) {
+            warn!("Load config error at verify_transaction: {}", err);
+            return Err(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE));
+        }
+
+        let cost_table = zero_cost_schedule();
+        let mut cost_strategy =
+            CostStrategy::system(&cost_table, *MAXIMUM_GAS_UNITS_FOR_READONLY_CALL);
+        let mut session = self.move_vm.new_session(&data_cache);
+        let result = session.execute_readonly_function(
+            module,
+            function_name,
+            type_params,
+            args,
+            &mut cost_strategy,
+            |e| e,
+        )?;
+
+        let effects = session
+            .finish()
+            .expect("Failed to generate session effects");
+        let (writeset, _events) =
+            txn_effects_to_writeset_and_events(effects).expect("Failed to generate writeset");
+        if !writeset.is_empty() {
+            warn!("Readonly function {} changes state", function_name);
+            return Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
+        }
+        Ok(result)
     }
 
     fn success_transaction_cleanup<R: RemoteCache>(
