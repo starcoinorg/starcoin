@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
@@ -67,20 +66,13 @@ pub fn execute_readonly_function(
     function_name: &Identifier,
     type_params: Vec<TypeTag>,
     args: Vec<Value>,
-    sender: AccountAddress,
 ) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
     let timer = TXN_EXECUTION_HISTOGRAM
         .with_label_values(&["execute_readonly_function"])
         .start_timer();
     let mut vm = StarcoinVM::new();
-    let result = vm.execute_readonly_function(
-        chain_state,
-        module,
-        function_name,
-        type_params,
-        args,
-        &sender,
-    );
+    let result =
+        vm.execute_readonly_function(chain_state, module, function_name, type_params, args);
     timer.observe_duration();
     result
 }

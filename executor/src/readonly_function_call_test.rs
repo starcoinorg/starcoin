@@ -13,6 +13,7 @@ use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
 
 #[stest::test]
 fn test_readonly_function_call() -> Result<()> {
@@ -81,7 +82,6 @@ fn test_readonly_function_call() -> Result<()> {
         &Identifier::new("get_s").unwrap(),
         vec![],
         vec![],
-        *account1.address(),
     )?;
 
     let value = Value::struct_(Struct::pack(vec![Value::u64(20)], false));
@@ -105,7 +105,6 @@ fn test_readonly_function_call() -> Result<()> {
             &Identifier::new("get_tuple").unwrap(),
             vec![],
             vec![],
-            *account1.address(),
         )?;
         assert_eq!(result.len(), 2);
 
@@ -129,8 +128,10 @@ fn test_readonly_function_call() -> Result<()> {
         &Identifier::new("set_s").unwrap(),
         vec![],
         vec![value],
-        *account1.address(),
-    );
-    //assert_eq!(result, Err(VMStatus::Error(StatusCode::REJECTED_WRITE_SET)));
+    )
+    .map_err(|err| {
+        assert_eq!(err, VMStatus::Error(StatusCode::REJECTED_WRITE_SET));
+    });
+
     Ok(())
 }

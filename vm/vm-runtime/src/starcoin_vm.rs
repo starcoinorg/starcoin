@@ -726,7 +726,6 @@ impl StarcoinVM {
         function_name: &IdentStr,
         type_params: Vec<TypeTag>,
         args: Vec<Value>,
-        sender: &AccountAddress,
     ) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
         let data_cache = StateViewCache::new(state_view);
         if let Err(err) = self.load_configs(&data_cache) {
@@ -743,7 +742,6 @@ impl StarcoinVM {
             function_name,
             type_params,
             args,
-            *sender,
             &mut cost_strategy,
             |e| e,
         )?;
