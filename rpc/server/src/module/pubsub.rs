@@ -103,7 +103,7 @@ impl StarcoinPubSub for PubSubImpl {
         let kind = match pubsub::Kind::decode(&kind_bytes) {
             Ok(t) => t,
             Err(e) => {
-                let _ = subscriber.reject(map_err(e.into()));
+                let _ = subscriber.reject(map_err(e));
                 return;
             }
         };
@@ -119,7 +119,7 @@ impl StarcoinPubSub for PubSubImpl {
                 let params = match pubsub::Params::decode(&params_bytes) {
                     Ok(t) => t,
                     Err(e) => {
-                        let _ = subscriber.reject(map_err(e.into()));
+                        let _ = subscriber.reject(map_err(e));
                         return;
                     }
                 };
