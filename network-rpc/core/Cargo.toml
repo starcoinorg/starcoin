@@ -9,9 +9,9 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.32"
 futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
 actix = "0.10.0"
 
 starcoin-types = { path = "../../types", package = "starcoin-types" }
 network-api = { path = "../../network/api"}
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
-serde = { version = "1.0", features = ["derive"] }

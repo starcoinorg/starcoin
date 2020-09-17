@@ -4,7 +4,7 @@
 use crate::common::advance_cal_service::{AdvanceCalAsyncService, AdvanceCalService};
 use crate::common::cal_service::{CalAsyncService, CalService};
 use log::debug;
-use starcoin_service_registry::mocker::{MockFn, MockHandler};
+use starcoin_service_registry::mocker::{mock, MockHandler};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceContext};
 use std::any::Any;
 use std::sync::{Arc, Mutex};
@@ -14,7 +14,7 @@ pub mod common;
 #[stest::test]
 async fn test_mock_service_by_fn() {
     let registry = RegistryService::launch();
-    let mocker: MockFn<CalService> = Box::new(|request, _ctx| {
+    let mocker = mock(|request, _ctx| {
         debug!("Mocker receive request: {:?}", request);
         //always return zero.
         Box::new(0u64)

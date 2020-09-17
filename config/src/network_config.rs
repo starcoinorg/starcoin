@@ -47,6 +47,12 @@ impl NetworkConfig {
             .ok_or_else(|| format_err!("Config not init."))
     }
 
+    pub fn self_peer_id(&self) -> Result<PeerId> {
+        self.self_peer_id
+            .clone()
+            .ok_or_else(|| format_err!("Self peer_id has not init."))
+    }
+
     fn prepare_peer_id(&mut self) {
         let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
         let host = self

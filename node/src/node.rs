@@ -4,7 +4,6 @@
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures_timer::Delay;
-use network_rpc_core::server::NetworkRpcServer;
 use starcoin_account_service::{AccountEventService, AccountService, AccountStorage};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_bus::{Bus, BusActor};
@@ -20,22 +19,20 @@ use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
-use starcoin_network_rpc_api::gen_client::get_rpc_info;
+use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_rpc_server::module::PubSubService;
 use starcoin_rpc_server::RpcActor;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{ActorService, RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_state_service::ChainStateService;
-use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::Storage;
 use starcoin_sync::SyncActor;
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
-use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -48,7 +45,6 @@ pub struct NodeStartedHandle {
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
-    pub network_rpc_server: Addr<NetworkRpcServer>,
     pub node_addr: Addr<Node>,
     pub registry: ServiceRef<RegistryService>,
 }
@@ -66,7 +62,6 @@ pub struct Node {
     pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
-    pub network_rpc_server: Addr<NetworkRpcServer>,
     pub registry: ServiceRef<RegistryService>,
 }
 
@@ -152,8 +147,6 @@ pub async fn start(
     let account_service = registry.registry::<AccountService>().await?;
     registry.registry::<AccountEventService>().await?;
 
-    let head_block_hash = *startup_info.get_master();
-
     registry.registry::<TxPoolActorService>().await?;
 
     //wait TxPoolService put shared..
@@ -161,57 +154,26 @@ pub async fn start(
     // TxPoolActorService auto put shared TxPoolService,
     let txpool_service = registry.get_shared::<TxPoolService>().await?;
 
-    let head_block = match storage.get_block(head_block_hash)? {
-        Some(block) => block,
-        None => panic!("can't get block by hash {}", head_block_hash),
-    };
-    let head_block_info = match storage.get_block_info(head_block_hash)? {
-        Some(block_info) => block_info,
-        None => panic!("can't get block info by hash {}", head_block_hash),
-    };
-    let peer_id = config
-        .network
-        .self_peer_id
-        .clone()
-        .expect("Self peer_id must has been set.");
-    let mut rpc_proto_info = Vec::new();
-    let chain_rpc_proto_info = get_rpc_info();
-    rpc_proto_info.push((
-        chain_rpc_proto_info.0.into(),
-        RpcInfo::new(chain_rpc_proto_info.1),
-    ));
-    let self_info = PeerInfo::new_with_proto(
-        peer_id.clone(),
-        head_block_info.get_total_difficulty(),
-        head_block.header().clone(),
-        rpc_proto_info,
-    );
-    let network_config = config.clone();
-    let network_bus = bus.clone();
-
-    let (network, rpc_rx) = NetworkAsyncService::start(
-        network_config.clone(),
-        network_bus.clone(),
-        genesis_hash,
-        self_info,
-    );
-    registry.put_shared(network.clone()).await?;
-
-    registry.registry::<PeerMsgBroadcasterService>().await?;
-    registry.registry::<BlockRelayer>().await?;
     let chain_state_service = registry.registry::<ChainStateService>().await?;
 
     let chain = registry.registry::<ChainReaderService>().await?;
     registry.registry::<ChainNotifyHandlerService>().await?;
 
-    // network rpc server
-    let network_rpc_server = starcoin_network_rpc::start_network_rpc_server(
-        rpc_rx,
-        chain.clone(),
+    let network_rpc_service = registry.registry::<NetworkRpcService>().await?;
+
+    let network = NetworkAsyncService::start(
+        config.clone(),
+        genesis_hash,
+        bus.clone(),
         storage.clone(),
-        chain_state_service.clone(),
-        txpool_service.clone(),
+        network_rpc_service,
     )?;
+    registry.put_shared(network.clone()).await?;
+
+    registry.registry::<PeerMsgBroadcasterService>().await?;
+    registry.registry::<BlockRelayer>().await?;
+
+    let peer_id = config.network.self_peer_id()?;
 
     info!("Self peer_id is: {}", peer_id.to_base58());
     info!(
@@ -286,7 +248,6 @@ pub async fn start(
         sync_actor: sync.clone(),
         rpc_actor: json_rpc.clone(),
         network: network.clone(),
-        network_rpc_server: network_rpc_server.clone(),
         registry: registry.clone(),
     };
     let node_addr = node.start();
@@ -298,7 +259,6 @@ pub async fn start(
         sync_actor: sync,
         rpc_actor: json_rpc,
         network,
-        network_rpc_server,
         node_addr,
         registry,
     })
