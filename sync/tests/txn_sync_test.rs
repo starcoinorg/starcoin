@@ -1,10 +1,12 @@
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use starcoin_service_registry::RegistryAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use std::sync::Arc;
 use std::time::Duration;
 use test_helper::run_node_by_config;
+use txpool::TxPoolService;
 use types::{account_address, transaction::SignedUserTransaction};
 
 #[stest::test]
@@ -14,14 +16,15 @@ fn test_txn_sync_actor() {
     let first_network_address = first_config.network.self_address().unwrap();
     let first_config = Arc::new(first_config);
     let first_node = run_node_by_config(first_config.clone()).unwrap();
-    let txpool_1 = first_node.start_handle().txpool.clone();
+    let txpool_1 = first_node
+        .start_handle()
+        .registry
+        .get_shared_sync::<TxPoolService>()
+        .unwrap();
 
     // add txn to node1
     let user_txn = gen_user_txn(&first_config);
-    let import_result = txpool_1
-        .get_service()
-        .add_txns(vec![user_txn.clone()])
-        .pop();
+    let import_result = txpool_1.add_txns(vec![user_txn.clone()]).pop();
     assert!(import_result.unwrap().is_ok());
 
     let mut second_config = NodeConfig::random_for_test();
@@ -30,15 +33,17 @@ fn test_txn_sync_actor() {
     let second_config = Arc::new(second_config);
 
     let second_node = run_node_by_config(second_config.clone()).unwrap();
-    let txpool_2 = second_node.start_handle().txpool.clone();
+    let txpool_2 = second_node
+        .start_handle()
+        .registry
+        .get_shared_sync::<TxPoolService>()
+        .unwrap();
     //wait sync finish.
     //Delay::new(Duration::from_secs(2)).await;
     std::thread::sleep(Duration::from_secs(2));
     let current_timestamp = second_config.net().consensus().now();
     // check txn
-    let mut txns = txpool_2
-        .get_service()
-        .get_pending_txns(None, Some(current_timestamp));
+    let mut txns = txpool_2.get_pending_txns(None, Some(current_timestamp));
     assert_eq!(txns.len(), 1);
     let txn = txns.pop().unwrap();
     assert_eq!(user_txn.crypto_hash(), txn.crypto_hash());

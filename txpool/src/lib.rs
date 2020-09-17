@@ -11,17 +11,18 @@ extern crate prometheus;
 extern crate transaction_pool as tx_pool;
 
 use actix::prelude::*;
-use crypto::hash::HashValue;
+use anyhow::{format_err, Result};
+use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 use starcoin_bus::{Bus, BusActor};
 use starcoin_config::NodeConfig;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::TxnStatusFullEvent;
-use std::{fmt::Debug, sync::Arc};
-use storage::Store;
+use std::sync::Arc;
+use storage::{BlockStore, Storage};
+use tx_pool_service_impl::Inner;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
 
-use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 pub use pool::TxStatus;
-use tx_pool_service_impl::Inner;
 pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
@@ -31,103 +32,66 @@ mod pool_client;
 mod test;
 mod tx_pool_service_impl;
 
-#[derive(Clone, Debug)]
-pub struct TxPool {
-    inner: Inner,
-    addr: actix::Addr<TxPoolActor>,
-}
-
-impl TxPool {
-    // TODO: use static dispatching instead of dynamic dispatch for storage instance.
-    pub fn start(
-        node_config: Arc<NodeConfig>,
-        storage: Arc<dyn Store>,
-        best_block_hash: HashValue,
-        bus: actix::Addr<BusActor>,
-    ) -> Self {
-        let best_block = match storage.get_block_by_hash(best_block_hash) {
-            Err(e) => panic!("fail to read storage, {}", e),
-            Ok(None) => panic!(
-                "best block id {} should exists in storage",
-                &best_block_hash
-            ),
-            Ok(Some(block)) => block,
-        };
-        let best_block_header = best_block.into_inner().0;
-        let service = TxPoolService::new(node_config, storage, best_block_header);
-        let inner = service.get_inner();
-        let pool = TxPoolActor::new(inner.clone(), bus);
-        let pool_addr = pool.start();
-        Self {
-            inner,
-            addr: pool_addr,
-        }
-    }
-
-    pub fn get_service(&self) -> TxPoolService {
-        TxPoolService::from_inner(self.inner.clone())
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct TxPoolRef {
-    addr: actix::Addr<TxPoolActor>,
-}
-
+//TODO refactor TxPoolService and rename.
 #[derive(Clone)]
-pub(crate) struct TxPoolActor {
+pub struct TxPoolActorService {
+    bus: Addr<BusActor>,
     inner: Inner,
-    bus: actix::Addr<BusActor>,
 }
-impl std::fmt::Debug for TxPoolActor {
+
+impl std::fmt::Debug for TxPoolActorService {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "pool: {:?}, bus: {:?}",
-            &self.inner,
-            self.bus.connected()
-        )
+        write!(f, "pool: {:?}", &self.inner,)
     }
 }
 
-impl TxPoolActor {
-    pub fn new(inner: Inner, bus: actix::Addr<BusActor>) -> Self {
+impl TxPoolActorService {
+    fn new(bus: Addr<BusActor>, inner: Inner) -> Self {
         Self { bus, inner }
     }
+}
 
-    pub fn launch(self) -> TxPoolRef {
-        let addr = self.start();
-        TxPoolRef { addr }
+impl ServiceFactory<Self> for TxPoolActorService {
+    fn create(ctx: &mut ServiceContext<TxPoolActorService>) -> Result<TxPoolActorService> {
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let txpool_service = ctx.get_shared_or_put(|| {
+            let startup_info = storage
+                .get_startup_info()?
+                .ok_or_else(|| format_err!("StartupInfo should exist when service init."))?;
+            let best_block = storage
+                .get_block_by_hash(startup_info.master)?
+                .ok_or_else(|| {
+                    format_err!(
+                        "best block id {} should exists in storage",
+                        startup_info.master
+                    )
+                })?;
+
+            let best_block_header = best_block.into_inner().0;
+            Ok(TxPoolService::new(node_config, storage, best_block_header))
+        })?;
+        Ok(Self::new(
+            ctx.get_shared::<Addr<BusActor>>()?,
+            txpool_service.get_inner(),
+        ))
     }
 }
 
-impl actix::Actor for TxPoolActor {
-    type Context = actix::Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        // subscribe txn relayer peer txns
-        let myself = ctx.address().recipient::<PeerTransactions>();
-        self.bus
-            .clone()
-            .subscribe(myself)
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                if let Err(e) = res {
-                    error!("fail to subscribe txn relayer message, err: {:?}", e);
-                    ctx.terminate();
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
-
+impl ActorService for TxPoolActorService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<PeerTransactions>();
         ctx.add_stream(self.inner.subscribe_txns());
+    }
 
-        info!("txn pool started");
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<PeerTransactions>();
     }
 }
+
 /// Listen to txn status, and propagate to remote peers if necessary.
-impl StreamHandler<TxnStatusFullEvent> for TxPoolActor {
-    fn handle(&mut self, item: TxnStatusFullEvent, ctx: &mut Context<Self>) {
+impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
+    fn handle_event(&mut self, item: TxnStatusFullEvent, ctx: &mut ServiceContext<Self>) {
         {
             let status = self.inner.pool_status().status;
             let mem_usage = status.mem_usage;
@@ -167,28 +131,17 @@ impl StreamHandler<TxnStatusFullEvent> for TxPoolActor {
         if txns.is_empty() {
             return;
         }
-        self.bus
-            .clone()
-            .broadcast(PropagateNewTransactions::new(txns))
-            .into_actor(self)
-            .then(|res, act, _ctx| {
-                if let Err(e) = res {
-                    error!("fail to emit propagate new txn event, err: {}", &e);
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
+        let bus = self.bus.clone();
+        ctx.wait(async {
+            if let Err(e) = bus.broadcast(PropagateNewTransactions::new(txns)).await {
+                error!("fail to emit propagate new txn event, err: {}", e);
+            }
+        })
     }
 }
 
-impl actix::Handler<PeerTransactions> for TxPoolActor {
-    type Result = ();
-
-    fn handle(
-        &mut self,
-        msg: PeerTransactions,
-        _ctx: &mut <Self as Actor>::Context,
-    ) -> Self::Result {
+impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
+    fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
         // JUST need to keep at most once delivery.
         let txns = msg.peer_transactions();
         let _ = self.inner.import_txns(txns);
@@ -202,8 +155,8 @@ mod test_sync_and_send {
     fn assert_static<T: 'static>() {}
     #[test]
     fn test_sync_and_send() {
-        assert_send::<super::TxPoolActor>();
-        assert_sync::<super::TxPoolActor>();
-        assert_static::<super::TxPoolActor>();
+        assert_send::<super::TxPoolActorService>();
+        assert_sync::<super::TxPoolActorService>();
+        assert_static::<super::TxPoolActorService>();
     }
 }

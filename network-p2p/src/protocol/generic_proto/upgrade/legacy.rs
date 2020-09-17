@@ -19,6 +19,7 @@ use bytes::BytesMut;
 use futures::prelude::*;
 use futures_codec::Framed;
 use libp2p::core::{upgrade::ProtocolName, Endpoint, InboundUpgrade, OutboundUpgrade, UpgradeInfo};
+use std::cmp::Reverse;
 use std::task::{Context, Poll};
 use std::{collections::VecDeque, io, pin::Pin, vec::IntoIter as VecIntoIter};
 use unsigned_varint::codec::UviBytes;
@@ -52,7 +53,7 @@ impl RegisteredProtocol {
             id: protocol,
             supported_versions: {
                 let mut tmp = versions.to_vec();
-                tmp.sort_unstable_by(|a, b| b.cmp(&a));
+                tmp.sort_unstable_by_key(|&b| Reverse(b));
                 tmp
             },
         }

@@ -35,7 +35,6 @@
 -  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
 -  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
 -  [Function `pay_from`](#0x1_Account_pay_from)
--  [Function `rotate_authentication_key_for_account`](#0x1_Account_rotate_authentication_key_for_account)
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
 -  [Function `extract_key_rotation_capability`](#0x1_Account_extract_key_rotation_capability)
 -  [Function `restore_key_rotation_capability`](#0x1_Account_restore_key_rotation_capability)
@@ -70,7 +69,6 @@
     -  [Function `pay_from_capability`](#0x1_Account_Specification_pay_from_capability)
     -  [Function `pay_from_with_metadata`](#0x1_Account_Specification_pay_from_with_metadata)
     -  [Function `pay_from`](#0x1_Account_Specification_pay_from)
-    -  [Function `rotate_authentication_key_for_account`](#0x1_Account_Specification_rotate_authentication_key_for_account)
     -  [Function `rotate_authentication_key`](#0x1_Account_Specification_rotate_authentication_key)
     -  [Function `extract_key_rotation_capability`](#0x1_Account_Specification_extract_key_rotation_capability)
     -  [Function `restore_key_rotation_capability`](#0x1_Account_Specification_restore_key_rotation_capability)
@@ -577,7 +575,7 @@ Message for accept token events
     new_account: &signer,
     authentication_key: vector&lt;u8&gt;,
 ) {
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, 88888);
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
     <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(new_account);
     move_to(new_account, <a href="#0x1_Account">Account</a> {
@@ -1021,32 +1019,6 @@ Message for accept token events
     amount: u128
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <a href="#0x1_Account_pay_from_with_metadata">pay_from_with_metadata</a>&lt;TokenType&gt;(account, payee, amount, x"");
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_rotate_authentication_key_for_account"></a>
-
-## Function `rotate_authentication_key_for_account`
-
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_rotate_authentication_key_for_account">rotate_authentication_key_for_account</a>(account: &<b>mut</b> <a href="#0x1_Account_Account">Account::Account</a>, new_authentication_key: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_rotate_authentication_key_for_account">rotate_authentication_key_for_account</a>(account: &<b>mut</b> <a href="#0x1_Account">Account</a>, new_authentication_key: vector&lt;u8&gt;) {
-  // Don't allow rotating <b>to</b> clearly invalid key
-  <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
-  account.authentication_key = new_authentication_key;
 }
 </code></pre>
 
@@ -1498,7 +1470,7 @@ Message for accept token events
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, _state_cost_amount: u64, _cost_is_negative: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 
@@ -1514,8 +1486,6 @@ Message for accept token events
     txn_gas_price: u64,
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
-    _state_cost_amount: u64,
-    _cost_is_negative: bool,
 ) <b>acquires</b> <a href="#0x1_Account">Account</a>, <a href="#0x1_Account_Balance">Balance</a> {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
@@ -1529,12 +1499,6 @@ Message for accept token events
         <a href="#0x1_Account_balance_for">balance_for</a>(sender_balance) &gt;= transaction_fee_amount,
         <a href="ErrorCode.md#0x1_ErrorCode_EINSUFFICIENT_BALANCE">ErrorCode::EINSUFFICIENT_BALANCE</a>()
     );
-
-    // Todo: remove the abandoned code
-    // <b>let</b> cost = <a href="SignedInteger64.md#0x1_SignedInteger64_create_from_raw_value">SignedInteger64::create_from_raw_value</a>(state_cost_amount, cost_is_negative);
-    // <b>assert</b>(
-    //     <a href="SignedInteger64.md#0x1_SignedInteger64_get_value">SignedInteger64::get_value</a>(cost) &gt;= 0, 7
-    // );
 
     // Bump the sequence number
     sender_account.sequence_number = txn_sequence_number + 1;
@@ -1883,23 +1847,6 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="0x1_Account_Specification_rotate_authentication_key_for_account"></a>
-
-### Function `rotate_authentication_key_for_account`
-
-
-<pre><code><b>fun</b> <a href="#0x1_Account_rotate_authentication_key_for_account">rotate_authentication_key_for_account</a>(account: &<b>mut</b> <a href="#0x1_Account_Account">Account::Account</a>, new_authentication_key: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> len(new_authentication_key) != 32;
-<b>ensures</b> account.authentication_key == new_authentication_key;
-</code></pre>
-
-
-
 <a name="0x1_Account_Specification_rotate_authentication_key"></a>
 
 ### Function `rotate_authentication_key`
@@ -2174,7 +2121,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `txn_epilogue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, _state_cost_amount: u64, _cost_is_negative: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Account_txn_epilogue">txn_epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64)
 </code></pre>
 
 

@@ -4,12 +4,13 @@
 pub mod message;
 
 use crate::message::{Event, Notification, ThinBlock};
-use actix::{ActorContext, ActorFuture, AsyncContext, ContextFutureSpawner, WrapFuture};
+use actix::Addr;
 use anyhow::{format_err, Result};
-use starcoin_bus::{Broadcast, Bus, BusActor, Subscription};
+use starcoin_bus::{Broadcast, BusActor};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
-use starcoin_storage::Store;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_storage::{Storage, Store};
 use starcoin_types::block::Block;
 use starcoin_types::system_events::{NewHeadBlock, SyncBegin, SyncDone};
 use std::sync::Arc;
@@ -17,14 +18,14 @@ use std::sync::Arc;
 /// ChainNotify watch `NewHeadBlock` message from bus,
 /// and then reproduce `Notification<ThinBlock>` and `Notification<Arc<Vec<Event>>>` message to bus.
 /// User can subscribe the two notification to watch onchain events.
-pub struct ChainNotifyHandlerActor {
-    bus: actix::Addr<BusActor>,
+pub struct ChainNotifyHandlerService {
+    bus: Addr<BusActor>,
     store: Arc<dyn Store>,
     broadcast_txn: bool,
 }
 
-impl ChainNotifyHandlerActor {
-    pub fn new(bus: actix::Addr<BusActor>, store: Arc<dyn Store>) -> Self {
+impl ChainNotifyHandlerService {
+    pub fn new(bus: Addr<BusActor>, store: Arc<dyn Store>) -> Self {
         Self {
             bus,
             store,
@@ -33,64 +34,56 @@ impl ChainNotifyHandlerActor {
     }
 }
 
-impl actix::Actor for ChainNotifyHandlerActor {
-    type Context = actix::Context<Self>;
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let sync_begin_recipient = ctx.address().recipient::<SyncBegin>();
-        self.bus
-            .send(Subscription {
-                recipient: sync_begin_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
-        let sync_done_recipient = ctx.address().recipient::<SyncDone>();
-        self.bus
-            .send(Subscription {
-                recipient: sync_done_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
-        self.bus
-            .clone()
-            .channel::<NewHeadBlock>()
-            .into_actor(self)
-            .then(|res, act, ctx| {
-                match res {
-                    Err(e) => {
-                        error!(target: "chain-notify", "fail to start event subscription actor, err: {}", &e);
-                        ctx.terminate();
-                    }
-                    Ok(r) => {
-                        ctx.add_stream(r);
-                    }
-                };
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
+impl ServiceFactory<Self> for ChainNotifyHandlerService {
+    fn create(
+        ctx: &mut ServiceContext<ChainNotifyHandlerService>,
+    ) -> Result<ChainNotifyHandlerService> {
+        let bus = ctx.get_shared::<Addr<BusActor>>()?;
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        Ok(Self::new(bus, storage))
     }
 }
 
-impl actix::Handler<SyncBegin> for ChainNotifyHandlerActor {
-    type Result = ();
+impl ActorService for ChainNotifyHandlerService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<SyncBegin>();
+        ctx.subscribe::<SyncDone>();
+        ctx.subscribe::<NewHeadBlock>();
+    }
 
-    fn handle(&mut self, _begin: SyncBegin, _ctx: &mut Self::Context) -> Self::Result {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<SyncBegin>();
+        ctx.unsubscribe::<SyncDone>();
+        ctx.unsubscribe::<NewHeadBlock>();
+    }
+}
+
+impl EventHandler<Self, SyncBegin> for ChainNotifyHandlerService {
+    fn handle_event(
+        &mut self,
+        _msg: SyncBegin,
+        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
+    ) {
         self.broadcast_txn = false;
     }
 }
 
-impl actix::Handler<SyncDone> for ChainNotifyHandlerActor {
-    type Result = ();
-    fn handle(&mut self, _done: SyncDone, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, SyncDone> for ChainNotifyHandlerService {
+    fn handle_event(
+        &mut self,
+        _msg: SyncDone,
+        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
+    ) {
         self.broadcast_txn = true;
     }
 }
 
-impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
-    fn handle(&mut self, item: NewHeadBlock, _ctx: &mut Self::Context) {
+impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
+    fn handle_event(
+        &mut self,
+        item: NewHeadBlock,
+        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
+    ) {
         if self.broadcast_txn {
             let NewHeadBlock(block_detail) = item;
             let block = block_detail.get_block();
@@ -105,7 +98,7 @@ impl actix::StreamHandler<NewHeadBlock> for ChainNotifyHandlerActor {
     }
 }
 
-impl ChainNotifyHandlerActor {
+impl ChainNotifyHandlerService {
     pub fn notify_new_block(&self, block: &Block) {
         let thin_block = ThinBlock::new(
             block.header().clone(),

@@ -161,7 +161,7 @@ module Account {
         new_account: &signer,
         authentication_key: vector<u8>,
     ) {
-        assert(Vector::length(&authentication_key) == 32, 88888);
+        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
         let new_account_addr = Signer::address_of(new_account);
         Event::publish_generator(new_account);
         move_to(new_account, Account {
@@ -458,17 +458,6 @@ module Account {
         };
     }
 
-    fun rotate_authentication_key_for_account(account: &mut Account, new_authentication_key: vector<u8>) {
-      // Don't allow rotating to clearly invalid key
-      assert(Vector::length(&new_authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
-      account.authentication_key = new_authentication_key;
-    }
-
-    spec fun rotate_authentication_key_for_account {
-        aborts_if len(new_authentication_key) != 32;
-        ensures account.authentication_key == new_authentication_key;
-    }
-
     // Rotate the authentication key for the account under cap.account_address
     public fun rotate_authentication_key(
         cap: &KeyRotationCapability,
@@ -698,8 +687,6 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
-        _state_cost_amount: u64,
-        _cost_is_negative: bool,
     ) acquires Account, Balance {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
 
@@ -713,12 +700,6 @@ module Account {
             balance_for(sender_balance) >= transaction_fee_amount,
             ErrorCode::EINSUFFICIENT_BALANCE()
         );
-
-        // Todo: remove the abandoned code
-        // let cost = SignedInteger64::create_from_raw_value(state_cost_amount, cost_is_negative);
-        // assert(
-        //     SignedInteger64::get_value(cost) >= 0, 7
-        // );
 
         // Bump the sequence number
         sender_account.sequence_number = txn_sequence_number + 1;

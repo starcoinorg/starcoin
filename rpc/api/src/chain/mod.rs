@@ -4,9 +4,7 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
@@ -73,16 +71,6 @@ pub trait ChainApi {
     /// Get global time by number.
     #[rpc(name = "chain.get_global_time_by_number")]
     fn get_global_time_by_number(&self, number: BlockNumber) -> FutureResult<GlobalTimeOnChain>;
-
-    /// Create a block for master.
-    #[rpc(name = "chain.create_dev_block")]
-    fn create_dev_block(
-        &self,
-        author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
-        parent_id: Option<HashValue>,
-        head: bool,
-    ) -> FutureResult<HashValue>;
 
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_uncle")]

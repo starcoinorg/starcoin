@@ -383,6 +383,7 @@ impl Block {
             self.header.author_public_key,
             uncles,
             self.header.number,
+            self.header.chain_id,
         )
     }
 }
@@ -472,7 +473,7 @@ impl Into<(HashValue, AccumulatorInfo, U256, AccumulatorInfo)> for BlockInfo {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BlockTemplate {
     /// Parent hash.
     pub parent_hash: HashValue,

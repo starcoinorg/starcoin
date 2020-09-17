@@ -1,32 +1,25 @@
-/// message for chain actor
-use actix::prelude::*;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2
+
 use anyhow::Result;
-use crypto::ed25519::Ed25519PublicKey;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
+use starcoin_service_registry::ServiceRequest;
 use starcoin_types::{
-    account_address::AccountAddress,
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     startup_info::{ChainInfo, StartupInfo},
-    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
+    transaction::{Transaction, TransactionInfo},
 };
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ChainRequest {
     CurrentHeader(),
     GetHeaderByHash(HashValue),
     HeadBlock(),
     GetBlockByNumber(BlockNumber),
     GetBlockHeaderByNumber(BlockNumber),
-    CreateBlockTemplate(
-        AccountAddress,
-        Option<Ed25519PublicKey>,
-        Option<HashValue>,
-        Vec<SignedUserTransaction>,
-    ),
-    // just fot test
     GetBlockByHash(HashValue),
     GetBlockByUncle(HashValue),
     GetBlockInfoByHash(HashValue),
@@ -38,19 +31,14 @@ pub enum ChainRequest {
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
-    GetTransactionInfoByBlockAndIndex {
-        block_id: HashValue,
-        txn_idx: u64,
-    },
-    GetEventsByTxnInfoId {
-        txn_info_id: HashValue,
-    },
+    GetTransactionInfoByBlockAndIndex { block_id: HashValue, txn_idx: u64 },
+    GetEventsByTxnInfoId { txn_info_id: HashValue },
     GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
 }
 
-impl Message for ChainRequest {
-    type Result = Result<ChainResponse>;
+impl ServiceRequest for ChainRequest {
+    type Response = Result<ChainResponse>;
 }
 
 pub enum ChainResponse {

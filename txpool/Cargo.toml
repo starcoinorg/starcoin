@@ -41,7 +41,8 @@ starcoin-state-tree={path="../state/state-tree"}
 starcoin-executor={path="../executor"}
 starcoin-consensus = {path = "../consensus"}
 starcoin-config={path="../config"}
-tx-relay = {path="./tx-relay", package="starcoin-tx-relay"}
+tx-relay = { path = "./tx-relay", package = "starcoin-tx-relay" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
 tempfile="3"

@@ -85,7 +85,7 @@ impl TxPoolSyncService for MockTxPoolService {
         todo!()
     }
     fn chain_new_block(&self, _enacted: Vec<Block>, _retracted: Vec<Block>) -> Result<()> {
-        todo!()
+        Ok(())
     }
 
     fn status(&self) -> TxPoolStatus {

@@ -38,7 +38,7 @@ mod test_state_sync;
 
 #[derive(Default, Debug, Message)]
 #[rtype(result = "()")]
-struct TxnInfoEvent(Option<HashValue>);
+struct TxnInfoEvent;
 
 struct Roots {
     state: HashValue,
@@ -120,6 +120,7 @@ async fn sync_accumulator_node<N>(
     accumulator_timer.observe_duration();
 
     state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_accumulator(
+        false,
         peer_id,
         node_key,
         accumulator_node,
@@ -127,6 +128,7 @@ async fn sync_accumulator_node<N>(
 }
 
 async fn sync_state_node<N>(
+    is_state_root: bool,
     node_key: HashValue,
     peer_id: PeerId,
     rpc_client: NetworkRpcClient<N>,
@@ -171,8 +173,13 @@ async fn sync_state_node<N>(
     };
     state_timer.observe_duration();
 
-    state_sync_task_event_handler
-        .send_event(StateSyncTaskEvent::new_state(peer_id, node_key, state_node));
+    state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_state(
+        false,
+        peer_id,
+        is_state_root,
+        node_key,
+        state_node,
+    ));
 }
 
 async fn sync_txn_info<N>(
@@ -207,7 +214,7 @@ async fn sync_txn_info<N>(
     state_timer.observe_duration();
 
     state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_txn_info(
-        peer_id, block_id, txn_infos,
+        false, peer_id, block_id, txn_infos,
     ));
 }
 
@@ -258,62 +265,99 @@ where
 
 #[derive(Debug, Clone, PartialEq)]
 enum TaskType {
-    STATE,
-    BlockAccumulator,
-    TxnInfo,
+    STATE(bool, Option<StateNode>),
+    BlockAccumulator(Option<AccumulatorNode>),
+    TxnInfo(Option<Vec<TransactionInfo>>),
 }
 
 #[derive(Debug, Message)]
 #[rtype(result = "()")]
 struct StateSyncTaskEvent {
+    local_exist: bool,
     peer_id: PeerId,
     key: HashValue,
-    state_node: Option<StateNode>,
-    accumulator_node: Option<AccumulatorNode>,
-    txn_infos: Option<Vec<TransactionInfo>>,
     task_type: TaskType,
 }
 
 impl StateSyncTaskEvent {
-    pub fn new_state(peer_id: PeerId, node_key: HashValue, state_node: Option<StateNode>) -> Self {
+    pub fn new_state(
+        local_exist: bool,
+        peer_id: PeerId,
+        is_state_root: bool,
+        node_key: HashValue,
+        state_node: Option<StateNode>,
+    ) -> Self {
         StateSyncTaskEvent {
+            local_exist,
             peer_id,
             key: node_key,
-            state_node,
-            accumulator_node: None,
-            txn_infos: None,
-            task_type: TaskType::STATE,
+            task_type: TaskType::STATE(is_state_root, state_node),
         }
     }
 
     pub fn new_accumulator(
+        local_exist: bool,
         peer_id: PeerId,
         node_key: HashValue,
         accumulator_node: Option<AccumulatorNode>,
     ) -> Self {
         StateSyncTaskEvent {
+            local_exist,
             peer_id,
             key: node_key,
-            state_node: None,
-            accumulator_node,
-            txn_infos: None,
-            task_type: TaskType::BlockAccumulator,
+            task_type: TaskType::BlockAccumulator(accumulator_node),
         }
     }
 
     pub fn new_txn_info(
+        local_exist: bool,
         peer_id: PeerId,
         block_id: HashValue,
         txn_infos: Option<Vec<TransactionInfo>>,
     ) -> Self {
         StateSyncTaskEvent {
+            local_exist,
             peer_id,
             key: block_id,
-            state_node: None,
-            accumulator_node: None,
-            txn_infos,
-            task_type: TaskType::TxnInfo,
+            task_type: TaskType::TxnInfo(txn_infos),
         }
+    }
+
+    fn local(&self) -> bool {
+        self.local_exist
+    }
+
+    fn is_state(&self) -> bool {
+        if let TaskType::STATE(_, _) = self.task_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn is_block_accumulator(&self) -> bool {
+        if let TaskType::BlockAccumulator(_) = self.task_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn is_txn_info(&self) -> bool {
+        if let TaskType::TxnInfo(_) = self.task_type {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn is_state_root(&self) -> bool {
+        if self.is_state() {
+            if let TaskType::STATE(is_state_root, _) = self.task_type {
+                return is_state_root;
+            }
+        }
+        false
     }
 }
 
@@ -407,19 +451,19 @@ where
         state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
     ) {
         let value = self.state_sync_task.pop_front();
-        if let Some((node_key, is_global)) = value {
+        if let Some((node_key, is_state_root)) = value {
             SYNC_METRICS
                 .sync_total_count
                 .with_label_values(&[LABEL_STATE])
                 .inc();
-            if let Ok(Some(state_node)) = self.storage.get(&node_key) {
+            if let Ok(Some(_)) = self.storage.get(&node_key) {
                 debug!("find state_node {:?} in db.", node_key);
-                self.state_sync_task
-                    .insert(self.self_peer_id.clone(), (node_key, is_global));
                 state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_state(
+                    true,
                     self.self_peer_id.clone(),
+                    is_state_root,
                     node_key,
-                    Some(state_node),
+                    None,
                 ));
             } else {
                 let best_peer_info = get_best_peer_info(self.network_service.clone());
@@ -433,9 +477,10 @@ where
                     }
                     let rpc_client = self.rpc_client.clone();
                     self.state_sync_task
-                        .insert(best_peer.get_peer_id(), (node_key, is_global));
+                        .insert(best_peer.get_peer_id(), (node_key, is_state_root));
                     Arbiter::spawn(async move {
                         sync_state_node(
+                            is_state_root,
                             node_key,
                             best_peer.get_peer_id(),
                             rpc_client,
@@ -452,10 +497,16 @@ where
     }
 
     fn handle_state_sync(&mut self, task_event: StateSyncTaskEvent) {
-        if let Some((state_node_hash, is_global)) = self.state_sync_task.get(&task_event.peer_id) {
-            let is_global = *is_global;
-            //1. push back
-            let current_node_key = task_event.key;
+        let is_state_root = task_event.is_state_root();
+        let current_node_key = task_event.key;
+        let mut done = false;
+        let mut state_node = None;
+        if task_event.local() {
+            if let Ok(Some(node)) = self.storage.get(&current_node_key) {
+                done = true;
+                state_node = Some(node);
+            }
+        } else if let Some((state_node_hash, _)) = self.state_sync_task.get(&task_event.peer_id) {
             if state_node_hash != &current_node_key {
                 debug!(
                     "hash miss match {:} : {:?}",
@@ -464,49 +515,53 @@ where
                 return;
             }
             let _ = self.state_sync_task.remove(&task_event.peer_id);
-            if let Some(state_node) = task_event.state_node {
-                if let Err(e) = self.storage.put(current_node_key, state_node.clone()) {
+            if let TaskType::STATE(_, Some(node)) = task_event.task_type {
+                if let Err(e) = self.storage.put(current_node_key, node.clone()) {
                     debug!("{:?}, retry {:?}.", e, current_node_key);
-                    self.state_sync_task
-                        .push_back((current_node_key, is_global));
                 } else {
-                    self.state_sync_task.do_one_task();
-                    match state_node.inner() {
-                        Node::Leaf(leaf) => {
-                            if !is_global {
-                                return;
-                            }
-                            match AccountState::try_from(leaf.blob().as_ref()) {
-                                Err(e) => {
-                                    error!("AccountState decode from blob failed : {:?}", e);
-                                }
-                                Ok(account_state) => {
-                                    account_state.storage_roots().iter().for_each(|key| {
-                                        if let Some(hash) = key {
-                                            if *hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
-                                                self.state_sync_task.push_back((*hash, false));
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                        Node::Internal(n) => {
-                            for child in n.all_child() {
-                                self.state_sync_task.push_back((child, is_global));
-                            }
-                        }
-                        _ => {
-                            debug!("node {:?} is null.", current_node_key);
-                        }
-                    }
+                    done = true;
+                    state_node = Some(node);
                 }
-            } else {
-                self.state_sync_task
-                    .push_back((current_node_key, is_global));
             }
         } else {
             debug!("discard state event : {:?}", task_event);
+            return;
+        };
+
+        if done {
+            self.state_sync_task.do_one_task();
+            match state_node.expect("State node is none.").inner() {
+                Node::Leaf(leaf) => {
+                    if !is_state_root {
+                        return;
+                    }
+                    match AccountState::try_from(leaf.blob().as_ref()) {
+                        Err(e) => {
+                            error!("AccountState decode from blob failed : {:?}", e);
+                        }
+                        Ok(account_state) => {
+                            account_state.storage_roots().iter().for_each(|key| {
+                                if let Some(hash) = key {
+                                    if *hash != *SPARSE_MERKLE_PLACEHOLDER_HASH {
+                                        self.state_sync_task.push_back((*hash, false));
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+                Node::Internal(n) => {
+                    for child in n.all_child() {
+                        self.state_sync_task.push_back((child, is_state_root));
+                    }
+                }
+                _ => {
+                    debug!("node {:?} is null.", current_node_key);
+                }
+            }
+        } else {
+            self.state_sync_task
+                .push_back((current_node_key, is_state_root));
         }
     }
 
@@ -520,16 +575,13 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Ok(Some(accumulator_node)) =
-                self.storage.get_node(AccumulatorStoreType::Block, node_key)
-            {
+            if let Ok(Some(_)) = self.storage.get_node(AccumulatorStoreType::Block, node_key) {
                 debug!("find accumulator_node {:?} in db.", node_key);
-                self.block_accumulator_sync_task
-                    .insert(self.self_peer_id.clone(), node_key);
                 state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_accumulator(
+                    true,
                     self.self_peer_id.clone(),
                     node_key,
-                    Some(accumulator_node),
+                    None,
                 ));
             } else {
                 let best_peer_info = get_best_peer_info(self.network_service.clone());
@@ -565,11 +617,20 @@ where
         task_event: StateSyncTaskEvent,
         txn_info_event_handler: Box<dyn SendSyncEventHandler<TxnInfoEvent>>,
     ) {
-        if let Some(accumulator_node_hash) =
+        let current_node_key = task_event.key;
+        let mut done = false;
+        let mut accumulator_node = None;
+        if task_event.local() {
+            if let Ok(Some(node)) = self
+                .storage
+                .get_node(AccumulatorStoreType::Block, current_node_key)
+            {
+                done = true;
+                accumulator_node = Some(node);
+            }
+        } else if let Some(accumulator_node_hash) =
             self.block_accumulator_sync_task.get(&task_event.peer_id)
         {
-            //1. push back
-            let current_node_key = task_event.key;
             if accumulator_node_hash != &current_node_key {
                 warn!(
                     "hash miss match {:} : {:?}",
@@ -578,40 +639,45 @@ where
                 return;
             }
             let _ = self.block_accumulator_sync_task.remove(&task_event.peer_id);
-            if let Some(accumulator_node) = task_event.accumulator_node {
+            if let TaskType::BlockAccumulator(Some(node)) = task_event.task_type {
                 if let Err(e) = self
                     .storage
-                    .save_node(AccumulatorStoreType::Block, accumulator_node.clone())
+                    .save_node(AccumulatorStoreType::Block, node.clone())
                 {
                     debug!("{:?}", e);
-                    self.block_accumulator_sync_task.push_back(current_node_key);
                 } else {
-                    debug!("receive accumulator_node: {:?}", accumulator_node);
-                    self.block_accumulator_sync_task.do_one_task();
-                    match accumulator_node {
-                        AccumulatorNode::Leaf(leaf) => {
-                            self.txn_info_sync_task.push_back(leaf.value());
-                            self.total_txn_info_task.fetch_add(1, Ordering::Relaxed);
-                            txn_info_event_handler.send_event(TxnInfoEvent(None));
-                        }
-                        AccumulatorNode::Internal(n) => {
-                            if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                self.block_accumulator_sync_task.push_back(n.left());
-                            }
-                            if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
-                                self.block_accumulator_sync_task.push_back(n.right());
-                            }
-                        }
-                        _ => {
-                            debug!("node {:?} is null.", current_node_key);
-                        }
-                    }
+                    debug!("receive accumulator_node: {:?}", node);
+                    done = true;
+                    accumulator_node = Some(node);
                 }
-            } else {
-                self.block_accumulator_sync_task.push_back(current_node_key);
             }
         } else {
             debug!("discard state event : {:?}", task_event);
+            return;
+        };
+
+        if done {
+            self.block_accumulator_sync_task.do_one_task();
+            match accumulator_node.expect("Accumulator Node is none.") {
+                AccumulatorNode::Leaf(leaf) => {
+                    self.txn_info_sync_task.push_back(leaf.value());
+                    self.total_txn_info_task.fetch_add(1, Ordering::Relaxed);
+                    txn_info_event_handler.send_event(TxnInfoEvent);
+                }
+                AccumulatorNode::Internal(n) => {
+                    if n.left() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                        self.block_accumulator_sync_task.push_back(n.left());
+                    }
+                    if n.right() != *ACCUMULATOR_PLACEHOLDER_HASH {
+                        self.block_accumulator_sync_task.push_back(n.right());
+                    }
+                }
+                _ => {
+                    debug!("node {:?} is null.", current_node_key);
+                }
+            }
+        } else {
+            self.block_accumulator_sync_task.push_back(current_node_key);
         }
     }
 
@@ -625,14 +691,13 @@ where
                 .sync_total_count
                 .with_label_values(&[LABEL_TXN_INFO])
                 .inc();
-            if let Ok(txn_infos) = self.storage.get_block_transaction_infos(block_id) {
+            if self.storage.get_block_transaction_infos(block_id).is_ok() {
                 debug!("find txn info {:?} in db.", block_id);
-                self.txn_info_sync_task
-                    .insert(self.self_peer_id.clone(), block_id);
                 state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_txn_info(
+                    true,
                     self.self_peer_id.clone(),
                     block_id,
-                    Some(txn_infos),
+                    None,
                 ));
             } else {
                 let best_peer_info = get_best_peer_info(self.network_service.clone());
@@ -669,29 +734,25 @@ where
         task_event: StateSyncTaskEvent,
         txn_info_event_handler: Box<dyn SendSyncEventHandler<TxnInfoEvent>>,
     ) {
-        // if let Some(block_id) = self.txn_info_sync_task.get(&task_event.peer_id) {
-        //1. push back
         let current_block_id = task_event.key;
-        // if block_id != &current_block_id {
-        //     debug!("hash miss match {:} : {:?}", block_id, current_block_id);
-        //     return;
-        // }
-        let _ = self.txn_info_sync_task.remove(&task_event.peer_id);
-        if let Some(txn_infos) = task_event.txn_infos {
-            if let Err(e) = self.save_txn_infos(current_block_id, txn_infos) {
-                debug!("{:?}, retry {:?}.", e, current_block_id);
-                self.txn_info_sync_task.push_back(current_block_id);
-                txn_info_event_handler.send_event(TxnInfoEvent(None));
-            } else {
-                self.txn_info_sync_task.do_one_task();
+        let mut done = false;
+        if !task_event.local() {
+            let _ = self.txn_info_sync_task.remove(&task_event.peer_id);
+            if let TaskType::TxnInfo(Some(txn_infos)) = task_event.task_type {
+                if let Err(e) = self.save_txn_infos(current_block_id, txn_infos) {
+                    debug!("{:?}, retry {:?}.", e, current_block_id);
+                } else {
+                    done = true;
+                }
             }
+        }
+
+        if done {
+            self.txn_info_sync_task.do_one_task();
         } else {
             self.txn_info_sync_task.push_back(current_block_id);
-            txn_info_event_handler.send_event(TxnInfoEvent(None));
+            txn_info_event_handler.send_event(TxnInfoEvent);
         }
-        // } else {
-        //     info!("discard state event : {:?}", task_event);
-        // }
     }
 
     pub fn save_txn_infos(
@@ -861,13 +922,7 @@ where
 {
     type Result = ();
 
-    fn handle(&mut self, event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
-        if let Some(block_id) = event.0 {
-            self.inner.txn_info_sync_task.push_back(block_id);
-            self.inner
-                .total_txn_info_task
-                .fetch_add(1, Ordering::Relaxed);
-        }
+    fn handle(&mut self, _event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
         self.inner.exe_txn_info_sync_task(Box::new(ctx.address()));
     }
 }
@@ -879,35 +934,41 @@ where
     type Result = ();
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
-        let task_type = task_event.task_type.clone();
-        match task_type {
-            TaskType::STATE => self.inner.handle_state_sync(task_event),
-            TaskType::TxnInfo => self
-                .inner
-                .handle_txn_info_sync(task_event, Box::new(ctx.address())),
-            TaskType::BlockAccumulator => self
-                .inner
-                .handle_accumulator_sync(task_event, Box::new(ctx.address())),
-        }
+        let mut finish = false;
+        if task_event.is_state() {
+            self.inner.handle_state_sync(task_event);
+            finish = self.inner.do_finish();
 
-        if self.inner.accumulator_sync_finish() {
-            self.block_sync_address.start();
-        }
-
-        if !self.inner.do_finish() {
-            match task_type {
-                TaskType::STATE => self.inner.exe_state_sync_task(Box::new(ctx.address())),
-                TaskType::BlockAccumulator => self
-                    .inner
-                    .exe_accumulator_sync_task(Box::new(ctx.address())),
-                TaskType::TxnInfo => {}
+            if !finish {
+                self.inner.exe_state_sync_task(Box::new(ctx.address()));
             }
-        } else if self.inner.total_txn_info_task.load(Ordering::Relaxed)
-            == self
-                .inner
-                .txn_info_sync_task
-                .done_tasks
-                .load(Ordering::Relaxed)
+        } else if task_event.is_block_accumulator() {
+            self.inner
+                .handle_accumulator_sync(task_event, Box::new(ctx.address()));
+            if self.inner.accumulator_sync_finish() {
+                self.block_sync_address.start();
+            }
+            finish = self.inner.do_finish();
+            if !finish {
+                self.inner
+                    .exe_accumulator_sync_task(Box::new(ctx.address()))
+            }
+        } else if task_event.is_txn_info() {
+            self.inner
+                .handle_txn_info_sync(task_event, Box::new(ctx.address()));
+            if self.inner.accumulator_sync_finish() {
+                self.block_sync_address.start();
+            }
+            finish = self.inner.do_finish();
+        }
+
+        if finish
+            && self.inner.total_txn_info_task.load(Ordering::Relaxed)
+                == self
+                    .inner
+                    .txn_info_sync_task
+                    .done_tasks
+                    .load(Ordering::Relaxed)
         {
             self.download_address.do_send(SyncTaskType::STATE);
             ctx.stop();

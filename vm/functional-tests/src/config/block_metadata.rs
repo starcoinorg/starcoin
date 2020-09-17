@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{common::strip, config::global::Config as GlobalConfig, errors::*};
+use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_types::block_metadata::BlockMetadata;
 use std::str::FromStr;
@@ -93,6 +94,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             author_public_key,
             uncles,
             *number,
+            ChainNetwork::TEST.chain_id(),
         ))
     } else {
         Err(ErrorKind::Other("Cannot generate block metadata".to_string()).into())

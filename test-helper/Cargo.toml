@@ -14,6 +14,7 @@ actix = "0.10.0"
 actix-rt = "1.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
+futures-timer = "3.0"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-config = { path = "../config" }
 starcoin-bus = { path = "../bus" }

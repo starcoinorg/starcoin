@@ -1,26 +1,37 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use futures_timer::Delay;
 use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
+use starcoin_service_registry::bus::BusService;
+use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
-use starcoin_txpool::TxPool;
+use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use std::sync::Arc;
+use std::time::Duration;
 
-pub fn start_txpool() -> (TxPool, Arc<Storage>, Arc<NodeConfig>) {
+pub async fn start_txpool() -> (
+    TxPoolService,
+    Arc<Storage>,
+    Arc<NodeConfig>,
+    ServiceRef<RegistryService>,
+) {
     let node_config = Arc::new(NodeConfig::random_for_test());
 
-    let (storage, startup_info, _) =
+    let (storage, _startup_info, _) =
         Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
+    let registry = RegistryService::launch();
+    registry.put_shared(node_config.clone()).await.unwrap();
+    registry.put_shared(storage.clone()).await.unwrap();
+    let new_bus = registry.service_ref::<BusService>().await.unwrap();
+    let bus = BusActor::launch2(new_bus);
+    registry.put_shared(bus).await.unwrap();
 
-    let bus = BusActor::launch();
+    registry.registry::<TxPoolActorService>().await.unwrap();
+    Delay::new(Duration::from_millis(200)).await;
+    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
-    let pool = TxPool::start(
-        node_config.clone(),
-        storage.clone(),
-        *startup_info.get_master(),
-        bus,
-    );
-    (pool, storage, node_config)
+    (txpool_service, storage, node_config, registry)
 }

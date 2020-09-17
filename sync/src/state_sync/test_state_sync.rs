@@ -2,8 +2,7 @@ use crate::helper::{
     get_accumulator_node_by_node_hash, get_state_node_by_node_hash, get_txn_infos,
 };
 use crate::state_sync::{
-    sync_accumulator_node, sync_state_node, sync_txn_info, Inner, StateSyncTaskEvent, TaskType,
-    TxnInfoEvent,
+    sync_accumulator_node, sync_state_node, sync_txn_info, Inner, StateSyncTaskEvent, TxnInfoEvent,
 };
 use crate::sync_event_handle::SendSyncEventHandler;
 use chain::BlockChain;
@@ -49,22 +48,18 @@ impl TestStateSyncTaskEventHandler {
 
 impl SendSyncEventHandler<StateSyncTaskEvent> for TestStateSyncTaskEventHandler {
     fn send_event(&self, event: StateSyncTaskEvent) {
-        match event.task_type {
-            TaskType::BlockAccumulator => {
-                let mut count: u64 = *self.accumulator_count.lock().unwrap();
-                count += 1;
-                *self.accumulator_count.lock().unwrap() = count;
-            }
-            TaskType::STATE => {
-                let mut count: u64 = *self.state_count.lock().unwrap();
-                count += 1;
-                *self.state_count.lock().unwrap() = count;
-            }
-            TaskType::TxnInfo => {
-                let mut count: u64 = *self.txn_info_count.lock().unwrap();
-                count += 1;
-                *self.txn_info_count.lock().unwrap() = count;
-            }
+        if event.is_block_accumulator() {
+            let mut count: u64 = *self.accumulator_count.lock().unwrap();
+            count += 1;
+            *self.accumulator_count.lock().unwrap() = count;
+        } else if event.is_state() {
+            let mut count: u64 = *self.state_count.lock().unwrap();
+            count += 1;
+            *self.state_count.lock().unwrap() = count;
+        } else if event.is_txn_info() {
+            let mut count: u64 = *self.txn_info_count.lock().unwrap();
+            count += 1;
+            *self.txn_info_count.lock().unwrap() = count;
         }
     }
 }
@@ -126,14 +121,19 @@ async fn test_state_sync_handle_event() {
     let peer_id = PeerId::random();
 
     // state
-    let (state_root, _) = inner.state_sync_task.pop_front().unwrap();
+    let (state_root, is_state_root) = inner.state_sync_task.pop_front().unwrap();
     assert_eq!(state_root, header.state_root());
     let state_node =
         get_state_node_by_node_hash(inner._get_network_client(), peer_id.clone(), state_root)
             .await
             .unwrap();
-    let state_task_event =
-        StateSyncTaskEvent::new_state(peer_id.clone(), state_root, Some(state_node));
+    let state_task_event = StateSyncTaskEvent::new_state(
+        false,
+        peer_id.clone(),
+        is_state_root,
+        state_root,
+        Some(state_node),
+    );
     inner.handle_state_sync(state_task_event);
 
     // accumulator
@@ -148,6 +148,7 @@ async fn test_state_sync_handle_event() {
     .await
     .unwrap();
     let accumulator_task_event = StateSyncTaskEvent::new_accumulator(
+        false,
         peer_id.clone(),
         accumulator_root,
         Some(accumulator_node),
@@ -161,7 +162,7 @@ async fn test_state_sync_handle_event() {
         .await
         .unwrap();
     let txn_info_task_event =
-        StateSyncTaskEvent::new_txn_info(peer_id.clone(), block_id, txn_infos);
+        StateSyncTaskEvent::new_txn_info(false, peer_id.clone(), block_id, txn_infos);
     inner.handle_txn_info_sync(txn_info_task_event, Box::new(handler.clone()));
 
     assert!(inner.do_finish());
@@ -188,6 +189,7 @@ async fn test_sync_state_node() {
     let handler = TestStateSyncTaskEventHandler::new();
     let header = block_chain.current_header();
     sync_state_node(
+        true,
         header.state_root(),
         PeerId::random(),
         inner._get_network_client().clone(),

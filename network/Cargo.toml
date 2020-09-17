@@ -32,7 +32,7 @@ crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 fnv = "1.0.6"
-zeroize = "1.0.0"
+zeroize = "1.1.1"
 bitflags = "1.2.0"
 smallvec = "1.4.2"
 
@@ -55,6 +55,7 @@ prometheus = "0.10"
 network-api = {package="network-api", path="../network/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path = "../sync/api"}
 starcoin-block-relayer-api = { path = "../block-relayer/api/" }
+starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

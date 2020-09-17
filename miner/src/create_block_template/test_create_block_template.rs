@@ -5,19 +5,34 @@ use crate::create_block_template::{CreateBlockTemplateRequest, CreateBlockTempla
 use bus::BusActor;
 use chain::BlockChain;
 use consensus::Consensus;
+use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_account_service::AccountService;
-use starcoin_config::NodeConfig;
+use starcoin_config::{temp_path, NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter};
 
 #[stest::test]
 fn test_create_block_template() {
-    let node_config = Arc::new(NodeConfig::random_for_test());
+    test_create_block_template_by_net(ChainNetwork::TEST);
+    test_create_block_template_by_net(ChainNetwork::DEV);
+    test_create_block_template_by_net(ChainNetwork::HALLEY);
+    test_create_block_template_by_net(ChainNetwork::PROXIMA);
+}
+
+fn test_create_block_template_by_net(net: ChainNetwork) {
+    debug!("test_create_block_template_by_net {:?}", net);
+    let mut opt = StarcoinOpt::default();
+    let temp_path = temp_path();
+    opt.net = Some(net);
+    opt.data_dir = Some(temp_path.path().to_path_buf());
+
+    let node_config = Arc::new(NodeConfig::load_with_opt(&opt).unwrap());
     let (storage, startup_info, genesis_id) =
         StarcoinGenesis::init_storage_for_test(node_config.net())
             .expect("init storage by genesis fail.");

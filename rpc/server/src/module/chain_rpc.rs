@@ -3,12 +3,10 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
@@ -65,17 +63,6 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
-        let service = self.service.clone();
-        let fut = async move {
-            let block = service.master_block_by_uncle(uncle_id).await?;
-            Ok(block)
-        }
-        .map_err(map_err);
-
-        Box::new(fut.boxed().compat())
-    }
-
     fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -126,6 +113,7 @@ where
 
         Box::new(fut.boxed().compat())
     }
+
     fn get_txn_info_by_block_and_index(
         &self,
         block_id: HashValue,
@@ -164,7 +152,6 @@ where
                 .compat(),
         )
     }
-
     fn current_epoch(&self) -> FutureResult<EpochInfo> {
         let service = self.service.clone();
         let fut = async move { service.epoch_info().await };
@@ -186,77 +173,11 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn create_dev_block(
-        &self,
-        author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
-        parent_id: Option<HashValue>,
-        head: bool,
-    ) -> FutureResult<HashValue> {
+    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
         let service = self.service.clone();
         let fut = async move {
-            let old_head = service
-                .clone()
-                .master_head_header()
-                .await?
-                .expect("head is none.");
-
-            let p_id = match parent_id {
-                Some(id) => id,
-                None => old_head.parent_hash(),
-            };
-
-            let parent_number = service
-                .clone()
-                .get_block_by_hash(p_id)
-                .await?
-                .header()
-                .number();
-            let brother_txns = if old_head.number() > parent_number {
-                service
-                    .clone()
-                    .master_block_by_number(parent_number + 1)
-                    .await?
-                    .body
-                    .into()
-            } else {
-                Vec::new()
-            };
-
-            let block_template = service
-                .clone()
-                .create_block_template(author, author_public_key, Some(p_id), brother_txns)
-                .await?;
-
-            let difficulty = if head {
-                let head_difficulty = service
-                    .clone()
-                    .get_block_info_by_hash(&old_head.id())
-                    .await?
-                    .expect("head block info is none.")
-                    .get_total_difficulty();
-                let parent_difficulty = service
-                    .clone()
-                    .get_block_info_by_hash(&p_id)
-                    .await?
-                    .expect("parent block info is none.")
-                    .get_total_difficulty();
-
-                if head_difficulty > parent_difficulty {
-                    (head_difficulty - parent_difficulty) * 2
-                } else {
-                    1.into()
-                }
-            } else {
-                1.into()
-            };
-
-            let block = block_template.into_block(0, difficulty);
-            let block_id = block.id();
-
-            //let _ = service.clone().try_connect(block).await?;
-
-            Ok(block_id)
+            let block = service.master_block_by_uncle(uncle_id).await?;
+            Ok(block)
         }
         .map_err(map_err);
 

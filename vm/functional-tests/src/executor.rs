@@ -17,6 +17,7 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::{
     account_config::{association_address, AccountResource, BalanceResource},
     file_format::CompiledModule,
@@ -29,6 +30,7 @@ use starcoin_vm_types::{
 pub struct FakeExecutor {
     data_store: ChainStateDB,
     block_time: u64,
+    chain_id: ChainId,
 }
 
 impl Default for FakeExecutor {
@@ -39,12 +41,14 @@ impl Default for FakeExecutor {
 
 impl FakeExecutor {
     pub fn new() -> Self {
-        let genesis_txn = Genesis::build_genesis_transaction(&ChainNetwork::TEST).unwrap();
+        let net = &ChainNetwork::TEST;
+        let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
         let data_store = ChainStateDB::mock();
         Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
         Self {
             data_store,
             block_time: 0,
+            chain_id: net.chain_id(),
         }
     }
 
@@ -53,6 +57,7 @@ impl FakeExecutor {
         let mut executor = FakeExecutor {
             data_store: ChainStateDB::mock(),
             block_time: 0,
+            chain_id: ChainNetwork::TEST.chain_id(),
         };
         executor.apply_write_set(write_set);
         executor
@@ -63,6 +68,7 @@ impl FakeExecutor {
         FakeExecutor {
             data_store: ChainStateDB::mock(),
             block_time: 0,
+            chain_id: ChainNetwork::TEST.chain_id(),
         }
     }
 
@@ -211,6 +217,7 @@ impl FakeExecutor {
             None,
             0,
             self.block_time,
+            self.chain_id,
         );
         let (_vm_status, output) = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])

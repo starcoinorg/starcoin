@@ -1,14 +1,19 @@
-use actix::prelude::*;
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use actix::Addr;
 use anyhow::Result;
 use bus::Bus;
-use bus::{Broadcast, BusActor, Subscription};
+use bus::{Broadcast, BusActor};
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_network::network::NetworkAsyncService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::helper::get_txns;
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::{Block, BlockBody},
@@ -20,34 +25,32 @@ use starcoin_types::{
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-pub struct BlockRelayer<P>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-{
+pub struct BlockRelayer {
     bus: Addr<BusActor>,
-    txpool: P,
+    txpool: TxPoolService,
     rpc_client: NetworkRpcClient<NetworkAsyncService>,
 }
 
-impl<P> BlockRelayer<P>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-{
-    pub fn new(
-        bus: Addr<BusActor>,
-        txpool: P,
-        network: NetworkAsyncService,
-    ) -> Result<Addr<BlockRelayer<P>>> {
-        let block_relayer = BlockRelayer {
+impl ServiceFactory<Self> for BlockRelayer {
+    fn create(ctx: &mut ServiceContext<BlockRelayer>) -> Result<BlockRelayer> {
+        let bus = ctx.get_shared::<Addr<BusActor>>()?;
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let network_service = ctx.get_shared::<NetworkAsyncService>()?;
+        Ok(Self::new(bus, txpool, network_service))
+    }
+}
+
+impl BlockRelayer {
+    pub fn new(bus: Addr<BusActor>, txpool: TxPoolService, network: NetworkAsyncService) -> Self {
+        Self {
             bus,
             txpool,
             rpc_client: NetworkRpcClient::new(network),
-        };
-        Ok(block_relayer.start())
+        }
     }
 
     async fn fill_compact_block(
-        txpool: P,
+        txpool: TxPoolService,
         rpc_client: NetworkRpcClient<NetworkAsyncService>,
         compact_block: CompactBlock,
         peer_id: PeerId,
@@ -146,37 +149,20 @@ where
     }
 }
 
-impl<P> Actor for BlockRelayer<P>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-{
-    type Context = Context<Self>;
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let new_head_block_recipient = ctx.address().recipient::<NewHeadBlock>();
-        self.bus
-            .clone()
-            .subscribe(new_head_block_recipient)
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-        let cmpctblock_recipient = ctx.address().recipient::<PeerCmpctBlockEvent>();
+impl ActorService for BlockRelayer {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.subscribe::<NewHeadBlock>();
+        ctx.subscribe::<PeerCmpctBlockEvent>();
+    }
 
-        self.bus
-            .send(Subscription {
-                recipient: cmpctblock_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+        ctx.unsubscribe::<NewHeadBlock>();
+        ctx.unsubscribe::<PeerCmpctBlockEvent>();
     }
 }
 
-impl<P> Handler<NewHeadBlock> for BlockRelayer<P>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-{
-    type Result = ();
-    fn handle(&mut self, event: NewHeadBlock, ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
+    fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<BlockRelayer>) {
         debug!("Handle relay new head block event");
         let compact_block = self.block_into_compact(event.0.get_block().clone());
         let total_difficulty = event.0.get_total_difficulty();
@@ -184,33 +170,21 @@ where
             compact_block,
             total_difficulty,
         };
-        self.bus
-            .clone()
-            .broadcast(net_cmpct_block_msg)
-            .into_actor(self)
-            .then(|res, act, _ctx| {
-                if let Err(e) = res {
-                    error!(
-                        "Failed to emit new compact block relay message, err: {}",
-                        &e
-                    );
-                }
-                async {}.into_actor(act)
-            })
-            .wait(ctx);
+        let bus = self.bus.clone();
+        ctx.wait(async {
+            if let Err(e) = bus.broadcast(net_cmpct_block_msg).await {
+                error!("Failed to emit new compact block relay message, err: {}", e);
+            }
+        });
     }
 }
 
-impl<P> Handler<PeerCmpctBlockEvent> for BlockRelayer<P>
-where
-    P: TxPoolSyncService + Sync + Send + 'static,
-{
-    type Result = ();
-    fn handle(
+impl EventHandler<Self, PeerCmpctBlockEvent> for BlockRelayer {
+    fn handle_event(
         &mut self,
         cmpct_block_msg: PeerCmpctBlockEvent,
-        _ctx: &mut Self::Context,
-    ) -> Self::Result {
+        ctx: &mut ServiceContext<BlockRelayer>,
+    ) {
         let bus = self.bus.clone();
         let rpc_client = self.rpc_client.clone();
         let txpool = self.txpool.clone();
@@ -227,6 +201,6 @@ where
                 });
             }
         };
-        Arbiter::spawn(fut);
+        ctx.spawn(fut);
     }
 }
