@@ -22,11 +22,19 @@ where
 
 pub type MockFn<S> = Box<dyn FnMut(Box<dyn Any>, &mut ServiceContext<S>) -> Box<dyn Any> + Send>;
 
+pub fn mock<S, F>(f: F) -> MockFn<S>
+where
+    S: ActorService,
+    F: FnMut(Box<dyn Any>, &mut ServiceContext<S>) -> Box<dyn Any> + Send + 'static,
+{
+    Box::new(f)
+}
+
 impl<S> MockHandler<S> for MockFn<S>
 where
     S: ActorService,
 {
     fn handle(&mut self, r: Box<dyn Any>, ctx: &mut ServiceContext<S>) -> Box<dyn Any> {
-        self.as_mut()(r, ctx)
+        self(r, ctx)
     }
 }

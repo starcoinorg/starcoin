@@ -15,10 +15,15 @@ use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
+
 mod remote_chain_state;
+
 pub use remote_chain_state::RemoteChainStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
+
+//TODO move this constants from types
+pub use starcoin_types::CHAIN_PROTOCOL_NAME;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {

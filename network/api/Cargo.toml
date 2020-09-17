@@ -11,6 +11,7 @@ anyhow = "1.0.32"
 futures = "0.3"
 serde = { version = "1.0", default-features = false }
 starcoin-crypto = { path = "../../commons/crypto"}
-scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
+starcoin-service-registry = { path = "../../commons/service-registry" }
 async-trait = "0.1.40"
 libp2p = "0.22.0"

@@ -5,6 +5,7 @@ use actix::prelude::*;
 use anyhow::*;
 use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
+use starcoin_service_registry::ServiceRequest;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::SignedUserTransaction;
@@ -31,6 +32,11 @@ pub enum PeerMessage {
 pub struct RawRpcRequestMessage {
     pub request: (String, Vec<u8>, PeerId),
     pub responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
+}
+
+// TODO remove RawRpcRequestMessage responder and set response.
+impl ServiceRequest for RawRpcRequestMessage {
+    type Response = ();
 }
 
 #[rtype(result = "Result<()>")]

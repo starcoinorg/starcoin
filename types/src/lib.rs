@@ -73,7 +73,7 @@ pub mod genesis_config {
     pub use starcoin_vm_types::genesis_config::*;
 }
 
-//TODO should define at here?
+//TODO should define at here? move to network api.
 pub const CHAIN_PROTOCOL_NAME: &[u8] = b"/starcoin/chain/1";
 pub const TXN_PROTOCOL_NAME: &[u8] = b"/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &[u8] = b"/starcoin/block/1";

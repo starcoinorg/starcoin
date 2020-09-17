@@ -11,57 +11,49 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetStateWithProof, GetTxns, TransactionsData,
 };
 use starcoin_service_registry::ServiceRef;
+use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
+use starcoin_state_service::ChainStateService;
+use starcoin_storage::Store;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
 };
-use state_api::{ChainStateAsyncService, StateWithProof};
 use state_tree::StateNode;
 use std::sync::Arc;
-use storage::Store;
 use traits::ChainAsyncService;
 use txpool::TxPoolService;
 use txpool_api::TxPoolSyncService;
 
 const MAX_SIZE: usize = 10;
 
-pub struct NetworkRpcImpl<S>
-where
-    S: ChainStateAsyncService + 'static,
-{
-    chain_reader: ServiceRef<ChainReaderService>,
-    txpool: TxPoolService,
+pub struct NetworkRpcImpl {
     storage: Arc<dyn Store>,
-    state_service: S,
+    chain_service: ServiceRef<ChainReaderService>,
+    txpool_service: TxPoolService,
+    state_service: ServiceRef<ChainStateService>,
 }
 
-impl<S> NetworkRpcImpl<S>
-where
-    S: ChainStateAsyncService + 'static,
-{
+impl NetworkRpcImpl {
     pub fn new(
-        chain_reader: ServiceRef<ChainReaderService>,
-        txpool: TxPoolService,
-        state_service: S,
         storage: Arc<dyn Store>,
+        chain_service: ServiceRef<ChainReaderService>,
+        txpool: TxPoolService,
+        state_service: ServiceRef<ChainStateService>,
     ) -> Self {
         Self {
-            chain_reader,
-            txpool,
+            chain_service,
+            txpool_service: txpool,
             storage,
             state_service,
         }
     }
 }
 
-impl<S> gen_server::NetworkRpc for NetworkRpcImpl<S>
-where
-    S: ChainStateAsyncService + 'static,
-{
+impl gen_server::NetworkRpc for NetworkRpcImpl {
     fn get_txns(&self, _peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>> {
-        let txpool = self.txpool.clone();
+        let txpool = self.txpool_service.clone();
         let storage = self.storage.clone();
         let fut = async move {
             let data = {
@@ -110,7 +102,7 @@ where
         _peer_id: PeerId,
         request: GetBlockHeadersByNumber,
     ) -> BoxFuture<Result<Vec<BlockHeader>>> {
-        let chain_reader = self.chain_reader.clone();
+        let chain_reader = self.chain_service.clone();
         let fut = async move {
             let mut headers = Vec::new();
             let numbers: Vec<BlockNumber> = request.into();
@@ -138,7 +130,7 @@ where
     ) -> BoxFuture<Result<Vec<BlockHeader>>> {
         let fut = async move {
             let mut headers = Vec::new();
-            let chain_reader = self.chain_reader.clone();
+            let chain_reader = self.chain_service.clone();
             for hash in hashes {
                 if headers.len() >= MAX_SIZE {
                     break;
@@ -158,7 +150,7 @@ where
         _peer_id: PeerId,
         request: GetBlockHeaders,
     ) -> BoxFuture<Result<Vec<BlockHeader>>> {
-        let chain_reader = self.chain_reader.clone();
+        let chain_reader = self.chain_service.clone();
         let fut = async move {
             let mut headers = Vec::new();
             if let Ok(Some(header)) = chain_reader
@@ -192,7 +184,7 @@ where
     ) -> BoxFuture<Result<Vec<BlockInfo>>> {
         let fut = async move {
             let mut infos = Vec::new();
-            let chain_reader = self.chain_reader.clone();
+            let chain_reader = self.chain_service.clone();
             for hash in hashes {
                 if infos.len() >= MAX_SIZE {
                     break;
@@ -213,7 +205,7 @@ where
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<BlockBody>>> {
-        let chain_reader = self.chain_reader.clone();
+        let chain_reader = self.chain_service.clone();
         let fut = async move {
             let mut bodies = Vec::new();
             for hash in hashes {
