@@ -9,7 +9,6 @@ use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
 use starcoin_vm_types::values::Value;
 use starcoin_vm_types::{state_view::StateView, vm_status::VMStatus};
 use vm_runtime::{metrics::TXN_EXECUTION_HISTOGRAM, starcoin_vm::StarcoinVM};
-use starcoin_vm_types::value::MoveTypeLayout;
 
 pub fn execute_transactions(
     chain_state: &dyn StateView,
@@ -69,7 +68,7 @@ pub fn execute_readonly_function(
     type_params: Vec<TypeTag>,
     args: Vec<Value>,
     sender: AccountAddress,
-) -> Result<Vec<(MoveTypeLayout, Value)>, VMStatus> {
+) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
     let timer = TXN_EXECUTION_HISTOGRAM
         .with_label_values(&["execute_readonly_function"])
         .start_timer();

@@ -47,7 +47,6 @@ use starcoin_vm_types::{
     values::Value,
     vm_status::{StatusCode, VMStatus},
 };
-use starcoin_vm_types::value::MoveTypeLayout;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
@@ -728,7 +727,7 @@ impl StarcoinVM {
         type_params: Vec<TypeTag>,
         args: Vec<Value>,
         sender: &AccountAddress,
-    ) -> Result<Vec<(MoveTypeLayout, Value)>, VMStatus> {
+    ) -> Result<Vec<(TypeTag, Value)>, VMStatus> {
         let data_cache = StateViewCache::new(state_view);
         if let Err(err) = self.load_configs(&data_cache) {
             warn!("Load config error at verify_transaction: {}", err);
@@ -736,7 +735,8 @@ impl StarcoinVM {
         }
 
         let cost_table = zero_cost_schedule();
-        let mut cost_strategy = CostStrategy::system(&cost_table, MAXIMUM_GAS_UNITS_FOR_READONLY_CALL.clone());
+        let mut cost_strategy =
+            CostStrategy::system(&cost_table, *MAXIMUM_GAS_UNITS_FOR_READONLY_CALL);
         let mut session = self.move_vm.new_session(&data_cache);
         let result = session.execute_readonly_function(
             module,

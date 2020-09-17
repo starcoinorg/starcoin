@@ -16,10 +16,10 @@ serde_yaml = "0.8.13"
 serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
 serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
 
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="ee1fe7c6ade0819e8d7cca8283969e7cab1f4bf0" }
-libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="ee1fe7c6ade0819e8d7cca8283969e7cab1f4bf0" }
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="ee1fe7c6ade0819e8d7cca8283969e7cab1f4bf0" }
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="ee1fe7c6ade0819e8d7cca8283969e7cab1f4bf0"}
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="c9db0acc1813645b75a550f0e2f9f9a38b96333d" }
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="c9db0acc1813645b75a550f0e2f9f9a38b96333d" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="c9db0acc1813645b75a550f0e2f9f9a38b96333d" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="c9db0acc1813645b75a550f0e2f9f9a38b96333d"}
 
 [dev-dependencies]
 tempfile = "3.1.0"

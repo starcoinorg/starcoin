@@ -28,7 +28,7 @@ num_enum = "0.5.1"
 actix = "0.10.0"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="ee1fe7c6ade0819e8d7cca8283969e7cab1f4bf0" }
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="c9db0acc1813645b75a550f0e2f9f9a38b96333d" }
 libp2p = "0.22.0"
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"

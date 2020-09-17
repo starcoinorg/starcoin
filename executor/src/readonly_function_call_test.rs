@@ -4,15 +4,16 @@
 use crate::executor_test::{compile_module_with_address, execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
+use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::errors::Location;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
-use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
+
 #[stest::test]
 fn test_readonly_function_call() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -40,6 +41,10 @@ fn test_readonly_function_call() -> Result<()> {
         public fun get_s(): S {
             let s = Self::new();
             s
+        }
+        
+        public fun get_tuple(): (u64, address) {
+            (0, 0x1)
         }
 
         public fun set_s(account: &signer): u64 {
@@ -80,15 +85,45 @@ fn test_readonly_function_call() -> Result<()> {
     )?;
 
     let value = Value::struct_(Struct::pack(vec![Value::u64(20)], false));
-    assert!(
-        result[0].0 == MoveTypeLayout::Struct(MoveStructLayout::new(vec![MoveTypeLayout::U64]))
-    );
-    assert!(result[0].1
+    let ty = TypeTag::Struct(StructTag {
+        address: *account1.address(),
+        module: Identifier::new("A").unwrap(),
+        name: Identifier::new("S").unwrap(),
+        type_params: vec![],
+    });
+    assert_eq!(result[0].0, ty);
+    assert!(result[0]
+        .1
         .equals(&value)
         .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
 
+    // test on return multi values.
+    {
+        let result = crate::execute_readonly_function(
+            &chain_state,
+            &compiled_module.self_id(),
+            &Identifier::new("get_tuple").unwrap(),
+            vec![],
+            vec![],
+            *account1.address(),
+        )?;
+        assert_eq!(result.len(), 2);
+
+        assert_eq!(result[0].0, TypeTag::U64);
+        assert_eq!(result[1].0, TypeTag::Address);
+        assert!(result[0]
+            .1
+            .equals(&Value::u64(0))
+            .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
+        assert!(result[1]
+            .1
+            .equals(&Value::address(
+                AccountAddress::from_hex_literal("0x1").unwrap()
+            ))
+            .map_err(|e| e.finish(Location::Undefined).into_vm_status())?);
+    }
     let value = Value::transaction_argument_signer_reference(*account1.address());
-    let result = crate::execute_readonly_function(
+    let _result = crate::execute_readonly_function(
         &chain_state,
         &compiled_module.self_id(),
         &Identifier::new("set_s").unwrap(),
