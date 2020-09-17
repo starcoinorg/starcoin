@@ -23,7 +23,7 @@ pub struct Miner {
 }
 
 pub struct MineCtx {
-    header_hash: HashValue,
+    mining_hash: HashValue,
     block_template: BlockTemplate,
     difficulty: U256,
     metrics_timer: HistogramTimer,
@@ -31,13 +31,13 @@ pub struct MineCtx {
 
 impl MineCtx {
     pub fn new(block_template: BlockTemplate, difficulty: U256) -> MineCtx {
-        let header_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
+        let mining_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let metrics_timer = MINER_METRICS
             .block_mint_time
             .with_label_values(&["mint"])
             .start_timer();
         MineCtx {
-            header_hash,
+            mining_hash,
             block_template,
             difficulty,
             metrics_timer,
@@ -56,13 +56,13 @@ impl Miner {
 
     pub async fn set_mint(&self, block_template: BlockTemplate, difficulty: U256) -> Result<()> {
         let ctx = MineCtx::new(block_template, difficulty);
-        let header_hash = ctx.header_hash;
+        let mining_hash = ctx.mining_hash;
         if self.is_minting() {
             warn!("force set mint job, since mint ctx is not empty");
         }
         *self.state.lock().unwrap() = Some(ctx);
         let bus = self.bus.clone();
-        bus.broadcast(MintBlockEvent::new(header_hash, difficulty))
+        bus.broadcast(MintBlockEvent::new(mining_hash, difficulty))
             .await
     }
 

@@ -229,6 +229,6 @@ impl ThinHeadBlock {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct MintBlock {
-    pub header_hash: HashValue,
+    pub minting_hash: HashValue,
     pub difficulty: U256,
 }

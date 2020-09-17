@@ -37,14 +37,11 @@ fn test_miner() {
             .config
             .net()
             .consensus()
-            .solve_consensus_nonce(
-                &mint_block_event.header_hash.to_vec(),
-                mint_block_event.difficulty,
-            );
+            .solve_consensus_nonce(mint_block_event.minting_hash, mint_block_event.difficulty);
         // mint client submit seal
         bus.broadcast(SubmitSealEvent {
             nonce,
-            header_hash: mint_block_event.header_hash,
+            header_hash: mint_block_event.minting_hash,
         })
         .await
         .unwrap();
@@ -52,7 +49,7 @@ fn test_miner() {
         assert_eq!(mined_block.header.nonce, nonce);
         let raw_header =
             BlockTemplate::from_block(mined_block).as_raw_block_header(mint_block_event.difficulty);
-        assert_eq!(mint_block_event.header_hash, raw_header.crypto_hash());
+        assert_eq!(mint_block_event.minting_hash, raw_header.crypto_hash());
         handle.stop().unwrap();
     };
     block_on(fut);

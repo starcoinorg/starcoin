@@ -65,8 +65,8 @@ where
                 job = job_rx.select_next_some() => {
                     match job{
                         Ok(job)=>{
-                            let (pow_hash, diff) =job;
-                            self.start_mint_work(pow_hash, diff).await;
+                            let (minting_hash, diff) =job;
+                            self.start_mint_work(minting_hash, diff).await;
 
                         }
                         Err(e)=>{error!("read subscribed job error:{}",e)}
@@ -82,11 +82,11 @@ where
         }
     }
 
-    async fn submit_seal(&self, pow_header: HashValue, nonce: u64) {
+    async fn submit_seal(&self, pow_hash: HashValue, nonce: u64) {
         self.worker_controller
             .send_message(WorkerMessage::Stop)
             .await;
-        if let Err(err) = self.job_client.submit_seal(pow_header, nonce) {
+        if let Err(err) = self.job_client.submit_seal(pow_hash, nonce) {
             error!("Submit seal to failed: {:?}", err);
             return;
         }
@@ -105,12 +105,9 @@ where
         }
     }
 
-    async fn start_mint_work(&self, pow_header: HashValue, diff: U256) {
+    async fn start_mint_work(&self, minting_hash: HashValue, diff: U256) {
         self.worker_controller
-            .send_message(WorkerMessage::NewWork {
-                pow_header: pow_header.to_vec(),
-                diff,
-            })
+            .send_message(WorkerMessage::NewWork { minting_hash, diff })
             .await
     }
 }

@@ -3,7 +3,8 @@
 
 use crate::{nonce_generator, partition_nonce};
 use anyhow::{bail, Result};
-use consensus::{argon, difficulty::difficult_to_target, Consensus};
+use consensus::{difficult_to_target, Consensus};
+use crypto::HashValue;
 use futures::channel::mpsc;
 use futures::executor::block_on;
 use futures::SinkExt;
@@ -41,6 +42,7 @@ pub fn start_worker(
                     };
                     let nonce_range = partition_nonce(i as u64, thread_num as u64);
                     let nonce_tx_clone = nonce_tx.clone();
+
                     thread::Builder::new()
                         .name(worker_name.clone())
                         .spawn(move || {
@@ -70,12 +72,12 @@ pub fn start_worker(
                     None
                 };
             let nonce_range = partition_nonce(1 as u64, 2 as u64);
-            let solver = move |pow_header: &[u8],
+            let solver = move |minting_hash: HashValue,
                                nonce: u64,
                                diff: U256,
                                nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>|
                   -> bool {
-                strategy_solver(strategy, pow_header, nonce, diff, nonce_tx)
+                strategy_solver(strategy, minting_hash, nonce, diff, nonce_tx)
             };
             thread::Builder::new()
                 .name(worker_name)
@@ -93,7 +95,7 @@ pub fn start_worker(
 #[derive(Clone)]
 pub enum WorkerMessage {
     Stop,
-    NewWork { pow_header: Vec<u8>, diff: U256 },
+    NewWork { minting_hash: HashValue, diff: U256 },
 }
 
 pub struct WorkerController {
@@ -118,7 +120,7 @@ pub struct Worker {
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     worker_rx: mpsc::UnboundedReceiver<WorkerMessage>,
     diff: U256,
-    pow_header: Option<Vec<u8>>,
+    minting_hash: Option<HashValue>,
     start: bool,
     num_seal_found: u64,
 }
@@ -132,7 +134,7 @@ impl Worker {
             nonce_tx,
             worker_rx,
             diff: 1.into(),
-            pow_header: None,
+            minting_hash: None,
             start: false,
             num_seal_found: 0,
         }
@@ -140,7 +142,7 @@ impl Worker {
 
     fn run<
         G: FnMut() -> u64,
-        S: Fn(&[u8], u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>) -> bool,
+        S: Fn(HashValue, u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>) -> bool,
     >(
         &mut self,
         mut rng: G,
@@ -156,7 +158,7 @@ impl Worker {
                 break;
             }
             if self.start {
-                if let Some(pow_header) = self.pow_header.clone() {
+                if let Some(minting_hash) = self.minting_hash.clone() {
                     hash_counter += 1;
                     let elapsed = start.elapsed();
                     if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
@@ -170,7 +172,7 @@ impl Worker {
                         }
                         start = Instant::now();
                         hash_counter = 0;
-                        if solver(&pow_header, rng(), self.diff, self.nonce_tx.clone()) {
+                        if solver(minting_hash, rng(), self.diff, self.nonce_tx.clone()) {
                             self.start = false;
                             self.num_seal_found += 1;
                             if let Some(pb) = pb {
@@ -191,8 +193,8 @@ impl Worker {
         match self.worker_rx.try_next() {
             Ok(msg) => match msg {
                 Some(msg) => match msg {
-                    WorkerMessage::NewWork { pow_header, diff } => {
-                        self.pow_header = Some(pow_header);
+                    WorkerMessage::NewWork { minting_hash, diff } => {
+                        self.minting_hash = Some(minting_hash);
                         self.diff = diff;
                         self.start = true;
                         Ok(())
@@ -213,18 +215,17 @@ impl Worker {
 }
 
 fn argon_solver(
-    pow_header: &[u8],
+    minting_hash: HashValue,
     nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let input = consensus::set_header_nonce(pow_header, nonce);
-    if let Ok(pow_hash) = argon::calculate_hash(&input) {
+    if let Ok(pow_hash) = ConsensusStrategy::Argon.calculate_pow_hash(minting_hash, nonce) {
         let pow_hash_u256: U256 = pow_hash.into();
         let target = difficult_to_target(diff);
         if pow_hash_u256 <= target {
             info!("Seal found {:?}", nonce);
-            if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
+            if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
                 error!("Failed to send nonce: {:?}", e);
                 return false;
             };
@@ -236,13 +237,13 @@ fn argon_solver(
 
 fn strategy_solver(
     strategy: ConsensusStrategy,
-    pow_header: &[u8],
+    minting_hash: HashValue,
     _nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    let nonce = strategy.solve_consensus_nonce(pow_header, diff);
-    if let Err(e) = block_on(nonce_tx.send((pow_header.to_vec(), nonce))) {
+    let nonce = strategy.solve_consensus_nonce(minting_hash, diff);
+    if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
         error!("Failed to send nonce: {:?}", e);
         return false;
     };

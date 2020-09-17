@@ -8,6 +8,7 @@ mod consensus_test;
 pub mod dev;
 pub mod difficulty;
 pub mod dummy;
+pub mod keccak;
 mod time;
 
 pub use consensus::Consensus;
@@ -19,25 +20,32 @@ use crate::dummy::DummyConsensus;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
+use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::U256;
+use starcoin_types::{H256, U256};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
-pub fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
+pub fn difficult_1_target() -> U256 {
+    U256::max_value()
+}
+pub fn target_to_difficulty(target: U256) -> U256 {
+    difficult_1_target() / target
+}
+
+pub fn difficult_to_target(difficulty: U256) -> U256 {
+    difficult_1_target() / difficulty
+}
+
+pub(crate) fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
+    //TODO: change function name
     let len = header.len();
     let mut header = header.to_owned();
     header.truncate(len - 8);
     let _ = header.write_u64::<LittleEndian>(nonce);
     header
-}
-
-pub fn u64_to_vec(u: u64) -> Vec<u8> {
-    let mut wtr = vec![];
-    wtr.write_u64::<LittleEndian>(u).unwrap();
-    wtr
 }
 
 static DUMMY: Lazy<DummyConsensus> = Lazy::new(DummyConsensus::new);
@@ -65,11 +73,11 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn solve_consensus_nonce(&self, header_hash: &[u8], difficulty: U256) -> u64 {
+    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(header_hash, difficulty),
-            ConsensusStrategy::Dev => DEV.solve_consensus_nonce(header_hash, difficulty),
-            ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(header_hash, difficulty),
+            ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(mining_hash, difficulty),
+            ConsensusStrategy::Dev => DEV.solve_consensus_nonce(mining_hash, difficulty),
+            ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(mining_hash, difficulty),
         }
     }
 
@@ -83,6 +91,14 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch, header),
             ConsensusStrategy::Dev => DEV.verify(reader, epoch, header),
             ConsensusStrategy::Argon => ARGON.verify(reader, epoch, header),
+        }
+    }
+
+    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256> {
+        match self {
+            ConsensusStrategy::Dummy => DUMMY.calculate_pow_hash(mining_hash, nonce),
+            ConsensusStrategy::Dev => DEV.calculate_pow_hash(mining_hash, nonce),
+            ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce),
         }
     }
 
