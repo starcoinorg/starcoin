@@ -24,3 +24,4 @@ stest = { path = "../commons/stest" }
 starcoin-state-api = { path = "../state/api" }
 starcoin-statedb = { path = "../state/statedb" }
 starcoin-vm-types = { path = "../vm/types"}
+sha3 = { version = "0.9.1"}
