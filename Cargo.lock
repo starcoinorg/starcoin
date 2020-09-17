@@ -6848,8 +6848,10 @@ name = "starcoin-dev"
 version = "0.4.6"
 dependencies = [
  "anyhow",
+ "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-resource-viewer",
  "starcoin-state-api",
  "starcoin-state-service",
  "starcoin-statedb",

@@ -6,6 +6,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::dev::DevApi;
+use starcoin_rpc_api::types::ContractCall;
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
@@ -41,6 +42,32 @@ where
         let f = async move {
             let state_root = service.state_root().await?;
             let output = playground.dry_run(state_root, Transaction::UserTransaction(txn))?;
+            Ok(output)
+        }
+        .map_err(map_err);
+        Box::new(f.boxed().compat())
+    }
+
+    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<Vec<u8>>> {
+        let service = self.service.clone();
+        let playground = self.playground.clone();
+        let ContractCall {
+            module_address,
+            module_name,
+            func,
+            type_args,
+            args,
+        } = call;
+        let f = async move {
+            let state_root = service.state_root().await?;
+            let output = playground.call_contract(
+                state_root,
+                module_address,
+                module_name,
+                func,
+                type_args,
+                args,
+            )?;
             Ok(output)
         }
         .map_err(map_err);
