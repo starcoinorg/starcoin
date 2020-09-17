@@ -83,7 +83,6 @@ pub fn call_contract(
         &IdentStr::new(func)?,
         type_args,
         convert_txn_args(&args),
-        &AccountAddress::ZERO,
     )?;
     let annotator = MoveValueAnnotator::new(state_view);
     let mut annotated_values = Vec::with_capacity(rets.len());
