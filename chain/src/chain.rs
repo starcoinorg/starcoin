@@ -143,6 +143,7 @@ impl BlockChain {
         epoch.start_number() <= block_header.number()
             && epoch.end_number() > block_header.number()
             && self.exist_block(block_header.parent_hash())
+            && !self.exist_block(block_header.id())
             && !self.uncles.contains(&block_header.id())
     }
 
@@ -681,6 +682,17 @@ impl BlockChain {
         let uncle_ids: Vec<_> = uncles.iter().map(|uncle| uncle.id()).collect();
         debug!("verify block : {:?} uncle ids {:?}", header.id(), uncle_ids);
         for uncle_id in uncle_ids {
+            if self.exist_block(uncle_id) {
+                return Err(ConnectBlockError::VerifyBlockFailed(
+                    VerifyBlockField::Uncle,
+                    format_err!(
+                        "legal master block can not be uncle block,block id is {:?}",
+                        uncle_id
+                    ),
+                )
+                .into());
+            }
+
             if self.uncles.contains(&uncle_id) {
                 debug!("uncle block exists in master,uncle id is {:?}", uncle_id,);
                 return Err(ConnectBlockError::VerifyBlockFailed(
