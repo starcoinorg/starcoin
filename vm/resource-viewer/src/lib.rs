@@ -31,7 +31,7 @@ use std::{
 mod fat_type;
 mod module_cache;
 mod resolver;
-mod stdlib_type_mapping;
+
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
@@ -146,32 +146,6 @@ impl<'a> MoveValueAnnotator<'a> {
         let move_value = MoveValue::simple_deserialize(event.event_data(), &move_ty)?;
         self.annotate_value(&move_value, &ty)
     }
-
-    // pub fn view_account_state(&self, state: &AccountState) -> Result<AnnotatedAccountStateBlob> {
-    //     let mut output = BTreeMap::new();
-    //     for (k, v) in state.iter() {
-    //         let ty = if let Ok(ty) = resource_vec_to_type_tag(k.as_slice()) {
-    //             ty
-    //         } else {
-    //             println!("Uncached AccessPath: {:?}", k);
-    //             continue;
-    //         };
-    //         let ty = self.cache.resolve_struct(&ty)?;
-    //         let struct_def = (&ty)
-    //             .try_into()
-    //             .map_err(|e: PartialVMError| e.finish(Location::Undefined).into_vm_status())?;
-    //
-    //         let move_struct = MoveStruct::simple_deserialize(v.as_slice(), &struct_def)?;
-    //         println!("annotaing: {:?}, {:?}", ty, move_struct);
-    //         output.insert(
-    //             ty.struct_tag()
-    //                 .map_err(|e| e.finish(Location::Undefined).into_vm_status())
-    //                 .unwrap(),
-    //             self.annotate_struct(&move_struct, &ty)?,
-    //         );
-    //     }
-    //     Ok(AnnotatedAccountStateBlob(output))
-    // }
 
     fn annotate_struct(
         &self,

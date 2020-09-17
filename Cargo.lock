@@ -7381,9 +7381,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "starcoin-config",
  "starcoin-vm-types",
- "stdlib",
 ]
 
 [[package]]
