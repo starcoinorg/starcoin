@@ -67,7 +67,7 @@ impl StartupInfo {
         &self.master
     }
 
-    pub fn branch_exist_exclude(&self, branch_id: &HashValue) -> bool {
+    pub fn is_branch_head_exclude_master(&self, branch_id: &HashValue) -> bool {
         self.branches.contains(branch_id)
     }
 }
@@ -122,7 +122,7 @@ mod tests {
         son.parent_hash = parent.id();
         startup.update_master(&son);
         assert_eq!(son.id(), *startup.get_master());
-        assert!(!startup.branch_exist_exclude(&parent.id()));
+        assert!(!startup.is_branch_head_exclude_master(&parent.id()));
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         let son = BlockHeader::random();
         startup.update_master(&son);
         assert_eq!(son.id(), *startup.get_master());
-        assert!(startup.branch_exist_exclude(&parent.id()));
+        assert!(startup.is_branch_head_exclude_master(&parent.id()));
     }
 
     #[test]
@@ -144,13 +144,13 @@ mod tests {
 
         let parent = BlockHeader::random();
         startup.insert_branch(&parent);
-        assert!(startup.branch_exist_exclude(&parent.id()));
+        assert!(startup.is_branch_head_exclude_master(&parent.id()));
 
         let mut son = BlockHeader::random();
         son.parent_hash = parent.id();
         startup.insert_branch(&son);
-        assert!(!startup.branch_exist_exclude(&parent.id()));
-        assert!(startup.branch_exist_exclude(&son.id()));
+        assert!(!startup.is_branch_head_exclude_master(&parent.id()));
+        assert!(startup.is_branch_head_exclude_master(&son.id()));
     }
 
     #[test]
@@ -161,11 +161,11 @@ mod tests {
 
         let branch1 = BlockHeader::random();
         startup.insert_branch(&branch1);
-        assert!(startup.branch_exist_exclude(&branch1.id()));
+        assert!(startup.is_branch_head_exclude_master(&branch1.id()));
 
         let branch2 = BlockHeader::random();
         startup.insert_branch(&branch2);
-        assert!(startup.branch_exist_exclude(&branch2.id()));
-        assert!(startup.branch_exist_exclude(&branch1.id()));
+        assert!(startup.is_branch_head_exclude_master(&branch2.id()));
+        assert!(startup.is_branch_head_exclude_master(&branch1.id()));
     }
 }

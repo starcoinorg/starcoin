@@ -109,7 +109,9 @@ impl EventHandler<Self, NewBranch> for CreateBlockTemplateService {
         msg: NewBranch,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) {
-        self.inner.insert_uncle((&*msg.0).clone())
+        msg.0.iter().for_each(|uncle| {
+            self.inner.insert_uncle(uncle.clone());
+        });
     }
 }
 
@@ -119,7 +121,9 @@ impl ServiceHandler<Self, CreateBlockTemplateRequest> for CreateBlockTemplateSer
         _msg: CreateBlockTemplateRequest,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) -> Result<BlockTemplate> {
-        self.inner.create_block_template()
+        let template = self.inner.create_block_template();
+        self.inner.uncles_prune();
+        template
     }
 }
 
@@ -187,16 +191,30 @@ impl Inner {
 
     pub fn do_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
-        for maybe_uncle in self.uncles.values() {
-            if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
-                break;
-            }
-            if self.chain.can_be_uncle(maybe_uncle) {
-                new_uncle.push(maybe_uncle.clone())
+        if let Ok(epoch) = self.chain.epoch_info() {
+            if epoch.end_number() != (self.chain.current_header().number() + 1) {
+                for maybe_uncle in self.uncles.values() {
+                    if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
+                        break;
+                    }
+                    if self.chain.can_be_uncle(maybe_uncle) {
+                        new_uncle.push(maybe_uncle.clone())
+                    }
+                }
             }
         }
 
         new_uncle
+    }
+
+    fn uncles_prune(&mut self) {
+        if !self.uncles.is_empty() {
+            if let Ok(epoch) = self.chain.epoch_info() {
+                if epoch.end_number() == (self.chain.current_header().number() + 2) {
+                    self.uncles.clear();
+                }
+            }
+        }
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplate> {

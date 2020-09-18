@@ -16,7 +16,7 @@ pub struct NewHeadBlock(pub Arc<BlockDetail>);
 /// may be uncle block
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
-pub struct NewBranch(pub Arc<BlockHeader>);
+pub struct NewBranch(pub Arc<Vec<BlockHeader>>);
 
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
