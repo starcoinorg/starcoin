@@ -1,7 +1,7 @@
 use crate::consensus::Consensus;
+use crate::ARGON;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
 
 #[stest::test]
 fn raw_hash_test() {
@@ -21,8 +21,12 @@ fn raw_hash_test() {
 
 #[stest::test]
 fn verify_header_test() {
-    let header = BlockHeader::random();
-    let raw_header: RawBlockHeader = header.into();
-    let nonce = ConsensusStrategy::Argon.solve_consensus_nonce(raw_header.crypto_hash(), 1.into());
-    //TODO: verify it
+    let mut header = BlockHeader::random();
+    header.difficulty = 1.into();
+    let raw_header: RawBlockHeader = header.clone().into();
+    let nonce = ARGON.solve_consensus_nonce(raw_header.crypto_hash(), raw_header.difficulty);
+    header.nonce = nonce;
+    ARGON
+        .verify_header_difficulty(header.difficulty, &header)
+        .unwrap()
 }

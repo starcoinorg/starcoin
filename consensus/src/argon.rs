@@ -4,16 +4,14 @@
 use crate::consensus::Consensus;
 use crate::time::{RealTimeService, TimeService};
 use crate::{difficult_to_target, difficulty, set_header_nonce, target_to_difficulty};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use argon2::{self, Config};
 use rand::Rng;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::{BlockHeader, RawBlockHeader};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{H256, U256};
 use starcoin_vm_types::on_chain_config::EpochInfo;
-
 #[derive(Default)]
 pub struct ArgonConsensus {
     time_service: RealTimeService,
@@ -60,24 +58,8 @@ impl Consensus for ArgonConsensus {
         epoch: &EpochInfo,
         header: &BlockHeader,
     ) -> Result<()> {
-        //TODO: check mining_hash for difficulty? not need recalculate it?
         let difficulty = self.calculate_next_difficulty(reader, epoch)?;
-        if header.difficulty() != difficulty {
-            return Err(anyhow!(
-                "Difficulty mismatch: {:?}, header: {:?}",
-                difficulty,
-                header
-            ));
-        }
-        let nonce = header.nonce;
-        let raw_block_header: RawBlockHeader = header.to_owned().into();
-        let pow_hash = self.calculate_pow_hash(raw_block_header.crypto_hash(), nonce)?;
-        let hash_u256: U256 = pow_hash.into();
-        let target = difficult_to_target(difficulty);
-        if hash_u256 <= target {
-            anyhow::bail!("Invalid header:{:?}", header);
-        }
-        Ok(())
+        self.verify_header_difficulty(difficulty, header)
     }
 
     fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256> {

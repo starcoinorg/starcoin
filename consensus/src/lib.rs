@@ -17,6 +17,7 @@ pub use time::TimeService;
 use crate::argon::ArgonConsensus;
 use crate::dev::DevConsensus;
 use crate::dummy::DummyConsensus;
+use crate::keccak::KeccakConsensus;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
@@ -31,6 +32,7 @@ use starcoin_vm_types::on_chain_config::EpochInfo;
 pub fn difficult_1_target() -> U256 {
     U256::max_value()
 }
+
 pub fn target_to_difficulty(target: U256) -> U256 {
     difficult_1_target() / target
 }
@@ -51,6 +53,7 @@ pub(crate) fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
 static DUMMY: Lazy<DummyConsensus> = Lazy::new(DummyConsensus::new);
 static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
 static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
+static KECCAK: Lazy<KeccakConsensus> = Lazy::new(KeccakConsensus::new);
 
 impl Consensus for ConsensusStrategy {
     fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
@@ -58,6 +61,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.init(reader),
             ConsensusStrategy::Dev => DEV.init(reader),
             ConsensusStrategy::Argon => ARGON.init(reader),
+            ConsensusStrategy::Keccak => KECCAK.init(reader),
         }
     }
 
@@ -70,6 +74,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader, epoch),
+            ConsensusStrategy::Keccak => KECCAK.calculate_next_difficulty(reader, epoch),
         }
     }
 
@@ -78,6 +83,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Dev => DEV.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(mining_hash, difficulty),
+            ConsensusStrategy::Keccak => KECCAK.solve_consensus_nonce(mining_hash, difficulty),
         }
     }
 
@@ -91,6 +97,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch, header),
             ConsensusStrategy::Dev => DEV.verify(reader, epoch, header),
             ConsensusStrategy::Argon => ARGON.verify(reader, epoch, header),
+            ConsensusStrategy::Keccak => KECCAK.verify(reader, epoch, header),
         }
     }
 
@@ -99,6 +106,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Dev => DEV.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce),
+            ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce),
         }
     }
 
@@ -107,6 +115,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dummy => DUMMY.time(),
             ConsensusStrategy::Dev => DEV.time(),
             ConsensusStrategy::Argon => ARGON.time(),
+            ConsensusStrategy::Keccak => KECCAK.time(),
         }
     }
 }

@@ -76,7 +76,7 @@ impl Miner {
             .lock()
             .unwrap()
             .take()
-            .ok_or_else(|| format_err!("Empty mine ctx"))?;
+            .ok_or_else(|| format_err!("Mint job is empty"))?;
         debug!("miner receive submit with hash:{}", header_hash);
         // TODO:FIX ME
         /*

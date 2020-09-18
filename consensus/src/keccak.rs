@@ -3,13 +3,12 @@
 
 use crate::consensus::Consensus;
 use crate::time::{RealTimeService, TimeService};
-use crate::{difficult_to_target, difficulty, set_header_nonce, target_to_difficulty};
-use anyhow::{anyhow, Result};
+use crate::{difficulty, set_header_nonce, target_to_difficulty};
+use anyhow::Result;
 use sha3::{Digest, Keccak256};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::{BlockHeader, RawBlockHeader};
+use starcoin_types::block::BlockHeader;
 use starcoin_types::{H256, U256};
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
@@ -46,30 +45,16 @@ impl Consensus for KeccakConsensus {
         epoch: &EpochInfo,
         header: &BlockHeader,
     ) -> Result<()> {
-        //TODO: check mining_hash for difficulty? not need recalculate it?
-        //TODO: Move as a common one.
         let difficulty = self.calculate_next_difficulty(reader, epoch)?;
-        if header.difficulty() != difficulty {
-            return Err(anyhow!(
-                "Difficulty mismatch: {:?}, header: {:?}",
-                difficulty,
-                header
-            ));
-        }
-        let nonce = header.nonce;
-        let raw_block_header: RawBlockHeader = header.to_owned().into();
-        let pow_hash = self.calculate_pow_hash(raw_block_header.crypto_hash(), nonce)?;
-        let hash_u256: U256 = pow_hash.into();
-        let target = difficult_to_target(difficulty);
-        if hash_u256 <= target {
-            anyhow::bail!("Invalid header:{:?}", header);
-        }
-        Ok(())
+        self.verify_header_difficulty(difficulty, header)
     }
 
+    /// Double keccak256 for pow hash
     fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256> {
         let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
-        let pow_hash: H256 = Keccak256::digest(&mix_hash).as_slice().into();
+        let pow_hash: H256 = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice())
+            .as_slice()
+            .into();
         Ok(pow_hash)
     }
 

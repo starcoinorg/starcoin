@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::time::TimeService;
-use crate::ChainReader;
-use anyhow::Result;
+use crate::{difficult_to_target, ChainReader};
+use anyhow::{anyhow, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateReader;
+use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     H256, U256,
@@ -55,6 +56,26 @@ pub trait Consensus {
         let mining_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let consensus_nonce = self.solve_consensus_nonce(mining_hash, difficulty);
         Ok(block_template.into_block(consensus_nonce, difficulty))
+    }
+    /// Inner helper for verify and unit testing
+    fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
+        if header.difficulty() != difficulty {
+            return Err(anyhow!(
+                "Difficulty mismatch: {:?}, header: {:?}",
+                difficulty,
+                header
+            ));
+        }
+        let nonce = header.nonce;
+        let raw_block_header: RawBlockHeader = header.to_owned().into();
+        let pow_hash: U256 = self
+            .calculate_pow_hash(raw_block_header.crypto_hash(), nonce)?
+            .into();
+        let target = difficult_to_target(difficulty);
+        if pow_hash > target {
+            anyhow::bail!("Invalid header:{:?}", header);
+        }
+        Ok(())
     }
 
     fn time(&self) -> &dyn TimeService;

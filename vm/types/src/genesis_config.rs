@@ -57,6 +57,7 @@ pub enum ConsensusStrategy {
     Dummy = 0,
     Dev = 1,
     Argon = 2,
+    Keccak = 3,
 }
 
 impl ConsensusStrategy {
@@ -77,6 +78,7 @@ impl fmt::Display for ConsensusStrategy {
             ConsensusStrategy::Dummy => write!(f, "dummy"),
             ConsensusStrategy::Dev => write!(f, "dev"),
             ConsensusStrategy::Argon => write!(f, "argon"),
+            ConsensusStrategy::Keccak => write!(f, "keccak"),
         }
     }
 }
@@ -89,6 +91,7 @@ impl FromStr for ConsensusStrategy {
             "dummy" => Ok(ConsensusStrategy::Dummy),
             "dev" => Ok(ConsensusStrategy::Dev),
             "argon" => Ok(ConsensusStrategy::Argon),
+            "keccak" => Ok(ConsensusStrategy::Keccak),
             s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
         }
     }
@@ -879,7 +882,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             .expect("decode public key must success."),
         ),
         genesis_key_pair: None,
-        consensus_strategy: ConsensusStrategy::Argon,
+        consensus_strategy: ConsensusStrategy::Keccak,
         global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
         global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
         min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
@@ -935,7 +938,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         .expect("decode public key must success."),
     ),
     genesis_key_pair: None,
-    consensus_strategy: ConsensusStrategy::Argon,
+    consensus_strategy: ConsensusStrategy::Keccak,
     global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
     global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
     min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
@@ -983,7 +986,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         .expect("decode public key must success."),
     ),
     genesis_key_pair: None,
-    consensus_strategy: ConsensusStrategy::Argon,
+    consensus_strategy: ConsensusStrategy::Keccak,
     global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
     global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
     min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
