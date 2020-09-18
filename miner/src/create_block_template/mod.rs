@@ -109,7 +109,9 @@ impl EventHandler<Self, NewBranch> for CreateBlockTemplateService {
         msg: NewBranch,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) {
-        self.inner.insert_uncle((&*msg.0).clone())
+        msg.0.iter().for_each(|uncle| {
+            self.inner.insert_uncle(uncle.clone());
+        });
     }
 }
 
