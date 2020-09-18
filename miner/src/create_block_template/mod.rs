@@ -22,7 +22,7 @@ use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 use traits::ChainReader;
 use types::{
-    block::{Block, BlockHeader, BlockTemplate},
+    block::{Block, BlockHeader, BlockNumber, BlockTemplate},
     system_events::{NewBranch, NewHeadBlock},
 };
 
@@ -30,6 +30,7 @@ use types::{
 mod test_create_block_template;
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
+const MAX_NUMBER: BlockNumber = 10_000;
 
 #[derive(Debug)]
 pub struct GetHeadRequest;
@@ -121,6 +122,7 @@ impl ServiceHandler<Self, CreateBlockTemplateRequest> for CreateBlockTemplateSer
         _msg: CreateBlockTemplateRequest,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) -> Result<BlockTemplate> {
+        self.inner.uncles_prune();
         self.inner.create_block_template()
     }
 }
@@ -189,16 +191,32 @@ impl Inner {
 
     pub fn do_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
-        for maybe_uncle in self.uncles.values() {
-            if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
-                break;
-            }
-            if self.chain.can_be_uncle(maybe_uncle) {
-                new_uncle.push(maybe_uncle.clone())
+        if let Ok(epoch) = self.chain.epoch_info() {
+            if epoch.end_number() != (self.chain.current_header().number() + 1) {
+                for maybe_uncle in self.uncles.values() {
+                    if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
+                        break;
+                    }
+                    if self.chain.can_be_uncle(maybe_uncle) {
+                        new_uncle.push(maybe_uncle.clone())
+                    }
+                }
             }
         }
 
         new_uncle
+    }
+
+    fn uncles_prune(&mut self) {
+        if !self.uncles.is_empty() {
+            if let Ok(epoch) = self.chain.epoch_info() {
+                let latest_number = self.chain.current_header().number();
+                if epoch.end_number() == (latest_number + 1) {
+                    self.uncles
+                        .retain(|_, v| v.number() > (latest_number - MAX_NUMBER));
+                }
+            }
+        }
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplate> {
