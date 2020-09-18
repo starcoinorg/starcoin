@@ -28,7 +28,7 @@ impl JobClient for JobBusClient {
         block_on(async move {
             let receiver = bus.channel::<MintBlockEvent>().await;
             receiver
-                .map(|r| r.map(|b| Ok((b.header_hash, b.difficulty))))
+                .map(|r| r.map(|b| Ok((b.minting_hash, b.difficulty))))
                 .map(|s| s.boxed())
         })
     }

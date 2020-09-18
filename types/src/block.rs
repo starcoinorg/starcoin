@@ -255,6 +255,7 @@ pub struct RawBlockHeader {
     pub difficulty: U256,
     /// hash for uncle blocks header
     pub uncle_hash: Option<HashValue>,
+    //TODO: Add chain id
 }
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]

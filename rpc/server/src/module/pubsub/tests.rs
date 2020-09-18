@@ -241,7 +241,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let v = r["params"]["result"].clone();
     let mint_block: MintBlock = serde_json::from_value(v).unwrap();
     assert_eq!(mint_block.difficulty, diff);
-    assert_eq!(mint_block.header_hash, header_hash);
+    assert_eq!(mint_block.minting_hash, header_hash);
     // Unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;

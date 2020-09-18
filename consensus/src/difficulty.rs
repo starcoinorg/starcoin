@@ -3,14 +3,11 @@
 
 use starcoin_types::U256;
 
+use crate::{difficult_1_target, difficult_to_target};
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_vm_types::on_chain_config::EpochInfo;
-
-pub fn difficult_1_target() -> U256 {
-    U256::max_value()
-}
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
@@ -98,14 +95,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
         avg_time, time_plan, new_target
     );
     Ok(new_target)
-}
-
-pub fn target_to_difficulty(target: U256) -> U256 {
-    difficult_1_target() / target
-}
-
-pub fn difficult_to_target(difficulty: U256) -> U256 {
-    difficult_1_target() / difficulty
 }
 
 #[derive(Clone)]
