@@ -32,15 +32,15 @@ pub fn test_sync(sync_mode: SyncMode) {
     debug!("first chain head block number is {}", number_1);
     assert_eq!(number_1, count);
 
-    second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
-    second_config.miner.enable_miner_client = false;
-    second_config.sync.set_mode(sync_mode);
-
     let mut second_config = NodeConfig::random_for_test();
     info!(
         "second peer : {:?}",
         second_config.network.self_peer_id().unwrap()
     );
+    second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
+    second_config.miner.enable_miner_client = false;
+    second_config.sync.set_mode(sync_mode);
+
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
     let second_chain = block_on(async { second_node.start_handle().chain_service().await });
 
