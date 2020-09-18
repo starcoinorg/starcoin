@@ -670,11 +670,13 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
             }
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                if !peer_info.known_blocks.contains(&id) {
-                    peer_info.known_blocks.put(id, ());
-                } else {
+                if peer_info.known_blocks.contains(&id)
+                    || peer_info.peer_info.get_total_difficulty() >= total_difficulty
+                {
                     continue;
                 }
+
+                peer_info.known_blocks.put(id, ());
                 network
                     .send_peer_message(
                         BLOCK_PROTOCOL_NAME.into(),
