@@ -83,7 +83,7 @@ fn test_do_uncles() {
         let mut master =
             BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
 
-        let tmp_inner = Inner::new(
+        let mut tmp_inner = Inner::new(
             node_config.net(),
             storage.clone(),
             head_id,
@@ -101,7 +101,8 @@ fn test_do_uncles() {
             .create_block(&master, block_template)
             .unwrap();
         head_id = block.id();
-        master.apply(block).unwrap();
+        master.apply(block.clone()).unwrap();
+        tmp_inner.update_chain(block).unwrap();
         master_inner = Some(tmp_inner);
     }
 
@@ -135,8 +136,10 @@ fn test_do_uncles() {
     }
 
     // uncles
-    {
-        let master = BlockChain::new(node_config.net().consensus(), head_id, storage).unwrap();
+    for i in 0..times {
+        let mut master =
+            BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
+
         let block_template = master_inner
             .as_ref()
             .unwrap()
@@ -147,7 +150,14 @@ fn test_do_uncles() {
             .consensus()
             .create_block(&master, block_template)
             .unwrap();
-        assert_eq!(block.uncles().unwrap().len(), times);
+        if i == 0 {
+            assert_eq!(block.uncles().unwrap().len(), times);
+        } else {
+            assert!(block.uncles().is_none());
+        }
+        head_id = block.id();
+        master.apply(block.clone()).unwrap();
+        master_inner.as_mut().unwrap().update_chain(block).unwrap();
     }
 }
 
