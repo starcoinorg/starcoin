@@ -114,9 +114,20 @@ where
         let block_header = block.header().clone();
         let total_difficulty = new_branch.get_total_difficulty()?;
         let broadcast_new_branch = self.is_new_branch(&block_header.parent_hash(), repeat_apply);
+        let mut map_be_uncles = Vec::new();
+        let parent_is_master_head = self.is_master_head(&block_header.parent_hash());
+        if broadcast_new_branch
+            && self.block_exist(block_header.parent_hash())
+            && !parent_is_master_head
+        {
+            map_be_uncles.push(
+                self.get_master()
+                    .get_header_by_number(block_header.number())?
+                    .expect("block header is not exist."),
+            );
+        }
         if total_difficulty > self.get_master().get_total_difficulty()? {
-            let broadcast_new_master = !self.parent_eq_head(&block_header.parent_hash());
-            let (enacted_blocks, retracted_blocks) = if broadcast_new_master {
+            let (enacted_blocks, retracted_blocks) = if !parent_is_master_head {
                 self.find_ancestors_from_accumulator(&new_branch)?
             } else {
                 (vec![block.clone()], vec![])
@@ -134,7 +145,8 @@ where
 
         if broadcast_new_branch {
             //send new branch event
-            self.broadcast_new_branch(block_header);
+            map_be_uncles.push(block_header);
+            self.broadcast_new_branch(map_be_uncles);
         }
 
         WRITE_BLOCK_CHAIN_METRICS
@@ -153,7 +165,7 @@ where
         if !repeat_apply
             || self
                 .startup_info
-                .branch_exist_exclude(&new_block_header.parent_hash())
+                .is_branch_head_exclude_master(&new_block_header.parent_hash())
         {
             self.startup_info.insert_branch(new_block_header);
         }
@@ -161,11 +173,11 @@ where
 
     fn is_new_branch(&self, parent_id: &HashValue, repeat_apply: bool) -> bool {
         !repeat_apply
-            && !self.startup_info.branch_exist_exclude(parent_id)
-            && !self.parent_eq_head(parent_id)
+            && !self.startup_info.is_branch_head_exclude_master(parent_id)
+            && !self.is_master_head(parent_id)
     }
 
-    fn parent_eq_head(&self, parent_id: &HashValue) -> bool {
+    fn is_master_head(&self, parent_id: &HashValue) -> bool {
         parent_id == &self.startup_info.master
     }
 
@@ -255,10 +267,10 @@ where
         });
     }
 
-    fn broadcast_new_branch(&self, maybe_uncle: BlockHeader) {
+    fn broadcast_new_branch(&self, maybe_uncles: Vec<BlockHeader>) {
         let bus = self.bus.clone();
         bus.do_send(Broadcast {
-            msg: NewBranch(Arc::new(maybe_uncle)),
+            msg: NewBranch(Arc::new(maybe_uncles)),
         });
     }
 
