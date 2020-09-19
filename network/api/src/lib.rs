@@ -6,12 +6,13 @@ use std::time::Duration;
 
 pub mod messages;
 use async_trait::async_trait;
+use network_rpc_core::RawRpcClient;
 pub use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
 use std::borrow::Cow;
 
 #[async_trait]
-pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
+pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + RawRpcClient {
     async fn send_peer_message(
         &self,
         protocol_name: Cow<'static, [u8]>,
@@ -28,8 +29,7 @@ pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
 
     async fn send_request_bytes(
         &self,
-        protocol_name: Cow<'static, [u8]>,
-        peer_id: PeerId,
+        peer_id: Option<PeerId>,
         rpc_path: String,
         message: Vec<u8>,
         time_out: Duration,
@@ -47,9 +47,5 @@ pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin {
 
     async fn get_peer_set_size(&self) -> Result<usize>;
 
-    async fn register_rpc_proto(
-        &self,
-        proto_name: Cow<'static, [u8]>,
-        rpc_info: RpcInfo,
-    ) -> Result<()>;
+    async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()>;
 }

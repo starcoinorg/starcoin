@@ -24,9 +24,7 @@ pub fn mock_rpc_handler(
     _ctx: &mut ServiceContext<NetworkRpcService>,
 ) -> Box<dyn Any> {
     let mut req = req.downcast::<RawRpcRequestMessage>().unwrap();
-    req.responder
-        .try_send((network_p2p::PROTOCOL_NAME.into(), req.request.1))
-        .unwrap();
+    req.responder.try_send(req.request.2).unwrap();
     Box::new(())
 }
 
@@ -51,8 +49,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = network2
         .send_request_bytes(
-            network_p2p::PROTOCOL_NAME.into(),
-            network1.identify().clone(),
+            Some(network1.identify().clone()),
             "test".to_string(),
             request.clone(),
             Duration::from_secs(1),
@@ -69,8 +66,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = network1
         .send_request_bytes(
-            network_p2p::PROTOCOL_NAME.into(),
-            network2.identify().clone(),
+            Some(network2.identify().clone()),
             "test".to_string(),
             request.clone(),
             Duration::from_secs(1),

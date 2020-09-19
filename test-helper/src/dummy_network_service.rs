@@ -1,10 +1,14 @@
 use accumulator::AccumulatorNode;
-//use anyhow::*;
+
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use network_api::{messages::PeerMessage, NetworkService, PeerId};
+use network_rpc_core::RawRpcClient;
+use network_rpc_core::Result;
 use starcoin_chain::BlockChain;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
-    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber, Result,
+    BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders, GetBlockHeadersByNumber,
 };
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
@@ -149,6 +153,63 @@ impl DummyNetworkService {
             Ok(None)
         }
     }
+
+    async fn handle_request(
+        &self,
+        _peer_id: Option<PeerId>,
+        rpc_path: String,
+        message: Vec<u8>,
+        _time_out: Duration,
+    ) -> Result<Vec<u8>> {
+        match rpc_path.to_lowercase().as_str() {
+            // "get_txns" => {}
+            "get_txn_infos" => {
+                let block_id: HashValue = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_txn_infos(block_id)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_headers_by_number" => {
+                let req: GetBlockHeadersByNumber = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_headers_by_number(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_header_by_hash" => {
+                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_header_by_hash(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_headers_with_peer" => {
+                let req: GetBlockHeaders = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_headers_with_peer(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_info_by_hash" => {
+                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_info_by_hash(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_body_by_hash" => {
+                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_body_by_hash(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_state_node_by_node_hash" => {
+                let req: HashValue = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_state_node_by_node_hash(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            "get_accumulator_node_by_node_hash" => {
+                let req: GetAccumulatorNodeByNodeHash = scs::from_bytes(message.as_slice())?;
+                let resp = self.get_accumulator_node_by_node_hash(req)?;
+                Ok(scs::to_bytes(&resp)?)
+            }
+            // "get_state_with_proof" => {
+            // }
+            // "get_account_state" => {
+            // }
+            _ => unimplemented!(),
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -176,60 +237,14 @@ impl NetworkService for DummyNetworkService {
 
     async fn send_request_bytes(
         &self,
-        _protocol_name: Cow<'static, [u8]>,
-        _peer_id: PeerId,
+        peer_id: Option<PeerId>,
         rpc_path: String,
         message: Vec<u8>,
-        _time_out: Duration,
+        time_out: Duration,
     ) -> anyhow::Result<Vec<u8>> {
-        match rpc_path.to_lowercase().as_str() {
-            // "get_txns" => {}
-            "get_txn_infos" => {
-                let block_id: HashValue = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_txn_infos(block_id);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_headers_by_number" => {
-                let req: GetBlockHeadersByNumber = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_headers_by_number(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_header_by_hash" => {
-                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_header_by_hash(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_headers_with_peer" => {
-                let req: GetBlockHeaders = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_headers_with_peer(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_info_by_hash" => {
-                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_info_by_hash(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_body_by_hash" => {
-                let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_body_by_hash(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_state_node_by_node_hash" => {
-                let req: HashValue = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_state_node_by_node_hash(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            "get_accumulator_node_by_node_hash" => {
-                let req: GetAccumulatorNodeByNodeHash = scs::from_bytes(message.as_slice())?;
-                let resp = self.get_accumulator_node_by_node_hash(req);
-                Ok(scs::to_bytes(&resp)?)
-            }
-            // "get_state_with_proof" => {
-            // }
-            // "get_account_state" => {
-            // }
-            _ => unimplemented!(),
-        }
+        self.handle_request(peer_id, rpc_path, message, time_out)
+            .then(|result| async move { Ok(scs::to_bytes(&result).unwrap()) })
+            .await
     }
 
     async fn peer_set(&self) -> anyhow::Result<Vec<PeerInfo>> {
@@ -256,11 +271,19 @@ impl NetworkService for DummyNetworkService {
         Ok(2)
     }
 
-    async fn register_rpc_proto(
-        &self,
-        _proto_name: Cow<'static, [u8]>,
-        _rpc_info: RpcInfo,
-    ) -> anyhow::Result<()> {
+    async fn register_rpc_proto(&self, _rpc_info: RpcInfo) -> anyhow::Result<()> {
         Ok(())
+    }
+}
+
+impl RawRpcClient for DummyNetworkService {
+    fn send_raw_request(
+        &self,
+        peer_id: Option<PeerId>,
+        rpc_path: String,
+        message: Vec<u8>,
+        timeout: Duration,
+    ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
+        self.send_request_bytes(peer_id, rpc_path, message, timeout)
     }
 }

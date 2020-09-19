@@ -16,7 +16,7 @@ pub struct NewHeadBlock(pub Arc<BlockDetail>);
 /// may be uncle block
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
-pub struct NewBranch(pub Arc<BlockHeader>);
+pub struct NewBranch(pub Arc<Vec<BlockHeader>>);
 
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
@@ -62,14 +62,14 @@ impl GenerateBlockEvent {
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub struct MintBlockEvent {
-    pub header_hash: HashValue,
+    pub minting_hash: HashValue,
     pub difficulty: U256,
 }
 
 impl MintBlockEvent {
-    pub fn new(header_hash: HashValue, difficulty: U256) -> Self {
+    pub fn new(minting_hash: HashValue, difficulty: U256) -> Self {
         Self {
-            header_hash,
+            minting_hash,
             difficulty,
         }
     }
@@ -78,6 +78,7 @@ impl MintBlockEvent {
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub struct SubmitSealEvent {
+    //TODO: header_hash to minting_hash
     pub nonce: u64,
     pub header_hash: HashValue,
 }

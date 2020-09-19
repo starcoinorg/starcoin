@@ -6,11 +6,12 @@ use crate::time::{MockTimeService, TimeService};
 use anyhow::Result;
 use logger::prelude::*;
 use rand::Rng;
+use starcoin_crypto::HashValue;
 use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::U256;
+use starcoin_types::{H256, U256};
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
@@ -47,7 +48,7 @@ impl Consensus for DummyConsensus {
         Ok(epoch.block_time_target().into())
     }
 
-    fn solve_consensus_nonce(&self, _header_hash: &[u8], difficulty: U256) -> u64 {
+    fn solve_consensus_nonce(&self, _mining_hash: HashValue, difficulty: U256) -> u64 {
         let mut rng = rand::thread_rng();
         let time: u64 = rng.gen_range(1, difficulty.as_u64() * 2);
         debug!(
@@ -66,6 +67,10 @@ impl Consensus for DummyConsensus {
         _header: &BlockHeader,
     ) -> Result<()> {
         Ok(())
+    }
+
+    fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<H256> {
+        unreachable!()
     }
 
     fn time(&self) -> &dyn TimeService {

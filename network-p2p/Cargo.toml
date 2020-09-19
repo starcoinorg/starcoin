@@ -15,7 +15,7 @@ codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 derive_more = "0.99.10"
-either = "1.6.0"
+either = "1.6.1"
 erased-serde = "0.3.9"
 fnv = "1.0.6"
 futures = "0.3"

@@ -14,6 +14,7 @@ use bitflags::_core::sync::atomic::Ordering;
 use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
+use futures::future::BoxFuture;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use futures_timer::Delay;
@@ -22,10 +23,12 @@ use libp2p::PeerId;
 use lru::LruCache;
 use network_api::{messages::RawRpcRequestMessage, NetworkService};
 use network_p2p::Multiaddr;
+use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
+use starcoin_network_rpc_api::CHAIN_PROTOCOL_NAME;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -95,8 +98,8 @@ impl PeerInfoNet {
         }
     }
 
-    pub fn register_rpc_proto(&mut self, rpc_proto_name: Cow<'static, [u8]>, rpc_info: RpcInfo) {
-        self.peer_info.register_rpc_proto(rpc_proto_name, rpc_info)
+    pub fn register_rpc_proto(&mut self, rpc_info: RpcInfo) {
+        self.peer_info.register_rpc_proto(rpc_info)
     }
 
     pub fn get_peer_info(&self) -> &PeerInfo {
@@ -133,8 +136,7 @@ impl NetworkService for NetworkAsyncService {
 
     async fn send_request_bytes(
         &self,
-        protocol_name: Cow<'static, [u8]>,
-        peer_id: types::peer_info::PeerId,
+        peer_id: Option<types::peer_info::PeerId>,
         rpc_path: String,
         message: Vec<u8>,
         time_out: Duration,
@@ -142,8 +144,22 @@ impl NetworkService for NetworkAsyncService {
         let request_id = get_unix_ts();
         let peer_msg = PeerMessage::RawRPCRequest(request_id, rpc_path, message);
         let data = peer_msg.encode()?;
+        let peer_id = match peer_id {
+            Some(peer_id) => peer_id,
+            None => {
+                self.best_peer()
+                    .await?
+                    .ok_or_else(|| format_err!("No connected peers to request for {:?}", peer_msg))?
+                    .peer_id
+            }
+        };
+        debug!(
+            "Send request to {} with id {} and msg: {:?}",
+            peer_id, request_id, peer_msg
+        );
+
         self.network_service
-            .send_message(peer_id.clone().into(), protocol_name, data)
+            .send_message(peer_id.clone().into(), CHAIN_PROTOCOL_NAME.into(), data)
             .await?;
 
         let (tx, rx) = futures::channel::mpsc::channel(1);
@@ -151,15 +167,15 @@ impl NetworkService for NetworkAsyncService {
         self.raw_message_processor
             .add_future(request_id, tx, peer_id.clone().into())
             .await;
-        debug!("send request to {} with id {}", peer_id, request_id);
+
         let processor = self.raw_message_processor.clone();
-        let peer_id_clone = peer_id.clone();
 
         if let Some(metrics) = &self.metrics {
             metrics.request_count.inc();
         }
 
         let metrics = self.metrics.clone();
+        let peer_id_for_task = peer_id.clone();
         let task = async move {
             Delay::new(time_out).await;
             let timeout = processor.remove_future(request_id).await;
@@ -168,7 +184,7 @@ impl NetworkService for NetworkAsyncService {
             }
             debug!(
                 "send request to {} with id {} timeout",
-                peer_id_clone, request_id
+                peer_id_for_task, request_id
             );
             if let Some(metrics) = metrics {
                 metrics.request_timeout_count.inc();
@@ -234,24 +250,26 @@ impl NetworkService for NetworkAsyncService {
         Ok(size)
     }
 
-    async fn register_rpc_proto(
-        &self,
-        proto_name: Cow<'static, [u8]>,
-        rpc_info: RpcInfo,
-    ) -> Result<()> {
-        if self
-            .network_service
-            .exist_notif_proto(proto_name.clone())
-            .await
-        {
-            if let Some(peer_info) = self.inner.peers.lock().await.get_mut(&self.peer_id) {
-                peer_info.register_rpc_proto(proto_name, rpc_info);
-                self.inner
-                    .network_service
-                    .update_self_info(peer_info.get_peer_info().clone());
-            }
+    async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()> {
+        if let Some(peer_info) = self.inner.peers.lock().await.get_mut(&self.peer_id) {
+            peer_info.register_rpc_proto(rpc_info);
+            self.inner
+                .network_service
+                .update_self_info(peer_info.get_peer_info().clone());
         }
         Ok(())
+    }
+}
+
+impl RawRpcClient for NetworkAsyncService {
+    fn send_raw_request(
+        &self,
+        peer_id: Option<network_api::PeerId>,
+        rpc_path: String,
+        message: Vec<u8>,
+        timeout: Duration,
+    ) -> BoxFuture<Result<Vec<u8>>> {
+        self.send_request_bytes(peer_id, rpc_path, message, timeout)
     }
 }
 
@@ -283,10 +301,7 @@ impl NetworkAsyncService {
 
         let mut rpc_proto_info = Vec::new();
         let chain_rpc_proto_info = get_rpc_info();
-        rpc_proto_info.push((
-            chain_rpc_proto_info.0.into(),
-            RpcInfo::new(chain_rpc_proto_info.1),
-        ));
+        rpc_proto_info.push(RpcInfo::new(chain_rpc_proto_info));
         let self_info = PeerInfo::new_with_proto(
             peer_id,
             head_block_info.get_total_difficulty(),
@@ -476,7 +491,7 @@ impl Inner {
                 let (tx, rx) = mpsc::channel(1);
                 self.network_rpc_service.try_send(RawRpcRequestMessage {
                     responder: tx,
-                    request: (rpc_path, request, peer_id.clone().into()),
+                    request: (peer_id.clone().into(), rpc_path, request),
                 })?;
                 let network_service = self.network_service.clone();
                 async_std::task::spawn(Self::handle_response(id, peer_id, rx, network_service));
@@ -494,16 +509,16 @@ impl Inner {
     async fn handle_response(
         id: u128,
         peer_id: PeerId,
-        mut rx: mpsc::Receiver<(Cow<'static, [u8]>, Vec<u8>)>,
+        mut rx: mpsc::Receiver<Vec<u8>>,
         network_service: SNetworkService,
     ) -> Result<()> {
         let response = rx.next().await;
         match response {
-            Some((protocol_name, response)) => {
+            Some(response) => {
                 let peer_msg = PeerMessage::RawRPCResponse(id, response);
                 let data = peer_msg.encode()?;
                 network_service
-                    .send_message(peer_id, protocol_name, data)
+                    .send_message(peer_id, CHAIN_PROTOCOL_NAME.into(), data)
                     .await?;
                 debug!("send response by id {} succ.", id);
                 Ok(())
@@ -670,11 +685,13 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
             }
 
             for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                if !peer_info.known_blocks.contains(&id) {
-                    peer_info.known_blocks.put(id, ());
-                } else {
+                if peer_info.known_blocks.contains(&id)
+                    || peer_info.peer_info.get_total_difficulty() >= total_difficulty
+                {
                     continue;
                 }
+
+                peer_info.known_blocks.put(id, ());
                 network
                     .send_peer_message(
                         BLOCK_PROTOCOL_NAME.into(),

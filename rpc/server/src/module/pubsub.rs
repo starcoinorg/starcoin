@@ -310,7 +310,7 @@ pub struct NewMintBlockHandler;
 impl EventHandler<MintBlockEvent> for NewMintBlockHandler {
     fn handle(&self, msg: MintBlockEvent) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         vec![Ok(pubsub::Result::MintBlock(Box::new(MintBlock {
-            header_hash: msg.header_hash,
+            minting_hash: msg.minting_hash,
             difficulty: msg.difficulty,
         })))]
     }

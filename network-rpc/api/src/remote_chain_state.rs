@@ -1,6 +1,8 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::{gen_client::NetworkRpcClient, GetAccountState, GetStateWithProof};
 use anyhow::{anyhow, Result};
-use network_api::NetworkService;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainStateReader, StateView, StateWithProof};
 use starcoin_types::access_path::AccessPath;
@@ -10,20 +12,14 @@ use starcoin_types::peer_info::PeerId;
 use starcoin_types::state_set::ChainStateSet;
 
 #[derive(Clone)]
-pub struct RemoteChainStateReader<N>
-where
-    N: NetworkService,
-{
+pub struct RemoteChainStateReader {
     peer_id: Option<PeerId>,
     state_root: Option<HashValue>,
-    client: NetworkRpcClient<N>,
+    client: NetworkRpcClient,
 }
 
-impl<N> RemoteChainStateReader<N>
-where
-    N: NetworkService,
-{
-    pub fn new(client: NetworkRpcClient<N>) -> Self {
+impl RemoteChainStateReader {
+    pub fn new(client: NetworkRpcClient) -> Self {
         Self {
             peer_id: None,
             state_root: None,
@@ -39,10 +35,7 @@ where
     }
 }
 
-impl<N> ChainStateReader for RemoteChainStateReader<N>
-where
-    N: NetworkService,
-{
+impl ChainStateReader for RemoteChainStateReader {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
         let peer_id = self
             .peer_id
@@ -82,12 +75,7 @@ where
             account_address: account_address.to_owned(),
         };
         let client = self.client.clone();
-        futures::executor::block_on(async {
-            client
-                .get_account_state(peer_id, req)
-                .await
-                .map_err(|e| e.into())
-        })
+        futures::executor::block_on(async { client.get_account_state(peer_id, req).await })
     }
 
     fn state_root(&self) -> HashValue {
@@ -102,10 +90,7 @@ where
     }
 }
 
-impl<N> StateView for RemoteChainStateReader<N>
-where
-    N: NetworkService,
-{
+impl StateView for RemoteChainStateReader {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
         let state_proof = self.get_with_proof(access_path)?;
         Ok(state_proof.state)
