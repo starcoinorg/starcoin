@@ -91,7 +91,7 @@ where
     N: NetworkService + 'static,
 {
     pool: TxPoolService,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     network_service: N,
 }
 

@@ -4258,6 +4258,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.5",
  "libp2p",
+ "network-rpc-core",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -4320,13 +4321,15 @@ dependencies = [
 name = "network-rpc-core"
 version = "0.4.6"
 dependencies = [
- "actix",
  "anyhow",
  "futures 0.3.5",
- "network-api",
+ "log 0.4.11",
+ "network-rpc-derive",
+ "num_enum",
  "serde",
- "starcoin-logger",
+ "starcoin-canonical-serialization",
  "starcoin-types",
+ "stest",
 ]
 
 [[package]]
@@ -4335,12 +4338,10 @@ version = "0.4.6"
 dependencies = [
  "anyhow",
  "futures 0.3.5",
- "network-rpc-core",
  "proc-macro-crate",
  "proc-macro2 1.0.21",
  "quote 1.0.7",
  "serde",
- "starcoin-canonical-serialization",
  "starcoin-logger",
  "starcoin-types",
  "syn 1.0.41",
@@ -7175,6 +7176,7 @@ dependencies = [
  "lru 0.6.0",
  "network-api",
  "network-p2p",
+ "network-rpc-core",
  "parity-codec",
  "parking_lot 0.11.0",
  "prometheus 0.10.0",

@@ -99,14 +99,11 @@ impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
     }
 }
 
-pub async fn get_txns<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_txns(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     req: GetTxns,
-) -> Result<TransactionsData>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<TransactionsData> {
     let data = client.get_txns(peer_id, req.clone()).await?;
     if req.ids.is_some() {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
@@ -122,28 +119,19 @@ where
     }
 }
 
-pub async fn get_txn_infos<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_txn_infos(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     block_id: HashValue,
-) -> Result<Option<Vec<TransactionInfo>>>
-where
-    N: NetworkService + 'static,
-{
-    client
-        .get_txn_infos(peer_id, block_id)
-        .await
-        .map_err(|e| e.into())
+) -> Result<Option<Vec<TransactionInfo>>> {
+    client.get_txn_infos(peer_id, block_id).await
 }
 
-pub async fn get_headers_by_number<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_headers_by_number(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     req: GetBlockHeadersByNumber,
-) -> Result<Vec<BlockHeader>>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<Vec<BlockHeader>> {
     let mut verify_condition: RpcEntryVerify<BlockNumber> = (&req).into();
     let data = client.get_headers_by_number(peer_id, req).await?;
     let verified_headers =
@@ -151,15 +139,12 @@ where
     Ok(verified_headers)
 }
 
-pub async fn get_headers_with_peer<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_headers_with_peer(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     req: GetBlockHeaders,
     number: BlockNumber,
-) -> Result<Vec<BlockHeader>>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<Vec<BlockHeader>> {
     let mut verify_condition: RpcEntryVerify<BlockNumber> =
         (&req.clone().into_numbers(number)).into();
     let data = client.get_headers_with_peer(peer_id, req).await?;
@@ -170,7 +155,7 @@ where
 
 pub async fn get_headers<N>(
     network: &N,
-    client: &NetworkRpcClient<N>,
+    client: &NetworkRpcClient,
     req: GetBlockHeaders,
     number: BlockNumber,
 ) -> Result<(Vec<BlockHeader>, PeerId)>
@@ -202,7 +187,7 @@ where
 
 pub async fn _get_header_by_hash<N>(
     network: &N,
-    client: &NetworkRpcClient<N>,
+    client: &NetworkRpcClient,
     hashes: Vec<HashValue>,
 ) -> Result<Vec<BlockHeader>>
 where
@@ -221,7 +206,7 @@ where
 }
 
 pub async fn get_body_by_hash<N>(
-    client: &NetworkRpcClient<N>,
+    client: &NetworkRpcClient,
     network: &N,
     hashes: Vec<HashValue>,
     max_height: BlockNumber,
@@ -250,28 +235,22 @@ where
     }
 }
 
-pub async fn get_info_by_hash<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_info_by_hash(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     hashes: Vec<HashValue>,
-) -> Result<Vec<BlockInfo>>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<Vec<BlockInfo>> {
     let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
     let data = client.get_info_by_hash(peer_id, hashes).await?;
     let verified_infos = verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
     Ok(verified_infos)
 }
 
-pub async fn get_state_node_by_node_hash<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_state_node_by_node_hash(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     node_key: HashValue,
-) -> Result<StateNode>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<StateNode> {
     if let Some(state_node) = client
         .get_state_node_by_node_hash(peer_id, node_key)
         .await?
@@ -294,15 +273,12 @@ where
     }
 }
 
-pub async fn get_accumulator_node_by_node_hash<N>(
-    client: &NetworkRpcClient<N>,
+pub async fn get_accumulator_node_by_node_hash(
+    client: &NetworkRpcClient,
     peer_id: PeerId,
     node_key: HashValue,
     accumulator_type: AccumulatorStoreType,
-) -> Result<AccumulatorNode>
-where
-    N: NetworkService + 'static,
-{
+) -> Result<AccumulatorNode> {
     if let Some(accumulator_node) = client
         .get_accumulator_node_by_node_hash(
             peer_id,

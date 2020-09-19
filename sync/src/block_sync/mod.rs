@@ -139,7 +139,7 @@ where
     headers: HashMap<HashValue, BlockHeader>,
     body_task: BlockSyncTask,
     network: N,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     state: SyncTaskState,
 }
 

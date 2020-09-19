@@ -6,7 +6,6 @@ use chain::BlockChain;
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network_api::NetworkService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::ChainStateReader;
 use starcoin_storage::Store;
@@ -20,10 +19,9 @@ use types::{
     system_events::{NewBranch, NewHeadBlock},
 };
 
-pub struct WriteBlockChainService<P, N>
+pub struct WriteBlockChainService<P>
 where
     P: TxPoolSyncService + 'static,
-    N: NetworkService + 'static,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -31,13 +29,12 @@ where
     storage: Arc<dyn Store>,
     txpool: P,
     bus: Addr<BusActor>,
-    remote_chain_state: Option<RemoteChainStateReader<N>>,
+    remote_chain_state: Option<RemoteChainStateReader>,
 }
 
-impl<P, N> WriteableChainService for WriteBlockChainService<P, N>
+impl<P> WriteableChainService for WriteBlockChainService<P>
 where
     P: TxPoolSyncService + 'static,
-    N: NetworkService + 'static,
 {
     fn try_connect(&mut self, block: Block) -> Result<()> {
         self.connect_inner(block, true, None)
@@ -53,10 +50,9 @@ where
     }
 }
 
-impl<P, N> WriteBlockChainService<P, N>
+impl<P> WriteBlockChainService<P>
 where
     P: TxPoolSyncService + 'static,
-    N: NetworkService + 'static,
 {
     pub fn new(
         config: Arc<NodeConfig>,
@@ -64,7 +60,7 @@ where
         storage: Arc<dyn Store>,
         txpool: P,
         bus: Addr<BusActor>,
-        remote_chain_state: Option<RemoteChainStateReader<N>>,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
         let master = BlockChain::new(
             config.net().consensus(),

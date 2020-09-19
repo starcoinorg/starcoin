@@ -51,7 +51,7 @@ where
 {
     downloader: Arc<Downloader<N>>,
     self_peer_id: Arc<PeerId>,
-    rpc_client: NetworkRpcClient<N>,
+    rpc_client: NetworkRpcClient,
     network: N,
     bus: Addr<BusActor>,
     sync_event_sender: mpsc::Sender<SyncEvent>,
@@ -270,7 +270,7 @@ where
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<N>>,
-        rpc_client: NetworkRpcClient<N>,
+        rpc_client: NetworkRpcClient,
         network: N,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
@@ -330,7 +330,7 @@ where
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader<N>>,
-        rpc_client: NetworkRpcClient<N>,
+        rpc_client: NetworkRpcClient,
         network: N,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
@@ -382,7 +382,7 @@ where
                 }
 
                 // 3. sync task
-                let (root, block_info) = Downloader::get_pivot(
+                let (root, block_info) = Downloader::<N>::get_pivot(
                     &rpc_client,
                     best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
@@ -439,7 +439,7 @@ where
 
     fn sync_block_from_best_peer(
         downloader: Arc<Downloader<N>>,
-        rpc_client: NetworkRpcClient<N>,
+        rpc_client: NetworkRpcClient,
         network: N,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
@@ -477,7 +477,7 @@ where
 
     async fn sync_block_from_best_peer_inner(
         downloader: Arc<Downloader<N>>,
-        rpc_client: NetworkRpcClient<N>,
+        rpc_client: NetworkRpcClient,
         network: N,
         sync_task: SyncTask,
         download_address: Addr<DownloadActor<N>>,
@@ -563,7 +563,7 @@ where
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
         bus: Addr<BusActor>,
-        remote_chain_state: Option<RemoteChainStateReader<N>>,
+        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Self {
         Downloader {
             block_connector: BlockConnector::new(
@@ -585,7 +585,7 @@ where
     pub async fn find_ancestor_header(
         &self,
         peer_id: PeerId,
-        rpc_client: &NetworkRpcClient<N>,
+        rpc_client: &NetworkRpcClient,
         network: N,
         block_number: BlockNumber,
         total_difficulty: U256,
@@ -676,7 +676,7 @@ where
     }
 
     async fn get_pivot(
-        rpc_client: &NetworkRpcClient<N>,
+        rpc_client: &NetworkRpcClient,
         peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
         step: usize,

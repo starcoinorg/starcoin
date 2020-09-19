@@ -2,59 +2,59 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::delegates::RpcMethod;
-use anyhow::{format_err, Result};
-use futures::channel::mpsc::Sender;
-use futures::SinkExt;
-use logger::prelude::*;
-use network_api::messages::RawRpcRequestMessage;
-use std::borrow::Cow;
+use crate::PeerId;
+use crate::Result;
+use crate::{NetRpcError, RawRpcServer};
+use futures::future::BoxFuture;
+use futures::FutureExt;
+use log::warn;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NetworkRpcServer {
-    //TODO remove this field after refactor RawRpcRequestMessage,because request should know it's protocol name.
-    protocol_name: Cow<'static, [u8]>,
     methods: HashMap<String, Arc<dyn RpcMethod>>,
 }
 
 impl NetworkRpcServer {
-    pub fn new<F>(protocol_name: Cow<'static, [u8]>, rpc_methods: F) -> Self
+    pub fn new<F>(rpc_methods: F) -> Self
     where
         F: IntoIterator<Item = (String, Arc<dyn RpcMethod>)>,
     {
         let mut methods: HashMap<String, Arc<dyn RpcMethod>> = Default::default();
         methods.extend(rpc_methods);
-        NetworkRpcServer {
-            protocol_name,
-            methods,
-        }
-    }
-    async fn do_response(
-        protocol_name: Cow<'static, [u8]>,
-        responder: Sender<(Cow<'static, [u8]>, Vec<u8>)>,
-        resp: Vec<u8>,
-    ) -> Result<()> {
-        if let Err(e) = responder.clone().send((protocol_name, resp)).await {
-            Err(format_err!("sender to responder error: {:?}", e))
-        } else {
-            Ok(())
-        }
+        NetworkRpcServer { methods }
     }
 
-    pub async fn handle_request(&self, req_msg: RawRpcRequestMessage) -> Result<()> {
-        let responder = req_msg.responder.clone();
-        let (path, request, peer_id) = req_msg.request;
-        if let Some(method) = self.methods.get(&path) {
+    pub async fn handle_request_async(
+        &self,
+        peer_id: PeerId,
+        rpc_path: String,
+        message: Vec<u8>,
+    ) -> Result<Vec<u8>> {
+        if let Some(method) = self.methods.get(&rpc_path) {
             let method = method.clone();
-            let response = method.call(peer_id, request).await;
-            Self::do_response(self.protocol_name.clone(), responder, response).await
+            method
+                .call(peer_id, message)
+                .await
+                .map_err(Into::<NetRpcError>::into)
         } else {
-            //TODO send method not found error to client.
             warn!(
                 "network rpc method received not defined in server: {:?}",
-                path
+                rpc_path
             );
-            Ok(())
+            Err(NetRpcError::method_not_fount(rpc_path))
         }
+    }
+}
+
+impl RawRpcServer for NetworkRpcServer {
+    fn handle_raw_request(
+        &self,
+        peer_id: PeerId,
+        rpc_path: String,
+        message: Vec<u8>,
+    ) -> BoxFuture<Result<Vec<u8>>> {
+        self.handle_request_async(peer_id, rpc_path, message)
+            .boxed()
     }
 }

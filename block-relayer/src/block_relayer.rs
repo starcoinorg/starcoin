@@ -8,7 +8,7 @@ use bus::{Broadcast, BusActor};
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
-use starcoin_network::network::NetworkAsyncService;
+use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::helper::get_txns;
@@ -28,7 +28,7 @@ use std::iter::FromIterator;
 pub struct BlockRelayer {
     bus: Addr<BusActor>,
     txpool: TxPoolService,
-    rpc_client: NetworkRpcClient<NetworkAsyncService>,
+    rpc_client: NetworkRpcClient,
 }
 
 impl ServiceFactory<Self> for BlockRelayer {
@@ -51,7 +51,7 @@ impl BlockRelayer {
 
     async fn fill_compact_block(
         txpool: TxPoolService,
-        rpc_client: NetworkRpcClient<NetworkAsyncService>,
+        rpc_client: NetworkRpcClient,
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {

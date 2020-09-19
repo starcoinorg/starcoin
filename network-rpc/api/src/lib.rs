@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use actix::Message;
+use anyhow::Result;
 use futures::future::BoxFuture;
-pub use network_rpc_core::Result;
 use network_rpc_derive::*;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -153,11 +153,17 @@ impl Message for GetStateWithProof {
     type Result = Result<StateWithProof>;
 }
 
-pub(crate) const DELAY_TIME: u64 = 15;
+#[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
+pub struct Ping {
+    ///ping message, return same msg.
+    pub msg: String,
+    ///return by error
+    pub err: bool,
+}
 
 #[net_rpc(client, server)]
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
-    fn ping(&self, peer_id: PeerId, req: String) -> BoxFuture<Result<String>>;
+    fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
 
     fn get_txns(&self, peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>>;
 
