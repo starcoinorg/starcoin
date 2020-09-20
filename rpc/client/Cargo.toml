@@ -21,7 +21,7 @@ actix-rt = "1.1"
 tokio = "0.2"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "14.2"
-jsonrpc-server-utils = "14.0"
+jsonrpc-server-utils = "15.0"
 jsonrpc-pubsub = "14.0"
 jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "14.2", features = ["http", "ipc", "ws", "arbitrary_precision"] }
