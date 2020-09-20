@@ -26,7 +26,7 @@ jsonrpc-ipc-server = "14.0"
 jsonrpc-ws-server = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
-jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-core-client = { version = "15.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 tokio01 = { version="0.1", package="tokio"}
 futures = { version = "0.3", features = ["compat"] }
 num_cpus = "1.10"
