@@ -19,7 +19,7 @@ serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0"
 actix-rt = "1.1"
 tokio = "0.2"
-jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
+jsonrpc-core = { version = "15.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "14.2"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
