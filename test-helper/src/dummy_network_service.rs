@@ -2,7 +2,7 @@ use accumulator::AccumulatorNode;
 
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use network_api::{messages::PeerMessage, NetworkService, PeerId};
+use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider};
 use network_rpc_core::RawRpcClient;
 use network_rpc_core::Result;
 use starcoin_chain::BlockChain;
@@ -210,6 +210,18 @@ impl DummyNetworkService {
             _ => unimplemented!(),
         }
     }
+
+    async fn send_request_bytes(
+        &self,
+        peer_id: Option<PeerId>,
+        rpc_path: String,
+        message: Vec<u8>,
+        time_out: Duration,
+    ) -> anyhow::Result<Vec<u8>> {
+        self.handle_request(peer_id, rpc_path, message, time_out)
+            .then(|result| async move { Ok(scs::to_bytes(&result).unwrap()) })
+            .await
+    }
 }
 
 #[async_trait::async_trait]
@@ -231,46 +243,6 @@ impl NetworkService for DummyNetworkService {
         Ok(())
     }
 
-    fn identify(&self) -> PeerId {
-        self.peer_id.clone()
-    }
-
-    async fn send_request_bytes(
-        &self,
-        peer_id: Option<PeerId>,
-        rpc_path: String,
-        message: Vec<u8>,
-        time_out: Duration,
-    ) -> anyhow::Result<Vec<u8>> {
-        self.handle_request(peer_id, rpc_path, message, time_out)
-            .then(|result| async move { Ok(scs::to_bytes(&result).unwrap()) })
-            .await
-    }
-
-    async fn peer_set(&self) -> anyhow::Result<Vec<PeerInfo>> {
-        Ok(self.peers.clone())
-    }
-
-    async fn best_peer_set(&self) -> anyhow::Result<Vec<PeerInfo>> {
-        Ok(self.peers.clone())
-    }
-
-    async fn get_peer(&self, _peer_id: &PeerId) -> anyhow::Result<Option<PeerInfo>> {
-        self.best_peer().await
-    }
-
-    async fn get_self_peer(&self) -> anyhow::Result<PeerInfo> {
-        Ok(self.peers.get(0).expect("should have").clone())
-    }
-
-    async fn best_peer(&self) -> anyhow::Result<Option<PeerInfo>> {
-        Ok(Some(self.peers.get(1).expect("should have").clone()))
-    }
-
-    async fn get_peer_set_size(&self) -> anyhow::Result<usize> {
-        Ok(2)
-    }
-
     async fn register_rpc_proto(&self, _rpc_info: RpcInfo) -> anyhow::Result<()> {
         Ok(())
     }
@@ -285,5 +257,20 @@ impl RawRpcClient for DummyNetworkService {
         timeout: Duration,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
         self.send_request_bytes(peer_id, rpc_path, message, timeout)
+            .boxed()
+    }
+}
+
+impl PeerProvider for DummyNetworkService {
+    fn identify(&self) -> PeerId {
+        self.peer_id.clone()
+    }
+
+    fn peer_set(&self) -> BoxFuture<anyhow::Result<Vec<PeerInfo>>> {
+        futures::future::ready(Ok(self.peers.clone())).boxed()
+    }
+
+    fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<anyhow::Result<Option<PeerInfo>>> {
+        unimplemented!()
     }
 }

@@ -101,7 +101,7 @@ where
 {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let best_peers = self.network_service.best_peer_set().await?;
+        let best_peers = self.network_service.peer_selector().await?.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");
             return Ok(());
