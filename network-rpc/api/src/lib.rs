@@ -167,6 +167,7 @@ pub struct Ping {
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
 
+    ///Get txns from txpool TODO rename
     fn get_txns(&self, peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>>;
 
     fn get_txn_infos(

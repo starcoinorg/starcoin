@@ -10,13 +10,13 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
-use std::collections::HashSet;
-use std::hash::Hash;
-use types::{
+use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
 };
+use std::collections::HashSet;
+use std::hash::Hash;
 
 const HEAD_CT: usize = 10;
 //TODO find a suitable value and strategy.
@@ -168,8 +168,7 @@ where
         .peer_selector()
         .await?
         .filter_by_block_number(least_height)
-        .random()
-        .map(|peer_info| peer_info.peer_id);
+        .random_peer_id();
 
     if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
@@ -215,10 +214,9 @@ where
         .peer_selector()
         .await?
         .filter_by_block_number(least_height)
-        .random();
+        .random_peer_id();
 
-    if let Some(peer_info) = selected_peer {
-        let peer_id = peer_info.get_peer_id();
+    if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data = client.get_body_by_hash(peer_id.clone(), hashes).await?;

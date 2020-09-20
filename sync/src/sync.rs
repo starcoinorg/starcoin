@@ -11,9 +11,9 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
+use starcoin_types::{peer_info::PeerId, startup_info::StartupInfo};
 use std::sync::Arc;
 use txpool::TxPoolService;
-use types::{peer_info::PeerId, startup_info::StartupInfo};
 
 pub struct SyncActor<N>
 where

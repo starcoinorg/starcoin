@@ -24,18 +24,18 @@ use starcoin_network_rpc_api::{
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncNotify;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
-use traits::ChainAsyncService;
-use txpool::TxPoolService;
-use types::{
+use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     startup_info::StartupInfo,
     system_events::{MinedBlock, SyncDone, SystemStarted},
     U256,
 };
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+use traits::ChainAsyncService;
+use txpool::TxPoolService;
 
 #[derive(Debug, Message)]
 #[rtype(result = "Result<()>")]
