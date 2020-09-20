@@ -1,6 +1,6 @@
 [package]
 name = "move-prover"
-version = "0.4.6"
+version = "0.5.0"
 authors = ["Libra Association <opensource@libra.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 publish = false
 edition = "2018"
