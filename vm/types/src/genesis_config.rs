@@ -950,7 +950,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
-    stdlib_version: StdlibVersion::new(0, 2),
+    stdlib_version: StdlibVersion::new(0, 3),
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);

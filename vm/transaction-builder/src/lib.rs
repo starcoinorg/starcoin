@@ -19,6 +19,7 @@ pub use stdlib::init_scripts::{compiled_init_script, InitScript};
 pub use stdlib::transaction_scripts::compiled_transaction_script;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
+use stdlib::transaction_scripts::VersionedStdlibScript;
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
@@ -303,8 +304,8 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        let publish_option_bytes = scs::to_bytes(&genesis_config.vm_config.publishing_option)
-            .expect("Cannot serialize publishing option");
+        let initial_script_allow_list = VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+
         let instruction_schedule =
             scs::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
                 .expect("Cannot serialize gas schedule");
@@ -315,7 +316,13 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
-                TransactionArgument::U8Vector(publish_option_bytes),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(0).expect("script allow list should contain more then 0 member").to_vec()),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(1).expect("script allow list should contain more then 1 member").to_vec()),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(2).expect("script allow list should contain more then 2 members").to_vec()),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(3).expect("script allow list should contain more then 3 members").to_vec()),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(4).expect("script allow list should contain more then 4 members").to_vec()),
+                TransactionArgument::U8Vector(initial_script_allow_list.get(5).expect("script allow list should contain more then 5 members").to_vec()),
+                TransactionArgument::Bool(genesis_config.vm_config.publishing_option.is_open()),
                 TransactionArgument::U8Vector(instruction_schedule),
                 TransactionArgument::U8Vector(native_schedule),
                 TransactionArgument::U64(genesis_config.reward_delay),

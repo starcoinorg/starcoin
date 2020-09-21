@@ -17,8 +17,16 @@ script {
    use 0x1::BlockReward;
    use 0x1::ChainId;
    use 0x1::ConsensusStrategy;
+   use 0x1::TransactionPublishOption;
 
-fun genesis_init(publishing_option: vector<u8>,
+fun genesis_init(
+                 initial_script_allow_list_member_0: vector<u8>,
+                 initial_script_allow_list_member_1: vector<u8>,
+                 initial_script_allow_list_member_2: vector<u8>,
+                 initial_script_allow_list_member_3: vector<u8>,
+                 initial_script_allow_list_member_4: vector<u8>,
+                 initial_script_allow_list_member_5: vector<u8>,
+                 is_open_module: bool,
                  instruction_schedule: vector<u8>,
                  native_schedule: vector<u8>,
                  reward_delay: u64,
@@ -64,8 +72,20 @@ fun genesis_init(publishing_option: vector<u8>,
 
         Block::initialize(&genesis_account, parent_hash);
 
+        TransactionPublishOption::initialize(
+            &genesis_account,
+            Vector::empty<vector<u8>>(),
+            is_open_module,
+        );
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_0);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_1);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_2);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_3);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_4);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_5);
+
         // init config
-        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule,
+        VMConfig::initialize(&genesis_account, instruction_schedule, native_schedule,
             block_gas_limit,
             global_memory_per_byte_cost,
             global_memory_per_byte_write_cost,
