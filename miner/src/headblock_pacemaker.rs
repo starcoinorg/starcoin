@@ -34,14 +34,16 @@ impl ServiceFactory<Self> for HeadBlockPacemaker {
 }
 
 impl ActorService for HeadBlockPacemaker {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
         info!("{}", "Fire first GenerateBlock event");
         self.send_event();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        Ok(())
     }
 }
 

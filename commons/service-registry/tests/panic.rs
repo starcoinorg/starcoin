@@ -20,7 +20,7 @@ fn test_service_panic() {
         .build();
     sys.block_on(async {
         let registry = RegistryService::launch();
-        let service_ref = registry.registry::<PanicService>().await.unwrap();
+        let service_ref = registry.register::<PanicService>().await.unwrap();
         service_ref.send(PingRequest).await.unwrap();
         let ping_count = service_ref.send(PingRequest).await.unwrap();
         assert_eq!(2, ping_count);
@@ -41,7 +41,7 @@ fn test_service_panic() {
             .await
             .unwrap();
         assert_eq!(status, None);
-        registry.shutdown().await.unwrap();
+        registry.shutdown_system().await.unwrap();
         System::current().stop();
     });
 }

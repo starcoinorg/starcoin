@@ -93,7 +93,7 @@ impl Handler<NodeRequest> for Node {
             }
             NodeRequest::StopSystem => {
                 info!("Receive StopSystem request, try to stop system.");
-                if let Err(e) = self.registry.shutdown_sync() {
+                if let Err(e) = self.registry.shutdown_system_sync() {
                     error!("Shutdown registry error: {}", e);
                 };
                 System::current().stop();
@@ -144,22 +144,22 @@ pub async fn start(
         .put_shared::<AccountStorage>(account_storage.clone())
         .await?;
 
-    let account_service = registry.registry::<AccountService>().await?;
-    registry.registry::<AccountEventService>().await?;
+    let account_service = registry.register::<AccountService>().await?;
+    registry.register::<AccountEventService>().await?;
 
-    registry.registry::<TxPoolActorService>().await?;
+    registry.register::<TxPoolActorService>().await?;
 
     //wait TxPoolService put shared..
     Delay::new(Duration::from_millis(200)).await;
     // TxPoolActorService auto put shared TxPoolService,
     let txpool_service = registry.get_shared::<TxPoolService>().await?;
 
-    let chain_state_service = registry.registry::<ChainStateService>().await?;
+    let chain_state_service = registry.register::<ChainStateService>().await?;
 
-    let chain = registry.registry::<ChainReaderService>().await?;
-    registry.registry::<ChainNotifyHandlerService>().await?;
+    let chain = registry.register::<ChainReaderService>().await?;
+    registry.register::<ChainNotifyHandlerService>().await?;
 
-    let network_rpc_service = registry.registry::<NetworkRpcService>().await?;
+    let network_rpc_service = registry.register::<NetworkRpcService>().await?;
 
     let network = NetworkAsyncService::start(
         config.clone(),
@@ -170,8 +170,8 @@ pub async fn start(
     )?;
     registry.put_shared(network.clone()).await?;
 
-    registry.registry::<PeerMsgBroadcasterService>().await?;
-    registry.registry::<BlockRelayer>().await?;
+    registry.register::<PeerMsgBroadcasterService>().await?;
+    registry.register::<BlockRelayer>().await?;
 
     let peer_id = config.network.self_peer_id()?;
 
@@ -209,15 +209,15 @@ pub async fn start(
 
     delay_for(Duration::from_secs(1)).await;
 
-    registry.registry::<CreateBlockTemplateService>().await?;
-    registry.registry::<MinerService>().await?;
+    registry.register::<CreateBlockTemplateService>().await?;
+    registry.register::<MinerService>().await?;
 
     let miner_client_config = config.miner.client_config.clone();
     registry.put_shared(miner_client_config).await?;
     let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
     registry.put_shared(job_client).await?;
     registry
-        .registry::<MinerClientService<JobBusClient>>()
+        .register::<MinerClientService<JobBusClient>>()
         .await?;
     if !config.miner.enable_miner_client {
         info!("Config.miner.enable_miner_client is false, so stop MinerClientService.");
@@ -241,8 +241,8 @@ pub async fn start(
     bus.clone().broadcast(StartSyncTxnEvent).await.unwrap();
     bus.clone().broadcast(SystemStarted).await?;
 
-    registry.registry::<OndemandPacemaker>().await?;
-    registry.registry::<HeadBlockPacemaker>().await?;
+    registry.register::<OndemandPacemaker>().await?;
+    registry.register::<HeadBlockPacemaker>().await?;
 
     let node = Node {
         sync_actor: sync.clone(),

@@ -53,14 +53,16 @@ impl ServiceFactory<MinerService> for MinerService {
 }
 
 impl ActorService for MinerService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
         ctx.subscribe::<SubmitSealEvent>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
         ctx.unsubscribe::<SubmitSealEvent>();
+        Ok(())
     }
 }
 

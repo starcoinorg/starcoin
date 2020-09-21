@@ -40,24 +40,12 @@ impl MockHandler<AccountService> for AccountService {
 }
 
 impl ActorService for AccountService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
-        match self.manager.default_account_info() {
-            Err(e) => {
-                error!("Check default account error: {:?}", e);
-            }
-            Ok(account) => {
-                if account.is_none() {
-                    match self.manager.create_account("") {
-                        Ok(account) => {
-                            info!("Create default account: {}", account.address());
-                        }
-                        Err(e) => {
-                            error!("Create default account error: {:?}", e);
-                        }
-                    };
-                }
-            }
-        };
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        let account = self.manager.default_account_info()?;
+
+        if account.is_none() {
+            self.manager.create_account("")?;
+        }
 
         let config = ctx
             .get_shared::<Arc<NodeConfig>>()
@@ -67,23 +55,20 @@ impl ActorService for AccountService {
         if let (Some(association_private_key), _) =
             &config.net().genesis_config().association_key_pair
         {
-            match self.manager.account_info(association_address()) {
-                Ok(association_account) => {
-                    if association_account.is_none() {
-                        if let Err(e) = self.manager.import_account(
-                            association_address(),
-                            association_private_key.to_bytes().to_vec(),
-                            "",
-                        ) {
-                            error!("Import association account error:{:?}", e)
-                        } else {
-                            info!("Import association account to wallet.");
-                        }
-                    }
+            let association_account = self.manager.account_info(association_address())?;
+            if association_account.is_none() {
+                if let Err(e) = self.manager.import_account(
+                    association_address(),
+                    association_private_key.to_bytes().to_vec(),
+                    "",
+                ) {
+                    error!("Import association account error:{:?}", e)
+                } else {
+                    info!("Import association account to wallet.");
                 }
-                Err(e) => error!("Get {} account info error: {:?}", association_address(), e),
             }
         }
+        Ok(())
     }
 }
 
@@ -174,7 +159,7 @@ mod tests {
         let account_storage = AccountStorage::create_from_path(vault_config.dir())?;
         registry.put_shared(config).await?;
         registry.put_shared(account_storage).await?;
-        let service_ref = registry.registry::<AccountService>().await?;
+        let service_ref = registry.register::<AccountService>().await?;
         let account = service_ref.get_default_account().await?;
         //default account will auto create
         assert!(account.is_some());

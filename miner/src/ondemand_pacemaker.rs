@@ -34,12 +34,14 @@ impl ServiceFactory<Self> for OndemandPacemaker {
 }
 
 impl ActorService for OndemandPacemaker {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<PropagateNewTransactions>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<PropagateNewTransactions>();
+        Ok(())
     }
 }
 

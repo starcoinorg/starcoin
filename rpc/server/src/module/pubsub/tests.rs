@@ -79,7 +79,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     let bus = registry.get_shared::<Addr<BusActor>>().await.unwrap();
     registry
-        .registry::<ChainNotifyHandlerService>()
+        .register::<ChainNotifyHandlerService>()
         .await
         .unwrap();
 
