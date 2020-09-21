@@ -12,6 +12,8 @@ use starcoin_types::account_config::association_address;
 use std::any::Any;
 use std::sync::Arc;
 
+pub const DEFAULT_ACCOUNT_PASSWORD: &str = "";
+
 pub struct AccountService {
     manager: AccountManager,
 }
@@ -44,7 +46,7 @@ impl ActorService for AccountService {
         let account = self.manager.default_account_info()?;
 
         if account.is_none() {
-            self.manager.create_account("")?;
+            self.manager.create_account(DEFAULT_ACCOUNT_PASSWORD)?;
         }
 
         let config = ctx
