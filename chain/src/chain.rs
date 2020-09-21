@@ -145,6 +145,7 @@ impl BlockChain {
             && self.exist_block(block_header.parent_hash())
             && !self.exist_block(block_header.id())
             && !self.uncles.contains(&block_header.id())
+            && block_header.number() <= self.current_header().number()
     }
 
     fn epoch_uncles(&self, epoch_resource: &EpochResource) -> Result<Vec<HashValue>> {
