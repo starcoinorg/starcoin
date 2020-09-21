@@ -37,7 +37,7 @@ spec:
       containers:
       - name: starcoin
         image: starcoin/starcoin:v0.5.0
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command:
           - bash
           - -c
