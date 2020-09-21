@@ -47,6 +47,21 @@ if ! [ -x "$(command -v grcov)" ]; then
   fi
 fi
 
+# Check that covfix is installed
+if ! [ -x "$(command -v rust-covfix)" ]; then
+  echo "Error: rust-covfix is not installed." >&2
+  if [ $SKIP_PROMPTS -eq 0 ]; then
+    read -p "Install rust-covfix? [yY/*] " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      [[ "$0" == "$BASH_SOURCE" ]] && exit 1 || return 1
+    fi
+    cargo install rust-covfix
+  else
+    exit 1
+  fi
+fi
+
 # Check that lcov is installed
 if ! [ -x "$(command -v lcov)" ]; then
   echo "Error: lcov is not installed." >&2
@@ -65,7 +80,7 @@ if [ $SKIP_PROMPTS -eq 0 ]; then
 fi
 
 # Set the flags necessary for coverage output
-export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Coverflow-checks=off"
+export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -C panic=abort"
 export RUSTC_BOOTSTRAP=1
 export CARGO_INCREMENTAL=0
 export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
@@ -100,9 +115,12 @@ fi
 echo "Generating lcov report at ${COVERAGE_DIR}/lcov.info..."
 grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" -o "$COVERAGE_DIR/lcov.info"
 
+# fix cov data
+rust-covfix -o "$COVERAGE_DIR/lcov_correct.info" "$COVERAGE_DIR/lcov.info"
+
 # Generate HTML report
 echo "Generating report at ${COVERAGE_DIR}..."
 # Flag "--ignore-errors source" ignores missing source files
-genhtml -o "$COVERAGE_DIR" --show-details --highlight --ignore-errors source --legend "$COVERAGE_DIR/lcov.info"
+genhtml -o "$COVERAGE_DIR" --show-details --highlight --ignore-errors source --legend "$COVERAGE_DIR/lcov_correct.info"
 
 echo "Done. Please view report at ${COVERAGE_DIR}/index.html"
