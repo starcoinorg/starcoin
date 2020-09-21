@@ -7,16 +7,17 @@ use bus::BusActor;
 use chain::BlockChain;
 use consensus::Consensus;
 use create_block_template::CreateBlockTemplateRequest;
-use futures::prelude::*;
+use futures::FutureExt;
+use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_config::ConsensusStrategy;
 use starcoin_config::NodeConfig;
-pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_storage::Storage;
 use std::sync::Arc;
+use std::time::Duration;
 
 mod create_block_template;
 pub mod headblock_pacemaker;
@@ -26,6 +27,7 @@ pub mod miner;
 pub mod ondemand_pacemaker;
 
 pub use create_block_template::CreateBlockTemplateService;
+pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -91,7 +93,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
 
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let create_block_template_service = self.create_block_template_service.clone();
-
+        let self_ref = ctx.self_ref();
         let f = async move {
             let block_template = create_block_template_service.send(
                 CreateBlockTemplateRequest)
@@ -110,11 +112,15 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 miner.set_mint(block_template, difficulty).await?;
                 Ok(())
             }
-        }.map(move |result: Result<()>| {
+        }.then(|result: Result<()>| async move {
             if let Err(err) = result {
-                error!("Failed to process generate block event:{:?}.", err);
+                error!("Failed to process generate block event:{:?}, delay to trigger a new event.", err);
+                Delay::new(Duration::from_millis(1000)).await;
+                if let Err(err) = self_ref.notify(GenerateBlockEvent::new(false)) {
+                    error!("Send self generate block event notify failed:{:?}.", err);
+                }
             }
         });
-        ctx.wait(f);
+        ctx.spawn(f);
     }
 }
