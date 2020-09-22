@@ -12,6 +12,8 @@
 -  [Function `PROLOGUE_CANT_PAY_GAS_DEPOSIT`](#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT)
 -  [Function `PROLOGUE_TRANSACTION_EXPIRED`](#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED)
 -  [Function `PROLOGUE_BAD_CHAIN_ID`](#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID)
+-  [Function `PROLOGUE_MODULE_NOT_ALLOWED`](#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED)
+-  [Function `PROLOGUE_SCRIPT_NOT_ALLOWED`](#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED)
 -  [Function `EINSUFFICIENT_BALANCE`](#0x1_ErrorCode_EINSUFFICIENT_BALANCE)
 -  [Function `ENOT_GENESIS_ACCOUNT`](#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT)
 -  [Function `ENOT_GENESIS`](#0x1_ErrorCode_ENOT_GENESIS)
@@ -175,6 +177,50 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">PROLOGUE_BAD_CHAIN_ID</a>(): u64 {6}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED"></a>
+
+## Function `PROLOGUE_MODULE_NOT_ALLOWED`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64 {7}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED"></a>
+
+## Function `PROLOGUE_SCRIPT_NOT_ALLOWED`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64 {8}
 </code></pre>
 
 

@@ -150,7 +150,6 @@ The script hash already exists in the allowlist
 
     <a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&publish_option.script_allow_list)
         || <a href="Vector.md#0x1_Vector_contains">Vector::contains</a>(&publish_option.script_allow_list, hash)
-        || <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()
 }
 </code></pre>
 
@@ -177,7 +176,6 @@ The script hash already exists in the allowlist
     <b>let</b> publish_option = <a href="Config.md#0x1_Config_get">Config::get</a>&lt;<a href="#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account);
 
     publish_option.module_publishing_allowed
-            || <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()
 }
 </code></pre>
 

@@ -13,6 +13,8 @@ const PROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
 const PROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
 const PROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
 const PROLOGUE_BAD_CHAIN_ID: u64 = 6;
+const PROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
+const PROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 
 const EINSUFFICIENT_BALANCE: u64 = 10;
 const ENOT_GENESIS_ACCOUNT: u64 = 11;
@@ -38,6 +40,8 @@ pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
                 }
                 PROLOGUE_TRANSACTION_EXPIRED => StatusCode::TRANSACTION_EXPIRED,
                 PROLOGUE_BAD_CHAIN_ID => StatusCode::BAD_CHAIN_ID,
+                PROLOGUE_MODULE_NOT_ALLOWED => StatusCode::INVALID_MODULE_PUBLISHER,
+                PROLOGUE_SCRIPT_NOT_ALLOWED => StatusCode::UNKNOWN_SCRIPT,
                 ENOT_GENESIS_ACCOUNT => StatusCode::NO_ACCOUNT_ROLE,
                 ENOT_GENESIS => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
                 ECONFIG_VALUE_DOES_NOT_EXIST => {

@@ -89,12 +89,6 @@ impl StarcoinVM {
         }
     }
 
-    fn vm_config(&self) -> Result<&VMConfig, VMStatus> {
-        self.vm_config
-            .as_ref()
-            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
-    }
-
     fn load_configs_impl(&mut self, state: &dyn StateView) -> Result<(), Error> {
         self.vm_config = Some(
             VMConfig::fetch_config(RemoteStorage::new(state))?
@@ -212,20 +206,12 @@ impl StarcoinVM {
         let mut cost_strategy = CostStrategy::system(self.get_gas_schedule()?, GasUnits::new(0));
         self.check_gas(&txn_data)?;
         match transaction.payload() {
-            TransactionPayload::Script(script) => {
-                self.is_allowed_script(script)?;
-            }
             TransactionPayload::Package(package) => {
-                //TODO move to prologue
-                if !&self.vm_config()?.publishing_option.is_open() {
-                    warn!("[VM] Custom modules not allowed");
-                    return Err(VMStatus::Error(StatusCode::UNKNOWN_MODULE));
-                };
-                //TODO verify module compat.
                 for module in package.modules() {
                     self.check_compatibility_if_exist(&session, module)?;
                 }
             }
+            TransactionPayload::Script(_) => {}
         }
         self.run_prologue(&mut session, &mut cost_strategy, &txn_data)
     }
@@ -391,7 +377,6 @@ impl StarcoinVM {
             cost_strategy.disable_metering();
             //let _timer = TXN_VERIFICATION_SECONDS.start_timer();
             self.check_gas(txn_data)?;
-            self.is_allowed_script(script)?;
             self.run_prologue(&mut session, cost_strategy, &txn_data)?;
         }
 
@@ -421,19 +406,6 @@ impl StarcoinVM {
                 cost_strategy.remaining_gas(),
                 txn_data,
             )
-        }
-    }
-
-    fn is_allowed_script(&self, script: &Script) -> Result<(), VMStatus> {
-        if !self
-            .vm_config()?
-            .publishing_option
-            .is_allowed_script(&script.code())
-        {
-            warn!("[VM] Custom scripts not allowed: {:?}", &script.code());
-            Err(VMStatus::Error(StatusCode::UNKNOWN_SCRIPT))
-        } else {
-            Ok(())
         }
     }
 

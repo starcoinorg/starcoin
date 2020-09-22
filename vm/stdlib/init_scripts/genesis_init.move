@@ -26,6 +26,9 @@ fun genesis_init(
                  initial_script_allow_list_member_3: vector<u8>,
                  initial_script_allow_list_member_4: vector<u8>,
                  initial_script_allow_list_member_5: vector<u8>,
+                 initial_script_allow_list_member_6: vector<u8>,
+                 initial_script_allow_list_member_7: vector<u8>,
+                 initial_script_allow_list_member_8: vector<u8>,
                  is_open_module: bool,
                  instruction_schedule: vector<u8>,
                  native_schedule: vector<u8>,
@@ -83,6 +86,9 @@ fun genesis_init(
         TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_3);
         TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_4);
         TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_5);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_6);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_7);
+        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_8);
 
         // init config
         VMConfig::initialize(&genesis_account, instruction_schedule, native_schedule,

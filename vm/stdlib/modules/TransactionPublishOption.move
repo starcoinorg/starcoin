@@ -51,7 +51,6 @@ module TransactionPublishOption {
 
         Vector::is_empty(&publish_option.script_allow_list)
             || Vector::contains(&publish_option.script_allow_list, hash)
-            || Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS()
     }
 
     // Check if a sender can publish a module
@@ -59,7 +58,6 @@ module TransactionPublishOption {
         let publish_option = Config::get<TransactionPublishOption>(account);
 
         publish_option.module_publishing_allowed
-                || Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS()
     }
 
     // Add `new_hash` to the list of script hashes that is allowed to be executed by the network.
