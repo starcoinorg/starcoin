@@ -18,7 +18,6 @@ use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::time::Duration;
 
 struct ServiceHolder<S>
 where
@@ -293,10 +292,11 @@ impl RegistryService {
 }
 
 impl ActorService for RegistryService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.run_interval(Duration::from_millis(2000), |ctx| {
-            ctx.notify(CheckServiceEvent)
-        });
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+        //TODO check service will cause registry actor blocked, fixme.
+        // ctx.run_interval(Duration::from_millis(2000), |ctx| {
+        //     ctx.notify(CheckServiceEvent)
+        // });
         Ok(())
     }
 }

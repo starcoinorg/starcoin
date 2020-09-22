@@ -3,11 +3,10 @@
 
 use actix_rt::System;
 use common::panic_service::{PanicRequest, PanicService, PingRequest};
-use futures_timer::Delay;
+use starcoin_service_registry::ServiceStatus::Shutdown;
 use starcoin_service_registry::{
     ActorService, RegistryAsyncService, RegistryService, ServiceStatus,
 };
-use std::time::Duration;
 
 pub mod common;
 
@@ -34,13 +33,14 @@ fn test_service_panic() {
             .unwrap();
         assert_eq!(status, Some(ServiceStatus::Shutdown));
         //wait registry to remove Shutdown service.
-        Delay::new(Duration::from_millis(4000)).await;
+        //Delay::new(Duration::from_millis(4000)).await;
 
         let status = registry
             .get_service_status(PanicService::service_name())
             .await
             .unwrap();
-        assert_eq!(status, None);
+
+        assert_eq!(status, Some(Shutdown));
         registry.shutdown_system().await.unwrap();
         System::current().stop();
     });
