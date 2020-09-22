@@ -193,7 +193,7 @@ where
         match block_on(async move {
             self.addr
                 .send(ServiceQuery::Status)
-                .timeout(Duration::from_millis(500))
+                .timeout(Duration::from_millis(50))
                 .await
         }) {
             Ok(status) => match status {
@@ -211,20 +211,6 @@ where
                     MailboxError::Closed => ServiceStatus::Shutdown,
                 }
             }
-        }
-    }
-
-    pub fn is_started(&self) -> bool {
-        match self.self_status() {
-            ServiceStatus::Started => true,
-            _ => false,
-        }
-    }
-
-    pub fn is_stopped(&self) -> bool {
-        match self.self_status() {
-            ServiceStatus::Stopped => true,
-            _ => false,
         }
     }
 }

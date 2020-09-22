@@ -20,15 +20,15 @@ async fn test_mock_service_by_fn() {
         Box::new(0u64)
     });
 
-    let cal_service_ref = registry.registry_mocker(mocker).await.unwrap();
+    let cal_service_ref = registry.register_mocker(mocker).await.unwrap();
     let result = cal_service_ref.add(1).await.unwrap();
     assert_eq!(result, 0);
-    let service_ref = registry.registry::<AdvanceCalService>().await.unwrap();
+    let service_ref = registry.register::<AdvanceCalService>().await.unwrap();
 
     let values = vec![1, 2, 3, 4, 5];
     let result = service_ref.batch_add(values).await.unwrap();
     assert_eq!(result, 0);
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }
 
 #[derive(Default, Clone)]
@@ -54,15 +54,15 @@ async fn test_mock_service() {
     let registry = RegistryService::launch();
     let mocker = MockCalService::default();
 
-    let cal_service_ref = registry.registry_mocker(mocker.clone()).await.unwrap();
+    let cal_service_ref = registry.register_mocker(mocker.clone()).await.unwrap();
     let result = cal_service_ref.add(1).await.unwrap();
     assert_eq!(result, 0);
     assert_eq!(*mocker.counter.lock().unwrap(), 1);
 
-    let service_ref = registry.registry::<AdvanceCalService>().await.unwrap();
+    let service_ref = registry.register::<AdvanceCalService>().await.unwrap();
 
     let values = vec![1, 2, 3, 4, 5];
     let result = service_ref.batch_add(values).await.unwrap();
     assert_eq!(result, 0);
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }

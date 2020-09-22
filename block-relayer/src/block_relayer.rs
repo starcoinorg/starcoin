@@ -150,14 +150,16 @@ impl BlockRelayer {
 }
 
 impl ActorService for BlockRelayer {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<PeerCmpctBlockEvent>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<PeerCmpctBlockEvent>();
+        Ok(())
     }
 }
 

@@ -124,10 +124,13 @@ impl<C> ActorService for MinerClientService<C>
 where
     C: JobClient + Send + Unpin + Clone + Sync,
 {
-    fn started(&mut self, _ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         let config = self.config.clone();
         let job_client = self.job_client.clone();
         let arbiter = Arbiter::new();
+
+        //FIXME actor can not quit graceful, because MinerClient.start is a loop
+        //TODO refactor MinerClient, and support graceful quit.
         let fut = async move {
             let mut miner_cli = match MinerClient::new(config, job_client) {
                 Err(e) => {
@@ -141,9 +144,8 @@ where
             }
         };
         arbiter.send(Box::pin(fut));
-        //FIXME if use cxt.wait, actor can not quit graceful, because MinerClient.start is a loop
-        //TODO refactor MinerClient, and support graceful quit.
-        //ctx.wait(fut)
+
+        Ok(())
     }
 }
 

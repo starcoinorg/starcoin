@@ -12,8 +12,8 @@ pub mod common;
 #[stest::test]
 async fn test_service_deps() {
     let registry = RegistryService::launch();
-    registry.registry::<CalService>().await.unwrap();
-    let service_ref = registry.registry::<AdvanceCalService>().await.unwrap();
+    registry.register::<CalService>().await.unwrap();
+    let service_ref = registry.register::<AdvanceCalService>().await.unwrap();
 
     let values = vec![1, 2, 3, 4, 5];
     let result = service_ref.batch_add(values).await.unwrap();
@@ -50,5 +50,5 @@ async fn test_service_deps() {
     let result = service_ref.batch_add(values).await.unwrap();
     assert_eq!(result, 16);
 
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }

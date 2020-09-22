@@ -15,7 +15,7 @@ pub mod common;
 async fn test_broadcast() {
     let registry = RegistryService::launch();
     let service_ref = registry
-        .registry::<BroadcastProcessService>()
+        .register::<BroadcastProcessService>()
         .await
         .unwrap();
     let bus_ref = registry.service_ref::<BusService>().await.unwrap();
@@ -54,5 +54,5 @@ async fn test_broadcast() {
     assert_eq!(result.b1_count, 1);
     assert_eq!(result.b2_count, 0);
 
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }

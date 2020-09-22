@@ -80,14 +80,16 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
 }
 
 impl ActorService for CreateBlockTemplateService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
         ctx.subscribe::<NewBranch>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
         ctx.unsubscribe::<NewBranch>();
+        Ok(())
     }
 }
 

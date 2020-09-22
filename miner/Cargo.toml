@@ -9,6 +9,7 @@ anyhow = "1.0.32"
 actix = "0.10.0"
 actix-rt = "1.1"
 futures = { version = "0.3" }
+futures-timer = "3.0"
 starcoin-config = { path = "../config" }
 network = { path = "../network", package = "starcoin-network" }
 chain = {path = "../chain", package="starcoin-chain" }

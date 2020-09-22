@@ -9,7 +9,7 @@ pub mod common;
 #[stest::test]
 async fn test_refcell_cal() {
     let registry = RegistryService::launch();
-    let service_ref = registry.registry::<CalService>().await.unwrap();
+    let service_ref = registry.register::<CalService>().await.unwrap();
 
     let result = service_ref.add(1).await.unwrap();
     assert_eq!(result, 1);
@@ -19,5 +19,5 @@ async fn test_refcell_cal() {
 
     let result = service_ref.sub(1).await.unwrap();
     assert_eq!(result, 1);
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }

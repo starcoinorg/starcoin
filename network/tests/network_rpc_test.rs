@@ -74,6 +74,6 @@ async fn test_network_raw_rpc() {
         .await;
     assert_eq!(request, resp.unwrap());
 
-    registry2.shutdown().await.unwrap();
-    registry1.shutdown().await.unwrap();
+    registry2.shutdown_system().await.unwrap();
+    registry1.shutdown_system().await.unwrap();
 }

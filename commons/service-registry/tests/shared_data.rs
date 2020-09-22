@@ -14,8 +14,8 @@ async fn test_shared_data() {
     let registry = RegistryService::launch();
     let db = DB::default();
     registry.put_shared(Arc::new(db)).await.unwrap();
-    let put_ref = registry.registry::<PutService>().await.unwrap();
-    let get_ref = registry.registry::<GetService>().await.unwrap();
+    let put_ref = registry.register::<PutService>().await.unwrap();
+    let get_ref = registry.register::<GetService>().await.unwrap();
     put_ref
         .send(PutRequest::new("k1".to_string(), "v1".to_string()))
         .await
@@ -44,5 +44,5 @@ async fn test_shared_data() {
         .unwrap();
     assert_eq!(value, Some("v1".to_string()));
 
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }

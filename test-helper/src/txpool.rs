@@ -29,7 +29,7 @@ pub async fn start_txpool() -> (
     let bus = BusActor::launch2(new_bus);
     registry.put_shared(bus).await.unwrap();
 
-    registry.registry::<TxPoolActorService>().await.unwrap();
+    registry.register::<TxPoolActorService>().await.unwrap();
     Delay::new(Duration::from_millis(200)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 

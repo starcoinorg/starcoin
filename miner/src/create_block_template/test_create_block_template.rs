@@ -394,12 +394,12 @@ async fn test_create_block_template_actor() {
 
     registry.put_shared(storage).await.unwrap();
     registry
-        .registry_mocker(AccountService::mock().unwrap())
+        .register_mocker(AccountService::mock().unwrap())
         .await
         .unwrap();
 
     let create_block_template_service = registry
-        .registry::<CreateBlockTemplateService>()
+        .register::<CreateBlockTemplateService>()
         .await
         .unwrap();
     let response = create_block_template_service

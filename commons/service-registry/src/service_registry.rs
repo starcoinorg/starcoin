@@ -9,7 +9,7 @@ use crate::{
     EventHandler, ServiceCmd, ServiceContext, ServiceHandler, ServiceInfo, ServiceRef,
     ServiceRequest, ServiceStatus,
 };
-use actix::{Actor, AsyncContext, Supervisor};
+use actix::{Actor, AsyncContext};
 use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
@@ -18,7 +18,6 @@ use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::time::Duration;
 
 struct ServiceHolder<S>
 where
@@ -98,7 +97,7 @@ impl Registry {
             services: vec![],
         };
         registry
-            .registry::<BusService>()
+            .register::<BusService>()
             .expect("Registry BusService should success");
         registry
     }
@@ -107,7 +106,16 @@ impl Registry {
     where
         T: Send + Sync + Clone + 'static,
     {
+        info!("Put shared by type: {}", type_name::<T>());
         self.shared.insert(TypeId::of::<T>(), Box::new(t));
+    }
+
+    pub fn remove_shared<T>(&mut self)
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        info!("Remove shared by type: {}", type_name::<T>());
+        self.shared.remove(&TypeId::of::<T>());
     }
 
     pub fn get_shared<T>(&self) -> Result<T>
@@ -140,7 +148,7 @@ impl Registry {
             .map(|handle| handle.status())
     }
 
-    fn do_registry<S, F>(&mut self, f: F) -> Result<ServiceRef<S>>
+    fn do_register<S, F>(&mut self, f: F) -> Result<ServiceRef<S>>
     where
         S: ActorService + 'static,
         F: FnOnce(ServiceRef<RegistryService>) -> ServiceActor<S> + Send + 'static,
@@ -153,25 +161,34 @@ impl Registry {
 
         let arbiter = Arbiter::new();
         let registry_ref = self.service_ref.clone();
-        let addr = Supervisor::start_in_arbiter(&arbiter, move |_ctx| f(registry_ref));
+        let addr = ServiceActor::start_in_arbiter(&arbiter, move |_ctx| f(registry_ref));
         let service_ref: ServiceRef<S> = addr.into();
         let holder = ServiceHolder::new(arbiter, service_ref.clone());
         self.services.push(Box::new(holder));
         Ok(service_ref)
     }
 
-    pub fn registry<S>(&mut self) -> Result<ServiceRef<S>>
+    pub fn register<S>(&mut self) -> Result<ServiceRef<S>>
     where
         S: ActorService + ServiceFactory<S> + 'static,
     {
-        self.do_registry(ServiceActor::new::<S>)
+        self.do_register(ServiceActor::new::<S>)
     }
 
-    pub fn registry_mocker<S>(&mut self, mocker: Box<dyn MockHandler<S>>) -> Result<ServiceRef<S>>
+    pub fn register_mocker<S>(&mut self, mocker: Box<dyn MockHandler<S>>) -> Result<ServiceRef<S>>
     where
         S: ActorService + 'static,
     {
-        self.do_registry(|registry_ref| ServiceActor::new_mocker(registry_ref, mocker))
+        self.do_register(|registry_ref| ServiceActor::new_mocker(registry_ref, mocker))
+    }
+
+    /// Stop service thread and remove from registry.
+    /// A service after shutdown, can not start again, must been registry again.
+    pub fn shutdown_service(&mut self, service_name: &str) -> Result<()> {
+        self.do_with_proxy(service_name, |proxy| proxy.shutdown())?;
+        self.services
+            .retain(|proxy| proxy.service_name() != service_name);
+        Ok(())
     }
 
     pub fn list(&self) -> Vec<ServiceInfo> {
@@ -213,13 +230,17 @@ impl Registry {
         self.do_with_proxy(service_name, |proxy| proxy.exec_service_cmd(service_cmd))
     }
 
-    fn exec_system_cmd(&self, cmd: SystemCmd) -> Result<()> {
+    fn exec_system_cmd(&mut self, cmd: SystemCmd) -> Result<()> {
         match cmd {
             SystemCmd::Shutdown => {
                 info!("Start to shutdown system");
                 for service in self.services.iter().rev() {
                     service.shutdown()?;
                 }
+            }
+            SystemCmd::ShutdownService(service_name) => {
+                info!("Start to shutdown service: {}", service_name);
+                self.shutdown_service(service_name.as_str())?;
             }
         }
         Ok(())
@@ -271,31 +292,33 @@ impl RegistryService {
 }
 
 impl ActorService for RegistryService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
-        ctx.run_interval(Duration::from_millis(2000), |ctx| {
-            ctx.notify(CheckServiceEvent)
-        });
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+        //TODO check service will cause registry actor blocked, fixme.
+        // ctx.run_interval(Duration::from_millis(2000), |ctx| {
+        //     ctx.notify(CheckServiceEvent)
+        // });
+        Ok(())
     }
 }
 
-pub struct RegistryRequest<S>
+pub struct RegisterRequest<S>
 where
     S: ActorService + ServiceFactory<S> + 'static,
 {
     phantom: PhantomData<S>,
 }
 
-impl<S> Debug for RegistryRequest<S>
+impl<S> Debug for RegisterRequest<S>
 where
     S: ActorService + ServiceFactory<S>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+        write!(f, "{}", type_name::<Self>())
     }
 }
 
 #[allow(clippy::new_without_default)]
-impl<S> RegistryRequest<S>
+impl<S> RegisterRequest<S>
 where
     S: ActorService + ServiceFactory<S>,
 {
@@ -306,43 +329,43 @@ where
     }
 }
 
-impl<S> ServiceRequest for RegistryRequest<S>
+impl<S> ServiceRequest for RegisterRequest<S>
 where
     S: ActorService + ServiceFactory<S>,
 {
     type Response = Result<ServiceRef<S>>;
 }
 
-impl<S> ServiceHandler<Self, RegistryRequest<S>> for RegistryService
+impl<S> ServiceHandler<Self, RegisterRequest<S>> for RegistryService
 where
     S: ActorService + ServiceFactory<S>,
 {
     fn handle(
         &mut self,
-        _msg: RegistryRequest<S>,
+        _msg: RegisterRequest<S>,
         _ctx: &mut ServiceContext<RegistryService>,
     ) -> Result<ServiceRef<S>> {
-        self.registry.registry::<S>()
+        self.registry.register::<S>()
     }
 }
 
-pub struct RegistryMockerRequest<S>
+pub struct RegisterMockerRequest<S>
 where
     S: ActorService + 'static,
 {
     mocker: Box<dyn MockHandler<S>>,
 }
 
-impl<S> Debug for RegistryMockerRequest<S>
+impl<S> Debug for RegisterMockerRequest<S>
 where
     S: ActorService,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+        write!(f, "{}", type_name::<Self>())
     }
 }
 
-impl<S> RegistryMockerRequest<S>
+impl<S> RegisterMockerRequest<S>
 where
     S: ActorService,
 {
@@ -351,23 +374,23 @@ where
     }
 }
 
-impl<S> ServiceRequest for RegistryMockerRequest<S>
+impl<S> ServiceRequest for RegisterMockerRequest<S>
 where
     S: ActorService,
 {
     type Response = Result<ServiceRef<S>>;
 }
 
-impl<S> ServiceHandler<Self, RegistryMockerRequest<S>> for RegistryService
+impl<S> ServiceHandler<Self, RegisterMockerRequest<S>> for RegistryService
 where
     S: ActorService,
 {
     fn handle(
         &mut self,
-        msg: RegistryMockerRequest<S>,
+        msg: RegisterMockerRequest<S>,
         _ctx: &mut ServiceContext<RegistryService>,
     ) -> Result<ServiceRef<S>> {
-        self.registry.registry_mocker::<S>(msg.mocker)
+        self.registry.register_mocker::<S>(msg.mocker)
     }
 }
 
@@ -400,7 +423,7 @@ where
     S: ActorService,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}<{}>", type_name::<Self>(), type_name::<S>())
+        write!(f, "{}", type_name::<Self>())
     }
 }
 
@@ -525,6 +548,50 @@ where
     }
 }
 
+pub struct RemoveShardRequest<T>
+where
+    T: Send + Sync + Clone + 'static,
+{
+    phantom: PhantomData<T>,
+}
+
+impl<T> Debug for RemoveShardRequest<T>
+where
+    T: Send + Sync + Clone,
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}<{}>", type_name::<Self>(), type_name::<T>())
+    }
+}
+
+impl<T> RemoveShardRequest<T>
+where
+    T: Send + Sync + Clone,
+{
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<T> ServiceRequest for RemoveShardRequest<T>
+where
+    T: Send + Sync + Clone + 'static,
+{
+    type Response = ();
+}
+
+impl<T> ServiceHandler<Self, RemoveShardRequest<T>> for RegistryService
+where
+    T: Send + Sync + Clone + 'static,
+{
+    fn handle(&mut self, _msg: RemoveShardRequest<T>, _ctx: &mut ServiceContext<RegistryService>) {
+        self.registry.remove_shared::<T>();
+    }
+}
+
 #[derive(Debug)]
 pub struct ServiceStatusRequest {
     service_name: String,
@@ -582,7 +649,9 @@ impl ServiceHandler<Self, ServiceCmdRequest> for RegistryService {
 
 #[derive(Debug)]
 pub enum SystemCmd {
+    ///Shutdown system
     Shutdown,
+    ShutdownService(String),
 }
 
 #[derive(Debug)]
@@ -621,11 +690,11 @@ impl EventHandler<Self, CheckServiceEvent> for RegistryService {
 
 #[async_trait::async_trait]
 pub trait RegistryAsyncService {
-    async fn registry<S>(&self) -> Result<ServiceRef<S>>
+    async fn register<S>(&self) -> Result<ServiceRef<S>>
     where
         S: ActorService + ServiceFactory<S> + 'static;
 
-    async fn registry_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
+    async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
     where
         S: ActorService + 'static,
         Mocker: MockHandler<S> + 'static;
@@ -634,7 +703,7 @@ pub trait RegistryAsyncService {
     where
         S: ActorService + ServiceFactory<S> + 'static,
     {
-        block_on(async { self.registry::<S>().await })
+        block_on(async { self.register::<S>().await })
     }
 
     async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
@@ -711,29 +780,51 @@ pub trait RegistryAsyncService {
         })
     }
 
-    async fn shutdown(&self) -> Result<()>;
+    async fn remove_shared<T>(&self) -> Result<()>
+    where
+        T: Send + Sync + Clone + 'static;
 
-    fn shutdown_sync(&self) -> Result<()> {
-        block_on(async { self.shutdown().await })
+    fn remove_shared_sync<T>(&self) -> Result<()>
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        block_on(async { self.remove_shared::<T>().await })
+    }
+
+    async fn shutdown_system(&self) -> Result<()>;
+
+    fn shutdown_system_sync(&self) -> Result<()> {
+        block_on(async { self.shutdown_system().await })
+    }
+
+    async fn shutdown_service<S>(&self) -> Result<()>
+    where
+        S: ActorService + 'static;
+
+    fn shutdown_service_sync<S>(&self) -> Result<()>
+    where
+        S: ActorService + 'static,
+    {
+        block_on(async { self.shutdown_service::<S>().await })
     }
 }
 
 #[async_trait::async_trait]
 impl RegistryAsyncService for ServiceRef<RegistryService> {
-    async fn registry<S>(&self) -> Result<ServiceRef<S>>
+    async fn register<S>(&self) -> Result<ServiceRef<S>>
     where
         S: ActorService + ServiceFactory<S> + 'static,
     {
-        self.send(RegistryRequest::new()).await?
+        self.send(RegisterRequest::new()).await?
     }
 
-    async fn registry_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
+    async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
     where
         S: ActorService + 'static,
         Mocker: MockHandler<S> + 'static,
     {
         let handler = Box::new(mocker);
-        self.send(RegistryMockerRequest::new(handler)).await?
+        self.send(RegisterMockerRequest::new(handler)).await?
     }
 
     async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
@@ -790,9 +881,26 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
         self.send(GetShardRequest::new()).await
     }
 
-    async fn shutdown(&self) -> Result<()> {
+    async fn remove_shared<T>(&self) -> Result<()>
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        self.send(RemoveShardRequest::<T>::new()).await
+    }
+
+    async fn shutdown_system(&self) -> Result<()> {
         self.send(SystemCmdRequest {
             cmd: SystemCmd::Shutdown,
+        })
+        .await?
+    }
+
+    async fn shutdown_service<S>(&self) -> Result<()>
+    where
+        S: ActorService + 'static,
+    {
+        self.send(SystemCmdRequest {
+            cmd: SystemCmd::ShutdownService(S::service_name().to_string()),
         })
         .await?
     }
