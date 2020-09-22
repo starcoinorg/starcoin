@@ -30,11 +30,26 @@ module TransactionPublishOption {
 
     public fun initialize(
         account: &signer,
-        script_allow_list: vector<vector<u8>>,
+        merged_script_allow_list: vector<u8>,
         module_publishing_allowed: bool,
     ) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
+
+        let script_allow_list = Vector::empty<vector<u8>>();
+        let len = Vector::length(&merged_script_allow_list) / SCRIPT_HASH_LENGTH;
+        let i = 0;
+        while (i < len) {
+            let script_hash = Vector::empty<u8>();
+            let j = 0;
+            while (j < SCRIPT_HASH_LENGTH) {
+                let index = SCRIPT_HASH_LENGTH * i + j;
+                Vector::push_back(&mut script_hash, *Vector::borrow(&merged_script_allow_list, index));
+                j = j + 1;
+            };
+            Vector::push_back<vector<u8>>(&mut script_allow_list, script_hash);
+            i = i + 1;
+        };
 
         Config::publish_new_config(
             account,

@@ -20,15 +20,7 @@ script {
    use 0x1::TransactionPublishOption;
 
 fun genesis_init(
-                 initial_script_allow_list_member_0: vector<u8>,
-                 initial_script_allow_list_member_1: vector<u8>,
-                 initial_script_allow_list_member_2: vector<u8>,
-                 initial_script_allow_list_member_3: vector<u8>,
-                 initial_script_allow_list_member_4: vector<u8>,
-                 initial_script_allow_list_member_5: vector<u8>,
-                 initial_script_allow_list_member_6: vector<u8>,
-                 initial_script_allow_list_member_7: vector<u8>,
-                 initial_script_allow_list_member_8: vector<u8>,
+                 merged_script_allow_list: vector<u8>,
                  is_open_module: bool,
                  instruction_schedule: vector<u8>,
                  native_schedule: vector<u8>,
@@ -77,18 +69,9 @@ fun genesis_init(
 
         TransactionPublishOption::initialize(
             &genesis_account,
-            Vector::empty<vector<u8>>(),
+            merged_script_allow_list,
             is_open_module,
         );
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_0);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_1);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_2);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_3);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_4);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_5);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_6);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_7);
-        TransactionPublishOption::add_to_script_allow_list(&genesis_account, initial_script_allow_list_member_8);
 
         // init config
         VMConfig::initialize(&genesis_account, instruction_schedule, native_schedule,

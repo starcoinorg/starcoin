@@ -17,9 +17,9 @@ use starcoin_vm_types::transaction::{
 };
 pub use stdlib::init_scripts::{compiled_init_script, InitScript};
 pub use stdlib::transaction_scripts::compiled_transaction_script;
+use stdlib::transaction_scripts::VersionedStdlibScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
-use stdlib::transaction_scripts::VersionedStdlibScript;
 
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 pub const DEFAULT_MAX_GAS_AMOUNT: u64 = 20000;
@@ -304,7 +304,18 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        let initial_script_allow_list = VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+        //let initial_script_allow_list = &genesis_config.publishing_option.allowed_script();
+        // just for test. todo: once we have a better test, switch back to use genesis_config.publishing_option.allowed_script()
+        let initial_script_allow_list =
+            VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+        let mut merged_script_allow_list: Vec<u8> = Vec::new();
+        for i in 0..initial_script_allow_list.len() {
+            let tmp = &mut initial_script_allow_list
+                .get(i)
+                .expect("Cannot get script allow list member")
+                .to_vec();
+            merged_script_allow_list.append(tmp);
+        }
 
         let instruction_schedule =
             scs::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
@@ -316,15 +327,7 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
-                TransactionArgument::U8Vector(initial_script_allow_list.get(0).expect("script allow list should contain more then 0 member").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(1).expect("script allow list should contain more then 1 member").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(2).expect("script allow list should contain more then 2 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(3).expect("script allow list should contain more then 3 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(4).expect("script allow list should contain more then 4 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(5).expect("script allow list should contain more then 5 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(6).expect("script allow list should contain more then 6 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(7).expect("script allow list should contain more then 7 members").to_vec()),
-                TransactionArgument::U8Vector(initial_script_allow_list.get(8).expect("script allow list should contain more then 8 members").to_vec()),
+                TransactionArgument::U8Vector(merged_script_allow_list),
                 TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
                 TransactionArgument::U8Vector(instruction_schedule),
                 TransactionArgument::U8Vector(native_schedule),

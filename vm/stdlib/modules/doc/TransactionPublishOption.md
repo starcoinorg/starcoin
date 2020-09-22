@@ -99,7 +99,7 @@ The script hash already exists in the allowlist
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, script_allow_list: vector&lt;vector&lt;u8&gt;&gt;, module_publishing_allowed: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, merged_script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool)
 </code></pre>
 
 
@@ -110,11 +110,27 @@ The script hash already exists in the allowlist
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionPublishOption_initialize">initialize</a>(
     account: &signer,
-    script_allow_list: vector&lt;vector&lt;u8&gt;&gt;,
+    merged_script_allow_list: vector&lt;u8&gt;,
     module_publishing_allowed: bool,
 ) {
     <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
+
+    <b>let</b> script_allow_list = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;vector&lt;u8&gt;&gt;();
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&merged_script_allow_list);
+    <b>let</b> i = 0;
+    <b>while</b> (i &lt; len) {
+        <b>let</b> script_hash = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
+        <b>let</b> j = 0;
+        <b>while</b> (j &lt; SCRIPT_HASH_LENGTH) {
+            <b>let</b> index = SCRIPT_HASH_LENGTH * i + j;
+            <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> script_hash, *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&merged_script_allow_list, index));
+            j = j + 1;
+        };
+        <a href="Debug.md#0x1_Debug_print">Debug::print</a>&lt;vector&lt;u8&gt;&gt;(&script_hash);
+        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> script_allow_list, script_hash);
+        i = i + 1;
+    };
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(
         account,

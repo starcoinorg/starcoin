@@ -44,6 +44,13 @@ impl VMPublishingOption {
             }
         }
     }
+
+    pub fn allowed_script(&self) -> Vec<[u8; SCRIPT_HASH_LENGTH]> {
+        match self {
+            VMPublishingOption::Open | VMPublishingOption::CustomScripts => Vec::new(),
+            VMPublishingOption::Locked(whitelist) => whitelist.clone(),
+        }
+    }
 }
 
 /// Defines all the on chain configuration data needed by VM.
