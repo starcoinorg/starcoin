@@ -31,7 +31,7 @@ use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
-use starcoin_vm_types::on_chain_config::{VMPublishingOption, INITIAL_GAS_SCHEDULE};
+use starcoin_vm_types::on_chain_config::INITIAL_GAS_SCHEDULE;
 use starcoin_vm_types::transaction::{Module, Package, Script, TransactionPayloadType};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -78,7 +78,6 @@ impl StarcoinVM {
     fn load_configs(&mut self, state: &dyn StateView) -> Result<(), Error> {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
-                publishing_option: VMPublishingOption::Open,
                 gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
                 block_gas_limit: u64::MAX, //no gas limitation on genesis
             });

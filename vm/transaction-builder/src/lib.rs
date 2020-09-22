@@ -325,7 +325,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(initial_script_allow_list.get(6).expect("script allow list should contain more then 6 members").to_vec()),
                 TransactionArgument::U8Vector(initial_script_allow_list.get(7).expect("script allow list should contain more then 7 members").to_vec()),
                 TransactionArgument::U8Vector(initial_script_allow_list.get(8).expect("script allow list should contain more then 8 members").to_vec()),
-                TransactionArgument::Bool(genesis_config.vm_config.publishing_option.is_open()),
+                TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
                 TransactionArgument::U8Vector(instruction_schedule),
                 TransactionArgument::U8Vector(native_schedule),
                 TransactionArgument::U64(genesis_config.reward_delay),
