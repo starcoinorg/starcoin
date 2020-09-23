@@ -1,0 +1,22 @@
+[package]
+name = "starcoin-dataformat-generator"
+version = "0.1.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+build = "build.rs"
+
+[dependencies]
+
+[build-dependencies]
+
+serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
+serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
+
+starcoin-types = { path = "../types" }
+starcoin-crypto = {path = "../commons/crypto" }
+starcoin-rpc-api = {path = "../rpc/api" }
+anyhow = "1.0"
+serde = "1.0"
+serde_yaml = "0.8"

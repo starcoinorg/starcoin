@@ -79,6 +79,7 @@ members = [
     "cmd/tx-factory",
     "cmd/miner_client",
     "cmd/generator",
+    "dataformat-generator",
 ]
 
 [profile.dev]
