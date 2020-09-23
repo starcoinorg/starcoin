@@ -366,7 +366,10 @@ where
                 let ancestor = ancestor_header.number();
 
                 // 2. pivot
-                let (latest_block_id, latest_number) = best_peer.get_hash_number();
+                let latest_header = best_peer.get_latest_header();
+                let latest_block_id = latest_header.id();
+                let latest_number = latest_header.number();
+
                 let min_behind = if main_network {
                     MAIN_MIN_BLOCKS_BEHIND
                 } else {
@@ -593,7 +596,7 @@ where
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
         let peer_info = network
-            .get_peer(&peer_id.clone())
+            .get_peer(peer_id.clone())
             .await?
             .ok_or_else(|| format_err!("get peer {:?} not exist.", peer_id))?;
 

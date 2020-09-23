@@ -1,18 +1,25 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::messages::PeerMessage;
 use anyhow::*;
-pub use libp2p::multiaddr::Multiaddr;
-use starcoin_types::system_events::NewHeadBlock;
-use std::time::Duration;
-
-pub mod messages;
 use async_trait::async_trait;
 use network_rpc_core::RawRpcClient;
-pub use starcoin_types::peer_info::PeerId;
-use starcoin_types::peer_info::{PeerInfo, RpcInfo};
+use starcoin_types::peer_info::RpcInfo;
+use starcoin_types::system_events::NewHeadBlock;
 use std::borrow::Cow;
 
+pub mod messages;
+mod peer_provider;
+
+pub use libp2p::multiaddr::Multiaddr;
+pub use peer_provider::PeerProvider;
+pub use starcoin_types::peer_info::{PeerId, PeerInfo};
+
 #[async_trait]
-pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + RawRpcClient {
+pub trait NetworkService:
+    Send + Sync + Clone + Sized + std::marker::Unpin + RawRpcClient + PeerProvider
+{
     async fn send_peer_message(
         &self,
         protocol_name: Cow<'static, [u8]>,
@@ -24,28 +31,6 @@ pub trait NetworkService: Send + Sync + Clone + Sized + std::marker::Unpin + Raw
         protocol_name: Cow<'static, [u8]>,
         event: NewHeadBlock,
     ) -> Result<()>;
-
-    fn identify(&self) -> PeerId;
-
-    async fn send_request_bytes(
-        &self,
-        peer_id: Option<PeerId>,
-        rpc_path: String,
-        message: Vec<u8>,
-        time_out: Duration,
-    ) -> Result<Vec<u8>>;
-
-    async fn peer_set(&self) -> Result<Vec<PeerInfo>>;
-
-    async fn best_peer_set(&self) -> Result<Vec<PeerInfo>>;
-
-    async fn get_peer(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>>;
-
-    async fn get_self_peer(&self) -> Result<PeerInfo>;
-
-    async fn best_peer(&self) -> Result<Option<PeerInfo>>;
-
-    async fn get_peer_set_size(&self) -> Result<usize>;
 
     async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()>;
 }

@@ -18,7 +18,9 @@ use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
 
 mod remote_chain_state;
 
+pub use network_rpc_core::RawRpcClient;
 pub use remote_chain_state::RemoteChainStateReader;
+
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 
