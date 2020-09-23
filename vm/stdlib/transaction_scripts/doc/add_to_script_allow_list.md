@@ -15,6 +15,9 @@
 
 Append the
 <code>hash</code> to script hashes list allowed to be executed by the network.
+Todo: it's dangous to run the script when publish option is VMPublishingOption::Open
+because the list is empty at the moment, adding script into the empty list will lead to
+that only the added script is allowed to execute.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_add_to_script_allow_list">add_to_script_allow_list</a>(account: &signer, hash: vector&lt;u8&gt;)
