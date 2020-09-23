@@ -65,7 +65,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
             "solve_time:{:?}, avg_time:{:?}, block_n:{:?}",
             solve_time, avg_time, block_n
         );
-        avg_target = avg_target + blocks[latest_block_index].target / block_n;
+        avg_target += blocks[latest_block_index].target / block_n;
         latest_block_index += 1
     }
     avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;

@@ -1,11 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+#![allow(clippy::ptr_offset_with_cast)]
+#![allow(clippy::assign_op_pattern)]
 
 use serde::{de, ser, Deserialize, Serialize, Serializer};
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
 use uint::*;
-
 construct_uint! {
     pub struct U256(4);
 }
