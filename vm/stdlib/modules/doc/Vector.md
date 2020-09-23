@@ -21,6 +21,7 @@
 -  [Function `index_of`](#0x1_Vector_index_of)
 -  [Function `remove`](#0x1_Vector_remove)
 -  [Function `swap_remove`](#0x1_Vector_swap_remove)
+-  [Function `split`](#0x1_Vector_split)
 -  [Specification](#0x1_Vector_Specification)
     -  [Function `length`](#0x1_Vector_Specification_length)
     -  [Function `borrow`](#0x1_Vector_Specification_borrow)
@@ -430,6 +431,60 @@
     <b>let</b> last_idx = <a href="#0x1_Vector_length">length</a>(v) - 1;
     <a href="#0x1_Vector_swap">swap</a>(v, i, last_idx);
     <a href="#0x1_Vector_pop_back">pop_back</a>(v)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Vector_split"></a>
+
+## Function `split`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt; {
+    <b>let</b> result = <a href="#0x1_Vector_empty">empty</a>&lt;vector&lt;Element&gt;&gt;();
+    <b>let</b> len = <a href="#0x1_Vector_length">length</a>(v) / sub_len;
+
+    <b>let</b> rem = 0;
+    <b>if</b> (len * sub_len &lt; <a href="#0x1_Vector_length">length</a>(v)) {
+        rem = <a href="#0x1_Vector_length">length</a>(v) - len * sub_len;
+    };
+
+    <b>let</b> i = 0;
+    <b>while</b> (i &lt; len) {
+        <b>let</b> sub = <a href="#0x1_Vector_empty">empty</a>&lt;Element&gt;();
+        <b>let</b> j = 0;
+        <b>while</b> (j &lt; sub_len) {
+            <b>let</b> index = sub_len * i + j;
+            <a href="#0x1_Vector_push_back">push_back</a>(&<b>mut</b> sub, *<a href="#0x1_Vector_borrow">borrow</a>(v, index));
+            j = j + 1;
+        };
+        <a href="#0x1_Vector_push_back">push_back</a>&lt;vector&lt;Element&gt;&gt;(&<b>mut</b> result, sub);
+        i = i + 1;
+    };
+
+    <b>if</b> (rem &gt; 0) {
+        <b>let</b> sub = <a href="#0x1_Vector_empty">empty</a>&lt;Element&gt;();
+        <b>let</b> index = <a href="#0x1_Vector_length">length</a>(v) - rem;
+        <b>while</b> (index &lt; <a href="#0x1_Vector_length">length</a>(v)) {
+            <a href="#0x1_Vector_push_back">push_back</a>(&<b>mut</b> sub, *<a href="#0x1_Vector_borrow">borrow</a>(v, index));
+            index = index + 1;
+        };
+        <a href="#0x1_Vector_push_back">push_back</a>&lt;vector&lt;Element&gt;&gt;(&<b>mut</b> result, sub);
+    };
+    result
 }
 </code></pre>
 

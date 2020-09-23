@@ -117,7 +117,7 @@ The script hash already exists in the allowlist
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
 
     <b>let</b> script_allow_list = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;vector&lt;u8&gt;&gt;();
-    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&merged_script_allow_list);
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&merged_script_allow_list) / SCRIPT_HASH_LENGTH;
     <b>let</b> i = 0;
     <b>while</b> (i &lt; len) {
         <b>let</b> script_hash = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
@@ -127,8 +127,7 @@ The script hash already exists in the allowlist
             <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> script_hash, *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&merged_script_allow_list, index));
             j = j + 1;
         };
-        <a href="Debug.md#0x1_Debug_print">Debug::print</a>&lt;vector&lt;u8&gt;&gt;(&script_hash);
-        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> script_allow_list, script_hash);
+        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>&lt;vector&lt;u8&gt;&gt;(&<b>mut</b> script_allow_list, script_hash);
         i = i + 1;
     };
 
