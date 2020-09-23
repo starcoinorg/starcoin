@@ -93,12 +93,19 @@ impl PeerSelector {
         self.filter(move |peer| peer.latest_header.number >= block_number)
     }
 
+    pub fn random_peer_id(&self) -> Option<PeerId> {
+        self.peers
+            .iter()
+            .choose(&mut rand::thread_rng())
+            .map(|info| info.peer_id.clone())
+    }
+
     pub fn random(&self) -> Option<PeerInfo> {
         self.peers.iter().choose(&mut rand::thread_rng()).cloned()
     }
 
-    pub fn first(&self) -> Option<PeerInfo> {
-        self.peers.get(0).cloned()
+    pub fn first(&self) -> Option<PeerId> {
+        self.peers.get(0).map(|info| info.peer_id.clone())
     }
 
     pub fn is_empty(&self) -> bool {

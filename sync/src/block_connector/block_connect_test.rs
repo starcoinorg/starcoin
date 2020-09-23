@@ -1,6 +1,6 @@
 use crate::block_connector::FutureBlockPool;
 use crypto::HashValue;
-use types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
 
 fn _gen_future_block_pool(block_ct: usize) -> (FutureBlockPool, HashValue, Vec<HashValue>) {
     let pool = FutureBlockPool::new();

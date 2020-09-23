@@ -3,11 +3,11 @@ use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::{account_address, transaction::SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
 use test_helper::run_node_by_config;
 use txpool::TxPoolService;
-use types::{account_address, transaction::SignedUserTransaction};
 
 #[stest::test]
 fn test_txn_sync_actor() {
