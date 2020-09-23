@@ -79,11 +79,12 @@ impl Miner {
             .ok_or_else(|| format_err!("Mint job is empty"))?;
         debug!("miner receive submit with hash:{}", header_hash);
         // TODO:FIX ME
-        /*
-        if ctx.header_hash != header_hash {
+
+        if ctx.mining_hash != header_hash {
             self.reset_ctx(Some(ctx));
             return Err(format_err!("Header hash mismatch"));
-        }*/
+        }
+
         let block = ctx.block_template.into_block(nonce, ctx.difficulty);
         info!("Mint new block with id: {:?}", block.id());
         self.bus
@@ -95,7 +96,7 @@ impl Miner {
         Ok(())
     }
 
-    fn _reset_ctx(&self, ctx: Option<MineCtx>) {
+    fn reset_ctx(&self, ctx: Option<MineCtx>) {
         *(self.state.lock().unwrap()) = ctx;
     }
 }

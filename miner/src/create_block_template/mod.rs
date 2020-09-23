@@ -151,6 +151,7 @@ pub struct Inner {
 }
 
 impl Inner {
+    // #[cfg(test)]
     pub fn insert_uncle(&mut self, uncle: BlockHeader) {
         self.parent_uncle
             .entry(uncle.parent_hash())
@@ -212,7 +213,9 @@ impl Inner {
     fn uncles_prune(&mut self) {
         if !self.uncles.is_empty() {
             if let Ok(epoch) = self.chain.epoch_info() {
-                if epoch.end_number() == (self.chain.current_header().number() + 2) {
+                if epoch.end_number()
+                    == (self.chain.current_header().number() + MAX_UNCLE_COUNT_PER_BLOCK as u64)
+                {
                     self.uncles.clear();
                 }
             }

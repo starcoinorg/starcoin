@@ -6,7 +6,6 @@ use anyhow::Result;
 use bus::BusActor;
 use chain::BlockChain;
 use consensus::Consensus;
-use create_block_template::CreateBlockTemplateRequest;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -26,7 +25,7 @@ mod metrics;
 pub mod miner;
 pub mod ondemand_pacemaker;
 
-pub use create_block_template::CreateBlockTemplateService;
+pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
 
@@ -94,11 +93,12 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
         let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
         let create_block_template_service = self.create_block_template_service.clone();
         let self_ref = ctx.self_ref();
+        debug!("ddddddddd: {:?}", enable_mint_empty_block);
         let f = async move {
             let block_template = create_block_template_service.send(
                 CreateBlockTemplateRequest)
                 .await??;
-
+            debug!("xxxxxxxx: {:?}", block_template.clone());
             if block_template.body.transactions.is_empty() && !enable_mint_empty_block {
                 debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
                 Ok(())
@@ -110,6 +110,7 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 let difficulty =
                     strategy.calculate_next_difficulty(&block_chain, &epoch)?;
                 miner.set_mint(block_template, difficulty).await?;
+                debug!("yyyyyyyyyyy: {:?}", epoch);
                 Ok(())
             }
         }.then(|result: Result<()>| async move {

@@ -372,7 +372,7 @@ fn test_new_branch() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 async fn test_create_block_template_actor() {
     let bus = BusActor::launch();
     let node_config = Arc::new(NodeConfig::random_for_test());
