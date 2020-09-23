@@ -80,7 +80,7 @@ if [ $SKIP_PROMPTS -eq 0 ]; then
 fi
 
 # Set the flags necessary for coverage output
-export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -C panic=abort"
+export RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 export RUSTC_BOOTSTRAP=1
 export CARGO_INCREMENTAL=0
 export RUST_MIN_STACK=8388608 # 8 * 1024 * 1024
