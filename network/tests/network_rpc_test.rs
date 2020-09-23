@@ -4,8 +4,9 @@
 use crypto::HashValue;
 use logger::prelude::*;
 use network_api::messages::RawRpcRequestMessage;
-use network_api::NetworkService;
+use network_api::PeerProvider;
 use network_p2p::Multiaddr;
+use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_network_rpc::NetworkRpcService;
@@ -48,7 +49,7 @@ async fn test_network_raw_rpc() {
     let request = request.encode().unwrap();
     info!("req :{:?}", request);
     let resp = network2
-        .send_request_bytes(
+        .send_raw_request(
             Some(network1.identify().clone()),
             "test".to_string(),
             request.clone(),
@@ -65,7 +66,7 @@ async fn test_network_raw_rpc() {
     let request = request.encode().unwrap();
     info!("req :{:?}", request);
     let resp = network1
-        .send_request_bytes(
+        .send_raw_request(
             Some(network2.identify().clone()),
             "test".to_string(),
             request.clone(),
