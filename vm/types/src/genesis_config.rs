@@ -4,7 +4,6 @@
 use crate::on_chain_config::{VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE};
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, format_err, Result};
-use ethereum_types::U256;
 use libp2p::multiaddr::Multiaddr;
 use move_core_types::move_resource::MoveResource;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -12,6 +11,7 @@ use once_cell::sync::Lazy;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
+use starcoin_uint::U256;
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
