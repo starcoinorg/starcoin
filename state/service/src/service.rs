@@ -44,12 +44,14 @@ impl ServiceFactory<Self> for ChainStateService {
 }
 
 impl ActorService for ChainStateService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        Ok(())
     }
 }
 
@@ -178,7 +180,7 @@ mod tests {
             test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
         registry.put_shared(storage).await?;
-        let service_ref = registry.registry::<ChainStateService>().await?;
+        let service_ref = registry.register::<ChainStateService>().await?;
         let account_state = service_ref.get_account_state(genesis_address()).await?;
         assert!(account_state.is_some());
         Ok(())

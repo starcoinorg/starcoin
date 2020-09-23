@@ -40,9 +40,9 @@ pub async fn build_network(
     let bus = BusActor::launch2(new_bus);
     registry.put_shared(bus.clone()).await?;
     let network_rpc_service = if let Some(mocker) = rpc_service_mocker {
-        registry.registry_mocker(mocker).await?
+        registry.register_mocker(mocker).await?
     } else {
-        registry.registry::<NetworkRpcService>().await?
+        registry.register::<NetworkRpcService>().await?
     };
 
     Ok((

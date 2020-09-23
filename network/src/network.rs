@@ -637,14 +637,16 @@ impl ServiceFactory<Self> for PeerMsgBroadcasterService {
 }
 
 impl ActorService for PeerMsgBroadcasterService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<PropagateNewTransactions>();
         ctx.subscribe::<NetCmpctBlockMessage>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<PropagateNewTransactions>();
         ctx.unsubscribe::<NetCmpctBlockMessage>();
+        Ok(())
     }
 }
 

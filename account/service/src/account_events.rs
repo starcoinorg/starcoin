@@ -19,12 +19,14 @@ pub struct AccountEventService {
 }
 
 impl ActorService for AccountEventService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<ContractEventNotification>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<ContractEventNotification>();
+        Ok(())
     }
 }
 

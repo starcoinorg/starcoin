@@ -62,7 +62,8 @@ where
 {
     fn start(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_started() {
-            bail!("Service {} has bean started", S::service_name())
+            warn!("Service {} has bean started", S::service_name());
+            return Ok(());
         }
         let mut service = match (self.service_creator)(ctx) {
             Err(e) => {
@@ -71,7 +72,7 @@ where
             }
             Ok(service) => service,
         };
-        service.started(ctx);
+        service.started(ctx)?;
         self.service.replace(service);
         info!("Service {} start.", S::service_name());
         Ok(())
@@ -79,11 +80,12 @@ where
 
     fn stop(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_stopped() {
-            bail!("Service {} has bean stopped", S::service_name())
+            warn!("Service {} has bean stopped", S::service_name());
+            return Ok(());
         }
         let service = self.service.take();
         if let Some(mut service) = service {
-            service.stopped(ctx);
+            service.stopped(ctx)?;
         }
         info!("Service {} stop.", S::service_name());
         Ok(())

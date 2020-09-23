@@ -45,16 +45,18 @@ impl ServiceFactory<Self> for ChainNotifyHandlerService {
 }
 
 impl ActorService for ChainNotifyHandlerService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncBegin>();
         ctx.subscribe::<SyncDone>();
         ctx.subscribe::<NewHeadBlock>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncBegin>();
         ctx.unsubscribe::<SyncDone>();
         ctx.unsubscribe::<NewHeadBlock>();
+        Ok(())
     }
 }
 

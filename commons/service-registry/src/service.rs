@@ -23,8 +23,12 @@ pub trait ActorService: Send + Sized {
         type_name::<Self>()
     }
 
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {}
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {}
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        Ok(())
+    }
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        Ok(())
+    }
 }
 
 pub struct ServiceContext<'a, S>
@@ -63,21 +67,21 @@ where
         self.cache.service_ref::<DepS>()
     }
 
-    pub fn get_shared<T>(&mut self) -> Result<T>
+    pub fn get_shared<T>(&self) -> Result<T>
     where
         T: Send + Sync + Clone + 'static,
     {
-        let registry_ref = self.registry_ref().clone();
+        let registry_ref = self.registry_ref();
         registry_ref.get_shared_sync()
     }
 
-    pub fn get_shared_or_put<T, F>(&mut self, f: F) -> Result<T>
+    pub fn get_shared_or_put<T, F>(&self, f: F) -> Result<T>
     where
         T: Send + Sync + Clone + 'static,
         F: FnOnce() -> Result<T>,
     {
-        let registry_ref = self.registry_ref().clone();
-        block_on(async {
+        let registry_ref = self.registry_ref();
+        block_on(async move {
             let result = registry_ref.get_shared_opt::<T>().await?;
             match result {
                 Some(r) => Ok(r),

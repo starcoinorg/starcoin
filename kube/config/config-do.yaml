@@ -1,6 +1,6 @@
 apiVersion: v1
 data:
-  seed: /ip4/39.102.50.159/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU
+  seed: /dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk
   start_disable_seed_node: "false"
 kind: ConfigMap
 metadata:

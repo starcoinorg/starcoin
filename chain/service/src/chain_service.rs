@@ -51,12 +51,14 @@ impl ServiceFactory<Self> for ChainReaderService {
 }
 
 impl ActorService for ChainReaderService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<NewHeadBlock>();
+        Ok(())
     }
 }
 
@@ -335,7 +337,7 @@ mod tests {
         let registry = RegistryService::launch();
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
-        let service_ref = registry.registry::<ChainReaderService>().await?;
+        let service_ref = registry.register::<ChainReaderService>().await?;
         let chain_info = service_ref.master_head().await?;
         assert_eq!(*chain_info.get_head(), startup_info.master);
         Ok(())

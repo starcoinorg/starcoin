@@ -26,14 +26,16 @@ pub struct BroadcastProcessService {
 }
 
 impl ActorService for BroadcastProcessService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<BMessage1>();
         ctx.subscribe::<BMessage2>();
+        Ok(())
     }
 
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<BMessage1>();
         ctx.unsubscribe::<BMessage2>();
+        Ok(())
     }
 }
 

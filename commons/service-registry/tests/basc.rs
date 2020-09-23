@@ -9,13 +9,13 @@ pub mod common;
 #[stest::test]
 async fn test_launch_and_shutdown() {
     let registry = RegistryService::launch();
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }
 
 #[stest::test]
 async fn test_basic() {
     let registry = RegistryService::launch();
-    let service_ref = registry.registry::<CalService>().await.unwrap();
+    let service_ref = registry.register::<CalService>().await.unwrap();
 
     let service_ref2 = registry.service_ref::<CalService>().await;
     assert!(service_ref2.is_ok());
@@ -47,5 +47,5 @@ async fn test_basic() {
 
     let result = service_ref.sub(1).await.unwrap();
     assert_eq!(result, 0);
-    registry.shutdown().await.unwrap();
+    registry.shutdown_system().await.unwrap();
 }
