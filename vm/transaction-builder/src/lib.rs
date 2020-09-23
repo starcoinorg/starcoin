@@ -17,7 +17,6 @@ use starcoin_vm_types::transaction::{
 };
 pub use stdlib::init_scripts::{compiled_init_script, InitScript};
 pub use stdlib::transaction_scripts::compiled_transaction_script;
-use stdlib::transaction_scripts::VersionedStdlibScript;
 pub use stdlib::transaction_scripts::{CompiledBytes, StdlibScript};
 pub use stdlib::{stdlib_modules, StdLibOptions, StdlibVersion};
 
@@ -304,10 +303,11 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        //let initial_script_allow_list = &genesis_config.publishing_option.allowed_script();
-        // just for test. todo: once we have a better test, switch back to use genesis_config.publishing_option.allowed_script()
-        let initial_script_allow_list =
-            VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+        // for test
+        // let initial_script_allow_list =
+        //     VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+        let initial_script_allow_list = genesis_config.publishing_option.allowed_script();
+
         let mut merged_script_allow_list: Vec<u8> = Vec::new();
         for i in 0..initial_script_allow_list.len() {
             let tmp = &mut initial_script_allow_list
