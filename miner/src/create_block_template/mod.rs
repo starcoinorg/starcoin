@@ -151,7 +151,6 @@ pub struct Inner {
 }
 
 impl Inner {
-    // #[cfg(test)]
     pub fn insert_uncle(&mut self, uncle: BlockHeader) {
         self.parent_uncle
             .entry(uncle.parent_hash())

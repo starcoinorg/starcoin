@@ -7,15 +7,18 @@ use consensus::Consensus;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use futures::executor::block_on;
+use logger::prelude::*;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
+use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::{CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService};
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
+use std::time::Duration;
 use types::{
     block::BlockTemplate,
     system_events::{GenerateBlockEvent, MintBlockEvent, NewHeadBlock, SubmitSealEvent},
@@ -68,7 +71,7 @@ fn test_miner() {
 #[stest::test]
 async fn test_miner_service() {
     let mut config = NodeConfig::random_for_test();
-    config.miner.enable_miner_client = false;
+    config.miner.enable_mint_empty_block = true;
     let registry = RegistryService::launch();
     let node_config = Arc::new(config.clone());
     registry.put_shared(node_config.clone()).await.unwrap();
@@ -79,6 +82,9 @@ async fn test_miner_service() {
     let new_bus = registry.service_ref::<BusService>().await.unwrap();
     let bus = BusActor::launch2(new_bus);
     registry.put_shared(bus.clone()).await.unwrap();
+
+    let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
+    registry.put_shared(job_client.clone()).await.unwrap();
 
     let chain_header = storage
         .get_block_header_by_hash(genesis_hash)
@@ -110,6 +116,7 @@ async fn test_miner_service() {
     miner.start_self().unwrap();
     miner.notify(GenerateBlockEvent::new(false)).unwrap();
 
+    std::thread::sleep(Duration::from_millis(1000));
     // Generate a event
     let diff = U256::from(1024);
     let header_hash = HashValue::random();
@@ -121,6 +128,7 @@ async fn test_miner_service() {
     miner
         .notify(SubmitSealEvent::new(header_hash, nonce))
         .unwrap();
-    println!("status: {:?}", miner.self_status());
-    registry.stop_self();
+    debug!("status: {:?}", miner.self_status());
+
+    registry.stop_self().unwrap();
 }
