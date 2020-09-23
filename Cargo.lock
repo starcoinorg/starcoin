@@ -4265,6 +4265,7 @@ dependencies = [
  "futures 0.3.5",
  "libp2p",
  "network-rpc-core",
+ "rand 0.7.3",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",

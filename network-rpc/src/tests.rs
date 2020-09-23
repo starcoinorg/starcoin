@@ -4,7 +4,7 @@
 use anyhow::Result;
 use config::*;
 use futures::executor::block_on;
-use network_api::NetworkService;
+use network_api::PeerProvider;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetStateWithProof, Ping,

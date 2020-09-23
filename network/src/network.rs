@@ -7,7 +7,7 @@ use crate::net::{build_network_service, SNetworkService};
 use crate::network_metrics::NetworkMetrics;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
 use actix::Addr;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use async_trait::async_trait;
 use bitflags::_core::ops::Deref;
 use bitflags::_core::sync::atomic::Ordering;
@@ -16,12 +16,13 @@ use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::future::BoxFuture;
 use futures::lock::Mutex;
+use futures::FutureExt;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use futures_timer::Delay;
 use libp2p::multiaddr::Protocol;
 use libp2p::PeerId;
 use lru::LruCache;
-use network_api::{messages::RawRpcRequestMessage, NetworkService};
+use network_api::{messages::RawRpcRequestMessage, NetworkService, PeerProvider};
 use network_p2p::Multiaddr;
 use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
@@ -130,8 +131,66 @@ impl NetworkService for NetworkAsyncService {
         unimplemented!()
     }
 
+    async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()> {
+        if let Some(peer_info) = self.inner.peers.lock().await.get_mut(&self.peer_id) {
+            peer_info.register_rpc_proto(rpc_info);
+            self.inner
+                .network_service
+                .update_self_info(peer_info.get_peer_info().clone());
+        }
+        Ok(())
+    }
+}
+
+impl PeerProvider for NetworkAsyncService {
     fn identify(&self) -> types::peer_info::PeerId {
         self.peer_id.clone().into()
+    }
+
+    fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>> {
+        self.get_peer_set().boxed()
+    }
+
+    fn get_peer(&self, peer_id: types::peer_info::PeerId) -> BoxFuture<Result<Option<PeerInfo>>> {
+        async move { self.get_peer_by_id(&peer_id.into()).await }.boxed()
+    }
+}
+
+impl RawRpcClient for NetworkAsyncService {
+    fn send_raw_request(
+        &self,
+        peer_id: Option<network_api::PeerId>,
+        rpc_path: String,
+        message: Vec<u8>,
+        timeout: Duration,
+    ) -> BoxFuture<Result<Vec<u8>>> {
+        self.send_request_bytes(peer_id, rpc_path, message, timeout)
+            .boxed()
+    }
+}
+
+impl NetworkAsyncService {
+    async fn get_peer_set(&self) -> Result<Vec<PeerInfo>> {
+        let mut result = vec![];
+
+        for (peer_id, peer) in self.inner.peers.lock().await.iter() {
+            if self.peer_id.eq(peer_id) {
+                continue;
+            }
+            result.push(peer.peer_info.clone());
+        }
+        Ok(result)
+    }
+
+    async fn get_peer_by_id(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
+        match self.inner.peers.lock().await.get(peer_id) {
+            Some(peer) => Ok(Some(peer.peer_info.clone())),
+            None => Ok(None),
+        }
+    }
+
+    pub fn peers(&self) -> Arc<Mutex<HashMap<PeerId, PeerInfoNet>>> {
+        self.inner.peers.clone()
     }
 
     async fn send_request_bytes(
@@ -197,89 +256,6 @@ impl NetworkService for NetworkAsyncService {
         response
     }
 
-    async fn peer_set(&self) -> Result<Vec<PeerInfo>> {
-        let mut result = vec![];
-
-        for (peer_id, peer) in self.inner.peers.lock().await.iter() {
-            if self.peer_id.eq(peer_id) {
-                continue;
-            }
-            debug!("peer_id is {},peer_info is {:?}", peer_id, peer);
-            result.push(peer.peer_info.clone());
-        }
-        debug!("result is {:?}", result);
-        Ok(result)
-    }
-    /// get all peers and sort by difficulty decreasely.
-    async fn best_peer_set(&self) -> Result<Vec<PeerInfo>> {
-        let mut peer_infos = self.peer_set().await?;
-        peer_infos.sort_by_key(|p| p.total_difficulty);
-        peer_infos.reverse();
-        Ok(peer_infos)
-    }
-
-    async fn get_peer(&self, peer_id: &types::peer_info::PeerId) -> Result<Option<PeerInfo>> {
-        let peer_id: PeerId = peer_id.clone().into();
-        match self.inner.peers.lock().await.get(&peer_id) {
-            Some(peer) => Ok(Some(peer.peer_info.clone())),
-            None => Ok(None),
-        }
-    }
-
-    async fn get_self_peer(&self) -> Result<PeerInfo> {
-        match self.inner.peers.lock().await.get(&self.peer_id) {
-            Some(peer) => Ok(peer.peer_info.clone()),
-            None => bail!("Can not find self peer info."),
-        }
-    }
-
-    async fn best_peer(&self) -> Result<Option<PeerInfo>> {
-        let self_peer_id = types::peer_info::PeerId::new(self.peer_id.clone());
-        let best_peer_set = self.best_peer_set().await?;
-        let best_peer = best_peer_set
-            .iter()
-            .find(|peer| self_peer_id != peer.get_peer_id());
-        match best_peer {
-            Some(peer) => Ok(Some(peer.clone())),
-            None => Ok(None),
-        }
-    }
-
-    async fn get_peer_set_size(&self) -> Result<usize> {
-        let size = self.inner.peers.lock().await.len();
-        Ok(size)
-    }
-
-    async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()> {
-        if let Some(peer_info) = self.inner.peers.lock().await.get_mut(&self.peer_id) {
-            peer_info.register_rpc_proto(rpc_info);
-            self.inner
-                .network_service
-                .update_self_info(peer_info.get_peer_info().clone());
-        }
-        Ok(())
-    }
-}
-
-impl RawRpcClient for NetworkAsyncService {
-    fn send_raw_request(
-        &self,
-        peer_id: Option<network_api::PeerId>,
-        rpc_path: String,
-        message: Vec<u8>,
-        timeout: Duration,
-    ) -> BoxFuture<Result<Vec<u8>>> {
-        self.send_request_bytes(peer_id, rpc_path, message, timeout)
-    }
-}
-
-impl NetworkAsyncService {
-    pub fn peers(&self) -> Arc<Mutex<HashMap<PeerId, PeerInfoNet>>> {
-        self.inner.peers.clone()
-    }
-}
-
-impl NetworkAsyncService {
     pub fn start(
         node_config: Arc<NodeConfig>,
         genesis_hash: HashValue,
