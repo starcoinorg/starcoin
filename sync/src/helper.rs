@@ -105,7 +105,7 @@ pub async fn get_txns(
     peer_id: PeerId,
     req: GetTxns,
 ) -> Result<TransactionsData> {
-    let data = client.get_txns(peer_id, req.clone()).await?;
+    let data = client.get_txns_from_pool(peer_id, req.clone()).await?;
     if req.ids.is_some() {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
         let verified_txns = verify_condition
@@ -148,7 +148,7 @@ pub async fn get_headers_with_peer(
 ) -> Result<Vec<BlockHeader>> {
     let mut verify_condition: RpcEntryVerify<BlockNumber> =
         (&req.clone().into_numbers(number)).into();
-    let data = client.get_headers_with_peer(peer_id, req).await?;
+    let data = client.get_headers(peer_id, req).await?;
     let verified_headers =
         verify_condition.filter(data, |header| -> BlockNumber { header.number() });
     Ok(verified_headers)
@@ -191,7 +191,7 @@ where
     if let Some(peer_info) = network.best_peer().await? {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data = client
-            .get_header_by_hash(peer_info.get_peer_id(), hashes)
+            .get_headers_by_hash(peer_info.get_peer_id(), hashes)
             .await?;
         let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
         Ok(verified_headers)
@@ -200,7 +200,7 @@ where
     }
 }
 
-pub async fn get_body_by_hash<N>(
+pub async fn get_bodies_by_hash<N>(
     client: &NetworkRpcClient,
     network: &N,
     hashes: Vec<HashValue>,
@@ -219,7 +219,7 @@ where
     if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = client.get_body_by_hash(peer_id.clone(), hashes).await?;
+        let data = client.get_bodies_by_hash(peer_id.clone(), hashes).await?;
         let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
         Ok((verified_bodies, peer_id))
     } else {
@@ -227,13 +227,13 @@ where
     }
 }
 
-pub async fn get_info_by_hash(
+pub async fn get_block_infos(
     client: &NetworkRpcClient,
     peer_id: PeerId,
     hashes: Vec<HashValue>,
 ) -> Result<Vec<BlockInfo>> {
     let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-    let data = client.get_info_by_hash(peer_id, hashes).await?;
+    let data = client.get_block_infos(peer_id, hashes).await?;
     let verified_infos = verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
     Ok(verified_infos)
 }

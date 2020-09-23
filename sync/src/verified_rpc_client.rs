@@ -13,6 +13,7 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetTxns, RawRpcClient, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
+use starcoin_types::block::Block;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -124,7 +125,7 @@ impl VerifiedRpcClient {
 
     pub async fn get_txns(&self, req: GetTxns) -> Result<TransactionsData> {
         let peer_id = self.random_peer()?;
-        let data = self.client.get_txns(peer_id, req.clone()).await?;
+        let data = self.client.get_txns_from_pool(peer_id, req.clone()).await?;
         if req.ids.is_some() {
             let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
             let verified_txns = verify_condition
@@ -162,41 +163,56 @@ impl VerifiedRpcClient {
         number: BlockNumber,
     ) -> Result<Vec<BlockHeader>> {
         let peer_id = self.random_peer()?;
-
         debug!("rpc select peer {:?}", peer_id);
-
         let mut verify_condition: RpcEntryVerify<BlockNumber> =
             (&req.clone().into_numbers(number)).into();
-        let data = self.client.get_headers_with_peer(peer_id, req).await?;
+        let data = self.client.get_headers(peer_id, req).await?;
         let verified_headers =
             verify_condition.filter(data, |header| -> BlockNumber { header.number() });
         Ok(verified_headers)
     }
 
-    pub async fn get_header_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+    pub async fn get_headers_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
         let peer_id = self.random_peer()?;
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data: Vec<BlockHeader> = self.client.get_header_by_hash(peer_id, hashes).await?;
+        let data: Vec<BlockHeader> = self.client.get_headers_by_hash(peer_id, hashes).await?;
         let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
         Ok(verified_headers)
     }
 
-    pub async fn get_body_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockBody>> {
+    pub async fn get_bodies_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockBody>> {
         let peer_id = self.random_peer()?;
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data: Vec<BlockBody> = self.client.get_body_by_hash(peer_id, hashes).await?;
+        let data: Vec<BlockBody> = self.client.get_bodies_by_hash(peer_id, hashes).await?;
         let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
         Ok(verified_bodies)
     }
 
-    pub async fn get_info_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
+    pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
         let peer_id = self.random_peer()?;
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = self.client.get_info_by_hash(peer_id, hashes).await?;
+        let data = self.client.get_block_infos(peer_id, hashes).await?;
         let verified_infos =
             verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
         Ok(verified_infos)
+    }
+
+    pub async fn get_blocks_by_number(
+        &self,
+        req: GetBlockHeaders,
+        number: BlockNumber,
+    ) -> Result<Vec<Block>> {
+        let headers = self.get_headers(req, number).await?;
+        let hashs = headers.iter().map(|header| header.id()).collect();
+        let bodies = self.get_bodies_by_hash(hashs).await?;
+        //TODO verify headers and bodies' length.
+        let blocks: Vec<Block> = headers
+            .into_iter()
+            .zip(bodies.into_iter())
+            .map(|(header, body)| Block::new(header, body))
+            .collect();
+        Ok(blocks)
     }
 
     pub async fn get_state_node_by_node_hash(&self, node_key: HashValue) -> Result<StateNode> {

@@ -1,5 +1,5 @@
 use crate::download::DownloadActor;
-use crate::helper::{get_body_by_hash, get_headers, get_headers_msg_for_common};
+use crate::helper::{get_bodies_by_hash, get_headers, get_headers_msg_for_common};
 use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_HASH, SYNC_METRICS};
 use crate::sync_task::{
@@ -256,7 +256,8 @@ where
                 let block_idlist = tasks.iter().map(|t| t.id).collect();
 
                 let event =
-                    match get_body_by_hash(&rpc_client, &network, block_idlist, max_height).await {
+                    match get_bodies_by_hash(&rpc_client, &network, block_idlist, max_height).await
+                    {
                         Ok((bodies, peer_id)) => {
                             SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id)
                         }
@@ -310,8 +311,7 @@ where
             for block_body in bodies {
                 let block_header = self.headers.remove(&block_body.hash);
                 let body = RealBlockBody::new(block_body.transactions, block_body.uncles);
-                let block =
-                    Block::new_with_body(block_header.expect("block_header is none."), body);
+                let block = Block::new(block_header.expect("block_header is none."), body);
                 blocks.push(block);
             }
 

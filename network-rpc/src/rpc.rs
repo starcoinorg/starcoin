@@ -55,7 +55,11 @@ impl NetworkRpcImpl {
 }
 
 impl gen_server::NetworkRpc for NetworkRpcImpl {
-    fn get_txns(&self, _peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>> {
+    fn get_txns_from_pool(
+        &self,
+        _peer_id: PeerId,
+        req: GetTxns,
+    ) -> BoxFuture<Result<TransactionsData>> {
         let txpool = self.txpool_service.clone();
         let storage = self.storage.clone();
         let fut = async move {
@@ -125,7 +129,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_header_by_hash(
+    fn get_headers_by_hash(
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
@@ -147,7 +151,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_headers_with_peer(
+    fn get_headers(
         &self,
         _peer_id: PeerId,
         request: GetBlockHeaders,
@@ -179,7 +183,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_info_by_hash(
+    fn get_block_infos(
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,
@@ -200,7 +204,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_body_by_hash(
+    fn get_bodies_by_hash(
         &self,
         _peer_id: PeerId,
         hashes: Vec<HashValue>,

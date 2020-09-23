@@ -2,7 +2,7 @@ use crate::block_connector::{BlockConnector, PivotBlock};
 /// Sync message which outbound
 use crate::block_sync::BlockSyncTaskActor;
 use crate::helper::{
-    get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer, get_info_by_hash,
+    get_block_infos, get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer,
 };
 use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
@@ -696,7 +696,7 @@ where
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {
                 let mut infos =
-                    get_info_by_hash(&rpc_client, peer_id, vec![pivot.parent_hash()]).await?;
+                    get_block_infos(&rpc_client, peer_id, vec![pivot.parent_hash()]).await?;
                 if let Some(block_info) = infos.pop() {
                     if Self::verify_pivot(&pivot, &block_info) {
                         Ok((pivot, block_info))
