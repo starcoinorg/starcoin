@@ -7,13 +7,13 @@ use crypto::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use starcoin_network_rpc_api::BlockBody;
+use starcoin_types::block::BlockHeader;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use test_helper::chain::gen_blockchain_with_blocks_for_test;
 use test_helper::DummyNetworkService;
 use traits::ChainReader;
-use types::block::BlockHeader;
 
 #[derive(Clone)]
 struct TestSyncDataEventHandler {

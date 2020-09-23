@@ -161,6 +161,7 @@ impl DummyNetworkService {
         message: Vec<u8>,
         _time_out: Duration,
     ) -> Result<Vec<u8>> {
+        //TODO refactor this, do not use string to match method.
         match rpc_path.to_lowercase().as_str() {
             // "get_txns" => {}
             "get_txn_infos" => {
@@ -173,22 +174,22 @@ impl DummyNetworkService {
                 let resp = self.get_headers_by_number(req)?;
                 Ok(scs::to_bytes(&resp)?)
             }
-            "get_header_by_hash" => {
+            "get_headers_by_hash" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
                 let resp = self.get_header_by_hash(req)?;
                 Ok(scs::to_bytes(&resp)?)
             }
-            "get_headers_with_peer" => {
+            "get_headers" => {
                 let req: GetBlockHeaders = scs::from_bytes(message.as_slice())?;
                 let resp = self.get_headers_with_peer(req)?;
                 Ok(scs::to_bytes(&resp)?)
             }
-            "get_info_by_hash" => {
+            "get_block_infos" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
                 let resp = self.get_info_by_hash(req)?;
                 Ok(scs::to_bytes(&resp)?)
             }
-            "get_body_by_hash" => {
+            "get_bodies_by_hash" => {
                 let req: Vec<HashValue> = scs::from_bytes(message.as_slice())?;
                 let resp = self.get_body_by_hash(req)?;
                 Ok(scs::to_bytes(&resp)?)

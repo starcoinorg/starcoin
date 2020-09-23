@@ -57,7 +57,7 @@ prop_compose! {
         // block in block_strategy
     ) -> Block {
         let body = BlockBody::new(user_txns, None);
-        Block::new_with_body(header, body)
+        Block::new(header, body)
     }
 }
 ///gen header by given parent_header
@@ -163,7 +163,7 @@ prop_compose! {
         );
         let header = gen_header(parent_header, state_root, acc_root);
         let body = BlockBody::new(user_txns, None);
-        Block::new_with_body(header, body)
+        Block::new(header, body)
     }
 }
 
