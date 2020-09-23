@@ -8,12 +8,12 @@ use crate::sync_event_handle::SendSyncEventHandler;
 use chain::BlockChain;
 use config::NodeConfig;
 use starcoin_accumulator::node::AccumulatorStoreType;
+use starcoin_types::peer_info::PeerId;
 use std::marker::PhantomData;
 use std::sync::{Arc, Mutex};
 use test_helper::chain::gen_blockchain_with_blocks_for_test;
 use test_helper::{gen_blockchain_for_test, DummyNetworkService};
 use traits::ChainReader;
-use types::peer_info::PeerId;
 
 #[derive(Clone)]
 struct TestStateSyncTaskEventHandler {

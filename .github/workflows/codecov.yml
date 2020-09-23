@@ -31,6 +31,6 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
-          file: ./target/codecov/lcov.info
+          file: ./target/codecov/lcov_correct.info
           flags: unittests
           fail_ci_if_error: false

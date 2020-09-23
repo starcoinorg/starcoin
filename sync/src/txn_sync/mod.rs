@@ -7,8 +7,8 @@ use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::peer_info::PeerId;
 use txpool::TxPoolService;
-use types::peer_info::PeerId;
 
 #[derive(Clone)]
 pub struct TxnSyncActor<N>

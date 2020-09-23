@@ -8,16 +8,16 @@ use network_api::{NetworkService, PeerId};
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_storage::Store;
+use starcoin_types::{
+    block::{Block, BlockInfo, BlockNumber},
+    startup_info::StartupInfo,
+};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use traits::WriteableChainService;
 use traits::{ConnectBlockError, VerifyBlockField};
 use txpool::TxPoolService;
-use types::{
-    block::{Block, BlockInfo, BlockNumber},
-    startup_info::StartupInfo,
-};
 
 mod block_connect_test;
 mod metrics;
@@ -343,7 +343,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::FutureBlockPool;
-    use types::block::{Block, BlockBody, BlockHeader};
+    use starcoin_types::block::{Block, BlockBody, BlockHeader};
 
     #[test]
     fn test_future_block_pool() {
