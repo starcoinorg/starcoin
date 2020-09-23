@@ -82,6 +82,12 @@ impl BlockBody {
     }
 }
 
+impl Into<starcoin_types::block::BlockBody> for BlockBody {
+    fn into(self) -> starcoin_types::block::BlockBody {
+        starcoin_types::block::BlockBody::new(self.transactions, self.uncles)
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeadersByNumber {
     pub number: BlockNumber,
@@ -167,7 +173,12 @@ pub struct Ping {
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
 
-    fn get_txns(&self, peer_id: PeerId, req: GetTxns) -> BoxFuture<Result<TransactionsData>>;
+    ///Get txns from txpool TODO rename
+    fn get_txns_from_pool(
+        &self,
+        peer_id: PeerId,
+        req: GetTxns,
+    ) -> BoxFuture<Result<TransactionsData>>;
 
     fn get_txn_infos(
         &self,
@@ -181,25 +192,25 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         request: GetBlockHeadersByNumber,
     ) -> BoxFuture<Result<Vec<BlockHeader>>>;
 
-    fn get_headers_with_peer(
+    fn get_headers(
         &self,
         peer_id: PeerId,
         request: GetBlockHeaders,
     ) -> BoxFuture<Result<Vec<BlockHeader>>>;
 
-    fn get_info_by_hash(
+    fn get_block_infos(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<BlockInfo>>>;
 
-    fn get_body_by_hash(
+    fn get_bodies_by_hash(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
     ) -> BoxFuture<Result<Vec<BlockBody>>>;
 
-    fn get_header_by_hash(
+    fn get_headers_by_hash(
         &self,
         peer_id: PeerId,
         hashes: Vec<HashValue>,
