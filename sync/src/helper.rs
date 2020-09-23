@@ -3,7 +3,6 @@ use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use network_api::NetworkService;
-use rand::prelude::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_network_rpc_api::{
@@ -20,6 +19,8 @@ use types::{
 };
 
 const HEAD_CT: usize = 10;
+//TODO find a suitable value and strategy.
+#[allow(dead_code)]
 const STABLELIZE_BLCOK_NUM: usize = 7;
 
 trait RpcVerify<C: Clone> {
@@ -162,18 +163,13 @@ pub async fn get_headers<N>(
 where
     N: NetworkService + 'static,
 {
-    let peers = network.best_peer_set().await?;
-
-    // random select a peer has enough blocks to get from.
-    let random_peer = peers
-        .iter()
-        .filter(|peer| {
-            peer.latest_header.number >= number + req.max_size as u64 + STABLELIZE_BLCOK_NUM as u64
-        })
-        .choose(&mut rand::thread_rng())
-        .map(|p| p.peer_id.clone());
-    // or else, backward to use best peer.
-    let selected_peer = random_peer.or_else(|| peers.first().map(|p| p.peer_id.clone()));
+    let least_height = number;
+    let selected_peer = network
+        .peer_selector()
+        .await?
+        .filter_by_block_number(least_height)
+        .random()
+        .map(|peer_info| peer_info.peer_id);
 
     if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
@@ -214,14 +210,12 @@ pub async fn get_body_by_hash<N>(
 where
     N: NetworkService + 'static,
 {
-    let peers = network.best_peer_set().await?;
-    // random select a peer who has enough block
-    let random_peer = peers
-        .iter()
-        .filter(|peer| peer.latest_header.number >= max_height + STABLELIZE_BLCOK_NUM as u64)
-        .choose(&mut rand::thread_rng());
-    // or else fall back to use best peer
-    let selected_peer = random_peer.or_else(|| peers.first());
+    let least_height = max_height;
+    let selected_peer = network
+        .peer_selector()
+        .await?
+        .filter_by_block_number(least_height)
+        .random();
 
     if let Some(peer_info) = selected_peer {
         let peer_id = peer_info.get_peer_id();
