@@ -6842,6 +6842,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-dataformat-generator"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde-generate",
+ "serde-reflection",
+ "serde_yaml",
+ "starcoin-crypto",
+ "starcoin-rpc-api",
+ "starcoin-types",
+]
+
+[[package]]
 name = "starcoin-decrypt"
 version = "0.5.0"
 dependencies = [

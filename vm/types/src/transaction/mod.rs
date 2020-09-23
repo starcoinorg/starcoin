@@ -38,7 +38,9 @@ pub mod authenticator {
 use crate::account_config::STC_TOKEN_CODE_STR;
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use libra_types::transaction::{Module, Script};
+pub use libra_types::transaction::{
+    ArgumentABI, Module, Script, ScriptABI, TypeArgumentABI, SCRIPT_HASH_LENGTH,
+};
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
 pub use transaction_argument::{
