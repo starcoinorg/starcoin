@@ -1,6 +1,6 @@
 script {
     use 0x1::TransactionPublishOption;
-    fun main(account: &signer) {
+    fun set_open_script(account: &signer) {
         TransactionPublishOption::set_open_script(account)
     }
 }
