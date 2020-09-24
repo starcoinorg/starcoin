@@ -27,7 +27,7 @@ forkable-jellyfish-merkle = { path = "../core/forkable-jellyfish-merkle", packag
 logger = {path = "../commons/logger", package="starcoin-logger"}
 starcoin-metrics = { path = "../commons/metrics"}
 starcoin-config = { path = "../config"}
-
+starcoin-uint = { path = "../types/uint"}
 [dependencies.rocksdb]
 version = "0.15"
 default-features = false

@@ -11,7 +11,7 @@ use starcoin_statedb::ChainStateReader;
 use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
-    H256, U256,
+    U256,
 };
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
@@ -43,7 +43,7 @@ pub trait Consensus {
     ) -> Result<()>;
 
     /// Calculate the Pow hash for header
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256>;
+    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
     fn create_block(

@@ -3,7 +3,6 @@
 
 use consensus::Consensus;
 use crypto::HashValue;
-use ethereum_types::U256;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
@@ -19,6 +18,7 @@ use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, Tr
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader},
     block_metadata::BlockMetadata,
+    U256,
 };
 use std::convert::TryFrom;
 use std::sync::Arc;

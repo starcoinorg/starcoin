@@ -13,6 +13,7 @@ members = [
     "commons/proptest-helpers",
     "commons/service-registry",
     "types",
+    "types/uint",
     "core/traits",
     "core/accumulator",
     "core/forkable-jellyfish-merkle",

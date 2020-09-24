@@ -11,7 +11,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_statedb::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::{H256, U256};
+use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
@@ -69,7 +69,7 @@ impl Consensus for DummyConsensus {
         Ok(())
     }
 
-    fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<H256> {
+    fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<HashValue> {
         unreachable!()
     }
 

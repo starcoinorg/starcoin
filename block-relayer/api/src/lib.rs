@@ -1,7 +1,6 @@
 use actix::prelude::*;
 use starcoin_types::cmpact_block::CompactBlock;
-use starcoin_types::peer_info::PeerId;
-use starcoin_types::U256;
+use starcoin_types::{peer_info::PeerId, U256};
 
 /// Event of received compact block
 #[derive(Message, Clone, Debug)]
