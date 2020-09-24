@@ -40,7 +40,6 @@ starcoin-network-rpc-api = { path = "../../network-rpc/api" }
 starcoin-network = { path = "../../network" }
 proptest = { version = "0.10.0", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-ethereum-types = "0.2.3"
 starcoin-account-api = { path = "../../account/api" }
 starcoin-account-lib = { path = "../../account/lib" }
 starcoin-genesis = { path = "../../core/genesis" }

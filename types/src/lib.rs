@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // #![feature(vec_remove_item)]
 #![forbid(unsafe_code)]
+
 pub mod access_path {
     pub use starcoin_vm_types::access_path::{
         into_inner, random_code, random_resource, AccessPath, DataType,
@@ -10,6 +11,8 @@ pub mod access_path {
 
 pub mod account_address;
 
+pub use starcoin_uint::*;
+
 pub mod account_config {
     pub use starcoin_vm_types::account_config::*;
 }
@@ -17,6 +20,7 @@ pub mod account_config {
 pub mod account_state;
 pub mod block;
 pub mod cmpact_block;
+
 pub mod block_metadata {
     pub use starcoin_vm_types::block_metadata::BlockMetadata;
 }
@@ -65,7 +69,6 @@ pub mod write_set {
     pub use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 }
 
-pub use ethereum_types::{H256, U256};
 use once_cell::sync::Lazy;
 use std::borrow::Cow;
 

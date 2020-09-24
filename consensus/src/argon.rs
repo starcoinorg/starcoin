@@ -10,8 +10,9 @@ use rand::Rng;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::{H256, U256};
+use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+
 #[derive(Default)]
 pub struct ArgonConsensus {
     time_service: RealTimeService,
@@ -62,13 +63,12 @@ impl Consensus for ArgonConsensus {
         self.verify_header_difficulty(difficulty, header)
     }
 
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256> {
+    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
         let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
         let mut config = Config::default();
         config.mem_cost = 1024;
         let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;
-        let h_256: H256 = output.as_slice().into();
-        Ok(h_256)
+        HashValue::from_slice(output.as_slice())
     }
 
     fn time(&self) -> &dyn TimeService {

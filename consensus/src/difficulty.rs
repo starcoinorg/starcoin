@@ -65,7 +65,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
             "solve_time:{:?}, avg_time:{:?}, block_n:{:?}",
             solve_time, avg_time, block_n
         );
-        avg_target = avg_target + blocks[latest_block_index].target / block_n.into();
+        avg_target += blocks[latest_block_index].target / block_n;
         latest_block_index += 1
     }
     avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;
@@ -75,21 +75,21 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     let time_plan = epoch.block_time_target();
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
-    let new_target =
-        if let Some(new_target) = (avg_target / time_plan.into()).checked_mul(avg_time.into()) {
-            if new_target / 2.into() > avg_target {
-                debug!("target increase too fast, limit to 2 times");
-                avg_target * 2
-            } else if new_target < avg_target / 2.into() {
-                debug!("target reduce too fast, limit to 2 times");
-                avg_target / 2.into()
-            } else {
-                new_target
-            }
+    let new_target = if let Some(new_target) = (avg_target / time_plan).checked_mul(avg_time.into())
+    {
+        if new_target / 2 > avg_target {
+            debug!("target increase too fast, limit to 2 times");
+            avg_target * 2
+        } else if new_target < avg_target / 2 {
+            debug!("target reduce too fast, limit to 2 times");
+            avg_target / 2
         } else {
-            debug!("target large than max value, set to 1_difficulty");
-            difficult_1_target()
-        };
+            new_target
+        }
+    } else {
+        debug!("target large than max value, set to 1_difficulty");
+        difficult_1_target()
+    };
     debug!(
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",
         avg_time, time_plan, new_target

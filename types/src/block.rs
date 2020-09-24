@@ -227,6 +227,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             gas_used: self.gas_used,
             difficulty: self.difficulty,
             uncle_hash: self.uncle_hash,
+            chain_id: self.chain_id,
         }
     }
 }
@@ -255,7 +256,8 @@ pub struct RawBlockHeader {
     pub difficulty: U256,
     /// hash for uncle blocks header
     pub uncle_hash: Option<HashValue>,
-    //TODO: Add chain id
+    /// The chain id
+    pub chain_id: ChainId,
 }
 
 #[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -563,6 +565,7 @@ impl BlockTemplate {
             gas_used: self.gas_used,
             uncle_hash: self.uncle_hash,
             difficulty,
+            chain_id: self.chain_id,
         }
     }
 
