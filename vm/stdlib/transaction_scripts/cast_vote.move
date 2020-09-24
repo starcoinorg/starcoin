@@ -2,7 +2,7 @@ script {
     use 0x1::Dao;
     use 0x1::Account;
 
-    fun main<Token: copyable, ActionT>(
+    fun cast_vote<Token: copyable, ActionT>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,

@@ -5,17 +5,17 @@
 
 ### Table of Contents
 
--  [Function `main`](#SCRIPT_main)
+-  [Function `queue_proposal_action`](#SCRIPT_queue_proposal_action)
 
 
 
-<a name="SCRIPT_main"></a>
+<a name="SCRIPT_queue_proposal_action"></a>
 
-## Function `main`
+## Function `queue_proposal_action`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_main">main</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_queue_proposal_action">queue_proposal_action</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -24,7 +24,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_main">main</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(
+<pre><code><b>fun</b> <a href="#SCRIPT_queue_proposal_action">queue_proposal_action</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(
     _signer: &signer,
     proposer_address: address,
     proposal_id: u64,
