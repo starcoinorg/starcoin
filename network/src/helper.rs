@@ -47,3 +47,45 @@ fn is_reserved(ip: Ipv4Addr) -> bool {
 fn is_benchmarking(ip: Ipv4Addr) -> bool {
     ip.octets()[0] == 198 && (ip.octets()[1] & 0xfe) == 18
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::helper::*;
+    use std::net::Ipv4Addr;
+
+    #[test]
+    fn test_192_0_0() {
+        let ip_9 = Ipv4Addr::new(192, 0, 0, 9);
+        assert!(is_global(ip_9));
+
+        let ip_10 = Ipv4Addr::new(192, 0, 0, 10);
+        assert!(is_global(ip_10));
+    }
+
+    #[test]
+    fn test_is_shared() {
+        let ip = Ipv4Addr::new(100, 64, 0, 1);
+        assert!(is_shared(ip));
+    }
+
+    #[test]
+    fn test_is_ietf_protocol_assignment() {
+        let ip = Ipv4Addr::new(192, 0, 0, 1);
+        assert!(is_ietf_protocol_assignment(ip));
+    }
+
+    #[test]
+    fn test_is_reserved() {
+        let ip_1 = Ipv4Addr::new(241, 1, 1, 100);
+        assert!(is_reserved(ip_1));
+
+        let ip_2 = Ipv4Addr::new(255, 255, 255, 255);
+        assert!(!is_reserved(ip_2));
+    }
+
+    #[test]
+    fn test_is_benchmarking() {
+        let ip = Ipv4Addr::new(198, 18, 0, 10);
+        assert!(is_benchmarking(ip));
+    }
+}
