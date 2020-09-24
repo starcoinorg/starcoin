@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::Metadata;
-use crate::module::map_err;
 use actix::Addr;
 use futures::channel::mpsc;
 use futures::future::AbortHandle;
@@ -11,7 +10,6 @@ use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use scs::SCSCodec;
 use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
@@ -86,55 +84,7 @@ impl StarcoinPubSub for PubSubImpl {
         let _ = subscriber.reject(error);
     }
 
-    fn subscribe_hex(
-        &self,
-        _meta: Self::Metadata,
-        subscriber: Subscriber<pubsub::Result>,
-        kind_str: String,
-        params_str: Option<String>,
-    ) {
-        let kind_bytes = match hex::decode(kind_str) {
-            Ok(t) => t,
-            Err(e) => {
-                let _ = subscriber.reject(map_err(e.into()));
-                return;
-            }
-        };
-        let kind = match pubsub::Kind::decode(&kind_bytes) {
-            Ok(t) => t,
-            Err(e) => {
-                let _ = subscriber.reject(map_err(e));
-                return;
-            }
-        };
-        let params = match params_str {
-            Some(t) => {
-                let params_bytes = match hex::decode(t) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        let _ = subscriber.reject(map_err(e.into()));
-                        return;
-                    }
-                };
-                let params = match pubsub::Params::decode(&params_bytes) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        let _ = subscriber.reject(map_err(e));
-                        return;
-                    }
-                };
-                Some(params)
-            }
-            None => None,
-        };
-        self.subscribe(_meta, subscriber, kind, params);
-    }
-
     fn unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
-        self.service.unsubscribe(id)
-    }
-
-    fn unsubscribe_hex(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
         self.service.unsubscribe(id)
     }
 }
