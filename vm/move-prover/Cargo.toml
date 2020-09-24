@@ -8,18 +8,18 @@ license = "Apache-2.0"
 
 [dependencies]
 # libra dependencies
-move-lang = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-spec-lang = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-docgen = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-errmapgen = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-bytecode = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-vm = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-bytecode-source-map = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-move-ir-types = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-abigen = { git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
+move-lang = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+spec-lang = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+docgen = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+bytecode = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+vm = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+libra-temppath = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+bytecode-source-map = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+move-ir-types = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+abigen = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
 
 # external dependencies
 async-trait = "0.1.38"
@@ -42,8 +42,8 @@ tokio = { version = "0.2", features = ["full"] }
 toml = "0.5.6"
 
 [dev-dependencies]
-datatest-stable = {git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
-test-utils = {git = "https://github.com/starcoinorg/libra", rev="8d13116a3bf9289e848fc581e48df357d3ab1362" }
+datatest-stable = {git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+test-utils = {git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
 shell-words = "1.0.0"
 
 [[test]]

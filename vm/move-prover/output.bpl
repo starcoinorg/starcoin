@@ -1,3 +1,6 @@
+
+// ** prelude from <inline-prelude>
+
 // ================================================================================
 // Notation
 
@@ -136,95 +139,7 @@ function {:inline} $IsValidNum(v: $Value): bool {
 // -----------
 
 
-{{#if backend.vector_using_sequences}}
 
-// This is the implementation of $ValueArray using sequences
-
-type {:datatype} {:builtin "(Seq T@$Value)"} $ValueArray;
-
-function {:builtin "(as seq.empty (Seq T@$Value))"} $EmptyValueArray(): $ValueArray;
-
-function {:builtin "seq.nth"} $ReadValueArray(a: $ValueArray, i: int): $Value;
-
-function {:builtin "seq.len"} $LenValueArray(a: $ValueArray): int;
-
-function {:builtin "seq.extract"} $ValueArrayExtract(a: $ValueArray, offset: int, length: int): $ValueArray;
-
-function {:builtin "seq.++"} $ConcatValueArray(a: $ValueArray, b:$ValueArray): $ValueArray;
-
-function {:builtin "seq.unit"} $UnitValueArray(v: $Value): $ValueArray;
-
-
-function {{backend.func_inline}} $RemoveValueArray(a: $ValueArray): $ValueArray {
-    (
-        $ValueArrayExtract(a, 0, $LenValueArray(a) -1)
-    )
-}
-
-
-function {{backend.func_inline}} $RemoveIndexValueArray(a: $ValueArray, i: int): $ValueArray {
-    (
-        var prefix := $ValueArrayExtract(a, 0, i); (
-        var suffix := $ValueArrayExtract(a, i+1, $LenValueArray(a)-i-1);
-        $ConcatValueArray(prefix, suffix)
-    ))
-}
-
-// Note: The axioms for $ReverseValueArray are written assuming specific degenerate behaviour in the z3 operators underneath the functions used.
-// This behaviour could change with a different version of z3 or a different solver.
-// The implementation favours seq.extract over seq.nth because of weird behaviour in the latter for accesses outside the length of the sequence.
-function {{backend.func_inline}} $ReverseValueArray(a: $ValueArray): $ValueArray;
-axiom (forall a: $ValueArray :: $LenValueArray($ReverseValueArray(a)) == $LenValueArray(a));
-axiom (forall a: $ValueArray :: (forall i: int :: $ValueArrayExtract(a, i, 1) == $ValueArrayExtract(a, $LenValueArray(a)-1-i, 1)));
-
-function {{backend.func_inline}} $SliceValueArray(a: $ValueArray, i: int, j: int): $ValueArray { // return the sliced vector of a for the range [i, j)
-    (
-        $ValueArrayExtract(a, i, j-i)
-    )
-}
-
-function {{backend.func_inline}} $ExtendValueArray(a: $ValueArray, elem: $Value): $ValueArray {
-    (
-        $ConcatValueArray(a, $UnitValueArray(elem))
-    )
-}
-
-function {{backend.func_inline}} $UpdateValueArray(a: $ValueArray, i: int, elem: $Value): $ValueArray {
-    (
-        var prefix := $ValueArrayExtract(a, 0, i); (
-        var suffix := $ValueArrayExtract(a, i+1, $LenValueArray(a)-i-1);
-        $ConcatValueArray(prefix, $ConcatValueArray($UnitValueArray(elem), suffix))
-    ))
-}
-
-function {{backend.func_inline}} $SwapValueArray(a: $ValueArray, i: int, j: int): $ValueArray {
-    (
-        var lower := if i < j then i else j; (
-        var upper := if i < j then j else i; (
-        var beginning := $ValueArrayExtract(a, 0, lower); (
-        var middle := $ValueArrayExtract(a, lower+1, (upper-lower)-1); (
-        var end := $ValueArrayExtract(a, upper+1, $LenValueArray(a)-upper-1); (
-        var swap_first_part := $ConcatValueArray(beginning, $ValueArrayExtract(a,upper,1)); (
-        var swap_last_part := $ConcatValueArray($ValueArrayExtract(a,lower,1), end);
-        $ConcatValueArray(swap_first_part, $ConcatValueArray(middle, swap_last_part))
-    )))))))
-}
-
-function {:inline} $IsEmpty(a: $ValueArray): bool {
-    $LenValueArray(a) == 0
-}
-
-// All invalid elements of array are DefaultValue. This is useful in specialized
-// cases. This is used to defined normalization for $Vector
-// For sequences this is true by default
-function {:inline} $IsNormalizedValueArray(a: $ValueArray, len: int): bool {
-    (
-        true
-    )
-}
-
-
-{{else}}
 
 
 // This is the implementation of $ValueArray using integer maps
@@ -237,19 +152,19 @@ function $EmptyValueArray(): $ValueArray;
 axiom l#$ValueArray($EmptyValueArray()) == 0;
 axiom v#$ValueArray($EmptyValueArray()) == $MapConstValue($Error());
 
-function {{backend.func_inline}} $ReadValueArray(a: $ValueArray, i: int): $Value {
+function {:inline} $ReadValueArray(a: $ValueArray, i: int): $Value {
     (
         v#$ValueArray(a)[i]
     )
 }
 
-function {{backend.func_inline}} $LenValueArray(a: $ValueArray): int {
+function {:inline} $LenValueArray(a: $ValueArray): int {
     (
         l#$ValueArray(a)
     )
 }
 
-function {{backend.func_inline}} $RemoveValueArray(a: $ValueArray): $ValueArray {
+function {:inline} $RemoveValueArray(a: $ValueArray): $ValueArray {
     (
         var l := l#$ValueArray(a) - 1;
         $ValueArray(
@@ -260,11 +175,11 @@ function {{backend.func_inline}} $RemoveValueArray(a: $ValueArray): $ValueArray 
     )
 }
 
-function {{backend.func_inline}} $SingleValueArray(v: $Value): $ValueArray {
+function {:inline} $SingleValueArray(v: $Value): $ValueArray {
     $ValueArray($MapConstValue($DefaultValue())[0 := v], 1)
 }
 
-function {{backend.func_inline}} $RemoveIndexValueArray(a: $ValueArray, i: int): $ValueArray {
+function {:inline} $RemoveIndexValueArray(a: $ValueArray, i: int): $ValueArray {
     (
         var l := l#$ValueArray(a) - 1;
         $ValueArray(
@@ -277,7 +192,7 @@ function {{backend.func_inline}} $RemoveIndexValueArray(a: $ValueArray, i: int):
     )
 }
 
-function {{backend.func_inline}} $ConcatValueArray(a1: $ValueArray, a2: $ValueArray): $ValueArray {
+function {:inline} $ConcatValueArray(a1: $ValueArray, a2: $ValueArray): $ValueArray {
     (
         var l1, m1, l2, m2 := l#$ValueArray(a1), v#$ValueArray(a1), l#$ValueArray(a2), v#$ValueArray(a2);
         $ValueArray(
@@ -290,7 +205,7 @@ function {{backend.func_inline}} $ConcatValueArray(a1: $ValueArray, a2: $ValueAr
     )
 }
 
-function {{backend.func_inline}} $ReverseValueArray(a: $ValueArray): $ValueArray {
+function {:inline} $ReverseValueArray(a: $ValueArray): $ValueArray {
     (
         var l := l#$ValueArray(a);
         $ValueArray(
@@ -300,20 +215,20 @@ function {{backend.func_inline}} $ReverseValueArray(a: $ValueArray): $ValueArray
     )
 }
 
-function {{backend.func_inline}} $SliceValueArray(a: $ValueArray, i: int, j: int): $ValueArray { // return the sliced vector of a for the range [i, j)
+function {:inline} $SliceValueArray(a: $ValueArray, i: int, j: int): $ValueArray { // return the sliced vector of a for the range [i, j)
     $ValueArray((lambda k:int :: if 0 <= k && k < j-i then v#$ValueArray(a)[i+k] else $DefaultValue()), (if j-i < 0 then 0 else j-i))
 }
 
-function {{backend.func_inline}} $ExtendValueArray(a: $ValueArray, elem: $Value): $ValueArray {
+function {:inline} $ExtendValueArray(a: $ValueArray, elem: $Value): $ValueArray {
     (var len := l#$ValueArray(a);
      $ValueArray(v#$ValueArray(a)[len := elem], len + 1))
 }
 
-function {{backend.func_inline}} $UpdateValueArray(a: $ValueArray, i: int, elem: $Value): $ValueArray {
+function {:inline} $UpdateValueArray(a: $ValueArray, i: int, elem: $Value): $ValueArray {
     $ValueArray(v#$ValueArray(a)[i := elem], l#$ValueArray(a))
 }
 
-function {{backend.func_inline}} $SwapValueArray(a: $ValueArray, i: int, j: int): $ValueArray {
+function {:inline} $SwapValueArray(a: $ValueArray, i: int, j: int): $ValueArray {
     $ValueArray(v#$ValueArray(a)[i := v#$ValueArray(a)[j]][j := v#$ValueArray(a)[i]], l#$ValueArray(a))
 }
 
@@ -328,7 +243,7 @@ function {:inline} $IsNormalizedValueArray(a: $ValueArray, len: int): bool {
 }
 
 
-{{/if}} //end of backend.vector_using_sequences
+ //end of backend.vector_using_sequences
 
 
 // Stratified Functions on Values
@@ -339,114 +254,186 @@ function {:inline} $IsNormalizedValueArray(a: $ValueArray, len: int): bool {
 //   translator.
 
 const $StratificationDepth: int;
-axiom $StratificationDepth == {{backend.stratification_depth}};
+axiom $StratificationDepth == 4;
 
-{{#if backend.native_equality}}
 
-// Map IsEqual to native Boogie equality. This only works with extensional arrays as provided
-// by the array theory.
-function {:inline} $IsEqual(v1: $Value, v2: $Value): bool {
-    v1 == v2
-}
 
-{{else}}
+// Generate a stratified version of IsEqual for depth of 4.
 
-// Generate a stratified version of IsEqual for depth of {{backend.stratification_depth}}.
-{{#stratified}}
-function {{backend.aggressive_func_inline}} $IsEqual_{{@this_suffix}}(v1: $Value, v2: $Value): bool {
+function  $IsEqual_stratified(v1: $Value, v2: $Value): bool {
     (v1 == v2) ||
     (is#$Vector(v1) &&
      is#$Vector(v2) &&
      $vlen(v1) == $vlen(v2) &&
-     (forall i: int :: 0 <= i && i < $vlen(v1) ==> $IsEqual_{{@next_suffix}}($select_vector(v1,i), $select_vector(v2,i))))
+     (forall i: int :: 0 <= i && i < $vlen(v1) ==> $IsEqual_level1($select_vector(v1,i), $select_vector(v2,i))))
 }
-{{else}}
-function {:inline} $IsEqual_{{@this_suffix}}(v1: $Value, v2: $Value): bool {
+
+function  $IsEqual_level1(v1: $Value, v2: $Value): bool {
+    (v1 == v2) ||
+    (is#$Vector(v1) &&
+     is#$Vector(v2) &&
+     $vlen(v1) == $vlen(v2) &&
+     (forall i: int :: 0 <= i && i < $vlen(v1) ==> $IsEqual_level2($select_vector(v1,i), $select_vector(v2,i))))
+}
+
+function  $IsEqual_level2(v1: $Value, v2: $Value): bool {
+    (v1 == v2) ||
+    (is#$Vector(v1) &&
+     is#$Vector(v2) &&
+     $vlen(v1) == $vlen(v2) &&
+     (forall i: int :: 0 <= i && i < $vlen(v1) ==> $IsEqual_level3($select_vector(v1,i), $select_vector(v2,i))))
+}
+
+function {:inline} $IsEqual_level3(v1: $Value, v2: $Value): bool {
     v1 == v2
 }
-{{/stratified}}
+
 
 function {:inline} $IsEqual(v1: $Value, v2: $Value): bool {
     $IsEqual_stratified(v1, v2)
 }
 
-{{/if}}
 
-// Generate stratified ReadValue for the depth of {{backend.stratification_depth}}.
 
-{{#stratified}}
-function {{backend.aggressive_func_inline}} $ReadValue_{{@this_suffix}}(p: $Path, v: $Value) : $Value {
-    if ({{@this_level}} == size#$Path(p)) then
+// Generate stratified ReadValue for the depth of 4.
+
+
+function  $ReadValue_stratified(p: $Path, v: $Value) : $Value {
+    if (0 == size#$Path(p)) then
         v
     else
-        $ReadValue_{{@next_suffix}}(p, $select_vector(v,$path_index_at(p, {{@this_level}})))
+        $ReadValue_level1(p, $select_vector(v,$path_index_at(p, 0)))
 }
-{{else}}
-function {:inline} $ReadValue_{{@this_suffix}}(p: $Path, v: $Value): $Value {
+
+function  $ReadValue_level1(p: $Path, v: $Value) : $Value {
+    if (1 == size#$Path(p)) then
+        v
+    else
+        $ReadValue_level2(p, $select_vector(v,$path_index_at(p, 1)))
+}
+
+function  $ReadValue_level2(p: $Path, v: $Value) : $Value {
+    if (2 == size#$Path(p)) then
+        v
+    else
+        $ReadValue_level3(p, $select_vector(v,$path_index_at(p, 2)))
+}
+
+function {:inline} $ReadValue_level3(p: $Path, v: $Value): $Value {
     v
 }
-{{/stratified}}
+
 
 function {:inline} $ReadValue(p: $Path, v: $Value): $Value {
     $ReadValue_stratified(p, v)
 }
 
-// Generate stratified $UpdateValue for the depth of {{backend.stratification_depth}}.
+// Generate stratified $UpdateValue for the depth of 4.
 
-{{#stratified}}
-function {{backend.aggressive_func_inline}} $UpdateValue_{{@this_suffix}}(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
-    (var poffset := offset + {{@this_level}};
+
+function  $UpdateValue_stratified(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
+    (var poffset := offset + 0;
     if (poffset == size#$Path(p)) then
         new_v
     else
         $update_vector(v, $path_index_at(p, poffset),
-                       $UpdateValue_{{@next_suffix}}(p, offset, $select_vector(v,$path_index_at(p, poffset)), new_v)))
+                       $UpdateValue_level1(p, offset, $select_vector(v,$path_index_at(p, poffset)), new_v)))
 }
-{{else}}
-function {:inline} $UpdateValue_{{@this_suffix}}(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
+
+function  $UpdateValue_level1(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
+    (var poffset := offset + 1;
+    if (poffset == size#$Path(p)) then
+        new_v
+    else
+        $update_vector(v, $path_index_at(p, poffset),
+                       $UpdateValue_level2(p, offset, $select_vector(v,$path_index_at(p, poffset)), new_v)))
+}
+
+function  $UpdateValue_level2(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
+    (var poffset := offset + 2;
+    if (poffset == size#$Path(p)) then
+        new_v
+    else
+        $update_vector(v, $path_index_at(p, poffset),
+                       $UpdateValue_level3(p, offset, $select_vector(v,$path_index_at(p, poffset)), new_v)))
+}
+
+function {:inline} $UpdateValue_level3(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
     new_v
 }
-{{/stratified}}
+
 
 function {:inline} $UpdateValue(p: $Path, offset: int, v: $Value, new_v: $Value): $Value {
     $UpdateValue_stratified(p, offset, v, new_v)
 }
 
-// Generate stratified $IsPathPrefix for the depth of {{backend.stratification_depth}}.
+// Generate stratified $IsPathPrefix for the depth of 4.
 
-{{#stratified}}
-function {{backend.aggressive_func_inline}} $IsPathPrefix_{{@this_suffix}}(p1: $Path, p2: $Path): bool {
-    if ({{@this_level}} == size#$Path(p1)) then
+
+function  $IsPathPrefix_stratified(p1: $Path, p2: $Path): bool {
+    if (0 == size#$Path(p1)) then
         true
-    else if (p#$Path(p1)[{{@this_level}}] == p#$Path(p2)[{{@this_level}}]) then
-        $IsPathPrefix_{{@next_suffix}}(p1, p2)
+    else if (p#$Path(p1)[0] == p#$Path(p2)[0]) then
+        $IsPathPrefix_level1(p1, p2)
     else
         false
 }
-{{else}}
-function {:inline} $IsPathPrefix_{{@this_suffix}}(p1: $Path, p2: $Path): bool {
+
+function  $IsPathPrefix_level1(p1: $Path, p2: $Path): bool {
+    if (1 == size#$Path(p1)) then
+        true
+    else if (p#$Path(p1)[1] == p#$Path(p2)[1]) then
+        $IsPathPrefix_level2(p1, p2)
+    else
+        false
+}
+
+function  $IsPathPrefix_level2(p1: $Path, p2: $Path): bool {
+    if (2 == size#$Path(p1)) then
+        true
+    else if (p#$Path(p1)[2] == p#$Path(p2)[2]) then
+        $IsPathPrefix_level3(p1, p2)
+    else
+        false
+}
+
+function {:inline} $IsPathPrefix_level3(p1: $Path, p2: $Path): bool {
     true
 }
-{{/stratified}}
+
 
 function {:inline} $IsPathPrefix(p1: $Path, p2: $Path): bool {
     $IsPathPrefix_stratified(p1, p2)
 }
 
-// Generate stratified $ConcatPath for the depth of {{backend.stratification_depth}}.
+// Generate stratified $ConcatPath for the depth of 4.
 
-{{#stratified}}
-function {{backend.aggressive_func_inline}} $ConcatPath_{{@this_suffix}}(p1: $Path, p2: $Path): $Path {
-    if ({{@this_level}} == size#$Path(p2)) then
+
+function  $ConcatPath_stratified(p1: $Path, p2: $Path): $Path {
+    if (0 == size#$Path(p2)) then
         p1
     else
-        $ConcatPath_{{@next_suffix}}($Path(p#$Path(p1)[size#$Path(p1) := p#$Path(p2)[{{@this_level}}]], size#$Path(p1) + 1), p2)
+        $ConcatPath_level1($Path(p#$Path(p1)[size#$Path(p1) := p#$Path(p2)[0]], size#$Path(p1) + 1), p2)
 }
-{{else}}
-function {:inline} $ConcatPath_{{@this_suffix}}(p1: $Path, p2: $Path): $Path {
+
+function  $ConcatPath_level1(p1: $Path, p2: $Path): $Path {
+    if (1 == size#$Path(p2)) then
+        p1
+    else
+        $ConcatPath_level2($Path(p#$Path(p1)[size#$Path(p1) := p#$Path(p2)[1]], size#$Path(p1) + 1), p2)
+}
+
+function  $ConcatPath_level2(p1: $Path, p2: $Path): $Path {
+    if (2 == size#$Path(p2)) then
+        p1
+    else
+        $ConcatPath_level3($Path(p#$Path(p1)[size#$Path(p1) := p#$Path(p2)[2]], size#$Path(p1) + 1), p2)
+}
+
+function {:inline} $ConcatPath_level3(p1: $Path, p2: $Path): $Path {
     p1
 }
-{{/stratified}}
+
 
 function {:inline} $ConcatPath(p1: $Path, p2: $Path): $Path {
     $ConcatPath_stratified(p1, p2)
@@ -640,7 +627,7 @@ procedure {:inline 1} $MoveTo(m: $Memory, ta: $TypeValueArray, v: $Value, signer
 }
 
 procedure {:inline 1} $MoveFrom(m: $Memory, address: $Value, ta: $TypeValueArray) returns (m': $Memory, dst: $Value)
-{{backend.type_requires}} is#$Address(address);
+free requires is#$Address(address);
 {
     var a: int;
 
@@ -654,7 +641,7 @@ procedure {:inline 1} $MoveFrom(m: $Memory, address: $Value, ta: $TypeValueArray
 }
 
 procedure {:inline 1} $BorrowGlobal(m: $Memory, address: $Value, ta: $TypeValueArray) returns (dst: $Mutation)
-{{backend.type_requires}} is#$Address(address);
+free requires is#$Address(address);
 {
     var a: int;
 
@@ -683,7 +670,7 @@ procedure {:inline 1} $BorrowField(src: $Mutation, f: $FieldName) returns (dst: 
 }
 
 procedure {:inline 1} $GetGlobal(m: $Memory, address: $Value, ta: $TypeValueArray) returns (dst: $Value)
-{{backend.type_requires}} is#$Address(address);
+free requires is#$Address(address);
 {
     var a: int;
     a := a#$Address(address);
@@ -775,7 +762,7 @@ procedure {:inline 1} $Splice1(idx1: int, src1: $Mutation, dst: $Mutation) retur
 }
 
 procedure {:inline 1} $CastU8(src: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src);
+free requires is#$Integer(src);
 {
     if (i#$Integer(src) > $MAX_U8) {
         call $ExecFailureAbort();
@@ -785,7 +772,7 @@ procedure {:inline 1} $CastU8(src: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $CastU64(src: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src);
+free requires is#$Integer(src);
 {
     if (i#$Integer(src) > $MAX_U64) {
         call $ExecFailureAbort();
@@ -795,7 +782,7 @@ procedure {:inline 1} $CastU64(src: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $CastU128(src: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src);
+free requires is#$Integer(src);
 {
     if (i#$Integer(src) > $MAX_U128) {
         call $ExecFailureAbort();
@@ -805,7 +792,7 @@ procedure {:inline 1} $CastU128(src: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $AddU8(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU8(src1) && $IsValidU8(src2);
+free requires $IsValidU8(src1) && $IsValidU8(src2);
 {
     if (i#$Integer(src1) + i#$Integer(src2) > $MAX_U8) {
         call $ExecFailureAbort();
@@ -815,7 +802,7 @@ procedure {:inline 1} $AddU8(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $AddU64(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU64(src1) && $IsValidU64(src2);
+free requires $IsValidU64(src1) && $IsValidU64(src2);
 {
     if (i#$Integer(src1) + i#$Integer(src2) > $MAX_U64) {
         call $ExecFailureAbort();
@@ -825,13 +812,13 @@ procedure {:inline 1} $AddU64(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $AddU64_unchecked(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU64(src1) && $IsValidU64(src2);
+free requires $IsValidU64(src1) && $IsValidU64(src2);
 {
     dst := $Integer(i#$Integer(src1) + i#$Integer(src2));
 }
 
 procedure {:inline 1} $AddU128(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU128(src1) && $IsValidU128(src2);
+free requires $IsValidU128(src1) && $IsValidU128(src2);
 {
     if (i#$Integer(src1) + i#$Integer(src2) > $MAX_U128) {
         call $ExecFailureAbort();
@@ -841,13 +828,13 @@ procedure {:inline 1} $AddU128(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $AddU128_unchecked(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU128(src1) && $IsValidU128(src2);
+free requires $IsValidU128(src1) && $IsValidU128(src2);
 {
     dst := $Integer(i#$Integer(src1) + i#$Integer(src2));
 }
 
 procedure {:inline 1} $Sub(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     if (i#$Integer(src1) < i#$Integer(src2)) {
         call $ExecFailureAbort();
@@ -903,7 +890,7 @@ requires is#$Integer(src1) && is#$Integer(src2);
 }
 
 procedure {:inline 1} $MulU8(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU8(src1) && $IsValidU8(src2);
+free requires $IsValidU8(src1) && $IsValidU8(src2);
 {
     if (i#$Integer(src1) * i#$Integer(src2) > $MAX_U8) {
         call $ExecFailureAbort();
@@ -913,7 +900,7 @@ procedure {:inline 1} $MulU8(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $MulU64(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU64(src1) && $IsValidU64(src2);
+free requires $IsValidU64(src1) && $IsValidU64(src2);
 {
     if (i#$Integer(src1) * i#$Integer(src2) > $MAX_U64) {
         call $ExecFailureAbort();
@@ -923,7 +910,7 @@ procedure {:inline 1} $MulU64(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $MulU128(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} $IsValidU128(src1) && $IsValidU128(src2);
+free requires $IsValidU128(src1) && $IsValidU128(src2);
 {
     if (i#$Integer(src1) * i#$Integer(src2) > $MAX_U128) {
         call $ExecFailureAbort();
@@ -933,7 +920,7 @@ procedure {:inline 1} $MulU128(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $Div(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     if (i#$Integer(src2) == 0) {
         call $ExecFailureAbort();
@@ -943,7 +930,7 @@ procedure {:inline 1} $Div(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $Mod(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     if (i#$Integer(src2) == 0) {
         call $ExecFailureAbort();
@@ -953,47 +940,47 @@ procedure {:inline 1} $Mod(src1: $Value, src2: $Value) returns (dst: $Value)
 }
 
 procedure {:inline 1} $ArithBinaryUnimplemented(src1: $Value, src2: $Value) returns (dst: $Value);
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 ensures is#$Integer(dst);
 
 procedure {:inline 1} $Lt(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     dst := $Boolean(i#$Integer(src1) < i#$Integer(src2));
 }
 
 procedure {:inline 1} $Gt(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     dst := $Boolean(i#$Integer(src1) > i#$Integer(src2));
 }
 
 procedure {:inline 1} $Le(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     dst := $Boolean(i#$Integer(src1) <= i#$Integer(src2));
 }
 
 procedure {:inline 1} $Ge(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Integer(src1) && is#$Integer(src2);
+free requires is#$Integer(src1) && is#$Integer(src2);
 {
     dst := $Boolean(i#$Integer(src1) >= i#$Integer(src2));
 }
 
 procedure {:inline 1} $And(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Boolean(src1) && is#$Boolean(src2);
+free requires is#$Boolean(src1) && is#$Boolean(src2);
 {
     dst := $Boolean(b#$Boolean(src1) && b#$Boolean(src2));
 }
 
 procedure {:inline 1} $Or(src1: $Value, src2: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Boolean(src1) && is#$Boolean(src2);
+free requires is#$Boolean(src1) && is#$Boolean(src2);
 {
     dst := $Boolean(b#$Boolean(src1) || b#$Boolean(src2));
 }
 
 procedure {:inline 1} $Not(src: $Value) returns (dst: $Value)
-{{backend.type_requires}} is#$Boolean(src);
+free requires is#$Boolean(src);
 {
     dst := $Boolean(!b#$Boolean(src));
 }
@@ -1008,16 +995,7 @@ function {:inline} $Vector_type_value(tv: $TypeValue): $TypeValue {
     $VectorType(tv)
 }
 
-{{#if backend.vector_using_sequences}}
 
-// This uses the implementation of $ValueArray using sequences
-function {:inline} $Vector_$is_well_formed(v: $Value): bool {
-    (
-        is#$Vector(v)
-    )
-}
-
-{{else}}
 
 // This is uses the implementation of $ValueArray using integer maps
 function {:inline} $Vector_$is_well_formed(v: $Value): bool {
@@ -1032,7 +1010,7 @@ function {:inline} $Vector_$is_well_formed(v: $Value): bool {
     )
 }
 
-{{/if}}
+
 
 procedure {:inline 1} $Vector_empty(ta: $TypeValue) returns (v: $Value) {
     v := $mk_vector();
@@ -1110,7 +1088,7 @@ function {:inline 1} $Vector_$borrow(ta: $TypeValue, v: $Value, i: $Value): $Val
 }
 
 procedure {:inline 1} $Vector_borrow_mut(ta: $TypeValue, v: $Value, index: $Value) returns (dst: $Mutation, v': $Value)
-{{backend.type_requires}} is#$Integer(index);
+free requires is#$Integer(index);
 {
     var i_ind: int;
 
@@ -1135,7 +1113,7 @@ procedure {:inline 1} $Vector_destroy_empty(ta: $TypeValue, v: $Value) {
 }
 
 procedure {:inline 1} $Vector_swap(ta: $TypeValue, v: $Value, i: $Value, j: $Value) returns (v': $Value)
-{{backend.type_requires}} is#$Integer(i) && is#$Integer(j);
+free requires is#$Integer(i) && is#$Integer(j);
 {
     var i_ind: int;
     var j_ind: int;
@@ -1154,7 +1132,7 @@ function {:inline 1} $Vector_$swap(ta: $TypeValue, v: $Value, i: $Value, j: $Val
 }
 
 procedure {:inline 1} $Vector_remove(ta: $TypeValue, v: $Value, i: $Value) returns (e: $Value, v': $Value)
-{{backend.type_requires}} is#$Integer(i);
+free requires is#$Integer(i);
 {
     var i_ind: int;
 
@@ -1169,7 +1147,7 @@ procedure {:inline 1} $Vector_remove(ta: $TypeValue, v: $Value, i: $Value) retur
 }
 
 procedure {:inline 1} $Vector_swap_remove(ta: $TypeValue, v: $Value, i: $Value) returns (e: $Value, v': $Value)
-{{backend.type_requires}} is#$Integer(i);
+free requires is#$Integer(i);
 {
     var i_ind: int;
     var len: int;
@@ -1256,7 +1234,7 @@ axiom (forall v1,v2: $Value :: $Vector_$is_well_formed(v1) && $Vector_$is_well_f
 // and ensures properties when verifying code that calls it.
 procedure $Hash_sha2_256(val: $Value) returns (res: $Value);
 // It will still work without this, but this helps verifier find more reasonable counterexamples.
-{{backend.type_requires}} $IsValidU8Vector(val);
+free requires $IsValidU8Vector(val);
 ensures res == $Hash_sha2_core(val);     // returns Hash_sha2 Value
 ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 ensures $vlen(res) == 32;               // result is 32 bytes.
@@ -1317,7 +1295,7 @@ procedure {:inline 1} $Event_write_to_event_store(ta: $TypeValue, guid: $Value, 
 // Native Signer
 
 procedure {:inline 1} $Signer_borrow_address(signer: $Value) returns (res: $Value)
-    {{backend.type_requires}} is#$Address(signer);
+    free requires is#$Address(signer);
 {
     res := signer;
 }
@@ -1368,12 +1346,10 @@ axiom (forall v1, v2: $Value :: $IsEqual(v1, v2) ==> $LCS_serialize_core(v1) == 
 axiom (forall v: $Value :: $LCS_serialize_core_inv($LCS_serialize_core(v)) == v);
 
 // This says that serialize returns a non-empty vec<u8>
-{{#if (eq backend.serialize_bound 0)}}
-axiom (forall v: $Value :: ( var r := $LCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 ));
-{{else}}
+
 axiom (forall v: $Value :: ( var r := $LCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 &&
-                            $vlen(r) <= {{backend.serialize_bound}} ));
-{{/if}}
+                            $vlen(r) <= 4 ));
+
 
 // Serialized addresses should have the same length
 const $serialized_address_len: int;
@@ -1386,8 +1362,6 @@ ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 function {:inline} $LCS_$to_bytes(ta: $TypeValue, v: $Value): $Value {
     $LCS_serialize_core(v)
 }
-
-procedure $LCS_to_address(v: $Value) returns (res: $Value);
 
 // ==================================================================================
 // Native Signer::spec_address_of
