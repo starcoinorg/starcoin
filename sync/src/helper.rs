@@ -1,12 +1,10 @@
 use anyhow::{format_err, Result};
 use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
-use logger::prelude::*;
-use network_api::NetworkService;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_network_rpc_api::{
-    gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
+    gen_client::NetworkRpcClient, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
@@ -152,79 +150,6 @@ pub async fn get_headers_with_peer(
     let verified_headers =
         verify_condition.filter(data, |header| -> BlockNumber { header.number() });
     Ok(verified_headers)
-}
-
-pub async fn get_headers<N>(
-    network: &N,
-    client: &NetworkRpcClient,
-    req: GetBlockHeaders,
-    number: BlockNumber,
-) -> Result<(Vec<BlockHeader>, PeerId)>
-where
-    N: NetworkService + 'static,
-{
-    let least_height = number;
-    let selected_peer = network
-        .peer_selector()
-        .await?
-        .filter_by_block_number(least_height)
-        .random_peer_id();
-
-    if let Some(peer_id) = selected_peer {
-        debug!("rpc select peer {}", &peer_id);
-        get_headers_with_peer(client, peer_id.clone(), req, number)
-            .await
-            .map(|headers| (headers, peer_id))
-    } else {
-        Err(format_err!("Can not get peer when sync block header."))
-    }
-}
-
-pub async fn _get_header_by_hash<N>(
-    network: &N,
-    client: &NetworkRpcClient,
-    hashes: Vec<HashValue>,
-) -> Result<Vec<BlockHeader>>
-where
-    N: NetworkService + 'static,
-{
-    if let Some(peer_info) = network.best_peer().await? {
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = client
-            .get_headers_by_hash(peer_info.get_peer_id(), hashes)
-            .await?;
-        let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
-        Ok(verified_headers)
-    } else {
-        Err(format_err!("Can not get peer when sync block header."))
-    }
-}
-
-pub async fn get_bodies_by_hash<N>(
-    client: &NetworkRpcClient,
-    network: &N,
-    hashes: Vec<HashValue>,
-    max_height: BlockNumber,
-) -> Result<(Vec<BlockBody>, PeerId)>
-where
-    N: NetworkService + 'static,
-{
-    let least_height = max_height;
-    let selected_peer = network
-        .peer_selector()
-        .await?
-        .filter_by_block_number(least_height)
-        .random_peer_id();
-
-    if let Some(peer_id) = selected_peer {
-        debug!("rpc select peer {}", &peer_id);
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = client.get_bodies_by_hash(peer_id.clone(), hashes).await?;
-        let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
-        Ok((verified_bodies, peer_id))
-    } else {
-        Err(format_err!("Can not get peer when sync block body."))
-    }
 }
 
 pub async fn get_block_infos(

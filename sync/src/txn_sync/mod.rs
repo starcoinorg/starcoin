@@ -3,32 +3,30 @@ use actix::prelude::*;
 use anyhow::{bail, Result};
 use bus::{Bus, BusActor};
 use logger::prelude::*;
-use network_api::NetworkService;
+use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
+use std::sync::Arc;
 use txpool::TxPoolService;
 
 #[derive(Clone)]
-pub struct TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+pub struct TxnSyncActor {
     bus: Addr<BusActor>,
-    inner: Inner<N>,
+    inner: Inner,
 }
 
-impl<N> TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    pub fn launch(txpool: TxPoolService, network: N, bus: Addr<BusActor>) -> Addr<TxnSyncActor<N>> {
+impl TxnSyncActor {
+    pub fn launch<N>(txpool: TxPoolService, network: N, bus: Addr<BusActor>) -> Addr<TxnSyncActor>
+    where
+        N: NetworkService + 'static,
+    {
         let actor = TxnSyncActor {
             inner: Inner {
                 pool: txpool,
                 rpc_client: NetworkRpcClient::new(network.clone()),
-                network_service: network,
+                peer_provider: Arc::new(network),
             },
             bus,
         };
@@ -36,10 +34,7 @@ where
     }
 }
 
-impl<N> actix::Actor for TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl actix::Actor for TxnSyncActor {
     type Context = actix::Context<Self>;
 
     /// when start, subscribe StartSyncTxnEvent.
@@ -61,10 +56,7 @@ where
     }
 }
 
-impl<N> actix::Handler<StartSyncTxnEvent> for TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
     type Result = ();
 
     fn handle(
@@ -86,22 +78,16 @@ where
 }
 
 #[derive(Clone)]
-struct Inner<N>
-where
-    N: NetworkService + 'static,
-{
+struct Inner {
     pool: TxPoolService,
     rpc_client: NetworkRpcClient,
-    network_service: N,
+    peer_provider: Arc<dyn PeerProvider>,
 }
 
-impl<N> Inner<N>
-where
-    N: NetworkService + 'static,
-{
+impl Inner {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let best_peers = self.network_service.peer_selector().await?.top(10);
+        let best_peers = self.peer_provider.peer_selector().await?.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");
             return Ok(());

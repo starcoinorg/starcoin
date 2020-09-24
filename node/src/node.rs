@@ -42,7 +42,7 @@ pub struct NodeStartedHandle {
     pub config: Arc<NodeConfig>,
     pub bus: Addr<BusActor>,
     pub storage: Arc<Storage>,
-    pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
+    pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub node_addr: Addr<Node>,
@@ -59,7 +59,7 @@ impl NodeStartedHandle {
 }
 
 pub struct Node {
-    pub sync_actor: Addr<SyncActor<NetworkAsyncService>>,
+    pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub registry: ServiceRef<RegistryService>,
@@ -193,7 +193,7 @@ pub async fn start(
     let sync_storage = storage.clone();
     let sync_startup_info = startup_info.clone();
     let sync = Arbiter::new()
-        .exec(move || -> Result<Addr<SyncActor<NetworkAsyncService>>> {
+        .exec(move || -> Result<Addr<SyncActor>> {
             SyncActor::launch(
                 sync_config,
                 sync_bus,

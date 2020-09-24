@@ -14,6 +14,7 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -117,7 +118,19 @@ impl VerifiedRpcClient {
         }
     }
 
-    fn random_peer(&self) -> Result<PeerId> {
+    pub fn new_with_client(peer_selector: PeerSelector, client: NetworkRpcClient) -> Self {
+        Self {
+            peer_selector,
+            client,
+        }
+    }
+
+    pub fn best_peer(&self) -> Option<PeerInfo> {
+        //TODO best peer should select at init  VerifiedRpcClient
+        self.peer_selector.clone().bests().random()
+    }
+
+    pub fn random_peer(&self) -> Result<PeerId> {
         self.peer_selector
             .random_peer_id()
             .ok_or_else(|| format_err!("No peers for send request."))
@@ -140,9 +153,15 @@ impl VerifiedRpcClient {
         }
     }
 
-    pub async fn get_txn_infos(&self, block_id: HashValue) -> Result<Option<Vec<TransactionInfo>>> {
+    pub async fn get_txn_infos(
+        &self,
+        block_id: HashValue,
+    ) -> Result<(PeerId, Option<Vec<TransactionInfo>>)> {
         let peer_id = self.random_peer()?;
-        self.client.get_txn_infos(peer_id, block_id).await
+        Ok((
+            peer_id.clone(),
+            self.client.get_txn_infos(peer_id, block_id).await?,
+        ))
     }
 
     pub async fn get_headers_by_number(
@@ -161,15 +180,16 @@ impl VerifiedRpcClient {
         &self,
         req: GetBlockHeaders,
         number: BlockNumber,
-    ) -> Result<Vec<BlockHeader>> {
+    ) -> Result<(Vec<BlockHeader>, PeerId)> {
         let peer_id = self.random_peer()?;
         debug!("rpc select peer {:?}", peer_id);
         let mut verify_condition: RpcEntryVerify<BlockNumber> =
             (&req.clone().into_numbers(number)).into();
-        let data = self.client.get_headers(peer_id, req).await?;
+        let data = self.client.get_headers(peer_id.clone(), req).await?;
         let verified_headers =
             verify_condition.filter(data, |header| -> BlockNumber { header.number() });
-        Ok(verified_headers)
+        //TODO remove peer_id from result
+        Ok((verified_headers, peer_id))
     }
 
     pub async fn get_headers_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
@@ -180,13 +200,19 @@ impl VerifiedRpcClient {
         Ok(verified_headers)
     }
 
-    pub async fn get_bodies_by_hash(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockBody>> {
+    pub async fn get_bodies_by_hash(
+        &self,
+        hashes: Vec<HashValue>,
+    ) -> Result<(Vec<BlockBody>, PeerId)> {
         let peer_id = self.random_peer()?;
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data: Vec<BlockBody> = self.client.get_bodies_by_hash(peer_id, hashes).await?;
+        let data: Vec<BlockBody> = self
+            .client
+            .get_bodies_by_hash(peer_id.clone(), hashes)
+            .await?;
         let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
-        Ok(verified_bodies)
+        Ok((verified_bodies, peer_id))
     }
 
     pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
@@ -203,9 +229,9 @@ impl VerifiedRpcClient {
         req: GetBlockHeaders,
         number: BlockNumber,
     ) -> Result<Vec<Block>> {
-        let headers = self.get_headers(req, number).await?;
+        let (headers, _) = self.get_headers(req, number).await?;
         let hashs = headers.iter().map(|header| header.id()).collect();
-        let bodies = self.get_bodies_by_hash(hashs).await?;
+        let (bodies, _) = self.get_bodies_by_hash(hashs).await?;
         //TODO verify headers and bodies' length.
         let blocks: Vec<Block> = headers
             .into_iter()
@@ -215,16 +241,19 @@ impl VerifiedRpcClient {
         Ok(blocks)
     }
 
-    pub async fn get_state_node_by_node_hash(&self, node_key: HashValue) -> Result<StateNode> {
+    pub async fn get_state_node_by_node_hash(
+        &self,
+        node_key: HashValue,
+    ) -> Result<(PeerId, StateNode)> {
         let peer_id = self.random_peer()?;
         if let Some(state_node) = self
             .client
-            .get_state_node_by_node_hash(peer_id, node_key)
+            .get_state_node_by_node_hash(peer_id.clone(), node_key)
             .await?
         {
             let state_node_id = state_node.inner().hash();
             if node_key == state_node_id {
-                Ok(state_node)
+                Ok((peer_id, state_node))
             } else {
                 Err(format_err!(
                     "State node hash {:?} and node key {:?} mismatch.",
@@ -244,12 +273,12 @@ impl VerifiedRpcClient {
         &self,
         node_key: HashValue,
         accumulator_type: AccumulatorStoreType,
-    ) -> Result<AccumulatorNode> {
+    ) -> Result<(PeerId, AccumulatorNode)> {
         let peer_id = self.random_peer()?;
         if let Some(accumulator_node) = self
             .client
             .get_accumulator_node_by_node_hash(
-                peer_id,
+                peer_id.clone(),
                 GetAccumulatorNodeByNodeHash {
                     node_hash: node_key,
                     accumulator_storage_type: accumulator_type,
@@ -259,7 +288,7 @@ impl VerifiedRpcClient {
         {
             let accumulator_node_id = accumulator_node.hash();
             if node_key == accumulator_node_id {
-                Ok(accumulator_node)
+                Ok((peer_id, accumulator_node))
             } else {
                 Err(format_err!(
                     "Accumulator node hash {:?} and node key {:?} mismatch.",
@@ -274,4 +303,88 @@ impl VerifiedRpcClient {
             ))
         }
     }
+
+    // pub async fn find_ancestor_header(
+    //     &self,
+    //     start_block_number: BlockNumber,
+    //     total_difficulty: U256,
+    //     is_full_mode: bool,
+    // ) -> Result<Option<BlockHeader>> {
+    //     let mut ancestor_header = None;
+    //     let peer_info = self.peer_selector.bests().random()
+    //         .ok_or_else(|| format_err!("Select beast peer fail."))?;
+    //
+    //     if peer_info.total_difficulty <= total_difficulty {
+    //         return Ok(ancestor_header);
+    //     }
+    //     info!("Sync begin, find ancestor.");
+    //     let mut need_executed = is_full_mode;
+    //     let mut latest_block_number = if start_block_number > peer_info.latest_header.number() {
+    //         peer_info.latest_header.number()
+    //     } else {
+    //         start_block_number
+    //     };
+    //     let mut continue_none = false;
+    //     loop {
+    //         let get_block_headers_by_number_req =
+    //             get_headers_msg_for_ancestor(latest_block_number, 1);
+    //         let headers =
+    //             self.get_headers_by_number(get_block_headers_by_number_req)
+    //                 .await?;
+    //         if !headers.is_empty() {
+    //             latest_block_number = headers
+    //                 .last()
+    //                 .expect("get_headers_by_number is empty.")
+    //                 .clone()
+    //                 .number();
+    //             continue_none = false;
+    //         } else {
+    //             if continue_none {
+    //                 break;
+    //             }
+    //             continue_none = true;
+    //         }
+    //
+    //         let (need_executed_new, ancestor) = self.do_ancestor(headers, need_executed).await?;
+    //
+    //         need_executed = need_executed_new;
+    //
+    //         if ancestor.is_some() {
+    //             ancestor_header = ancestor;
+    //             break;
+    //         }
+    //     }
+    //
+    //     if ancestor_header.is_none() {
+    //         return Err(format_err!("find ancestor is none."));
+    //     }
+    //     Ok(ancestor_header)
+    // }
+    //
+    // pub async fn do_ancestor(
+    //     &self,
+    //     block_headers: Vec<BlockHeader>,
+    //     need_executed: bool,
+    // ) -> Result<(bool, Option<BlockHeader>)> {
+    //     let mut ancestor = None;
+    //     let mut need_executed = need_executed;
+    //     for header in block_headers {
+    //         if let Some(block_state) = self
+    //             .chain_reader
+    //             .clone()
+    //             .get_block_state_by_hash(&header.id())
+    //             .await?
+    //         {
+    //             if !need_executed || block_state == BlockState::Executed {
+    //                 if need_executed && block_state == BlockState::Executed {
+    //                     need_executed = false;
+    //                 }
+    //                 ancestor = Some(header);
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //     Ok((need_executed, ancestor))
+    // }
 }

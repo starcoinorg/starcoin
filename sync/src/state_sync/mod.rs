@@ -1,13 +1,11 @@
 use crate::block_sync::BlockSyncTaskRef;
 use crate::download::DownloadActor;
-use crate::helper::{
-    get_accumulator_node_by_node_hash, get_state_node_by_node_hash, get_txn_infos,
-};
 use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_ACCUMULATOR, LABEL_STATE, LABEL_TXN_INFO, SYNC_METRICS};
 use crate::sync_task::{
     SyncTaskAction, SyncTaskRequest, SyncTaskResponse, SyncTaskState, SyncTaskType,
 };
+use crate::verified_rpc_client::VerifiedRpcClient;
 use crate::StateSyncReset;
 use actix::prelude::*;
 use actix::{Actor, Addr, Context, Handler};
@@ -15,18 +13,13 @@ use anyhow::Result;
 use crypto::hash::{ACCUMULATOR_PLACEHOLDER_HASH, SPARSE_MERKLE_PLACEHOLDER_HASH};
 use crypto::HashValue;
 use forkable_jellyfish_merkle::node_type::Node;
-use futures::executor::block_on;
 use logger::prelude::*;
-use network_api::NetworkService;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
-use starcoin_network_rpc_api::gen_client::NetworkRpcClient;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 use starcoin_types::{
-    account_state::AccountState,
-    peer_info::{PeerId, PeerInfo},
-    transaction::TransactionInfo,
+    account_state::AccountState, peer_info::PeerId, transaction::TransactionInfo,
 };
 use std::collections::{HashMap, VecDeque};
 use std::convert::TryFrom;
@@ -70,29 +63,24 @@ impl Roots {
 
 async fn sync_accumulator_node(
     node_key: HashValue,
-    peer_id: PeerId,
-    rpc_client: NetworkRpcClient,
+    rpc_client: VerifiedRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
 ) {
     let accumulator_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_ACCUMULATOR])
         .start_timer();
-    let accumulator_node = match get_accumulator_node_by_node_hash(
-        &rpc_client,
-        peer_id.clone(),
-        node_key,
-        AccumulatorStoreType::Block,
-    )
-    .await
+    let (peer_id, accumulator_node) = match rpc_client
+        .get_accumulator_node_by_node_hash(node_key, AccumulatorStoreType::Block)
+        .await
     {
-        Ok(accumulator_node) => {
+        Ok((peer_id, accumulator_node)) => {
             if node_key == accumulator_node.hash() {
                 SYNC_METRICS
                     .sync_succ_count
                     .with_label_values(&[LABEL_ACCUMULATOR])
                     .inc();
-                Some(accumulator_node)
+                (peer_id, Some(accumulator_node))
             } else {
                 SYNC_METRICS
                     .sync_verify_fail_count
@@ -103,7 +91,7 @@ async fn sync_accumulator_node(
                     node_key,
                     accumulator_node.hash()
                 );
-                None
+                (peer_id, None)
             }
         }
         Err(e) => {
@@ -112,7 +100,8 @@ async fn sync_accumulator_node(
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
             debug!("{:?}", e);
-            None
+            //TODO fixme
+            (PeerId::random(), None)
         }
     };
     accumulator_timer.observe_duration();
@@ -128,23 +117,21 @@ async fn sync_accumulator_node(
 async fn sync_state_node(
     is_state_root: bool,
     node_key: HashValue,
-    peer_id: PeerId,
-    rpc_client: NetworkRpcClient,
+    rpc_client: VerifiedRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
 ) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_STATE])
         .start_timer();
-    let state_node = match get_state_node_by_node_hash(&rpc_client, peer_id.clone(), node_key).await
-    {
-        Ok(state_node) => {
+    let (peer_id, state_node) = match rpc_client.get_state_node_by_node_hash(node_key).await {
+        Ok((peer_id, state_node)) => {
             if node_key == state_node.0.hash() {
                 SYNC_METRICS
                     .sync_succ_count
                     .with_label_values(&[LABEL_STATE])
                     .inc();
-                Some(state_node)
+                (peer_id, Some(state_node))
             } else {
                 SYNC_METRICS
                     .sync_verify_fail_count
@@ -155,7 +142,7 @@ async fn sync_state_node(
                     node_key,
                     state_node.0.hash()
                 );
-                None
+                (peer_id, None)
             }
         }
         Err(e) => {
@@ -164,7 +151,8 @@ async fn sync_state_node(
                 .with_label_values(&[LABEL_STATE])
                 .inc();
             debug!("{:?}", e);
-            None
+            //TODO fixme
+            (PeerId::random(), None)
         }
     };
     state_timer.observe_duration();
@@ -180,15 +168,14 @@ async fn sync_state_node(
 
 async fn sync_txn_info(
     block_id: HashValue,
-    peer_id: PeerId,
-    rpc_client: NetworkRpcClient,
+    rpc_client: VerifiedRpcClient,
     state_sync_task_event_handler: Box<dyn SendSyncEventHandler<StateSyncTaskEvent>>,
 ) {
     let state_timer = SYNC_METRICS
         .sync_done_time
         .with_label_values(&[LABEL_TXN_INFO])
         .start_timer();
-    let txn_infos = match get_txn_infos(&rpc_client, peer_id.clone(), block_id).await {
+    let (peer_id, txn_infos) = match rpc_client.get_txn_infos(block_id).await {
         Ok(infos) => {
             SYNC_METRICS
                 .sync_succ_count
@@ -202,7 +189,8 @@ async fn sync_txn_info(
                 .with_label_values(&[LABEL_TXN_INFO])
                 .inc();
             debug!("{:?}", e);
-            None
+            //TODO fixme
+            (PeerId::random(), None)
         }
     };
     state_timer.observe_duration();
@@ -213,17 +201,11 @@ async fn sync_txn_info(
 }
 
 #[derive(Clone)]
-pub struct StateSyncTaskRef<N>
-where
-    N: NetworkService + 'static,
-{
-    address: Addr<StateSyncTaskActor<N>>,
+pub struct StateSyncTaskRef {
+    address: Addr<StateSyncTaskActor>,
 }
 
-impl<N> SyncTaskAction for StateSyncTaskRef<N>
-where
-    N: NetworkService + 'static,
-{
+impl SyncTaskAction for StateSyncTaskRef {
     fn activate(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -233,10 +215,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<N> StateSyncReset for StateSyncTaskRef<N>
-where
-    N: NetworkService + 'static,
-{
+impl StateSyncReset for StateSyncTaskRef {
     async fn reset(
         &self,
         state_root: HashValue,
@@ -355,24 +334,17 @@ impl StateSyncTaskEvent {
     }
 }
 
-pub struct StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
-    block_sync_address: BlockSyncTaskRef<N>,
-    download_address: Addr<DownloadActor<N>>,
-    inner: Inner<N>,
+pub struct StateSyncTaskActor {
+    block_sync_address: BlockSyncTaskRef,
+    download_address: Addr<DownloadActor>,
+    inner: Inner,
 }
 
-struct Inner<N>
-where
-    N: NetworkService + 'static,
-{
+struct Inner {
     self_peer_id: PeerId,
     roots: Roots,
     storage: Arc<dyn Store>,
-    rpc_client: NetworkRpcClient,
-    network_service: N,
+    rpc_client: VerifiedRpcClient,
     state_sync_task: StateSyncTask<(HashValue, bool)>,
     txn_info_sync_task: StateSyncTask<HashValue>,
     block_accumulator_sync_task: StateSyncTask<HashValue>,
@@ -380,15 +352,12 @@ where
     total_txn_info_task: AtomicU64,
 }
 
-impl<N> Inner<N>
-where
-    N: NetworkService + 'static,
-{
+impl Inner {
     fn new(
         self_peer_id: PeerId,
         root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
-        network_service: N,
+        rpc_client: VerifiedRpcClient,
     ) -> Self {
         let roots = Roots::new(root.0, root.1, root.2);
         let mut state_sync_task = StateSyncTask::new();
@@ -397,24 +366,18 @@ where
         block_accumulator_sync_task.push_back(*roots.block_accumulator_root());
         let mut txn_info_sync_task = StateSyncTask::new();
         txn_info_sync_task.push_back(*roots.pivot_id());
-        let rpc_client = NetworkRpcClient::new(network_service.clone());
 
         Inner {
             self_peer_id,
             roots,
             storage,
             rpc_client,
-            network_service,
             state_sync_task,
             txn_info_sync_task,
             block_accumulator_sync_task,
             state: SyncTaskState::Ready,
             total_txn_info_task: AtomicU64::new(1),
         }
-    }
-
-    fn _get_network_client(&self) -> &NetworkRpcClient {
-        &self.rpc_client
     }
 
     fn do_finish(&mut self) -> bool {
@@ -460,7 +423,7 @@ where
                     None,
                 ));
             } else {
-                let best_peer_info = get_best_peer_info(self.network_service.clone());
+                let best_peer_info = self.rpc_client.best_peer();
                 debug!(
                     "sync state node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -476,7 +439,6 @@ where
                         sync_state_node(
                             is_state_root,
                             node_key,
-                            best_peer.get_peer_id(),
                             rpc_client,
                             state_sync_task_event_handler,
                         )
@@ -578,7 +540,7 @@ where
                     None,
                 ));
             } else {
-                let best_peer_info = get_best_peer_info(self.network_service.clone());
+                let best_peer_info = self.rpc_client.best_peer();
                 debug!(
                     "sync accumulator node {:?} from peer {:?}.",
                     node_key, best_peer_info
@@ -591,7 +553,6 @@ where
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
                                 node_key,
-                                best_peer.get_peer_id(),
                                 rpc_client,
                                 state_sync_task_event_handler,
                             )
@@ -694,7 +655,7 @@ where
                     None,
                 ));
             } else {
-                let best_peer_info = get_best_peer_info(self.network_service.clone());
+                let best_peer_info = self.rpc_client.best_peer();
                 debug!(
                     "sync txn info {:?} from peer {:?}.",
                     block_id, best_peer_info
@@ -707,13 +668,7 @@ where
                     self.txn_info_sync_task
                         .insert(best_peer.get_peer_id(), block_id);
                     Arbiter::spawn(async move {
-                        sync_txn_info(
-                            block_id,
-                            best_peer.get_peer_id(),
-                            rpc_client,
-                            state_sync_task_event_handler,
-                        )
-                        .await;
+                        sync_txn_info(block_id, rpc_client, state_sync_task_event_handler).await;
                     });
                 } else {
                     warn!("best peer is none, state sync may be failed.");
@@ -819,19 +774,16 @@ impl<T> StateSyncTask<T> {
     }
 }
 
-impl<N> StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl StateSyncTaskActor {
     pub fn launch(
         self_peer_id: PeerId,
         root: (HashValue, HashValue, HashValue),
         storage: Arc<dyn Store>,
-        network_service: N,
-        block_sync_address: BlockSyncTaskRef<N>,
-        download_address: Addr<DownloadActor<N>>,
-    ) -> StateSyncTaskRef<N> {
-        let inner = Inner::new(self_peer_id, root, storage, network_service);
+        rpc_client: VerifiedRpcClient,
+        block_sync_address: BlockSyncTaskRef,
+        download_address: Addr<DownloadActor>,
+    ) -> StateSyncTaskRef {
+        let inner = Inner::new(self_peer_id, root, storage, rpc_client);
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             inner,
             block_sync_address,
@@ -845,7 +797,7 @@ where
         state_root: &HashValue,
         block_accumulator_root: &HashValue,
         pivot_id: &HashValue,
-        address: Addr<StateSyncTaskActor<N>>,
+        address: Addr<StateSyncTaskActor>,
     ) {
         debug!(
             "reset state sync task with state root : {:?}, block accumulator root : {:?}.",
@@ -883,7 +835,7 @@ where
         }
     }
 
-    fn activation_task(&mut self, address: Addr<StateSyncTaskActor<N>>) {
+    fn activation_task(&mut self, address: Addr<StateSyncTaskActor>) {
         if self.inner.state.is_failed() {
             debug!("activation state sync task.");
             self.inner.state = SyncTaskState::Syncing;
@@ -895,10 +847,7 @@ where
     }
 }
 
-impl<N> Actor for StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Actor for StateSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -910,10 +859,7 @@ where
     }
 }
 
-impl<N> Handler<TxnInfoEvent> for StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<TxnInfoEvent> for StateSyncTaskActor {
     type Result = ();
 
     fn handle(&mut self, _event: TxnInfoEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -921,10 +867,7 @@ where
     }
 }
 
-impl<N> Handler<StateSyncTaskEvent> for StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
     type Result = ();
 
     fn handle(&mut self, task_event: StateSyncTaskEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -983,10 +926,7 @@ struct ResetRoots {
     pivot_id: HashValue,
 }
 
-impl<N> Handler<StateSyncEvent> for StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<StateSyncEvent> for StateSyncTaskActor {
     type Result = Result<()>;
 
     /// This method is called for every message received by this actor.
@@ -1005,10 +945,7 @@ where
     }
 }
 
-impl<N> Handler<SyncTaskRequest> for StateSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<SyncTaskRequest> for StateSyncTaskActor {
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, ctx: &mut Self::Context) -> Self::Result {
@@ -1019,17 +956,4 @@ where
             }
         }
     }
-}
-
-fn get_best_peer_info<N>(network_service: N) -> Option<PeerInfo>
-where
-    N: NetworkService + 'static,
-{
-    block_on(async move {
-        if let Ok(peer_info) = network_service.best_peer().await {
-            peer_info
-        } else {
-            None
-        }
-    })
 }

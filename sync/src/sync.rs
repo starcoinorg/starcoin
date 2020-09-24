@@ -15,21 +15,15 @@ use starcoin_types::{peer_info::PeerId, startup_info::StartupInfo};
 use std::sync::Arc;
 use txpool::TxPoolService;
 
-pub struct SyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    download_address: Addr<DownloadActor<N>>,
+pub struct SyncActor {
+    download_address: Addr<DownloadActor>,
     #[allow(dead_code)]
-    txn_sync_address: Addr<TxnSyncActor<N>>,
+    txn_sync_address: Addr<TxnSyncActor>,
     bus: Addr<BusActor>,
 }
 
-impl<N> SyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    pub fn launch(
+impl SyncActor {
+    pub fn launch<N>(
         node_config: Arc<NodeConfig>,
         bus: Addr<BusActor>,
         peer_id: Arc<PeerId>,
@@ -38,7 +32,7 @@ where
         network: N,
         storage: Arc<dyn Store>,
         startup_info: StartupInfo,
-    ) -> Result<Addr<SyncActor<N>>>
+    ) -> Result<Addr<SyncActor>>
     where
         N: NetworkService + 'static,
     {
@@ -63,10 +57,7 @@ where
     }
 }
 
-impl<N> Actor for SyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Actor for SyncActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -95,10 +86,7 @@ where
     }
 }
 
-impl<N> Handler<PeerNewBlock> for SyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<PeerNewBlock> for SyncActor {
     type Result = ();
     fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
         let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
@@ -110,10 +98,7 @@ where
     }
 }
 
-impl<N> Handler<PeerEvent> for SyncActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<PeerEvent> for SyncActor {
     type Result = Result<()>;
 
     fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {

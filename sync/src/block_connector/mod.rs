@@ -4,7 +4,7 @@ use bus::BusActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
-use network_api::{NetworkService, PeerId};
+use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_storage::Store;
@@ -30,25 +30,19 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 pub use write_block_chain::WriteBlockChainService;
 
 #[derive(Clone)]
-pub struct PivotBlock<N>
-where
-    N: NetworkService + 'static,
-{
+pub struct PivotBlock {
     number: BlockNumber,
     block_info: BlockInfo,
-    state_sync_task_ref: StateSyncTaskRef<N>,
+    state_sync_task_ref: StateSyncTaskRef,
     block_accumulator: Option<Arc<MerkleAccumulator>>,
     storage: Arc<dyn Store>,
 }
 
-impl<N> PivotBlock<N>
-where
-    N: NetworkService + 'static,
-{
+impl PivotBlock {
     pub fn new(
         number: BlockNumber,
         block_info: BlockInfo,
-        state_sync_task_ref: StateSyncTaskRef<N>,
+        state_sync_task_ref: StateSyncTaskRef,
         storage: Arc<dyn Store>,
     ) -> Self {
         Self {
@@ -142,19 +136,13 @@ impl FutureBlockPool {
     }
 }
 
-pub struct BlockConnector<N>
-where
-    N: NetworkService + 'static,
-{
+pub struct BlockConnector {
     writeable_block_chain: Arc<RwLock<dyn WriteableChainService + 'static>>,
     future_blocks: FutureBlockPool,
-    pivot: Arc<RwLock<Option<PivotBlock<N>>>>,
+    pivot: Arc<RwLock<Option<PivotBlock>>>,
 }
 
-impl<N> BlockConnector<N>
-where
-    N: NetworkService + 'static,
-{
+impl BlockConnector {
     pub fn new(
         config: Arc<NodeConfig>,
         startup_info: StartupInfo,
@@ -163,7 +151,7 @@ where
         bus: Addr<BusActor>,
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Self {
-        let pivot: Option<PivotBlock<N>> = None;
+        let pivot: Option<PivotBlock> = None;
         let writeable_block_chain = WriteBlockChainService::new(
             config,
             startup_info,
@@ -180,14 +168,14 @@ where
         }
     }
 
-    pub fn update_pivot(&self, pivot: Option<PivotBlock<N>>) {
+    pub fn update_pivot(&self, pivot: Option<PivotBlock>) {
         match pivot {
             Some(p) => self.pivot.write().replace(p),
             None => self.pivot.write().take(),
         };
     }
 
-    fn get_pivot(&self) -> Option<PivotBlock<N>> {
+    fn get_pivot(&self) -> Option<PivotBlock> {
         (*self.pivot.read()).clone()
     }
 

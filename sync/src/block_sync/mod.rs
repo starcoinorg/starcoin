@@ -1,10 +1,11 @@
 use crate::download::DownloadActor;
-use crate::helper::{get_bodies_by_hash, get_headers, get_headers_msg_for_common};
+use crate::helper::get_headers_msg_for_common;
 use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_HASH, SYNC_METRICS};
 use crate::sync_task::{
     SyncTaskAction, SyncTaskRequest, SyncTaskResponse, SyncTaskState, SyncTaskType,
 };
+use crate::verified_rpc_client::VerifiedRpcClient;
 use crate::Downloader;
 use actix::prelude::*;
 use actix::{Actor, ActorContext, Addr, Context, Handler};
@@ -12,8 +13,8 @@ use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::{NetworkService, PeerId};
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, BlockBody};
+use network_api::PeerId;
+use starcoin_network_rpc_api::BlockBody;
 use starcoin_types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
@@ -120,33 +121,23 @@ impl BlockSyncTask {
     }
 }
 
-pub struct BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
-    inner: Inner<N>,
-    downloader: Arc<Downloader<N>>,
-    download_address: Addr<DownloadActor<N>>,
+pub struct BlockSyncTaskActor {
+    inner: Inner,
+    downloader: Arc<Downloader>,
+    download_address: Addr<DownloadActor>,
 }
 
-pub struct Inner<N>
-where
-    N: NetworkService + 'static,
-{
+pub struct Inner {
     ancestor_number: BlockNumber,
     target_number: BlockNumber,
     next: BlockIdAndNumber,
     headers: HashMap<HashValue, BlockHeader>,
     body_task: BlockSyncTask,
-    network: N,
-    rpc_client: NetworkRpcClient,
+    rpc_client: VerifiedRpcClient,
     state: SyncTaskState,
 }
 
-impl<N> Debug for Inner<N>
-where
-    N: NetworkService + 'static,
-{
+impl Debug for Inner {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_tuple("Inner")
             .field(&self.ancestor_number)
@@ -158,15 +149,12 @@ where
     }
 }
 
-impl<N> Inner<N>
-where
-    N: NetworkService + 'static,
-{
+impl Inner {
     fn new(
         ancestor_number: BlockNumber,
         target_number: BlockNumber,
         next: BlockIdAndNumber,
-        network: N,
+        rpc_client: VerifiedRpcClient,
         state: SyncTaskState,
     ) -> Self {
         Self {
@@ -175,8 +163,7 @@ where
             next,
             headers: HashMap::new(),
             body_task: BlockSyncTask::new(),
-            network: network.clone(),
-            rpc_client: NetworkRpcClient::new(network),
+            rpc_client,
             state,
         }
     }
@@ -216,7 +203,6 @@ where
 
         let next = self.next.id;
         let next_number = self.next.number;
-        let network = self.network.clone();
         let rpc_client = self.rpc_client.clone();
         Arbiter::spawn(async move {
             // sync header
@@ -227,15 +213,14 @@ where
                     .with_label_values(&[LABEL_HASH])
                     .start_timer();
 
-                let event =
-                    match get_headers(&network, &rpc_client, get_headers_req, next_number).await {
-                        Ok((headers, peer_id)) => SyncDataEvent::new_header_event(headers, peer_id),
-                        Err(e) => {
-                            error!("Sync headers err: {:?}", e);
-                            Delay::new(Duration::from_secs(1)).await;
-                            SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
-                        }
-                    };
+                let event = match rpc_client.get_headers(get_headers_req, next_number).await {
+                    Ok((headers, peer_id)) => SyncDataEvent::new_header_event(headers, peer_id),
+                    Err(e) => {
+                        error!("Sync headers err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
+                        SyncDataEvent::new_header_event(Vec::new(), PeerId::random())
+                    }
+                };
 
                 sync_data_handler.send_event(event);
                 hash_timer.observe_duration();
@@ -248,25 +233,18 @@ where
                     .with_label_values(&[LABEL_BLOCK_BODY])
                     .start_timer();
                 debug_assert!(!tasks.is_empty());
-                let max_height = tasks
-                    .iter()
-                    .map(|t| t.number)
-                    .max()
-                    .expect("body tasks is not empty");
                 let block_idlist = tasks.iter().map(|t| t.id).collect();
 
-                let event =
-                    match get_bodies_by_hash(&rpc_client, &network, block_idlist, max_height).await
-                    {
-                        Ok((bodies, peer_id)) => {
-                            SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id)
-                        }
-                        Err(e) => {
-                            error!("Sync bodies err: {:?}", e);
-                            Delay::new(Duration::from_secs(1)).await;
-                            SyncDataEvent::new_body_event(Vec::new(), tasks, PeerId::random())
-                        }
-                    };
+                let event = match rpc_client.get_bodies_by_hash(block_idlist).await {
+                    Ok((bodies, peer_id)) => {
+                        SyncDataEvent::new_body_event(bodies, Vec::new(), peer_id)
+                    }
+                    Err(e) => {
+                        error!("Sync bodies err: {:?}", e);
+                        Delay::new(Duration::from_secs(1)).await;
+                        SyncDataEvent::new_body_event(Vec::new(), tasks, PeerId::random())
+                    }
+                };
 
                 sync_data_handler.send_event(event);
                 block_body_timer.observe_duration();
@@ -327,27 +305,21 @@ where
     }
 }
 
-impl<N> Debug for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Debug for BlockSyncTaskActor {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         f.debug_tuple("BlockSyncTask").field(&self.inner).finish()
     }
 }
 
-impl<N> BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl BlockSyncTaskActor {
     pub fn launch(
         ancestor_header: &BlockHeader,
         target_number: BlockNumber,
-        downloader: Arc<Downloader<N>>,
-        network: N,
+        downloader: Arc<Downloader>,
         start: bool,
-        download_address: Addr<DownloadActor<N>>,
-    ) -> BlockSyncTaskRef<N> {
+        download_address: Addr<DownloadActor>,
+        rpc_client: VerifiedRpcClient,
+    ) -> BlockSyncTaskRef {
         debug_assert!(ancestor_header.number() < target_number);
         let inner = Inner::new(
             ancestor_header.number(),
@@ -356,7 +328,7 @@ where
                 id: ancestor_header.id(),
                 number: ancestor_header.number(),
             },
-            network,
+            rpc_client,
             if start {
                 SyncTaskState::Ready
             } else {
@@ -384,12 +356,12 @@ where
         }
     }
 
-    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
+    fn block_sync(&mut self, address: Addr<BlockSyncTaskActor>) {
         self.inner
             .sync_blocks(Box::new(address.clone()), Box::new(address));
     }
 
-    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor<N>>) {
+    fn start_sync_task(&mut self, address: Addr<BlockSyncTaskActor>) {
         self.inner.state = SyncTaskState::Syncing;
         if let Err(err) = address.try_send(NextTimeEvent {}) {
             error!("Send NextTimeEvent failed when start : {:?}", err);
@@ -397,10 +369,7 @@ where
     }
 }
 
-impl<N> Actor for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Actor for BlockSyncTaskActor {
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
@@ -410,10 +379,7 @@ where
     }
 }
 
-impl<N> Handler<SyncDataEvent> for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<SyncDataEvent> for BlockSyncTaskActor {
     type Result = ();
 
     fn handle(&mut self, data: SyncDataEvent, _ctx: &mut Self::Context) -> Self::Result {
@@ -434,10 +400,7 @@ where
     }
 }
 
-impl<N> Handler<NextTimeEvent> for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<NextTimeEvent> for BlockSyncTaskActor {
     type Result = ();
 
     fn handle(&mut self, _event: NextTimeEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -451,10 +414,7 @@ where
     }
 }
 
-impl<N> Handler<BlockSyncBeginEvent> for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<BlockSyncBeginEvent> for BlockSyncTaskActor {
     type Result = Result<()>;
 
     fn handle(&mut self, _event: BlockSyncBeginEvent, ctx: &mut Self::Context) -> Self::Result {
@@ -467,10 +427,7 @@ where
     }
 }
 
-impl<N> Handler<SyncTaskRequest> for BlockSyncTaskActor<N>
-where
-    N: NetworkService + 'static,
-{
+impl Handler<SyncTaskRequest> for BlockSyncTaskActor {
     type Result = Result<SyncTaskResponse>;
 
     fn handle(&mut self, action: SyncTaskRequest, _ctx: &mut Self::Context) -> Self::Result {
@@ -481,17 +438,11 @@ where
 }
 
 #[derive(Clone)]
-pub struct BlockSyncTaskRef<N>
-where
-    N: NetworkService + 'static,
-{
-    address: Addr<BlockSyncTaskActor<N>>,
+pub struct BlockSyncTaskRef {
+    address: Addr<BlockSyncTaskActor>,
 }
 
-impl<N> BlockSyncTaskRef<N>
-where
-    N: NetworkService + 'static,
-{
+impl BlockSyncTaskRef {
     pub fn start(&self) {
         let address = self.address.clone();
         Arbiter::spawn(async move {
@@ -500,4 +451,4 @@ where
     }
 }
 
-impl<N> SyncTaskAction for BlockSyncTaskRef<N> where N: NetworkService + 'static {}
+impl SyncTaskAction for BlockSyncTaskRef {}
