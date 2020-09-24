@@ -7864,7 +7864,9 @@ dependencies = [
 name = "starcoin-uint"
 version = "0.5.0"
 dependencies = [
+ "hex",
  "serde",
+ "serde_json",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-types",
