@@ -14,6 +14,7 @@ module TransactionManager {
     use 0x1::Timestamp;
     use 0x1::ChainId;
     use 0x1::ErrorCode;
+    use 0x1::TransactionPublishOption;
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 =0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -47,9 +48,16 @@ module TransactionManager {
         Account::txn_prologue<TokenType>(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
         assert(TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time), ErrorCode::PROLOGUE_TRANSACTION_EXPIRED());
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
+            assert(
+                TransactionPublishOption::is_module_allowed(account),
+                ErrorCode::PROLOGUE_MODULE_NOT_ALLOWED()
+            );
             PackageTxnManager::package_txn_prologue(account, txn_sender, txn_package_address, txn_script_or_package_hash);
         }else if(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){
-            //TODO verify script hash.
+            assert(
+                TransactionPublishOption::is_script_allowed(account, &txn_script_or_package_hash),
+                ErrorCode::PROLOGUE_SCRIPT_NOT_ALLOWED()
+            );
         };
     }
 

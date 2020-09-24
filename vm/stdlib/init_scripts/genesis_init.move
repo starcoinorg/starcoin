@@ -17,8 +17,11 @@ script {
    use 0x1::BlockReward;
    use 0x1::ChainId;
    use 0x1::ConsensusStrategy;
+   use 0x1::TransactionPublishOption;
 
-fun genesis_init(publishing_option: vector<u8>,
+fun genesis_init(
+                 merged_script_allow_list: vector<u8>,
+                 is_open_module: bool,
                  instruction_schedule: vector<u8>,
                  native_schedule: vector<u8>,
                  reward_delay: u64,
@@ -64,8 +67,14 @@ fun genesis_init(publishing_option: vector<u8>,
 
         Block::initialize(&genesis_account, parent_hash);
 
+        TransactionPublishOption::initialize(
+            &genesis_account,
+            merged_script_allow_list,
+            is_open_module,
+        );
+
         // init config
-        VMConfig::initialize(&genesis_account, publishing_option, instruction_schedule, native_schedule,
+        VMConfig::initialize(&genesis_account, instruction_schedule, native_schedule,
             block_gas_limit,
             global_memory_per_byte_cost,
             global_memory_per_byte_write_cost,
