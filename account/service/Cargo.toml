@@ -20,7 +20,6 @@ starcoin-account-api = { path = "../api", features = ["mock"] }
 starcoin-account-lib = { path = "../lib" }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-txpool = { path = "../../txpool" }
-starcoin-bus = { path = "../../bus" }
 starcoin-chain-notify = { path = "../../chain/chain-notify" }
 
 

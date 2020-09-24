@@ -6,12 +6,12 @@ use crate::node::{Node, NodeStartedHandle};
 use actix::prelude::*;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
-use starcoin_bus::Bus;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_node_api::message::NodeRequest;
 use starcoin_node_api::node_service::NodeAsyncService;
+use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::ServiceInfo;
 use starcoin_types::block::BlockDetail;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
@@ -125,8 +125,8 @@ impl NodeHandle {
     pub fn generate_block(&self) -> Result<BlockDetail> {
         let bus = self.start_handle.bus.clone();
         block_on(async move {
-            let receiver = bus.clone().oneshot::<NewHeadBlock>().await?;
-            bus.broadcast(GenerateBlockEvent::new(false)).await?;
+            let receiver = bus.oneshot::<NewHeadBlock>().await?;
+            bus.broadcast(GenerateBlockEvent::new(false))?;
             let new_head_block = receiver.await?;
             Ok(new_head_block.0.as_ref().clone())
         })

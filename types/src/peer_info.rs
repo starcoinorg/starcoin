@@ -7,7 +7,8 @@ use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
 use crate::block::BlockHeader;
-use crate::{block::BlockNumber, U256};
+use crate::block::BlockNumber;
+use crate::U256;
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
 use std::fmt;

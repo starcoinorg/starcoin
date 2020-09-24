@@ -32,7 +32,6 @@ logger = { path = "../../commons/logger", package = "starcoin-logger" }
 stest = { path = "../../commons/stest" }
 txpool = { path = "../../txpool", package = "starcoin-txpool" }
 starcoin-statedb = { path = "../../state/statedb" }
-bus = { path = "../../bus", package = "starcoin-bus" }
 starcoin-metrics = { path = "../../commons/metrics" }
 starcoin-open-block = { path = "../open-block" }
 starcoin-vm-types = { path = "../../vm/types" }
@@ -40,7 +39,6 @@ starcoin-network-rpc-api = { path = "../../network-rpc/api" }
 starcoin-network = { path = "../../network" }
 proptest = { version = "0.10.0", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-ethereum-types = "0.2.3"
 starcoin-account-api = { path = "../../account/api" }
 starcoin-account-lib = { path = "../../account/lib" }
 starcoin-genesis = { path = "../../core/genesis" }

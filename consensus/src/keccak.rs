@@ -9,7 +9,7 @@ use sha3::{Digest, Keccak256};
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_types::{H256, U256};
+use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
@@ -50,12 +50,10 @@ impl Consensus for KeccakConsensus {
     }
 
     /// Double keccak256 for pow hash
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<H256> {
+    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
         let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
-        let pow_hash: H256 = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice())
-            .as_slice()
-            .into();
-        Ok(pow_hash)
+        let pow_hash = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice());
+        HashValue::from_slice(pow_hash.as_slice())
     }
 
     fn time(&self) -> &dyn TimeService {

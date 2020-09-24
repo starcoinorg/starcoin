@@ -24,7 +24,6 @@ starcoin-txpool = { path = "../txpool"}
 starcoin-genesis = {path = "../core/genesis"}
 starcoin-sync-api = {path = "../sync/api"}
 starcoin-executor = {path = "../executor", package="starcoin-executor" }
-starcoin-bus = {path = "../bus"}
 starcoin-vm-types = { path = "../vm/types" }
 starcoin-node = { path = "../node" }
 traits = { path = "../core/traits", package = "starcoin-traits" }
