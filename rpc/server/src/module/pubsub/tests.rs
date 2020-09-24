@@ -96,8 +96,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
-    let request =
-        r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events", {}], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io
         .handle_request(request, metadata.clone())
@@ -107,8 +106,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     assert_eq!(resp, Some(response.to_owned()));
 
     // Subscribe error
-    let request =
-        r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: events","data":"\"Expected a filter object.\""},"id":1}"#;
 
     let resp = io
@@ -161,13 +159,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Fail if params are provided
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions", {}], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: newPendingTransactions","data":"\"Expected no parameters.\""},"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
 
     // Subscribe
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
@@ -223,7 +221,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newMintBlock"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newMintBlock"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));

@@ -89,16 +89,6 @@ KeyRotationCapabilityResource:
   STRUCT:
     - account_address:
         TYPENAME: AccountAddress
-Kind:
-  ENUM:
-    0:
-      newHeads: UNIT
-    1:
-      events: UNIT
-    2:
-      newPendingTransactions: UNIT
-    3:
-      newMintBlock: UNIT
 Module:
   STRUCT:
     - code: BYTES

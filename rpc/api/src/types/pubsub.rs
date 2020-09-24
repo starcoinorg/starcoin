@@ -19,6 +19,7 @@ use std::convert::{TryFrom, TryInto};
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
+#[serde(tag = "type_name")]
 pub enum Kind {
     /// New block subscription.
     NewHeads,
@@ -90,7 +91,6 @@ impl<'a> Deserialize<'a> for Params {
 /// Filter
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Eq, Hash)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
 pub struct EventFilter {
     /// From Block
     #[serde(default)]
