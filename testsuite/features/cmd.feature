@@ -60,7 +60,6 @@ Feature: cmd integration test
  #dev
   Scenario Outline: [cmd] dev test
     Then cmd: "account unlock -d 30000 0000000000000000000000000a550c18"
-    Then cmd: "dev upgrade_stdlib --blocking"
     Then stop
 
     Examples:
