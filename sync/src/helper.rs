@@ -3,7 +3,6 @@ use crypto::hash::HashValue;
 use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use network_api::NetworkService;
-use rand::prelude::IteratorRandom;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_network_rpc_api::{
@@ -11,15 +10,17 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
-use std::collections::HashSet;
-use std::hash::Hash;
-use types::{
+use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
     transaction::TransactionInfo,
 };
+use std::collections::HashSet;
+use std::hash::Hash;
 
 const HEAD_CT: usize = 10;
+//TODO find a suitable value and strategy.
+#[allow(dead_code)]
 const STABLELIZE_BLCOK_NUM: usize = 7;
 
 trait RpcVerify<C: Clone> {
@@ -104,7 +105,7 @@ pub async fn get_txns(
     peer_id: PeerId,
     req: GetTxns,
 ) -> Result<TransactionsData> {
-    let data = client.get_txns(peer_id, req.clone()).await?;
+    let data = client.get_txns_from_pool(peer_id, req.clone()).await?;
     if req.ids.is_some() {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
         let verified_txns = verify_condition
@@ -147,7 +148,7 @@ pub async fn get_headers_with_peer(
 ) -> Result<Vec<BlockHeader>> {
     let mut verify_condition: RpcEntryVerify<BlockNumber> =
         (&req.clone().into_numbers(number)).into();
-    let data = client.get_headers_with_peer(peer_id, req).await?;
+    let data = client.get_headers(peer_id, req).await?;
     let verified_headers =
         verify_condition.filter(data, |header| -> BlockNumber { header.number() });
     Ok(verified_headers)
@@ -162,18 +163,12 @@ pub async fn get_headers<N>(
 where
     N: NetworkService + 'static,
 {
-    let peers = network.best_peer_set().await?;
-
-    // random select a peer has enough blocks to get from.
-    let random_peer = peers
-        .iter()
-        .filter(|peer| {
-            peer.latest_header.number >= number + req.max_size as u64 + STABLELIZE_BLCOK_NUM as u64
-        })
-        .choose(&mut rand::thread_rng())
-        .map(|p| p.peer_id.clone());
-    // or else, backward to use best peer.
-    let selected_peer = random_peer.or_else(|| peers.first().map(|p| p.peer_id.clone()));
+    let least_height = number;
+    let selected_peer = network
+        .peer_selector()
+        .await?
+        .filter_by_block_number(least_height)
+        .random_peer_id();
 
     if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
@@ -196,7 +191,7 @@ where
     if let Some(peer_info) = network.best_peer().await? {
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data = client
-            .get_header_by_hash(peer_info.get_peer_id(), hashes)
+            .get_headers_by_hash(peer_info.get_peer_id(), hashes)
             .await?;
         let verified_headers = verify_condition.filter(data, |header| -> HashValue { header.id() });
         Ok(verified_headers)
@@ -205,7 +200,7 @@ where
     }
 }
 
-pub async fn get_body_by_hash<N>(
+pub async fn get_bodies_by_hash<N>(
     client: &NetworkRpcClient,
     network: &N,
     hashes: Vec<HashValue>,
@@ -214,20 +209,17 @@ pub async fn get_body_by_hash<N>(
 where
     N: NetworkService + 'static,
 {
-    let peers = network.best_peer_set().await?;
-    // random select a peer who has enough block
-    let random_peer = peers
-        .iter()
-        .filter(|peer| peer.latest_header.number >= max_height + STABLELIZE_BLCOK_NUM as u64)
-        .choose(&mut rand::thread_rng());
-    // or else fall back to use best peer
-    let selected_peer = random_peer.or_else(|| peers.first());
+    let least_height = max_height;
+    let selected_peer = network
+        .peer_selector()
+        .await?
+        .filter_by_block_number(least_height)
+        .random_peer_id();
 
-    if let Some(peer_info) = selected_peer {
-        let peer_id = peer_info.get_peer_id();
+    if let Some(peer_id) = selected_peer {
         debug!("rpc select peer {}", &peer_id);
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-        let data = client.get_body_by_hash(peer_id.clone(), hashes).await?;
+        let data = client.get_bodies_by_hash(peer_id.clone(), hashes).await?;
         let verified_bodies = verify_condition.filter(data, |body| -> HashValue { body.id() });
         Ok((verified_bodies, peer_id))
     } else {
@@ -235,13 +227,13 @@ where
     }
 }
 
-pub async fn get_info_by_hash(
+pub async fn get_block_infos(
     client: &NetworkRpcClient,
     peer_id: PeerId,
     hashes: Vec<HashValue>,
 ) -> Result<Vec<BlockInfo>> {
     let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
-    let data = client.get_info_by_hash(peer_id, hashes).await?;
+    let data = client.get_block_infos(peer_id, hashes).await?;
     let verified_infos = verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
     Ok(verified_infos)
 }

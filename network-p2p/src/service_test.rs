@@ -15,8 +15,10 @@ mod tests {
 
     const PROTOCOL_NAME: &[u8] = b"/starcoin/notify/1";
 
+    //FIXME
     #[stest::test(timeout = 5)]
     #[allow(clippy::string_lit_as_bytes)]
+    #[ignore]
     fn test_notify() {
         let protocol = ProtocolId::from(b"stargate".as_ref());
         let config1 = generate_config(vec![]);

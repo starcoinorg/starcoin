@@ -7,8 +7,8 @@ use network_api::NetworkService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::peer_info::PeerId;
 use txpool::TxPoolService;
-use types::peer_info::PeerId;
 
 #[derive(Clone)]
 pub struct TxnSyncActor<N>
@@ -101,7 +101,7 @@ where
 {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let best_peers = self.network_service.best_peer_set().await?;
+        let best_peers = self.network_service.peer_selector().await?.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");
             return Ok(());

@@ -2,7 +2,7 @@ use crate::block_connector::{BlockConnector, PivotBlock};
 /// Sync message which outbound
 use crate::block_sync::BlockSyncTaskActor;
 use crate::helper::{
-    get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer, get_info_by_hash,
+    get_block_infos, get_headers_by_number, get_headers_msg_for_ancestor, get_headers_with_peer,
 };
 use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
@@ -24,18 +24,18 @@ use starcoin_network_rpc_api::{
 use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_sync_api::SyncNotify;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
-use traits::ChainAsyncService;
-use txpool::TxPoolService;
-use types::{
+use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     startup_info::StartupInfo,
     system_events::{MinedBlock, SyncDone, SystemStarted},
     U256,
 };
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
+use traits::ChainAsyncService;
+use txpool::TxPoolService;
 
 #[derive(Debug, Message)]
 #[rtype(result = "Result<()>")]
@@ -366,7 +366,10 @@ where
                 let ancestor = ancestor_header.number();
 
                 // 2. pivot
-                let (latest_block_id, latest_number) = best_peer.get_hash_number();
+                let latest_header = best_peer.get_latest_header();
+                let latest_block_id = latest_header.id();
+                let latest_number = latest_header.number();
+
                 let min_behind = if main_network {
                     MAIN_MIN_BLOCKS_BEHIND
                 } else {
@@ -593,7 +596,7 @@ where
     ) -> Result<Option<BlockHeader>> {
         let mut ancestor_header = None;
         let peer_info = network
-            .get_peer(&peer_id.clone())
+            .get_peer(peer_id.clone())
             .await?
             .ok_or_else(|| format_err!("get peer {:?} not exist.", peer_id))?;
 
@@ -693,7 +696,7 @@ where
             let number = latest_block.1 - step as u64;
             if pivot.number() == number {
                 let mut infos =
-                    get_info_by_hash(&rpc_client, peer_id, vec![pivot.parent_hash()]).await?;
+                    get_block_infos(&rpc_client, peer_id, vec![pivot.parent_hash()]).await?;
                 if let Some(block_info) = infos.pop() {
                     if Self::verify_pivot(&pivot, &block_info) {
                         Ok((pivot, block_info))

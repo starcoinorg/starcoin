@@ -23,15 +23,15 @@ use starcoin_accumulator::AccumulatorNode;
 use starcoin_network_rpc_api::gen_client::NetworkRpcClient;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
-use std::collections::{HashMap, VecDeque};
-use std::convert::TryFrom;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use types::{
+use starcoin_types::{
     account_state::AccountState,
     peer_info::{PeerId, PeerInfo},
     transaction::TransactionInfo,
 };
+use std::collections::{HashMap, VecDeque};
+use std::convert::TryFrom;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 #[cfg(test)]
 mod test_state_sync;

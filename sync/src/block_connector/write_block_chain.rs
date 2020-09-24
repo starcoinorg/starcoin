@@ -10,14 +10,14 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_state_api::ChainStateReader;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
-use std::sync::Arc;
-use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
-use types::{
+use starcoin_types::{
     block::{Block, BlockDetail, BlockHeader},
     peer_info::PeerId,
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
+use std::sync::Arc;
+use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 
 pub struct WriteBlockChainService<P>
 where
