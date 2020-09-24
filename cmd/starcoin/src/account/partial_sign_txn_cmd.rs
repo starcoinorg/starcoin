@@ -87,7 +87,7 @@ impl CommandAction for PartialSignTxnCommand {
             let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
             // use txn id's short str and signer as the file name
             let file_name = txn.raw_txn().crypto_hash().short_str();
-            output_dir.push(file_name);
+            output_dir.push(file_name.as_str());
             output_dir.set_extension("multisig-txn.partial");
             output_dir
         };
