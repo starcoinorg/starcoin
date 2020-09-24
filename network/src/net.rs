@@ -43,9 +43,7 @@ impl SNetworkService {
 
         async_std::task::spawn(worker);
 
-        let inner = NetworkInner {
-            service: service.clone(),
-        };
+        let inner = NetworkInner::new(service.clone());
 
         Self {
             inner,
@@ -132,6 +130,12 @@ impl SNetworkService {
         self.service.broadcast_message(protocol_name, message).await;
     }
 
+    pub fn add_peer_for_test(&mut self, peer: String) -> Result<()> {
+        self.service
+            .add_reserved_peer(peer)
+            .map_err(|e| format_err!("{:?}", e))
+    }
+
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
         self.service.connected_peers().await
     }
@@ -154,7 +158,10 @@ impl SNetworkService {
 }
 
 impl NetworkInner {
-    async fn handle_network_receive(
+    pub fn new(service: Arc<NetworkService>) -> Self {
+        Self { service }
+    }
+    pub async fn handle_network_receive(
         &self,
         event: Event,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,

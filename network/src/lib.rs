@@ -9,6 +9,7 @@ extern crate prometheus;
 mod helper;
 mod message_processor;
 mod net;
+#[cfg(test)]
 mod net_test;
 pub mod network;
 mod network_metrics;
@@ -22,6 +23,9 @@ pub use net::{build_network_service, SNetworkService};
 pub use network::NetworkAsyncService;
 use network_p2p::PeerId;
 use std::borrow::Cow;
+
+#[cfg(test)]
+pub use net::NetworkInner;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NetworkMessage {
