@@ -636,6 +636,8 @@ pub struct GenesisConfig {
     pub pre_mine_amount: u128,
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
+    /// Script allow list and Module publish option
+    pub publishing_option: VMPublishingOption,
     /// uncle rate target
     pub uncle_rate_target: u64,
     /// how many block as a epoch
@@ -759,10 +761,10 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         nonce: 0,
         pre_mine_amount: PRE_MINT_AMOUNT,
         vm_config: VMConfig {
-            publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
+        publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -808,11 +810,11 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         nonce: 0,
         pre_mine_amount: PRE_MINT_AMOUNT,
         vm_config: VMConfig {
-            publishing_option: VMPublishingOption::Open,
             // ToDo: remove gas_schedule
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
+        publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -861,10 +863,10 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         nonce: 0,
         pre_mine_amount: PRE_MINT_AMOUNT,
         vm_config: VMConfig {
-            publishing_option: VMPublishingOption::Open,
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
         },
+        publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 10,
         init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -917,10 +919,10 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     nonce: 0,
     pre_mine_amount: PRE_MINT_AMOUNT,
     vm_config: VMConfig {
-        publishing_option: VMPublishingOption::Open,
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         block_gas_limit: BLOCK_GAS_LIMIT,
     },
+    publishing_option: VMPublishingOption::Open,
     uncle_rate_target: UNCLE_RATE_TARGET,
     epoch_block_count: BLOCK_DIFF_WINDOW * 10,
     init_block_time_target: INIT_BLOCK_TIME_TARGET,
@@ -950,7 +952,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
-    stdlib_version: StdlibVersion::new(0, 2),
+    stdlib_version: StdlibVersion::new(0, 3),
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -965,10 +967,10 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     nonce: 0,
     pre_mine_amount: 0,
     vm_config: VMConfig {
-        publishing_option: VMPublishingOption::Open,
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         block_gas_limit: BLOCK_GAS_LIMIT,
     },
+    publishing_option: VMPublishingOption::Open,
     uncle_rate_target: UNCLE_RATE_TARGET,
     epoch_block_count: BLOCK_DIFF_WINDOW * 1000,
     init_block_time_target: INIT_BLOCK_TIME_TARGET,

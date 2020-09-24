@@ -129,6 +129,9 @@ pub enum StdlibScript {
     PeerToPeer,
     PeerToPeerWithMetadata,
     PublishSharedEd2551PublicKey,
+    AddToScriptAllowList,
+    SetOpenModule,
+    SetOpenScript,
     // ...add new scripts here
 }
 
@@ -144,6 +147,9 @@ impl StdlibScript {
             PeerToPeer,
             PeerToPeerWithMetadata,
             PublishSharedEd2551PublicKey,
+            AddToScriptAllowList,
+            SetOpenModule,
+            SetOpenScript,
             // ...add new scripts here
         ]
     }
@@ -188,6 +194,9 @@ impl fmt::Display for StdlibScript {
                 PeerToPeer => "peer_to_peer",
                 PeerToPeerWithMetadata => "peer_to_peer_with_metadata",
                 PublishSharedEd2551PublicKey => "publish_shared_ed25519_public_key",
+                AddToScriptAllowList => "add_to_script_allow_list",
+                SetOpenModule => "set_open_module",
+                SetOpenScript => "set_open_script",
             }
         )
     }

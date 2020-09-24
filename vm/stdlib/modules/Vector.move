@@ -119,6 +119,40 @@ module Vector {
         pop_back(v)
     }
 
+    public fun split<Element: copyable>(v: &vector<Element>, sub_len: u64): vector<vector<Element>> {
+        let result = empty<vector<Element>>();
+        let len = length(v) / sub_len;
+
+        let rem = 0;
+        if (len * sub_len < length(v)) {
+            rem = length(v) - len * sub_len;
+        };
+
+        let i = 0;
+        while (i < len) {
+            let sub = empty<Element>();
+            let j = 0;
+            while (j < sub_len) {
+                let index = sub_len * i + j;
+                push_back(&mut sub, *borrow(v, index));
+                j = j + 1;
+            };
+            push_back<vector<Element>>(&mut result, sub);
+            i = i + 1;
+        };
+
+        if (rem > 0) {
+            let sub = empty<Element>();
+            let index = length(v) - rem;
+            while (index < length(v)) {
+                push_back(&mut sub, *borrow(v, index));
+                index = index + 1;
+            };
+            push_back<vector<Element>>(&mut result, sub);
+        };
+        result
+    }
+
     // ------------------------------------------------------------------------
     // Specification
     // ------------------------------------------------------------------------

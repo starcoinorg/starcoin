@@ -74,9 +74,16 @@
     <a href="Account.md#0x1_Account_txn_prologue">Account::txn_prologue</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
     <b>assert</b>(<a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">ErrorCode::PROLOGUE_TRANSACTION_EXPIRED</a>());
     <b>if</b> (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
+        <b>assert</b>(
+            <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">TransactionPublishOption::is_module_allowed</a>(account),
+            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">ErrorCode::PROLOGUE_MODULE_NOT_ALLOWED</a>()
+        );
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(account, txn_sender, txn_package_address, txn_script_or_package_hash);
     }<b>else</b> <b>if</b>(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){
-        //TODO verify <b>script</b> hash.
+        <b>assert</b>(
+            <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">TransactionPublishOption::is_script_allowed</a>(account, &txn_script_or_package_hash),
+            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">ErrorCode::PROLOGUE_SCRIPT_NOT_ALLOWED</a>()
+        );
     };
 }
 </code></pre>

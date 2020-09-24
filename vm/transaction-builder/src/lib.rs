@@ -303,8 +303,20 @@ pub fn build_stdlib_package(
         let association_auth_key =
             AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
 
-        let publish_option_bytes = scs::to_bytes(&genesis_config.vm_config.publishing_option)
-            .expect("Cannot serialize publishing option");
+        // for test
+        // let initial_script_allow_list =
+        //     VersionedStdlibScript::new(net.stdlib_version()).whitelist();
+        let initial_script_allow_list = genesis_config.publishing_option.allowed_script();
+
+        let mut merged_script_allow_list: Vec<u8> = Vec::new();
+        for i in 0..initial_script_allow_list.len() {
+            let tmp = &mut initial_script_allow_list
+                .get(i)
+                .expect("Cannot get script allow list member")
+                .to_vec();
+            merged_script_allow_list.append(tmp);
+        }
+
         let instruction_schedule =
             scs::to_bytes(&genesis_config.vm_config.gas_schedule.instruction_table)
                 .expect("Cannot serialize gas schedule");
@@ -315,7 +327,8 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
-                TransactionArgument::U8Vector(publish_option_bytes),
+                TransactionArgument::U8Vector(merged_script_allow_list),
+                TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
                 TransactionArgument::U8Vector(instruction_schedule),
                 TransactionArgument::U8Vector(native_schedule),
                 TransactionArgument::U64(genesis_config.reward_delay),
