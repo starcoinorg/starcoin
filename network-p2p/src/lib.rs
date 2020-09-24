@@ -7,7 +7,7 @@ extern crate prometheus;
 #[macro_use]
 extern crate starcoin_metrics;
 
-pub use crate::protocol::event::Event;
+pub use crate::protocol::event::{DhtEvent, Event};
 pub use crate::protocol::generic_proto::GenericProtoOut;
 pub use crate::service::{NetworkService, NetworkWorker};
 pub use config::{NetworkConfiguration, NodeKeyConfig, Params, ProtocolId, Secret};

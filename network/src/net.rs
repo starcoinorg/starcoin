@@ -43,9 +43,7 @@ impl SNetworkService {
 
         async_std::task::spawn(worker);
 
-        let inner = NetworkInner {
-            service: service.clone(),
-        };
+        let inner = NetworkInner::new(service.clone());
 
         Self {
             inner,
@@ -160,7 +158,10 @@ impl SNetworkService {
 }
 
 impl NetworkInner {
-    async fn handle_network_receive(
+    pub fn new(service: Arc<NetworkService>) -> Self {
+        Self { service }
+    }
+    pub async fn handle_network_receive(
         &self,
         event: Event,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
