@@ -6,6 +6,7 @@ use chain::BlockChain;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
+use futures::task::Spawn;
 use logger::prelude::*;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_account_service::AccountService;
@@ -187,7 +188,6 @@ impl Inner {
         } else {
             self.chain.update_chain_head(block)?;
         }
-        // TODO:prune uncles when switch epoch
         Ok(())
     }
 
@@ -212,9 +212,9 @@ impl Inner {
     fn uncles_prune(&mut self) {
         if !self.uncles.is_empty() {
             if let Ok(epoch) = self.chain.epoch_info() {
-                if epoch.end_number()
-                    == (self.chain.current_header().number() + MAX_UNCLE_COUNT_PER_BLOCK as u64)
-                {
+                // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
+                // 的倒数第二块处理时清理uncles
+                if epoch.end_number() == (self.chain.current_header().number() + 2) {
                     self.uncles.clear();
                 }
             }
