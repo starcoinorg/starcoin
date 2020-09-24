@@ -1,14 +1,11 @@
 use crate::download::DownloadService;
-use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
-use bus::{BusActor, Subscription};
 use logger::prelude::*;
 use network::PeerEvent;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
-use starcoin_types::{peer_info::PeerId, startup_info::StartupInfo};
 
 //TODO should remove this Service?
 pub struct SyncService {
@@ -42,7 +39,7 @@ impl ActorService for SyncService {
 }
 
 impl EventHandler<Self, PeerEvent> for SyncService {
-    fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<SyncService>) {
+    fn handle_event(&mut self, msg: PeerEvent, _ctx: &mut ServiceContext<SyncService>) {
         if let Err(e) = match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("connect new peer:{:?}", open_peer_id);
@@ -61,7 +58,7 @@ impl EventHandler<Self, PeerEvent> for SyncService {
 }
 
 impl EventHandler<Self, PeerNewBlock> for SyncService {
-    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<SyncService>) {
+    fn handle_event(&mut self, msg: PeerNewBlock, _ctx: &mut ServiceContext<SyncService>) {
         let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
         if let Err(e) = self.download_service.notify(new_block) {
             error!("Notify to download error: {:?}", e);

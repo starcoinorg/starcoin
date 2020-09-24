@@ -6,12 +6,10 @@ use crate::message_processor::{MessageFuture, MessageProcessor};
 use crate::net::{build_network_service, SNetworkService};
 use crate::network_metrics::NetworkMetrics;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
-use actix::Addr;
 use anyhow::{format_err, Result};
 use async_trait::async_trait;
 use bitflags::_core::ops::Deref;
 use bitflags::_core::sync::atomic::Ordering;
-use bus::{Broadcast, Bus, BusActor};
 use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::future::BoxFuture;
@@ -30,6 +28,7 @@ use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_network_rpc_api::gen_client::get_rpc_info;
 use starcoin_network_rpc_api::CHAIN_PROTOCOL_NAME;
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -72,7 +71,7 @@ impl Deref for NetworkAsyncService {
 
 struct Inner {
     network_service: SNetworkService,
-    bus: Addr<BusActor>,
+    bus: ServiceRef<BusService>,
     raw_message_processor: MessageProcessor<u128, Vec<u8>>,
     peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
     connected_tx: mpsc::Sender<PeerEvent>,
@@ -259,7 +258,7 @@ impl NetworkAsyncService {
     pub fn start(
         node_config: Arc<NodeConfig>,
         genesis_hash: HashValue,
-        bus: Addr<BusActor>,
+        bus: ServiceRef<BusService>,
         storage: Arc<Storage>,
         network_rpc_service: ServiceRef<NetworkRpcService>,
     ) -> Result<NetworkAsyncService> {
@@ -428,10 +427,7 @@ impl Inner {
                         }
                     }
                 }
-                self.bus
-                    .clone()
-                    .broadcast(PeerTransactions::new(txns))
-                    .await?;
+                self.bus.broadcast(PeerTransactions::new(txns))?;
             }
             PeerMessage::CompactBlock(compact_block, total_diff) => {
                 //TODO: Check total difficulty
@@ -452,14 +448,10 @@ impl Inner {
                         peer_info.peer_info.total_difficulty = total_diff;
                     }
                 }
-                self.bus
-                    .send(Broadcast {
-                        msg: PeerCmpctBlockEvent {
-                            peer_id: peer_id.into(),
-                            compact_block,
-                        },
-                    })
-                    .await?;
+                self.bus.broadcast(PeerCmpctBlockEvent {
+                    peer_id: peer_id.into(),
+                    compact_block,
+                })?;
             }
 
             PeerMessage::RawRPCRequest(id, rpc_path, request) => {
@@ -521,7 +513,7 @@ impl Inner {
                 inner.on_peer_disconnected(peer_id.into()).await;
             }
         }
-        inner.bus.send(Broadcast { msg: event }).await?;
+        inner.bus.broadcast(event)?;
         Ok(())
     }
 

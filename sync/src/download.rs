@@ -8,9 +8,7 @@ use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
 use crate::sync_task::{SyncTask, SyncTaskType};
 use crate::verified_rpc_client::VerifiedRpcClient;
-use actix::{Addr, Arbiter};
 use anyhow::{format_err, Result};
-use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
 use futures_timer::Delay;
@@ -21,6 +19,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders, RemoteChainStateReader,
 };
+use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
@@ -52,7 +51,6 @@ pub struct DownloadService {
     self_peer_id: PeerId,
     rpc_client: NetworkRpcClient,
     network: Arc<dyn PeerProvider>,
-    bus: Addr<BusActor>,
     sync_duration: Duration,
     ready: Arc<AtomicBool>,
     syncing: Arc<AtomicBool>,
@@ -68,7 +66,7 @@ impl DownloadService {
         peer_id: PeerId,
         chain_reader: ServiceRef<ChainReaderService>,
         network: NetworkAsyncService,
-        bus: Addr<BusActor>,
+        bus: ServiceRef<BusService>,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
         startup_info: StartupInfo,
@@ -80,25 +78,22 @@ impl DownloadService {
                 startup_info,
                 storage.clone(),
                 txpool,
-                bus.clone(),
+                bus,
                 None,
             )),
             self_peer_id: peer_id,
             rpc_client: NetworkRpcClient::new(network.clone()),
             network: Arc::new(network),
-            bus,
             sync_duration: Duration::from_secs(5),
             syncing: Arc::new(AtomicBool::new(false)),
             ready: Arc::new(AtomicBool::new(false)),
             storage,
             sync_task: SyncTask::new_empty(),
-            need_sync_state: Arc::new(AtomicBool::new(
-                if node_config.clone().network.disable_seed {
-                    false
-                } else {
-                    node_config.clone().sync.is_state_sync()
-                },
-            )),
+            need_sync_state: Arc::new(AtomicBool::new(if node_config.network.disable_seed {
+                false
+            } else {
+                node_config.sync.is_state_sync()
+            })),
             node_config,
         }
     }
@@ -108,7 +103,7 @@ impl ServiceFactory<Self> for DownloadService {
     fn create(ctx: &mut ServiceContext<DownloadService>) -> Result<DownloadService> {
         let chain_reader = ctx.service_ref::<ChainReaderService>()?.clone();
         let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let bus = ctx.get_shared::<Addr<BusActor>>()?;
+        let bus = ctx.bus_ref().clone();
         let txpool = ctx.get_shared::<TxPoolService>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
@@ -145,14 +140,10 @@ impl ActorService for DownloadService {
 }
 
 impl EventHandler<Self, SyncTaskType> for DownloadService {
-    fn handle_event(
-        &mut self,
-        task_type: SyncTaskType,
-        _ctx: &mut ServiceContext<DownloadService>,
-    ) {
+    fn handle_event(&mut self, task_type: SyncTaskType, ctx: &mut ServiceContext<DownloadService>) {
         self.sync_task.drop_task(&task_type);
         if self.sync_task.is_finish() {
-            self.bus.do_send(Broadcast { msg: SyncDone });
+            ctx.broadcast(SyncDone);
             self.need_sync_state.store(false, Ordering::Relaxed);
             self.syncing.store(false, Ordering::Relaxed);
             self.downloader.set_pivot(None);
@@ -207,26 +198,40 @@ impl EventHandler<Self, SyncEvent> for DownloadService {
 
                 let sync_task = self.sync_task.clone();
                 if self.need_sync_state.load(Ordering::Relaxed) {
-                    Self::sync_state_and_block(
-                        self.self_peer_id.clone(),
-                        self.node_config.clone().base.net().is_main(),
-                        self.downloader.clone(),
-                        self.rpc_client.clone(),
-                        self.network.clone(),
-                        self.storage.clone(),
-                        sync_task,
-                        self.syncing.clone(),
-                        ctx.self_ref(),
-                    );
+                    let self_peer_id = self.self_peer_id.clone();
+                    let is_main = self.node_config.clone().base.net().is_main();
+                    let downloader = self.downloader.clone();
+                    let rpc_client = self.rpc_client.clone();
+                    let network = self.network.clone();
+                    let storage = self.storage.clone();
+                    let syncing = self.syncing.clone();
+                    let self_ref = ctx.self_ref();
+                    ctx.spawn(async move {
+                        Self::sync_state_and_block(
+                            self_peer_id,
+                            is_main,
+                            downloader,
+                            rpc_client,
+                            network,
+                            storage,
+                            sync_task,
+                            syncing,
+                            self_ref,
+                        )
+                        .await;
+                    });
                 } else {
-                    Self::sync_block_from_best_peer(
-                        self.downloader.clone(),
-                        self.rpc_client.clone(),
-                        self.network.clone(),
-                        sync_task,
-                        self.syncing.clone(),
-                        ctx.self_ref(),
-                    );
+                    let downloader = self.downloader.clone();
+                    let rpc_client = self.rpc_client.clone();
+                    let network = self.network.clone();
+                    let syncing = self.syncing.clone();
+                    let self_ref = ctx.self_ref();
+                    ctx.spawn(async move {
+                        Self::sync_block_from_best_peer(
+                            downloader, rpc_client, network, sync_task, syncing, self_ref,
+                        )
+                        .await;
+                    });
                 }
             }
         }
@@ -249,7 +254,7 @@ impl EventHandler<Self, SyncNotify> for DownloadService {
 }
 
 impl DownloadService {
-    fn sync_state_and_block(
+    async fn sync_state_and_block(
         self_peer_id: PeerId,
         main_network: bool,
         downloader: Arc<Downloader>,
@@ -260,55 +265,46 @@ impl DownloadService {
         syncing: Arc<AtomicBool>,
         download_address: ServiceRef<DownloadService>,
     ) {
-        Arbiter::spawn(async move {
-            SYNC_METRICS
-                .sync_count
-                .with_label_values(&[LABEL_STATE])
-                .inc();
-            if !syncing.load(Ordering::Relaxed) {
-                syncing.store(true, Ordering::Relaxed);
-                match Self::sync_state_and_block_inner(
-                    self_peer_id.clone(),
-                    main_network,
-                    downloader.clone(),
-                    rpc_client.clone(),
-                    network.clone(),
-                    storage.clone(),
-                    sync_task.clone(),
-                    download_address.clone(),
-                )
-                .await
-                {
-                    Err(e) => {
-                        error!("state sync error : {:?}", e);
-                        syncing.store(false, Ordering::Relaxed);
-                        Self::sync_state_and_block(
-                            self_peer_id.clone(),
-                            main_network,
-                            downloader.clone(),
-                            rpc_client,
-                            network.clone(),
-                            storage.clone(),
-                            sync_task,
-                            syncing.clone(),
-                            download_address,
-                        );
+        SYNC_METRICS
+            .sync_count
+            .with_label_values(&[LABEL_STATE])
+            .inc();
+        if !syncing.load(Ordering::Relaxed) {
+            syncing.store(true, Ordering::Relaxed);
+            match Self::sync_state_and_block_inner(
+                self_peer_id.clone(),
+                main_network,
+                downloader.clone(),
+                rpc_client.clone(),
+                network.clone(),
+                storage.clone(),
+                sync_task.clone(),
+                download_address.clone(),
+            )
+            .await
+            {
+                Err(e) => {
+                    error!("state sync error : {:?}, delay and retry.", e);
+                    syncing.store(false, Ordering::Relaxed);
+                    Delay::new(Duration::from_millis(1000)).await;
+                    if let Err(e) = download_address.notify(SyncEvent::DoSync) {
+                        error!("Send DoSync event error: {:?}", e);
                     }
-                    Ok(flag) => {
-                        SYNC_METRICS
-                            .sync_done_count
-                            .with_label_values(&[LABEL_STATE])
-                            .inc();
-                        if flag {
-                            if let Err(e) = download_address.notify(SyncTaskType::STATE) {
-                                error!("Notify error: {:?}", e)
-                            }
-                            syncing.store(false, Ordering::Relaxed);
+                }
+                Ok(flag) => {
+                    SYNC_METRICS
+                        .sync_done_count
+                        .with_label_values(&[LABEL_STATE])
+                        .inc();
+                    if flag {
+                        if let Err(e) = download_address.notify(SyncTaskType::STATE) {
+                            error!("Notify error: {:?}", e)
                         }
+                        syncing.store(false, Ordering::Relaxed);
                     }
                 }
             }
-        });
+        }
     }
 
     async fn sync_state_and_block_inner(
@@ -430,7 +426,7 @@ impl DownloadService {
         Ok(false)
     }
 
-    fn sync_block_from_best_peer(
+    async fn sync_block_from_best_peer(
         downloader: Arc<Downloader>,
         rpc_client: NetworkRpcClient,
         network: Arc<dyn PeerProvider>,
@@ -440,31 +436,29 @@ impl DownloadService {
     ) {
         if !syncing.load(Ordering::Relaxed) {
             syncing.store(true, Ordering::Relaxed);
-            Arbiter::spawn(async move {
-                SYNC_METRICS
-                    .sync_count
-                    .with_label_values(&[LABEL_BLOCK])
-                    .inc();
-                match Self::sync_block_from_best_peer_inner(
-                    downloader,
-                    rpc_client,
-                    network,
-                    sync_task,
-                    download_address,
-                )
-                .await
-                {
-                    Err(e) => {
-                        error!("sync block from best peer failed : {:?}", e);
+            SYNC_METRICS
+                .sync_count
+                .with_label_values(&[LABEL_BLOCK])
+                .inc();
+            match Self::sync_block_from_best_peer_inner(
+                downloader,
+                rpc_client,
+                network,
+                sync_task,
+                download_address,
+            )
+            .await
+            {
+                Err(e) => {
+                    error!("sync block from best peer failed : {:?}", e);
+                    syncing.store(false, Ordering::Relaxed);
+                }
+                Ok(flag) => {
+                    if flag {
                         syncing.store(false, Ordering::Relaxed);
                     }
-                    Ok(flag) => {
-                        if flag {
-                            syncing.store(false, Ordering::Relaxed);
-                        }
-                    }
                 }
-            });
+            }
         }
     }
 
@@ -556,7 +550,7 @@ impl Downloader {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
-        bus: Addr<BusActor>,
+        bus: ServiceRef<BusService>,
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Self {
         Downloader {

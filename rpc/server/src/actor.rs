@@ -11,11 +11,11 @@ use actix::prelude::*;
 use anyhow::Result;
 use jsonrpc_core::{MetaIoHandler, RemoteProcedure};
 use starcoin_account_api::AccountAsyncService;
-use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
+use starcoin_miner::MinerService;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::account::AccountApi;
 use starcoin_rpc_api::chain::ChainApi;
@@ -25,6 +25,7 @@ use starcoin_rpc_api::{
     dev::DevApi, node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
 use starcoin_rpc_middleware::MetricMiddleware;
+use starcoin_service_registry::ServiceRef;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -39,13 +40,13 @@ pub struct RpcActor {
 impl RpcActor {
     pub fn launch<CS, TS, AS, SS>(
         config: Arc<NodeConfig>,
-        bus: Addr<BusActor>,
         txpool_service: TS,
         chain_service: CS,
         account_service: AS,
         state_service: SS,
         dev_playground_service: Option<PlaygroudService>,
         pubsub_service: Option<PubSubService>,
+        miner: Option<ServiceRef<MinerService>>,
         //TODO after network async service provide trait, remove Option.
         network_service: Option<NetworkAsyncService>,
         logger_handle: Option<Arc<LoggerHandle>>,
@@ -65,7 +66,7 @@ impl RpcActor {
             Some(StateRpcImpl::new(state_service.clone())),
             pubsub_service.map(PubSubImpl::new),
             logger_handle.map(|logger_handle| DebugRpcImpl::new(config_clone, logger_handle)),
-            Some(MinerRpcImpl::new(bus)),
+            miner.map(MinerRpcImpl::new),
         )?;
 
         if let Some(dev_playgroud) = dev_playground_service {
@@ -203,15 +204,14 @@ mod tests {
         let state_service = MockChainStateService::new();
         let chain_service = MockChainService::default();
         let playground_service = PlaygroudService::new(Arc::new(MockStateNodeStore::new()));
-        let bus = BusActor::launch();
         let _rpc_actor = RpcActor::launch(
             config,
-            bus,
             txpool,
             chain_service,
             account_service,
             state_service,
             Some(playground_service),
+            None,
             None,
             None,
             Some(logger_handle),

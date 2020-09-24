@@ -4,9 +4,7 @@ use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
-use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRequest,
-};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;

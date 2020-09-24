@@ -1,6 +1,5 @@
 use crate::state_sync::StateSyncTaskRef;
 use anyhow::{format_err, Result};
-use bus::BusActor;
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -25,8 +24,9 @@ mod metrics;
 mod test_write_block_chain;
 mod write_block_chain;
 
-use actix::Addr;
 use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_service_registry::bus::BusService;
+use starcoin_service_registry::ServiceRef;
 pub use write_block_chain::WriteBlockChainService;
 
 #[derive(Clone)]
@@ -148,7 +148,7 @@ impl BlockConnector {
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
-        bus: Addr<BusActor>,
+        bus: ServiceRef<BusService>,
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Self {
         let pivot: Option<PivotBlock> = None;

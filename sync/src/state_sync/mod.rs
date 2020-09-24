@@ -337,7 +337,7 @@ impl StateSyncTaskEvent {
 
 pub struct StateSyncTaskActor {
     block_sync_address: BlockSyncTaskRef,
-    download_address: ServiceRef<DownloadService>,
+    download_service: ServiceRef<DownloadService>,
     inner: Inner,
 }
 
@@ -402,6 +402,11 @@ impl Inner {
 
     fn accumulator_sync_finish(&self) -> bool {
         self.block_accumulator_sync_task.is_empty() && self.txn_info_sync_task.is_empty()
+    }
+
+    #[cfg(test)]
+    fn get_network_client(&self) -> VerifiedRpcClient {
+        self.rpc_client.clone()
     }
 
     fn exe_state_sync_task(
@@ -788,7 +793,7 @@ impl StateSyncTaskActor {
         let address = StateSyncTaskActor::create(move |_ctx| Self {
             inner,
             block_sync_address,
-            download_address,
+            download_service: download_address,
         });
         StateSyncTaskRef { address }
     }
@@ -908,7 +913,9 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                     .done_tasks
                     .load(Ordering::Relaxed)
         {
-            self.download_address.notify(SyncTaskType::STATE);
+            if let Err(e) = self.download_service.notify(SyncTaskType::STATE) {
+                error!("Notify download error: {:?}", e);
+            };
             ctx.stop();
         }
     }

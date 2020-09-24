@@ -23,7 +23,6 @@ libp2p = "0.22.0"
 
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
-bus = {path = "../bus", package="starcoin-bus"}
 tx-relay = {path="../txpool/tx-relay", package="starcoin-tx-relay"}
 network-p2p = {path = "../network-p2p", package="network-p2p"}
 logger = {path = "../commons/logger",package="starcoin-logger"}

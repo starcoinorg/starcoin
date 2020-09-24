@@ -17,7 +17,6 @@ futures = "0.3"
 futures-timer = "3.0"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-config = { path = "../config" }
-starcoin-bus = { path = "../bus" }
 starcoin-consensus = { path = "../consensus" }
 starcoin-executor = { path = "../executor" }
 starcoin-network = { path = "../network" }

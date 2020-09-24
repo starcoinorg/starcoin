@@ -409,7 +409,9 @@ impl Handler<NextTimeEvent> for BlockSyncTaskActor {
         if !finish {
             self.block_sync(ctx.address());
         } else {
-            self.download_address.notify(SyncTaskType::BLOCK);
+            if let Err(e) = self.download_address.notify(SyncTaskType::BLOCK) {
+                error!("Notify download error: {:?}", e);
+            }
             ctx.stop();
         }
     }

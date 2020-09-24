@@ -152,20 +152,16 @@ where
     where
         M: Send + Clone + Debug + 'static,
     {
-        let bus = self.bus_ref().clone();
-        let fut = wrap_future::<_, ServiceActor<S>>(async move { bus.broadcast(msg).await }).map(
-            |r, _act, _ctx| {
-                if let Err(e) = r {
-                    error!(
-                        "Broadcast {} for service {} error: {:?}",
-                        type_name::<M>(),
-                        S::service_name(),
-                        e
-                    );
-                }
-            },
-        );
-        self.ctx.wait(fut.into_future());
+        let bus = self.bus_ref();
+        if let Err(e) = bus.broadcast(msg) {
+            //TODO wait and retry?
+            error!(
+                "Broadcast {} for service {} error: {:?}",
+                type_name::<M>(),
+                S::service_name(),
+                e
+            );
+        }
     }
 
     pub fn run_interval<F>(&mut self, dur: Duration, mut f: F)

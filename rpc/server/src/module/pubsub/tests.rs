@@ -2,14 +2,12 @@ use crate::{
     metadata::Metadata,
     module::{PubSubImpl, PubSubService},
 };
-use actix::Addr;
 use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
-use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::BlockChain;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
@@ -20,6 +18,7 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_rpc_api::types::pubsub::MintBlock;
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
@@ -77,7 +76,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // now block is applied, we can emit events.
 
-    let bus = registry.get_shared::<Addr<BusActor>>().await.unwrap();
+    let bus = registry.service_ref::<BusService>().await?;
     registry
         .register::<ChainNotifyHandlerService>()
         .await
@@ -118,7 +117,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(BlockDetail::new(new_block, 0.into()));
-    bus.broadcast(NewHeadBlock(block_detail)).await?;
+    bus.broadcast(NewHeadBlock(block_detail))?;
 
     let mut receiver = receiver.compat();
 
@@ -146,7 +145,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let (txpool_service, _, config, registry) = test_helper::start_txpool().await;
-    let bus = registry.get_shared::<Addr<BusActor>>().await?;
+    let bus = registry.service_ref::<BusService>().await?;
     let service = PubSubService::new(bus, txpool_service.clone());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -208,7 +207,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let (txpool_service, .., registry) = test_helper::start_txpool().await;
-    let bus = registry.get_shared::<Addr<BusActor>>().await?;
+    let bus = registry.service_ref::<BusService>().await?;
     let service = PubSubService::new(bus.clone(), txpool_service.clone());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -229,7 +228,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let diff = U256::from(1024);
     let header_hash = HashValue::random();
     let mint_block_event = MintBlockEvent::new(header_hash, diff);
-    bus.broadcast(mint_block_event.clone()).await.unwrap();
+    bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.compat().next())
         .await?
         .transpose()

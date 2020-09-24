@@ -24,7 +24,6 @@ members = [
     "state/state-store-api",
     "state/service",
     "config",
-    "bus",
     "storage",
     "consensus",
     "testsuite",
@@ -92,8 +91,8 @@ panic = "unwind"
 debug-assertions = false
 
 [profile.release.package]
+starcoin-service-registry.debug = 1
 starcoin-chain.debug = 1
-starcoin-bus.debug = 1
 starcoin-consensus.debug = 1
 starcoin-miner.debug = 1
 starcoin-network.debug = 1

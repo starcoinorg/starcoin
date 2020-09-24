@@ -1,22 +1,25 @@
 use crate::block_connector::WriteBlockChainService;
-use bus::BusActor;
+
 use chain::BlockChain;
 use config::NodeConfig;
 use consensus::Consensus;
 use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis as StarcoinGenesis;
+use starcoin_service_registry::bus::BusService;
+use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_txpool_mock_service::MockTxPoolService;
 use std::sync::Arc;
 use traits::{ChainReader, WriteableChainService};
 
-fn create_writeable_block_chain() -> (WriteBlockChainService<MockTxPoolService>, Arc<NodeConfig>) {
+async fn create_writeable_block_chain(
+) -> (WriteBlockChainService<MockTxPoolService>, Arc<NodeConfig>) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
     let (storage, startup_info, _) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
-
-    let bus = BusActor::launch();
+    let registry = RegistryService::launch();
+    let bus = registry.service_ref::<BusService>().await.unwrap();
     let txpool_service = MockTxPoolService::new();
     (
         WriteBlockChainService::new(
@@ -63,9 +66,8 @@ fn gen_blocks(
 
 #[stest::test]
 async fn test_block_chain_apply() {
-    ::logger::init_for_test();
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain();
+    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
     gen_blocks(node_config, times, &mut writeable_block_chain_service);
     assert_eq!(
         writeable_block_chain_service
@@ -121,9 +123,8 @@ fn gen_fork_block_chain(
 
 #[stest::test]
 async fn test_block_chain_forks() {
-    ::logger::init_for_test();
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain();
+    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
     gen_blocks(
         node_config.clone(),
         times,
@@ -155,9 +156,8 @@ async fn test_block_chain_forks() {
 
 #[stest::test]
 async fn test_block_chain_switch_master() {
-    ::logger::init_for_test();
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain();
+    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
     gen_blocks(
         node_config.clone(),
         times,
