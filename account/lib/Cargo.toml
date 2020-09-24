@@ -21,7 +21,6 @@ starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-decrypt = {path = "../../commons/decrypt"}
 starcoin-storage = {path = "../../storage"}
-starcoin-bus = {path = "../../bus"}
 starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-logger = {path = "../../commons/logger"}
 

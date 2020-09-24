@@ -1,23 +1,23 @@
 use crate::{MintBlockEvent, SubmitSealEvent};
-use actix::Addr;
 use anyhow::Result;
-use bus::{Bus, BusActor};
 use crypto::HashValue;
 use futures::executor::block_on;
 use futures::stream::BoxStream;
 use futures::stream::StreamExt;
 use starcoin_miner_client::JobClient;
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::ServiceRef;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use types::U256;
 
 #[derive(Clone)]
 pub struct JobBusClient {
-    bus: Addr<BusActor>,
+    bus: ServiceRef<BusService>,
     consensus: ConsensusStrategy,
 }
 
 impl JobBusClient {
-    pub fn new(bus: Addr<BusActor>, consensus: ConsensusStrategy) -> Self {
+    pub fn new(bus: ServiceRef<BusService>, consensus: ConsensusStrategy) -> Self {
         Self { bus, consensus }
     }
 }
@@ -34,8 +34,8 @@ impl JobClient for JobBusClient {
     }
 
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
-        let bus = self.bus.clone();
-        block_on(async move { bus.broadcast(SubmitSealEvent::new(pow_hash, nonce)).await })
+        self.bus.broadcast(SubmitSealEvent::new(pow_hash, nonce))?;
+        Ok(())
     }
 
     fn consensus(&self) -> Result<ConsensusStrategy> {

@@ -3,7 +3,6 @@
 
 use anyhow::Result;
 use libp2p::core::Multiaddr;
-use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_network_rpc::NetworkRpcService;
@@ -36,9 +35,7 @@ pub async fn build_network(
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;
 
-    let new_bus = registry.service_ref::<BusService>().await?;
-    let bus = BusActor::launch2(new_bus);
-    registry.put_shared(bus.clone()).await?;
+    let bus = registry.service_ref::<BusService>().await?;
     let network_rpc_service = if let Some(mocker) = rpc_service_mocker {
         registry.register_mocker(mocker).await?
     } else {

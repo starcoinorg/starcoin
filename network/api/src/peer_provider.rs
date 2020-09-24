@@ -9,7 +9,7 @@ use futures::{FutureExt, TryFutureExt};
 use rand::prelude::IteratorRandom;
 use starcoin_types::block::BlockNumber;
 
-pub trait PeerProvider {
+pub trait PeerProvider: Send + Sync {
     fn identify(&self) -> PeerId;
 
     fn best_peer(&self) -> BoxFuture<Result<Option<PeerInfo>>> {

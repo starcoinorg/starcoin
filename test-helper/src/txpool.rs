@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use futures_timer::Delay;
-use starcoin_bus::BusActor;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_service_registry::bus::BusService;
@@ -25,8 +24,7 @@ pub async fn start_txpool() -> (
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
-    let new_bus = registry.service_ref::<BusService>().await.unwrap();
-    let bus = BusActor::launch2(new_bus);
+    let bus = registry.service_ref::<BusService>().await.unwrap();
     registry.put_shared(bus).await.unwrap();
 
     registry.register::<TxPoolActorService>().await.unwrap();

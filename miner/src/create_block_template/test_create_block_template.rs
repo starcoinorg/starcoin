@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService, Inner};
-use bus::BusActor;
+
 use chain::BlockChain;
 use consensus::Consensus;
 use logger::prelude::*;
@@ -374,10 +374,8 @@ fn test_new_branch() {
 
 #[stest::test]
 async fn test_create_block_template_actor() {
-    let bus = BusActor::launch();
     let node_config = Arc::new(NodeConfig::random_for_test());
     let registry = RegistryService::launch();
-    registry.put_shared(bus).await.unwrap();
     registry.put_shared(node_config.clone()).await.unwrap();
 
     let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())

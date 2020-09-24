@@ -6,6 +6,7 @@ use anyhow::Result;
 use futures::channel::{mpsc, oneshot};
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::sync::mpsc::TrySendError;
 
 mod service;
 mod sys_bus;
@@ -123,6 +124,10 @@ where
     pub fn new(msg: M) -> Self {
         Self { msg }
     }
+
+    pub fn into_inner(self) -> M {
+        self.msg
+    }
 }
 
 impl<M> ServiceRequest for BroadcastRequest<M>
@@ -151,7 +156,7 @@ pub trait Bus {
     where
         M: Send + Clone + Debug + 'static;
 
-    async fn broadcast<M: 'static>(&self, msg: M) -> Result<()>
+    fn broadcast<M: 'static>(&self, msg: M) -> Result<(), TrySendError<M>>
     where
         M: Send + Clone + Debug;
 }
@@ -195,13 +200,15 @@ impl Bus for ServiceRef<BusService> {
             .map_err(Into::<anyhow::Error>::into)?
     }
 
-    async fn broadcast<M>(&self, msg: M) -> Result<()>
+    fn broadcast<M>(&self, msg: M) -> Result<(), TrySendError<M>>
     where
         M: Send + Clone + Debug + 'static,
     {
-        self.send(BroadcastRequest { msg })
-            .await
-            .map_err(Into::<anyhow::Error>::into)
+        self.try_send(BroadcastRequest { msg })
+            .map_err(|e| match e {
+                TrySendError::Full(m) => TrySendError::Full(m.into_inner()),
+                TrySendError::Disconnected(m) => TrySendError::Disconnected(m.into_inner()),
+            })
     }
 }
 
@@ -210,7 +217,6 @@ mod tests {
     use super::*;
     use crate::{RegistryAsyncService, RegistryService};
     use actix::Arbiter;
-    use futures::executor::block_on;
     use futures::StreamExt;
     use log::debug;
     use std::thread::sleep;
@@ -226,7 +232,7 @@ mod tests {
         let bus2 = bus.clone();
         let arbiter = Arbiter::new();
         arbiter.exec_fn(move || loop {
-            let result = block_on(async { bus2.broadcast(MyMessage {}).await.is_ok() });
+            let result = bus2.broadcast(MyMessage {}).is_ok();
             debug!("broadcast result: {}", result);
             sleep(Duration::from_millis(50));
         });
@@ -243,7 +249,7 @@ mod tests {
         let bus2 = bus.clone();
         let arbiter = Arbiter::new();
         arbiter.exec_fn(move || loop {
-            let result = block_on(async { bus2.broadcast(MyMessage {}).await.is_ok() });
+            let result = bus2.broadcast(MyMessage {}).is_ok();
             debug!("broadcast result: {}", result);
             sleep(Duration::from_millis(50));
         });

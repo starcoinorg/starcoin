@@ -4,7 +4,7 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub trait SyncTaskAction {
+pub trait SyncTaskAction: Send + Sync {
     fn activate(&self) {}
 }
 
