@@ -7,7 +7,7 @@
 
 -  [Struct `STC`](#0x1_STC_STC)
 -  [Resource `SharedBurnCapability`](#0x1_STC_SharedBurnCapability)
--  [Const `SCALING_FACTOR`](#0x1_STC_SCALING_FACTOR)
+-  [Const `BASE_SCALING_FACTOR`](#0x1_STC_BASE_SCALING_FACTOR)
 -  [Const `FRACTIONAL_PART`](#0x1_STC_FRACTIONAL_PART)
 -  [Function `initialize`](#0x1_STC_initialize)
 -  [Function `is_stc`](#0x1_STC_is_stc)
@@ -77,13 +77,14 @@
 
 </details>
 
-<a name="0x1_STC_SCALING_FACTOR"></a>
+<a name="0x1_STC_BASE_SCALING_FACTOR"></a>
 
-## Const `SCALING_FACTOR`
+## Const `BASE_SCALING_FACTOR`
+
+scaling_factor = 10^6
 
 
-
-<pre><code><b>const</b> SCALING_FACTOR: u128 = 1000000;
+<pre><code><b>const</b> BASE_SCALING_FACTOR: u128 = 1000000;
 </code></pre>
 
 
@@ -92,6 +93,7 @@
 
 ## Const `FRACTIONAL_PART`
 
+fractional_part = 10^3
 
 
 <pre><code><b>const</b> FRACTIONAL_PART: u128 = 1000;
@@ -115,14 +117,17 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
-        account,
-        SCALING_FACTOR, // scaling_factor = 10^6
-        FRACTIONAL_PART,    // fractional_part = 10^3
-    );
-
+    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account, BASE_SCALING_FACTOR, FRACTIONAL_PART);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
-    move_to(account, <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>{cap: burn_cap});
+    move_to(account, <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
+    <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
+    <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">ModifyDaoConfigProposal::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
+    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">UpgradeModuleDaoProposal::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
+    <b>let</b> upgrade_plan_cap = <a href="PackageTxnManager.md#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap">PackageTxnManager::extract_submit_upgrade_plan_cap</a>(account);
+    <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_delegate_module_upgrade_capability">UpgradeModuleDaoProposal::delegate_module_upgrade_capability</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
+        account,
+        upgrade_plan_cap,
+    );
 }
 </code></pre>
 
@@ -172,7 +177,7 @@ Returns true if
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_burn">burn</a>(token: <a href="Token.md#0x1_Token">Token</a>&lt;<a href="#0x1_STC">STC</a>&gt;) <b>acquires</b> <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_burn">burn</a>(token: <a href="Token.md#0x1_Token">Token</a>&lt;<a href="#0x1_STC">STC</a>&gt;) <b>acquires</b> <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> {
     <b>let</b> cap = borrow_global&lt;<a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>&gt;(<a href="#0x1_STC_token_address">token_address</a>());
     <a href="Token.md#0x1_Token_burn_with_capability">Token::burn_with_capability</a>(&cap.cap, token);
 }
@@ -198,7 +203,7 @@ Returns true if
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_token_address">token_address</a>(): address {
-   <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;<a href="#0x1_STC">STC</a>&gt;()
+    <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;<a href="#0x1_STC">STC</a>&gt;()
 }
 </code></pre>
 

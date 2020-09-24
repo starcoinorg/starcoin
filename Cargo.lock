@@ -6850,6 +6850,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-types",
  "starcoin-vm-runtime",
+ "starcoin-vm-types",
  "structopt 0.3.17",
  "tokio 0.2.22",
 ]

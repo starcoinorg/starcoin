@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor_test::{compile_module_with_address, execute_and_apply, prepare_genesis};
+use crate::test_helper::{compile_module_with_address, execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_types::account_address::AccountAddress;
