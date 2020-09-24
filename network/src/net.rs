@@ -132,6 +132,12 @@ impl SNetworkService {
         self.service.broadcast_message(protocol_name, message).await;
     }
 
+    pub fn add_peer_for_test(&mut self, peer: String) -> Result<()> {
+        self.service
+            .add_reserved_peer(peer)
+            .map_err(|e| format_err!("{:?}", e))
+    }
+
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
         self.service.connected_peers().await
     }

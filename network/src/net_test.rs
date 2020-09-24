@@ -7,7 +7,7 @@ mod tests {
     use crate::NetworkMessage;
     use crate::PeerEvent;
     use async_std::task;
-    use config::{get_random_available_port, NodeConfig};
+    use config::{get_random_available_port, NetworkConfig, NodeConfig};
     use crypto::hash::HashValue;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
@@ -16,6 +16,8 @@ mod tests {
     use futures_timer::Delay;
     use network_p2p::Multiaddr;
     use network_p2p::PROTOCOL_NAME;
+    use std::future::Future;
+    use std::pin::Pin;
     use std::{thread, time::Duration};
     use types::peer_info::PeerInfo;
 
@@ -25,6 +27,7 @@ mod tests {
         UnboundedReceiver<NetworkMessage>,
         UnboundedReceiver<PeerEvent>,
         UnboundedSender<()>,
+        NetworkConfig,
     );
 
     fn build_test_network_pair(host: String) -> (NetworkComponent, NetworkComponent) {
@@ -44,6 +47,7 @@ mod tests {
         UnboundedReceiver<NetworkMessage>,
         UnboundedReceiver<PeerEvent>,
         UnboundedSender<()>,
+        NetworkConfig,
     )> {
         let mut result: Vec<(
             SNetworkService,
@@ -51,6 +55,7 @@ mod tests {
             UnboundedReceiver<NetworkMessage>,
             UnboundedReceiver<PeerEvent>,
             UnboundedSender<()>,
+            NetworkConfig,
         )> = Vec::with_capacity(num);
         let mut first_addr = None::<String>;
         for index in 0..num {
@@ -77,7 +82,8 @@ mod tests {
 
             let server = build_network_service(&config, HashValue::default(), PeerInfo::random());
             result.push({
-                let c: NetworkComponent = server;
+                let c: NetworkComponent =
+                    (server.0, server.1, server.2, server.3, server.4, config);
                 c
             });
         }
@@ -89,8 +95,8 @@ mod tests {
         ::logger::init_for_test();
         //let mut rt = Builder::new().core_threads(1).build().unwrap();
         let (
-            (service1, tx1, rx1, _event_rx1, close_tx1),
-            (service2, tx2, _rx2, _event_rx2, close_tx2),
+            (service1, tx1, rx1, _event_rx1, close_tx1, _),
+            (service2, tx2, _rx2, _event_rx2, close_tx2, _),
         ) = build_test_network_pair("127.0.0.1".to_string());
         let msg_peer_id_1 = service1.identify().clone();
         let msg_peer_id_2 = service2.identify().clone();
@@ -160,8 +166,8 @@ mod tests {
         ::logger::init_for_test();
 
         let (
-            (service1, _tx1, rx1, _event_rx1, _close_tx1),
-            (service2, _tx2, _rx2, _event_rx2, _close_tx2),
+            (service1, _tx1, rx1, _event_rx1, _close_tx1, _),
+            (service2, _tx2, _rx2, _event_rx2, _close_tx2, _),
         ) = build_test_network_pair("127.0.0.1".to_string());
         let msg_peer_id = service1.identify().clone();
         let receive_fut = async move {
@@ -226,6 +232,34 @@ mod tests {
             // );
         };
         task::block_on(fut);
+    }
+
+    #[stest::test]
+    async fn test_network_broadcast_message() {
+        ::logger::init_for_test();
+        let (mut service1, mut service2) = build_test_network_pair("127.0.0.1".to_string());
+        let from_peer_id = service1.0.identify().clone();
+        let to_peer_id = service2.0.identify().clone();
+        thread::sleep(Duration::from_secs(2));
+        assert!(service1.0.is_connected(to_peer_id.clone()).await.unwrap());
+        assert!(service2.0.is_connected(from_peer_id.clone()).await.unwrap());
+        let to_peer_id_str = format!(
+            "{}/p2p/{}",
+            service2.5.listen.to_string(),
+            to_peer_id.to_base58()
+        );
+        debug!("to peer : {:?}", to_peer_id_str);
+        service1.0.add_peer_for_test(to_peer_id_str).unwrap();
+
+        let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
+
+        service1
+            .0
+            .broadcast_message(network_p2p::PROTOCOL_NAME.into(), random_bytes.clone())
+            .await;
+        let mut receiver = service2.2.select_next_some();
+        let response = futures::future::poll_fn(move |cx| Pin::new(&mut receiver).poll(cx)).await;
+        assert_eq!(response.data, random_bytes);
     }
 
     //FIXME temp ignore for #139
