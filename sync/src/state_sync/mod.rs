@@ -1,5 +1,5 @@
 use crate::block_sync::BlockSyncTaskRef;
-use crate::download::DownloadActor;
+use crate::download::DownloadService;
 use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_ACCUMULATOR, LABEL_STATE, LABEL_TXN_INFO, SYNC_METRICS};
 use crate::sync_task::{
@@ -16,6 +16,7 @@ use forkable_jellyfish_merkle::node_type::Node;
 use logger::prelude::*;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
+use starcoin_service_registry::ServiceRef;
 use starcoin_state_tree::StateNode;
 use starcoin_storage::Store;
 use starcoin_types::{
@@ -336,7 +337,7 @@ impl StateSyncTaskEvent {
 
 pub struct StateSyncTaskActor {
     block_sync_address: BlockSyncTaskRef,
-    download_address: Addr<DownloadActor>,
+    download_address: ServiceRef<DownloadService>,
     inner: Inner,
 }
 
@@ -781,7 +782,7 @@ impl StateSyncTaskActor {
         storage: Arc<dyn Store>,
         rpc_client: VerifiedRpcClient,
         block_sync_address: BlockSyncTaskRef,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
     ) -> StateSyncTaskRef {
         let inner = Inner::new(self_peer_id, root, storage, rpc_client);
         let address = StateSyncTaskActor::create(move |_ctx| Self {
@@ -907,7 +908,7 @@ impl Handler<StateSyncTaskEvent> for StateSyncTaskActor {
                     .done_tasks
                     .load(Ordering::Relaxed)
         {
-            self.download_address.do_send(SyncTaskType::STATE);
+            self.download_address.notify(SyncTaskType::STATE);
             ctx.stop();
         }
     }

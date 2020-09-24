@@ -47,6 +47,10 @@ where
         Self { cache, ctx }
     }
 
+    pub fn set_mailbox_capacity(&mut self, cap: usize) {
+        self.ctx.set_mailbox_capacity(cap);
+    }
+
     /// Get Self's ServiceRef
     pub fn self_ref(&self) -> ServiceRef<S> {
         self.ctx.address().into()

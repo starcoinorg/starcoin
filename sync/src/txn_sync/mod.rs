@@ -1,10 +1,12 @@
 use crate::helper;
-use actix::prelude::*;
 use anyhow::{bail, Result};
-use bus::{Bus, BusActor};
 use logger::prelude::*;
+use network::NetworkAsyncService;
 use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRequest,
+};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
@@ -12,68 +14,53 @@ use std::sync::Arc;
 use txpool::TxPoolService;
 
 #[derive(Clone)]
-pub struct TxnSyncActor {
-    bus: Addr<BusActor>,
+pub struct TxnSyncService {
     inner: Inner,
 }
 
-impl TxnSyncActor {
-    pub fn launch<N>(txpool: TxPoolService, network: N, bus: Addr<BusActor>) -> Addr<TxnSyncActor>
+impl ActorService for TxnSyncService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<StartSyncTxnEvent>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<StartSyncTxnEvent>();
+        Ok(())
+    }
+}
+
+impl ServiceFactory<Self> for TxnSyncService {
+    fn create(ctx: &mut ServiceContext<TxnSyncService>) -> Result<TxnSyncService> {
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        Ok(Self::new(txpool, network))
+    }
+}
+
+impl TxnSyncService {
+    pub fn new<N>(txpool: TxPoolService, network: N) -> Self
     where
         N: NetworkService + 'static,
     {
-        let actor = TxnSyncActor {
+        Self {
             inner: Inner {
                 pool: txpool,
                 rpc_client: NetworkRpcClient::new(network.clone()),
                 peer_provider: Arc::new(network),
             },
-            bus,
-        };
-        actor.start()
+        }
     }
 }
 
-impl actix::Actor for TxnSyncActor {
-    type Context = actix::Context<Self>;
-
-    /// when start, subscribe StartSyncTxnEvent.
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let myself = ctx.address().recipient::<StartSyncTxnEvent>();
-        self.bus
-            .clone()
-            .subscribe(myself)
-            .into_actor(self)
-            .map(|res, _act, ctx| {
-                if let Err(e) = res {
-                    error!("fail to subscribe start_sync_txn event, err: {:?}", e);
-                    ctx.terminate();
-                }
-            })
-            .wait(ctx);
-
-        info!("txn sync actor started");
-    }
-}
-
-impl actix::Handler<StartSyncTxnEvent> for TxnSyncActor {
-    type Result = ();
-
-    fn handle(
-        &mut self,
-        _msg: StartSyncTxnEvent,
-        ctx: &mut <Self as Actor>::Context,
-    ) -> Self::Result {
-        self.inner
-            .clone()
-            .sync_txn()
-            .into_actor(self)
-            .map(|res, _act, _ctx| {
-                if let Err(e) = res {
-                    error!("handle sync txn event fail: {:?}", e);
-                }
-            })
-            .spawn(ctx);
+impl EventHandler<Self, StartSyncTxnEvent> for TxnSyncService {
+    fn handle_event(&mut self, _msg: StartSyncTxnEvent, ctx: &mut ServiceContext<TxnSyncService>) {
+        let inner = self.inner.clone();
+        ctx.wait(async move {
+            if let Err(e) = inner.sync_txn().await {
+                error!("handle sync txn event fail: {:?}", e);
+            }
+        });
     }
 }
 

@@ -3,15 +3,16 @@
 
 mod block_connector;
 pub mod block_sync;
-mod download;
+pub mod download;
 pub mod helper;
 pub mod state_sync;
 mod sync;
 mod sync_metrics;
 mod sync_task;
-mod txn_sync;
+pub mod txn_sync;
+
 pub use download::Downloader;
-pub use sync::SyncActor;
+pub use sync::SyncService;
 
 mod sync_event_handle;
 pub mod verified_rpc_client;

@@ -1,4 +1,4 @@
-use crate::download::DownloadActor;
+use crate::download::DownloadService;
 use crate::helper::get_headers_msg_for_common;
 use crate::sync_event_handle::SendSyncEventHandler;
 use crate::sync_metrics::{LABEL_BLOCK_BODY, LABEL_HASH, SYNC_METRICS};
@@ -15,6 +15,7 @@ use futures_timer::Delay;
 use logger::prelude::*;
 use network_api::PeerId;
 use starcoin_network_rpc_api::BlockBody;
+use starcoin_service_registry::ServiceRef;
 use starcoin_types::block::{Block, BlockBody as RealBlockBody, BlockHeader, BlockNumber};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
@@ -124,7 +125,7 @@ impl BlockSyncTask {
 pub struct BlockSyncTaskActor {
     inner: Inner,
     downloader: Arc<Downloader>,
-    download_address: Addr<DownloadActor>,
+    download_address: ServiceRef<DownloadService>,
 }
 
 pub struct Inner {
@@ -317,7 +318,7 @@ impl BlockSyncTaskActor {
         target_number: BlockNumber,
         downloader: Arc<Downloader>,
         start: bool,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
         rpc_client: VerifiedRpcClient,
     ) -> BlockSyncTaskRef {
         debug_assert!(ancestor_header.number() < target_number);
@@ -408,7 +409,7 @@ impl Handler<NextTimeEvent> for BlockSyncTaskActor {
         if !finish {
             self.block_sync(ctx.address());
         } else {
-            self.download_address.do_send(SyncTaskType::BLOCK);
+            self.download_address.notify(SyncTaskType::BLOCK);
             ctx.stop();
         }
     }

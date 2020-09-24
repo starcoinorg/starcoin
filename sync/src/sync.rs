@@ -1,128 +1,70 @@
-use crate::download::DownloadActor;
-use crate::txn_sync::TxnSyncActor;
+use crate::download::DownloadService;
 use actix::{prelude::*, Actor, Addr, Context, Handler};
 use anyhow::Result;
 use bus::{BusActor, Subscription};
-use config::NodeConfig;
 use logger::prelude::*;
 use network::PeerEvent;
-use network_api::NetworkService;
-use starcoin_chain_service::ChainReaderService;
-use starcoin_service_registry::ServiceRef;
-use starcoin_storage::Store;
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+};
 use starcoin_sync_api::{PeerNewBlock, SyncNotify};
 use starcoin_types::{peer_info::PeerId, startup_info::StartupInfo};
-use std::sync::Arc;
-use txpool::TxPoolService;
 
-pub struct SyncActor {
-    download_address: Addr<DownloadActor>,
-    #[allow(dead_code)]
-    txn_sync_address: Addr<TxnSyncActor>,
-    bus: Addr<BusActor>,
+//TODO should remove this Service?
+pub struct SyncService {
+    download_service: ServiceRef<DownloadService>,
 }
 
-impl SyncActor {
-    pub fn launch<N>(
-        node_config: Arc<NodeConfig>,
-        bus: Addr<BusActor>,
-        peer_id: Arc<PeerId>,
-        chain: ServiceRef<ChainReaderService>,
-        txpool: TxPoolService,
-        network: N,
-        storage: Arc<dyn Store>,
-        startup_info: StartupInfo,
-    ) -> Result<Addr<SyncActor>>
-    where
-        N: NetworkService + 'static,
-    {
-        let txn_sync_addr = TxnSyncActor::launch(txpool.clone(), network.clone(), bus.clone());
-        let download_address = DownloadActor::launch(
-            node_config,
-            peer_id,
-            chain,
-            network,
-            bus.clone(),
-            storage.clone(),
-            txpool,
-            startup_info,
-        )?;
-
-        let actor = SyncActor {
-            download_address,
-            txn_sync_address: txn_sync_addr,
-            bus,
-        };
-        Ok(actor.start())
+impl SyncService {
+    pub fn new(download_service: ServiceRef<DownloadService>) -> Self {
+        Self { download_service }
     }
 }
 
-impl Actor for SyncActor {
-    type Context = Context<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let peer_recipient = ctx.address().recipient::<PeerEvent>();
-        self.bus
-            .send(Subscription {
-                recipient: peer_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-
-        let sync_recipient = ctx.address().recipient::<PeerNewBlock>();
-        self.bus
-            .send(Subscription {
-                recipient: sync_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
-        info!("SyncActor started");
-    }
-
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
-        info!("SyncActor stopped");
+impl ServiceFactory<Self> for SyncService {
+    fn create(ctx: &mut ServiceContext<SyncService>) -> Result<SyncService> {
+        Ok(Self::new(ctx.service_ref::<DownloadService>()?.clone()))
     }
 }
 
-impl Handler<PeerNewBlock> for SyncActor {
-    type Result = ();
-    fn handle(&mut self, msg: PeerNewBlock, ctx: &mut Self::Context) -> Self::Result {
-        let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
-        self.download_address
-            .send(new_block)
-            .into_actor(self)
-            .then(|_result, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+impl ActorService for SyncService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<PeerEvent>();
+        ctx.subscribe::<PeerNewBlock>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<PeerEvent>();
+        ctx.unsubscribe::<PeerNewBlock>();
+        Ok(())
     }
 }
 
-impl Handler<PeerEvent> for SyncActor {
-    type Result = Result<()>;
-
-    fn handle(&mut self, msg: PeerEvent, ctx: &mut Self::Context) -> Self::Result {
-        match msg {
+impl EventHandler<Self, PeerEvent> for SyncService {
+    fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<SyncService>) {
+        if let Err(e) = match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("connect new peer:{:?}", open_peer_id);
                 let download_msg = SyncNotify::NewPeerMsg(open_peer_id);
-                self.download_address
-                    .send(download_msg)
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
+                self.download_service.notify(download_msg)
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("disconnect peer: {:?}", close_peer_id);
                 let download_msg = SyncNotify::ClosePeerMsg(close_peer_id);
-                self.download_address
-                    .send(download_msg)
-                    .into_actor(self)
-                    .then(|_result, act, _ctx| async {}.into_actor(act))
-                    .wait(ctx);
+                self.download_service.notify(download_msg)
             }
+        } {
+            error!("Notify to download error {:?}", e);
         }
+    }
+}
 
-        Ok(())
+impl EventHandler<Self, PeerNewBlock> for SyncService {
+    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<SyncService>) {
+        let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
+        if let Err(e) = self.download_service.notify(new_block) {
+            error!("Notify to download error: {:?}", e);
+        }
     }
 }

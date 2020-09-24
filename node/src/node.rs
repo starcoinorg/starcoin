@@ -30,7 +30,9 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_sync::SyncActor;
+use starcoin_sync::download::DownloadService;
+use starcoin_sync::txn_sync::TxnSyncService;
+use starcoin_sync::SyncService;
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::system_events::SystemStarted;
@@ -42,7 +44,6 @@ pub struct NodeStartedHandle {
     pub config: Arc<NodeConfig>,
     pub bus: Addr<BusActor>,
     pub storage: Arc<Storage>,
-    pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub node_addr: Addr<Node>,
@@ -59,7 +60,6 @@ impl NodeStartedHandle {
 }
 
 pub struct Node {
-    pub sync_actor: Addr<SyncActor>,
     pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub registry: ServiceRef<RegistryService>,
@@ -184,28 +184,10 @@ pub async fn start(
             .as_ref()
             .expect("Self connect address must has been set.")
     );
-    let peer_id = Arc::new(peer_id);
-    let sync_config = config.clone();
-    let sync_bus = bus.clone();
-    let sync_chain = chain.clone();
-    let sync_txpool = txpool_service.clone();
-    let sync_network = network.clone();
-    let sync_storage = storage.clone();
-    let sync_startup_info = startup_info.clone();
-    let sync = Arbiter::new()
-        .exec(move || -> Result<Addr<SyncActor>> {
-            SyncActor::launch(
-                sync_config,
-                sync_bus,
-                peer_id,
-                sync_chain,
-                sync_txpool,
-                sync_network,
-                sync_storage,
-                sync_startup_info,
-            )
-        })
-        .await??;
+
+    registry.register::<TxnSyncService>().await?;
+    registry.register::<DownloadService>().await?;
+    registry.register::<SyncService>().await?;
 
     delay_for(Duration::from_secs(1)).await;
 
@@ -245,7 +227,6 @@ pub async fn start(
     registry.register::<HeadBlockPacemaker>().await?;
 
     let node = Node {
-        sync_actor: sync.clone(),
         rpc_actor: json_rpc.clone(),
         network: network.clone(),
         registry: registry.clone(),
@@ -256,7 +237,6 @@ pub async fn start(
         config,
         bus,
         storage,
-        sync_actor: sync,
         rpc_actor: json_rpc,
         network,
         node_addr,

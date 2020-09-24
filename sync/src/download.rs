@@ -8,22 +8,23 @@ use crate::state_sync::StateSyncTaskActor;
 use crate::sync_metrics::{LABEL_BLOCK, LABEL_STATE, SYNC_METRICS};
 use crate::sync_task::{SyncTask, SyncTaskType};
 use crate::verified_rpc_client::VerifiedRpcClient;
-use actix::prelude::*;
-use actix::{Actor, Addr, AsyncContext, Context, Handler};
+use actix::{Addr, Arbiter};
 use anyhow::{format_err, Result};
-use bus::{Broadcast, BusActor, Subscription};
+use bus::{Broadcast, BusActor};
 use config::NodeConfig;
 use crypto::HashValue;
-use futures::channel::mpsc;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::{NetworkService, PeerProvider};
+use network::NetworkAsyncService;
+use network_api::PeerProvider;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders, RemoteChainStateReader,
 };
-use starcoin_service_registry::ServiceRef;
-use starcoin_storage::Store;
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+};
+use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_sync_api::SyncNotify;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
@@ -39,21 +40,19 @@ use std::time::Duration;
 use traits::ChainAsyncService;
 use txpool::TxPoolService;
 
-#[derive(Debug, Message)]
-#[rtype(result = "Result<()>")]
+#[derive(Debug, Clone)]
 pub enum SyncEvent {
     DoSync,
 }
 
 const _MIN_PEER_SIZE: usize = 5;
 
-pub struct DownloadActor {
+pub struct DownloadService {
     downloader: Arc<Downloader>,
-    self_peer_id: Arc<PeerId>,
+    self_peer_id: PeerId,
     rpc_client: NetworkRpcClient,
     network: Arc<dyn PeerProvider>,
     bus: Addr<BusActor>,
-    sync_event_sender: mpsc::Sender<SyncEvent>,
     sync_duration: Duration,
     ready: Arc<AtomicBool>,
     syncing: Arc<AtomicBool>,
@@ -63,85 +62,94 @@ pub struct DownloadActor {
     node_config: Arc<NodeConfig>,
 }
 
-impl DownloadActor {
-    pub fn launch<N>(
+impl DownloadService {
+    pub fn new(
         node_config: Arc<NodeConfig>,
-        peer_id: Arc<PeerId>,
+        peer_id: PeerId,
         chain_reader: ServiceRef<ChainReaderService>,
-        network: N,
+        network: NetworkAsyncService,
         bus: Addr<BusActor>,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
         startup_info: StartupInfo,
-    ) -> Result<Addr<DownloadActor>>
-    where
-        N: NetworkService + 'static,
-    {
-        let download_actor = DownloadActor::create(move |ctx| {
-            let (sync_event_sender, sync_event_receiver) = mpsc::channel(100);
-            ctx.add_message_stream(sync_event_receiver);
-            DownloadActor {
-                downloader: Arc::new(Downloader::new(
-                    chain_reader,
-                    node_config.clone(),
-                    startup_info,
-                    storage.clone(),
-                    txpool,
-                    bus.clone(),
-                    None,
-                )),
-                self_peer_id: peer_id,
-                rpc_client: NetworkRpcClient::new(network.clone()),
-                network: Arc::new(network),
-                bus,
-                sync_event_sender,
-                sync_duration: Duration::from_secs(5),
-                syncing: Arc::new(AtomicBool::new(false)),
-                ready: Arc::new(AtomicBool::new(false)),
-                storage,
-                sync_task: SyncTask::new_empty(),
-                need_sync_state: Arc::new(AtomicBool::new(
-                    if node_config.clone().network.disable_seed {
-                        false
-                    } else {
-                        node_config.clone().sync.is_state_sync()
-                    },
-                )),
-                node_config,
-            }
-        });
-
-        Ok(download_actor)
+    ) -> Self {
+        Self {
+            downloader: Arc::new(Downloader::new(
+                chain_reader,
+                node_config.clone(),
+                startup_info,
+                storage.clone(),
+                txpool,
+                bus.clone(),
+                None,
+            )),
+            self_peer_id: peer_id,
+            rpc_client: NetworkRpcClient::new(network.clone()),
+            network: Arc::new(network),
+            bus,
+            sync_duration: Duration::from_secs(5),
+            syncing: Arc::new(AtomicBool::new(false)),
+            ready: Arc::new(AtomicBool::new(false)),
+            storage,
+            sync_task: SyncTask::new_empty(),
+            need_sync_state: Arc::new(AtomicBool::new(
+                if node_config.clone().network.disable_seed {
+                    false
+                } else {
+                    node_config.clone().sync.is_state_sync()
+                },
+            )),
+            node_config,
+        }
     }
 }
 
-impl Actor for DownloadActor {
-    type Context = Context<Self>;
+impl ServiceFactory<Self> for DownloadService {
+    fn create(ctx: &mut ServiceContext<DownloadService>) -> Result<DownloadService> {
+        let chain_reader = ctx.service_ref::<ChainReaderService>()?.clone();
+        let node_config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let bus = ctx.get_shared::<Addr<BusActor>>()?;
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let startup_info = storage
+            .get_startup_info()?
+            .ok_or_else(|| format_err!("Startup info should exist."))?;
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let peer_id = node_config.network.self_peer_id()?;
+        Ok(Self::new(
+            node_config,
+            peer_id,
+            chain_reader,
+            network,
+            bus,
+            storage,
+            txpool,
+            startup_info,
+        ))
+    }
+}
 
-    fn started(&mut self, ctx: &mut Self::Context) {
+impl ActorService for DownloadService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.set_mailbox_capacity(1024);
-        let recipient = ctx.address().recipient::<MinedBlock>();
-        self.bus
-            .send(Subscription { recipient })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+        ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<SystemStarted>();
+        Ok(())
+    }
 
-        let sys_event_recipient = ctx.address().recipient::<SystemStarted>();
-        self.bus
-            .send(Subscription {
-                recipient: sys_event_recipient,
-            })
-            .into_actor(self)
-            .then(|_res, act, _ctx| async {}.into_actor(act))
-            .wait(ctx);
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<SystemStarted>();
+        Ok(())
     }
 }
 
-impl Handler<SyncTaskType> for DownloadActor {
-    type Result = Result<()>;
-
-    fn handle(&mut self, task_type: SyncTaskType, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, SyncTaskType> for DownloadService {
+    fn handle_event(
+        &mut self,
+        task_type: SyncTaskType,
+        _ctx: &mut ServiceContext<DownloadService>,
+    ) {
         self.sync_task.drop_task(&task_type);
         if self.sync_task.is_finish() {
             self.bus.do_send(Broadcast { msg: SyncDone });
@@ -149,14 +157,11 @@ impl Handler<SyncTaskType> for DownloadActor {
             self.syncing.store(false, Ordering::Relaxed);
             self.downloader.set_pivot(None);
         }
-        Ok(())
     }
 }
 
-impl Handler<MinedBlock> for DownloadActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: MinedBlock, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, MinedBlock> for DownloadService {
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<DownloadService>) {
         debug!("try connect mined block.");
         let MinedBlock(new_block) = msg;
         match self.downloader.connect_block(new_block.as_ref().clone()) {
@@ -168,18 +173,23 @@ impl Handler<MinedBlock> for DownloadActor {
     }
 }
 
-impl Handler<SystemStarted> for DownloadActor {
-    type Result = ();
+#[derive(Clone, Debug)]
+struct CheckDone;
 
-    fn handle(&mut self, _msg: SystemStarted, ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, CheckDone> for DownloadService {
+    fn handle_event(&mut self, _msg: CheckDone, ctx: &mut ServiceContext<DownloadService>) {
+        debug!("Check sync is finish.");
+        if self.sync_task.is_finish() {
+            ctx.notify(SyncEvent::DoSync);
+        }
+    }
+}
+
+impl EventHandler<Self, SystemStarted> for DownloadService {
+    fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<DownloadService>) {
         if !self.ready.load(Ordering::Relaxed) {
-            ctx.run_interval(self.sync_duration, move |download, _ctx| {
-                debug!("Send sync event.");
-                if download.sync_task.is_finish() {
-                    if let Err(e) = download.sync_event_sender.try_send(SyncEvent::DoSync) {
-                        error!("{:?}", e);
-                    }
-                }
+            ctx.run_interval(self.sync_duration, move |ctx| {
+                ctx.notify(CheckDone);
             });
         }
         self.ready.store(true, Ordering::Relaxed);
@@ -187,19 +197,18 @@ impl Handler<SystemStarted> for DownloadActor {
     }
 }
 
-impl Handler<SyncEvent> for DownloadActor {
-    type Result = Result<()>;
-    fn handle(&mut self, item: SyncEvent, ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, SyncEvent> for DownloadService {
+    fn handle_event(&mut self, item: SyncEvent, ctx: &mut ServiceContext<DownloadService>) {
         match item {
             SyncEvent::DoSync => {
                 if !self.sync_task.is_finish() {
-                    return Ok(());
+                    return;
                 }
 
                 let sync_task = self.sync_task.clone();
                 if self.need_sync_state.load(Ordering::Relaxed) {
                     Self::sync_state_and_block(
-                        self.self_peer_id.as_ref().clone(),
+                        self.self_peer_id.clone(),
                         self.node_config.clone().base.net().is_main(),
                         self.downloader.clone(),
                         self.rpc_client.clone(),
@@ -207,7 +216,7 @@ impl Handler<SyncEvent> for DownloadActor {
                         self.storage.clone(),
                         sync_task,
                         self.syncing.clone(),
-                        ctx.address(),
+                        ctx.self_ref(),
                     );
                 } else {
                     Self::sync_block_from_best_peer(
@@ -216,20 +225,16 @@ impl Handler<SyncEvent> for DownloadActor {
                         self.network.clone(),
                         sync_task,
                         self.syncing.clone(),
-                        ctx.address(),
+                        ctx.self_ref(),
                     );
                 }
             }
         }
-
-        Ok(())
     }
 }
 
-impl Handler<SyncNotify> for DownloadActor {
-    type Result = ();
-
-    fn handle(&mut self, msg: SyncNotify, _ctx: &mut Self::Context) -> Self::Result {
+impl EventHandler<Self, SyncNotify> for DownloadService {
+    fn handle_event(&mut self, msg: SyncNotify, _ctx: &mut ServiceContext<DownloadService>) {
         match msg {
             SyncNotify::NewPeerMsg(peer_id) => {
                 self.sync_task.activate_tasks();
@@ -243,7 +248,7 @@ impl Handler<SyncNotify> for DownloadActor {
     }
 }
 
-impl DownloadActor {
+impl DownloadService {
     fn sync_state_and_block(
         self_peer_id: PeerId,
         main_network: bool,
@@ -253,7 +258,7 @@ impl DownloadActor {
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
     ) {
         Arbiter::spawn(async move {
             SYNC_METRICS
@@ -295,7 +300,9 @@ impl DownloadActor {
                             .with_label_values(&[LABEL_STATE])
                             .inc();
                         if flag {
-                            download_address.do_send(SyncTaskType::STATE);
+                            if let Err(e) = download_address.notify(SyncTaskType::STATE) {
+                                error!("Notify error: {:?}", e)
+                            }
                             syncing.store(false, Ordering::Relaxed);
                         }
                     }
@@ -312,7 +319,7 @@ impl DownloadActor {
         network: Arc<dyn PeerProvider>,
         storage: Arc<dyn Store>,
         sync_task: SyncTask,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
@@ -429,7 +436,7 @@ impl DownloadActor {
         network: Arc<dyn PeerProvider>,
         sync_task: SyncTask,
         syncing: Arc<AtomicBool>,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
     ) {
         if !syncing.load(Ordering::Relaxed) {
             syncing.store(true, Ordering::Relaxed);
@@ -466,7 +473,7 @@ impl DownloadActor {
         rpc_client: NetworkRpcClient,
         network: Arc<dyn PeerProvider>,
         sync_task: SyncTask,
-        download_address: Addr<DownloadActor>,
+        download_address: ServiceRef<DownloadService>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
