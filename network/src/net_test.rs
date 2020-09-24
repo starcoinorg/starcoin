@@ -16,6 +16,7 @@ mod tests {
     use futures_timer::Delay;
     use network_p2p::Multiaddr;
     use network_p2p::PROTOCOL_NAME;
+    use std::borrow::Cow;
     use std::future::Future;
     use std::pin::Pin;
     use std::{thread, time::Duration};
@@ -236,7 +237,6 @@ mod tests {
 
     #[stest::test]
     async fn test_network_broadcast_message() {
-        ::logger::init_for_test();
         let (mut service1, mut service2) = build_test_network_pair("127.0.0.1".to_string());
         let from_peer_id = service1.0.identify().clone();
         let to_peer_id = service2.0.identify().clone();
@@ -256,6 +256,50 @@ mod tests {
         service1
             .0
             .broadcast_message(network_p2p::PROTOCOL_NAME.into(), random_bytes.clone())
+            .await;
+        let mut receiver = service2.2.select_next_some();
+        let response = futures::future::poll_fn(move |cx| Pin::new(&mut receiver).poll(cx)).await;
+        assert_eq!(response.data, random_bytes);
+    }
+
+    #[stest::test]
+    async fn test_network_exist_notif_proto() {
+        let service: NetworkComponent =
+            build_test_network_services(1, "127.0.0.1".to_string(), get_random_available_port())
+                .into_iter()
+                .next()
+                .unwrap();
+        assert!(
+            service
+                .0
+                .exist_notif_proto(network_p2p::PROTOCOL_NAME.into())
+                .await
+        );
+    }
+
+    #[stest::test]
+    async fn test_network_sub_stream() {
+        let (mut service1, mut service2) = build_test_network_pair("127.0.0.1".to_string());
+        let protocol = b"test_network_sub_stream";
+        service1.0.sub_stream(Cow::Borrowed(protocol)).await;
+        service2.0.sub_stream(Cow::Borrowed(protocol)).await;
+        let from_peer_id = service1.0.identify().clone();
+        let to_peer_id = service2.0.identify().clone();
+        thread::sleep(Duration::from_secs(2));
+        assert!(service1.0.is_connected(to_peer_id.clone()).await.unwrap());
+        assert!(service2.0.is_connected(from_peer_id.clone()).await.unwrap());
+        let to_peer_id_str = format!(
+            "{}/p2p/{}",
+            service2.5.listen.to_string(),
+            to_peer_id.to_base58()
+        );
+        debug!("to peer : {:?}", to_peer_id_str);
+        service1.0.add_peer_for_test(to_peer_id_str).unwrap();
+        let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
+
+        service1
+            .0
+            .broadcast_message(Cow::Borrowed(protocol), random_bytes.clone())
             .await;
         let mut receiver = service2.2.select_next_some();
         let response = futures::future::poll_fn(move |cx| Pin::new(&mut receiver).poll(cx)).await;
