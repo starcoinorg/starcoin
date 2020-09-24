@@ -114,3 +114,87 @@ where
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::get_unix_ts;
+    use crate::message_processor::{MessageFuture, MessageProcessor};
+    use anyhow::{format_err, Result};
+    use futures::{Future, SinkExt};
+    use libp2p::PeerId;
+    use std::pin::Pin;
+
+    #[stest::test]
+    async fn test_message_future_err() {
+        let (mut tx, rx) = futures::channel::mpsc::channel::<Result<()>>(1);
+        let message_future = MessageFuture::new(rx);
+        let _ = tx.send(Err(format_err!("test error."))).await;
+        let response = message_future.await;
+        assert!(response.is_err());
+    }
+
+    #[stest::test]
+    fn test_message_future_none() {
+        let (_, rx) = futures::channel::mpsc::channel::<Result<()>>(1);
+        let mut message_future = MessageFuture::new(rx);
+        let response = futures::executor::block_on(futures::future::poll_fn(move |cx| {
+            Pin::new(&mut message_future).poll(cx)
+        }));
+        assert!(response.is_err());
+    }
+
+    #[stest::test]
+    async fn test_add_future() {
+        let message_processor = MessageProcessor::<u128, ()>::new();
+        let request_id = get_unix_ts();
+        let (tx, _) = futures::channel::mpsc::channel::<Result<()>>(1);
+        message_processor
+            .add_future(request_id, tx.clone(), PeerId::random())
+            .await;
+        assert!(message_processor
+            .tx_map
+            .lock()
+            .await
+            .contains_key(&request_id));
+        message_processor
+            .add_future(request_id, tx, PeerId::random())
+            .await;
+        assert_eq!(message_processor.tx_map.lock().await.len(), 1);
+    }
+
+    #[stest::test]
+    async fn test_send_response_error() {
+        let message_processor = MessageProcessor::<u128, ()>::new();
+        let request_id = get_unix_ts();
+        let (tx, _) = futures::channel::mpsc::channel::<Result<()>>(1);
+        message_processor
+            .add_future(request_id, tx.clone(), PeerId::random())
+            .await;
+        assert!(message_processor
+            .send_response(request_id, ())
+            .await
+            .is_ok());
+    }
+
+    #[stest::test]
+    async fn test_send_response_none() {
+        let message_processor = MessageProcessor::<u128, ()>::new();
+        let request_id = get_unix_ts();
+        assert!(message_processor
+            .send_response(request_id, ())
+            .await
+            .is_ok());
+    }
+
+    #[stest::test]
+    async fn test_remove_future() {
+        let message_processor = MessageProcessor::<u128, ()>::new();
+        let request_id = get_unix_ts();
+        let (tx, rx) = futures::channel::mpsc::channel::<Result<()>>(1);
+        message_processor
+            .add_future(request_id, tx.clone(), PeerId::random())
+            .await;
+        assert!(message_processor.remove_future(request_id).await);
+        drop(rx);
+    }
+}
