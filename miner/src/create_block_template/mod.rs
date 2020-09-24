@@ -6,7 +6,6 @@ use chain::BlockChain;
 use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
-use futures::task::Spawn;
 use logger::prelude::*;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
 use starcoin_account_service::AccountService;
