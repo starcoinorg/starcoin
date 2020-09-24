@@ -40,7 +40,7 @@ module ModifyDaoConfigProposal {
         voting_quorum_rate: u8,
         min_action_delay: u64,
     ) {
-        assert(voting_quorum_rate < 100, ERR_QUROM_RATE_INVALID);
+        assert(voting_quorum_rate <= 100, ERR_QUROM_RATE_INVALID);
         let action = DaoConfigUpdate {
             voting_delay,
             voting_period,
