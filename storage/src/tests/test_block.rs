@@ -14,7 +14,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::U256;
+use starcoin_uint::U256;
 
 #[test]
 fn test_block() {
