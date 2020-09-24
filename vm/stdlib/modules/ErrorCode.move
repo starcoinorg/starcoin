@@ -13,6 +13,8 @@ module ErrorCode {
     public fun PROLOGUE_CANT_PAY_GAS_DEPOSIT(): u64 {4}
     public fun PROLOGUE_TRANSACTION_EXPIRED(): u64 {5}
     public fun PROLOGUE_BAD_CHAIN_ID(): u64 {6}
+    public fun PROLOGUE_MODULE_NOT_ALLOWED(): u64 {7}
+    public fun PROLOGUE_SCRIPT_NOT_ALLOWED(): u64 {8}
 
     public fun EINSUFFICIENT_BALANCE(): u64 {10}
     public fun ENOT_GENESIS_ACCOUNT(): u64 {11}

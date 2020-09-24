@@ -11,10 +11,8 @@ module VMConfig {
     }
 
     // The struct to hold all config data needed to operate the VM.
-    // * publishing_option: Defines Scripts/Modules that are allowed to execute in the current configruation.
     // * gas_schedule: Cost of running the VM.
     struct VMConfig {
-        publishing_option: vector<u8>,
         gas_schedule: GasSchedule,
         block_gas_limit: u64,
     }
@@ -72,7 +70,6 @@ module VMConfig {
     // Initialize the table under the genesis account
     public fun initialize(
         account: &signer,
-        publishing_option: vector<u8>,
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
         block_gas_limit: u64,
@@ -107,7 +104,6 @@ module VMConfig {
         Config::publish_new_config<VMConfig>(
             account,
             VMConfig {
-                publishing_option,
                 gas_schedule: GasSchedule {
                     instruction_schedule,
                     native_schedule,
@@ -124,16 +120,6 @@ module VMConfig {
         aborts_if exists<Config::ModifyConfigCapabilityHolder<VMConfig>>(Signer::spec_address_of(account));
         ensures exists<Config::Config<VMConfig>>(Signer::spec_address_of(account));
         ensures exists<Config::ModifyConfigCapabilityHolder<VMConfig>>(Signer::spec_address_of(account));
-    }
-
-    public fun set_publishing_option(account: &signer, publishing_option: vector<u8>) {
-        let current_config = Config::get<VMConfig>(account);
-        current_config.publishing_option = publishing_option;
-        Config::set<VMConfig>(account, current_config);
-    }
-
-    spec fun set_publishing_option {
-        pragma verify = false;
     }
 }
 

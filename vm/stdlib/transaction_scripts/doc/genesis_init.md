@@ -15,7 +15,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
 </code></pre>
 
 
@@ -24,7 +24,9 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(publishing_option: vector&lt;u8&gt;,
+<pre><code><b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(
+                 merged_script_allow_list: vector&lt;u8&gt;,
+                 is_open_module: bool,
                  instruction_schedule: vector&lt;u8&gt;,
                  native_schedule: vector&lt;u8&gt;,
                  reward_delay: u64,
@@ -70,8 +72,14 @@
 
         <a href="../../modules/doc/Block.md#0x1_Block_initialize">Block::initialize</a>(&genesis_account, parent_hash);
 
+        <a href="../../modules/doc/TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">TransactionPublishOption::initialize</a>(
+            &genesis_account,
+            merged_script_allow_list,
+            is_open_module,
+        );
+
         // init config
-        <a href="../../modules/doc/VMConfig.md#0x1_VMConfig_initialize">VMConfig::initialize</a>(&genesis_account, publishing_option, instruction_schedule, native_schedule,
+        <a href="../../modules/doc/VMConfig.md#0x1_VMConfig_initialize">VMConfig::initialize</a>(&genesis_account, instruction_schedule, native_schedule,
             block_gas_limit,
             global_memory_per_byte_cost,
             global_memory_per_byte_write_cost,
