@@ -3,7 +3,8 @@
 
 use crate::bus::BusService;
 use crate::{ActorService, RegistryAsyncService, RegistryService, ServiceRef};
-use anyhow::Result;
+use anyhow::{format_err, Result};
+use futures::executor::block_on;
 use std::any::{Any, TypeId};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
@@ -25,12 +26,13 @@ impl ServiceCache {
         &self.registry
     }
 
-    pub fn bus_ref(&mut self) -> &ServiceRef<BusService> {
-        self.service_ref::<BusService>()
-            .expect("BusService should exist in registry.")
+    pub fn bus_ref(&mut self) -> Result<&ServiceRef<BusService>> {
+        self.service_ref::<BusService>().and_then(|service| {
+            service.ok_or_else(|| format_err!("BusService should exist in registry."))
+        })
     }
 
-    pub fn service_ref<S>(&mut self) -> Result<&ServiceRef<S>>
+    pub fn service_ref<S>(&mut self) -> Result<Option<&ServiceRef<S>>>
     where
         S: ActorService,
     {
@@ -39,12 +41,14 @@ impl ServiceCache {
         let any_box = match entry {
             Entry::Occupied(e) => e.into_mut(),
             Entry::Vacant(e) => {
-                let service_ref = self.registry.service_ref_sync::<S>()?;
+                let registry = &self.registry;
+                let service_ref = block_on(async move { registry.service_ref_opt::<S>().await })?;
                 e.insert(Box::new(service_ref))
             }
         };
         Ok(any_box
-            .downcast_ref::<ServiceRef<S>>()
-            .expect("Downcast service ref should success."))
+            .downcast_ref::<Option<ServiceRef<S>>>()
+            .expect("Downcast service ref should success.")
+            .as_ref())
     }
 }

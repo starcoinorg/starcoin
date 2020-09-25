@@ -1,9 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metadata::Metadata;
 use jsonrpc_http_server::hyper;
 use jsonrpc_pubsub::Session;
+use starcoin_rpc_api::metadata::Metadata;
 use std::sync::Arc;
 
 /// Common HTTP & IPC & TCP metadata extractor.

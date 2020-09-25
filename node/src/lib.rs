@@ -186,7 +186,7 @@ pub fn run_node_with_log(
         setup_panic_handler();
         let mut system = System::builder().stop_on_panic(true).name("main").build();
         system.block_on(async {
-            match node::start(config, Some(logger_handle)).await {
+            match node::start(config, logger_handle).await {
                 Err(e) => {
                     error!("Node start fail: {:?}.", e);
                     if start_sender.send(Err(e)).is_err() {

@@ -7309,6 +7309,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-rpc-middleware",
  "starcoin-state-api",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7404,6 +7405,7 @@ dependencies = [
  "starcoin-chain",
  "starcoin-chain-mock",
  "starcoin-chain-notify",
+ "starcoin-chain-service",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7439,7 +7441,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-service-registry"
-version = "0.4.5"
+version = "0.5.1"
 dependencies = [
  "actix",
  "actix-rt",

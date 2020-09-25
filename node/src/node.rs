@@ -9,7 +9,6 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_dev::playground::PlaygroudService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
@@ -20,8 +19,7 @@ use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerServic
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
-use starcoin_rpc_server::module::PubSubService;
-use starcoin_rpc_server::RpcActor;
+use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{ActorService, RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_state_service::ChainStateService;
@@ -43,7 +41,6 @@ pub struct NodeStartedHandle {
     pub config: Arc<NodeConfig>,
     pub bus: ServiceRef<BusService>,
     pub storage: Arc<Storage>,
-    pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub node_addr: Addr<Node>,
     pub registry: ServiceRef<RegistryService>,
@@ -59,7 +56,6 @@ impl NodeStartedHandle {
 }
 
 pub struct Node {
-    pub rpc_actor: Addr<RpcActor>,
     pub network: NetworkAsyncService,
     pub registry: ServiceRef<RegistryService>,
 }
@@ -120,10 +116,12 @@ impl Handler<NodeRequest> for Node {
 
 pub async fn start(
     config: Arc<NodeConfig>,
-    logger_handle: Option<Arc<LoggerHandle>>,
+    logger_handle: Arc<LoggerHandle>,
 ) -> Result<NodeStartedHandle> {
     let registry = RegistryService::launch();
     registry.put_shared(config.clone()).await?;
+    registry.put_shared(logger_handle).await?;
+
     let bus = registry.service_ref::<BusService>().await?;
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
@@ -141,7 +139,7 @@ pub async fn start(
         .put_shared::<AccountStorage>(account_storage.clone())
         .await?;
 
-    let account_service = registry.register::<AccountService>().await?;
+    registry.register::<AccountService>().await?;
     registry.register::<AccountEventService>().await?;
 
     registry.register::<TxPoolActorService>().await?;
@@ -149,11 +147,9 @@ pub async fn start(
     //wait TxPoolService put shared..
     Delay::new(Duration::from_millis(200)).await;
     // TxPoolActorService auto put shared TxPoolService,
-    let txpool_service = registry.get_shared::<TxPoolService>().await?;
-
-    let chain_state_service = registry.register::<ChainStateService>().await?;
-
-    let chain = registry.register::<ChainReaderService>().await?;
+    registry.get_shared::<TxPoolService>().await?;
+    registry.register::<ChainStateService>().await?;
+    registry.register::<ChainReaderService>().await?;
     registry.register::<ChainNotifyHandlerService>().await?;
 
     let network_rpc_service = registry.register::<NetworkRpcService>().await?;
@@ -189,7 +185,7 @@ pub async fn start(
     delay_for(Duration::from_secs(1)).await;
 
     registry.register::<CreateBlockTemplateService>().await?;
-    let miner = registry.register::<MinerService>().await?;
+    registry.register::<MinerService>().await?;
 
     let miner_client_config = config.miner.client_config.clone();
     registry.put_shared(miner_client_config).await?;
@@ -204,19 +200,8 @@ pub async fn start(
             .stop_service(MinerClientService::<JobBusClient>::service_name())
             .await?;
     }
+    registry.register::<RpcService>().await?;
 
-    let (json_rpc, _io_handler) = RpcActor::launch(
-        config.clone(),
-        txpool_service.clone(),
-        chain.clone(),
-        account_service,
-        chain_state_service,
-        Some(PlaygroudService::new(storage.clone())),
-        Some(PubSubService::new(bus.clone(), txpool_service)),
-        Some(miner),
-        Some(network.clone()),
-        logger_handle,
-    )?;
     bus.broadcast(StartSyncTxnEvent)?;
     bus.broadcast(SystemStarted)?;
 
@@ -224,7 +209,6 @@ pub async fn start(
     registry.register::<HeadBlockPacemaker>().await?;
 
     let node = Node {
-        rpc_actor: json_rpc.clone(),
         network: network.clone(),
         registry: registry.clone(),
     };
@@ -234,7 +218,6 @@ pub async fn start(
         config,
         bus,
         storage,
-        rpc_actor: json_rpc,
         network,
         node_addr,
         registry,
