@@ -170,7 +170,7 @@ if any field is
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ) {
-    <b>assert</b>(voting_quorum_rate &lt; 100, ERR_QUROM_RATE_INVALID);
+    <b>assert</b>(voting_quorum_rate &lt;= 100, ERR_QUROM_RATE_INVALID);
     <b>let</b> action = <a href="#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,
