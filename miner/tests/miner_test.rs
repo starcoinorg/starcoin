@@ -9,10 +9,8 @@ use logger::prelude::*;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
-use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::{CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService};
 use starcoin_service_registry::bus::Bus;
-use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
@@ -74,13 +72,6 @@ async fn test_miner_service() {
     let (storage, _startup_info, genesis_hash) =
         Genesis::init_storage_for_test(config.net()).unwrap();
     registry.put_shared(storage.clone()).await.unwrap();
-
-    let new_bus = registry.service_ref::<BusService>().await.unwrap();
-    let bus = BusActor::launch2(new_bus);
-    registry.put_shared(bus.clone()).await.unwrap();
-
-    let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
-    registry.put_shared(job_client.clone()).await.unwrap();
 
     let chain_header = storage
         .get_block_header_by_hash(genesis_hash)
