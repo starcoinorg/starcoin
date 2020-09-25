@@ -4,9 +4,7 @@
 pub mod message;
 
 use crate::message::{Event, Notification, ThinBlock};
-use actix::Addr;
 use anyhow::{format_err, Result};
-use starcoin_bus::{Broadcast, BusActor};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -19,15 +17,13 @@ use std::sync::Arc;
 /// and then reproduce `Notification<ThinBlock>` and `Notification<Arc<Vec<Event>>>` message to bus.
 /// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerService {
-    bus: Addr<BusActor>,
     store: Arc<dyn Store>,
     broadcast_txn: bool,
 }
 
 impl ChainNotifyHandlerService {
-    pub fn new(bus: Addr<BusActor>, store: Arc<dyn Store>) -> Self {
+    pub fn new(store: Arc<dyn Store>) -> Self {
         Self {
-            bus,
             store,
             broadcast_txn: true,
         }
@@ -38,9 +34,8 @@ impl ServiceFactory<Self> for ChainNotifyHandlerService {
     fn create(
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) -> Result<ChainNotifyHandlerService> {
-        let bus = ctx.get_shared::<Addr<BusActor>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        Ok(Self::new(bus, storage))
+        Ok(Self::new(storage))
     }
 }
 
@@ -84,16 +79,16 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
     fn handle_event(
         &mut self,
         item: NewHeadBlock,
-        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
+        ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
         if self.broadcast_txn {
             let NewHeadBlock(block_detail) = item;
             let block = block_detail.get_block();
             // notify header.
-            self.notify_new_block(block);
+            self.notify_new_block(block, ctx);
 
             // notify events
-            if let Err(e) = self.notify_events(block, self.store.clone()) {
+            if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
                 error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
             }
         }
@@ -101,7 +96,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
 }
 
 impl ChainNotifyHandlerService {
-    pub fn notify_new_block(&self, block: &Block) {
+    pub fn notify_new_block(&self, block: &Block, ctx: &mut ServiceContext<Self>) {
         let thin_block = ThinBlock::new(
             block.header().clone(),
             block
@@ -110,12 +105,15 @@ impl ChainNotifyHandlerService {
                 .map(|t| t.crypto_hash())
                 .collect(),
         );
-        self.bus.do_send(Broadcast {
-            msg: Notification(thin_block),
-        });
+        ctx.broadcast(Notification(thin_block));
     }
 
-    pub fn notify_events(&self, block: &Block, store: Arc<dyn Store>) -> Result<()> {
+    pub fn notify_events(
+        &self,
+        block: &Block,
+        store: Arc<dyn Store>,
+        ctx: &mut ServiceContext<Self>,
+    ) -> Result<()> {
         let block_number = block.header().number();
         let block_id = block.id();
         let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
@@ -134,9 +132,7 @@ impl ChainNotifyHandlerService {
             );
         }
         let events = Arc::new(all_events);
-        self.bus.do_send(Broadcast {
-            msg: Notification(events),
-        });
+        ctx.broadcast(Notification(events));
         Ok(())
     }
 }

@@ -1,15 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::Addr;
 use anyhow::Result;
-use bus::Bus;
-use bus::{Broadcast, BusActor};
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::helper::get_txns;
 use starcoin_sync_api::PeerNewBlock;
@@ -26,24 +24,21 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 pub struct BlockRelayer {
-    bus: Addr<BusActor>,
     txpool: TxPoolService,
     rpc_client: NetworkRpcClient,
 }
 
 impl ServiceFactory<Self> for BlockRelayer {
     fn create(ctx: &mut ServiceContext<BlockRelayer>) -> Result<BlockRelayer> {
-        let bus = ctx.get_shared::<Addr<BusActor>>()?;
         let txpool = ctx.get_shared::<TxPoolService>()?;
         let network_service = ctx.get_shared::<NetworkAsyncService>()?;
-        Ok(Self::new(bus, txpool, network_service))
+        Ok(Self::new(txpool, network_service))
     }
 }
 
 impl BlockRelayer {
-    pub fn new(bus: Addr<BusActor>, txpool: TxPoolService, network: NetworkAsyncService) -> Self {
+    pub fn new(txpool: TxPoolService, network: NetworkAsyncService) -> Self {
         Self {
-            bus,
             txpool,
             rpc_client: NetworkRpcClient::new(network),
         }
@@ -172,12 +167,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             compact_block,
             total_difficulty,
         };
-        let bus = self.bus.clone();
-        ctx.wait(async {
-            if let Err(e) = bus.broadcast(net_cmpct_block_msg).await {
-                error!("Failed to emit new compact block relay message, err: {}", e);
-            }
-        });
+        ctx.broadcast(net_cmpct_block_msg);
     }
 }
 
@@ -187,9 +177,9 @@ impl EventHandler<Self, PeerCmpctBlockEvent> for BlockRelayer {
         cmpct_block_msg: PeerCmpctBlockEvent,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) {
-        let bus = self.bus.clone();
         let rpc_client = self.rpc_client.clone();
         let txpool = self.txpool.clone();
+        let bus = ctx.bus_ref().clone();
         let fut = async move {
             let compact_block = cmpct_block_msg.compact_block;
             let peer_id = cmpct_block_msg.peer_id;
@@ -198,9 +188,9 @@ impl EventHandler<Self, PeerCmpctBlockEvent> for BlockRelayer {
                 BlockRelayer::fill_compact_block(txpool, rpc_client, compact_block, peer_id.clone())
                     .await
             {
-                bus.do_send(Broadcast {
-                    msg: PeerNewBlock::new(peer_id, block),
-                });
+                if let Err(e) = bus.broadcast(PeerNewBlock::new(peer_id, block)) {
+                    error!("Broadcast PeerNewBlock message error: {:?}", e)
+                }
             }
         };
         ctx.spawn(fut);

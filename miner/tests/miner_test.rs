@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use bus::Bus;
-use bus::BusActor;
 use consensus::Consensus;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
@@ -13,6 +11,7 @@ use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::{CreateBlockTemplateRequest, CreateBlockTemplateService, MinerService};
+use starcoin_service_registry::bus::Bus;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
@@ -33,11 +32,8 @@ fn test_miner() {
     let handle = test_helper::run_node_by_config(Arc::new(config)).unwrap();
     let fut = async move {
         let bus = handle.start_handle().bus.clone();
-        let new_block_receiver = bus.clone().oneshot::<NewHeadBlock>().await.unwrap();
-        bus.clone()
-            .broadcast(GenerateBlockEvent::new(false))
-            .await
-            .unwrap();
+        let new_block_receiver = bus.oneshot::<NewHeadBlock>().await.unwrap();
+        bus.broadcast(GenerateBlockEvent::new(false)).unwrap();
         // mint client handle mint block event
         let mint_block_event = bus
             .clone()
@@ -57,7 +53,6 @@ fn test_miner() {
             nonce,
             header_hash: mint_block_event.minting_hash,
         })
-        .await
         .unwrap();
         let mined_block = new_block_receiver.await.unwrap().0.get_block().clone();
         assert_eq!(mined_block.header.nonce, nonce);

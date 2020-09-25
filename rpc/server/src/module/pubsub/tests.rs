@@ -2,14 +2,12 @@ use crate::{
     metadata::Metadata,
     module::{PubSubImpl, PubSubService},
 };
-use actix::Addr;
 use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
 use jsonrpc_pubsub::Session;
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
-use starcoin_bus::{Bus, BusActor};
 use starcoin_chain::BlockChain;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
@@ -20,6 +18,7 @@ use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_rpc_api::types::pubsub::MintBlock;
+use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
@@ -77,7 +76,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // now block is applied, we can emit events.
 
-    let bus = registry.get_shared::<Addr<BusActor>>().await.unwrap();
+    let bus = registry.service_ref::<BusService>().await?;
     registry
         .register::<ChainNotifyHandlerService>()
         .await
@@ -96,8 +95,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
-    let request =
-        r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events", {}], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io
         .handle_request(request, metadata.clone())
@@ -107,8 +105,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     assert_eq!(resp, Some(response.to_owned()));
 
     // Subscribe error
-    let request =
-        r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["events"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"events"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: events","data":"\"Expected a filter object.\""},"id":1}"#;
 
     let resp = io
@@ -120,7 +117,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 
     // send block
     let block_detail = Arc::new(BlockDetail::new(new_block, 0.into()));
-    bus.broadcast(NewHeadBlock(block_detail)).await?;
+    bus.broadcast(NewHeadBlock(block_detail))?;
 
     let mut receiver = receiver.compat();
 
@@ -148,7 +145,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let (txpool_service, _, config, registry) = test_helper::start_txpool().await;
-    let bus = registry.get_shared::<Addr<BusActor>>().await?;
+    let bus = registry.service_ref::<BusService>().await?;
     let service = PubSubService::new(bus, txpool_service.clone());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -161,13 +158,13 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Fail if params are provided
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions", {}], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}, {}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","error":{"code":-32602,"message":"Couldn't parse parameters: newPendingTransactions","data":"\"Expected no parameters.\""},"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
 
     // Subscribe
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newPendingTransactions"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newPendingTransactions"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
@@ -210,7 +207,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let (txpool_service, .., registry) = test_helper::start_txpool().await;
-    let bus = registry.get_shared::<Addr<BusActor>>().await?;
+    let bus = registry.service_ref::<BusService>().await?;
     let service = PubSubService::new(bus.clone(), txpool_service.clone());
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -223,7 +220,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     metadata.session = Some(Arc::new(Session::new(sender)));
 
     // Subscribe
-    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": ["newMintBlock"], "id": 1}"#;
+    let request = r#"{"jsonrpc": "2.0", "method": "starcoin_subscribe", "params": [{"type_name":"newMintBlock"}], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":0,"id":1}"#;
     let resp = io.handle_request(request, metadata.clone()).compat().await;
     assert_eq!(resp, Ok(Some(response.to_owned())));
@@ -231,7 +228,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let diff = U256::from(1024);
     let header_hash = HashValue::random();
     let mint_block_event = MintBlockEvent::new(header_hash, diff);
-    bus.broadcast(mint_block_event.clone()).await.unwrap();
+    bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.compat().next())
         .await?
         .transpose()

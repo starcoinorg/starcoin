@@ -52,7 +52,7 @@ pub trait ReadableChainService {
 }
 
 /// Writeable block chain service trait
-pub trait WriteableChainService {
+pub trait WriteableChainService: Send + Sync {
     fn try_connect(&mut self, block: Block) -> Result<()>;
 
     fn try_connect_without_execute(

@@ -10,10 +10,8 @@ extern crate trace_time;
 extern crate prometheus;
 extern crate transaction_pool as tx_pool;
 
-use actix::prelude::*;
 use anyhow::{format_err, Result};
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
-use starcoin_bus::{Bus, BusActor};
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::TxnStatusFullEvent;
@@ -35,7 +33,6 @@ mod tx_pool_service_impl;
 //TODO refactor TxPoolService and rename.
 #[derive(Clone)]
 pub struct TxPoolActorService {
-    bus: Addr<BusActor>,
     inner: Inner,
 }
 
@@ -46,8 +43,8 @@ impl std::fmt::Debug for TxPoolActorService {
 }
 
 impl TxPoolActorService {
-    fn new(bus: Addr<BusActor>, inner: Inner) -> Self {
-        Self { bus, inner }
+    fn new(inner: Inner) -> Self {
+        Self { inner }
     }
 }
 
@@ -71,10 +68,7 @@ impl ServiceFactory<Self> for TxPoolActorService {
             let best_block_header = best_block.into_inner().0;
             Ok(TxPoolService::new(node_config, storage, best_block_header))
         })?;
-        Ok(Self::new(
-            ctx.get_shared::<Addr<BusActor>>()?,
-            txpool_service.get_inner(),
-        ))
+        Ok(Self::new(txpool_service.get_inner()))
     }
 }
 
@@ -133,12 +127,7 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
         if txns.is_empty() {
             return;
         }
-        let bus = self.bus.clone();
-        ctx.wait(async {
-            if let Err(e) = bus.broadcast(PropagateNewTransactions::new(txns)).await {
-                error!("fail to emit propagate new txn event, err: {}", e);
-            }
-        })
+        ctx.broadcast(PropagateNewTransactions::new(txns));
     }
 }
 

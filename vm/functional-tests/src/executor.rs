@@ -8,6 +8,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
+use starcoin_types::language_storage::ResourceKey;
 use starcoin_types::write_set::{WriteOp, WriteSetMut};
 use starcoin_types::{
     access_path::AccessPath,
@@ -16,8 +17,10 @@ use starcoin_types::{
     write_set::WriteSet,
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
-use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
+use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE_STR};
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::move_resource::MoveResource;
+use starcoin_vm_types::on_chain_resource::GlobalTimeOnChain;
 use starcoin_vm_types::{
     account_config::{association_address, AccountResource, BalanceResource},
     file_format::CompiledModule,
@@ -113,6 +116,18 @@ impl FakeExecutor {
                     .expect("freeze write_set must success."),
             )
             .expect("statedb set should success");
+    }
+
+    pub fn read_timestamp(&self) -> u64 {
+        let resource_key = ResourceKey::new(genesis_address(), GlobalTimeOnChain::struct_tag());
+        let ap = AccessPath::resource_access_path(&resource_key);
+        let data_blob = self
+            .data_store
+            .get(&ap)
+            .expect("account must exist in data store")
+            .expect("data must exist in data store");
+        let time: GlobalTimeOnChain = scs::from_bytes(data_blob.as_slice()).unwrap();
+        time.seconds
     }
 
     /// Reads the resource [`Value`] for an account from this executor's data store.

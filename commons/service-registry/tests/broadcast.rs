@@ -23,9 +23,9 @@ async fn test_broadcast() {
     //wait subscribe finished.
     Delay::new(Duration::from_millis(500)).await;
 
-    bus_ref.broadcast(BMessage1 {}).await.unwrap();
-    bus_ref.broadcast(BMessage1 {}).await.unwrap();
-    bus_ref.broadcast(BMessage2 {}).await.unwrap();
+    bus_ref.broadcast(BMessage1 {}).unwrap();
+    bus_ref.broadcast(BMessage1 {}).unwrap();
+    bus_ref.broadcast(BMessage2 {}).unwrap();
     //wait broadcast message processed.
     Delay::new(Duration::from_millis(500)).await;
 
@@ -38,7 +38,7 @@ async fn test_broadcast() {
     Delay::new(Duration::from_millis(500)).await;
 
     // broadcast message after service stop will process fail.
-    bus_ref.broadcast(BMessage1 {}).await.unwrap();
+    bus_ref.broadcast(BMessage1 {}).unwrap();
 
     service_ref.start_self().unwrap();
 
@@ -46,7 +46,7 @@ async fn test_broadcast() {
 
     //broadcast service worked after restart
 
-    bus_ref.broadcast(BMessage1 {}).await.unwrap();
+    bus_ref.broadcast(BMessage1 {}).unwrap();
 
     Delay::new(Duration::from_millis(500)).await;
 

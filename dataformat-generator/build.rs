@@ -3,7 +3,7 @@ use serde_reflection::{Error, Samples, Tracer, TracerConfig};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
 use starcoin_crypto::multi_ed25519::MultiEd25519PrivateKey;
 use starcoin_crypto::{HashValue, PrivateKey, SigningKey, Uniform};
-use starcoin_rpc_api::types::pubsub::Kind;
+// use starcoin_rpc_api::types::pubsub::Kind;
 use starcoin_types::access_path::{AccessPath, DataType};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::AccountResource;
@@ -60,9 +60,9 @@ fn generate() -> Result<(), Error> {
 
     tracer.trace_type::<AccountResource>(&samples)?;
 
-    {
-        tracer.trace_type::<Kind>(&samples)?;
-    }
+    // {
+    //     tracer.trace_type::<Kind>(&samples)?;
+    // }
 
     tracer.trace_type::<AccessPath>(&samples)?;
     tracer.trace_type::<DataType>(&samples)?;

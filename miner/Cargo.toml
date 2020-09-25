@@ -19,7 +19,6 @@ starcoin-state-api = {path = "../state/api"}
 statedb = {path = "../state/statedb", package="starcoin-statedb" }
 state_tree = {path = "../state/state-tree", package="starcoin-state-tree" }
 consensus = {path = "../consensus", package="starcoin-consensus" }
-bus = { path = "../bus", package = "starcoin-bus" }
 starcoin-storage = { path = "../storage" }
 executor = { path = "../executor", package = "starcoin-executor" }
 starcoin-txpool = { path = "../txpool" }

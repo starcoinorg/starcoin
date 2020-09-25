@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
 use anyhow::Result;
-use bus::BusActor;
 use chain::BlockChain;
 use consensus::Consensus;
 use futures::FutureExt;
@@ -38,9 +36,9 @@ pub struct MinerService {
 
 impl ServiceFactory<MinerService> for MinerService {
     fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
-        let bus = ctx.get_shared::<Addr<BusActor>>()?;
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let bus = ctx.bus_ref().clone();
         let miner = miner::Miner::new(bus, config.clone());
         let create_block_template_service =
             ctx.service_ref::<CreateBlockTemplateService>()?.clone();

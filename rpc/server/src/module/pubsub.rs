@@ -2,31 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metadata::Metadata;
-use crate::module::map_err;
-use actix::Addr;
 use futures::channel::mpsc;
+use futures::compat::Sink01CompatExt;
 use futures::future::AbortHandle;
 use futures::{compat::Future01CompatExt, StreamExt};
 use jsonrpc_core::Result;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
-use scs::SCSCodec;
-use starcoin_bus::{Bus, BusActor};
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
+use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::ServiceRef;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
+use starcoin_types::system_events::MintBlockEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::fmt::Debug;
 use std::sync::{atomic, Arc};
 use txpool::TxPoolService;
-
-use futures::compat::Sink01CompatExt;
-use starcoin_crypto::HashValue;
-use starcoin_types::system_events::MintBlockEvent;
-use std::fmt::Debug;
 
 #[cfg(test)]
 pub mod tests;
@@ -86,55 +83,7 @@ impl StarcoinPubSub for PubSubImpl {
         let _ = subscriber.reject(error);
     }
 
-    fn subscribe_hex(
-        &self,
-        _meta: Self::Metadata,
-        subscriber: Subscriber<pubsub::Result>,
-        kind_str: String,
-        params_str: Option<String>,
-    ) {
-        let kind_bytes = match hex::decode(kind_str) {
-            Ok(t) => t,
-            Err(e) => {
-                let _ = subscriber.reject(map_err(e.into()));
-                return;
-            }
-        };
-        let kind = match pubsub::Kind::decode(&kind_bytes) {
-            Ok(t) => t,
-            Err(e) => {
-                let _ = subscriber.reject(map_err(e));
-                return;
-            }
-        };
-        let params = match params_str {
-            Some(t) => {
-                let params_bytes = match hex::decode(t) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        let _ = subscriber.reject(map_err(e.into()));
-                        return;
-                    }
-                };
-                let params = match pubsub::Params::decode(&params_bytes) {
-                    Ok(t) => t,
-                    Err(e) => {
-                        let _ = subscriber.reject(map_err(e));
-                        return;
-                    }
-                };
-                Some(params)
-            }
-            None => None,
-        };
-        self.subscribe(_meta, subscriber, kind, params);
-    }
-
     fn unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
-        self.service.unsubscribe(id)
-    }
-
-    fn unsubscribe_hex(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
         self.service.unsubscribe(id)
     }
 }
@@ -142,14 +91,14 @@ impl StarcoinPubSub for PubSubImpl {
 #[derive(Clone)]
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,
-    bus: Addr<BusActor>,
+    bus: ServiceRef<BusService>,
     subscribers: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
     txpool: TxPoolService,
     spawner: actix_rt::Arbiter,
 }
 
 impl PubSubService {
-    pub fn new(bus: Addr<BusActor>, txpool: TxPoolService) -> Self {
+    pub fn new(bus: ServiceRef<BusService>, txpool: TxPoolService) -> Self {
         let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
         Self {
             spawner: actix_rt::Arbiter::new(),
@@ -213,7 +162,7 @@ impl PubSubService {
     pub fn add_new_header_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
         let myself = self.clone();
         self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.clone().channel().await;
+            let channel = myself.bus.channel().await;
             match channel {
                 Err(_e) => {
                     let _ = subscriber
@@ -231,7 +180,7 @@ impl PubSubService {
     pub fn add_mint_block_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
         let myself = self.clone();
         self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.clone().channel().await;
+            let channel = myself.bus.channel().await;
             match channel {
                 Err(_e) => {
                     let _ = subscriber
@@ -249,7 +198,7 @@ impl PubSubService {
     pub fn add_event_subscription(&self, subscriber: Subscriber<pubsub::Result>, filter: Filter) {
         let myself = self.clone();
         self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.clone().channel().await;
+            let channel = myself.bus.channel().await;
             match channel {
                 Err(_) => {
                     let _ = subscriber

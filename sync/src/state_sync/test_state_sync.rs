@@ -1,12 +1,12 @@
-use crate::helper::{
-    get_accumulator_node_by_node_hash, get_state_node_by_node_hash, get_txn_infos,
-};
 use crate::state_sync::{
     sync_accumulator_node, sync_state_node, sync_txn_info, Inner, StateSyncTaskEvent, TxnInfoEvent,
 };
 use crate::sync_event_handle::SendSyncEventHandler;
+use crate::verified_rpc_client::VerifiedRpcClient;
 use chain::BlockChain;
 use config::NodeConfig;
+use futures::executor::block_on;
+use network_api::PeerProvider;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_types::peer_info::PeerId;
 use std::marker::PhantomData;
@@ -79,7 +79,7 @@ impl SendSyncEventHandler<TxnInfoEvent> for TestTxnInfoEventHandler {
     fn send_event(&self, _event: TxnInfoEvent) {}
 }
 
-fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetworkService>) {
+fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner) {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let block_chain =
         Arc::new(gen_blockchain_with_blocks_for_test(times, node_config.net()).unwrap());
@@ -87,7 +87,7 @@ fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetwork
     (block_chain, inner)
 }
 
-fn gen_inner(block_chain: Arc<BlockChain>, new_storage: bool) -> Inner<DummyNetworkService> {
+fn gen_inner(block_chain: Arc<BlockChain>, new_storage: bool) -> Inner {
     let storage = if new_storage {
         let node_config = Arc::new(NodeConfig::random_for_test());
         gen_blockchain_for_test(node_config.net())
@@ -98,6 +98,10 @@ fn gen_inner(block_chain: Arc<BlockChain>, new_storage: bool) -> Inner<DummyNetw
     };
     let pivot = block_chain.current_header();
     let network = DummyNetworkService::new(block_chain.clone());
+
+    let peer_selector = block_on(async { network.peer_selector().await }).unwrap();
+    let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+
     Inner::new(
         PeerId::random(),
         (
@@ -106,7 +110,7 @@ fn gen_inner(block_chain: Arc<BlockChain>, new_storage: bool) -> Inner<DummyNetw
             pivot.id(),
         ),
         storage,
-        network,
+        rpc_client,
     )
 }
 
@@ -118,15 +122,15 @@ async fn test_state_sync_handle_event() {
 
     let header = block_chain.current_header();
     let handler = TestTxnInfoEventHandler::new();
-    let peer_id = PeerId::random();
 
     // state
     let (state_root, is_state_root) = inner.state_sync_task.pop_front().unwrap();
     assert_eq!(state_root, header.state_root());
-    let state_node =
-        get_state_node_by_node_hash(inner._get_network_client(), peer_id.clone(), state_root)
-            .await
-            .unwrap();
+    let client = inner.get_network_client();
+    let (peer_id, state_node) = client
+        .get_state_node_by_node_hash(state_root)
+        .await
+        .unwrap();
     let state_task_event = StateSyncTaskEvent::new_state(
         false,
         peer_id.clone(),
@@ -139,14 +143,10 @@ async fn test_state_sync_handle_event() {
     // accumulator
     let accumulator_root = inner.block_accumulator_sync_task.pop_front().unwrap();
     assert_eq!(accumulator_root, header.parent_block_accumulator_root());
-    let accumulator_node = get_accumulator_node_by_node_hash(
-        inner._get_network_client(),
-        peer_id.clone(),
-        accumulator_root,
-        AccumulatorStoreType::Block,
-    )
-    .await
-    .unwrap();
+    let (peer_id, accumulator_node) = client
+        .get_accumulator_node_by_node_hash(accumulator_root, AccumulatorStoreType::Block)
+        .await
+        .unwrap();
     let accumulator_task_event = StateSyncTaskEvent::new_accumulator(
         false,
         peer_id.clone(),
@@ -158,11 +158,8 @@ async fn test_state_sync_handle_event() {
     // txn info
     let block_id = inner.txn_info_sync_task.pop_front().unwrap();
     assert_eq!(block_id, header.id());
-    let txn_infos = get_txn_infos(inner._get_network_client(), peer_id.clone(), block_id)
-        .await
-        .unwrap();
-    let txn_info_task_event =
-        StateSyncTaskEvent::new_txn_info(false, peer_id.clone(), block_id, txn_infos);
+    let (peer_id, txn_infos) = client.get_txn_infos(block_id).await.unwrap();
+    let txn_info_task_event = StateSyncTaskEvent::new_txn_info(false, peer_id, block_id, txn_infos);
     inner.handle_txn_info_sync(txn_info_task_event, Box::new(handler.clone()));
 
     assert!(inner.do_finish());
@@ -173,10 +170,10 @@ async fn test_sync_accumulator_node() {
     let (block_chain, inner) = gen_block_chain_and_inner(1);
     let handler = TestStateSyncTaskEventHandler::new();
     let header = block_chain.current_header();
+    let client = inner.get_network_client();
     sync_accumulator_node(
         header.parent_block_accumulator_root(),
-        PeerId::random(),
-        inner._get_network_client().clone(),
+        client.clone(),
         Box::new(handler.clone()),
     )
     .await;
@@ -188,11 +185,11 @@ async fn test_sync_state_node() {
     let (block_chain, inner) = gen_block_chain_and_inner(1);
     let handler = TestStateSyncTaskEventHandler::new();
     let header = block_chain.current_header();
+    let client = inner.get_network_client();
     sync_state_node(
         true,
         header.state_root(),
-        PeerId::random(),
-        inner._get_network_client().clone(),
+        client.clone(),
         Box::new(handler.clone()),
     )
     .await;
@@ -204,12 +201,7 @@ async fn test_sync_txn_info() {
     let (block_chain, inner) = gen_block_chain_and_inner(1);
     let handler = TestStateSyncTaskEventHandler::new();
     let header = block_chain.current_header();
-    sync_txn_info(
-        header.id(),
-        PeerId::random(),
-        inner._get_network_client().clone(),
-        Box::new(handler.clone()),
-    )
-    .await;
+    let client = inner.get_network_client();
+    sync_txn_info(header.id(), client.clone(), Box::new(handler.clone())).await;
     assert_eq!(handler.get_txn_info_count(), 1);
 }

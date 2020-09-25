@@ -3,22 +3,22 @@
 
 use crate::metrics::MINER_METRICS;
 use crate::MintBlockEvent;
-use actix::prelude::*;
 use anyhow::{format_err, Result};
-use bus::{Bus, BusActor};
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
 use parking_lot::Mutex;
 use starcoin_config::NodeConfig;
 use starcoin_metrics::HistogramTimer;
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::ServiceRef;
 use std::sync::Arc;
 use types::{block::BlockTemplate, system_events::MinedBlock, U256};
 
 #[derive(Clone)]
 pub struct Miner {
     state: Arc<Mutex<Option<MineCtx>>>,
-    bus: Addr<BusActor>,
+    bus: ServiceRef<BusService>,
     config: Arc<NodeConfig>,
 }
 
@@ -46,7 +46,7 @@ impl MineCtx {
 }
 
 impl Miner {
-    pub fn new(bus: Addr<BusActor>, config: Arc<NodeConfig>) -> Miner {
+    pub fn new(bus: ServiceRef<BusService>, config: Arc<NodeConfig>) -> Miner {
         Self {
             state: Arc::new(Mutex::new(None)),
             bus,
@@ -61,9 +61,9 @@ impl Miner {
             warn!("force set mint job, since mint ctx is not empty");
         }
         *self.state.lock() = Some(ctx);
-        let bus = self.bus.clone();
-        bus.broadcast(MintBlockEvent::new(mining_hash, difficulty))
-            .await
+        self.bus
+            .broadcast(MintBlockEvent::new(mining_hash, difficulty))?;
+        Ok(())
     }
 
     pub fn is_minting(&self) -> bool {
@@ -85,10 +85,7 @@ impl Miner {
 
         let block = ctx.block_template.into_block(nonce, ctx.difficulty);
         info!("Mint new block with id: {:?}", block.id());
-        self.bus
-            .clone()
-            .broadcast(MinedBlock(Arc::new(block)))
-            .await?;
+        self.bus.broadcast(MinedBlock(Arc::new(block)))?;
         MINER_METRICS.block_mint_count.inc();
         ctx.metrics_timer.observe_duration();
         Ok(())
