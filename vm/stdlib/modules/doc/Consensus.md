@@ -37,6 +37,7 @@
 -  [Function `epoch_end_block_number`](#0x1_Consensus_epoch_end_block_number)
 -  [Function `epoch_number`](#0x1_Consensus_epoch_number)
 -  [Function `block_time_target`](#0x1_Consensus_block_time_target)
+-  [Specification](#0x1_Consensus_Specification)
 
 
 
@@ -57,63 +58,54 @@
 
 <dl>
 <dt>
-
 <code>uncle_rate_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>init_block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>init_reward_per_block: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>reward_per_uncle_percent: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>epoch_block_count: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>block_difficulty_window: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>min_block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>max_block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>max_uncles_per_block: u64</code>
 </dt>
 <dd>
@@ -141,49 +133,42 @@
 
 <dl>
 <dt>
-
 <code>epoch_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>epoch_start_time: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>start_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>end_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>reward_per_block: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>new_epoch_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Consensus_NewEpochEvent">Consensus::NewEpochEvent</a>&gt;</code>
 </dt>
 <dd>
@@ -211,49 +196,42 @@
 
 <dl>
 <dt>
-
 <code>epoch_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>epoch_start_time: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>start_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>end_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>block_time_target: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>reward_per_block: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>previous_epoch_total_reward: u128</code>
 </dt>
 <dd>
@@ -281,14 +259,12 @@
 
 <dl>
 <dt>
-
 <code>uncles: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>total_reward: u128</code>
 </dt>
 <dd>
@@ -305,7 +281,7 @@
 
 
 
-<pre><code><b>const</b> THOUSAND: u64 = 1000;
+<pre><code><b>const</b> <a href="#0x1_Consensus_THOUSAND">THOUSAND</a>: u64 = 1000;
 </code></pre>
 
 
@@ -316,7 +292,7 @@
 
 
 
-<pre><code><b>const</b> THOUSAND_U128: u128 = 1000;
+<pre><code><b>const</b> <a href="#0x1_Consensus_THOUSAND_U128">THOUSAND_U128</a>: u128 = 1000;
 </code></pre>
 
 
@@ -327,7 +303,7 @@
 
 
 
-<pre><code><b>const</b> HUNDRED: u64 = 100;
+<pre><code><b>const</b> <a href="#0x1_Consensus_HUNDRED">HUNDRED</a>: u64 = 100;
 </code></pre>
 
 
@@ -774,7 +750,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Consensus_compute_reward_per_block">compute_reward_per_block</a>(new_epoch_block_time_target: u64): u128 {
     <b>let</b> current_config = <a href="#0x1_Consensus_get_config">get_config</a>();
-    (current_config.init_reward_per_block * ((new_epoch_block_time_target <b>as</b> u128) * THOUSAND_U128/(current_config.init_block_time_target <b>as</b> u128)))/THOUSAND_U128
+    (current_config.init_reward_per_block * ((new_epoch_block_time_target <b>as</b> u128) * <a href="#0x1_Consensus_THOUSAND_U128">THOUSAND_U128</a>/(current_config.init_block_time_target <b>as</b> u128)))/<a href="#0x1_Consensus_THOUSAND_U128">THOUSAND_U128</a>
 }
 </code></pre>
 
@@ -814,8 +790,8 @@
         <b>let</b> total_uncles = epoch_data.uncles;
         <b>let</b> blocks = epoch_ref.end_number - epoch_ref.start_number;
         <b>let</b> avg_block_time = total_time / blocks;
-        <b>let</b> uncles_rate = total_uncles * THOUSAND / blocks;
-        <b>let</b> new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time / (config.uncle_rate_target + THOUSAND);
+        <b>let</b> uncles_rate = total_uncles * <a href="#0x1_Consensus_THOUSAND">THOUSAND</a> / blocks;
+        <b>let</b> new_epoch_block_time_target = (<a href="#0x1_Consensus_THOUSAND">THOUSAND</a> + uncles_rate) * avg_block_time / (config.uncle_rate_target + <a href="#0x1_Consensus_THOUSAND">THOUSAND</a>);
 
         <b>if</b> (new_epoch_block_time_target &lt; config.min_block_time_target) {
             new_epoch_block_time_target = config.min_block_time_target;
@@ -1062,3 +1038,13 @@
 
 
 </details>
+
+<a name="0x1_Consensus_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+pragma aborts_if_is_strict;
+</code></pre>

@@ -31,7 +31,6 @@
 
 <dl>
 <dt>
-
 <code>value: u8</code>
 </dt>
 <dd>

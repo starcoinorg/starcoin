@@ -32,7 +32,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;</code>
 </dt>
 <dd>
@@ -48,8 +47,7 @@
 ## Struct `DaoConfigUpdate`
 
 a proposal action to udpate dao config.
-if any field is
-<code>0</code>, that means the proposal want to update.
+if any field is <code>0</code>, that means the proposal want to update.
 
 
 <pre><code><b>struct</b> <a href="#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>
@@ -63,28 +61,24 @@ if any field is
 
 <dl>
 <dt>
-
 <code>voting_delay: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>voting_period: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>voting_quorum_rate: u8</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>min_action_delay: u64</code>
 </dt>
 <dd>
@@ -101,7 +95,7 @@ if any field is
 
 
 
-<pre><code><b>const</b> ERR_NOT_AUTHORIZED: u64 = 401;
+<pre><code><b>const</b> <a href="#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 401;
 </code></pre>
 
 
@@ -112,7 +106,7 @@ if any field is
 
 
 
-<pre><code><b>const</b> ERR_QUROM_RATE_INVALID: u64 = 402;
+<pre><code><b>const</b> <a href="#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>: u64 = 402;
 </code></pre>
 
 
@@ -134,7 +128,7 @@ if any field is
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
     <b>let</b> dao_config_moidify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
         <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;,
     &gt;(signer);
@@ -170,7 +164,7 @@ if any field is
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ) {
-    <b>assert</b>(voting_quorum_rate &lt;= 100, ERR_QUROM_RATE_INVALID);
+    <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
     <b>let</b> action = <a href="#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,

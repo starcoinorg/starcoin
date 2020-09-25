@@ -41,14 +41,12 @@
 
 <dl>
 <dt>
-
 <code>value: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>is_negative: bool</code>
 </dt>
 <dd>
