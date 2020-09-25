@@ -8,6 +8,9 @@ module UpgradeModuleDaoProposal {
     use 0x1::Dao;
     use 0x1::Block;
 
+    const ERR_NOT_AUTHORIZED: u64 = 401;
+    const ERR_UNABLE_TO_UPGRADE: u64 = 400;
+
     resource struct UpgradeModuleCapabilities<TokenT> {
         caps: vector<WrappedUpgradePlanCapability>,
     }
@@ -19,12 +22,12 @@ module UpgradeModuleDaoProposal {
     // const UPGRADE_DELAY: u64 = 200;
     struct UpgradeModule {
         module_address: address,
-        module_hash: vector<u8>,
+        package_hash: vector<u8>,
     }
 
     public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, 401);
+        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
         let caps = UpgradeModuleCapabilities<TokenT> { caps: Vector::empty() };
         move_to(signer, caps)
     }
@@ -35,7 +38,7 @@ module UpgradeModuleDaoProposal {
         cap: PackageTxnManager::UpgradePlanCapability,
     ) acquires UpgradeModuleCapabilities {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, 401);
+        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
         let caps = borrow_global_mut<UpgradeModuleCapabilities<TokenT>>(token_issuer);
         // TODO: should check duplicate cap?
         // for now, only one cap exists for a module address.
@@ -53,24 +56,21 @@ module UpgradeModuleDaoProposal {
     public fun propose_module_upgrade<TokenT: copyable>(
         signer: &signer,
         module_address: address,
-        module_hash: vector<u8>,
+        package_hash: vector<u8>,
     ) acquires UpgradeModuleCapabilities {
-        assert(able_to_upgrade<TokenT>(module_address), 400);
+        assert(able_to_upgrade<TokenT>(module_address), ERR_UNABLE_TO_UPGRADE);
         Dao::propose<TokenT, UpgradeModule>(
             signer,
-            UpgradeModule { module_address, module_hash },
-            200,
+            UpgradeModule { module_address, package_hash },
+            Dao::default_min_action_delay(),
         );
-
-        // TODO: replace 200 with DAO::MIN_ACTION_DELAY
     }
 
     public fun submit_module_upgrade_plan<TokenT: copyable>(
-        _signer: &signer,
         proposer_address: address,
         proposal_id: u64,
     ) acquires UpgradeModuleCapabilities {
-        let UpgradeModule { module_address, module_hash } = Dao::extract_proposal_action<
+        let UpgradeModule { module_address, package_hash } = Dao::extract_proposal_action<
             TokenT,
             UpgradeModule,
         >(proposer_address, proposal_id);
@@ -81,7 +81,7 @@ module UpgradeModuleDaoProposal {
         let cap = Vector::borrow(&caps.caps, pos);
         PackageTxnManager::submit_upgrade_plan_with_cap(
             &cap.cap,
-            module_hash,
+            package_hash,
             Block::get_current_block_number(),
         );
     }

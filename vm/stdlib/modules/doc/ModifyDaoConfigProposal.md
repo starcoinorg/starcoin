@@ -7,6 +7,8 @@
 
 -  [Resource `DaoConfigModifyCapability`](#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability)
 -  [Struct `DaoConfigUpdate`](#0x1_ModifyDaoConfigProposal_DaoConfigUpdate)
+-  [Const `ERR_NOT_AUTHORIZED`](#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED)
+-  [Const `ERR_QUROM_RATE_INVALID`](#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID)
 -  [Function `plugin`](#0x1_ModifyDaoConfigProposal_plugin)
 -  [Function `propose`](#0x1_ModifyDaoConfigProposal_propose)
 -  [Function `execute`](#0x1_ModifyDaoConfigProposal_execute)
@@ -46,7 +48,8 @@
 ## Struct `DaoConfigUpdate`
 
 a proposal action to udpate dao config.
-if any field is some, that means the proposal want to update.
+if any field is
+<code>0</code>, that means the proposal want to update.
 
 
 <pre><code><b>struct</b> <a href="#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>
@@ -61,28 +64,28 @@ if any field is some, that means the proposal want to update.
 <dl>
 <dt>
 
-<code>voting_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;</code>
+<code>voting_delay: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
 
-<code>voting_period: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;</code>
+<code>voting_period: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
 
-<code>voting_quorum_rate: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u8&gt;</code>
+<code>voting_quorum_rate: u8</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
 
-<code>min_action_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;</code>
+<code>min_action_delay: u64</code>
 </dt>
 <dd>
 
@@ -91,6 +94,28 @@ if any field is some, that means the proposal want to update.
 
 
 </details>
+
+<a name="0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED"></a>
+
+## Const `ERR_NOT_AUTHORIZED`
+
+
+
+<pre><code><b>const</b> ERR_NOT_AUTHORIZED: u64 = 401;
+</code></pre>
+
+
+
+<a name="0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID"></a>
+
+## Const `ERR_QUROM_RATE_INVALID`
+
+
+
+<pre><code><b>const</b> ERR_QUROM_RATE_INVALID: u64 = 402;
+</code></pre>
+
+
 
 <a name="0x1_ModifyDaoConfigProposal_plugin"></a>
 
@@ -109,7 +134,7 @@ if any field is some, that means the proposal want to update.
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, 401);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, ERR_NOT_AUTHORIZED);
     <b>let</b> dao_config_moidify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
         <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;,
     &gt;(signer);
@@ -129,7 +154,7 @@ if any field is some, that means the proposal want to update.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;, voting_period: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;, voting_quorum_rate: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u8&gt;, min_action_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
 </code></pre>
 
 
@@ -140,11 +165,12 @@ if any field is some, that means the proposal want to update.
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(
     signer: &signer,
-    voting_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;,
-    voting_period: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;,
-    voting_quorum_rate: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u8&gt;,
-    min_action_delay: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
 ) {
+    <b>assert</b>(voting_quorum_rate &lt; 100, ERR_QUROM_RATE_INVALID);
     <b>let</b> action = <a href="#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,

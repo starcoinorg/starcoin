@@ -25,5 +25,5 @@ statedb = {path = "../../state/statedb", package="starcoin-statedb" }
 starcoin-state-api = {path="../../state/api"}
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-consensus = { path = "../../consensus" }
-
+starcoin-vm-types = {path = "../../vm/types"}
 [features]
