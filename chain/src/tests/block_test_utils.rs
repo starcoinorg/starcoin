@@ -65,6 +65,7 @@ fn gen_header(
     parent_header: BlockHeader,
     acc_root: HashValue,
     state_root: HashValue,
+    body_hash: HashValue,
 ) -> BlockHeader {
     BlockHeader::new(
         parent_header.id(),
@@ -77,7 +78,7 @@ fn gen_header(
         0,
         U256::zero(),
         0,
-        None,
+        body_hash,
         parent_header.chain_id,
     )
 }
@@ -161,8 +162,8 @@ prop_compose! {
             txns,
             u64::max_value(), /*block_gas_limit*/
         );
-        let header = gen_header(parent_header, state_root, acc_root);
         let body = BlockBody::new(user_txns, None);
+        let header = gen_header(parent_header, state_root, acc_root, body.hash());
         Block::new(header, body)
     }
 }
@@ -175,7 +176,7 @@ prop_compose! {
         parent_header in Just(parent_header),
     )
        -> BlockHeader {
-       gen_header(parent_header, HashValue::zero(), HashValue::zero())
+       gen_header(parent_header, HashValue::zero(), HashValue::zero(), HashValue::zero())
     }
 }
 

@@ -66,7 +66,7 @@ fn test_uncle() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().body.uncles.is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -85,7 +85,7 @@ fn test_uncle_exist() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().body.uncles.is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -141,7 +141,7 @@ fn test_switch_epoch() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().body.uncles.is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -165,7 +165,7 @@ fn test_switch_epoch() {
     // 5. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_none());
+    assert!(mock_chain.head().head_block().body.uncles.is_some());
     assert!(mock_chain.head().head_block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
@@ -191,7 +191,7 @@ fn test_uncle_in_diff_epoch() {
     // 4. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_none());
+    assert!(mock_chain.head().head_block().body.uncles.is_some());
     assert!(mock_chain.head().head_block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 

@@ -6,7 +6,6 @@ use consensus::Consensus;
 use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
-use scs::SCSCodec;
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
     AccumulatorTreeStore, MerkleAccumulator,
@@ -643,26 +642,6 @@ impl BlockChain {
             );
         }
 
-        match header.uncle_hash {
-            Some(uncle_hash) => {
-                let calculated_hash = HashValue::sha3_256_of(&uncles.to_vec().encode()?);
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    calculated_hash.eq(&uncle_hash),
-                    "uncle hash in header is {},uncle hash calculated is {}",
-                    uncle_hash,
-                    calculated_hash
-                );
-            }
-            None => {
-                return Err(ConnectBlockError::VerifyBlockFailed(
-                    VerifyBlockField::Uncle,
-                    format_err!("Unexpect uncles, header's uncle hash is None"),
-                )
-                .into());
-            }
-        }
-
         let epoch_start_number = if let Some(epoch) = &self.epoch {
             if header.number() >= epoch.end_number() {
                 return Err(ConnectBlockError::VerifyBlockFailed(
@@ -741,6 +720,13 @@ impl BlockChain {
             VerifyBlockField::Header,
             header.gas_used() <= gas_limit,
             "invalid block: gas_used should not greater than gas_limit"
+        );
+
+        verify_block!(
+            VerifyBlockField::Header,
+            block.body.hash() == header.body_hash(),
+            "verify block:{:?} body hash fail.",
+            header.id(),
         );
 
         let mut switch_epoch = false;
