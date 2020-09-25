@@ -26,7 +26,6 @@
     -  [Function `length`](#0x1_Vector_Specification_length)
     -  [Function `borrow`](#0x1_Vector_Specification_borrow)
     -  [Function `singleton`](#0x1_Vector_Specification_singleton)
-    -  [Module specifications](#0x1_Vector_@Module_specifications)
     -  [Function `reverse`](#0x1_Vector_Specification_reverse)
     -  [Function `append`](#0x1_Vector_Specification_append)
     -  [Function `is_empty`](#0x1_Vector_Specification_is_empty)
@@ -34,6 +33,8 @@
     -  [Function `index_of`](#0x1_Vector_Specification_index_of)
     -  [Function `remove`](#0x1_Vector_Specification_remove)
     -  [Function `swap_remove`](#0x1_Vector_Specification_swap_remove)
+    -  [Function `split`](#0x1_Vector_Specification_split)
+    -  [Module specifications](#0x1_Vector_@Module_specifications)
 
 
 
@@ -564,63 +565,6 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="0x1_Vector_@Module_specifications"></a>
-
-### Module specifications
-
-
-Auxiliary function to check whether a vector contains an element.
-
-
-<a name="0x1_Vector_spec_contains"></a>
-
-
-<pre><code><b>define</b> <a href="#0x1_Vector_spec_contains">spec_contains</a>&lt;Element&gt;(v: vector&lt;Element&gt;, e: Element): bool {
-    exists x in v: x == e
-}
-</code></pre>
-
-
-Auxiliary function to check if
-<code>v1</code> is equal to the result of adding
-<code>e</code> at the end of
-<code>v2</code>
-
-
-<a name="0x1_Vector_eq_push_back"></a>
-
-
-<pre><code><b>define</b> <a href="#0x1_Vector_eq_push_back">eq_push_back</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;, e: Element): bool {
-    len(v1) == len(v2) + 1 &&
-    v1[len(v1)-1] == e &&
-    v1[0..len(v1)-1] == v2[0..len(v2)]
-}
-</code></pre>
-
-
-Auxiliary function to check if
-<code>v</code> is equal to the result of concatenating
-<code>v1</code> and
-<code>v2</code>
-
-
-<a name="0x1_Vector_eq_append"></a>
-
-
-<pre><code><b>define</b> <a href="#0x1_Vector_eq_append">eq_append</a>&lt;Element&gt;(v: vector&lt;Element&gt;, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
-    len(v) == len(v1) + len(v2) &&
-    v[0..len(v1)] == v1 &&
-    v[len(v1)..len(v)] == v2
-}
-<a name="0x1_Vector_eq_pop_front"></a>
-<b>define</b> <a href="#0x1_Vector_eq_pop_front">eq_pop_front</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
-    len(v1) + 1 == len(v2) &&
-    v1 == v2[1..len(v2)]
-}
-</code></pre>
-
-
-
 <a name="0x1_Vector_Specification_reverse"></a>
 
 ### Function `reverse`
@@ -729,4 +673,71 @@ Auxiliary function to check if
 
 
 <pre><code>pragma intrinsic = <b>true</b>;
+</code></pre>
+
+
+
+<a name="0x1_Vector_Specification_split"></a>
+
+### Function `split`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Vector_split">split</a>&lt;Element: <b>copyable</b>&gt;(v: &vector&lt;Element&gt;, sub_len: u64): vector&lt;vector&lt;Element&gt;&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Vector_@Module_specifications"></a>
+
+### Module specifications
+
+
+Auxiliary function to check whether a vector contains an element.
+
+
+<a name="0x1_Vector_spec_contains"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Vector_spec_contains">spec_contains</a>&lt;Element&gt;(v: vector&lt;Element&gt;, e: Element): bool {
+    exists x in v: x == e
+}
+</code></pre>
+
+
+Auxiliary function to check if <code>v1</code> is equal to the result of adding <code>e</code> at the end of <code>v2</code>
+
+
+<a name="0x1_Vector_eq_push_back"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Vector_eq_push_back">eq_push_back</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;, e: Element): bool {
+    len(v1) == len(v2) + 1 &&
+    v1[len(v1)-1] == e &&
+    v1[0..len(v1)-1] == v2[0..len(v2)]
+}
+</code></pre>
+
+
+Auxiliary function to check if <code>v</code> is equal to the result of concatenating <code>v1</code> and <code>v2</code>
+
+
+<a name="0x1_Vector_eq_append"></a>
+
+
+<pre><code><b>define</b> <a href="#0x1_Vector_eq_append">eq_append</a>&lt;Element&gt;(v: vector&lt;Element&gt;, v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
+    len(v) == len(v1) + len(v2) &&
+    v[0..len(v1)] == v1 &&
+    v[len(v1)..len(v)] == v2
+}
+<a name="0x1_Vector_eq_pop_front"></a>
+<b>define</b> <a href="#0x1_Vector_eq_pop_front">eq_pop_front</a>&lt;Element&gt;(v1: vector&lt;Element&gt;, v2: vector&lt;Element&gt;): bool {
+    len(v1) + 1 == len(v2) &&
+    v1 == v2[1..len(v2)]
+}
 </code></pre>

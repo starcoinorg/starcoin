@@ -9,7 +9,6 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     option::Option::None,
-    process::Command,
 };
 
 use codespan::{ByteIndex, ByteOffset, ColumnIndex, FileId, LineIndex, Location, Span};
@@ -26,13 +25,14 @@ use spec_lang::{
     ty::{PrimitiveType, Type},
 };
 
-use crate::cli::Options;
+use crate::{
+    cli::Options,
+    prover_task_runner::{ProverTaskRunner, RunBoogieWithSeeds},
+};
 // DEBUG
 // use backtrace::Backtrace;
+use bytecode::{function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder};
 use spec_lang::env::{ConditionTag, NodeId};
-use stackless_bytecode_generator::{
-    function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder,
-};
 
 /// A type alias for the way how we use crate `pretty`'s document type. `pretty` is a
 /// Wadler-style pretty printer. Our simple usage doesn't require any lifetime management.
@@ -112,7 +112,23 @@ impl<'env> BoogieWrapper<'env> {
         info!("running solver");
         debug!("command line: {}", args.iter().join(" "));
         for count in 0..bench_repeat {
-            let output = Command::new(&args[0]).args(&args[1..]).output()?;
+            let task = RunBoogieWithSeeds {
+                options: self.options.clone(),
+                boogie_file: boogie_file.to_string(),
+            };
+            // When running on complicated formulas(especially those with quantifiers), SMT solvers
+            // can suffer from the so-called butterfly effect, where minor changes such as using
+            // different random seeds cause significant instabilities in verification times.
+            // Thus by running multiple instances of Boogie with different random seeds, we can
+            // potentially alleviate the instability.
+            let (seed, output) = ProverTaskRunner::run_tasks(
+                task,
+                self.options.prover.num_instances,
+                self.options.prover.sequential_task,
+            );
+            if self.options.prover.num_instances > 1 {
+                debug!("Boogie instance with seed {} finished first", seed);
+            }
             if !output.status.success() {
                 return Err(anyhow!("boogie exited with: {:?}", output));
             } else if count == bench_repeat - 1 {
@@ -201,7 +217,7 @@ impl<'env> BoogieWrapper<'env> {
             // Expected error did not happen, report it.
             let diag = Diagnostic::new(
                 Severity::Error,
-                info.message.clone(),
+                format!("{} (negative error)", info.message),
                 Label::new(loc.file_id(), loc.span(), ""),
             );
             self.env.add_diag(diag);

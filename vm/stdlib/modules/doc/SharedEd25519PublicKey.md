@@ -38,14 +38,12 @@
 
 <dl>
 <dt>
-
 <code>key: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>rotation_cap: <a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a></code>
 </dt>
 <dd>
@@ -62,7 +60,7 @@
 
 
 
-<pre><code><b>const</b> EMALFORMED_PUBLIC_KEY: u64 = 100;
+<pre><code><b>const</b> <a href="#0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY">EMALFORMED_PUBLIC_KEY</a>: u64 = 100;
 </code></pre>
 
 
@@ -115,7 +113,7 @@
     // Cryptographic check of <b>public</b> key validity
     <b>assert</b>(
         <a href="Signature.md#0x1_Signature_ed25519_validate_pubkey">Signature::ed25519_validate_pubkey</a>(<b>copy</b> new_public_key),
-        EMALFORMED_PUBLIC_KEY
+        <a href="#0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY">EMALFORMED_PUBLIC_KEY</a>
     );
     <a href="Account.md#0x1_Account_rotate_authentication_key">Account::rotate_authentication_key</a>(
         &shared_key.rotation_cap,

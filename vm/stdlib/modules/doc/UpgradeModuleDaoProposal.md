@@ -36,7 +36,6 @@
 
 <dl>
 <dt>
-
 <code>caps: vector&lt;<a href="#0x1_UpgradeModuleDaoProposal_WrappedUpgradePlanCapability">UpgradeModuleDaoProposal::WrappedUpgradePlanCapability</a>&gt;</code>
 </dt>
 <dd>
@@ -64,7 +63,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a></code>
 </dt>
 <dd>
@@ -92,14 +90,12 @@
 
 <dl>
 <dt>
-
 <code>module_address: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>package_hash: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -116,7 +112,7 @@
 
 
 
-<pre><code><b>const</b> ERR_NOT_AUTHORIZED: u64 = 401;
+<pre><code><b>const</b> <a href="#0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 401;
 </code></pre>
 
 
@@ -127,7 +123,7 @@
 
 
 
-<pre><code><b>const</b> ERR_UNABLE_TO_UPGRADE: u64 = 400;
+<pre><code><b>const</b> <a href="#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE">ERR_UNABLE_TO_UPGRADE</a>: u64 = 400;
 </code></pre>
 
 
@@ -149,7 +145,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_UpgradeModuleDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="#0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
     <b>let</b> caps = <a href="#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a>&lt;TokenT&gt; { caps: <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>() };
     move_to(signer, caps)
 }
@@ -180,7 +176,7 @@ If this govverment can upgrade module, call this to register capability.
     cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>,
 ) <b>acquires</b> <a href="#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a> {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="#0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
     <b>let</b> caps = borrow_global_mut&lt;<a href="#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a>&lt;TokenT&gt;&gt;(token_issuer);
     // TODO: should check duplicate cap?
     // for now, only one cap exists for a <b>module</b> address.
@@ -196,8 +192,7 @@ If this govverment can upgrade module, call this to register capability.
 
 ## Function `able_to_upgrade`
 
-check whether this gov has the ability to upgrade module in
-<code>moudle_address</code>.
+check whether this gov has the ability to upgrade module in <code>moudle_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_UpgradeModuleDaoProposal_able_to_upgrade">able_to_upgrade</a>&lt;TokenT&gt;(module_address: address): bool
@@ -241,7 +236,7 @@ propose a module upgrade, called by proposer.
     module_address: address,
     package_hash: vector&lt;u8&gt;,
 ) <b>acquires</b> <a href="#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a> {
-    <b>assert</b>(<a href="#0x1_UpgradeModuleDaoProposal_able_to_upgrade">able_to_upgrade</a>&lt;TokenT&gt;(module_address), ERR_UNABLE_TO_UPGRADE);
+    <b>assert</b>(<a href="#0x1_UpgradeModuleDaoProposal_able_to_upgrade">able_to_upgrade</a>&lt;TokenT&gt;(module_address), <a href="#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE">ERR_UNABLE_TO_UPGRADE</a>);
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;(
         signer,
         <a href="#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash },

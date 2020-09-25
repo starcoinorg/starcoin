@@ -35,7 +35,6 @@
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>
@@ -63,7 +62,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;<a href="#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a>&gt;</code>
 </dt>
 <dd>
@@ -91,7 +89,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;<a href="#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a>&gt;</code>
 </dt>
 <dd>
@@ -108,7 +105,7 @@
 
 
 
-<pre><code><b>const</b> SCALING_FACTOR: u128 = 1000000;
+<pre><code><b>const</b> <a href="#0x1_DummyToken_SCALING_FACTOR">SCALING_FACTOR</a>: u128 = 1000000;
 </code></pre>
 
 
@@ -119,7 +116,7 @@
 
 
 
-<pre><code><b>const</b> FRACTIONAL_PART: u128 = 1000;
+<pre><code><b>const</b> <a href="#0x1_DummyToken_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000;
 </code></pre>
 
 
@@ -142,8 +139,8 @@
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_DummyToken_initialize">initialize</a>(account: &signer) {
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_DummyToken">DummyToken</a>&gt;(
         account,
-        SCALING_FACTOR, // scaling_factor = 10^6
-        FRACTIONAL_PART,    // fractional_part = 10^3
+        <a href="#0x1_DummyToken_SCALING_FACTOR">SCALING_FACTOR</a>, // scaling_factor = 10^6
+        <a href="#0x1_DummyToken_FRACTIONAL_PART">FRACTIONAL_PART</a>,    // fractional_part = 10^3
     );
 
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="#0x1_DummyToken">DummyToken</a>&gt;(account);
@@ -162,9 +159,7 @@
 
 ## Function `is_dummy_token`
 
-Returns true if
-<code>TokenType</code> is
-<code><a href="#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a></code>
+Returns true if <code>TokenType</code> is <code><a href="#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a></code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_DummyToken_is_dummy_token">is_dummy_token</a>&lt;TokenType&gt;(): bool

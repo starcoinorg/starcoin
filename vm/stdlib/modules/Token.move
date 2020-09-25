@@ -98,6 +98,10 @@ module Token {
         move_from<ScalingFactorModifyCapability<TokenType>>(Signer::address_of(signer))
     }
 
+    spec fun remove_scaling_factor_modify_capability {
+        pragma verify = false;
+    }
+
     public fun add_scaling_factor_modify_capability<TokenType>(
         signer: &signer,
         cap: ScalingFactorModifyCapability<TokenType>,
@@ -105,10 +109,18 @@ module Token {
         move_to<ScalingFactorModifyCapability<TokenType>>(signer, cap)
     }
 
+    spec fun add_scaling_factor_modify_capability {
+        pragma verify = false;
+    }
+
     public fun destroy_scaling_factor_modify_capability<TokenType>(
         cap: ScalingFactorModifyCapability<TokenType>,
     ) {
         let ScalingFactorModifyCapability<TokenType> { } = cap;
+    }
+
+    spec fun destroy_scaling_factor_modify_capability {
+        pragma verify = false;
     }
 
     public fun remove_mint_capability<TokenType>(signer: &signer): MintCapability<TokenType>
@@ -257,6 +269,7 @@ module Token {
     }
 
     spec fun value {
+        pragma verify = false;
     }
 
     /// Public accessor for the value of a token
@@ -273,12 +286,9 @@ module Token {
         split_share<TokenType>(token, amount_to_share<TokenType>(amount))
     }
 
-    // spec fun split {
-    //     aborts_if token.value < amount;
-    //     // TODO: ensure result
-    // }
-
-
+    spec fun split {
+        pragma verify = false;
+    }
 
     /// Splits the given token into two and returns them both
     /// It leverages `Self::withdraw_share` for any verifications of the values.
@@ -308,6 +318,9 @@ module Token {
     //     ensures result.value == amount;
     //     ensures token.value == old(token).value - amount;
     // }
+    spec fun withdraw {
+        pragma verify = false;
+    }
 
     /// It operates on token value directly regardless of the `scaling_factor` of the token.
     /// The original token will have value = original value - `share`
@@ -383,6 +396,10 @@ module Token {
         }
     }
 
+    spec fun amount_to_share {
+        pragma verify = false;
+    }
+
     public fun share_to_amount<TokenType>(hold: u128): u128 acquires TokenInfo {
         let base = base_scaling_factor<TokenType>();
         let scaled = scaling_factor<TokenType>();
@@ -393,15 +410,27 @@ module Token {
         }
     }
 
+    spec fun share_to_amount {
+        pragma verify = false;
+    }
+
     /// Returns the scaling factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let (token_address, _, _) = name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
+    spec fun scaling_factor {
+        pragma verify = false;
+    }
+
     public fun base_scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let (token_address, _, _) = name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).base_scaling_factor
+    }
+
+    spec fun base_scaling_factor {
+        pragma verify = false;
     }
 
     public fun set_scaling_factor<TokenType>(signer: &signer, value: u128)
@@ -410,6 +439,10 @@ module Token {
             Signer::address_of(signer),
         );
         set_scaling_factor_with_capability(cap, value)
+    }
+
+    spec fun set_scaling_factor {
+        pragma verify = false;
     }
 
     public fun set_scaling_factor_with_capability<TokenType>(
@@ -423,7 +456,7 @@ module Token {
         // TODO: emit event
     }
 
-    spec fun scaling_factor {
+    spec fun set_scaling_factor_with_capability {
         // Todo: fix name_of()
         pragma verify = false;
         //let x  = name_of();
@@ -456,6 +489,10 @@ module Token {
     public fun total_share<TokenType>(): u128 acquires TokenInfo {
         let (token_address, _, _) = name_of<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
+    }
+
+    spec fun total_share {
+        pragma verify = false;
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.

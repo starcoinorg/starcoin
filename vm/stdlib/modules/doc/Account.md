@@ -105,49 +105,42 @@
 
 <dl>
 <dt>
-
 <code>authentication_key: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>withdrawal_capability: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>key_rotation_capability: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>received_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Account_ReceivedPaymentEvent">Account::ReceivedPaymentEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>sent_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Account_SentPaymentEvent">Account::SentPaymentEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>accept_token_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Account_AcceptTokenEvent">Account::AcceptTokenEvent</a>&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>sequence_number: u64</code>
 </dt>
 <dd>
@@ -175,7 +168,6 @@
 
 <dl>
 <dt>
-
 <code>token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;</code>
 </dt>
 <dd>
@@ -203,7 +195,6 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
@@ -231,7 +222,6 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
@@ -259,28 +249,24 @@
 
 <dl>
 <dt>
-
 <code>amount: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>payee: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>metadata: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -308,28 +294,24 @@
 
 <dl>
 <dt>
-
 <code>amount: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>payer: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>metadata: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -358,7 +340,6 @@ Message for accept token events
 
 <dl>
 <dt>
-
 <code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -375,7 +356,7 @@ Message for accept token events
 
 
 
-<pre><code><b>const</b> DUMMY_AUTH_KEY: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+<pre><code><b>const</b> <a href="#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>: vector&lt;u8&gt; = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 </code></pre>
 
 
@@ -488,7 +469,7 @@ Message for accept token events
 ) :signer {
     <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>let</b> new_account = <a href="#0x1_Account_create_signer">create_signer</a>(new_account_address);
-    <a href="#0x1_Account_make_account">make_account</a>(&new_account, DUMMY_AUTH_KEY);
+    <a href="#0x1_Account_make_account">make_account</a>(&new_account, <a href="#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>);
     new_account
 }
 </code></pre>
@@ -1542,7 +1523,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
-<b>aborts_if</b> len(DUMMY_AUTH_KEY) != 32;
+<b>aborts_if</b> len(<a href="#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>) != 32;
 <b>aborts_if</b> exists&lt;<a href="#0x1_Account">Account</a>&gt;(new_account_address);
 </code></pre>
 
@@ -1610,7 +1591,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1646,7 +1627,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1662,7 +1643,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="#0x1_Account_Deposit_With_Payer_And_Metadata">Deposit_With_Payer_And_Metadata</a>&lt;TokenType&gt;;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1697,8 +1678,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> balance.token.value &lt; amount;
-<b>ensures</b> balance.token.value == <b>old</b>(balance.token.value) - amount;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1714,12 +1694,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).withdrawal_capability);
-<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value &lt; amount;
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value
-        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value) - amount;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1735,10 +1710,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
-<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value
-        == <b>old</b>(<b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value) - amount;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1921,7 +1893,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1937,7 +1909,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(addr);
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -2104,14 +2076,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
-<b>aborts_if</b> !exists&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender);
-<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) != <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).authentication_key;
-<b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; max_u64();
-<b>aborts_if</b> !exists&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
-<b>aborts_if</b> <b>global</b>&lt;<a href="#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; txn_gas_price * txn_max_gas_units;
-<b>aborts_if</b> txn_sequence_number &lt; <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).sequence_number;
-<b>aborts_if</b> txn_sequence_number != <b>global</b>&lt;<a href="#0x1_Account">Account</a>&gt;(txn_sender).sequence_number;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 

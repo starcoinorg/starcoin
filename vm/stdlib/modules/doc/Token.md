@@ -55,6 +55,9 @@
 -  [Function `name_of`](#0x1_Token_name_of)
 -  [Specification](#0x1_Token_Specification)
     -  [Function `register_token`](#0x1_Token_Specification_register_token)
+    -  [Function `remove_scaling_factor_modify_capability`](#0x1_Token_Specification_remove_scaling_factor_modify_capability)
+    -  [Function `add_scaling_factor_modify_capability`](#0x1_Token_Specification_add_scaling_factor_modify_capability)
+    -  [Function `destroy_scaling_factor_modify_capability`](#0x1_Token_Specification_destroy_scaling_factor_modify_capability)
     -  [Function `remove_mint_capability`](#0x1_Token_Specification_remove_mint_capability)
     -  [Function `add_mint_capability`](#0x1_Token_Specification_add_mint_capability)
     -  [Function `destroy_mint_capability`](#0x1_Token_Specification_destroy_mint_capability)
@@ -67,14 +70,22 @@
     -  [Function `burn_with_capability`](#0x1_Token_Specification_burn_with_capability)
     -  [Function `zero`](#0x1_Token_Specification_zero)
     -  [Function `value`](#0x1_Token_Specification_value)
+    -  [Function `split`](#0x1_Token_Specification_split)
     -  [Function `split_share`](#0x1_Token_Specification_split_share)
+    -  [Function `withdraw`](#0x1_Token_Specification_withdraw)
     -  [Function `withdraw_share`](#0x1_Token_Specification_withdraw_share)
     -  [Function `join`](#0x1_Token_Specification_join)
     -  [Function `deposit`](#0x1_Token_Specification_deposit)
     -  [Function `destroy_zero`](#0x1_Token_Specification_destroy_zero)
+    -  [Function `amount_to_share`](#0x1_Token_Specification_amount_to_share)
+    -  [Function `share_to_amount`](#0x1_Token_Specification_share_to_amount)
     -  [Function `scaling_factor`](#0x1_Token_Specification_scaling_factor)
+    -  [Function `base_scaling_factor`](#0x1_Token_Specification_base_scaling_factor)
+    -  [Function `set_scaling_factor`](#0x1_Token_Specification_set_scaling_factor)
+    -  [Function `set_scaling_factor_with_capability`](#0x1_Token_Specification_set_scaling_factor_with_capability)
     -  [Function `fractional_part`](#0x1_Token_Specification_fractional_part)
     -  [Function `market_cap`](#0x1_Token_Specification_market_cap)
+    -  [Function `total_share`](#0x1_Token_Specification_total_share)
     -  [Function `is_registered_in`](#0x1_Token_Specification_is_registered_in)
     -  [Function `is_same_token`](#0x1_Token_Specification_is_same_token)
     -  [Function `token_address`](#0x1_Token_Specification_token_address)
@@ -88,8 +99,7 @@
 
 ## Resource `Token`
 
-The token has a
-<code>TokenType</code> color that tells us what token the
+The token has a <code>TokenType</code> color that tells us what token the
 <code>value</code> inside represents.
 
 
@@ -104,7 +114,6 @@ The token has a
 
 <dl>
 <dt>
-
 <code>value: u128</code>
 </dt>
 <dd>
@@ -119,8 +128,7 @@ The token has a
 
 ## Resource `MintCapability`
 
-A minting capability allows tokens of type
-<code>TokenType</code> to be minted
+A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;
@@ -134,7 +142,6 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>
@@ -162,7 +169,6 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>
@@ -190,7 +196,6 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>
@@ -218,14 +223,12 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>amount: u128</code>
 </dt>
 <dd>
  funds added to the system
 </dd>
 <dt>
-
 <code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -253,14 +256,12 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>amount: u128</code>
 </dt>
 <dd>
  funds removed from the system
 </dd>
 <dt>
-
 <code>token_code: vector&lt;u8&gt;</code>
 </dt>
 <dd>
@@ -288,7 +289,6 @@ A minting capability allows tokens of type
 
 <dl>
 <dt>
-
 <code>total_value: u128</code>
 </dt>
 <dd>
@@ -296,7 +296,6 @@ A minting capability allows tokens of type
  <code>TokenType</code>. Mutable.
 </dd>
 <dt>
-
 <code>scaling_factor: u128</code>
 </dt>
 <dd>
@@ -304,14 +303,12 @@ A minting capability allows tokens of type
  to get to the human-readable reprentation for this token). e.g. 10^6 for Token1
 </dd>
 <dt>
-
 <code>base_scaling_factor: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>fractional_part: u128</code>
 </dt>
 <dd>
@@ -320,14 +317,12 @@ A minting capability allows tokens of type
  10^2 for Token1 cents)
 </dd>
 <dt>
-
 <code>mint_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Token_MintEvent">Token::MintEvent</a>&gt;</code>
 </dt>
 <dd>
  event stream for minting
 </dd>
 <dt>
-
 <code>burn_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Token_BurnEvent">Token::BurnEvent</a>&gt;</code>
 </dt>
 <dd>
@@ -345,7 +340,7 @@ A minting capability allows tokens of type
 Token register's address should same as TokenType's address.
 
 
-<pre><code><b>const</b> ETOKEN_REGISTER: u64 = 100;
+<pre><code><b>const</b> <a href="#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>: u64 = 100;
 </code></pre>
 
 
@@ -356,7 +351,7 @@ Token register's address should same as TokenType's address.
 
 
 
-<pre><code><b>const</b> EAMOUNT_EXCEEDS_COIN_VALUE: u64 = 102;
+<pre><code><b>const</b> <a href="#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>: u64 = 102;
 </code></pre>
 
 
@@ -365,8 +360,7 @@ Token register's address should same as TokenType's address.
 
 ## Function `register_token`
 
-Register the type
-<code>TokenType</code> as a Token and got MintCapability and BurnCapability.
+Register the type <code>TokenType</code> as a Token and got MintCapability and BurnCapability.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, base_scaling_factor: u128, fractional_part: u128)
@@ -384,7 +378,7 @@ Register the type
     fractional_part: u128,
 ) {
     <b>let</b> (token_address, _module_name, _token_name) = <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, ETOKEN_REGISTER);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>);
     // <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
@@ -636,8 +630,7 @@ Register the type
 
 ## Function `mint`
 
-Return
-<code>amount</code> tokens.
+Return <code>amount</code> tokens.
 Fails if the sender does not have a published MintCapability.
 
 
@@ -667,9 +660,7 @@ Fails if the sender does not have a published MintCapability.
 
 ## Function `mint_with_capability`
 
-Mint a new Token::Token worth
-<code>amount</code> considering current
-<code>scaling_factor</code>. The caller must have a reference to a MintCapability.
+Mint a new Token::Token worth <code>amount</code> considering current <code>scaling_factor</code>. The caller must have a reference to a MintCapability.
 Only the Association account can acquire such a reference, and it can do so only via
 <code>borrow_sender_mint_capability</code>
 
@@ -801,8 +792,7 @@ Create a new Token::Token<TokenType> with a value of 0
 
 ## Function `value`
 
-Scaled value of the token considering the
-<code>scaling_factor</code>.
+Scaled value of the token considering the <code>scaling_factor</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
@@ -853,8 +843,7 @@ Public accessor for the value of a token
 ## Function `split`
 
 Splits the given token into two and returns them both
-It leverages
-<code><a href="#0x1_Token_split_share">Self::split_share</a></code> for any verifications of the values
+It leverages <code><a href="#0x1_Token_split_share">Self::split_share</a></code> for any verifications of the values
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): (<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -883,10 +872,8 @@ It leverages
 ## Function `split_share`
 
 Splits the given token into two and returns them both
-It leverages
-<code><a href="#0x1_Token_withdraw_share">Self::withdraw_share</a></code> for any verifications of the values.
-It operates on token value directly regardless of the
-<code>scaling_factor</code> of the token.
+It leverages <code><a href="#0x1_Token_withdraw_share">Self::withdraw_share</a></code> for any verifications of the values.
+It operates on token value directly regardless of the <code>scaling_factor</code> of the token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_split_share">split_share</a>&lt;TokenType&gt;(token: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): (<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -916,8 +903,7 @@ It operates on token value directly regardless of the
 ## Function `withdraw`
 
 "Divides" the given token into two, where the original token is modified in place.
-This will consider the scaling_factor of the
-<code><a href="#0x1_Token">Token</a></code>.
+This will consider the scaling_factor of the <code><a href="#0x1_Token">Token</a></code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -943,14 +929,10 @@ This will consider the scaling_factor of the
 
 ## Function `withdraw_share`
 
-It operates on token value directly regardless of the
-<code>scaling_factor</code> of the token.
-The original token will have value = original value -
-<code>share</code>
-The new token will have a value =
-<code>share</code>
-Fails if the tokens value is less than
-<code>share</code>
+It operates on token value directly regardless of the <code>scaling_factor</code> of the token.
+The original token will have value = original value - <code>share</code>
+The new token will have a value = <code>share</code>
+Fails if the tokens value is less than <code>share</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_withdraw_share">withdraw_share</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -967,7 +949,7 @@ Fails if the tokens value is less than
     share: u128,
 ): <a href="#0x1_Token">Token</a>&lt;TokenType&gt; {
     // Check that `share` is less than the token's value
-    <b>assert</b>(token.value &gt;= share, EAMOUNT_EXCEEDS_COIN_VALUE);
+    <b>assert</b>(token.value &gt;= share, <a href="#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>);
     token.value = token.value - share;
     <a href="#0x1_Token">Token</a> { value: share }
 }
@@ -1013,8 +995,7 @@ value is equal to the sum of the two inputs
 
 "Merges" the two tokens
 The token passed in by reference will have a value equal to the sum of the two tokens
-The
-<code>check</code> token is consumed in the process
+The <code>check</code> token is consumed in the process
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_deposit">deposit</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, check: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -1069,8 +1050,7 @@ so you cannot "burn" any non-zero amount of Token
 
 ## Function `amount_to_share`
 
-convenient function to calculate hold of the input
-<code>amount</code> based the current scaling_factor.
+convenient function to calculate hold of the input <code>amount</code> based the current scaling_factor.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128
@@ -1132,8 +1112,7 @@ convenient function to calculate hold of the input
 
 ## Function `scaling_factor`
 
-Returns the scaling factor for the
-<code>TokenType</code> token.
+Returns the scaling factor for the <code>TokenType</code> token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
@@ -1243,8 +1222,7 @@ Returns the scaling factor for the
 
 ## Function `fractional_part`
 
-Returns the representable fractional part for the
-<code>TokenType</code> token.
+Returns the representable fractional part for the <code>TokenType</code> token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128
@@ -1270,9 +1248,7 @@ Returns the representable fractional part for the
 
 ## Function `market_cap`
 
-Return the total amount of token of type
-<code>TokenType</code> considering current
-<code>scaling_factor</code>
+Return the total amount of token of type <code>TokenType</code> considering current <code>scaling_factor</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
@@ -1323,9 +1299,7 @@ Return the total share of token minted.
 
 ## Function `is_registered_in`
 
-Return true if the type
-<code>TokenType</code> is a registered in
-<code>token_address</code>.
+Return true if the type <code>TokenType</code> is a registered in <code>token_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_registered_in">is_registered_in</a>&lt;TokenType&gt;(token_address: address): bool
@@ -1350,9 +1324,7 @@ Return true if the type
 
 ## Function `is_same_token`
 
-Return true if the type
-<code>TokenType1</code> is same with
-<code>TokenType2</code>
+Return true if the type <code>TokenType1</code> is same with <code>TokenType2</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_is_same_token">is_same_token</a>&lt;TokenType1, TokenType2&gt;(): bool
@@ -1459,8 +1431,7 @@ Return the token code for the registered token.
 
 ## Function `name_of`
 
-Return Token's module address, module name, and type name of
-<code>TokenType</code>.
+Return Token's module address, module name, and type name of <code>TokenType</code>.
 
 
 <pre><code><b>fun</b> <a href="#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
@@ -1497,6 +1468,54 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, base_scaling_factor: u128, fractional_part: u128)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_remove_scaling_factor_modify_capability"></a>
+
+### Function `remove_scaling_factor_modify_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_remove_scaling_factor_modify_capability">remove_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_add_scaling_factor_modify_capability"></a>
+
+### Function `add_scaling_factor_modify_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_add_scaling_factor_modify_capability">add_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_destroy_scaling_factor_modify_capability"></a>
+
+### Function `destroy_scaling_factor_modify_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_destroy_scaling_factor_modify_capability">destroy_scaling_factor_modify_capability</a>&lt;TokenType&gt;(cap: <a href="#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1685,6 +1704,27 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_split"></a>
+
+### Function `split`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): (<a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
 <a name="0x1_Token_Specification_split_share"></a>
 
 ### Function `split_share`
@@ -1697,6 +1737,22 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>aborts_if</b> token.<a href="#0x1_Token_value">value</a> &lt; share;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_withdraw"></a>
+
+### Function `withdraw`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): <a href="#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 
@@ -1770,12 +1826,92 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
+<a name="0x1_Token_Specification_amount_to_share"></a>
+
+### Function `amount_to_share`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_share_to_amount"></a>
+
+### Function `share_to_amount`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
 <a name="0x1_Token_Specification_scaling_factor"></a>
 
 ### Function `scaling_factor`
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_base_scaling_factor"></a>
+
+### Function `base_scaling_factor`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_set_scaling_factor"></a>
+
+### Function `set_scaling_factor`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_set_scaling_factor">set_scaling_factor</a>&lt;TokenType&gt;(signer: &signer, value: u128)
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_set_scaling_factor_with_capability"></a>
+
+### Function `set_scaling_factor_with_capability`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_set_scaling_factor_with_capability">set_scaling_factor_with_capability</a>&lt;TokenType&gt;(_cap: &<a href="#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;, value: u128)
 </code></pre>
 
 
@@ -1808,6 +1944,22 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="0x1_Token_Specification_total_share"></a>
+
+### Function `total_share`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;(): u128
 </code></pre>
 
 

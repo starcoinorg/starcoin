@@ -38,28 +38,24 @@
 
 <dl>
 <dt>
-
 <code>number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>parent_hash: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>author: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>new_block_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Block_NewBlockEvent">Block::NewBlockEvent</a>&gt;</code>
 </dt>
 <dd>
@@ -87,21 +83,18 @@
 
 <dl>
 <dt>
-
 <code>number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>author: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>timestamp: u64</code>
 </dt>
 <dd>

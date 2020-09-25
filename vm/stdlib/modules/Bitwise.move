@@ -1,6 +1,10 @@
 address 0x1 {
 module BitOperators {
 
+    spec module {
+        pragma verify = false;
+    }
+
     public fun and(x: u64, y: u64): u64 {
         (x & y as u64)
     }

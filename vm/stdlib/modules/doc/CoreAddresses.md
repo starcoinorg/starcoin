@@ -71,8 +71,7 @@ accounts on-chain.
 
 The reserved address for transactions inserted by the VM into blocks (e.g.
 block metadata transactions). Because the transaction is sent from
-the VM, an account _cannot_ exist at the
-<code>0x0</code> address since there
+the VM, an account _cannot_ exist at the <code>0x0</code> address since there
 is no signer for the transaction.
 
 
@@ -105,8 +104,7 @@ pragma aborts_if_is_strict;
 </code></pre>
 
 
-Specification version of
-<code>Self::GENESIS_ACCOUNT</code>.
+Specification version of <code>Self::GENESIS_ACCOUNT</code>.
 
 
 <a name="0x1_CoreAddresses_SPEC_GENESIS_ADDRESS"></a>
@@ -118,8 +116,7 @@ Specification version of
 </code></pre>
 
 
-Specification version of
-<code><a href="#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">Self::ASSOCIATION_ROOT_ADDRESS</a></code>.
+Specification version of <code><a href="#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">Self::ASSOCIATION_ROOT_ADDRESS</a></code>.
 
 
 <a name="0x1_CoreAddresses_SPEC_ASSOCIATION_ROOT_ADDRESS"></a>
@@ -131,8 +128,7 @@ Specification version of
 </code></pre>
 
 
-Specification version of
-<code><a href="#0x1_CoreAddresses_VM_RESERVED_ADDRESS">Self::VM_RESERVED_ADDRESS</a></code>.
+Specification version of <code><a href="#0x1_CoreAddresses_VM_RESERVED_ADDRESS">Self::VM_RESERVED_ADDRESS</a></code>.
 
 
 <a name="0x1_CoreAddresses_SPEC_VM_RESERVED_ADDRESS"></a>

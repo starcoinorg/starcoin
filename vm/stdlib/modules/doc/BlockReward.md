@@ -34,21 +34,18 @@
 
 <dl>
 <dt>
-
 <code>reward_number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>reward_delay: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>infos: vector&lt;<a href="#0x1_BlockReward_RewardInfo">BlockReward::RewardInfo</a>&gt;</code>
 </dt>
 <dd>
@@ -76,21 +73,18 @@
 
 <dl>
 <dt>
-
 <code>number: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>reward: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>miner: address</code>
 </dt>
 <dd>
