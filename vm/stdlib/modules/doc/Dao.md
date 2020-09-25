@@ -37,6 +37,8 @@
 -  [Function `extract_proposal_action`](#0x1_Dao_extract_proposal_action)
 -  [Function `destroy_terminated_proposal`](#0x1_Dao_destroy_terminated_proposal)
 -  [Function `proposal_state`](#0x1_Dao_proposal_state)
+-  [Function `proposal_info`](#0x1_Dao_proposal_info)
+-  [Function `vote_of`](#0x1_Dao_vote_of)
 -  [Function `quorum_votes`](#0x1_Dao_quorum_votes)
 -  [Function `generate_next_proposal_id`](#0x1_Dao_generate_next_proposal_id)
 -  [Function `default_min_action_delay`](#0x1_Dao_default_min_action_delay)
@@ -840,7 +842,7 @@ remove terminated proposal from proposer
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): u8
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): u8
 </code></pre>
 
 
@@ -849,8 +851,10 @@ remove terminated proposal from proposer
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): u8
-<b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+    proposer_address: address,
+    proposal_id: u64,
+): u8 <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
     <b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
@@ -875,6 +879,71 @@ remove terminated proposal from proposer
     } <b>else</b> {
         EXTRACTED
     }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_proposal_info"></a>
+
+## Function `proposal_info`
+
+get proposal's information.
+return: (start_time, end_time, for_votes, against_votes).
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): (u64, u64, u128, u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+    proposer_address: address,
+    proposal_id: u64,
+): (u64, u64, u128, u128) <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
+    <b>let</b> proposal = borrow_global&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+    <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_vote_of"></a>
+
+## Function `vote_of`
+
+Get voter's vote info on proposal with
+<code>proposal_id</code> of
+<code>proposer_address</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_vote_of">vote_of</a>&lt;TokenT: <b>copyable</b>&gt;(voter: address, proposer_address: address, proposal_id: u64): (bool, u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_vote_of">vote_of</a>&lt;TokenT: <b>copyable</b>&gt;(
+    voter: address,
+    proposer_address: address,
+    proposal_id: u64,
+): (bool, u128) <b>acquires</b> <a href="#0x1_Dao_Vote">Vote</a> {
+    <b>let</b> vote = borrow_global&lt;<a href="#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
+    <b>assert</b>(vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
+    <b>assert</b>(vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    (vote.agree, <a href="Token.md#0x1_Token_share">Token::share</a>(&vote.stake))
 }
 </code></pre>
 

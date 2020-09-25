@@ -248,8 +248,10 @@ module Dao {
         Option::destroy_none(action);
     }
 
-    fun proposal_state<TokenT: copyable, ActionT>(proposer_address: address, proposal_id: u64): u8
-    acquires Proposal {
+    public fun proposal_state<TokenT: copyable, ActionT>(
+        proposer_address: address,
+        proposal_id: u64,
+    ): u8 acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
         let current_time = Timestamp::now_seconds();
@@ -274,6 +276,29 @@ module Dao {
         } else {
             EXTRACTED
         }
+    }
+
+    /// get proposal's information.
+    /// return: (start_time, end_time, for_votes, against_votes).
+    public fun proposal_info<TokenT: copyable, ActionT>(
+        proposer_address: address,
+        proposal_id: u64,
+    ): (u64, u64, u128, u128) acquires Proposal {
+        let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
+        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
+    }
+
+    /// Get voter's vote info on proposal with `proposal_id` of `proposer_address`.
+    public fun vote_of<TokenT: copyable>(
+        voter: address,
+        proposer_address: address,
+        proposal_id: u64,
+    ): (bool, u128) acquires Vote {
+        let vote = borrow_global<Vote<TokenT>>(voter);
+        assert(vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
+        assert(vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        (vote.agree, Token::share(&vote.stake))
     }
 
     /// Quorum votes to make proposal pass.
