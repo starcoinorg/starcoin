@@ -8,6 +8,11 @@ module TransactionPublishOption {
     use 0x1::ErrorCode;
     use 0x1::Signer;
 
+    spec module {
+        pragma verify = false;
+        pragma aborts_if_is_strict;
+    }
+
     const SCRIPT_HASH_LENGTH: u64 = 32;
 
     /// The script hash has an invalid length

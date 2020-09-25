@@ -33,7 +33,6 @@
 
 <dl>
 <dt>
-
 <code>major: u64</code>
 </dt>
 <dd>

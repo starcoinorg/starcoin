@@ -11,6 +11,19 @@ use crate::{
 };
 use abigen::Abigen;
 use anyhow::anyhow;
+use bytecode::{
+    borrow_analysis::BorrowAnalysisProcessor,
+    clean_and_optimize::CleanAndOptimizeProcessor,
+    eliminate_imm_refs::EliminateImmRefsProcessor,
+    eliminate_mut_refs::EliminateMutRefsProcessor,
+    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
+    livevar_analysis::LiveVarAnalysisProcessor,
+    memory_instrumentation::MemoryInstrumentationProcessor,
+    reaching_def_analysis::ReachingDefProcessor,
+    stackless_bytecode::{Bytecode, Operation},
+    test_instrumenter::TestInstrumenter,
+    usage_analysis::{self, UsageProcessor},
+};
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream, WriteColor};
 use docgen::Docgen;
 use errmapgen::ErrmapGen;
@@ -22,19 +35,6 @@ use move_lang::find_move_filenames;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use spec_lang::{code_writer::CodeWriter, emit, emitln, env::GlobalEnv, run_spec_lang_compiler};
-use stackless_bytecode_generator::{
-    borrow_analysis::BorrowAnalysisProcessor,
-    eliminate_imm_refs::EliminateImmRefsProcessor,
-    eliminate_mut_refs::EliminateMutRefsProcessor,
-    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
-    livevar_analysis::LiveVarAnalysisProcessor,
-    packref_analysis::PackrefAnalysisProcessor,
-    reaching_def_analysis::ReachingDefProcessor,
-    stackless_bytecode::{Bytecode, Operation},
-    test_instrumenter::TestInstrumenter,
-    usage_analysis::{self, UsageProcessor},
-    writeback_analysis::WritebackAnalysisProcessor,
-};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -49,6 +49,7 @@ mod boogie_wrapper;
 mod bytecode_translator;
 pub mod cli;
 mod prelude_template_helpers;
+mod prover_task_runner;
 mod spec_translator;
 
 // =================================================================================================
@@ -87,11 +88,13 @@ pub fn run_move_prover<W: WriteColor>(
     if options.run_errmapgen {
         return run_errmapgen(&env, &options, now);
     }
+
     let targets = create_and_process_bytecode(&options, &env);
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with transformation errors"));
     }
+
     if options.run_packed_types_gen {
         return run_packed_types_gen(&env, &targets, now);
     }
@@ -302,7 +305,19 @@ fn create_and_process_bytecode(options: &Options, env: &GlobalEnv) -> FunctionTa
 
     // Create processing pipeline and run it.
     let pipeline = create_bytecode_processing_pipeline(options);
-    pipeline.run(env, &mut targets);
+    let dump_file = if options.prover.dump_bytecode {
+        Some(
+            options
+                .move_sources
+                .get(0)
+                .cloned()
+                .unwrap_or_else(|| "bytecode".to_string())
+                .replace(".move", ""),
+        )
+    } else {
+        None
+    };
+    pipeline.run(env, &mut targets, dump_file);
 
     targets
 }
@@ -312,13 +327,13 @@ fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipel
     let mut res = FunctionTargetPipeline::default();
 
     // Add processors in order they are executed.
-    res.add_processor(ReachingDefProcessor::new());
     res.add_processor(EliminateImmRefsProcessor::new());
+    res.add_processor(EliminateMutRefsProcessor::new());
+    res.add_processor(ReachingDefProcessor::new());
     res.add_processor(LiveVarAnalysisProcessor::new());
     res.add_processor(BorrowAnalysisProcessor::new());
-    res.add_processor(WritebackAnalysisProcessor::new());
-    res.add_processor(PackrefAnalysisProcessor::new());
-    res.add_processor(EliminateMutRefsProcessor::new());
+    res.add_processor(MemoryInstrumentationProcessor::new());
+    res.add_processor(CleanAndOptimizeProcessor::new());
     res.add_processor(TestInstrumenter::new(options.prover.verify_scope));
     res.add_processor(UsageProcessor::new());
 

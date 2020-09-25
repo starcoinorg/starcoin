@@ -35,7 +35,6 @@
 
 <dl>
 <dt>
-
 <code>value: u64</code>
 </dt>
 <dd>
@@ -226,8 +225,7 @@ and treat it as uninterpreted, which simplifies the verification problem signifi
 This way we avoid the non-linear arithmetic problem presented by this function.
 
 Abstracting this and related functions is possible because the correctness of currency
-conversion (where
-<code><a href="#0x1_FixedPoint32">FixedPoint32</a></code> is used for) is not relevant for the rest of the contract
+conversion (where <code><a href="#0x1_FixedPoint32">FixedPoint32</a></code> is used for) is not relevant for the rest of the contract
 control flow, so we can assume some arbitrary (but fixed) behavior here.
 
 
@@ -248,8 +246,7 @@ pragma verify = <b>false</b>;
 
 
 
-See comment at
-<code>Self::multiply_64</code>.
+See comment at <code>Self::multiply_64</code>.
 
 
 <pre><code>pragma opaque = <b>true</b>;
@@ -269,8 +266,7 @@ pragma verify = <b>false</b>;
 
 
 
-See comment at
-<code>Self::multiply_64</code>.
+See comment at <code>Self::multiply_64</code>.
 
 
 <pre><code>pragma opaque = <b>true</b>;
@@ -280,8 +276,7 @@ pragma verify = <b>false</b>;
 
 
 
-Uninterpreted function for
-<code><a href="#0x1_FixedPoint32_multiply_u64">Self::multiply_u64</a></code>.
+Uninterpreted function for <code><a href="#0x1_FixedPoint32_multiply_u64">Self::multiply_u64</a></code>.
 
 
 <a name="0x1_FixedPoint32_spec_multiply_u64"></a>
@@ -291,8 +286,7 @@ Uninterpreted function for
 </code></pre>
 
 
-Uninterpreted function for
-<code><a href="#0x1_FixedPoint32_divide_u64">Self::divide_u64</a></code>.
+Uninterpreted function for <code><a href="#0x1_FixedPoint32_divide_u64">Self::divide_u64</a></code>.
 
 
 <a name="0x1_FixedPoint32_spec_divide_u64"></a>
@@ -302,8 +296,7 @@ Uninterpreted function for
 </code></pre>
 
 
-Uninterpreted function for
-<code><a href="#0x1_FixedPoint32_create_from_rational">Self::create_from_rational</a></code>.
+Uninterpreted function for <code><a href="#0x1_FixedPoint32_create_from_rational">Self::create_from_rational</a></code>.
 
 
 <a name="0x1_FixedPoint32_spec_create_from_rational"></a>

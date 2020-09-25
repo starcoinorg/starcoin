@@ -38,7 +38,6 @@
 
 <dl>
 <dt>
-
 <code>seconds: u64</code>
 </dt>
 <dd>
@@ -68,7 +67,6 @@ is called at the end of genesis.
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>

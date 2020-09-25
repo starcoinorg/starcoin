@@ -72,7 +72,6 @@
 
 <dl>
 <dt>
-
 <code>next_proposal_id: u64</code>
 </dt>
 <dd>
@@ -100,28 +99,24 @@
 
 <dl>
 <dt>
-
 <code>voting_delay: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>voting_period: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>voting_quorum_rate: u8</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>min_action_delay: u64</code>
 </dt>
 <dd>
@@ -150,63 +145,54 @@ TODO: support that one can propose mutli proposals.
 
 <dl>
 <dt>
-
 <code>id: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>proposer: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>start_time: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>end_time: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>for_votes: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>against_votes: u128</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>eta: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>action_delay: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>action: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;Action&gt;</code>
 </dt>
 <dd>
@@ -234,28 +220,24 @@ TODO: support that one can propose mutli proposals.
 
 <dl>
 <dt>
-
 <code>proposer: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>id: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>agree: bool</code>
 </dt>
 <dd>
@@ -273,7 +255,7 @@ TODO: support that one can propose mutli proposals.
 default voting_delay: 1hour
 
 
-<pre><code><b>const</b> DEFAULT_VOTING_DELAY: u64 = 3600;
+<pre><code><b>const</b> <a href="#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>: u64 = 3600;
 </code></pre>
 
 
@@ -285,7 +267,7 @@ default voting_delay: 1hour
 default voting_period: 2days
 
 
-<pre><code><b>const</b> DEFAULT_VOTING_PERIOD: u64 = 172800;
+<pre><code><b>const</b> <a href="#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>: u64 = 172800;
 </code></pre>
 
 
@@ -297,7 +279,7 @@ default voting_period: 2days
 default quorum rate: 4% of toal token supply.
 
 
-<pre><code><b>const</b> DEFAULT_VOTEING_QUORUM_RATE: u8 = 4;
+<pre><code><b>const</b> <a href="#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>: u8 = 4;
 </code></pre>
 
 
@@ -309,7 +291,7 @@ default quorum rate: 4% of toal token supply.
 default action_delay: 1days
 
 
-<pre><code><b>const</b> DEFAULT_MIN_ACTION_DELAY: u64 = 86400;
+<pre><code><b>const</b> <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>: u64 = 86400;
 </code></pre>
 
 
@@ -321,7 +303,7 @@ default action_delay: 1days
 Proposal state
 
 
-<pre><code><b>const</b> PENDING: u8 = 1;
+<pre><code><b>const</b> <a href="#0x1_Dao_PENDING">PENDING</a>: u8 = 1;
 </code></pre>
 
 
@@ -332,7 +314,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ACTIVE: u8 = 2;
+<pre><code><b>const</b> <a href="#0x1_Dao_ACTIVE">ACTIVE</a>: u8 = 2;
 </code></pre>
 
 
@@ -343,7 +325,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> DEFEATED: u8 = 3;
+<pre><code><b>const</b> <a href="#0x1_Dao_DEFEATED">DEFEATED</a>: u8 = 3;
 </code></pre>
 
 
@@ -354,7 +336,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> AGREED: u8 = 4;
+<pre><code><b>const</b> <a href="#0x1_Dao_AGREED">AGREED</a>: u8 = 4;
 </code></pre>
 
 
@@ -365,7 +347,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> QUEUED: u8 = 5;
+<pre><code><b>const</b> <a href="#0x1_Dao_QUEUED">QUEUED</a>: u8 = 5;
 </code></pre>
 
 
@@ -376,7 +358,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> EXECUTABLE: u8 = 6;
+<pre><code><b>const</b> <a href="#0x1_Dao_EXECUTABLE">EXECUTABLE</a>: u8 = 6;
 </code></pre>
 
 
@@ -387,7 +369,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> EXTRACTED: u8 = 7;
+<pre><code><b>const</b> <a href="#0x1_Dao_EXTRACTED">EXTRACTED</a>: u8 = 7;
 </code></pre>
 
 
@@ -398,7 +380,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_NOT_AUTHORIZED: u64 = 1401;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>: u64 = 1401;
 </code></pre>
 
 
@@ -409,7 +391,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_ACTION_DELAY_TOO_SMALL: u64 = 1402;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_ACTION_DELAY_TOO_SMALL">ERR_ACTION_DELAY_TOO_SMALL</a>: u64 = 1402;
 </code></pre>
 
 
@@ -420,7 +402,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_PROPOSAL_STATE_INVALID: u64 = 1403;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>: u64 = 1403;
 </code></pre>
 
 
@@ -431,7 +413,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_PROPOSAL_ID_MISMATCH: u64 = 1404;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>: u64 = 1404;
 </code></pre>
 
 
@@ -442,7 +424,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_PROPOSER_MISMATCH: u64 = 1405;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>: u64 = 1405;
 </code></pre>
 
 
@@ -453,7 +435,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_QUROM_RATE_INVALID: u64 = 1406;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>: u64 = 1406;
 </code></pre>
 
 
@@ -464,7 +446,7 @@ Proposal state
 
 
 
-<pre><code><b>const</b> ERR_CONFIG_PARAM_INVALID: u64 = 1407;
+<pre><code><b>const</b> <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>: u64 = 1407;
 </code></pre>
 
 
@@ -475,8 +457,7 @@ Proposal state
 
 plug_in function, can only be called by token issuer.
 Any token who wants to has gov functionality
-can optin this moudle by call this
-<code>register function</code>.
+can optin this moudle by call this <code>register function</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer)
@@ -492,15 +473,15 @@ can optin this moudle by call this
     // TODO: we can add a token manage cap in <a href="Token.md#0x1_Token">Token</a> <b>module</b>.
     // and only token manager can register this.
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
     // <b>let</b> proposal_id = ProposalId {next: 0};
     <b>let</b> gov_info = <a href="#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; { next_proposal_id: 0 };
     move_to(signer, gov_info);
     <b>let</b> config = <a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
-        voting_delay: DEFAULT_VOTING_DELAY,
-        voting_period: DEFAULT_VOTING_PERIOD,
-        voting_quorum_rate: DEFAULT_VOTEING_QUORUM_RATE,
-        min_action_delay: DEFAULT_MIN_ACTION_DELAY,
+        voting_delay: <a href="#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>,
+        voting_period: <a href="#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>,
+        voting_quorum_rate: <a href="#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>,
+        min_action_delay: <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>,
     };
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(signer, config);
 }
@@ -533,7 +514,7 @@ propose a proposal.
     action: ActionT,
     action_delay: u64,
 ) <b>acquires</b> <a href="#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a> {
-    <b>assert</b>(action_delay &gt;= <a href="#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;(), ERR_ACTION_DELAY_TOO_SMALL);
+    <b>assert</b>(action_delay &gt;= <a href="#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;(), <a href="#0x1_Dao_ERR_ACTION_DELAY_TOO_SMALL">ERR_ACTION_DELAY_TOO_SMALL</a>);
     <b>let</b> proposal_id = <a href="#0x1_Dao_generate_next_proposal_id">generate_next_proposal_id</a>&lt;TokenT&gt;();
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + <a href="#0x1_Dao_voting_delay">voting_delay</a>&lt;TokenT&gt;();
     <b>let</b> proposal = <a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt; {
@@ -584,10 +565,10 @@ So think twice before casting vote.
     {
         <b>let</b> state = <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can cast vote.
-        <b>assert</b>(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+        <b>assert</b>(state == <a href="#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(proposal.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     <b>let</b> stake_value = <a href="Token.md#0x1_Token_share">Token::share</a>(&stake);
     <b>let</b> my_vote = <a href="#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt; { proposer: proposer_address, id: proposal_id, stake, agree };
     <b>if</b> (agree) {
@@ -607,9 +588,7 @@ So think twice before casting vote.
 
 ## Function `revoke_vote`
 
-Revoke some voting powers from vote on
-<code>proposal_id</code> of
-<code>proposer_address</code>.
+Revoke some voting powers from vote on <code>proposal_id</code> of <code>proposer_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_revoke_vote">revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, voting_power: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
@@ -630,13 +609,13 @@ Revoke some voting powers from vote on
     {
         <b>let</b> state = <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can revoke vote.
-        <b>assert</b>(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+        <b>assert</b>(state == <a href="#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(proposal.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <b>assert</b>(my_vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-    <b>assert</b>(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(my_vote.proposer == proposer_address, <a href="#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
+    <b>assert</b>(my_vote.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw_share">Token::withdraw_share</a>(&<b>mut</b> my_vote.stake, voting_power);
     <b>if</b> (my_vote.agree) {
         proposal.for_votes = proposal.for_votes - voting_power;
@@ -706,18 +685,18 @@ Retrieve back my staked token voted for a proposal.
     proposal_id: u64,
 ): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a>, <a href="#0x1_Dao_Vote">Vote</a> {
     // only check state when proposal exists.
-    // because proposal can be destroyed after it ends in DEFEATED or EXTRACTED state.
+    // because proposal can be destroyed after it ends in <a href="#0x1_Dao_DEFEATED">DEFEATED</a> or <a href="#0x1_Dao_EXTRACTED">EXTRACTED</a> state.
     <b>if</b> (<a href="#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id)) {
         <b>let</b> state = <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // Only after vote period end, user can unstake his votes.
-        <b>assert</b>(state &gt; ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+        <b>assert</b>(state &gt; <a href="#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
     };
     <b>let</b> <a href="#0x1_Dao_Vote">Vote</a> { proposer, id, stake, agree: _ } = move_from&lt;<a href="#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
     );
     // these checks are still required.
-    <b>assert</b>(proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-    <b>assert</b>(id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(proposer == proposer_address, <a href="#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
+    <b>assert</b>(id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     stake
 }
 </code></pre>
@@ -747,7 +726,7 @@ queue agreed proposal to execute.
     proposal_id: u64,
 ) <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     // Only agreed proposal can be submitted.
-    <b>assert</b>(<a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == AGREED, 601);
+    <b>assert</b>(<a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="#0x1_Dao_AGREED">AGREED</a>, 601);
     <b>let</b> proposal = borrow_global_mut&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     proposal.eta = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + proposal.action_delay;
 }
@@ -779,8 +758,8 @@ extract proposal action to execute.
 ): ActionT <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     // Only executable proposal's action can be extracted.
     <b>assert</b>(
-        <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == EXECUTABLE,
-        ERR_PROPOSAL_STATE_INVALID,
+        <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="#0x1_Dao_EXECUTABLE">EXECUTABLE</a>,
+        <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>,
     );
     <b>let</b> proposal = borrow_global_mut&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>let</b> action: ActionT = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> proposal.action);
@@ -814,8 +793,8 @@ remove terminated proposal from proposer
 ) <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal_state = <a href="#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
     <b>assert</b>(
-        proposal_state == DEFEATED || proposal_state == EXTRACTED,
-        ERR_PROPOSAL_STATE_INVALID,
+        proposal_state == <a href="#0x1_Dao_DEFEATED">DEFEATED</a> || proposal_state == <a href="#0x1_Dao_EXTRACTED">EXTRACTED</a>,
+        <a href="#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>,
     );
     <b>let</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
         id: _,
@@ -856,28 +835,28 @@ remove terminated proposal from proposer
     proposal_id: u64,
 ): u8 <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(proposal.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     <b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>if</b> (current_time &lt; proposal.start_time) {
         // Pending
-        PENDING
+        <a href="#0x1_Dao_PENDING">PENDING</a>
     } <b>else</b> <b>if</b> (current_time &lt;= proposal.end_time) {
         // Active
-        ACTIVE
+        <a href="#0x1_Dao_ACTIVE">ACTIVE</a>
     } <b>else</b> <b>if</b> (proposal.for_votes &lt;= proposal.against_votes ||
         proposal.for_votes &lt; <a href="#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;()) {
         // Defeated
-        DEFEATED
+        <a href="#0x1_Dao_DEFEATED">DEFEATED</a>
     } <b>else</b> <b>if</b> (proposal.eta == 0) {
         // Agreed.
-        AGREED
+        <a href="#0x1_Dao_AGREED">AGREED</a>
     } <b>else</b> <b>if</b> (current_time &lt; proposal.eta) {
         // Queued, waiting <b>to</b> execute
-        QUEUED
+        <a href="#0x1_Dao_QUEUED">QUEUED</a>
     } <b>else</b> <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&proposal.action)) {
-        EXECUTABLE
+        <a href="#0x1_Dao_EXECUTABLE">EXECUTABLE</a>
     } <b>else</b> {
-        EXTRACTED
+        <a href="#0x1_Dao_EXTRACTED">EXTRACTED</a>
     }
 }
 </code></pre>
@@ -908,7 +887,7 @@ return: (start_time, end_time, for_votes, against_votes).
     proposal_id: u64,
 ): (u64, u64, u128, u128) <b>acquires</b> <a href="#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(proposal.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
 }
 </code></pre>
@@ -921,9 +900,7 @@ return: (start_time, end_time, for_votes, against_votes).
 
 ## Function `vote_of`
 
-Get voter's vote info on proposal with
-<code>proposal_id</code> of
-<code>proposer_address</code>.
+Get voter's vote info on proposal with <code>proposal_id</code> of <code>proposer_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_vote_of">vote_of</a>&lt;TokenT: <b>copyable</b>&gt;(voter: address, proposer_address: address, proposal_id: u64): (bool, u128)
@@ -941,8 +918,8 @@ Get voter's vote info on proposal with
     proposal_id: u64,
 ): (bool, u128) <b>acquires</b> <a href="#0x1_Dao_Vote">Vote</a> {
     <b>let</b> vote = borrow_global&lt;<a href="#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-    <b>assert</b>(vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-    <b>assert</b>(vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+    <b>assert</b>(vote.proposer == proposer_address, <a href="#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
+    <b>assert</b>(vote.id == proposal_id, <a href="#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
     (vote.agree, <a href="Token.md#0x1_Token_share">Token::share</a>(&vote.stake))
 }
 </code></pre>
@@ -1021,7 +998,7 @@ min_action_delay
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64 {
-    DEFAULT_MIN_ACTION_DELAY
+    <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>
 }
 </code></pre>
 
@@ -1182,7 +1159,7 @@ TODO: cap should not be mut to set data.
         config.voting_delay = voting_delay;
     };
     <b>if</b> (voting_quorum_rate &gt; 0) {
-        <b>assert</b>(<a href="#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, ERR_QUROM_RATE_INVALID);
+        <b>assert</b>(<a href="#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
         config.voting_quorum_rate = voting_quorum_rate;
     };
     <b>if</b> (min_action_delay &gt; 0) {
@@ -1215,7 +1192,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, ERR_CONFIG_PARAM_INVALID);
+    <b>assert</b>(value &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
     <b>let</b> config = <a href="#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_delay = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1245,7 +1222,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, ERR_CONFIG_PARAM_INVALID);
+    <b>assert</b>(value &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
     <b>let</b> config = <a href="#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_period = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1275,7 +1252,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u8,
 ) {
-    <b>assert</b>(value &lt;= 100 && value &gt; 0, ERR_QUROM_RATE_INVALID);
+    <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
     <b>let</b> config = <a href="#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_quorum_rate = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1305,7 +1282,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, ERR_CONFIG_PARAM_INVALID);
+    <b>assert</b>(value &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
     <b>let</b> config = <a href="#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.min_action_delay = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);

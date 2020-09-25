@@ -76,7 +76,7 @@ module Authenticator {
     }
 
     spec fun derived_address {
-        aborts_if false;
+        pragma verify = false;
     }
 
     // Compute a multied25519 account authentication key for the policy `k`

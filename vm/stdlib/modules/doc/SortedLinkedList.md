@@ -42,14 +42,12 @@
 
 <dl>
 <dt>
-
 <code>addr: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>index: u64</code>
 </dt>
 <dd>
@@ -77,28 +75,24 @@
 
 <dl>
 <dt>
-
 <code>prev: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>next: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>head: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>data: T</code>
 </dt>
 <dd>
@@ -126,7 +120,6 @@
 
 <dl>
 <dt>
-
 <code>nodes: vector&lt;<a href="#0x1_SortedLinkedList_Node">SortedLinkedList::Node</a>&lt;T&gt;&gt;</code>
 </dt>
 <dd>

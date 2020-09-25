@@ -11,6 +11,7 @@
 -  [Function `not`](#0x1_BitOperators_not)
 -  [Function `lshift`](#0x1_BitOperators_lshift)
 -  [Function `rshift`](#0x1_BitOperators_rshift)
+-  [Specification](#0x1_BitOperators_Specification)
 
 
 
@@ -157,3 +158,12 @@
 
 
 </details>
+
+<a name="0x1_BitOperators_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>

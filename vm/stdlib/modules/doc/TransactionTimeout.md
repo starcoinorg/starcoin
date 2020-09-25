@@ -34,7 +34,6 @@
 
 <dl>
 <dt>
-
 <code>duration_seconds: u64</code>
 </dt>
 <dd>
@@ -51,7 +50,7 @@
 
 
 
-<pre><code><b>const</b> ONE_DAY: u64 = 86400;
+<pre><code><b>const</b> <a href="#0x1_TransactionTimeout_ONE_DAY">ONE_DAY</a>: u64 = 86400;
 </code></pre>
 
 
@@ -76,7 +75,7 @@
   <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
   // Currently set <b>to</b> 1day.
   //TODO set by onchain config.
-  move_to(account, <a href="#0x1_TransactionTimeout_TTL">TTL</a> {duration_seconds: ONE_DAY});
+  move_to(account, <a href="#0x1_TransactionTimeout_TTL">TTL</a> {duration_seconds: <a href="#0x1_TransactionTimeout_ONE_DAY">ONE_DAY</a>});
 }
 </code></pre>
 
@@ -169,7 +168,7 @@ pragma aborts_if_is_strict;
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> exists&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).duration_seconds == ONE_DAY;
+<b>ensures</b> <b>global</b>&lt;<a href="#0x1_TransactionTimeout_TTL">TTL</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).duration_seconds == <a href="#0x1_TransactionTimeout_ONE_DAY">ONE_DAY</a>;
 </code></pre>
 
 
