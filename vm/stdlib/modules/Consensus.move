@@ -8,6 +8,11 @@ module Consensus {
     use 0x1::ErrorCode;
     use 0x1::Timestamp;
 
+    spec module {
+        pragma verify = false;
+        pragma aborts_if_is_strict;
+    }
+
     const THOUSAND : u64 =1000;
     const THOUSAND_U128 : u128 =1000;
     const HUNDRED : u64 =100;

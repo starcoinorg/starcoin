@@ -34,14 +34,12 @@
 
 <dl>
 <dt>
-
 <code>counter: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>addr: address</code>
 </dt>
 <dd>
@@ -69,14 +67,12 @@
 
 <dl>
 <dt>
-
 <code>counter: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>guid: vector&lt;u8&gt;</code>
 </dt>
 <dd>

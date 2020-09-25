@@ -75,14 +75,12 @@
 
 <dl>
 <dt>
-
 <code>package_hash: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>active_after_number: u64</code>
 </dt>
 <dd>
@@ -110,7 +108,6 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
@@ -138,7 +135,6 @@
 
 <dl>
 <dt>
-
 <code>strategy: u8</code>
 </dt>
 <dd>
@@ -166,7 +162,6 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
@@ -194,7 +189,6 @@
 
 <dl>
 <dt>
-
 <code>plan: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="#0x1_PackageTxnManager_UpgradePlan">PackageTxnManager::UpgradePlan</a>&gt;</code>
 </dt>
 <dd>

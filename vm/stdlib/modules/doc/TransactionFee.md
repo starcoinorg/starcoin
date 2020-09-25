@@ -22,10 +22,8 @@
 
 ## Resource `TransactionFee`
 
-The
-<code><a href="#0x1_TransactionFee">TransactionFee</a></code> resource holds a preburn resource for each
-fiat
-<code>TokenType</code> that can be collected as a transaction fee.
+The <code><a href="#0x1_TransactionFee">TransactionFee</a></code> resource holds a preburn resource for each
+fiat <code>TokenType</code> that can be collected as a transaction fee.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;
@@ -39,7 +37,6 @@ fiat
 
 <dl>
 <dt>
-
 <code>fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;</code>
 </dt>
 <dd>
@@ -86,9 +83,7 @@ Called in genesis. Sets up the needed resources to collect transaction fees from
 
 ## Function `add_txn_fee_token`
 
-publishing a wrapper of the
-<code>Preburn&lt;TokenType&gt;</code> resource under
-<code>fee_account</code>
+publishing a wrapper of the <code>Preburn&lt;TokenType&gt;</code> resource under <code>fee_account</code>
 
 
 <pre><code><b>fun</b> <a href="#0x1_TransactionFee_add_txn_fee_token">add_txn_fee_token</a>&lt;TokenType&gt;(account: &signer)
@@ -120,8 +115,7 @@ publishing a wrapper of the
 
 ## Function `pay_fee`
 
-Deposit
-<code>token</code> into the transaction fees bucket
+Deposit <code>token</code> into the transaction fees bucket
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionFee_pay_fee">pay_fee</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
@@ -149,10 +143,8 @@ Deposit
 
 ## Function `distribute_transaction_fees`
 
-Distribute the transaction fees collected in the
-<code>TokenType</code> token.
-If the
-<code>TokenType</code> is STC, it unpacks the token and preburns the
+Distribute the transaction fees collected in the <code>TokenType</code> token.
+If the <code>TokenType</code> is STC, it unpacks the token and preburns the
 underlying fiat.
 
 
@@ -260,6 +252,5 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
-<b>aborts_if</b> !exists&lt;<a href="#0x1_TransactionFee">TransactionFee</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>

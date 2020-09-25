@@ -9,7 +9,7 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::{
     access_path::AccessPath,
     errors::*,
-    language_storage::{ModuleId, TypeTag},
+    language_storage::{ModuleId, StructTag},
     on_chain_config::ConfigStorage,
     state_view::StateView,
     vm_status::StatusCode,
@@ -96,7 +96,7 @@ impl<'block> RemoteCache for StateViewCache<'block> {
     fn get_resource(
         &self,
         address: &AccountAddress,
-        tag: &TypeTag,
+        tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
         RemoteStorage::new(self).get_resource(address, tag)
     }
@@ -133,13 +133,9 @@ impl<'a> RemoteCache for RemoteStorage<'a> {
     fn get_resource(
         &self,
         address: &AccountAddress,
-        tag: &TypeTag,
+        struct_tag: &StructTag,
     ) -> PartialVMResult<Option<Vec<u8>>> {
-        let struct_tag = match tag {
-            TypeTag::Struct(struct_tag) => struct_tag.clone(),
-            _ => return Err(PartialVMError::new(StatusCode::VALUE_DESERIALIZATION_ERROR)),
-        };
-        let ap = create_access_path(*address, struct_tag);
+        let ap = create_access_path(*address, struct_tag.clone());
         self.get(&ap)
     }
 }

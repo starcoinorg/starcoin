@@ -50,7 +50,6 @@
 
 <dl>
 <dt>
-
 <code>payload: ConfigValue</code>
 </dt>
 <dd>
@@ -78,14 +77,12 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="#0x1_Config_ConfigChangeEvent">Config::ConfigChangeEvent</a>&lt;ConfigValue&gt;&gt;</code>
 </dt>
 <dd>
@@ -113,7 +110,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;</code>
 </dt>
 <dd>
@@ -141,14 +137,12 @@
 
 <dl>
 <dt>
-
 <code>account_address: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>value: ConfigValue</code>
 </dt>
 <dd>

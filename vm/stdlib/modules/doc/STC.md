@@ -38,7 +38,6 @@
 
 <dl>
 <dt>
-
 <code>dummy_field: bool</code>
 </dt>
 <dd>
@@ -66,7 +65,6 @@
 
 <dl>
 <dt>
-
 <code>cap: <a href="Token.md#0x1_Token_BurnCapability">Token::BurnCapability</a>&lt;<a href="#0x1_STC_STC">STC::STC</a>&gt;</code>
 </dt>
 <dd>
@@ -84,7 +82,7 @@
 scaling_factor = 10^6
 
 
-<pre><code><b>const</b> BASE_SCALING_FACTOR: u128 = 1000000;
+<pre><code><b>const</b> <a href="#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>: u128 = 1000000;
 </code></pre>
 
 
@@ -96,7 +94,7 @@ scaling_factor = 10^6
 fractional_part = 10^3
 
 
-<pre><code><b>const</b> FRACTIONAL_PART: u128 = 1000;
+<pre><code><b>const</b> <a href="#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000;
 </code></pre>
 
 
@@ -117,7 +115,7 @@ fractional_part = 10^3
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account, BASE_SCALING_FACTOR, FRACTIONAL_PART);
+    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account, <a href="#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>, <a href="#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
     move_to(account, <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
     <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
@@ -139,9 +137,7 @@ fractional_part = 10^3
 
 ## Function `is_stc`
 
-Returns true if
-<code>TokenType</code> is
-<code><a href="#0x1_STC_STC">STC::STC</a></code>
+Returns true if <code>TokenType</code> is <code><a href="#0x1_STC_STC">STC::STC</a></code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_STC_is_stc">is_stc</a>&lt;TokenType&gt;(): bool

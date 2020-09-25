@@ -31,14 +31,12 @@
 
 <dl>
 <dt>
-
 <code>gas_schedule: <a href="#0x1_VMConfig_GasSchedule">VMConfig::GasSchedule</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>block_gas_limit: u64</code>
 </dt>
 <dd>
@@ -66,21 +64,18 @@
 
 <dl>
 <dt>
-
 <code>instruction_schedule: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>native_schedule: vector&lt;u8&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>gas_constants: <a href="#0x1_VMConfig_GasConstants">VMConfig::GasConstants</a></code>
 </dt>
 <dd>
@@ -108,43 +103,36 @@
 
 <dl>
 <dt>
-
 <code>global_memory_per_byte_cost: u64</code>
 </dt>
 <dd>
  The cost per-byte written to global storage.
 </dd>
 <dt>
-
 <code>global_memory_per_byte_write_cost: u64</code>
 </dt>
 <dd>
  The cost per-byte written to storage.
 </dd>
 <dt>
-
 <code>min_transaction_gas_units: u64</code>
 </dt>
 <dd>
  We charge one unit of gas per-byte for the first 600 bytes
 </dd>
 <dt>
-
 <code>large_transaction_cutoff: u64</code>
 </dt>
 <dd>
- Any transaction over this size will be charged
-<code>INTRINSIC_GAS_PER_BYTE</code> per byte
+ Any transaction over this size will be charged <code>INTRINSIC_GAS_PER_BYTE</code> per byte
 </dd>
 <dt>
-
 <code>instrinsic_gas_per_byte: u64</code>
 </dt>
 <dd>
  The units of gas that should be charged per byte for every transaction.
 </dd>
 <dt>
-
 <code>maximum_number_of_gas_units: u64</code>
 </dt>
 <dd>
@@ -154,35 +142,30 @@
          MAXIMUM_NUMBER_OF_GAS_UNITS * MAX_PRICE_PER_GAS_UNIT < min(u64::MAX, GasUnits<GasCarrier>::MAX)
 </dd>
 <dt>
-
 <code>min_price_per_gas_unit: u64</code>
 </dt>
 <dd>
  The minimum gas price that a transaction can be submitted with.
 </dd>
 <dt>
-
 <code>max_price_per_gas_unit: u64</code>
 </dt>
 <dd>
  The maximum gas unit price that a transaction can be submitted with.
 </dd>
 <dt>
-
 <code>max_transaction_size_in_bytes: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>gas_unit_scaling_factor: u64</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>default_account_size: u64</code>
 </dt>
 <dd>

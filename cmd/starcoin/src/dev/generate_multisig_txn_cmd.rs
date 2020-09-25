@@ -187,7 +187,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             let mut output_dir = opt.output_dir.clone().unwrap_or(current_dir()?);
             // use hash's short str as output file name
             let file_name = script_txn.crypto_hash().short_str();
-            output_dir.push(file_name);
+            output_dir.push(file_name.as_str());
             output_dir.set_extension("multisig-txn");
             output_dir
         };

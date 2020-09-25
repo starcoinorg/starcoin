@@ -41,14 +41,12 @@
 
 <dl>
 <dt>
-
 <code>public_keys: vector&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>threshold: u8</code>
 </dt>
 <dd>
@@ -65,7 +63,7 @@
 
 
 
-<pre><code><b>const</b> ED25519_SCHEME_ID: u8 = 0;
+<pre><code><b>const</b> <a href="#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a>: u8 = 0;
 </code></pre>
 
 
@@ -76,7 +74,7 @@
 
 
 
-<pre><code><b>const</b> MULTI_ED25519_SCHEME_ID: u8 = 1;
+<pre><code><b>const</b> <a href="#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a>: u8 = 1;
 </code></pre>
 
 
@@ -132,8 +130,8 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Authenticator_ed25519_authentication_key">ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt; {
-    // TODO: add constant ED25519_SCHEME_ID = 0u8
-    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> public_key, ED25519_SCHEME_ID);
+    // TODO: add constant <a href="#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a> = 0u8
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> public_key, <a href="#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a>);
     <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(public_key)
 }
 </code></pre>
@@ -204,7 +202,7 @@
         i = i + 1;
     };
     <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> authentication_key_preimage, <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&k.threshold));
-    // TODO: add constant MULTI_ED25519_SCHEME_ID = 1u8
+    // TODO: add constant <a href="#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a> = 1u8
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> authentication_key_preimage, 1u8);
     <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(authentication_key_preimage)
 }
@@ -319,7 +317,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code>pragma verify = <b>false</b>;
 </code></pre>
 
 

@@ -20,7 +20,7 @@
 
 
 
-<pre><code><b>const</b> TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
+<pre><code><b>const</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>: u8 = 0;
 </code></pre>
 
 
@@ -31,7 +31,7 @@
 
 
 
-<pre><code><b>const</b> TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
+<pre><code><b>const</b> <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>: u8 = 1;
 </code></pre>
 
 
@@ -73,13 +73,13 @@
 
     <a href="Account.md#0x1_Account_txn_prologue">Account::txn_prologue</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, txn_public_key, txn_gas_price, txn_max_gas_units);
     <b>assert</b>(<a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">ErrorCode::PROLOGUE_TRANSACTION_EXPIRED</a>());
-    <b>if</b> (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
+    <b>if</b> (txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>){
         <b>assert</b>(
             <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">TransactionPublishOption::is_module_allowed</a>(account),
             <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">ErrorCode::PROLOGUE_MODULE_NOT_ALLOWED</a>()
         );
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(account, txn_sender, txn_package_address, txn_script_or_package_hash);
-    }<b>else</b> <b>if</b>(txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT){
+    }<b>else</b> <b>if</b>(txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>){
         <b>assert</b>(
             <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">TransactionPublishOption::is_script_allowed</a>(account, &txn_script_or_package_hash),
             <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">ErrorCode::PROLOGUE_SCRIPT_NOT_ALLOWED</a>()
@@ -123,7 +123,7 @@
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <a href="Account.md#0x1_Account_txn_epilogue">Account::txn_epilogue</a>&lt;TokenType&gt;(account, txn_sender, txn_sequence_number, txn_gas_price, txn_max_gas_units, gas_units_remaining);
-    <b>if</b> (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE){
+    <b>if</b> (txn_payload_type == <a href="#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>){
        <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_epilogue">PackageTxnManager::package_txn_epilogue</a>(account, txn_sender, txn_package_address, success);
     }
 }

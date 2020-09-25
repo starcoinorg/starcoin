@@ -15,6 +15,7 @@
 -  [Function `add_to_script_allow_list`](#0x1_TransactionPublishOption_add_to_script_allow_list)
 -  [Function `set_open_script`](#0x1_TransactionPublishOption_set_open_script)
 -  [Function `set_open_module`](#0x1_TransactionPublishOption_set_open_module)
+-  [Specification](#0x1_TransactionPublishOption_Specification)
 
 
 
@@ -40,14 +41,12 @@ We represent these as the following resource.
 
 <dl>
 <dt>
-
 <code>script_allow_list: vector&lt;vector&lt;u8&gt;&gt;</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-
 <code>module_publishing_allowed: bool</code>
 </dt>
 <dd>
@@ -64,7 +63,7 @@ We represent these as the following resource.
 
 
 
-<pre><code><b>const</b> SCRIPT_HASH_LENGTH: u64 = 32;
+<pre><code><b>const</b> <a href="#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>: u64 = 32;
 </code></pre>
 
 
@@ -76,7 +75,7 @@ We represent these as the following resource.
 The script hash has an invalid length
 
 
-<pre><code><b>const</b> EINVALID_SCRIPT_HASH: u64 = 1001;
+<pre><code><b>const</b> <a href="#0x1_TransactionPublishOption_EINVALID_SCRIPT_HASH">EINVALID_SCRIPT_HASH</a>: u64 = 1001;
 </code></pre>
 
 
@@ -88,7 +87,7 @@ The script hash has an invalid length
 The script hash already exists in the allowlist
 
 
-<pre><code><b>const</b> EALLOWLIST_ALREADY_CONTAINS_SCRIPT: u64 = 1002;
+<pre><code><b>const</b> <a href="#0x1_TransactionPublishOption_EALLOWLIST_ALREADY_CONTAINS_SCRIPT">EALLOWLIST_ALREADY_CONTAINS_SCRIPT</a>: u64 = 1002;
 </code></pre>
 
 
@@ -117,13 +116,13 @@ The script hash already exists in the allowlist
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
 
     <b>let</b> script_allow_list = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;vector&lt;u8&gt;&gt;();
-    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&merged_script_allow_list) / SCRIPT_HASH_LENGTH;
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&merged_script_allow_list) / <a href="#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>;
     <b>let</b> i = 0;
     <b>while</b> (i &lt; len) {
         <b>let</b> script_hash = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
         <b>let</b> j = 0;
-        <b>while</b> (j &lt; SCRIPT_HASH_LENGTH) {
-            <b>let</b> index = SCRIPT_HASH_LENGTH * i + j;
+        <b>while</b> (j &lt; <a href="#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>) {
+            <b>let</b> index = <a href="#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a> * i + j;
             <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> script_hash, *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&merged_script_allow_list, index));
             j = j + 1;
         };
@@ -215,11 +214,11 @@ The script hash already exists in the allowlist
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_TransactionPublishOption_add_to_script_allow_list">add_to_script_allow_list</a>(account: &signer, new_hash: vector&lt;u8&gt;) {
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_hash) == SCRIPT_HASH_LENGTH, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_hash) == <a href="#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
 
     <b>let</b> publish_option = <a href="Config.md#0x1_Config_get">Config::get</a>&lt;<a href="#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account);
     <b>if</b> (<a href="Vector.md#0x1_Vector_contains">Vector::contains</a>(&publish_option.script_allow_list, &new_hash)) {
-        <b>abort</b> EALLOWLIST_ALREADY_CONTAINS_SCRIPT
+        <b>abort</b> <a href="#0x1_TransactionPublishOption_EALLOWLIST_ALREADY_CONTAINS_SCRIPT">EALLOWLIST_ALREADY_CONTAINS_SCRIPT</a>
     };
     <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> publish_option.script_allow_list, new_hash);
 
@@ -288,3 +287,13 @@ The script hash already exists in the allowlist
 
 
 </details>
+
+<a name="0x1_TransactionPublishOption_Specification"></a>
+
+## Specification
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+pragma aborts_if_is_strict;
+</code></pre>

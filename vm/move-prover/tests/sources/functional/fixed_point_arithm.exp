@@ -1,0 +1,236 @@
+Move prover returns: exiting with boogie verification errors
+error: post-condition does not hold
+
+     ┌── tests/sources/functional/fixed_point_arithm.move:117:9 ───
+     │
+ 117 │         ensures result <= x; // proved
+     │         ^^^^^^^^^^^^^^^^^^^^
+     │
+     =     at tests/sources/functional/fixed_point_arithm.move:111:5: div_mul
+     =         x = <redacted>,
+     =         y = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =         num = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:112:39: div_mul
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =         value = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:113:59: div_mul
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:114:53: div_mul
+
+error: post-condition does not hold
+
+     ┌── tests/sources/functional/fixed_point_arithm.move:126:9 ───
+     │
+ 126 │         ensures result >= x; // disproved
+     │         ^^^^^^^^^^^^^^^^^^^^
+     │
+     =     at tests/sources/functional/fixed_point_arithm.move:120:5: div_mul_incorrect
+     =         x = <redacted>,
+     =         y = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =         num = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:121:39: div_mul_incorrect
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =         value = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:122:59: div_mul_incorrect
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:123:53: div_mul_incorrect
+
+error: post-condition does not hold
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:95:9 ───
+    │
+ 95 │         ensures result <= x; // proved
+    │         ^^^^^^^^^^^^^^^^^^^^
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:89:5: mul_div
+    =         x = <redacted>,
+    =         y = <redacted>,
+    =         result = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+    =         num = <redacted>,
+    =         result = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+    =     at tests/sources/functional/fixed_point_arithm.move:90:39: mul_div
+    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =         value = <redacted>,
+    =         result = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at tests/sources/functional/fixed_point_arithm.move:91:61: mul_div
+    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at tests/sources/functional/fixed_point_arithm.move:92:51: mul_div
+
+error: post-condition does not hold
+
+     ┌── tests/sources/functional/fixed_point_arithm.move:104:9 ───
+     │
+ 104 │         ensures result >= x; // disproved
+     │         ^^^^^^^^^^^^^^^^^^^^
+     │
+     =     at tests/sources/functional/fixed_point_arithm.move:98:5: mul_div_incorrect
+     =         x = <redacted>,
+     =         y = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =         num = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:99:39: mul_div_incorrect
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =         value = <redacted>,
+     =         result = <redacted>
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:100:61: mul_div_incorrect
+     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at tests/sources/functional/fixed_point_arithm.move:101:51: mul_div_incorrect
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:12:5 ───
+    │
+ 12 │ ╭     fun multiply_0_x(x: FixedPoint32): u64 {
+ 13 │ │         FixedPoint32::multiply_u64(0, x)
+ 14 │ │     }
+    │ ╰─────^
+    ·
+ 13 │         FixedPoint32::multiply_u64(0, x)
+    │                       ------------ abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:12:5: multiply_0_x
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:13:23: multiply_0_x (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:20:5 ───
+    │
+ 20 │ ╭     fun multiply_0_x_incorrect(x: FixedPoint32): u64 {
+ 21 │ │         FixedPoint32::multiply_u64(0, x)
+ 22 │ │     }
+    │ ╰─────^
+    ·
+ 21 │         FixedPoint32::multiply_u64(0, x)
+    │                       ------------ abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:20:5: multiply_0_x_incorrect
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:21:23: multiply_0_x_incorrect (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:49:5 ───
+    │
+ 49 │ ╭     fun multiply_1_x(x: FixedPoint32): u64 {
+ 50 │ │         FixedPoint32::multiply_u64(1, x)
+ 51 │ │     }
+    │ ╰─────^
+    ·
+ 50 │         FixedPoint32::multiply_u64(1, x)
+    │                       ------------ abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:49:5: multiply_1_x
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:50:23: multiply_1_x (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:58:5 ───
+    │
+ 58 │ ╭     fun multiply_1_x_incorrect(x: FixedPoint32): u64 {
+ 59 │ │         FixedPoint32::multiply_u64(1, x)
+ 60 │ │     }
+    │ ╰─────^
+    ·
+ 59 │         FixedPoint32::multiply_u64(1, x)
+    │                       ------------ abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:58:5: multiply_1_x_incorrect
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:59:23: multiply_1_x_incorrect (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:28:5 ───
+    │
+ 28 │ ╭     fun multiply_x_0(x: u64): u64 {
+ 29 │ │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
+ 30 │ │     }
+    │ ╰─────^
+    ·
+ 29 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
+    │                                                     --------------------- abort happened here with code `0x5`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:28:5: multiply_x_0
+    =         x = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =         value = <redacted>,
+    =         result = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at tests/sources/functional/fixed_point_arithm.move:29:53: multiply_x_0 (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:36:5 ───
+    │
+ 36 │ ╭     fun multiply_x_0_incorrect(x: u64): u64 {
+ 37 │ │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
+ 38 │ │     }
+    │ ╰─────^
+    ·
+ 37 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
+    │                                                     --------------------- abort happened here with code `0x5`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:36:5: multiply_x_0_incorrect
+    =         x = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =         value = <redacted>,
+    =         result = <redacted>
+    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at tests/sources/functional/fixed_point_arithm.move:37:53: multiply_x_0_incorrect (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:67:5 ───
+    │
+ 67 │ ╭     fun multiply_x_1(x: u64): u64 {
+ 68 │ │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_rational(1,1))
+ 69 │ │     }
+    │ ╰─────^
+    ·
+ 68 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_rational(1,1))
+    │                                                     -------------------- abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:67:5: multiply_x_1
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:68:53: multiply_x_1 (ABORTED)
+
+error: abort not covered by any of the `aborts_if` clauses
+
+    ┌── tests/sources/functional/fixed_point_arithm.move:75:5 ───
+    │
+ 75 │ ╭     fun multiply_x_1_incorrect(x: u64): u64 {
+ 76 │ │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_rational(1,1))
+ 77 │ │     }
+    │ ╰─────^
+    ·
+ 76 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_rational(1,1))
+    │                                                     -------------------- abort happened here with code `0x2`
+    │
+    =     at tests/sources/functional/fixed_point_arithm.move:75:5: multiply_x_1_incorrect
+    =         x = <redacted>
+    =     at tests/sources/functional/fixed_point_arithm.move:76:53: multiply_x_1_incorrect (ABORTED)

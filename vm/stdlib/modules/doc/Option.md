@@ -63,7 +63,6 @@ zero or one because Move bytecode does not have ADTs.
 
 <dl>
 <dt>
-
 <code>vec: vector&lt;Element&gt;</code>
 </dt>
 <dd>
@@ -80,7 +79,7 @@ zero or one because Move bytecode does not have ADTs.
 
 
 
-<pre><code><b>const</b> EOPTION_ALREADY_FILLED: u64 = 0;
+<pre><code><b>const</b> <a href="#0x1_Option_EOPTION_ALREADY_FILLED">EOPTION_ALREADY_FILLED</a>: u64 = 0;
 </code></pre>
 
 
@@ -89,8 +88,7 @@ zero or one because Move bytecode does not have ADTs.
 
 ## Function `none`
 
-Return an empty
-<code><a href="#0x1_Option">Option</a></code>
+Return an empty <code><a href="#0x1_Option">Option</a></code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_none">none</a>&lt;Element&gt;(): <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;
@@ -115,9 +113,7 @@ Return an empty
 
 ## Function `some`
 
-Return an
-<code><a href="#0x1_Option">Option</a></code> containing
-<code>e</code>
+Return an <code><a href="#0x1_Option">Option</a></code> containing <code>e</code>
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_some">some</a>&lt;Element&gt;(e: Element): <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;
@@ -142,8 +138,7 @@ Return an
 
 ## Function `is_none`
 
-Return true if
-<code>t</code> does not hold a value
+Return true if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_is_none">is_none</a>&lt;Element&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): bool
@@ -168,8 +163,7 @@ Return true if
 
 ## Function `is_some`
 
-Return true if
-<code>t</code> holds a value
+Return true if <code>t</code> holds a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_is_some">is_some</a>&lt;Element&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): bool
@@ -194,12 +188,8 @@ Return true if
 
 ## Function `contains`
 
-Return true if the value in
-<code>t</code> is equal to
-<code>e_ref</code>
-Always returns
-<code><b>false</b></code> if
-<code>t</code> does not hold a value
+Return true if the value in <code>t</code> is equal to <code>e_ref</code>
+Always returns <code><b>false</b></code> if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_contains">contains</a>&lt;Element&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, e_ref: &Element): bool
@@ -224,10 +214,8 @@ Always returns
 
 ## Function `borrow`
 
-Return an immutable reference to the value inside
-<code>t</code>
-Aborts if
-<code>t</code> does not hold a value
+Return an immutable reference to the value inside <code>t</code>
+Aborts if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_borrow">borrow</a>&lt;Element&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): &Element
@@ -252,11 +240,8 @@ Aborts if
 
 ## Function `borrow_with_default`
 
-Return a reference to the value inside
-<code>t</code> if it holds one
-Return
-<code>default_ref</code> if
-<code>t</code> does not hold a value
+Return a reference to the value inside <code>t</code> if it holds one
+Return <code>default_ref</code> if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_borrow_with_default">borrow_with_default</a>&lt;Element&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, default_ref: &Element): &Element
@@ -283,11 +268,8 @@ Return
 
 ## Function `get_with_default`
 
-Return the value inside
-<code>t</code> if it holds one
-Return
-<code>default</code> if
-<code>t</code> does not hold a value
+Return the value inside <code>t</code> if it holds one
+Return <code>default</code> if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_get_with_default">get_with_default</a>&lt;Element: <b>copyable</b>&gt;(t: &<a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, default: Element): Element
@@ -314,11 +296,8 @@ Return
 
 ## Function `fill`
 
-Convert the none option
-<code>t</code> to a some option by adding
-<code>e</code>.
-Aborts if
-<code>t</code> already holds a value
+Convert the none option <code>t</code> to a some option by adding <code>e</code>.
+Aborts if <code>t</code> already holds a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_fill">fill</a>&lt;Element&gt;(t: &<b>mut</b> <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, e: Element)
@@ -333,7 +312,7 @@ Aborts if
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_fill">fill</a>&lt;Element&gt;(t: &<b>mut</b> <a href="#0x1_Option">Option</a>&lt;Element&gt;, e: Element) {
     <b>let</b> vec_ref = &<b>mut</b> t.vec;
     <b>if</b> (<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(vec_ref)) <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(vec_ref, e)
-    <b>else</b> <b>abort</b> EOPTION_ALREADY_FILLED
+    <b>else</b> <b>abort</b> <a href="#0x1_Option_EOPTION_ALREADY_FILLED">EOPTION_ALREADY_FILLED</a>
 }
 </code></pre>
 
@@ -345,12 +324,8 @@ Aborts if
 
 ## Function `extract`
 
-Convert a
-<code>some</code> option to a
-<code>none</code> by removing and returning the value stored inside
-<code>t</code>
-Aborts if
-<code>t</code> does not hold a value
+Convert a <code>some</code> option to a <code>none</code> by removing and returning the value stored inside <code>t</code>
+Aborts if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_extract">extract</a>&lt;Element&gt;(t: &<b>mut</b> <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): Element
@@ -375,10 +350,8 @@ Aborts if
 
 ## Function `borrow_mut`
 
-Return a mutable reference to the value inside
-<code>t</code>
-Aborts if
-<code>t</code> does not hold a value
+Return a mutable reference to the value inside <code>t</code>
+Aborts if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_borrow_mut">borrow_mut</a>&lt;Element&gt;(t: &<b>mut</b> <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): &<b>mut</b> Element
@@ -403,11 +376,8 @@ Aborts if
 
 ## Function `swap`
 
-Swap the old value inside
-<code>t</code> with
-<code>e</code> and return the old value
-Aborts if
-<code>t</code> does not hold a value
+Swap the old value inside <code>t</code> with <code>e</code> and return the old value
+Aborts if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_swap">swap</a>&lt;Element&gt;(t: &<b>mut</b> <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, e: Element): Element
@@ -435,10 +405,7 @@ Aborts if
 
 ## Function `destroy_with_default`
 
-Destroys
-<code>t.</code> If
-<code>t</code> holds a value, return it. Returns
-<code>default</code> otherwise
+Destroys <code>t.</code> If <code>t</code> holds a value, return it. Returns <code>default</code> otherwise
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_destroy_with_default">destroy_with_default</a>&lt;Element: <b>copyable</b>&gt;(t: <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;, default: Element): Element
@@ -465,10 +432,8 @@ Destroys
 
 ## Function `destroy_some`
 
-Unpack
-<code>t</code> and return its contents
-Aborts if
-<code>t</code> does not hold a value
+Unpack <code>t</code> and return its contents
+Aborts if <code>t</code> does not hold a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_destroy_some">destroy_some</a>&lt;Element&gt;(t: <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;): Element
@@ -496,10 +461,8 @@ Aborts if
 
 ## Function `destroy_none`
 
-Unpack
-<code>t</code>
-Aborts if
-<code>t</code> holds a value
+Unpack <code>t</code>
+Aborts if <code>t</code> holds a value
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="#0x1_Option_destroy_none">destroy_none</a>&lt;Element&gt;(t: <a href="#0x1_Option_Option">Option::Option</a>&lt;Element&gt;)
@@ -545,7 +508,6 @@ pragma aborts_if_is_strict;
 
 <dl>
 <dt>
-
 <code>vec: vector&lt;Element&gt;</code>
 </dt>
 <dd>

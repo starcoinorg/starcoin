@@ -31,7 +31,6 @@
 
 <dl>
 <dt>
-
 <code>id: u8</code>
 </dt>
 <dd>
