@@ -118,6 +118,8 @@ async fn test_miner_service() {
     miner.notify(GenerateBlockEvent::new(false)).unwrap();
 
     delay_for(Duration::from_millis(200)).await;
+    miner.notify(GenerateBlockEvent::new(true)).unwrap();
+    delay_for(Duration::from_millis(200)).await;
     // Generate a event
     let diff = U256::from(1024);
     let header_hash = HashValue::random();

@@ -7019,6 +7019,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "once_cell",
+ "parking_lot 0.11.0",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator",

@@ -9,10 +9,10 @@ use bus::{Bus, BusActor};
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use logger::prelude::*;
+use parking_lot::Mutex;
 use starcoin_config::NodeConfig;
 use starcoin_metrics::HistogramTimer;
 use std::sync::Arc;
-use std::sync::Mutex;
 use types::{block::BlockTemplate, system_events::MinedBlock, U256};
 
 #[derive(Clone)]
@@ -60,25 +60,23 @@ impl Miner {
         if self.is_minting() {
             warn!("force set mint job, since mint ctx is not empty");
         }
-        *self.state.lock().unwrap() = Some(ctx);
+        *self.state.lock() = Some(ctx);
         let bus = self.bus.clone();
         bus.broadcast(MintBlockEvent::new(mining_hash, difficulty))
             .await
     }
 
     pub fn is_minting(&self) -> bool {
-        self.state.lock().unwrap().is_some()
+        self.state.lock().is_some()
     }
 
     pub async fn submit(&self, nonce: u64, header_hash: HashValue) -> Result<()> {
         let ctx = self
             .state
             .lock()
-            .unwrap()
             .take()
             .ok_or_else(|| format_err!("Mint job is empty"))?;
         debug!("miner receive submit with hash:{}", header_hash);
-        // TODO:FIX ME
 
         if ctx.mining_hash != header_hash {
             self.reset_ctx(Some(ctx));
@@ -97,6 +95,6 @@ impl Miner {
     }
 
     fn reset_ctx(&self, ctx: Option<MineCtx>) {
-        *(self.state.lock().unwrap()) = ctx;
+        *(self.state.lock()) = ctx;
     }
 }
