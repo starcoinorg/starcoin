@@ -62,7 +62,7 @@ module UpgradeModuleDaoProposal {
         Dao::propose<TokenT, UpgradeModule>(
             signer,
             UpgradeModule { module_address, package_hash },
-            Dao::default_min_action_delay(),
+            Dao::min_action_delay<TokenT>(),
         );
     }
 

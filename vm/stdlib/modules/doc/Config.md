@@ -9,7 +9,6 @@
 -  [Resource `ModifyConfigCapability`](#0x1_Config_ModifyConfigCapability)
 -  [Resource `ModifyConfigCapabilityHolder`](#0x1_Config_ModifyConfigCapabilityHolder)
 -  [Struct `ConfigChangeEvent`](#0x1_Config_ConfigChangeEvent)
--  [Function `get`](#0x1_Config_get)
 -  [Function `get_by_address`](#0x1_Config_get_by_address)
 -  [Function `set`](#0x1_Config_set)
 -  [Function `set_with_capability`](#0x1_Config_set_with_capability)
@@ -20,7 +19,6 @@
 -  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#0x1_Config_Specification)
-    -  [Function `get`](#0x1_Config_Specification_get)
     -  [Function `get_by_address`](#0x1_Config_Specification_get_by_address)
     -  [Function `set`](#0x1_Config_Specification_set)
     -  [Function `set_with_capability`](#0x1_Config_Specification_set_with_capability)
@@ -149,32 +147,6 @@
 
 </dd>
 </dl>
-
-
-</details>
-
-<a name="0x1_Config_get"></a>
-
-## Function `get`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get">get</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): ConfigValue
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get">get</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): ConfigValue <b>acquires</b> <a href="#0x1_Config">Config</a> {
-    <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
-    *&borrow_global&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
-}
-</code></pre>
-
 
 
 </details>
@@ -433,41 +405,12 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="0x1_Config_Specification_get"></a>
-
-### Function `get`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Config_get">get</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer): ConfigValue
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-</code></pre>
-
-
-
 
 <a name="0x1_Config_spec_get"></a>
 
 
 <pre><code><b>define</b> <a href="#0x1_Config_spec_get">spec_get</a>&lt;ConfigValue&gt;(addr: address): ConfigValue {
     <b>global</b>&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
-}
-</code></pre>
-
-
-
-
-<a name="0x1_Config_Get"></a>
-
-
-<pre><code><b>schema</b> <a href="#0x1_Config_Get">Get</a>&lt;ConfigValue&gt; {
-    account: &signer;
-    <b>aborts_if</b> !exists&lt;<a href="#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 }
 </code></pre>
 

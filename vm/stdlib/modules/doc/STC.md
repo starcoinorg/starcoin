@@ -118,7 +118,13 @@ fractional_part = 10^3
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account, <a href="#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>, <a href="#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
     move_to(account, <a href="#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
-    <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
+    <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(
+        account,
+        <a href="Dao.md#0x1_Dao_default_voting_delay">Dao::default_voting_delay</a>(),
+        <a href="Dao.md#0x1_Dao_default_voting_period">Dao::default_voting_period</a>(),
+        <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">Dao::default_voting_quorum_rate</a>(),
+        <a href="Dao.md#0x1_Dao_default_min_action_delay">Dao::default_min_action_delay</a>(),
+    );
     <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">ModifyDaoConfigProposal::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
     <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">UpgradeModuleDaoProposal::plugin</a>&lt;<a href="#0x1_STC">STC</a>&gt;(account);
     <b>let</b> upgrade_plan_cap = <a href="PackageTxnManager.md#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap">PackageTxnManager::extract_submit_upgrade_plan_cap</a>(account);
@@ -126,6 +132,10 @@ fractional_part = 10^3
         account,
         upgrade_plan_cap,
     );
+    // the following configurations are gov-ed by <a href="Dao.md#0x1_Dao">Dao</a>.
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="#0x1_STC">STC</a>, <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>&gt;(account);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="#0x1_STC">STC</a>, <a href="VMConfig.md#0x1_VMConfig_VMConfig">VMConfig::VMConfig</a>&gt;(account);
+    <a href="OnChainConfigDao.md#0x1_OnChainConfigDao_plugin">OnChainConfigDao::plugin</a>&lt;<a href="#0x1_STC">STC</a>, <a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(account);
 }
 </code></pre>
 

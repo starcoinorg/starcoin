@@ -27,7 +27,12 @@
 -  [Const `ERR_PROPOSER_MISMATCH`](#0x1_Dao_ERR_PROPOSER_MISMATCH)
 -  [Const `ERR_QUROM_RATE_INVALID`](#0x1_Dao_ERR_QUROM_RATE_INVALID)
 -  [Const `ERR_CONFIG_PARAM_INVALID`](#0x1_Dao_ERR_CONFIG_PARAM_INVALID)
+-  [Function `default_min_action_delay`](#0x1_Dao_default_min_action_delay)
+-  [Function `default_voting_delay`](#0x1_Dao_default_voting_delay)
+-  [Function `default_voting_period`](#0x1_Dao_default_voting_period)
+-  [Function `default_voting_quorum_rate`](#0x1_Dao_default_voting_quorum_rate)
 -  [Function `plugin`](#0x1_Dao_plugin)
+-  [Function `new_dao_config`](#0x1_Dao_new_dao_config)
 -  [Function `propose`](#0x1_Dao_propose)
 -  [Function `cast_vote`](#0x1_Dao_cast_vote)
 -  [Function `revoke_vote`](#0x1_Dao_revoke_vote)
@@ -41,7 +46,6 @@
 -  [Function `vote_of`](#0x1_Dao_vote_of)
 -  [Function `quorum_votes`](#0x1_Dao_quorum_votes)
 -  [Function `generate_next_proposal_id`](#0x1_Dao_generate_next_proposal_id)
--  [Function `default_min_action_delay`](#0x1_Dao_default_min_action_delay)
 -  [Function `voting_delay`](#0x1_Dao_voting_delay)
 -  [Function `voting_period`](#0x1_Dao_voting_period)
 -  [Function `voting_quorum_rate`](#0x1_Dao_voting_quorum_rate)
@@ -451,16 +455,14 @@ Proposal state
 
 
 
-<a name="0x1_Dao_plugin"></a>
+<a name="0x1_Dao_default_min_action_delay"></a>
 
-## Function `plugin`
+## Function `default_min_action_delay`
 
-plug_in function, can only be called by token issuer.
-Any token who wants to has gov functionality
-can optin this moudle by call this <code>register function</code>.
+default min_action_delay
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64
 </code></pre>
 
 
@@ -469,7 +471,112 @@ can optin this moudle by call this <code>register function</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64 {
+    <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_default_voting_delay"></a>
+
+## Function `default_voting_delay`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64 {
+    <a href="#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_default_voting_period"></a>
+
+## Function `default_voting_period`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_period">default_voting_period</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_period">default_voting_period</a>(): u64 {
+    <a href="#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_default_voting_quorum_rate"></a>
+
+## Function `default_voting_quorum_rate`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8 {
+    <a href="#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_plugin"></a>
+
+## Function `plugin`
+
+plugin function, can only be called by token issuer.
+Any token who wants to has gov functionality
+can optin this moudle by call this <code>register function</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(
+    signer: &signer,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+) {
     // TODO: we can add a token manage cap in <a href="Token.md#0x1_Token">Token</a> <b>module</b>.
     // and only token manager can register this.
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
@@ -477,13 +584,47 @@ can optin this moudle by call this <code>register function</code>.
     // <b>let</b> proposal_id = ProposalId {next: 0};
     <b>let</b> gov_info = <a href="#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; { next_proposal_id: 0 };
     move_to(signer, gov_info);
-    <b>let</b> config = <a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
-        voting_delay: <a href="#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>,
-        voting_period: <a href="#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>,
-        voting_quorum_rate: <a href="#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>,
-        min_action_delay: <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>,
-    };
+    <b>let</b> config = <a href="#0x1_Dao_new_dao_config">new_dao_config</a>&lt;TokenT&gt;(
+        voting_delay,
+        voting_period,
+        voting_quorum_rate,
+        min_action_delay,
+    );
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>(signer, config);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_new_dao_config"></a>
+
+## Function `new_dao_config`
+
+create a dao config
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_new_dao_config">new_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64): <a href="#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_new_dao_config">new_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+): <a href="#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
+    <b>assert</b>(voting_delay &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(voting_period &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(voting_quorum_rate &gt; 0 && <a href="#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(min_action_delay &gt; 0, <a href="#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <a href="#0x1_Dao_DaoConfig">DaoConfig</a> { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
 }
 </code></pre>
 
@@ -974,31 +1115,6 @@ Quorum votes to make proposal pass.
     <b>let</b> proposal_id = gov_info.next_proposal_id;
     gov_info.next_proposal_id = proposal_id + 1;
     proposal_id
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Dao_default_min_action_delay"></a>
-
-## Function `default_min_action_delay`
-
-min_action_delay
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64 {
-    <a href="#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>
 }
 </code></pre>
 

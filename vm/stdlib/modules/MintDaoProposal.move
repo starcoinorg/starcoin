@@ -27,7 +27,7 @@ module MintDaoProposal {
         Dao::propose<TokenT, MintToken>(
             signer,
             MintToken { receiver, amount },
-            Dao::default_min_action_delay(),
+            Dao::min_action_delay<TokenT>(),
         );
     }
 

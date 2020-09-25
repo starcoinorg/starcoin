@@ -5,6 +5,10 @@ module STC {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::UpgradeModuleDaoProposal;
     use 0x1::PackageTxnManager;
+    use 0x1::OnChainConfigDao;
+    use 0x1::TransactionPublishOption;
+    use 0x1::VMConfig;
+    use 0x1::Version;
 
     spec module {
         pragma verify;
@@ -27,7 +31,13 @@ module STC {
         Token::register_token<STC>(account, BASE_SCALING_FACTOR, FRACTIONAL_PART);
         let burn_cap = Token::remove_burn_capability<STC>(account);
         move_to(account, SharedBurnCapability { cap: burn_cap });
-        Dao::plugin<STC>(account);
+        Dao::plugin<STC>(
+            account,
+            Dao::default_voting_delay(),
+            Dao::default_voting_period(),
+            Dao::default_voting_quorum_rate(),
+            Dao::default_min_action_delay(),
+        );
         ModifyDaoConfigProposal::plugin<STC>(account);
         UpgradeModuleDaoProposal::plugin<STC>(account);
         let upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(account);
@@ -35,6 +45,10 @@ module STC {
             account,
             upgrade_plan_cap,
         );
+        // the following configurations are gov-ed by Dao.
+        OnChainConfigDao::plugin<STC, TransactionPublishOption::TransactionPublishOption>(account);
+        OnChainConfigDao::plugin<STC, VMConfig::VMConfig>(account);
+        OnChainConfigDao::plugin<STC, Version::Version>(account);
     }
 
     spec fun initialize {
