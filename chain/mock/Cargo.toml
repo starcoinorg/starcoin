@@ -32,7 +32,6 @@ logger = { path = "../../commons/logger", package = "starcoin-logger" }
 stest = { path = "../../commons/stest" }
 txpool = { path = "../../txpool", package = "starcoin-txpool" }
 starcoin-statedb = { path = "../../state/statedb" }
-bus = { path = "../../bus", package = "starcoin-bus" }
 starcoin-metrics = { path = "../../commons/metrics" }
 starcoin-open-block = { path = "../open-block" }
 starcoin-vm-types = { path = "../../vm/types" }

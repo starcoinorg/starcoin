@@ -8,6 +8,7 @@ use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -171,17 +172,18 @@ pub fn raw_accept_token_txn(
 
 pub fn encode_create_account_script(
     version: StdlibVersion,
+    token_type: TypeTag,
     account_address: &AccountAddress,
     public_key_vec: Vec<u8>,
-    initial_balance: u64,
+    initial_balance: u128,
 ) -> Script {
     Script::new(
         compiled_transaction_script(version, StdlibScript::CreateAccount).into_vec(),
-        vec![],
+        vec![token_type],
         vec![
             TransactionArgument::Address(*account_address),
             TransactionArgument::U8Vector(public_key_vec),
-            TransactionArgument::U64(initial_balance),
+            TransactionArgument::U128(initial_balance),
         ],
     )
 }

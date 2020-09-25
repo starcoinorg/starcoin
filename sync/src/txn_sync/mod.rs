@@ -1,107 +1,78 @@
 use crate::helper;
-use actix::prelude::*;
 use anyhow::{bail, Result};
-use bus::{Bus, BusActor};
 use logger::prelude::*;
-use network_api::NetworkService;
+use network::NetworkAsyncService;
+use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
+use std::sync::Arc;
 use txpool::TxPoolService;
 
 #[derive(Clone)]
-pub struct TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    bus: Addr<BusActor>,
-    inner: Inner<N>,
+pub struct TxnSyncService {
+    inner: Inner,
 }
 
-impl<N> TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    pub fn launch(txpool: TxPoolService, network: N, bus: Addr<BusActor>) -> Addr<TxnSyncActor<N>> {
-        let actor = TxnSyncActor {
+impl ActorService for TxnSyncService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<StartSyncTxnEvent>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<StartSyncTxnEvent>();
+        Ok(())
+    }
+}
+
+impl ServiceFactory<Self> for TxnSyncService {
+    fn create(ctx: &mut ServiceContext<TxnSyncService>) -> Result<TxnSyncService> {
+        let txpool = ctx.get_shared::<TxPoolService>()?;
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        Ok(Self::new(txpool, network))
+    }
+}
+
+impl TxnSyncService {
+    pub fn new<N>(txpool: TxPoolService, network: N) -> Self
+    where
+        N: NetworkService + 'static,
+    {
+        Self {
             inner: Inner {
                 pool: txpool,
                 rpc_client: NetworkRpcClient::new(network.clone()),
-                network_service: network,
+                peer_provider: Arc::new(network),
             },
-            bus,
-        };
-        actor.start()
+        }
     }
 }
 
-impl<N> actix::Actor for TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    type Context = actix::Context<Self>;
-
-    /// when start, subscribe StartSyncTxnEvent.
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let myself = ctx.address().recipient::<StartSyncTxnEvent>();
-        self.bus
-            .clone()
-            .subscribe(myself)
-            .into_actor(self)
-            .map(|res, _act, ctx| {
-                if let Err(e) = res {
-                    error!("fail to subscribe start_sync_txn event, err: {:?}", e);
-                    ctx.terminate();
-                }
-            })
-            .wait(ctx);
-
-        info!("txn sync actor started");
-    }
-}
-
-impl<N> actix::Handler<StartSyncTxnEvent> for TxnSyncActor<N>
-where
-    N: NetworkService + 'static,
-{
-    type Result = ();
-
-    fn handle(
-        &mut self,
-        _msg: StartSyncTxnEvent,
-        ctx: &mut <Self as Actor>::Context,
-    ) -> Self::Result {
-        self.inner
-            .clone()
-            .sync_txn()
-            .into_actor(self)
-            .map(|res, _act, _ctx| {
-                if let Err(e) = res {
-                    error!("handle sync txn event fail: {:?}", e);
-                }
-            })
-            .spawn(ctx);
+impl EventHandler<Self, StartSyncTxnEvent> for TxnSyncService {
+    fn handle_event(&mut self, _msg: StartSyncTxnEvent, ctx: &mut ServiceContext<TxnSyncService>) {
+        let inner = self.inner.clone();
+        ctx.wait(async move {
+            if let Err(e) = inner.sync_txn().await {
+                error!("handle sync txn event fail: {:?}", e);
+            }
+        });
     }
 }
 
 #[derive(Clone)]
-struct Inner<N>
-where
-    N: NetworkService + 'static,
-{
+struct Inner {
     pool: TxPoolService,
     rpc_client: NetworkRpcClient,
-    network_service: N,
+    peer_provider: Arc<dyn PeerProvider>,
 }
 
-impl<N> Inner<N>
-where
-    N: NetworkService + 'static,
-{
+impl Inner {
     async fn sync_txn(self) -> Result<()> {
         // get all peers and sort by difficulty, try peer with max difficulty.
-        let best_peers = self.network_service.peer_selector().await?.top(10);
+        let best_peers = self.peer_provider.peer_selector().await?.top(10);
         if best_peers.is_empty() {
             info!("No peer to sync txn.");
             return Ok(());

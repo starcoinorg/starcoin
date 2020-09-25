@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor_test::{execute_and_apply, prepare_genesis};
+use crate::test_helper::{execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_consensus::Consensus;

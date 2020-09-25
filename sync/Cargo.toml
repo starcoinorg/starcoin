@@ -16,7 +16,6 @@ crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 itertools = { version = "0.9.0", default-features = false }
 traits = {path = "../core/traits", package="starcoin-traits"}
 futures = "0.3"
-bus = { path = "../bus", package = "starcoin-bus"}
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
 futures-timer = "3.0"

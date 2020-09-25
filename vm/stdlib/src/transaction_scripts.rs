@@ -132,6 +132,10 @@ pub enum StdlibScript {
     AddToScriptAllowList,
     SetOpenModule,
     SetOpenScript,
+    CastVote,
+    ProposeModuleUpgrade,
+    QueueProposalAction,
+    SubmitModuleUpgradePlan,
     // ...add new scripts here
 }
 
@@ -150,6 +154,10 @@ impl StdlibScript {
             AddToScriptAllowList,
             SetOpenModule,
             SetOpenScript,
+            CastVote,
+            ProposeModuleUpgrade,
+            QueueProposalAction,
+            SubmitModuleUpgradePlan,
             // ...add new scripts here
         ]
     }
@@ -197,6 +205,10 @@ impl fmt::Display for StdlibScript {
                 AddToScriptAllowList => "add_to_script_allow_list",
                 SetOpenModule => "set_open_module",
                 SetOpenScript => "set_open_script",
+                CastVote => "cast_vote",
+                ProposeModuleUpgrade => "propose_module_upgrade",
+                QueueProposalAction => "queue_proposal_action",
+                SubmitModuleUpgradePlan => "submit_module_upgrade_plan",
             }
         )
     }

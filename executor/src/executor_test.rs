@@ -1,6 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use super::test_helper::{
+    compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
+    prepare_genesis,
+};
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_config::ChainNetwork;
@@ -8,48 +12,14 @@ use starcoin_consensus::Consensus;
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
 };
-use starcoin_genesis::Genesis;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateWriter};
-use starcoin_transaction_builder::{
-    build_stdlib_package, create_signed_txn_with_association_account, StdlibScript,
-    DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
-};
-use starcoin_types::language_storage::CORE_CODE_ADDRESS;
-use starcoin_types::transaction::TransactionOutput;
+use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::{
-    account_address::AccountAddress,
-    account_config,
-    block_metadata::BlockMetadata,
-    transaction::Transaction,
-    transaction::TransactionStatus,
-    transaction::{Module, TransactionPayload},
+    account_config, block_metadata::BlockMetadata, transaction::Transaction,
+    transaction::TransactionPayload, transaction::TransactionStatus,
 };
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
-use statedb::ChainStateDB;
-use stdlib::{stdlib_files, transaction_scripts::compiled_transaction_script, StdLibOptions};
-
-pub fn prepare_genesis() -> (ChainStateDB, &'static ChainNetwork) {
-    let net = &ChainNetwork::TEST;
-    let chain_state = ChainStateDB::mock();
-    let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
-    Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
-    (chain_state, net)
-}
-
-pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
-    let output = crate::execute_transactions(chain_state, vec![txn])
-        .unwrap()
-        .pop()
-        .expect("Output must exist.");
-    if let TransactionStatus::Keep(_) = output.status() {
-        chain_state
-            .apply_write_set(output.write_set().clone())
-            .expect("apply write_set should success.");
-    }
-
-    output
-}
+use stdlib::transaction_scripts::compiled_transaction_script;
 
 #[stest::test(timeout = 200)]
 fn test_block_execute_gas_limit() -> Result<()> {
@@ -481,33 +451,6 @@ fn test_gas_used() -> Result<()> {
     Ok(())
 }
 
-fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
-    let account_reader = AccountStateReader::new(chain_state.as_super());
-    account_reader
-        .get_account_resource(&addr)
-        .expect("read account state should ok")
-        .map(|res| res.sequence_number())
-        .unwrap_or_default()
-}
-
-fn get_balance(address: AccountAddress, chain_state: &dyn ChainState) -> u128 {
-    let account_reader = AccountStateReader::new(chain_state.as_super());
-    account_reader
-        .get_balance(&address)
-        .expect("read balance resource should ok")
-        .unwrap_or_default()
-}
-
-pub fn compile_module_with_address(address: AccountAddress, code: &str) -> Module {
-    let stdlib_files = stdlib_files();
-    let compiled_result =
-        starcoin_move_compiler::compile_source_string_no_report(code, &stdlib_files, address)
-            .expect("compile fail")
-            .1
-            .expect("compile fail");
-    Module::new(compiled_result.serialize())
-}
-
 #[stest::test]
 fn test_publish_module_and_upgrade() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -596,35 +539,6 @@ fn test_block_metadata() -> Result<()> {
     let balance = get_balance(*account1.address(), &chain_state);
 
     assert!(balance > 0);
-
-    Ok(())
-}
-
-#[stest::test]
-fn test_stdlib_upgrade() -> Result<()> {
-    let (chain_state, net) = prepare_genesis();
-
-    let mut upgrade_package = build_stdlib_package(net, StdLibOptions::Fresh, false)?;
-
-    let program = r#"
-        module M {
-            public fun hello(){
-            }
-        }
-        "#;
-    let module = compile_module_with_address(CORE_CODE_ADDRESS, program);
-    upgrade_package.add_module(module)?;
-
-    let txn = create_signed_txn_with_association_account(
-        TransactionPayload::Package(upgrade_package),
-        0,
-        2_000_000,
-        1,
-        1,
-        &net,
-    );
-    let output = execute_and_apply(&chain_state, Transaction::UserTransaction(txn));
-    assert_eq!(KeptVMStatus::Executed, output.status().status().unwrap());
 
     Ok(())
 }

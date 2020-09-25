@@ -1,11 +1,14 @@
 use crate::block_sync::{BlockIdAndNumber, DataType, Inner, NextTimeEvent, SyncDataEvent};
 use crate::sync_event_handle::{CloneSyncEventHandler, SendSyncEventHandler};
 use crate::sync_task::SyncTaskState;
+use crate::verified_rpc_client::VerifiedRpcClient;
 use chain::BlockChain;
 use config::NodeConfig;
 use crypto::HashValue;
+use futures::executor::block_on;
 use futures_timer::Delay;
 use logger::prelude::*;
+use network_api::PeerProvider;
 use starcoin_network_rpc_api::BlockBody;
 use starcoin_types::block::BlockHeader;
 use std::marker::PhantomData;
@@ -108,7 +111,7 @@ impl CloneSyncEventHandler<NextTimeEvent> for TestNextTimeEventHandler {
     }
 }
 
-fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetworkService>) {
+fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner) {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let block_chain =
         Arc::new(gen_blockchain_with_blocks_for_test(times, node_config.net()).unwrap());
@@ -120,7 +123,9 @@ fn gen_block_chain_and_inner(times: u64) -> (Arc<BlockChain>, Inner<DummyNetwork
     };
 
     let network = DummyNetworkService::new(block_chain.clone());
-    let inner = Inner::new(0, times, id_number, network, SyncTaskState::Ready);
+    let peer_selector = block_on(async { network.peer_selector().await }).unwrap();
+    let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+    let inner = Inner::new(0, times, id_number, rpc_client, SyncTaskState::Ready);
     (block_chain, inner)
 }
 

@@ -546,7 +546,6 @@ dependencies = [
  "rand_core 0.5.1",
  "starcoin-account-api",
  "starcoin-accumulator",
- "starcoin-bus",
  "starcoin-chain",
  "starcoin-chain-service",
  "starcoin-config",
@@ -1480,7 +1479,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=405bc97b86709472c9b7a381f
 dependencies = [
  "libra-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/libra?rev=405bc97b86709472c9b7a381f5b3cedeaaf553ef)",
  "regex",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "termcolor",
  "walkdir",
 ]
@@ -4027,7 +4026,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-types",
  "starcoin-vm-types",
- "structopt 0.3.17",
+ "structopt 0.3.18",
 ]
 
 [[package]]
@@ -4067,7 +4066,7 @@ dependencies = [
  "move-ir-types",
  "petgraph",
  "regex",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "vm",
  "walkdir",
 ]
@@ -5913,7 +5912,7 @@ dependencies = [
  "rustyline",
  "serde",
  "serde_json",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "thiserror",
 ]
 
@@ -5992,7 +5991,7 @@ dependencies = [
  "serde-reflection",
  "serde_bytes",
  "serde_yaml",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "textwrap 0.12.1",
 ]
 
@@ -6409,7 +6408,6 @@ dependencies = [
  "rand_core 0.5.1",
  "serde",
  "starcoin-account-api",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain-notify",
  "starcoin-crypto",
@@ -6430,7 +6428,6 @@ dependencies = [
  "futures 0.3.5",
  "starcoin-account-api",
  "starcoin-account-lib",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain-notify",
  "starcoin-config",
@@ -6478,7 +6475,6 @@ dependencies = [
  "libp2p",
  "network-api",
  "starcoin-block-relayer-api",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -6508,22 +6504,6 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-types",
-]
-
-[[package]]
-name = "starcoin-bus"
-version = "0.5.0"
-dependencies = [
- "actix",
- "actix-rt",
- "anyhow",
- "async-std",
- "async-trait",
- "futures 0.3.5",
- "starcoin-logger",
- "starcoin-service-registry",
- "stest",
- "tokio 0.2.22",
 ]
 
 [[package]]
@@ -6607,7 +6587,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-lib",
  "starcoin-accumulator",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-config",
@@ -6640,7 +6619,6 @@ version = "0.5.0"
 dependencies = [
  "actix",
  "anyhow",
- "starcoin-bus",
  "starcoin-crypto",
  "starcoin-logger",
  "starcoin-service-registry",
@@ -6710,7 +6688,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "tokio 0.2.22",
  "tokio-compat",
 ]
@@ -6734,7 +6712,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-types",
  "starcoin-vm-types",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "thiserror",
  "toml",
 ]
@@ -6880,7 +6858,8 @@ dependencies = [
  "starcoin-storage",
  "starcoin-types",
  "starcoin-vm-runtime",
- "structopt 0.3.17",
+ "starcoin-vm-types",
+ "structopt 0.3.18",
  "tokio 0.2.22",
 ]
 
@@ -6901,7 +6880,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "tiny_http",
  "tokio 0.2.22",
  "tokio-compat",
@@ -6958,7 +6937,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-types",
- "structopt 0.3.17",
+ "structopt 0.3.18",
 ]
 
 [[package]]
@@ -6985,7 +6964,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "stest",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "thiserror",
 ]
 
@@ -7030,7 +7009,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-config",
@@ -7088,7 +7066,6 @@ dependencies = [
  "rust-argon2 0.8.2",
  "serde",
  "serde_json",
- "starcoin-bus",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7100,7 +7077,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "thiserror",
  "tokio 0.2.22",
  "tokio-compat",
@@ -7153,7 +7130,6 @@ dependencies = [
  "slog_derive",
  "smallvec 1.4.2",
  "starcoin-block-relayer-api",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -7196,7 +7172,6 @@ dependencies = [
  "starcoin-accumulator",
  "starcoin-block-relayer",
  "starcoin-block-relayer-api",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain-service",
  "starcoin-config",
@@ -7260,7 +7235,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-block-relayer",
- "starcoin-bus",
  "starcoin-chain-notify",
  "starcoin-chain-service",
  "starcoin-config",
@@ -7303,7 +7277,6 @@ dependencies = [
  "backtrace",
  "futures 0.3.5",
  "serde",
- "starcoin-bus",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -7475,7 +7448,6 @@ dependencies = [
  "serde_json",
  "starcoin-account-api",
  "starcoin-account-service",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-chain-mock",
@@ -7488,6 +7460,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-metrics",
+ "starcoin-miner",
  "starcoin-network",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
@@ -7658,7 +7631,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-chain-service",
@@ -7753,7 +7725,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "tokio 0.2.22",
  "tokio-compat",
 ]
@@ -7786,7 +7758,6 @@ dependencies = [
  "rand_core 0.5.1",
  "serde",
  "serde_derive",
- "starcoin-bus",
  "starcoin-config",
  "starcoin-consensus",
  "starcoin-crypto",
@@ -8041,13 +8012,13 @@ dependencies = [
 
 [[package]]
 name = "structopt"
-version = "0.3.17"
+version = "0.3.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6cc388d94ffabf39b5ed5fadddc40147cb21e605f53db6f8f36a625d27489ac5"
+checksum = "a33f6461027d7f08a13715659b2948e1602c31a3756aeae9378bfe7518c72e82"
 dependencies = [
  "clap",
  "lazy_static",
- "structopt-derive 0.4.10",
+ "structopt-derive 0.4.11",
 ]
 
 [[package]]
@@ -8064,9 +8035,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e2513111825077552a6751dfad9e11ce0fba07d7276a3943a037d7e93e64c5f"
+checksum = "c92e775028122a4b3dd55d58f14fc5120289c69bee99df1d117ae30f84b225c9"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -8234,7 +8205,6 @@ dependencies = [
  "starcoin-account-service",
  "starcoin-accumulator",
  "starcoin-block-relayer",
- "starcoin-bus",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-chain-notify",
@@ -8326,7 +8296,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "static_assertions",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "tokio-compat",
 ]
 
@@ -8842,7 +8812,7 @@ dependencies = [
  "serde-generate",
  "serde-reflection",
  "serde_yaml",
- "structopt 0.3.17",
+ "structopt 0.3.18",
  "tempfile",
  "textwrap 0.12.1",
 ]

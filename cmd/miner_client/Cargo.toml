@@ -13,7 +13,6 @@ starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 traits = { path = "../../core/traits", package = "starcoin-traits" }
 consensus = { path = "../../consensus", package = "starcoin-consensus" }
-bus = { path = "../../bus", package = "starcoin-bus" }
 tokio = { version = "0.2", features = ["full"] }
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
@@ -30,7 +29,7 @@ futures-timer = "3.0"
 async-std = "1.6.4"
 hex = { version = "0.4.2", default-features = false }
 thiserror = "1.0"
-structopt = "0.3.17"
+structopt = "0.3.18"
 indicatif = "0.15"
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }

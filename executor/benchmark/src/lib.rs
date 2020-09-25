@@ -12,6 +12,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
+use starcoin_vm_types::token::stc;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -121,9 +122,10 @@ impl TransactionGenerator {
                     self.sequence,
                     encode_create_account_script(
                         ChainNetwork::TEST.stdlib_version(),
+                        stc::stc_type_tag(),
                         &account.address,
                         account.public_key_vec(),
-                        init_account_balance,
+                        init_account_balance as u128,
                     ),
                     self.net.consensus().now() + j as u64 + 1,
                 );

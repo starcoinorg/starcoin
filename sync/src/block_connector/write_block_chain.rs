@@ -1,12 +1,12 @@
 use super::metrics::WRITE_BLOCK_CHAIN_METRICS;
-use actix::Addr;
 use anyhow::{ensure, format_err, Result};
-use bus::{Broadcast, BusActor};
 use chain::BlockChain;
 use config::NodeConfig;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_network_rpc_api::RemoteChainStateReader;
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::ServiceRef;
 use starcoin_state_api::ChainStateReader;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -28,7 +28,7 @@ where
     master: BlockChain,
     storage: Arc<dyn Store>,
     txpool: P,
-    bus: Addr<BusActor>,
+    bus: ServiceRef<BusService>,
     remote_chain_state: Option<RemoteChainStateReader>,
 }
 
@@ -59,7 +59,7 @@ where
         startup_info: StartupInfo,
         storage: Arc<dyn Store>,
         txpool: P,
-        bus: Addr<BusActor>,
+        bus: ServiceRef<BusService>,
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
         let master = BlockChain::new(
@@ -257,17 +257,15 @@ where
     }
 
     fn broadcast_new_head(&self, block: BlockDetail) {
-        let bus = self.bus.clone();
-        bus.do_send(Broadcast {
-            msg: NewHeadBlock(Arc::new(block)),
-        });
+        if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
+            error!("Broadcast NewHeadBlock error: {:?}", e);
+        }
     }
 
     fn broadcast_new_branch(&self, maybe_uncles: Vec<BlockHeader>) {
-        let bus = self.bus.clone();
-        bus.do_send(Broadcast {
-            msg: NewBranch(Arc::new(maybe_uncles)),
-        });
+        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(maybe_uncles))) {
+            error!("Broadcast NewBranch error: {:?}", e);
+        }
     }
 
     fn connect_inner(
