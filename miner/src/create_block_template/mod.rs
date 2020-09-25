@@ -187,7 +187,6 @@ impl Inner {
         } else {
             self.chain.update_chain_head(block)?;
         }
-        // TODO:prune uncles when switch epoch
         Ok(())
     }
 
@@ -212,6 +211,8 @@ impl Inner {
     fn uncles_prune(&mut self) {
         if !self.uncles.is_empty() {
             if let Ok(epoch) = self.chain.epoch_info() {
+                // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
+                // 的倒数第二块处理时清理uncles
                 if epoch.end_number() == (self.chain.current_header().number() + 2) {
                     self.uncles.clear();
                 }

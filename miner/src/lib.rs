@@ -4,7 +4,6 @@
 use anyhow::Result;
 use chain::BlockChain;
 use consensus::Consensus;
-use create_block_template::CreateBlockTemplateRequest;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
@@ -24,7 +23,7 @@ mod metrics;
 pub mod miner;
 pub mod ondemand_pacemaker;
 
-pub use create_block_template::CreateBlockTemplateService;
+pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
 
