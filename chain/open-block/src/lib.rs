@@ -1,8 +1,7 @@
 use anyhow::{bail, format_err, Result};
 use crypto::ed25519::Ed25519PublicKey;
-use crypto::hash::HashValue;
+use crypto::HashValue;
 use logger::prelude::*;
-use scs::SCSCodec;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -233,13 +232,10 @@ impl OpenedBlock {
         let (parent_id, timestamp, author, author_public_key, _uncles, number, _) =
             self.block_meta.into_inner();
 
-        let (uncle_hash, uncles) = if !self.uncles.is_empty() {
-            (
-                Some(HashValue::sha3_256_of(&self.uncles.encode()?)),
-                Some(self.uncles),
-            )
+        let uncles = if !self.uncles.is_empty() {
+            Some(self.uncles)
         } else {
-            (None, None)
+            None
         };
         let body = BlockBody::new(self.included_user_txns, uncles);
         let block_template = BlockTemplate::new(
@@ -254,7 +250,7 @@ impl OpenedBlock {
             accumulator_root,
             state_root,
             self.gas_used,
-            uncle_hash,
+            body.hash(),
             body,
             self.chain_id,
         );
