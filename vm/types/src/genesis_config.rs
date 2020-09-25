@@ -1000,5 +1000,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
-    stdlib_version: StdlibVersion::default(),
+    stdlib_version: StdlibVersion::new(0, 3),
 });
