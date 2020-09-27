@@ -37,7 +37,6 @@ fn test_dev_consensus() {
     assert_eq!(mock_chain.head().current_header().number, times);
 }
 
-
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let mut times = 10;
