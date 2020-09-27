@@ -3,8 +3,8 @@
 
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::account_config::ACCOUNT_MODULE;
-use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 use starcoin_vm_types::errors::VMError;
+use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
 
 //should be consistent with ErrorCode.move
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -76,7 +76,9 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
                     "[starcoin_vm] Unexpected success epilogue move abort: {:?}::{:?}",
                     location, code
                 );
-                return Err(VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION));
+                return Err(VMStatus::Error(
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
+                ));
             }
             VMStatus::MoveAbort(location, code)
         }

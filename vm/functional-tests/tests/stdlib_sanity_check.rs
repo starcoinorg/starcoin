@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_move_compiler::{
-    compiled_unit::verify_units,
-    errors::report_errors_to_buffer,
-    move_compile_no_report,
-    shared::Address,
-    test_utils::*,
+    compiled_unit::verify_units, errors::report_errors_to_buffer, move_compile_no_report,
+    shared::Address, test_utils::*,
 };
 use std::{fs, path::Path};
 

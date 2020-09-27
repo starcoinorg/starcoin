@@ -4,10 +4,7 @@ use anyhow::{bail, Result};
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
 use starcoin_move_compiler::{
-    compiled_unit::CompiledUnit,
-    move_compile_no_report,
-    shared::Address,
-    test_utils::read_bool_var,
+    compiled_unit::CompiledUnit, move_compile_no_report, shared::Address, test_utils::read_bool_var,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};

@@ -43,9 +43,7 @@ fn test_runner(path: &Path) -> datatest_stable::Result<()> {
     if no_boogie {
         options.prover.generate_only = true;
         if !NOT_CONFIGURED_WARNED.compare_and_swap(false, true, Ordering::Relaxed) {
-            warn!(
-                "Prover tools are not configured, verification tests will be skipped."
-            );
+            warn!("Prover tools are not configured, verification tests will be skipped.");
         }
     }
     options.prover.stable_test_output = true;
