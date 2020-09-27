@@ -54,7 +54,7 @@ script {
 
 //! block-prologue
 //! author: alice
-//! block-time: 5
+//! block-time: 2
 //! block-number: 2
 
 //! new-transaction
@@ -68,7 +68,31 @@ script {
     fun unlock_tokenbox(account: &signer) {
         let box = TokenBox::take<STC>(account);
         let token = TokenBox::withdraw(&mut box);
-        assert(Token::share(&token) == 8000, 102);
+        // withdraw 10000/5 again
+        assert(Token::share(&token) == 2000, 102);
+        TokenBox::save(account, box);
+        Account::deposit(account, token);
+    }
+}
+
+//! block-prologue
+//! author: alice
+//! block-time: 5
+//! block-number: 3
+
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Account;
+    use 0x1::STC::STC;
+    use 0x1::Token;
+    use 0x1::TokenBox;
+
+    fun unlock_tokenbox(account: &signer) {
+        let box = TokenBox::take<STC>(account);
+        //withdraw remain all
+        let token = TokenBox::withdraw(&mut box);
+        assert(Token::share(&token) == 6000, 103);
         TokenBox::destroy_empty(box);
         Account::deposit(account, token);
     }

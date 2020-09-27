@@ -40,7 +40,8 @@ module TokenBox {
         if (elapsed_time >= token_box.lock_peroid) {
             return Token::share(&token_box.token)
         }else {
-            token_box.origin * (elapsed_time as u128) / (token_box.lock_peroid as u128)
+            let taked = token_box.origin - Token::share(&token_box.token);
+            token_box.origin * (elapsed_time as u128) / (token_box.lock_peroid as u128) - taked
         }
     }
 
