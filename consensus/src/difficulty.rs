@@ -3,60 +3,45 @@
 
 use starcoin_types::{U256, U512};
 
-use crate::{difficult_1_target, difficult_to_target};
-use anyhow::Result;
+use crate::{difficult_1_target, difficult_to_target, target_to_difficulty};
+use anyhow::{bail, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
+use starcoin_types::block::Block;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 use std::convert::TryFrom;
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
-    let mut current_header = chain.current_header();
+    let current_header = chain.current_header();
     if current_header.number <= 1 {
         return Ok(difficult_to_target(current_header.difficulty));
     }
-    let blocks = {
-        let mut blocks: Vec<BlockDiffInfo> = vec![];
-
-        loop {
-            if epoch.block_difficulty_window() == 0
-                || epoch.start_number() > current_header.number()
-                || epoch.end_number() <= current_header.number()
-            {
-                break;
-            }
-            blocks.push(BlockDiffInfo {
-                timestamp: current_header.timestamp,
-                target: difficult_to_target(current_header.difficulty),
-            });
-
-            if (blocks.len() as u64) >= epoch.block_difficulty_window() {
-                break;
-            }
-
-            match chain.get_header(current_header.parent_hash)? {
-                Some(header) => {
-                    // Up to genesis
-                    if header.is_genesis() {
-                        break;
-                    }
-                    current_header = header;
-                }
-                None => {
-                    anyhow::bail!("Invalid block, header not exist");
-                }
-            }
-        }
-        blocks
+    let start_window_num = if current_header.number < epoch.block_difficulty_window() {
+        1
+    } else {
+        current_header.number - epoch.block_difficulty_window() + 1
     };
+    let blocks: Vec<BlockDiffInfo> = (start_window_num..current_header.number + 1)
+        .rev()
+        .filter(|&n| epoch.start_number() <= n && current_header.number <= epoch.end_number())
+        .map(|n| chain.get_block_by_number(n))
+        .filter_map(Result::ok)
+        .filter_map(|x| x)
+        .map(|b| b.into())
+        .collect();
+    get_next_target_helper(blocks, epoch.block_time_target())
+}
 
-    let mut avg_time: u64 = 0;
-    let mut avg_target = U512::zero();
-    let mut latest_block_index = 0;
-    if blocks.len() <= 1 {
-        return Ok(difficult_to_target(current_header.difficulty));
+pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
+    if blocks.len() < 1 {
+        bail!("block diff info is empty")
     }
+    if blocks.len() == 1 {
+        return Ok(target_to_difficulty(blocks[0].target));
+    }
+    let mut avg_time: u64 = 0;
+    let mut avg_target = U256::zero();
     let block_n = blocks.len() - 1;
     while latest_block_index < block_n {
         avg_time += blocks[latest_block_index].timestamp;
@@ -75,7 +60,6 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     if avg_time == 0 {
         avg_time = 1
     }
-    let time_plan = epoch.block_time_target();
     // new_target = avg_target * avg_time_used/time_plan
     // avoid the target increase or reduce too fast.
     let new_target = if let Some(new_target) = (avg_target / time_plan).checked_mul(avg_time.into())
@@ -104,4 +88,13 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
 pub struct BlockDiffInfo {
     pub timestamp: u64,
     pub target: U256,
+}
+
+impl From<Block> for BlockDiffInfo {
+    fn from(block: Block) -> Self {
+        Self {
+            timestamp: block.header.timestamp,
+            target: difficult_to_target(block.header.difficulty),
+        }
+    }
 }
