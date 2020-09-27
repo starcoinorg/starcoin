@@ -104,7 +104,7 @@ while read -r line; do
   (cd "$dirline" && pwd && cargo test || true)
 done < <(find "$TEST_DIR" -name 'Cargo.toml')
 
-cargo test --test integration -- -e "cmd"
+#cargo test --test integration -- -e "cmd"
 
 # Make the coverage directory if it doesn't exist
 if [ ! -d "$COVERAGE_DIR" ]; then
