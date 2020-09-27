@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_types::U256;
+use starcoin_types::{U256, U512};
 
 use crate::{difficult_1_target, difficult_to_target};
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use std::convert::TryFrom;
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
@@ -36,8 +37,8 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
 
             match chain.get_header(current_header.parent_hash)? {
                 Some(header) => {
-                    // Skip genesis
-                    if header.number == 0 {
+                    // Up to genesis
+                    if header.is_genesis() {
                         break;
                     }
                     current_header = header;
@@ -51,23 +52,25 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     };
 
     let mut avg_time: u64 = 0;
-    let mut avg_target = U256::zero();
+    let mut avg_target = U512::zero();
     let mut latest_block_index = 0;
     if blocks.len() <= 1 {
         return Ok(difficult_to_target(current_header.difficulty));
     }
     let block_n = blocks.len() - 1;
     while latest_block_index < block_n {
-        let solve_time =
-            blocks[latest_block_index].timestamp - blocks[latest_block_index + 1].timestamp;
-        avg_time += solve_time * (block_n - latest_block_index) as u64;
-        debug!(
-            "solve_time:{:?}, avg_time:{:?}, block_n:{:?}",
-            solve_time, avg_time, block_n
-        );
-        avg_target += blocks[latest_block_index].target / block_n;
+        avg_time += blocks[latest_block_index].timestamp;
+        avg_target += U512::from(&blocks[latest_block_index].target);
         latest_block_index += 1
     }
+    avg_time = if block_n <= 1 {
+        blocks[0].timestamp - blocks[1].timestamp
+    } else {
+        (block_n + 1) as u64 * blocks[0].timestamp - avg_time - blocks[block_n].timestamp
+    };
+    let avg_target = U256::try_from(&(avg_target / U512::from(block_n)))
+        .expect("avg_target must be transfer ok");
+
     avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;
     if avg_time == 0 {
         avg_time = 1

@@ -859,7 +859,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         timestamp: 1596791843,
         reward_delay: 3,
-        difficulty: 10.into(),
+        difficulty: 100000.into(),
         nonce: 0,
         pre_mine_amount: PRE_MINT_AMOUNT,
         vm_config: VMConfig {

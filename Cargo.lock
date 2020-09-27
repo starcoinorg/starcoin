@@ -6727,6 +6727,8 @@ dependencies = [
  "futures 0.3.5",
  "hex",
  "once_cell",
+ "proptest",
+ "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "rust-argon2 0.8.2",
