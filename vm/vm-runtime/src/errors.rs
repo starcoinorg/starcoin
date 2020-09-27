@@ -4,6 +4,7 @@
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::account_config::ACCOUNT_MODULE;
 use starcoin_vm_types::vm_status::{AbortLocation, StatusCode, VMStatus};
+use starcoin_vm_types::errors::VMError;
 
 //should be consistent with ErrorCode.move
 const PROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
@@ -26,9 +27,10 @@ const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
 const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
-pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
-    info!("{:?}", status);
-    match status {
+pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
+    info!("{:?}", error);
+    let status = error.into_vm_status();
+    Err(match status {
         VMStatus::MoveAbort(_location, code) => {
             let new_major_status = match code {
                 PROLOGUE_ACCOUNT_DOES_NOT_EXIST => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
@@ -61,19 +63,20 @@ pub fn convert_prologue_runtime_error(status: VMStatus) -> VMStatus {
             error!("[starcoin_vm] Unexpected prologue error: {:?}", code);
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
-    }
+    })
 }
 
-pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
-    info!("{:?}", status);
-    match status {
+pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMStatus> {
+    info!("{:?}", error);
+    let status = error.into_vm_status();
+    Err(match status {
         VMStatus::MoveAbort(location, code @ EINSUFFICIENT_BALANCE) => {
             if location != account_module_abort() {
                 error!(
                     "[starcoin_vm] Unexpected success epilogue move abort: {:?}::{:?}",
                     location, code
                 );
-                return VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION);
+                return Err(VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION));
             }
             VMStatus::MoveAbort(location, code)
         }
@@ -87,7 +90,7 @@ pub fn convert_normal_success_epilogue_error(status: VMStatus) -> VMStatus {
             );
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
-    }
+    })
 }
 
 fn account_module_abort() -> AbortLocation {

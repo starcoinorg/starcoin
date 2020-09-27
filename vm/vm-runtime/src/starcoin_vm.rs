@@ -445,8 +445,7 @@ impl StarcoinVM {
             ],
             genesis_address,
             cost_strategy,
-            convert_prologue_runtime_error,
-        )
+        ).or_else(convert_prologue_runtime_error)
     }
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
@@ -491,8 +490,7 @@ impl StarcoinVM {
             ],
             genesis_address,
             cost_strategy,
-            convert_normal_success_epilogue_error,
-        )
+        ).or_else(convert_normal_success_epilogue_error)
     }
 
     fn process_block_metadata(
@@ -530,8 +528,7 @@ impl StarcoinVM {
             args,
             txn_data.sender(),
             &mut cost_strategy,
-            convert_prologue_runtime_error,
-        )?;
+        ).or_else(convert_prologue_runtime_error)?;
         Ok(get_transaction_output(
             &mut (),
             session,
@@ -706,8 +703,7 @@ impl StarcoinVM {
             type_params,
             args,
             &mut cost_strategy,
-            |e| e,
-        )?;
+        ).map_err(|e| e.into_vm_status())?;
 
         let effects = session
             .finish()
