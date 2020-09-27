@@ -18,8 +18,8 @@ module STC {
     struct STC { }
 
     // TODO: make decision of how long the factor should be
-    /// scaling_factor = 10^6
-    const BASE_SCALING_FACTOR: u128 = 1000000;
+    /// scaling_factor = 10^9
+    const BASE_SCALING_FACTOR: u128 = 1000000000;
     /// fractional_part = 10^3
     const FRACTIONAL_PART: u128 = 1000;
 

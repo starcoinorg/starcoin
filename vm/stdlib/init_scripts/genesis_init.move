@@ -18,6 +18,7 @@ script {
     use 0x1::ChainId;
     use 0x1::ConsensusStrategy;
     use 0x1::TransactionPublishOption;
+    use 0x1::TokenLockPool;
 
     fun genesis_init(
         merged_script_allow_list: vector<u8>,
@@ -35,6 +36,8 @@ script {
         max_block_time_target: u64,
         max_uncles_per_block: u64,
         pre_mine_amount: u128,
+        time_locked_amount: u128,
+        time_locked_period: u64,
         parent_hash: vector<u8>,
         association_auth_key: vector<u8>,
         genesis_auth_key: vector<u8>,
@@ -118,9 +121,15 @@ script {
             DummyToken::initialize(&genesis_account);
             Account::accept_token<STC>(&association);
         };
+        TokenLockPool::initialize(&genesis_account);
         if (pre_mine_amount > 0) {
             let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
             Account::deposit_to(&genesis_account, Signer::address_of(&association), stc);
+        };
+        if (time_locked_amount > 0) {
+            let stc = Token::mint<STC>(&genesis_account, time_locked_amount);
+            let key = TokenLockPool::create_linear_lock(stc, time_locked_period);
+            TokenLockPool::save_linear_key(&association, key);
         };
         // only dev network set genesis auth key.
         if (!Vector::is_empty(&genesis_auth_key)) {
