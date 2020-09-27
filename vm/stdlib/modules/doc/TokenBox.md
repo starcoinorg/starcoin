@@ -165,7 +165,8 @@
     <b>if</b> (elapsed_time &gt;= token_box.lock_peroid) {
         <b>return</b> <a href="Token.md#0x1_Token_share">Token::share</a>(&token_box.token)
     }<b>else</b> {
-        token_box.origin * (elapsed_time <b>as</b> u128) / (token_box.lock_peroid <b>as</b> u128)
+        <b>let</b> taked = token_box.origin - <a href="Token.md#0x1_Token_share">Token::share</a>(&token_box.token);
+        token_box.origin * (elapsed_time <b>as</b> u128) / (token_box.lock_peroid <b>as</b> u128) - taked
     }
 }
 </code></pre>
