@@ -21,6 +21,22 @@ fn test_block_chain_head() {
     assert_eq!(mock_chain.head().current_header().number, times);
 }
 
+#[stest::test(timeout = 480)]
+fn test_halley_consensus() {
+    let mut mock_chain = MockChain::new(&ChainNetwork::HALLEY).unwrap();
+    let times = 20;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    assert_eq!(mock_chain.head().current_header().number, times);
+}
+
+#[stest::test(timeout = 240)]
+fn test_dev_consensus() {
+    let mut mock_chain = MockChain::new(&ChainNetwork::DEV).unwrap();
+    let times = 20;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    assert_eq!(mock_chain.head().current_header().number, times);
+}
+
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let mut times = 10;

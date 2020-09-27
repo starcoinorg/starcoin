@@ -15,7 +15,7 @@ num_enum = "0.5.1"
 hex = "0.4.2"
 chrono = { version = "0.4.15", default-features = false, features = ["clock"] }
 
-proptest = { version = "0.10.1"}
+proptest = "0.10.1"
 proptest-derive = { version = "0.2.0"}
 move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
 move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "405bc97b86709472c9b7a381f5b3cedeaaf553ef" }

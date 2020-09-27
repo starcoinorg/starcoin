@@ -21,6 +21,7 @@ use crate::keccak::KeccakConsensus;
 use anyhow::Result;
 use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
+use rand::Rng;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
@@ -44,6 +45,9 @@ pub fn difficult_to_target(difficulty: U256) -> U256 {
 pub(crate) fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
     //TODO: change function name
     let len = header.len();
+    if len < 8 {
+        return vec![];
+    }
     let mut header = header.to_owned();
     header.truncate(len - 8);
     let _ = header.write_u64::<LittleEndian>(nonce);
@@ -118,4 +122,10 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Keccak => KECCAK.time(),
         }
     }
+}
+
+pub fn generate_nonce() -> u64 {
+    let mut rng = rand::thread_rng();
+    rng.gen::<u64>();
+    rng.gen_range(0, u64::max_value())
 }
