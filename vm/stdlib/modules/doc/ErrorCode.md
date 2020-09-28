@@ -3,30 +3,29 @@
 
 # Module `0x1::ErrorCode`
 
-### Table of Contents
 
--  [Function `PROLOGUE_ACCOUNT_DOES_NOT_EXIST`](#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST)
--  [Function `PROLOGUE_INVALID_ACCOUNT_AUTH_KEY`](#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
--  [Function `PROLOGUE_SEQUENCE_NUMBER_TOO_OLD`](#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD)
--  [Function `PROLOGUE_SEQUENCE_NUMBER_TOO_NEW`](#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW)
--  [Function `PROLOGUE_CANT_PAY_GAS_DEPOSIT`](#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT)
--  [Function `PROLOGUE_TRANSACTION_EXPIRED`](#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED)
--  [Function `PROLOGUE_BAD_CHAIN_ID`](#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID)
--  [Function `PROLOGUE_MODULE_NOT_ALLOWED`](#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED)
--  [Function `PROLOGUE_SCRIPT_NOT_ALLOWED`](#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED)
--  [Function `EINSUFFICIENT_BALANCE`](#0x1_ErrorCode_EINSUFFICIENT_BALANCE)
--  [Function `ENOT_GENESIS_ACCOUNT`](#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT)
--  [Function `ENOT_GENESIS`](#0x1_ErrorCode_ENOT_GENESIS)
--  [Function `ECONFIG_VALUE_DOES_NOT_EXIST`](#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST)
--  [Function `EINVALID_TIMESTAMP`](#0x1_ErrorCode_EINVALID_TIMESTAMP)
--  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO)
--  [Function `EDESTORY_TOKEN_NON_ZERO`](#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO)
--  [Function `EBLOCK_NUMBER_MISMATCH`](#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH)
--  [Function `EINVALID_ARGUMENT`](#0x1_ErrorCode_EINVALID_ARGUMENT)
--  [Function `EUNREACHABLE`](#0x1_ErrorCode_EUNREACHABLE)
--  [Function `ECODE_BASE`](#0x1_ErrorCode_ECODE_BASE)
--  [Specification](#0x1_ErrorCode_Specification)
 
+-  [Function <code>PROLOGUE_ACCOUNT_DOES_NOT_EXIST</code>](#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST)
+-  [Function <code>PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</code>](#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+-  [Function <code>PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</code>](#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD)
+-  [Function <code>PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</code>](#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW)
+-  [Function <code>PROLOGUE_CANT_PAY_GAS_DEPOSIT</code>](#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT)
+-  [Function <code>PROLOGUE_TRANSACTION_EXPIRED</code>](#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED)
+-  [Function <code>PROLOGUE_BAD_CHAIN_ID</code>](#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID)
+-  [Function <code>PROLOGUE_MODULE_NOT_ALLOWED</code>](#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED)
+-  [Function <code>PROLOGUE_SCRIPT_NOT_ALLOWED</code>](#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED)
+-  [Function <code>EINSUFFICIENT_BALANCE</code>](#0x1_ErrorCode_EINSUFFICIENT_BALANCE)
+-  [Function <code>ENOT_GENESIS_ACCOUNT</code>](#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT)
+-  [Function <code>ENOT_GENESIS</code>](#0x1_ErrorCode_ENOT_GENESIS)
+-  [Function <code>ECONFIG_VALUE_DOES_NOT_EXIST</code>](#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST)
+-  [Function <code>EINVALID_TIMESTAMP</code>](#0x1_ErrorCode_EINVALID_TIMESTAMP)
+-  [Function <code>ECOIN_DEPOSIT_IS_ZERO</code>](#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO)
+-  [Function <code>EDESTORY_TOKEN_NON_ZERO</code>](#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO)
+-  [Function <code>EBLOCK_NUMBER_MISMATCH</code>](#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH)
+-  [Function <code>EINVALID_ARGUMENT</code>](#0x1_ErrorCode_EINVALID_ARGUMENT)
+-  [Function <code>EUNREACHABLE</code>](#0x1_ErrorCode_EUNREACHABLE)
+-  [Function <code>ECODE_BASE</code>](#0x1_ErrorCode_ECODE_BASE)
+-  [Specification](#@Specification_0)
 
 
 <a name="0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST"></a>
@@ -35,7 +34,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(): u64
 </code></pre>
 
 
@@ -44,7 +43,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(): u64 {0}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(): u64 {0}
 </code></pre>
 
 
@@ -57,7 +56,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>(): u64
 </code></pre>
 
 
@@ -66,7 +65,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>(): u64 {1}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>(): u64 {1}
 </code></pre>
 
 
@@ -79,7 +78,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>(): u64
 </code></pre>
 
 
@@ -88,7 +87,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>(): u64 {2}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>(): u64 {2}
 </code></pre>
 
 
@@ -101,7 +100,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>(): u64
 </code></pre>
 
 
@@ -110,7 +109,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>(): u64 {3}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>(): u64 {3}
 </code></pre>
 
 
@@ -123,7 +122,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>(): u64
 </code></pre>
 
 
@@ -132,7 +131,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>(): u64 {4}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>(): u64 {4}
 </code></pre>
 
 
@@ -145,7 +144,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">PROLOGUE_TRANSACTION_EXPIRED</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">PROLOGUE_TRANSACTION_EXPIRED</a>(): u64
 </code></pre>
 
 
@@ -154,7 +153,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">PROLOGUE_TRANSACTION_EXPIRED</a>(): u64 {5}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">PROLOGUE_TRANSACTION_EXPIRED</a>(): u64 {5}
 </code></pre>
 
 
@@ -167,7 +166,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">PROLOGUE_BAD_CHAIN_ID</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">PROLOGUE_BAD_CHAIN_ID</a>(): u64
 </code></pre>
 
 
@@ -176,7 +175,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">PROLOGUE_BAD_CHAIN_ID</a>(): u64 {6}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">PROLOGUE_BAD_CHAIN_ID</a>(): u64 {6}
 </code></pre>
 
 
@@ -189,7 +188,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64
 </code></pre>
 
 
@@ -198,7 +197,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64 {7}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">PROLOGUE_MODULE_NOT_ALLOWED</a>(): u64 {7}
 </code></pre>
 
 
@@ -211,7 +210,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64
 </code></pre>
 
 
@@ -220,7 +219,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64 {8}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">PROLOGUE_SCRIPT_NOT_ALLOWED</a>(): u64 {8}
 </code></pre>
 
 
@@ -233,7 +232,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>(): u64
 </code></pre>
 
 
@@ -242,7 +241,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>(): u64 {10}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>(): u64 {10}
 </code></pre>
 
 
@@ -255,7 +254,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ENOT_GENESIS_ACCOUNT</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ENOT_GENESIS_ACCOUNT</a>(): u64
 </code></pre>
 
 
@@ -264,7 +263,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ENOT_GENESIS_ACCOUNT</a>(): u64 {11}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ENOT_GENESIS_ACCOUNT</a>(): u64 {11}
 </code></pre>
 
 
@@ -277,7 +276,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ENOT_GENESIS">ENOT_GENESIS</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ENOT_GENESIS</a>(): u64
 </code></pre>
 
 
@@ -286,7 +285,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ENOT_GENESIS">ENOT_GENESIS</a>(): u64 {12}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ENOT_GENESIS</a>(): u64 {12}
 </code></pre>
 
 
@@ -299,7 +298,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>(): u64
 </code></pre>
 
 
@@ -308,7 +307,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>(): u64 {13}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>(): u64 {13}
 </code></pre>
 
 
@@ -321,7 +320,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64
 </code></pre>
 
 
@@ -330,7 +329,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64 {14}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>(): u64 {14}
 </code></pre>
 
 
@@ -343,7 +342,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64
 </code></pre>
 
 
@@ -352,7 +351,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64 {15}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>(): u64 {15}
 </code></pre>
 
 
@@ -365,7 +364,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64
 </code></pre>
 
 
@@ -374,7 +373,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64 {16}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>(): u64 {16}
 </code></pre>
 
 
@@ -387,7 +386,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64
 </code></pre>
 
 
@@ -396,7 +395,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64 {17}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>(): u64 {17}
 </code></pre>
 
 
@@ -410,7 +409,7 @@
 Invalid argument.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64
 </code></pre>
 
 
@@ -419,7 +418,7 @@ Invalid argument.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64 {18}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>(): u64 {18}
 </code></pre>
 
 
@@ -433,7 +432,7 @@ Invalid argument.
 There code should unreacheable
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64
 </code></pre>
 
 
@@ -442,7 +441,7 @@ There code should unreacheable
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64 {19}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_EUNREACHABLE">EUNREACHABLE</a>(): u64 {19}
 </code></pre>
 
 
@@ -455,7 +454,7 @@ There code should unreacheable
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64
 </code></pre>
 
 
@@ -464,14 +463,14 @@ There code should unreacheable
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64 {100}
+<pre><code><b>public</b> <b>fun</b> <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ECODE_BASE</a>(): u64 {100}
 </code></pre>
 
 
 
 </details>
 
-<a name="0x1_ErrorCode_Specification"></a>
+<a name="@Specification_0"></a>
 
 ## Specification
 

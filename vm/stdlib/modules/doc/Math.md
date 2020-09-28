@@ -3,14 +3,13 @@
 
 # Module `0x1::Math`
 
-### Table of Contents
 
--  [Function `sqrt`](#0x1_Math_sqrt)
--  [Function `pow`](#0x1_Math_pow)
--  [Specification](#0x1_Math_Specification)
-    -  [Function `sqrt`](#0x1_Math_Specification_sqrt)
-    -  [Function `pow`](#0x1_Math_Specification_pow)
 
+-  [Function <code>sqrt</code>](#0x1_Math_sqrt)
+-  [Function <code>pow</code>](#0x1_Math_pow)
+-  [Specification](#@Specification_0)
+    -  [Function <code>sqrt</code>](#@Specification_0_sqrt)
+    -  [Function <code>pow</code>](#@Specification_0_pow)
 
 
 <a name="0x1_Math_sqrt"></a>
@@ -19,7 +18,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_sqrt">sqrt</a>(y: u128): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64
 </code></pre>
 
 
@@ -28,7 +27,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_sqrt">sqrt</a>(y: u128): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64 {
     <b>if</b> (y &lt; 4) {
         <b>if</b> (y == 0) {
             0u64
@@ -57,7 +56,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
 </code></pre>
 
 
@@ -66,7 +65,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_pow">pow</a>(x: u64, y: u64): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128 {
     <b>let</b> result = 1u128;
     <b>let</b> z = y;
     <b>let</b> u = (x <b>as</b> u128);
@@ -85,7 +84,7 @@
 
 </details>
 
-<a name="0x1_Math_Specification"></a>
+<a name="@Specification_0"></a>
 
 ## Specification
 
@@ -97,12 +96,12 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="0x1_Math_Specification_sqrt"></a>
+<a name="@Specification_0_sqrt"></a>
 
 ### Function `sqrt`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_sqrt">sqrt</a>(y: u128): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64
 </code></pre>
 
 
@@ -116,12 +115,12 @@ pragma timeout = 120;
 
 
 
-<a name="0x1_Math_Specification_pow"></a>
+<a name="@Specification_0_pow"></a>
 
 ### Function `pow`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
 </code></pre>
 
 
