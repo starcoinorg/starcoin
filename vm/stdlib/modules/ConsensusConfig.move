@@ -1,5 +1,5 @@
 address 0x1 {
-module Consensus {
+module ConsensusConfig {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
@@ -16,16 +16,17 @@ module Consensus {
     const THOUSAND_U128: u128 = 1000;
     const HUNDRED: u64 = 100;
 
-    struct Consensus {
+    struct ConsensusConfig {
         uncle_rate_target: u64,
-        init_block_time_target: u64,
-        init_reward_per_block: u128,
-        reward_per_uncle_percent: u64,
+        base_block_time_target: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
         epoch_block_count: u64,
-        block_difficulty_window: u64,
+        base_block_difficulty_window: u64,
         min_block_time_target: u64,
         max_block_time_target: u64,
-        max_uncles_per_block: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
     }
 
     resource struct Epoch {
@@ -35,6 +36,10 @@ module Consensus {
         end_number: u64,
         block_time_target: u64,
         reward_per_block: u128,
+        reward_per_uncle_percent: u64,
+        block_difficulty_window: u64,
+        max_uncles_per_block: u64,
+        block_gas_limit: u64,
         new_epoch_events: Event::EventHandle<NewEpochEvent>,
     }
 
@@ -65,13 +70,14 @@ module Consensus {
         account: &signer,
         uncle_rate_target: u64,
         epoch_block_count: u64,
-        init_block_time_target: u64,
-        block_difficulty_window: u64,
-        init_reward_per_block: u128,
-        reward_per_uncle_percent: u64,
+        base_block_time_target: u64,
+        base_block_difficulty_window: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
         min_block_time_target: u64,
         max_block_time_target: u64,
-        max_uncles_per_block: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
     ) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(
@@ -80,12 +86,14 @@ module Consensus {
         );
         assert(uncle_rate_target > 0, ErrorCode::EINVALID_ARGUMENT());
         assert(epoch_block_count > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(init_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(init_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(block_difficulty_window > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(reward_per_uncle_percent > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_difficulty_window > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_reward_per_uncle_percent > 0, ErrorCode::EINVALID_ARGUMENT());
         assert(min_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_gas_limit >= 0, ErrorCode::EINVALID_ARGUMENT());
+
         move_to<Epoch>(
             account,
             Epoch {
@@ -93,95 +101,110 @@ module Consensus {
                 epoch_start_time: Timestamp::now_seconds(),
                 start_number: 0,
                 end_number: epoch_block_count,
-                block_time_target: init_block_time_target,
-                reward_per_block: init_reward_per_block,
+                block_time_target: base_block_time_target,
+                reward_per_block: base_reward_per_block,
+                reward_per_uncle_percent: base_reward_per_uncle_percent,
+                block_difficulty_window: base_block_difficulty_window,
+                max_uncles_per_block: base_max_uncles_per_block,
+                block_gas_limit: base_block_gas_limit,
                 new_epoch_events: Event::new_event_handle<NewEpochEvent>(account),
             },
         );
         move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0 });
-        Config::publish_new_config<Self::Consensus>(
+        Config::publish_new_config<Self::ConsensusConfig>(
             account,
-            Consensus {
+            new_consensus_config(
                 uncle_rate_target,
-                init_block_time_target,
-                init_reward_per_block,
+                base_block_time_target,
+                base_reward_per_block,
                 epoch_block_count,
-                block_difficulty_window,
-                reward_per_uncle_percent,
+                base_block_difficulty_window,
+                base_reward_per_uncle_percent,
                 min_block_time_target,
                 max_block_time_target,
-                max_uncles_per_block,
-            },
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+            ),
         );
     }
 
-    public fun set_uncle_rate_target(account: &signer, uncle_rate_target: u64) {
-        let old_config = Config::get_by_address<Self::Consensus>(Signer::address_of(account));
-        old_config.uncle_rate_target = uncle_rate_target;
-        Config::set<Self::Consensus>(account, old_config);
+    public fun new_consensus_config(uncle_rate_target: u64,
+                                    base_block_time_target: u64,
+                                    base_reward_per_block: u128,
+                                    base_reward_per_uncle_percent: u64,
+                                    epoch_block_count: u64,
+                                    base_block_difficulty_window: u64,
+                                    min_block_time_target: u64,
+                                    max_block_time_target: u64,
+                                    base_max_uncles_per_block: u64,
+                                    base_block_gas_limit: u64,): ConsensusConfig {
+        ConsensusConfig {
+            uncle_rate_target,
+            base_block_time_target,
+            base_reward_per_block,
+            epoch_block_count,
+            base_block_difficulty_window,
+            base_reward_per_uncle_percent,
+            min_block_time_target,
+            max_block_time_target,
+            base_max_uncles_per_block,
+            base_block_gas_limit,
+        }
     }
 
-    public fun set_epoch_block_count(account: &signer, epoch_block_count: u64) {
-        let old_config = Config::get_by_address<Self::Consensus>(Signer::address_of(account));
-        old_config.epoch_block_count = epoch_block_count;
-        Config::set<Self::Consensus>(account, old_config);
+    public fun get_config(): ConsensusConfig {
+        Config::get_by_address<ConsensusConfig>(CoreAddresses::GENESIS_ADDRESS())
     }
 
-    public fun set_min_block_time_target(account: &signer, min_block_time_target: u64) {
-        let old_config = Config::get_by_address<Self::Consensus>(Signer::address_of(account));
-        old_config.min_block_time_target = min_block_time_target;
-        Config::set<Self::Consensus>(account, old_config);
+    public fun uncle_rate_target(config: &ConsensusConfig): u64 {
+        config.uncle_rate_target
+    }
+    
+    public fun base_block_time_target(config: &ConsensusConfig): u64 {
+        config.base_block_time_target
     }
 
-    fun get_config(): Consensus {
-        Config::get_by_address<Consensus>(CoreAddresses::GENESIS_ADDRESS())
+    public fun base_reword_per_block(config: &ConsensusConfig): u128 {
+        config.base_reward_per_block
+    }
+    
+    public fun epoch_block_count(config: &ConsensusConfig): u64 {
+        config.epoch_block_count
     }
 
-    public fun uncle_rate_target(): u64 {
-        let current_config = get_config();
-        current_config.uncle_rate_target
+    public fun base_block_difficulty_window(config: &ConsensusConfig): u64 {
+        config.base_block_difficulty_window
     }
 
-    public fun epoch_block_count(): u64 {
-        let current_config = get_config();
-        current_config.epoch_block_count
+    public fun base_reward_per_uncle_percent(config: &ConsensusConfig): u64 {
+        config.base_reward_per_uncle_percent
     }
 
-    public fun init_block_time_target(): u64 {
-        let current_config = get_config();
-        current_config.init_block_time_target
+    public fun min_block_time_target(config: &ConsensusConfig): u64 {
+        config.min_block_time_target
     }
 
-    public fun min_block_time_target(): u64 {
-        let current_config = get_config();
-        current_config.min_block_time_target
+    public fun max_block_time_target(config: &ConsensusConfig): u64 {
+        config.max_block_time_target
     }
 
-    public fun max_block_time_target(): u64 {
-        let current_config = get_config();
-        current_config.max_block_time_target
+    public fun base_max_uncles_per_block(config: &ConsensusConfig): u64 {
+        config.base_max_uncles_per_block
     }
 
-    public fun reward_per_uncle_percent(): u64 {
-        let current_config = get_config();
-        current_config.reward_per_uncle_percent
-    }
-
-    public fun max_uncles_per_block(): u64 {
-        let current_config = get_config();
-        current_config.max_uncles_per_block
-    }
-
-    public fun block_difficulty_window(): u64 {
-        let current_config = get_config();
-        current_config.block_difficulty_window
+    public fun base_block_gas_limit(config: &ConsensusConfig): u64 {
+        config.base_block_gas_limit
     }
 
     public fun compute_reward_per_block(new_epoch_block_time_target: u64): u128 {
-        let current_config = get_config();
-        current_config.init_reward_per_block *
-            (new_epoch_block_time_target as u128) * THOUSAND_U128 /
-                (current_config.init_block_time_target as u128) / THOUSAND_U128
+        let config = get_config();
+        do_compute_reward_per_block(&config, new_epoch_block_time_target)
+    }
+
+    fun do_compute_reward_per_block(config: &ConsensusConfig, new_epoch_block_time_target: u64): u128 {
+        config.base_reward_per_block *
+                (new_epoch_block_time_target as u128) * THOUSAND_U128 /
+                (config.base_block_time_target as u128) / THOUSAND_U128
     }
 
     public fun adjust_epoch(account: &signer, block_number: u64, now: u64, uncles: u64): u128
@@ -190,8 +213,10 @@ module Consensus {
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             ErrorCode::ENOT_GENESIS_ACCOUNT(),
         );
-        assert(Self::max_uncles_per_block() >= uncles, MAX_UNCLES_PER_BLOCK_IS_WRONG());
+
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
+        assert(epoch_ref.max_uncles_per_block >= uncles, MAX_UNCLES_PER_BLOCK_IS_WRONG());
+
         let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         let (new_epoch, reward_per_block) = if (block_number < epoch_ref.end_number) {
             (false, epoch_ref.reward_per_block)
@@ -206,20 +231,30 @@ module Consensus {
             let uncles_rate = total_uncles * THOUSAND / blocks;
             let new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time /
                 (config.uncle_rate_target + THOUSAND);
+            //TODO adjust block gas limit.
+            let new_block_gas_limit = config.base_block_gas_limit;
+
             if (new_epoch_block_time_target < config.min_block_time_target) {
                 new_epoch_block_time_target = config.min_block_time_target;
             };
             if (new_epoch_block_time_target > config.max_block_time_target) {
                 new_epoch_block_time_target = config.max_block_time_target;
             };
-            let new_reward_per_block = Self::compute_reward_per_block(new_epoch_block_time_target);
+            let new_reward_per_block = do_compute_reward_per_block(&config, new_epoch_block_time_target);
+
+            //update epoch by adjust result or config, because ConsensusConfig may be updated.
             epoch_ref.epoch_number = epoch_ref.epoch_number + 1;
             epoch_ref.epoch_start_time = now;
-            epoch_data.uncles = uncles;
             epoch_ref.start_number = block_number;
             epoch_ref.end_number = block_number + config.epoch_block_count;
             epoch_ref.block_time_target = new_epoch_block_time_target;
             epoch_ref.reward_per_block = new_reward_per_block;
+            epoch_ref.reward_per_uncle_percent = config.base_reward_per_uncle_percent;
+            epoch_ref.block_difficulty_window = config.base_block_difficulty_window;
+            epoch_ref.max_uncles_per_block = config.base_max_uncles_per_block;
+            epoch_ref.block_gas_limit = new_block_gas_limit;
+
+            epoch_data.uncles = 0;
             emit_epoch_event(epoch_ref, epoch_data.total_reward);
             (true, new_reward_per_block)
         } else {
@@ -227,7 +262,7 @@ module Consensus {
             abort ErrorCode::EUNREACHABLE()
         };
         let reward = reward_per_block +
-            reward_per_block * (Self::reward_per_uncle_percent() as u128) * (uncles as u128) / 100;
+            reward_per_block * (epoch_ref.reward_per_uncle_percent as u128) * (uncles as u128) / 100;
         update_epoch_data(epoch_data, new_epoch, reward, uncles);
         reward
     }

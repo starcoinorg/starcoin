@@ -29,10 +29,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
-    VMConfig,
-};
+use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
 use std::cmp::min;
 use std::iter::Extend;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -237,11 +234,10 @@ impl BlockChain {
     }
 
     pub fn get_on_chain_block_gas_limit(&self) -> Result<u64> {
-        let account_state_reader = AccountStateReader::new(&self.chain_state);
-        let vm_config = account_state_reader.get_on_chain_config::<VMConfig>()?;
-        vm_config
-            .map(|vm_config| vm_config.block_gas_limit)
-            .ok_or_else(|| format_err!("read on chain config fail."))
+        self.epoch
+            .as_ref()
+            .map(|epoch| epoch.block_gas_limit())
+            .ok_or_else(|| format_err!("Chain EpochResource is empty."))
     }
 
     pub fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
@@ -459,19 +455,7 @@ impl ChainReader for BlockChain {
                 Some(block.header().state_root()),
             );
             let account_reader = AccountStateReader::new(&chain_state);
-            let epoch = account_reader
-                .get_resource::<EpochResource>(genesis_address())?
-                .ok_or_else(|| format_err!("Epoch is none."))?;
-
-            let epoch_data = account_reader
-                .get_resource::<EpochDataResource>(genesis_address())?
-                .ok_or_else(|| format_err!("Epoch is none."))?;
-
-            let consensus_conf = account_reader
-                .get_on_chain_config::<ConsensusConfig>()?
-                .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
-
-            Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+            account_reader.get_epoch_info()
         } else {
             Err(format_err!("Block is none when query epoch info."))
         }
@@ -725,7 +709,7 @@ impl BlockChain {
                 Some(state_reader) => AccountStateReader::new(state_reader),
                 None => AccountStateReader::new(&self.chain_state),
             };
-            let epoch_info = account_reader.epoch()?;
+            let epoch_info = account_reader.get_epoch_info()?;
             self.verify_header(&header, false, &epoch_info)?;
 
             if header.number() == epoch_info.end_number() {

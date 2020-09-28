@@ -1,7 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::on_chain_config::{VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE};
+use crate::gas_schedule::{
+    AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
+};
+use crate::on_chain_config::{
+    ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
+};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -644,24 +649,9 @@ pub struct GenesisConfig {
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
     pub publishing_option: VMPublishingOption,
-    /// uncle rate target
-    pub uncle_rate_target: u64,
-    /// how many block as a epoch
-    pub epoch_block_count: u64,
-    /// init block time target for first epoch
-    pub init_block_time_target: u64,
-    /// block window
-    pub block_difficulty_window: u64,
-    /// init block reward for first epoch
-    pub init_reward_per_block: u128,
-    /// reward per uncle percent
-    pub reward_per_uncle_percent: u64,
-    /// min block time target
-    pub min_block_time_target: u64,
-    /// max block time target
-    pub max_block_time_target: u64,
-    /// max uncle block count per block
-    pub max_uncles_per_block: u64,
+    /// VM gas constants config.
+    pub gas_constants: GasConstants,
+    pub consensus_config: ConsensusConfig,
     /// association account's key pair
     pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
     /// genesis account's key pair
@@ -669,17 +659,6 @@ pub struct GenesisConfig {
     /// consensus strategy for chain
     pub consensus_strategy: ConsensusStrategy,
 
-    pub global_memory_per_byte_cost: u64,
-    pub global_memory_per_byte_write_cost: u64,
-    pub min_transaction_gas_units: u64,
-    pub large_transaction_cutoff: u64,
-    pub instrinsic_gas_per_byte: u64,
-    pub maximum_number_of_gas_units: u64,
-    pub min_price_per_gas_unit: u64,
-    pub max_price_per_gas_unit: u64,
-    pub max_transaction_size_in_bytes: u64,
-    pub gas_unit_scaling_factor: u64,
-    pub default_account_size: u64,
     pub stdlib_version: StdlibVersion,
 }
 
@@ -698,10 +677,6 @@ impl GenesisConfig {
         } else {
             bail!("genesis private_key not config at current network.",)
         }
-    }
-
-    pub fn block_gas_limit(&self) -> u64 {
-        self.vm_config.block_gas_limit
     }
 
     pub fn load<P>(path: P) -> Result<GenesisConfig>
@@ -725,13 +700,13 @@ impl GenesisConfig {
     }
 }
 
-pub static UNCLE_RATE_TARGET: u64 = 80;
-pub static DEFAULT_INIT_BLOCK_TIME_TARGET: u64 = 10;
-pub static BLOCK_DIFF_WINDOW: u64 = 24;
-pub static REWARD_PER_UNCLE_PERCENT: u64 = 10;
-pub static MIN_BLOCK_TIME_TARGET: u64 = 1;
-pub static MAX_BLOCK_TIME_TARGET: u64 = 60;
-pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
+static UNCLE_RATE_TARGET: u64 = 80;
+static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10;
+static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
+static BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
+static MIN_BLOCK_TIME_TARGET: u64 = 1;
+static MAX_BLOCK_TIME_TARGET: u64 = 60;
+static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 //for pre sell
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
@@ -742,22 +717,36 @@ static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
 //three years.
 static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
-static DEFAULT_INIT_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
+static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(64));
 
-pub static BLOCK_GAS_LIMIT: u64 = 1_000_000;
+pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000;
 
-pub static GLOBAL_MEMORY_PER_BYTE_COST: u64 = 2;
-pub static GLOBAL_MEMORY_PER_BYTE_WRITE_COST: u64 = 5;
-pub static MIN_TRANSACTION_GAS_UNITS: u64 = 600;
-pub static LARGE_TRANSACTION_CUTOFF: u64 = 600;
-pub static INSTRINSIC_GAS_PER_BYTE: u64 = 8;
-pub static MAXIMUM_NUMBER_OF_GAS_UNITS: u64 = 4_000_000;
-pub static MIN_PRICE_PER_GAS_UNIT: u64 = 1;
-pub static MAX_PRICE_PER_GAS_UNIT: u64 = 10_000;
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
-pub static GAS_UNIT_SCALING_FACTOR: u64 = 1000;
-pub static DEFAULT_ACCOUNT_SIZE: u64 = 800;
+
+/// For V1 all accounts will be ~800 bytes
+static DEFAULT_ACCOUNT_SIZE: Lazy<AbstractMemorySize<GasCarrier>> =
+    Lazy::new(|| AbstractMemorySize::new(800));
+
+/// Any transaction over this size will be charged `INTRINSIC_GAS_PER_BYTE` per byte
+static LARGE_TRANSACTION_CUTOFF: Lazy<AbstractMemorySize<GasCarrier>> =
+    Lazy::new(|| AbstractMemorySize::new(600));
+
+static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
+    GasConstants {
+        global_memory_per_byte_cost: GasUnits::new(4),
+        global_memory_per_byte_write_cost: GasUnits::new(9),
+        min_transaction_gas_units: GasUnits::new(600),
+        large_transaction_cutoff: *LARGE_TRANSACTION_CUTOFF,
+        intrinsic_gas_per_byte: GasUnits::new(8),
+        maximum_number_of_gas_units: GasUnits::new(4_000_000),
+        min_price_per_gas_unit: GasPrice::new(0),
+        max_price_per_gas_unit: GasPrice::new(10_000),
+        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
+        gas_unit_scaling_factor: 1000,
+        default_account_size: *DEFAULT_ACCOUNT_SIZE,
+    }
+});
 
 pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
@@ -778,32 +767,24 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_locked_period: 3600,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         publishing_option: VMPublishingOption::Open,
-        uncle_rate_target: UNCLE_RATE_TARGET,
-        epoch_block_count: BLOCK_DIFF_WINDOW * 2,
-        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
-        block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
-        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-        min_block_time_target: MIN_BLOCK_TIME_TARGET,
-        max_block_time_target: MAX_BLOCK_TIME_TARGET,
-        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: UNCLE_RATE_TARGET,
+            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
+            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+        },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dummy,
-        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-        min_price_per_gas_unit: 0, // set to 0
-        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES, // to pass stdlib_upgrade
-        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-        default_account_size: DEFAULT_ACCOUNT_SIZE,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -828,34 +809,25 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
         time_locked_period: 3600 * 24,
         vm_config: VMConfig {
-            // ToDo: remove gas_schedule
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         publishing_option: VMPublishingOption::Open,
-        uncle_rate_target: UNCLE_RATE_TARGET,
-        epoch_block_count: BLOCK_DIFF_WINDOW * 2,
-        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
-        block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
-        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-        min_block_time_target: MIN_BLOCK_TIME_TARGET,
-        max_block_time_target: MAX_BLOCK_TIME_TARGET,
-        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: UNCLE_RATE_TARGET,
+            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 2,
+            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+        },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dev,
-        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
-        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
-        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-        default_account_size: DEFAULT_ACCOUNT_SIZE,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -884,18 +856,21 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_locked_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-            block_gas_limit: BLOCK_GAS_LIMIT,
         },
         publishing_option: VMPublishingOption::Open,
-        uncle_rate_target: UNCLE_RATE_TARGET,
-        epoch_block_count: BLOCK_DIFF_WINDOW * 10,
-        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
-        block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
-        reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-        min_block_time_target: MIN_BLOCK_TIME_TARGET,
-        max_block_time_target: MAX_BLOCK_TIME_TARGET,
-        max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: UNCLE_RATE_TARGET,
+            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+        },
         association_key_pair: (
             None,
             Ed25519PublicKey::from_encoded_string(
@@ -905,17 +880,6 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Keccak,
-        global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-        global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-        min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-        large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-        instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-        maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-        min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
-        max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-        max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
-        gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-        default_account_size: DEFAULT_ACCOUNT_SIZE,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -942,18 +906,21 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-        block_gas_limit: BLOCK_GAS_LIMIT,
     },
     publishing_option: VMPublishingOption::Open,
-    uncle_rate_target: UNCLE_RATE_TARGET,
-    epoch_block_count: BLOCK_DIFF_WINDOW * 10,
-    init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
-    block_difficulty_window: BLOCK_DIFF_WINDOW,
-    init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
-    reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-    min_block_time_target: MIN_BLOCK_TIME_TARGET,
-    max_block_time_target: MAX_BLOCK_TIME_TARGET,
-    max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+    gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+    consensus_config: ConsensusConfig {
+        uncle_rate_target: UNCLE_RATE_TARGET,
+        base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+        base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+        epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+        base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+        base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+        min_block_time_target: MIN_BLOCK_TIME_TARGET,
+        max_block_time_target: MAX_BLOCK_TIME_TARGET,
+        base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+        base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+    },
     association_key_pair: (
         None,
         Ed25519PublicKey::from_encoded_string(
@@ -963,17 +930,6 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-    global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-    min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-    large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-    instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-    maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-    min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
-    max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-    max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
-    gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-    default_account_size: DEFAULT_ACCOUNT_SIZE,
     stdlib_version: StdlibVersion::Latest,
 });
 
@@ -992,18 +948,21 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-        block_gas_limit: BLOCK_GAS_LIMIT,
     },
     publishing_option: VMPublishingOption::Open,
-    uncle_rate_target: UNCLE_RATE_TARGET,
-    epoch_block_count: BLOCK_DIFF_WINDOW * 1000,
-    init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
-    block_difficulty_window: BLOCK_DIFF_WINDOW,
-    init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
-    reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
-    min_block_time_target: MIN_BLOCK_TIME_TARGET,
-    max_block_time_target: MAX_BLOCK_TIME_TARGET,
-    max_uncles_per_block: MAX_UNCLES_PER_BLOCK,
+    gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+    consensus_config: ConsensusConfig {
+        uncle_rate_target: UNCLE_RATE_TARGET,
+        base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+        base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+        epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+        base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+        base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+        min_block_time_target: MIN_BLOCK_TIME_TARGET,
+        max_block_time_target: MAX_BLOCK_TIME_TARGET,
+        base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+        base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+    },
     association_key_pair: (
         None,
         Ed25519PublicKey::from_encoded_string(
@@ -1013,16 +972,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    global_memory_per_byte_cost: GLOBAL_MEMORY_PER_BYTE_COST,
-    global_memory_per_byte_write_cost: GLOBAL_MEMORY_PER_BYTE_WRITE_COST,
-    min_transaction_gas_units: MIN_TRANSACTION_GAS_UNITS,
-    large_transaction_cutoff: LARGE_TRANSACTION_CUTOFF,
-    instrinsic_gas_per_byte: INSTRINSIC_GAS_PER_BYTE,
-    maximum_number_of_gas_units: MAXIMUM_NUMBER_OF_GAS_UNITS,
-    min_price_per_gas_unit: MIN_PRICE_PER_GAS_UNIT,
-    max_price_per_gas_unit: MAX_PRICE_PER_GAS_UNIT,
-    max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
-    gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
-    default_account_size: DEFAULT_ACCOUNT_SIZE,
     stdlib_version: StdlibVersion::Latest,
 });

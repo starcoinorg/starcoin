@@ -78,7 +78,10 @@ fn test_block_metadata_error_code() -> Result<()> {
         net.consensus().now(),
         *account1.address(),
         Some(account1.clone().pubkey),
-        net.genesis_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
+        net.genesis_config()
+            .consensus_config
+            .base_max_uncles_per_block
+            + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
         net.chain_id(),
     ));

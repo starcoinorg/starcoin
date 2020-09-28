@@ -235,7 +235,7 @@
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;
 
-    <b>let</b> reward = <a href="Consensus.md#0x1_Consensus_adjust_epoch">Consensus::adjust_epoch</a>(account, number, timestamp, uncles);
+    <b>let</b> reward = <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">ConsensusConfig::adjust_epoch</a>(account, number, timestamp, uncles);
 
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="#0x1_Block_NewBlockEvent">NewBlockEvent</a>&gt;(
       &<b>mut</b> block_metadata_ref.new_block_events,

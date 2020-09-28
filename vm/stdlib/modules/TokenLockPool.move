@@ -76,6 +76,7 @@ module TokenLockPool {
     // Unlock token by LinearTimeLockKey
     public fun unlock_by_linear<TokenType>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
         let value = unlocked_value_of(key);
+        assert(value > 0, ETIMELOCK_NOT_UNLOCKED());
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         let token = Token::withdraw_share(&mut token_pool.token, value);
         key.taked = key.taked + value;

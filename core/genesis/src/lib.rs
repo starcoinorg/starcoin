@@ -431,7 +431,7 @@ mod tests {
             Some(genesis_block.header().state_root()),
         );
         let account_state_reader = AccountStateReader::new(&state_db);
-        let chain_id = account_state_reader.chain_id()?;
+        let chain_id = account_state_reader.get_chain_id()?;
         assert_eq!(
             net.chain_id(),
             chain_id,

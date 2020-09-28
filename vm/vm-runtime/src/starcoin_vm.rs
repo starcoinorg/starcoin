@@ -79,7 +79,6 @@ impl StarcoinVM {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
                 gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-                block_gas_limit: u64::MAX, //no gas limitation on genesis
             });
             self.version = Some(Version { major: 0 });
             Ok(())
@@ -112,13 +111,6 @@ impl StarcoinVM {
     pub fn get_version(&self) -> Result<Version, VMStatus> {
         self.version
             .clone()
-            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
-    }
-
-    pub fn get_block_gas_limit(&self) -> Result<&u64, VMStatus> {
-        self.vm_config
-            .as_ref()
-            .map(|config| &config.block_gas_limit)
             .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 

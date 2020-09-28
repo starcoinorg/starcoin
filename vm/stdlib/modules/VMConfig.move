@@ -13,7 +13,6 @@ module VMConfig {
     // * gas_schedule: Cost of running the VM.
     struct VMConfig {
         gas_schedule: GasSchedule,
-        block_gas_limit: u64,
     }
 
     // The gas schedule keeps two separate schedules for the gas:
@@ -61,7 +60,6 @@ module VMConfig {
     public fun new_vm_config(
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
-        block_gas_limit: u64,
         global_memory_per_byte_cost: u64,
         global_memory_per_byte_write_cost: u64,
         min_transaction_gas_units: u64,
@@ -89,7 +87,6 @@ module VMConfig {
         };
         VMConfig {
             gas_schedule: GasSchedule { instruction_schedule, native_schedule, gas_constants },
-            block_gas_limit,
         }
     }
 
@@ -98,7 +95,6 @@ module VMConfig {
         account: &signer,
         instruction_schedule: vector<u8>,
         native_schedule: vector<u8>,
-        block_gas_limit: u64,
         global_memory_per_byte_cost: u64,
         global_memory_per_byte_write_cost: u64,
         min_transaction_gas_units: u64,
@@ -112,26 +108,23 @@ module VMConfig {
         default_account_size: u64,
     ) {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), 1);
-        //TODO pass gas_constants as init argument and onchain config.
-        let gas_constants = GasConstants {
-            global_memory_per_byte_cost,
-            global_memory_per_byte_write_cost,
-            min_transaction_gas_units,
-            large_transaction_cutoff,
-            instrinsic_gas_per_byte,
-            maximum_number_of_gas_units,
-            min_price_per_gas_unit,
-            max_price_per_gas_unit,
-            max_transaction_size_in_bytes,
-            gas_unit_scaling_factor,
-            default_account_size,
-        };
         Config::publish_new_config<VMConfig>(
             account,
-            VMConfig {
-                gas_schedule: GasSchedule { instruction_schedule, native_schedule, gas_constants },
-                block_gas_limit,
-            },
+            new_vm_config(
+                instruction_schedule,
+                native_schedule,
+                global_memory_per_byte_cost,
+                global_memory_per_byte_write_cost,
+                min_transaction_gas_units,
+                large_transaction_cutoff,
+                instrinsic_gas_per_byte,
+                maximum_number_of_gas_units,
+                min_price_per_gas_unit,
+                max_price_per_gas_unit,
+                max_transaction_size_in_bytes,
+                gas_unit_scaling_factor,
+                default_account_size,
+            ),
         );
     }
 
