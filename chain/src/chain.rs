@@ -543,12 +543,6 @@ impl BlockChain {
         }
         // do not check genesis block timestamp check
         if !header.is_genesis() {
-            let pre_block = match self.get_block(parent_hash)? {
-                Some(block) => block,
-                None => {
-                    return Err(ConnectBlockError::ParentNotExist(Box::new(header.clone())).into());
-                }
-            };
             //block header time check in block prologue.
 
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
