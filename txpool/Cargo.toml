@@ -12,7 +12,6 @@ actix = "0.10.0"
 actix-rt = "1.1"
 async-trait = "0.1"
 log = "0.4.11"
-#transaction-pool = "2.0"
 futures = "0.3"
 futures-channel = "0.3"
 once_cell = "1.4.1"
@@ -30,7 +29,6 @@ types = { package = "starcoin-types", path = "../types"}
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
 starcoin-state-api = {path = "../state/api"}
 crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
-#transaction-pool = {path = "../commons/transaction-pool", package="tx-pool"}
 transaction-pool = "2.0.2"
 storage = {path = "../storage", package="starcoin-storage"}
 starcoin-statedb={ path="../state/statedb" }
@@ -41,9 +39,19 @@ starcoin-consensus = {path = "../consensus"}
 starcoin-config={path="../config"}
 tx-relay = { path = "./tx-relay", package = "starcoin-tx-relay" }
 starcoin-service-registry = { path = "../commons/service-registry" }
+proptest = { version = "0.10.1", default-features = false, optional = true }
+proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 
 [dev-dependencies]
+stdlib = { path = "../vm/stdlib" }
 tempfile="3"
 starcoin-open-block = {path = "../chain/open-block"}
 starcoin-genesis = { path = "../core/genesis" }
 test-helper = { path = "../test-helper" }
+proptest = "0.10.1"
+proptest-derive = { version = "0.2.0" }
+
+
+[features]
+default = []
+fuzzing = ["proptest","proptest-derive", "types/fuzzing"]

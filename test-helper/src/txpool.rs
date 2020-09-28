@@ -15,6 +15,7 @@ pub async fn start_txpool() -> (
     TxPoolService,
     Arc<Storage>,
     Arc<NodeConfig>,
+    ServiceRef<TxPoolActorService>,
     ServiceRef<RegistryService>,
 ) {
     let node_config = Arc::new(NodeConfig::random_for_test());
@@ -27,9 +28,9 @@ pub async fn start_txpool() -> (
     let bus = registry.service_ref::<BusService>().await.unwrap();
     registry.put_shared(bus).await.unwrap();
 
-    registry.register::<TxPoolActorService>().await.unwrap();
+    let pool_actor = registry.register::<TxPoolActorService>().await.unwrap();
     Delay::new(Duration::from_millis(200)).await;
     let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
 
-    (txpool_service, storage, node_config, registry)
+    (txpool_service, storage, node_config, pool_actor, registry)
 }
