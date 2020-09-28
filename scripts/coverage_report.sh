@@ -116,11 +116,11 @@ echo "Generating lcov report at ${COVERAGE_DIR}/lcov.info..."
 grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" -o "$COVERAGE_DIR/lcov.info"
 
 # fix cov data
-rust-covfix -o "$COVERAGE_DIR/lcov_correct.info" "$COVERAGE_DIR/lcov.info"
+#rust-covfix -o "$COVERAGE_DIR/lcov_correct.info" "$COVERAGE_DIR/lcov.info"
 
 # Generate HTML report
 echo "Generating report at ${COVERAGE_DIR}..."
 # Flag "--ignore-errors source" ignores missing source files
-genhtml -o "$COVERAGE_DIR" --show-details --highlight --ignore-errors source --legend "$COVERAGE_DIR/lcov_correct.info"
+genhtml -o "$COVERAGE_DIR" --show-details --highlight --ignore-errors source --legend "$COVERAGE_DIR/lcov.info"
 
 echo "Done. Please view report at ${COVERAGE_DIR}/index.html"
