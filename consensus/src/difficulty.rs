@@ -3,13 +3,13 @@
 
 use starcoin_types::{U256, U512};
 
-use crate::{difficult_1_target, difficult_to_target, target_to_difficulty};
+use crate::{difficult_1_target, difficult_to_target};
 use anyhow::{bail, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::Block;
 use starcoin_vm_types::on_chain_config::EpochInfo;
-use std::convert::TryFrom;
+use std::convert::TryInto;
 
 /// Get the target of next pow work
 pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
@@ -34,27 +34,30 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
-    if blocks.len() < 1 {
+    if blocks.is_empty() {
         bail!("block diff info is empty")
     }
     if blocks.len() == 1 {
-        return Ok(target_to_difficulty(blocks[0].target));
+        return Ok(blocks[0].target);
     }
     let mut avg_time: u64 = 0;
-    let mut avg_target = U256::zero();
+    let mut avg_target = U512::zero();
     let block_n = blocks.len() - 1;
-    while latest_block_index < block_n {
-        avg_time += blocks[latest_block_index].timestamp;
-        avg_target += U512::from(&blocks[latest_block_index].target);
-        latest_block_index += 1
+    for diff_info in blocks.iter().take(block_n) {
+        avg_time += diff_info.timestamp;
+        avg_target += (&diff_info.target).into();
     }
     avg_time = if block_n <= 1 {
         blocks[0].timestamp - blocks[1].timestamp
     } else {
         (block_n + 1) as u64 * blocks[0].timestamp - avg_time - blocks[block_n].timestamp
     };
-    let avg_target = U256::try_from(&(avg_target / U512::from(block_n)))
-        .expect("avg_target must be transfer ok");
+
+    avg_target /= block_n;
+    let avg_target: U256 = match (&avg_target).try_into() {
+        Ok(avg_target) => avg_target,
+        Err(e) => bail!("avg target max than u256: {:?}", e),
+    };
 
     avg_time /= (block_n as u64) * ((block_n + 1) as u64) / 2;
     if avg_time == 0 {
@@ -88,6 +91,12 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
 pub struct BlockDiffInfo {
     pub timestamp: u64,
     pub target: U256,
+}
+
+impl BlockDiffInfo {
+    pub fn new(timestamp: u64, target: U256) -> Self {
+        Self { timestamp, target }
+    }
 }
 
 impl From<Block> for BlockDiffInfo {
