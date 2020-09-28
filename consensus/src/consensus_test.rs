@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::set_header_nonce;
+use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
+use crate::time::MockTimeService;
 use crate::ARGON;
+use crate::{difficult_to_target, set_header_nonce, target_to_difficulty, TimeService};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
+use starcoin_types::U256;
+use std::collections::VecDeque;
+use std::time::SystemTime;
 
 #[stest::test]
 fn raw_hash_test() {
@@ -37,12 +42,47 @@ fn verify_header_test() {
         .unwrap()
 }
 
+#[stest::test]
+fn test_get_next_target() {
+    let time_used = simulate_blocks(15, 10000.into());
+    assert!((time_used as i64 - 15).abs() <= 1);
+    let time_used = simulate_blocks(20, 20000.into());
+    assert!((time_used as i64 - 20).abs() <= 1);
+    let time_used = simulate_blocks(5, 1000.into());
+    assert!((time_used as i64 - 5).abs() <= 1);
+}
+
+fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
+    fn liner_hash_pow(difficulty: U256, current: u64) -> u64 {
+        let ts = MockTimeService::new_with_value(current);
+        let used_time = difficulty.as_u64() / 10;
+        ts.sleep(used_time);
+        ts.now()
+    }
+
+    let mut diff = init_difficulty;
+    let mut blocks = VecDeque::new();
+    let mut now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    for _ in 0..500 {
+        let timestamp = liner_hash_pow(diff, now);
+        now = timestamp;
+        blocks.push_front(BlockDiffInfo::new(timestamp, difficult_to_target(diff)));
+        let bf: Vec<&BlockDiffInfo> = blocks.iter().collect();
+        let blocks = bf.iter().map(|&b| b.clone()).collect();
+        diff = target_to_difficulty(get_next_target_helper(blocks, time_plan).unwrap());
+    }
+    blocks[0].timestamp - blocks[1].timestamp
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(10))]
 
     #[test]
     fn test_calculate_hash(
-        hashes in any::<HashValue>(),
+        hashes in any::<HashValue> (),
         nonce in any::<u64>()) {
             let result = ARGON.calculate_pow_hash(hashes, nonce);
             assert!(result.is_ok());
@@ -57,6 +97,6 @@ proptest! {
                 assert!(!input.is_empty());
             }else {
                 assert!(input.is_empty());
-            }
+        }
     }
 }
