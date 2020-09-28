@@ -549,12 +549,8 @@ impl BlockChain {
                     return Err(ConnectBlockError::ParentNotExist(Box::new(header.clone())).into());
                 }
             };
+            //block header time check in block prologue.
 
-            verify_block!(
-                VerifyBlockField::Header,
-                pre_block.header().timestamp() < header.timestamp(),
-                "Invalid block: block timestamp too old"
-            );
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             verify_block!(
                 VerifyBlockField::Header,
