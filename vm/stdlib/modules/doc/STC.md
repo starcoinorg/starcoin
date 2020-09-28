@@ -79,10 +79,10 @@
 
 ## Const `BASE_SCALING_FACTOR`
 
-scaling_factor = 10^6
+scaling_factor = 10^9
 
 
-<pre><code><b>const</b> <a href="#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>: u128 = 1000000;
+<pre><code><b>const</b> <a href="#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>: u128 = 1000000000;
 </code></pre>
 
 

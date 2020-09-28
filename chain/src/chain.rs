@@ -543,18 +543,8 @@ impl BlockChain {
         }
         // do not check genesis block timestamp check
         if !header.is_genesis() {
-            let pre_block = match self.get_block(parent_hash)? {
-                Some(block) => block,
-                None => {
-                    return Err(ConnectBlockError::ParentNotExist(Box::new(header.clone())).into());
-                }
-            };
+            //block header time check in block prologue.
 
-            verify_block!(
-                VerifyBlockField::Header,
-                pre_block.header().timestamp() < header.timestamp(),
-                "Invalid block: block timestamp too old"
-            );
             let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
             verify_block!(
                 VerifyBlockField::Header,

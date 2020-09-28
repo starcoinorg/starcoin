@@ -15,7 +15,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, time_locked_amount: u128, time_locked_period: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
 </code></pre>
 
 
@@ -40,6 +40,8 @@
     max_block_time_target: u64,
     max_uncles_per_block: u64,
     pre_mine_amount: u128,
+    time_locked_amount: u128,
+    time_locked_period: u64,
     parent_hash: vector&lt;u8&gt;,
     association_auth_key: vector&lt;u8&gt;,
     genesis_auth_key: vector&lt;u8&gt;,
@@ -123,9 +125,15 @@
         <a href="../../modules/doc/DummyToken.md#0x1_DummyToken_initialize">DummyToken::initialize</a>(&genesis_account);
         <a href="../../modules/doc/Account.md#0x1_Account_accept_token">Account::accept_token</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&association);
     };
+    <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool_initialize">TokenLockPool::initialize</a>(&genesis_account);
     <b>if</b> (pre_mine_amount &gt; 0) {
         <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_amount);
         <a href="../../modules/doc/Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
+    };
+    <b>if</b> (time_locked_amount &gt; 0) {
+        <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, time_locked_amount);
+        <b>let</b> key = <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool_create_linear_lock">TokenLockPool::create_linear_lock</a>(stc, time_locked_period);
+        <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool_save_linear_key">TokenLockPool::save_linear_key</a>(&association, key);
     };
     // only dev network set genesis auth key.
     <b>if</b> (!<a href="../../modules/doc/Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&genesis_auth_key)) {

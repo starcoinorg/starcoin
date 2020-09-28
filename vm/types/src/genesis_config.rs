@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::on_chain_config::{VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE};
+use crate::token::stc::STCUnit;
+use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, format_err, Result};
 use libp2p::multiaddr::Multiaddr;
@@ -632,8 +634,12 @@ pub struct GenesisConfig {
     pub difficulty: U256,
     /// Genesis consensus nonce.
     pub nonce: u64,
-    /// pre mine amount to Association account.
+    /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
+    /// Time locked STC amount to  Association account.
+    pub time_locked_amount: u128,
+    /// Time locked period in seconds.
+    pub time_locked_period: u64,
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
@@ -720,16 +726,24 @@ impl GenesisConfig {
 }
 
 pub static UNCLE_RATE_TARGET: u64 = 80;
-pub static INIT_BLOCK_TIME_TARGET: u64 = 5;
+pub static DEFAULT_INIT_BLOCK_TIME_TARGET: u64 = 10;
 pub static BLOCK_DIFF_WINDOW: u64 = 24;
 pub static REWARD_PER_UNCLE_PERCENT: u64 = 10;
 pub static MIN_BLOCK_TIME_TARGET: u64 = 1;
 pub static MAX_BLOCK_TIME_TARGET: u64 = 60;
 pub static MAX_UNCLES_PER_BLOCK: u64 = 2;
-pub static INIT_REWARD_PER_BLOCK: u128 = 50 * 1_000_000;
 
-static PRE_MINT_AMOUNT: u128 =
-    INIT_REWARD_PER_BLOCK * ((3600 * 24 * 30) / INIT_BLOCK_TIME_TARGET as u128);
+//for pre sell
+static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
+    Lazy::new(|| STCUnit::STC.value_of(500_000_000));
+//for dev and ecosystem build.
+static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
+    Lazy::new(|| STCUnit::STC.value_of(1_500_000_000));
+//three years.
+static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
+
+static DEFAULT_INIT_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
+    Lazy::new(|| STCUnit::STC.value_of(64));
 
 pub static BLOCK_GAS_LIMIT: u64 = 1_000_000;
 
@@ -759,7 +773,9 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 1,
         difficulty: 1.into(),
         nonce: 0,
-        pre_mine_amount: PRE_MINT_AMOUNT,
+        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_locked_period: 3600,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
@@ -767,9 +783,9 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
-        init_block_time_target: INIT_BLOCK_TIME_TARGET,
+        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
         block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: INIT_REWARD_PER_BLOCK,
+        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_block_time_target: MIN_BLOCK_TIME_TARGET,
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
@@ -808,7 +824,9 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 1,
         difficulty: 1.into(),
         nonce: 0,
-        pre_mine_amount: PRE_MINT_AMOUNT,
+        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_locked_period: 3600 * 24,
         vm_config: VMConfig {
             // ToDo: remove gas_schedule
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
@@ -817,9 +835,9 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 2,
-        init_block_time_target: INIT_BLOCK_TIME_TARGET,
+        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
         block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: INIT_REWARD_PER_BLOCK,
+        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_block_time_target: MIN_BLOCK_TIME_TARGET,
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
@@ -861,7 +879,9 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         reward_delay: 3,
         difficulty: 100000.into(),
         nonce: 0,
-        pre_mine_amount: PRE_MINT_AMOUNT,
+        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_locked_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
             block_gas_limit: BLOCK_GAS_LIMIT,
@@ -869,9 +889,9 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         publishing_option: VMPublishingOption::Open,
         uncle_rate_target: UNCLE_RATE_TARGET,
         epoch_block_count: BLOCK_DIFF_WINDOW * 10,
-        init_block_time_target: INIT_BLOCK_TIME_TARGET,
+        init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
         block_difficulty_window: BLOCK_DIFF_WINDOW,
-        init_reward_per_block: INIT_REWARD_PER_BLOCK,
+        init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
         reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
         min_block_time_target: MIN_BLOCK_TIME_TARGET,
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
@@ -896,7 +916,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
         gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
         default_account_size: DEFAULT_ACCOUNT_SIZE,
-        stdlib_version: StdlibVersion::default(),
+        stdlib_version: StdlibVersion::Latest,
     }
 });
 
@@ -917,7 +937,9 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,
-    pre_mine_amount: PRE_MINT_AMOUNT,
+    pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+    time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+    time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         block_gas_limit: BLOCK_GAS_LIMIT,
@@ -925,9 +947,9 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     publishing_option: VMPublishingOption::Open,
     uncle_rate_target: UNCLE_RATE_TARGET,
     epoch_block_count: BLOCK_DIFF_WINDOW * 10,
-    init_block_time_target: INIT_BLOCK_TIME_TARGET,
+    init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
     block_difficulty_window: BLOCK_DIFF_WINDOW,
-    init_reward_per_block: INIT_REWARD_PER_BLOCK,
+    init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
     reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
     min_block_time_target: MIN_BLOCK_TIME_TARGET,
     max_block_time_target: MAX_BLOCK_TIME_TARGET,
@@ -952,7 +974,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
-    stdlib_version: StdlibVersion::new(0, 3),
+    stdlib_version: StdlibVersion::Latest,
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -965,7 +987,9 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,
-    pre_mine_amount: 0,
+    pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+    time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+    time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         block_gas_limit: BLOCK_GAS_LIMIT,
@@ -973,9 +997,9 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     publishing_option: VMPublishingOption::Open,
     uncle_rate_target: UNCLE_RATE_TARGET,
     epoch_block_count: BLOCK_DIFF_WINDOW * 1000,
-    init_block_time_target: INIT_BLOCK_TIME_TARGET,
+    init_block_time_target: DEFAULT_INIT_BLOCK_TIME_TARGET,
     block_difficulty_window: BLOCK_DIFF_WINDOW,
-    init_reward_per_block: INIT_REWARD_PER_BLOCK,
+    init_reward_per_block: DEFAULT_INIT_REWARD_PER_BLOCK.scaling(),
     reward_per_uncle_percent: REWARD_PER_UNCLE_PERCENT,
     min_block_time_target: MIN_BLOCK_TIME_TARGET,
     max_block_time_target: MAX_BLOCK_TIME_TARGET,
@@ -1000,5 +1024,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     max_transaction_size_in_bytes: MAX_TRANSACTION_SIZE_IN_BYTES,
     gas_unit_scaling_factor: GAS_UNIT_SCALING_FACTOR,
     default_account_size: DEFAULT_ACCOUNT_SIZE,
-    stdlib_version: StdlibVersion::new(0, 3),
+    stdlib_version: StdlibVersion::Latest,
 });
