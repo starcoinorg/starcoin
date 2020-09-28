@@ -341,6 +341,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_by_linear">unlock_by_linear</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>let</b> value = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_value_of">unlocked_value_of</a>(key);
+    <b>assert</b>(value &gt; 0, <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>());
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> token = <a href="Token.md#0x1_Token_withdraw_share">Token::withdraw_share</a>(&<b>mut</b> token_pool.token, value);
     key.taked = key.taked + value;
