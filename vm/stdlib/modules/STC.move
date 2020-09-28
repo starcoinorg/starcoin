@@ -8,6 +8,7 @@ module STC {
     use 0x1::OnChainConfigDao;
     use 0x1::TransactionPublishOption;
     use 0x1::VMConfig;
+    use 0x1::ConsensusConfig;
     use 0x1::Version;
 
     spec module {
@@ -49,6 +50,7 @@ module STC {
         OnChainConfigDao::plugin<STC, TransactionPublishOption::TransactionPublishOption>(account);
         OnChainConfigDao::plugin<STC, VMConfig::VMConfig>(account);
         OnChainConfigDao::plugin<STC, Version::Version>(account);
+        OnChainConfigDao::plugin<STC, ConsensusConfig::ConsensusConfig>(account);
     }
 
     spec fun initialize {

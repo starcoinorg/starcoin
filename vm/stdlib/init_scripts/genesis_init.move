@@ -8,7 +8,7 @@ script {
     use 0x1::STC::{Self, STC};
     use 0x1::DummyToken;
     use 0x1::PackageTxnManager;
-    use 0x1::Consensus;
+    use 0x1::ConsensusConfig;
     use 0x1::Version;
     use 0x1::VMConfig;
     use 0x1::Vector;
@@ -21,20 +21,9 @@ script {
     use 0x1::TokenLockPool;
 
     fun genesis_init(
-        merged_script_allow_list: vector<u8>,
-        is_open_module: bool,
-        instruction_schedule: vector<u8>,
-        native_schedule: vector<u8>,
+
         reward_delay: u64,
-        uncle_rate_target: u64,
-        epoch_block_count: u64,
-        init_block_time_target: u64,
-        block_difficulty_window: u64,
-        init_reward_per_block: u128,
-        reward_per_uncle_percent: u64,
-        min_block_time_target: u64,
-        max_block_time_target: u64,
-        max_uncles_per_block: u64,
+
         pre_mine_amount: u128,
         time_locked_amount: u128,
         time_locked_period: u64,
@@ -44,7 +33,26 @@ script {
         chain_id: u8,
         consensus_strategy: u8,
         genesis_timestamp: u64,
-        block_gas_limit: u64,
+
+        //consensus config
+        uncle_rate_target: u64,
+        epoch_block_count: u64,
+        base_block_time_target: u64,
+        base_block_difficulty_window: u64,
+        base_reward_per_block: u128,
+        base_reward_per_uncle_percent: u64,
+        min_block_time_target: u64,
+        max_block_time_target: u64,
+        base_max_uncles_per_block: u64,
+        base_block_gas_limit: u64,
+
+        //vm config
+        merged_script_allow_list: vector<u8>,
+        is_open_module: bool,
+        instruction_schedule: vector<u8>,
+        native_schedule: vector<u8>,
+
+        //gas constants
         global_memory_per_byte_cost: u64,
         global_memory_per_byte_write_cost: u64,
         min_transaction_gas_units: u64,
@@ -75,7 +83,6 @@ script {
             &genesis_account,
             instruction_schedule,
             native_schedule,
-            block_gas_limit,
             global_memory_per_byte_cost,
             global_memory_per_byte_write_cost,
             min_transaction_gas_units,
@@ -90,17 +97,18 @@ script {
         );
         Version::initialize(&genesis_account);
         TransactionTimeout::initialize(&genesis_account);
-        Consensus::initialize(
+        ConsensusConfig::initialize(
             &genesis_account,
             uncle_rate_target,
             epoch_block_count,
-            init_block_time_target,
-            block_difficulty_window,
-            init_reward_per_block,
-            reward_per_uncle_percent,
+            base_block_time_target,
+            base_block_difficulty_window,
+            base_reward_per_block,
+            base_reward_per_uncle_percent,
             min_block_time_target,
             max_block_time_target,
-            max_uncles_per_block,
+            base_max_uncles_per_block,
+            base_block_gas_limit,
         );
         BlockReward::initialize(&genesis_account, reward_delay);
         TransactionFee::initialize(&genesis_account);

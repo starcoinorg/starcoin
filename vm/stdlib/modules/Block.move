@@ -5,7 +5,7 @@ module Block {
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
-    use 0x1::Consensus;
+    use 0x1::ConsensusConfig;
     use 0x1::ErrorCode;
 
     spec module {
@@ -88,7 +88,7 @@ module Block {
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
 
-        let reward = Consensus::adjust_epoch(account, number, timestamp, uncles);
+        let reward = ConsensusConfig::adjust_epoch(account, number, timestamp, uncles);
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,

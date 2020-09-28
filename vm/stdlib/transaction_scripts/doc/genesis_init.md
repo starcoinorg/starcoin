@@ -15,7 +15,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, reward_delay: u64, uncle_rate_target: u64, epoch_block_count: u64, init_block_time_target: u64, block_difficulty_window: u64, init_reward_per_block: u128, reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, max_uncles_per_block: u64, pre_mine_amount: u128, time_locked_amount: u128, time_locked_period: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, block_gas_limit: u64, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(reward_delay: u64, pre_mine_amount: u128, time_locked_amount: u128, time_locked_period: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, consensus_strategy: u8, genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64)
 </code></pre>
 
 
@@ -25,20 +25,9 @@
 
 
 <pre><code><b>fun</b> <a href="#SCRIPT_genesis_init">genesis_init</a>(
-    merged_script_allow_list: vector&lt;u8&gt;,
-    is_open_module: bool,
-    instruction_schedule: vector&lt;u8&gt;,
-    native_schedule: vector&lt;u8&gt;,
+
     reward_delay: u64,
-    uncle_rate_target: u64,
-    epoch_block_count: u64,
-    init_block_time_target: u64,
-    block_difficulty_window: u64,
-    init_reward_per_block: u128,
-    reward_per_uncle_percent: u64,
-    min_block_time_target: u64,
-    max_block_time_target: u64,
-    max_uncles_per_block: u64,
+
     pre_mine_amount: u128,
     time_locked_amount: u128,
     time_locked_period: u64,
@@ -48,7 +37,26 @@
     chain_id: u8,
     consensus_strategy: u8,
     genesis_timestamp: u64,
-    block_gas_limit: u64,
+
+    //consensus config
+    uncle_rate_target: u64,
+    epoch_block_count: u64,
+    base_block_time_target: u64,
+    base_block_difficulty_window: u64,
+    base_reward_per_block: u128,
+    base_reward_per_uncle_percent: u64,
+    min_block_time_target: u64,
+    max_block_time_target: u64,
+    base_max_uncles_per_block: u64,
+    base_block_gas_limit: u64,
+
+    //vm config
+    merged_script_allow_list: vector&lt;u8&gt;,
+    is_open_module: bool,
+    instruction_schedule: vector&lt;u8&gt;,
+    native_schedule: vector&lt;u8&gt;,
+
+    //gas constants
     global_memory_per_byte_cost: u64,
     global_memory_per_byte_write_cost: u64,
     min_transaction_gas_units: u64,
@@ -79,7 +87,6 @@
         &genesis_account,
         instruction_schedule,
         native_schedule,
-        block_gas_limit,
         global_memory_per_byte_cost,
         global_memory_per_byte_write_cost,
         min_transaction_gas_units,
@@ -94,17 +101,18 @@
     );
     <a href="../../modules/doc/Version.md#0x1_Version_initialize">Version::initialize</a>(&genesis_account);
     <a href="../../modules/doc/TransactionTimeout.md#0x1_TransactionTimeout_initialize">TransactionTimeout::initialize</a>(&genesis_account);
-    <a href="../../modules/doc/Consensus.md#0x1_Consensus_initialize">Consensus::initialize</a>(
+    <a href="../../modules/doc/ConsensusConfig.md#0x1_ConsensusConfig_initialize">ConsensusConfig::initialize</a>(
         &genesis_account,
         uncle_rate_target,
         epoch_block_count,
-        init_block_time_target,
-        block_difficulty_window,
-        init_reward_per_block,
-        reward_per_uncle_percent,
+        base_block_time_target,
+        base_block_difficulty_window,
+        base_reward_per_block,
+        base_reward_per_uncle_percent,
         min_block_time_target,
         max_block_time_target,
-        max_uncles_per_block,
+        base_max_uncles_per_block,
+        base_block_gas_limit,
     );
     <a href="../../modules/doc/BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, reward_delay);
     <a href="../../modules/doc/TransactionFee.md#0x1_TransactionFee_initialize">TransactionFee::initialize</a>(&genesis_account);
