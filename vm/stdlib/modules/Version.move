@@ -1,5 +1,4 @@
 address 0x1 {
-
 module Version {
     use 0x1::Config;
     use 0x1::Signer;
@@ -16,23 +15,28 @@ module Version {
     }
 
     public fun initialize(account: &signer) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-
-        Config::publish_new_config<Self::Version>(
-            account,
-            Version { major: 1 },
+        assert(
+            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
+            ErrorCode::ENOT_GENESIS_ACCOUNT(),
         );
+        Config::publish_new_config<Self::Version>(account, Version { major: 1 });
     }
 
     spec fun initialize {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
-        aborts_if exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
+        aborts_if
+            exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
         aborts_if exists<Config::Config<Version>>(Signer::spec_address_of(account));
-        ensures exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
+        ensures
+            exists<Config::ModifyConfigCapabilityHolder<Version>>(Signer::spec_address_of(account));
         ensures exists<Config::Config<Version>>(Signer::spec_address_of(account));
     }
 
-    public fun get():u64{
+    public fun new_version(major: u64): Version {
+        Version { major }
+    }
+
+    public fun get(): u64 {
         let version = Config::get_by_address<Self::Version>(CoreAddresses::GENESIS_ADDRESS());
         version.major
     }
@@ -42,25 +46,20 @@ module Version {
     }
 
     public fun set(account: &signer, major: u64) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
-        let old_config = Config::get<Self::Version>(account);
-
         assert(
-            old_config.major < major,
-            25
+            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
+            ErrorCode::ENOT_GENESIS_ACCOUNT(),
         );
-
-        Config::set<Self::Version>(
-            account,
-            Version { major }
-        );
+        let old_config = Config::get_by_address<Self::Version>(Signer::address_of(account));
+        assert(old_config.major < major, 25);
+        Config::set<Self::Version>(account, Version { major });
     }
 
     spec fun set {
-        pragma verify = false; //Todo: data invariant does not hold
+        pragma verify = false;
+        //Todo: data invariant does not hold
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if Config::spec_get<Version>(Signer::spec_address_of(account)).major >= major;
     }
 }
-
 }

@@ -14,6 +14,24 @@ module Dao {
     const DEFAULT_VOTEING_QUORUM_RATE: u8 = 4;
     /// default action_delay: 1days
     const DEFAULT_MIN_ACTION_DELAY: u64 = 60 * 60 * 24;
+
+    /// default min_action_delay
+    public fun default_min_action_delay(): u64 {
+        DEFAULT_MIN_ACTION_DELAY
+    }
+
+    public fun default_voting_delay(): u64 {
+        DEFAULT_VOTING_DELAY
+    }
+
+    public fun default_voting_period(): u64 {
+        DEFAULT_VOTING_PERIOD
+    }
+
+    public fun default_voting_quorum_rate(): u8 {
+        DEFAULT_VOTEING_QUORUM_RATE
+    }
+
     /// Proposal state
     const PENDING: u8 = 1;
     const ACTIVE: u8 = 2;
@@ -64,10 +82,16 @@ module Dao {
     const ERR_QUROM_RATE_INVALID: u64 = 1406;
     const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
 
-    /// plug_in function, can only be called by token issuer.
+    /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
     /// can optin this moudle by call this `register function`.
-    public fun plugin<TokenT: copyable>(signer: &signer) {
+    public fun plugin<TokenT: copyable>(
+        signer: &signer,
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+    ) {
         // TODO: we can add a token manage cap in Token module.
         // and only token manager can register this.
         let token_issuer = Token::token_address<TokenT>();
@@ -75,13 +99,27 @@ module Dao {
         // let proposal_id = ProposalId {next: 0};
         let gov_info = DaoGlobalInfo<TokenT> { next_proposal_id: 0 };
         move_to(signer, gov_info);
-        let config = DaoConfig<TokenT> {
-            voting_delay: DEFAULT_VOTING_DELAY,
-            voting_period: DEFAULT_VOTING_PERIOD,
-            voting_quorum_rate: DEFAULT_VOTEING_QUORUM_RATE,
-            min_action_delay: DEFAULT_MIN_ACTION_DELAY,
-        };
+        let config = new_dao_config<TokenT>(
+            voting_delay,
+            voting_period,
+            voting_quorum_rate,
+            min_action_delay,
+        );
         Config::publish_new_config(signer, config);
+    }
+
+    /// create a dao config
+    public fun new_dao_config<TokenT: copyable>(
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+    ): DaoConfig<TokenT> {
+        assert(voting_delay > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(voting_period > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(voting_quorum_rate > 0 && voting_quorum_rate <= 100, ERR_CONFIG_PARAM_INVALID);
+        assert(min_action_delay > 0, ERR_CONFIG_PARAM_INVALID);
+        DaoConfig { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
     }
 
     /// propose a proposal.
@@ -315,11 +353,6 @@ module Dao {
     }
 
     //// Helper functions
-
-    /// min_action_delay
-    public fun default_min_action_delay(): u64 {
-        DEFAULT_MIN_ACTION_DELAY
-    }
 
     //// Query functions
     public fun voting_delay<TokenT: copyable>(): u64 {

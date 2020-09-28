@@ -131,7 +131,7 @@
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;(
         signer,
         <a href="#0x1_MintDaoProposal_MintToken">MintToken</a> { receiver, amount },
-        <a href="Dao.md#0x1_Dao_default_min_action_delay">Dao::default_min_action_delay</a>(),
+        <a href="Dao.md#0x1_Dao_min_action_delay">Dao::min_action_delay</a>&lt;TokenT&gt;(),
     );
 }
 </code></pre>
