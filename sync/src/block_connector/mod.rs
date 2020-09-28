@@ -21,6 +21,8 @@ use txpool::TxPoolService;
 mod block_connect_test;
 mod metrics;
 #[cfg(test)]
+mod test_illegal_block;
+#[cfg(test)]
 mod test_write_block_chain;
 mod write_block_chain;
 
@@ -28,6 +30,13 @@ use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::ServiceRef;
 pub use write_block_chain::WriteBlockChainService;
+
+#[cfg(test)]
+pub use test_write_block_chain::create_writeable_block_chain;
+#[cfg(test)]
+pub use test_write_block_chain::gen_blocks;
+#[cfg(test)]
+pub use test_write_block_chain::new_block;
 
 #[derive(Clone)]
 pub struct PivotBlock {

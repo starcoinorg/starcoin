@@ -712,6 +712,36 @@ impl BlockChain {
             let epoch_info = account_reader.get_epoch_info()?;
             self.verify_header(&header, false, &epoch_info)?;
 
+            // verify block accumulator
+            if let Some(parent_block_info) = self.get_block_info(Some(header.parent_hash()))? {
+                verify_block!(
+                    VerifyBlockField::Header,
+                    parent_block_info
+                        .get_block_accumulator_info()
+                        .get_accumulator_root()
+                        == &header.parent_block_accumulator_root(),
+                    "Block accumulator root miss match {:?} : {:?}",
+                    parent_block_info
+                        .get_block_accumulator_info()
+                        .get_accumulator_root(),
+                    header.parent_block_accumulator_root(),
+                );
+            } else {
+                verify_block!(
+                    VerifyBlockField::Header,
+                    false,
+                    "Can not find BlockInfo by parent id : {:?}",
+                    header.parent_hash(),
+                );
+            }
+
+            verify_block!(
+                VerifyBlockField::Header,
+                block.body.hash() == header.body_hash(),
+                "verify block:{:?} body hash fail.",
+                header.id(),
+            );
+
             if header.number() == epoch_info.end_number() {
                 switch_epoch = true;
             }
