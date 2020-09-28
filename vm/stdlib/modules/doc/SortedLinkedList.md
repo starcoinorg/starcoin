@@ -3,26 +3,25 @@
 
 # Module `0x1::SortedLinkedList`
 
-### Table of Contents
 
--  [Struct `EntryHandle`](#0x1_SortedLinkedList_EntryHandle)
--  [Resource `Node`](#0x1_SortedLinkedList_Node)
--  [Resource `NodeVector`](#0x1_SortedLinkedList_NodeVector)
--  [Function `entry_handle`](#0x1_SortedLinkedList_entry_handle)
--  [Function `get_addr`](#0x1_SortedLinkedList_get_addr)
--  [Function `get_index`](#0x1_SortedLinkedList_get_index)
--  [Function `node_exists`](#0x1_SortedLinkedList_node_exists)
--  [Function `get_data`](#0x1_SortedLinkedList_get_data)
--  [Function `get_prev_node_addr`](#0x1_SortedLinkedList_get_prev_node_addr)
--  [Function `is_head_node`](#0x1_SortedLinkedList_is_head_node)
--  [Function `create_new_list`](#0x1_SortedLinkedList_create_new_list)
--  [Function `insert_node`](#0x1_SortedLinkedList_insert_node)
--  [Function `remove_node`](#0x1_SortedLinkedList_remove_node)
--  [Function `remove_node_by_list_owner`](#0x1_SortedLinkedList_remove_node_by_list_owner)
--  [Function `remove_node_by_node_owner`](#0x1_SortedLinkedList_remove_node_by_node_owner)
--  [Function `remove_list`](#0x1_SortedLinkedList_remove_list)
--  [Function `find_position_and_insert`](#0x1_SortedLinkedList_find_position_and_insert)
 
+-  [Struct <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a></code>](#0x1_SortedLinkedList_EntryHandle)
+-  [Resource <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a></code>](#0x1_SortedLinkedList_Node)
+-  [Resource <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a></code>](#0x1_SortedLinkedList_NodeVector)
+-  [Function <code>entry_handle</code>](#0x1_SortedLinkedList_entry_handle)
+-  [Function <code>get_addr</code>](#0x1_SortedLinkedList_get_addr)
+-  [Function <code>get_index</code>](#0x1_SortedLinkedList_get_index)
+-  [Function <code>node_exists</code>](#0x1_SortedLinkedList_node_exists)
+-  [Function <code>get_data</code>](#0x1_SortedLinkedList_get_data)
+-  [Function <code>get_prev_node_addr</code>](#0x1_SortedLinkedList_get_prev_node_addr)
+-  [Function <code>is_head_node</code>](#0x1_SortedLinkedList_is_head_node)
+-  [Function <code>create_new_list</code>](#0x1_SortedLinkedList_create_new_list)
+-  [Function <code>insert_node</code>](#0x1_SortedLinkedList_insert_node)
+-  [Function <code>remove_node</code>](#0x1_SortedLinkedList_remove_node)
+-  [Function <code>remove_node_by_list_owner</code>](#0x1_SortedLinkedList_remove_node_by_list_owner)
+-  [Function <code>remove_node_by_node_owner</code>](#0x1_SortedLinkedList_remove_node_by_node_owner)
+-  [Function <code>remove_list</code>](#0x1_SortedLinkedList_remove_list)
+-  [Function <code>find_position_and_insert</code>](#0x1_SortedLinkedList_find_position_and_insert)
 
 
 <a name="0x1_SortedLinkedList_EntryHandle"></a>
@@ -31,7 +30,7 @@
 
 
 
-<pre><code><b>struct</b> <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>
+<pre><code><b>struct</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>
 </code></pre>
 
 
@@ -64,7 +63,7 @@
 
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;
+<pre><code><b>resource</b> <b>struct</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;
 </code></pre>
 
 
@@ -75,19 +74,19 @@
 
 <dl>
 <dt>
-<code>prev: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
+<code>prev: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>next: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
+<code>next: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>head: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
+<code>head: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a></code>
 </dt>
 <dd>
 
@@ -109,7 +108,7 @@
 
 
 
-<pre><code><b>resource</b> <b>struct</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;
+<pre><code><b>resource</b> <b>struct</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;
 </code></pre>
 
 
@@ -120,7 +119,7 @@
 
 <dl>
 <dt>
-<code>nodes: vector&lt;<a href="#0x1_SortedLinkedList_Node">SortedLinkedList::Node</a>&lt;T&gt;&gt;</code>
+<code>nodes: vector&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">SortedLinkedList::Node</a>&lt;T&gt;&gt;</code>
 </dt>
 <dd>
 
@@ -136,7 +135,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_entry_handle">entry_handle</a>(addr: address, index: u64): <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_entry_handle">entry_handle</a>(addr: address, index: u64): <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>
 </code></pre>
 
 
@@ -145,8 +144,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_entry_handle">entry_handle</a>(addr: address, index: u64): <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a> {
-    <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a> { addr, index }
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_entry_handle">entry_handle</a>(addr: address, index: u64): <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a> {
+    <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a> { addr, index }
 }
 </code></pre>
 
@@ -160,7 +159,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_addr">get_addr</a>(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): address
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_addr">get_addr</a>(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): address
 </code></pre>
 
 
@@ -169,7 +168,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_addr">get_addr</a>(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): address {
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_addr">get_addr</a>(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): address {
     entry.addr
 }
 </code></pre>
@@ -184,7 +183,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_index">get_index</a>(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): u64
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_index">get_index</a>(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): u64
 </code></pre>
 
 
@@ -193,7 +192,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_index">get_index</a>(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_index">get_index</a>(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): u64 {
     entry.index
 }
 </code></pre>
@@ -208,7 +207,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
 </code></pre>
 
 
@@ -217,10 +216,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    <b>if</b> (!exists&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr)) <b>return</b> <b>false</b>;
-    <b>let</b> node_vector = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
-    <b>if</b> (entry.index &gt;= <a href="Vector.md#0x1_Vector_length">Vector::length</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector)) <b>return</b> <b>false</b>;
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    <b>if</b> (!<b>exists</b>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr)) <b>return</b> <b>false</b>;
+    <b>let</b> node_vector = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+    <b>if</b> (entry.index &gt;= <a href="Vector.md#0x1_Vector_length">Vector::length</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector)) <b>return</b> <b>false</b>;
     <b>true</b>
 }
 </code></pre>
@@ -235,7 +234,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_data">get_data</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): T
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_data">get_data</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): T
 </code></pre>
 
 
@@ -244,11 +243,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_data">get_data</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): T <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    //make sure a node exists in entry
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
-    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_data">get_data</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): T <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    //make sure a node <b>exists</b> in entry
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
     *&node.data
 }
 </code></pre>
@@ -263,7 +262,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_prev_node_addr">get_prev_node_addr</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): address
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_prev_node_addr">get_prev_node_addr</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): address
 </code></pre>
 
 
@@ -272,11 +271,11 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_get_prev_node_addr">get_prev_node_addr</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): address <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    //make sure a node exists in entry
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 2);
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
-    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_get_prev_node_addr">get_prev_node_addr</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): address <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    //make sure a node <b>exists</b> in entry
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 2);
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
     *&node.prev.addr
 }
 </code></pre>
@@ -291,7 +290,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_is_head_node">is_head_node</a>&lt;T: <b>copyable</b>&gt;(entry: &<a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">is_head_node</a>&lt;T: <b>copyable</b>&gt;(entry: &<a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
 </code></pre>
 
 
@@ -300,12 +299,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_is_head_node">is_head_node</a>&lt;T: <b>copyable</b>&gt;(entry: &<a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-		//check that a node exists
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(*entry), 3);
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">is_head_node</a>&lt;T: <b>copyable</b>&gt;(entry: &<a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+		//check that a node <b>exists</b>
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(*entry), 3);
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
     //find the head node
-    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
+    <b>let</b> node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, entry.index);
 
     //check <b>if</b> this is the head node
     node.head.addr == entry.addr && node.head.index == entry.index
@@ -322,7 +321,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_create_new_list">create_new_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T)
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_create_new_list">create_new_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T)
 </code></pre>
 
 
@@ -331,13 +330,13 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_create_new_list">create_new_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T) {
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_create_new_list">create_new_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T) {
     <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
 
     //make sure no node/list is already stored in this account
-    <b>assert</b>(!exists&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender), 3);
-    <b>let</b> head_handle = <a href="#0x1_SortedLinkedList_entry_handle">entry_handle</a>(sender, 0);
-    <b>let</b> head = <a href="#0x1_SortedLinkedList_Node">Self::Node</a>&lt;T&gt; {
+    <b>assert</b>(!<b>exists</b>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender), 3);
+    <b>let</b> head_handle = <a href="SortedLinkedList.md#0x1_SortedLinkedList_entry_handle">entry_handle</a>(sender, 0);
+    <b>let</b> head = <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Self::Node</a>&lt;T&gt; {
         prev: <b>copy</b> head_handle,
         next: <b>copy</b> head_handle,
         head: head_handle,
@@ -345,7 +344,7 @@
     };
 
     <b>let</b> node_vector = <a href="Vector.md#0x1_Vector_singleton">Vector::singleton</a>(head);
-    move_to&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(account, <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt; { nodes: node_vector });
+    move_to&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(account, <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt; { nodes: node_vector });
 }
 </code></pre>
 
@@ -359,7 +358,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_insert_node">insert_node</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, prev_entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_insert_node">insert_node</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, prev_entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
 </code></pre>
 
 
@@ -368,17 +367,17 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_insert_node">insert_node</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, prev_entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_insert_node">insert_node</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, prev_entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
     <b>let</b> sender_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
 
-    //make sure a node exists in prev_entry
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> prev_entry), 1);
-    <b>let</b> prev_nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
+    //make sure a node <b>exists</b> in prev_entry
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> prev_entry), 1);
+    <b>let</b> prev_nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
 
     //get a reference <b>to</b> prev_node and find the address and reference <b>to</b> next_node, head
     <b>let</b> prev_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(prev_nodes, prev_entry.index);
     <b>let</b> next_entry = *&prev_node.next;
-    <b>let</b> next_node_vector = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
+    <b>let</b> next_node_vector = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
     <b>let</b> next_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(next_node_vector, next_entry.index);
     <b>let</b> head_entry = *&next_node.head;
 
@@ -389,15 +388,15 @@
     <b>let</b> cmp_with_prev = <a href="Compare.md#0x1_Compare_cmp_lcs_bytes">Compare::cmp_lcs_bytes</a>(&data_lcs_bytes, &<a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&prev_data));
     <b>let</b> cmp_with_next = <a href="Compare.md#0x1_Compare_cmp_lcs_bytes">Compare::cmp_lcs_bytes</a>(&data_lcs_bytes, &<a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&next_data));
 
-    <b>let</b> prev_is_head = <a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&prev_entry);
-    <b>let</b> next_is_head = <a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&next_entry);
+    <b>let</b> prev_is_head = <a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&prev_entry);
+    <b>let</b> next_is_head = <a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&next_entry);
 
     //check the order -- the list must be sorted
     <b>assert</b>(prev_is_head || cmp_with_prev == 2u8, 6); // prev_is_head || data &gt; prev_data
     <b>assert</b>(next_is_head || cmp_with_next == 1u8, 7); // next_is_head || data &lt; next_data
 
     //create the new node
-    <b>let</b> node = <a href="#0x1_SortedLinkedList_Node">Self::Node</a>&lt;T&gt; {
+    <b>let</b> node = <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Self::Node</a>&lt;T&gt; {
         prev: <b>copy</b> prev_entry,
         next: <b>copy</b> next_entry,
         head: head_entry,
@@ -405,21 +404,21 @@
     };
 
     <b>let</b> index = 0u64;
-    <b>if</b> (!exists&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address)) {
-        move_to&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(account, <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt; { nodes: <a href="Vector.md#0x1_Vector_singleton">Vector::singleton</a>(node) });
+    <b>if</b> (!<b>exists</b>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address)) {
+        move_to&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(account, <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt; { nodes: <a href="Vector.md#0x1_Vector_singleton">Vector::singleton</a>(node) });
     } <b>else</b> {
-        <b>let</b> node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address).nodes;
-        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut, node);
-        index = <a href="Vector.md#0x1_Vector_length">Vector::length</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut) - 1;
+        <b>let</b> node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address).nodes;
+        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut, node);
+        index = <a href="Vector.md#0x1_Vector_length">Vector::length</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut) - 1;
     };
 
-    <b>let</b> prev_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
+    <b>let</b> prev_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
     <b>let</b> prev_node_mut = <a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a>(prev_node_vector_mut, prev_entry.index);
     //fix the pointers at prev
     prev_node_mut.next.addr = sender_address;
     prev_node_mut.next.index = index;
 
-    <b>let</b> next_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
+    <b>let</b> next_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
     <b>let</b> next_node_mut = <a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a>(next_node_vector_mut, next_entry.index);
     //fix the pointers at next
     next_node_mut.prev.addr = sender_address;
@@ -437,7 +436,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="#0x1_SortedLinkedList_remove_node">remove_node</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
+<pre><code><b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node">remove_node</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
 </code></pre>
 
 
@@ -446,31 +445,31 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#0x1_SortedLinkedList_remove_node">remove_node</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    //check that a node exists
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+<pre><code><b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node">remove_node</a>&lt;T: <b>copyable</b>&gt;(entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    //check that a node <b>exists</b>
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
 
     //find prev and next
     <b>let</b> current_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(nodes, entry.index);
     <b>let</b> prev_entry = *&current_node.prev;
     <b>let</b> next_entry = *&current_node.next;
 
-    <b>let</b> prev_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
+    <b>let</b> prev_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(prev_entry.addr).nodes;
     <b>let</b> prev_node_mut = <a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a>(prev_node_vector_mut, prev_entry.index);
     //fix the pointers at prev
     prev_node_mut.next.addr = next_entry.addr;
     prev_node_mut.next.index = next_entry.index;
 
-    <b>let</b> next_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
+    <b>let</b> next_node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
     <b>let</b> next_node_mut = <a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a>(next_node_vector_mut, next_entry.index);
     //fix the pointers at next
     next_node_mut.prev.addr = prev_entry.addr;
     next_node_mut.prev.index = prev_entry.index;
 
-    <b>let</b> node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+    <b>let</b> node_vector_mut = &<b>mut</b> borrow_global_mut&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
     //destroy the current node
-    <b>let</b> <a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt; { prev: _, next: _, head: _, data: _ } = <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut, entry.index);
+    <b>let</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt; { prev: _, next: _, head: _, data: _ } = <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(node_vector_mut, entry.index);
 }
 </code></pre>
 
@@ -484,7 +483,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_node_by_list_owner">remove_node_by_list_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node_by_list_owner">remove_node_by_list_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
 </code></pre>
 
 
@@ -493,20 +492,20 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_node_by_list_owner">remove_node_by_list_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    //check that a node exists
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node_by_list_owner">remove_node_by_list_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    //check that a node <b>exists</b>
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
     //make sure it is not a head node
-    <b>assert</b>(!<a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> entry), 10);
+    <b>assert</b>(!<a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> entry), 10);
     //make sure the caller owns the list
 
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(entry.addr).nodes;
     <b>let</b> current_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(nodes, entry.index);
     <b>let</b> list_owner = current_node.head.addr;
     <b>assert</b>(list_owner == <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), 11);
 
     //remove it
-    <a href="#0x1_SortedLinkedList_remove_node">Self::remove_node</a>&lt;T&gt;(entry);
+    <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node">Self::remove_node</a>&lt;T&gt;(entry);
 }
 </code></pre>
 
@@ -520,7 +519,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_node_by_node_owner">remove_node_by_node_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node_by_node_owner">remove_node_by_node_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>)
 </code></pre>
 
 
@@ -529,16 +528,16 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_node_by_node_owner">remove_node_by_node_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    //check that a node exists
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node_by_node_owner">remove_node_by_node_owner</a>&lt;T: <b>copyable</b>&gt;(account: &signer, entry: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>) <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    //check that a node <b>exists</b>
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_node_exists">node_exists</a>&lt;T&gt;(<b>copy</b> entry), 1);
     //make sure it is not a head node
-    <b>assert</b>(!<a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> entry), 10);
+    <b>assert</b>(!<a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> entry), 10);
     //make sure the caller owns the node
     <b>assert</b>(entry.addr == <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), 11);
 
     //remove it
-    <a href="#0x1_SortedLinkedList_remove_node">Self::remove_node</a>&lt;T&gt;(entry);
+    <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_node">Self::remove_node</a>&lt;T&gt;(entry);
 }
 </code></pre>
 
@@ -552,7 +551,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_list">remove_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_list">remove_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer)
 </code></pre>
 
 
@@ -561,13 +560,13 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_remove_list">remove_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer) <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_remove_list">remove_list</a>&lt;T: <b>copyable</b>&gt;(account: &signer) <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
     <b>let</b> sender_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
 
     //fail <b>if</b> the caller does not own a list
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<a href="#0x1_SortedLinkedList_entry_handle">Self::entry_handle</a>(sender_address, 0)), 14);
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<a href="SortedLinkedList.md#0x1_SortedLinkedList_entry_handle">Self::entry_handle</a>(sender_address, 0)), 14);
 
-    <b>let</b> node_vector = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address).nodes;
+    <b>let</b> node_vector = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address).nodes;
     <b>let</b> current_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(node_vector, 0);
 
     //check that the list is empty
@@ -576,9 +575,9 @@
     <b>assert</b>(current_node.prev.addr == sender_address, 17);
     <b>assert</b>(current_node.prev.index == 0, 18);
 
-    //destroy the <a href="#0x1_SortedLinkedList_Node">Node</a>
-    <b>let</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> { nodes: nodes } = move_from&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address);
-    <b>let</b> <a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt; { prev: _, next: _, head: _, data: _ } = <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(&<b>mut</b> nodes, 0);
+    //destroy the <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>
+    <b>let</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> { nodes: nodes } = move_from&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(sender_address);
+    <b>let</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt; { prev: _, next: _, head: _, data: _ } = <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(&<b>mut</b> nodes, 0);
     <a href="Vector.md#0x1_Vector_destroy_empty">Vector::destroy_empty</a>(nodes);
 }
 </code></pre>
@@ -593,7 +592,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_find_position_and_insert">find_position_and_insert</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, head: <a href="#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_find_position_and_insert">find_position_and_insert</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, head: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">SortedLinkedList::EntryHandle</a>): bool
 </code></pre>
 
 
@@ -602,18 +601,18 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_SortedLinkedList_find_position_and_insert">find_position_and_insert</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, head: <a href="#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
-    <b>assert</b>(<a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> head), 18);
+<pre><code><b>public</b> <b>fun</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_find_position_and_insert">find_position_and_insert</a>&lt;T: <b>copyable</b>&gt;(account: &signer, data: T, head: <a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a>): bool <b>acquires</b> <a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a> {
+    <b>assert</b>(<a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&<b>copy</b> head), 18);
 
     <b>let</b> data_lcs_bytes = <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&data);
-    <b>let</b> nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(head.addr).nodes;
-    <b>let</b> head_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, head.index);
+    <b>let</b> nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(head.addr).nodes;
+    <b>let</b> head_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(nodes, head.index);
     <b>let</b> next_entry = *&head_node.next;
     <b>let</b> last_entry = *&head_node.prev;
 
-    <b>while</b> (!<a href="#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&next_entry)) {
-        <b>let</b> next_nodes = &borrow_global&lt;<a href="#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
-        <b>let</b> next_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(next_nodes, next_entry.index);
+    <b>while</b> (!<a href="SortedLinkedList.md#0x1_SortedLinkedList_is_head_node">Self::is_head_node</a>&lt;T&gt;(&next_entry)) {
+        <b>let</b> next_nodes = &borrow_global&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a>&lt;T&gt;&gt;(next_entry.addr).nodes;
+        <b>let</b> next_node = <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>&lt;<a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a>&lt;T&gt;&gt;(next_nodes, next_entry.index);
 
         <b>let</b> next_node_data = *&next_node.data;
         <b>let</b> next_data_lcs_bytes = <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&next_node_data);
@@ -625,12 +624,12 @@
             next_entry = *&next_node.next;
         } <b>else</b> { // next_data &gt; data, nothing found
             <b>let</b> prev_entry = *&next_node.prev;
-            <a href="#0x1_SortedLinkedList_insert_node">insert_node</a>(account, data, prev_entry);
+            <a href="SortedLinkedList.md#0x1_SortedLinkedList_insert_node">insert_node</a>(account, data, prev_entry);
             <b>return</b> <b>true</b>
         }
     };
     // list is empty, insert after head
-    <a href="#0x1_SortedLinkedList_insert_node">insert_node</a>(account, data, last_entry);
+    <a href="SortedLinkedList.md#0x1_SortedLinkedList_insert_node">insert_node</a>(account, data, last_entry);
     <b>true</b>
 }
 </code></pre>

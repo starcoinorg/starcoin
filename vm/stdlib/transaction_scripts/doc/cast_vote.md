@@ -1,21 +1,14 @@
 
-<a name="SCRIPT"></a>
+<a name="cast_vote"></a>
 
-# Script `cast_vote.move`
-
-### Table of Contents
-
--  [Function `cast_vote`](#SCRIPT_cast_vote)
+# Script `cast_vote`
 
 
 
-<a name="SCRIPT_cast_vote"></a>
-
-## Function `cast_vote`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, agree: bool, votes: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="cast_vote.md#cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, agree: bool, votes: u128)
 </code></pre>
 
 
@@ -24,7 +17,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, ActionT&gt;(
+<pre><code><b>fun</b> <a href="cast_vote.md#cast_vote">cast_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, ActionT&gt;(
     signer: &signer,
     proposer_address: address,
     proposal_id: u64,

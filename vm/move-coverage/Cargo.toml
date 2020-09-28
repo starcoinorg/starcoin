@@ -17,7 +17,7 @@ colored = "2.0.0"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types"}
-bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
+bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34" }
 
 
 [features]

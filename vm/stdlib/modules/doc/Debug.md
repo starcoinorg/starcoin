@@ -3,12 +3,11 @@
 
 # Module `0x1::Debug`
 
-### Table of Contents
 
--  [Function `print`](#0x1_Debug_print)
--  [Function `print_stack_trace`](#0x1_Debug_print_stack_trace)
--  [Specification](#0x1_Debug_Specification)
 
+-  [Function <code>print</code>](#0x1_Debug_print)
+-  [Function <code>print_stack_trace</code>](#0x1_Debug_print_stack_trace)
+-  [Specification](#@Specification_0)
 
 
 <a name="0x1_Debug_print"></a>
@@ -17,7 +16,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Debug_print">print</a>&lt;T&gt;(x: &T)
+<pre><code><b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print">print</a>&lt;T&gt;(x: &T)
 </code></pre>
 
 
@@ -26,7 +25,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="#0x1_Debug_print">print</a>&lt;T&gt;(x: &T);
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print">print</a>&lt;T&gt;(x: &T);
 </code></pre>
 
 
@@ -39,7 +38,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#0x1_Debug_print_stack_trace">print_stack_trace</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print_stack_trace">print_stack_trace</a>()
 </code></pre>
 
 
@@ -48,14 +47,14 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="#0x1_Debug_print_stack_trace">print_stack_trace</a>();
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="Debug.md#0x1_Debug_print_stack_trace">print_stack_trace</a>();
 </code></pre>
 
 
 
 </details>
 
-<a name="0x1_Debug_Specification"></a>
+<a name="@Specification_0"></a>
 
 ## Specification
 

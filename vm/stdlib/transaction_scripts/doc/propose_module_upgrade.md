@@ -1,21 +1,14 @@
 
-<a name="SCRIPT"></a>
+<a name="propose_module_upgrade"></a>
 
-# Script `propose_module_upgrade.move`
-
-### Table of Contents
-
--  [Function `propose_module_upgrade`](#SCRIPT_propose_module_upgrade)
+# Script `propose_module_upgrade`
 
 
 
-<a name="SCRIPT_propose_module_upgrade"></a>
-
-## Function `propose_module_upgrade`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_module_upgrade.md#propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -24,7 +17,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="propose_module_upgrade.md#propose_module_upgrade">propose_module_upgrade</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
     signer: &signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,

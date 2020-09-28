@@ -314,6 +314,7 @@ impl Options {
             .arg(
                 Arg::with_name("generate-only")
                     .long("generate-only")
+                    .short("g")
                     .help("only generate boogie file but do not call boogie"),
             )
             .arg(
@@ -372,6 +373,13 @@ impl Options {
                     .long("docgen")
                     .help("run the documentation generator instead of the prover. \
                     Generated docs will be written into the directory `./doc` unless configured otherwise via toml"),
+            )
+            .arg(
+                Arg::with_name("docgen-template")
+                    .long("docgen-template")
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("a template for documentation generation."),
             )
             .arg(
                 Arg::with_name("abigen")
@@ -461,6 +469,11 @@ impl Options {
                     .long("sequential")
                     .help("whether to run the Boogie instances sequentially")
             )
+            .arg(
+                Arg::with_name("use-cvc4")
+                    .long("use-cvc4")
+                    .help("use cvc4 solver instead of z3")
+            )
             .after_help("More options available via `--config file` or `--config-str str`. \
             Use `--print-config` to see format and current values. \
             See `move-prover/src/cli.rs::Option` for documentation.");
@@ -505,6 +518,9 @@ impl Options {
                 _ => unreachable!("should not happen"),
             }
         }
+        if matches.is_present("generate-only") {
+            options.prover.generate_only = true;
+        }
         if matches.occurrences_of("sources") > 0 {
             options.move_sources = get_vec("sources");
         }
@@ -525,6 +541,11 @@ impl Options {
         }
         if matches.is_present("docgen") {
             options.run_docgen = true;
+        }
+        if matches.is_present("docgen-template") {
+            options.run_docgen = true;
+            options.docgen.root_doc_template =
+                matches.value_of("docgen-template").map(|s| s.to_string());
         }
         if matches.is_present("abigen") {
             options.run_abigen = true;
@@ -580,6 +601,9 @@ impl Options {
                 .value_of("lazy-threshold")
                 .unwrap()
                 .parse::<usize>()?;
+        }
+        if matches.is_present("use-cvc4") {
+            options.backend.use_cvc4 = true;
         }
         if matches.is_present("print-config") {
             println!("{}", toml::to_string(&options).unwrap());
@@ -684,5 +708,10 @@ impl Options {
             "linux" | "freebsd" | "openbsd" => time + time,
             _ => time,
         }
+    }
+
+    /// Convenience function to enable debugging (like high verbosity) on this instance.
+    pub fn enable_debug(&mut self) {
+        self.verbosity_level = LevelFilter::Debug;
     }
 }

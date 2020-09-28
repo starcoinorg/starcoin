@@ -1,21 +1,14 @@
 
-<a name="SCRIPT"></a>
+<a name="empty_script"></a>
 
-# Script `empty_script.move`
-
-### Table of Contents
-
--  [Function `empty_script`](#SCRIPT_empty_script)
+# Script `empty_script`
 
 
 
-<a name="SCRIPT_empty_script"></a>
-
-## Function `empty_script`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_empty_script">empty_script</a>()
+<pre><code><b>public</b> <b>fun</b> <a href="empty_script.md#empty_script">empty_script</a>()
 </code></pre>
 
 
@@ -24,7 +17,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_empty_script">empty_script</a>() { }
+<pre><code><b>fun</b> <a href="empty_script.md#empty_script">empty_script</a>() { }
 </code></pre>
 
 

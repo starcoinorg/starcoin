@@ -1,23 +1,16 @@
 
-<a name="SCRIPT"></a>
+<a name="set_open_module"></a>
 
-# Script `set_open_module.move`
-
-### Table of Contents
-
--  [Function `set_open_module`](#SCRIPT_set_open_module)
--  [Specification](#SCRIPT_Specification)
-    -  [Function `set_open_module`](#SCRIPT_Specification_set_open_module)
+# Script `set_open_module`
 
 
 
-<a name="SCRIPT_set_open_module"></a>
-
-## Function `set_open_module`
-
+-  [Specification](#@Specification_0)
+    -  [Function <code><a href="set_open_module.md#set_open_module">set_open_module</a></code>](#@Specification_0_set_open_module)
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_set_open_module">set_open_module</a>(account: &signer, open_module: bool)
+
+<pre><code><b>public</b> <b>fun</b> <a href="set_open_module.md#set_open_module">set_open_module</a>(account: &signer, open_module: bool)
 </code></pre>
 
 
@@ -26,7 +19,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_set_open_module">set_open_module</a>(account: &signer, open_module: bool) {
+<pre><code><b>fun</b> <a href="set_open_module.md#set_open_module">set_open_module</a>(account: &signer, open_module: bool) {
     <a href="../../modules/doc/TransactionPublishOption.md#0x1_TransactionPublishOption_set_open_module">TransactionPublishOption::set_open_module</a>(account, open_module)
 }
 </code></pre>
@@ -35,17 +28,17 @@
 
 </details>
 
-<a name="SCRIPT_Specification"></a>
+<a name="@Specification_0"></a>
 
 ## Specification
 
 
-<a name="SCRIPT_Specification_set_open_module"></a>
+<a name="@Specification_0_set_open_module"></a>
 
 ### Function `set_open_module`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_set_open_module">set_open_module</a>(account: &signer, open_module: bool)
+<pre><code><b>public</b> <b>fun</b> <a href="set_open_module.md#set_open_module">set_open_module</a>(account: &signer, open_module: bool)
 </code></pre>
 
 
