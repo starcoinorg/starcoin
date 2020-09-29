@@ -50,10 +50,10 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag;
+              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
               sleep 5;
             else
-              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag;
+              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
