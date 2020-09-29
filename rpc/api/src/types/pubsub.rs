@@ -129,7 +129,6 @@ impl TryInto<Filter> for EventFilter {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Event {
     pub block_hash: Option<HashValue>,
     pub block_number: Option<BlockNumber>,
