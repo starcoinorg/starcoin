@@ -36,7 +36,7 @@ slog = { version = "2.5.2", features = ["nested-values"] }
 slog_derive = "0.2.0"
 smallvec = "1.4.2"
 thiserror = "1"
-unsigned-varint = { version = "0.3.1", features = ["futures", "futures-codec"] }
+unsigned-varint = { version = "0.4.0", features = ["futures", "futures-codec"] }
 void = "1.0.2"
 zeroize = "1.1.1"
 hex= "0.4.2"
