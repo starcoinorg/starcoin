@@ -7701,7 +7701,6 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
  "futures-channel",
- "futures-timer",
  "linked-hash-map",
  "log 0.4.11",
  "once_cell",

@@ -103,6 +103,7 @@ async fn test_subscribe_txns() {
 async fn test_pool_pending() -> Result<()> {
     let mut config = NodeConfig::random_for_test();
     let count = 5;
+    config.metrics.enable_metrics = false;
     config.tx_pool.max_count = count;
     let node_config = Arc::new(config);
 
