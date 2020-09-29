@@ -79,7 +79,6 @@ impl StarcoinVM {
         if state.is_genesis() {
             self.vm_config = Some(VMConfig {
                 gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-                block_gas_limit: u64::MAX, //no gas limitation on genesis
             });
             self.version = Some(Version { major: 0 });
             Ok(())
@@ -112,13 +111,6 @@ impl StarcoinVM {
     pub fn get_version(&self) -> Result<Version, VMStatus> {
         self.version
             .clone()
-            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
-    }
-
-    pub fn get_block_gas_limit(&self) -> Result<&u64, VMStatus> {
-        self.vm_config
-            .as_ref()
-            .map(|config| &config.block_gas_limit)
             .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 
@@ -434,27 +426,28 @@ impl StarcoinVM {
         };
 
         // Run prologue by genesis account
-        session.execute_function(
-            &account_config::TRANSACTION_MANAGER_MODULE,
-            &PROLOGUE_NAME,
-            vec![gas_token_ty],
-            vec![
-                Value::transaction_argument_signer_reference(genesis_address),
-                Value::address(txn_data.sender),
-                Value::u64(txn_sequence_number),
-                Value::vector_u8(txn_public_key),
-                Value::u64(txn_gas_price),
-                Value::u64(txn_max_gas_amount),
-                Value::u64(txn_expiration_time),
-                Value::u8(chain_id),
-                Value::u8(payload_type.into()),
-                Value::vector_u8(script_or_package_hash.to_vec()),
-                Value::address(package_address),
-            ],
-            genesis_address,
-            cost_strategy,
-            convert_prologue_runtime_error,
-        )
+        session
+            .execute_function(
+                &account_config::TRANSACTION_MANAGER_MODULE,
+                &PROLOGUE_NAME,
+                vec![gas_token_ty],
+                vec![
+                    Value::transaction_argument_signer_reference(genesis_address),
+                    Value::address(txn_data.sender),
+                    Value::u64(txn_sequence_number),
+                    Value::vector_u8(txn_public_key),
+                    Value::u64(txn_gas_price),
+                    Value::u64(txn_max_gas_amount),
+                    Value::u64(txn_expiration_time),
+                    Value::u8(chain_id),
+                    Value::u8(payload_type.into()),
+                    Value::vector_u8(script_or_package_hash.to_vec()),
+                    Value::address(package_address),
+                ],
+                genesis_address,
+                cost_strategy,
+            )
+            .or_else(convert_prologue_runtime_error)
     }
 
     /// Run the epilogue of a transaction by calling into `EPILOGUE_NAME` function stored
@@ -481,26 +474,27 @@ impl StarcoinVM {
             }
         };
         // Run epilogue by genesis account
-        session.execute_function(
-            &account_config::TRANSACTION_MANAGER_MODULE,
-            &EPILOGUE_NAME,
-            vec![gas_token_ty],
-            vec![
-                Value::transaction_argument_signer_reference(genesis_address),
-                Value::address(txn_data.sender),
-                Value::u64(txn_sequence_number),
-                Value::u64(txn_gas_price),
-                Value::u64(txn_max_gas_amount),
-                Value::u64(gas_remaining),
-                Value::u8(payload_type.into()),
-                Value::vector_u8(script_or_package_hash.to_vec()),
-                Value::address(package_address),
-                Value::bool(success),
-            ],
-            genesis_address,
-            cost_strategy,
-            convert_normal_success_epilogue_error,
-        )
+        session
+            .execute_function(
+                &account_config::TRANSACTION_MANAGER_MODULE,
+                &EPILOGUE_NAME,
+                vec![gas_token_ty],
+                vec![
+                    Value::transaction_argument_signer_reference(genesis_address),
+                    Value::address(txn_data.sender),
+                    Value::u64(txn_sequence_number),
+                    Value::u64(txn_gas_price),
+                    Value::u64(txn_max_gas_amount),
+                    Value::u64(gas_remaining),
+                    Value::u8(payload_type.into()),
+                    Value::vector_u8(script_or_package_hash.to_vec()),
+                    Value::address(package_address),
+                    Value::bool(success),
+                ],
+                genesis_address,
+                cost_strategy,
+            )
+            .or_else(convert_normal_success_epilogue_error)
     }
 
     fn process_block_metadata(
@@ -531,15 +525,16 @@ impl StarcoinVM {
             Value::u8(chain_id.id()),
         ];
         let mut session = self.move_vm.new_session(remote_cache);
-        session.execute_function(
-            &account_config::TRANSACTION_MANAGER_MODULE,
-            &account_config::BLOCK_PROLOGUE_NAME,
-            vec![],
-            args,
-            txn_data.sender(),
-            &mut cost_strategy,
-            convert_prologue_runtime_error,
-        )?;
+        session
+            .execute_function(
+                &account_config::TRANSACTION_MANAGER_MODULE,
+                &account_config::BLOCK_PROLOGUE_NAME,
+                vec![],
+                args,
+                txn_data.sender(),
+                &mut cost_strategy,
+            )
+            .or_else(convert_prologue_runtime_error)?;
         Ok(get_transaction_output(
             &mut (),
             session,
@@ -708,14 +703,9 @@ impl StarcoinVM {
         let mut cost_strategy =
             CostStrategy::system(&cost_table, *MAXIMUM_GAS_UNITS_FOR_READONLY_CALL);
         let mut session = self.move_vm.new_session(&data_cache);
-        let result = session.execute_readonly_function(
-            module,
-            function_name,
-            type_params,
-            args,
-            &mut cost_strategy,
-            |e| e,
-        )?;
+        let result = session
+            .execute_readonly_function(module, function_name, type_params, args, &mut cost_strategy)
+            .map_err(|e| e.into_vm_status())?;
 
         let effects = session
             .finish()

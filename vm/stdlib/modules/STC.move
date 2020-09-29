@@ -8,6 +8,7 @@ module STC {
     use 0x1::OnChainConfigDao;
     use 0x1::TransactionPublishOption;
     use 0x1::VMConfig;
+    use 0x1::ConsensusConfig;
     use 0x1::Version;
 
     spec module {
@@ -18,8 +19,8 @@ module STC {
     struct STC { }
 
     // TODO: make decision of how long the factor should be
-    /// scaling_factor = 10^6
-    const BASE_SCALING_FACTOR: u128 = 1000000;
+    /// scaling_factor = 10^9
+    const BASE_SCALING_FACTOR: u128 = 1000000000;
     /// fractional_part = 10^3
     const FRACTIONAL_PART: u128 = 1000;
 
@@ -49,6 +50,7 @@ module STC {
         OnChainConfigDao::plugin<STC, TransactionPublishOption::TransactionPublishOption>(account);
         OnChainConfigDao::plugin<STC, VMConfig::VMConfig>(account);
         OnChainConfigDao::plugin<STC, Version::Version>(account);
+        OnChainConfigDao::plugin<STC, ConsensusConfig::ConsensusConfig>(account);
     }
 
     spec fun initialize {

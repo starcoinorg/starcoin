@@ -37,13 +37,14 @@ module Timestamp {
         assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
         //Do not update time before time start.
         let global_timer = borrow_global_mut<CurrentTimeSeconds>(CoreAddresses::GENESIS_ADDRESS());
-        assert(timestamp > global_timer.seconds, ErrorCode::EINVALID_TIMESTAMP());
+        //TODO remove = after use milli seconds
+        assert(timestamp >= global_timer.seconds, ErrorCode::EINVALID_TIMESTAMP());
         global_timer.seconds = timestamp;
     }
     spec fun update_global_time {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if timestamp <= global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).seconds;
+        aborts_if timestamp < global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).seconds;
         ensures global<CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).seconds == timestamp;
     }
 

@@ -74,10 +74,8 @@ fun main(signer: &signer) {
     Timestamp::update_global_time(signer, now);
 }
 }
-
-// check: ABORTED
-// check: 100
-
+//TODO set check abort after refactor timestamp.
+// check: EXECUTED
 
 //! new-transaction
 //! sender: genesis
@@ -91,8 +89,6 @@ fun main(signer: &signer) {
 }
 }
 
-// TODO(status_migration) remove duplicate check
-// check: ABORTED
 // check: ABORTED
 // check: 100
 

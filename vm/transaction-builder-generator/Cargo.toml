@@ -1,6 +1,6 @@
 [package]
 name = "transaction-builder-generator"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Libra Association <opensource@libra.org>"]
 description = "Libra transaction-builder"
 repository = "https://github.com/libra/libra"
@@ -16,10 +16,10 @@ serde_yaml = "0.8.13"
 serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
 serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
 
-libra-types = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
-libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
-move-core-types = {git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef" }
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="405bc97b86709472c9b7a381f5b3cedeaaf553ef"}
+libra-types = { git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34" }
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34" }
+move-core-types = {git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34" }
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34"}
 
 [dev-dependencies]
 tempfile = "3.1.0"

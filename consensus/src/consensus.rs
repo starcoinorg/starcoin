@@ -18,7 +18,7 @@ use starcoin_vm_types::on_chain_config::EpochInfo;
 pub trait Consensus {
     fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
-        account_reader.epoch()
+        account_reader.get_epoch_info()
     }
 
     /// Init consensus with on chain state

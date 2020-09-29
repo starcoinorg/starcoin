@@ -4,10 +4,7 @@ use anyhow::{bail, Result};
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
 use starcoin_move_compiler::{
-    compiled_unit::CompiledUnit,
-    move_compile_no_report,
-    shared::Address,
-    test_utils::{read_bool_var, stdlib_files},
+    compiled_unit::CompiledUnit, move_compile_no_report, shared::Address, test_utils::read_bool_var,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
@@ -22,9 +19,9 @@ struct MoveSourceCompiler {
 }
 
 impl MoveSourceCompiler {
-    fn new(stdlib_modules_file_names: Vec<String>) -> Self {
+    fn new(stdlib_dir: String) -> Self {
         MoveSourceCompiler {
-            deps: stdlib_modules_file_names,
+            deps: vec![stdlib_dir],
             temp_files: vec![],
         }
     }
@@ -56,7 +53,7 @@ impl Compiler for MoveSourceCompiler {
 
         let targets = &vec![cur_path.clone()];
         let sender = Some(sender_addr);
-        let (files, units_or_errors) = move_compile_no_report(targets, &self.deps, sender)?;
+        let (files, units_or_errors) = move_compile_no_report(targets, &self.deps, sender, None)?;
         let unit = match units_or_errors {
             Err(errors) => {
                 let error_buffer = if read_bool_var(testsuite::PRETTY) {
@@ -96,7 +93,7 @@ impl Compiler for MoveSourceCompiler {
 
 fn functional_testsuite(path: &Path) -> datatest_stable::Result<()> {
     let _log = starcoin_logger::init_for_test();
-    testsuite::functional_tests(MoveSourceCompiler::new(stdlib_files(STD_LIB_DIR)), path)
+    testsuite::functional_tests(MoveSourceCompiler::new(STD_LIB_DIR.to_string()), path)
 }
 
 datatest_stable::harness!(functional_testsuite, FUNCTIONAL_TEST_DIR, r".*\.move");

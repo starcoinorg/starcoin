@@ -1,6 +1,6 @@
 [package]
 name = "network-p2p"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -29,7 +29,7 @@ parking_lot = "0.11.0"
 prost = "0.6.1"
 rand = "0.7.3"
 rustc-hex = "2.1.0"
-pin-project = "0.4.23"
+pin-project = "0.4.24"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 slog = { version = "2.5.2", features = ["nested-values"] }

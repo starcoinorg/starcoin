@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.5.0
+        image: starcoin/starcoin:v0.5.1
         imagePullPolicy: Always
         command:
           - bash
@@ -50,10 +50,10 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag;
+              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
               sleep 5;
             else
-              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag;
+              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
@@ -82,7 +82,7 @@ spec:
                 name: starcoin-config
                 key: start_disable_seed_node
       - name: txfactory
-        image: starcoin/starcoin:v0.5.0
+        image: starcoin/starcoin:v0.5.1
         imagePullPolicy: IfNotPresent
         command:
           - bash

@@ -1,21 +1,14 @@
 
-<a name="SCRIPT"></a>
+<a name="submit_module_upgrade_plan"></a>
 
-# Script `submit_module_upgrade_plan.move`
-
-### Table of Contents
-
--  [Function `submit_module_upgrade_plan`](#SCRIPT_submit_module_upgrade_plan)
+# Script `submit_module_upgrade_plan`
 
 
 
-<a name="SCRIPT_submit_module_upgrade_plan"></a>
-
-## Function `submit_module_upgrade_plan`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="#SCRIPT_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="submit_module_upgrade_plan.md#submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -24,7 +17,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="#SCRIPT_submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="submit_module_upgrade_plan.md#submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(
     _signer: &signer,
     proposer_address: address,
     proposal_id: u64,

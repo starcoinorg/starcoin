@@ -147,7 +147,7 @@ fn test_random_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -185,7 +185,7 @@ fn test_switch_epoch() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();

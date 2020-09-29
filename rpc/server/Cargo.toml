@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-server"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -59,7 +59,7 @@ starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-api = { path = "../../network/api" }
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="b660407697decb9719c071e71e47991f78b4e903"}
+lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34"}
 
 [dev-dependencies]
 starcoin-rpc-client = { path = "../client"}

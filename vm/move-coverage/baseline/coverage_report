@@ -398,7 +398,7 @@ Module 00000000000000000000000000000001::Consensus
 		total instructions: 322
 		covered instructions: 282
 		% coverage: 87.58
-	fun block_difficulty_window
+	fun base_block_difficulty_window
 		total instructions: 6
 		covered instructions: 0
 		% coverage: 0.00
@@ -434,7 +434,7 @@ Module 00000000000000000000000000000001::Consensus
 		total instructions: 129
 		covered instructions: 89
 		% coverage: 68.99
-	fun max_uncles_per_block
+	fun base_max_uncles_per_block
 		total instructions: 6
 		covered instructions: 6
 		% coverage: 100.00
@@ -454,7 +454,7 @@ Module 00000000000000000000000000000001::Consensus
 		total instructions: 7
 		covered instructions: 0
 		% coverage: 0.00
-	fun reward_per_uncle_percent
+	fun base_reward_per_uncle_percent
 		total instructions: 6
 		covered instructions: 6
 		% coverage: 100.00
