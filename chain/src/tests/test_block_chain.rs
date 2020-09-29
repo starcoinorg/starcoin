@@ -21,6 +21,22 @@ fn test_block_chain_head() {
     assert_eq!(mock_chain.head().current_header().number, times);
 }
 
+#[stest::test(timeout = 480)]
+fn test_halley_consensus() {
+    let mut mock_chain = MockChain::new(&ChainNetwork::HALLEY).unwrap();
+    let times = 20;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    assert_eq!(mock_chain.head().current_header().number, times);
+}
+
+#[stest::test(timeout = 240)]
+fn test_dev_consensus() {
+    let mut mock_chain = MockChain::new(&ChainNetwork::DEV).unwrap();
+    let times = 20;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    assert_eq!(mock_chain.head().current_header().number, times);
+}
+
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let mut times = 10;
@@ -66,7 +82,7 @@ fn test_uncle() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -85,7 +101,7 @@ fn test_uncle_exist() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -131,7 +147,7 @@ fn test_random_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 fn test_switch_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -141,7 +157,7 @@ fn test_switch_epoch() {
     uncles.push(uncle_block_header.clone());
     let block = product_a_block(mock_chain.head(), &miner, uncles);
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_some());
+    assert!(mock_chain.head().head_block().uncles().is_some());
     assert!(mock_chain
         .head()
         .head_block()
@@ -165,12 +181,11 @@ fn test_switch_epoch() {
     // 5. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_none());
     assert!(mock_chain.head().head_block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 480)]
 fn test_uncle_in_diff_epoch() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -191,7 +206,6 @@ fn test_uncle_in_diff_epoch() {
     // 4. switch epoch
     let block = product_a_block(mock_chain.head(), &miner, Vec::new());
     mock_chain.apply(block).unwrap();
-    assert!(mock_chain.head().current_header().uncle_hash.is_none());
     assert!(mock_chain.head().head_block().uncles().is_none());
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 

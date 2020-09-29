@@ -14,7 +14,6 @@ Feature: integration
     Given an account
     And default account
     Then charge money to account
-    Then execute transfer transaction
     Then state proof
     Then stop
 

@@ -133,7 +133,7 @@ pub fn compile_source_string_no_report(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    move_compile_no_report(&targets, deps, Some(sender)).map(|(f, u)| {
+    move_compile_no_report(&targets, deps, Some(sender), None).map(|(f, u)| {
         let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
         (f, compiled_result)
     })

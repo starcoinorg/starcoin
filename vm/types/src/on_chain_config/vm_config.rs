@@ -57,7 +57,6 @@ impl VMPublishingOption {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VMConfig {
     pub gas_schedule: CostTable,
-    pub block_gas_limit: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -70,7 +69,6 @@ struct CostTableInner {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 struct VMConfigInner {
     pub gas_schedule: CostTableInner,
-    pub block_gas_limit: u64,
 }
 
 impl CostTableInner {
@@ -96,10 +94,6 @@ impl OnChainConfig for VMConfig {
             )
         })?;
         let gas_schedule = raw_vm_config.gas_schedule.as_cost_table()?;
-        let block_gas_limit = raw_vm_config.block_gas_limit;
-        Ok(VMConfig {
-            gas_schedule,
-            block_gas_limit,
-        })
+        Ok(VMConfig { gas_schedule })
     }
 }

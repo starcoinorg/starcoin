@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-consensus"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -25,3 +25,14 @@ starcoin-state-api = { path = "../state/api" }
 starcoin-statedb = { path = "../state/statedb" }
 starcoin-vm-types = { path = "../vm/types"}
 sha3 = { version = "0.9.1"}
+proptest = { version = "0.10.1", default-features = false, optional = true }
+proptest-derive = { version = "0.2.0", default-features = false, optional = true }
+
+[dev-dependencies]
+proptest = "0.10.1"
+proptest-derive = { version = "0.2.0" }
+
+
+[features]
+default = []
+fuzzing = ["proptest","proptest-derive", "starcoin-types/fuzzing"]

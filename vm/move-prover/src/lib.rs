@@ -11,6 +11,19 @@ use crate::{
 };
 use abigen::Abigen;
 use anyhow::anyhow;
+use bytecode::{
+    borrow_analysis::BorrowAnalysisProcessor,
+    clean_and_optimize::CleanAndOptimizeProcessor,
+    eliminate_imm_refs::EliminateImmRefsProcessor,
+    eliminate_mut_refs::EliminateMutRefsProcessor,
+    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
+    livevar_analysis::LiveVarAnalysisProcessor,
+    memory_instrumentation::MemoryInstrumentationProcessor,
+    reaching_def_analysis::ReachingDefProcessor,
+    stackless_bytecode::{Bytecode, Operation},
+    test_instrumenter::TestInstrumenter,
+    usage_analysis::{self, UsageProcessor},
+};
 use codespan_reporting::term::termcolor::{ColorChoice, StandardStream, WriteColor};
 use docgen::Docgen;
 use errmapgen::ErrmapGen;
@@ -22,19 +35,6 @@ use move_lang::find_move_filenames;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use spec_lang::{code_writer::CodeWriter, emit, emitln, env::GlobalEnv, run_spec_lang_compiler};
-use stackless_bytecode_generator::{
-    borrow_analysis::BorrowAnalysisProcessor,
-    eliminate_imm_refs::EliminateImmRefsProcessor,
-    eliminate_mut_refs::EliminateMutRefsProcessor,
-    function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
-    livevar_analysis::LiveVarAnalysisProcessor,
-    packref_analysis::PackrefAnalysisProcessor,
-    reaching_def_analysis::ReachingDefProcessor,
-    stackless_bytecode::{Bytecode, Operation},
-    test_instrumenter::TestInstrumenter,
-    usage_analysis::{self, UsageProcessor},
-    writeback_analysis::WritebackAnalysisProcessor,
-};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -49,6 +49,7 @@ mod boogie_wrapper;
 mod bytecode_translator;
 pub mod cli;
 mod prelude_template_helpers;
+mod prover_task_runner;
 mod spec_translator;
 
 // =================================================================================================
@@ -62,8 +63,8 @@ pub fn run_move_prover<W: WriteColor>(
     options: Options,
 ) -> anyhow::Result<()> {
     let now = Instant::now();
-    let sources = find_move_filenames(&options.move_sources)?;
-    let deps = calculate_deps(&sources, &find_move_filenames(&options.move_deps)?)?;
+    let sources = find_move_filenames(&options.move_sources, true)?;
+    let deps = calculate_deps(&sources, &find_move_filenames(&options.move_deps, true)?)?;
     let address = Some(options.account_address.as_ref());
     debug!("parsing and checking sources");
     let mut env: GlobalEnv = run_spec_lang_compiler(sources, deps, address)?;
@@ -77,7 +78,7 @@ pub fn run_move_prover<W: WriteColor>(
 
     // Until this point, prover and docgen have same code. Here we part ways.
     if options.run_docgen {
-        return run_docgen(&env, &options, now);
+        return run_docgen(&env, &options, error_writer, now);
     }
     // Same for ABI generator.
     if options.run_abigen {
@@ -87,11 +88,13 @@ pub fn run_move_prover<W: WriteColor>(
     if options.run_errmapgen {
         return run_errmapgen(&env, &options, now);
     }
+
     let targets = create_and_process_bytecode(&options, &env);
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with transformation errors"));
     }
+
     if options.run_packed_types_gen {
         return run_packed_types_gen(&env, &targets, now);
     }
@@ -157,12 +160,16 @@ pub fn run_move_prover_errors_to_stderr(options: Options) -> anyhow::Result<()> 
     run_move_prover(&mut error_writer, options)
 }
 
-fn run_docgen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Result<()> {
-    let mut generator = Docgen::new(env, &options.docgen);
+fn run_docgen<W: WriteColor>(
+    env: &GlobalEnv,
+    options: &Options,
+    error_writer: &mut W,
+    now: Instant,
+) -> anyhow::Result<()> {
+    let generator = Docgen::new(env, &options.docgen);
     let checking_elapsed = now.elapsed();
     info!("generating documentation");
-    generator.gen();
-    for (file, content) in generator.into_result() {
+    for (file, content) in generator.gen() {
         let path = PathBuf::from(&file);
         fs::create_dir_all(path.parent().unwrap())?;
         fs::write(path.as_path(), content)?;
@@ -173,7 +180,12 @@ fn run_docgen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Resul
         checking_elapsed.as_secs_f64(),
         (generating_elapsed - checking_elapsed).as_secs_f64()
     );
-    Ok(())
+    if env.has_errors() {
+        env.report_errors(error_writer);
+        Err(anyhow!("exiting with documentation generation errors"))
+    } else {
+        Ok(())
+    }
 }
 
 fn run_abigen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Result<()> {
@@ -302,7 +314,19 @@ fn create_and_process_bytecode(options: &Options, env: &GlobalEnv) -> FunctionTa
 
     // Create processing pipeline and run it.
     let pipeline = create_bytecode_processing_pipeline(options);
-    pipeline.run(env, &mut targets);
+    let dump_file = if options.prover.dump_bytecode {
+        Some(
+            options
+                .move_sources
+                .get(0)
+                .cloned()
+                .unwrap_or_else(|| "bytecode".to_string())
+                .replace(".move", ""),
+        )
+    } else {
+        None
+    };
+    pipeline.run(env, &mut targets, dump_file);
 
     targets
 }
@@ -312,13 +336,13 @@ fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipel
     let mut res = FunctionTargetPipeline::default();
 
     // Add processors in order they are executed.
-    res.add_processor(ReachingDefProcessor::new());
     res.add_processor(EliminateImmRefsProcessor::new());
+    res.add_processor(EliminateMutRefsProcessor::new());
+    res.add_processor(ReachingDefProcessor::new());
     res.add_processor(LiveVarAnalysisProcessor::new());
     res.add_processor(BorrowAnalysisProcessor::new());
-    res.add_processor(WritebackAnalysisProcessor::new());
-    res.add_processor(PackrefAnalysisProcessor::new());
-    res.add_processor(EliminateMutRefsProcessor::new());
+    res.add_processor(MemoryInstrumentationProcessor::new());
+    res.add_processor(CleanAndOptimizeProcessor::new());
     res.add_processor(TestInstrumenter::new(options.prover.verify_scope));
     res.add_processor(UsageProcessor::new());
 
@@ -340,10 +364,21 @@ fn calculate_deps(sources: &[String], input_deps: &[String]) -> anyhow::Result<V
         .iter()
         .map(|s| canonicalize(s))
         .collect::<BTreeSet<_>>();
-    let deps = deps
+    let mut deps = deps
         .into_iter()
         .filter(|d| !canonical_sources.contains(&canonicalize(d)))
         .collect_vec();
+    // Sort deps by simple file name. Sorting is important because different orders
+    // caused by platform dependent ways how `calculate_deps_recursively` may return values, can
+    // cause different behavior of the SMT solver (butterfly effect). By using the simple file
+    // name we abstract from places where the sources live in the file system. Since Move has
+    // no namespaces and file names can be expected to be unique matching module/script names,
+    // this should work in most cases.
+    deps.sort_by(|a, b| {
+        let fa = PathBuf::from(a);
+        let fb = PathBuf::from(b);
+        Ord::cmp(fa.file_name().unwrap(), fb.file_name().unwrap())
+    });
     Ok(deps)
 }
 

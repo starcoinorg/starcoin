@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor_test::{execute_and_apply, prepare_genesis};
+use crate::test_helper::{execute_and_apply, prepare_genesis};
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_consensus::Consensus;
@@ -78,7 +78,10 @@ fn test_block_metadata_error_code() -> Result<()> {
         net.consensus().now(),
         *account1.address(),
         Some(account1.clone().pubkey),
-        net.genesis_config().max_uncles_per_block + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
+        net.genesis_config()
+            .consensus_config
+            .base_max_uncles_per_block
+            + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
         net.chain_id(),
     ));
@@ -120,7 +123,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     let txn2 = Transaction::UserTransaction(account1.sign_txn(raw_txn));
     let output = crate::execute_transactions(&chain_state, vec![txn2]).unwrap();
     assert_eq!(
-        KeptVMStatus::VerificationError,
+        KeptVMStatus::MiscellaneousError,
         output[0].status().status().unwrap()
     );
 

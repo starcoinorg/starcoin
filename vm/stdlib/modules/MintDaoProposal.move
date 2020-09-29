@@ -14,17 +14,21 @@ module MintDaoProposal {
         amount: u128,
     }
 
+    const ERR_NOT_AUTHORIZED: u64 = 401;
+
     public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, 401);
+        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
         let mint_cap = Token::remove_mint_capability<TokenT>(signer);
         move_to(signer, WrappedMintCapability { cap: mint_cap });
     }
 
     public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128) {
-        Dao::propose<TokenT, MintToken>(signer, MintToken { receiver, amount }, 200);
-
-        // TODO: replace 200 with DAO::MIN_ACTION_DELAY
+        Dao::propose<TokenT, MintToken>(
+            signer,
+            MintToken { receiver, amount },
+            Dao::min_action_delay<TokenT>(),
+        );
     }
 
     public fun execute_mint_proposal<TokenT: copyable>(

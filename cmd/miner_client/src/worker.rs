@@ -92,6 +92,12 @@ pub enum WorkerMessage {
     NewWork { minting_hash: HashValue, diff: U256 },
 }
 
+impl Default for WorkerMessage {
+    fn default() -> Self {
+        Self::Stop
+    }
+}
+
 pub struct WorkerController {
     inner: Vec<mpsc::UnboundedSender<WorkerMessage>>,
 }

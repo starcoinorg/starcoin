@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-tx-factory"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.32"
-structopt = "0.3.17"
+structopt = "0.3.18"
 ctrlc = { version = "3.1", features = ["termination"] }
 futures = { version = "0.3"}
 tokio = { version = "0.2", features = ["full"] }

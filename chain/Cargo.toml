@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-chain"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -28,7 +28,7 @@ starcoin-statedb = {path = "../state/statedb"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
-proptest = { version = "0.10.0", default-features = false, optional = true }
+proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 
 [dev-dependencies]
@@ -37,10 +37,11 @@ stest = { path = "../commons/stest" }
 starcoin-account-api = { path = "../account/api" }
 tokio = { version = "0.2", features = ["full"] }
 starcoin-genesis = { path = "../core/genesis" }
-proptest = { version = "0.10.0" }
+proptest = "0.10.1"
 proptest-derive = { version = "0.2.0" }
 test-helper = { path = "../test-helper" }
 starcoin-chain-mock = { path = "./mock" }
+starcoin-types = { path = "../types", package = "starcoin-types", features = ["fuzzing"]}
 
 [features]
 default = []

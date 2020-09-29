@@ -116,6 +116,18 @@ impl<'a> TryFrom<&'a U512> for U256 {
     }
 }
 
+impl<'a> From<&'a U256> for U512 {
+    fn from(value: &'a U256) -> U512 {
+        let U256(ref arr) = *value;
+        let mut ret = [0; 8];
+        ret[0] = arr[0];
+        ret[1] = arr[1];
+        ret[2] = arr[2];
+        ret[3] = arr[3];
+        U512(ret)
+    }
+}
+
 impl From<HashValue> for U256 {
     fn from(hash: HashValue) -> U256 {
         U256::from(hash.to_vec().as_slice())

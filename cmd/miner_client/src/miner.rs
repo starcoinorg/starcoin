@@ -83,9 +83,6 @@ where
     }
 
     async fn submit_seal(&self, pow_hash: HashValue, nonce: u64) {
-        self.worker_controller
-            .send_message(WorkerMessage::Stop)
-            .await;
         if let Err(err) = self.job_client.submit_seal(pow_hash, nonce) {
             error!("Submit seal to failed: {:?}", err);
             return;

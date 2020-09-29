@@ -74,7 +74,6 @@ fun main(account: &signer) {
 
 //! new-transaction
 //! sender: alice
-//! expiration-time: 100000010
 script {
 use 0x1::PackageTxnManager;
 use 0x1::Signer;

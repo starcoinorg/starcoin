@@ -7,7 +7,9 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
+use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
@@ -171,17 +173,18 @@ pub fn raw_accept_token_txn(
 
 pub fn encode_create_account_script(
     version: StdlibVersion,
+    token_type: TypeTag,
     account_address: &AccountAddress,
     public_key_vec: Vec<u8>,
-    initial_balance: u64,
+    initial_balance: u128,
 ) -> Script {
     Script::new(
         compiled_transaction_script(version, StdlibScript::CreateAccount).into_vec(),
-        vec![],
+        vec![token_type],
         vec![
             TransactionArgument::Address(*account_address),
             TransactionArgument::U8Vector(public_key_vec),
-            TransactionArgument::U64(initial_balance),
+            TransactionArgument::U128(initial_balance),
         ],
     )
 }
@@ -327,39 +330,71 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
-                TransactionArgument::U8Vector(merged_script_allow_list),
-                TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
-                TransactionArgument::U8Vector(instruction_schedule),
-                TransactionArgument::U8Vector(native_schedule),
                 TransactionArgument::U64(genesis_config.reward_delay),
-                TransactionArgument::U64(genesis_config.uncle_rate_target),
-                TransactionArgument::U64(genesis_config.epoch_block_count),
-                TransactionArgument::U64(genesis_config.init_block_time_target),
-                TransactionArgument::U64(genesis_config.block_difficulty_window),
-                TransactionArgument::U128(genesis_config.init_reward_per_block),
-                TransactionArgument::U64(genesis_config.reward_per_uncle_percent),
-                TransactionArgument::U64(genesis_config.min_block_time_target),
-                TransactionArgument::U64(genesis_config.max_block_time_target),
-                TransactionArgument::U64(genesis_config.max_uncles_per_block),
                 TransactionArgument::U128(genesis_config.pre_mine_amount),
+                TransactionArgument::U128(genesis_config.time_locked_amount),
+                TransactionArgument::U64(genesis_config.time_locked_period),
                 TransactionArgument::U8Vector(genesis_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
                 TransactionArgument::U8(chain_id),
                 TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
-                TransactionArgument::U64(genesis_config.vm_config.block_gas_limit),
-                TransactionArgument::U64(genesis_config.global_memory_per_byte_cost),
-                TransactionArgument::U64(genesis_config.global_memory_per_byte_write_cost),
-                TransactionArgument::U64(genesis_config.min_transaction_gas_units),
-                TransactionArgument::U64(genesis_config.large_transaction_cutoff),
-                TransactionArgument::U64(genesis_config.instrinsic_gas_per_byte),
-                TransactionArgument::U64(genesis_config.maximum_number_of_gas_units),
-                TransactionArgument::U64(genesis_config.min_price_per_gas_unit),
-                TransactionArgument::U64(genesis_config.max_price_per_gas_unit),
-                TransactionArgument::U64(genesis_config.max_transaction_size_in_bytes),
-                TransactionArgument::U64(genesis_config.gas_unit_scaling_factor),
-                TransactionArgument::U64(genesis_config.default_account_size),
+                //consensus config
+                TransactionArgument::U64(genesis_config.consensus_config.uncle_rate_target),
+                TransactionArgument::U64(genesis_config.consensus_config.epoch_block_count),
+                TransactionArgument::U64(genesis_config.consensus_config.base_block_time_target),
+                TransactionArgument::U64(
+                    genesis_config.consensus_config.base_block_difficulty_window,
+                ),
+                TransactionArgument::U128(genesis_config.consensus_config.base_reward_per_block),
+                TransactionArgument::U64(
+                    genesis_config
+                        .consensus_config
+                        .base_reward_per_uncle_percent,
+                ),
+                TransactionArgument::U64(genesis_config.consensus_config.min_block_time_target),
+                TransactionArgument::U64(genesis_config.consensus_config.max_block_time_target),
+                TransactionArgument::U64(genesis_config.consensus_config.base_max_uncles_per_block),
+                TransactionArgument::U64(genesis_config.consensus_config.base_block_gas_limit),
+                //vm config
+                TransactionArgument::U8Vector(merged_script_allow_list),
+                TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
+                TransactionArgument::U8Vector(instruction_schedule),
+                TransactionArgument::U8Vector(native_schedule),
+                //gas constants
+                TransactionArgument::U64(
+                    genesis_config
+                        .gas_constants
+                        .global_memory_per_byte_cost
+                        .get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config
+                        .gas_constants
+                        .global_memory_per_byte_write_cost
+                        .get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config.gas_constants.min_transaction_gas_units.get(),
+                ),
+                TransactionArgument::U64(
+                    genesis_config.gas_constants.large_transaction_cutoff.get(),
+                ),
+                TransactionArgument::U64(genesis_config.gas_constants.intrinsic_gas_per_byte.get()),
+                TransactionArgument::U64(
+                    genesis_config
+                        .gas_constants
+                        .maximum_number_of_gas_units
+                        .get(),
+                ),
+                TransactionArgument::U64(genesis_config.gas_constants.min_price_per_gas_unit.get()),
+                TransactionArgument::U64(genesis_config.gas_constants.max_price_per_gas_unit.get()),
+                TransactionArgument::U64(
+                    genesis_config.gas_constants.max_transaction_size_in_bytes,
+                ),
+                TransactionArgument::U64(genesis_config.gas_constants.gas_unit_scaling_factor),
+                TransactionArgument::U64(genesis_config.gas_constants.default_account_size.get()),
             ],
         ));
     }

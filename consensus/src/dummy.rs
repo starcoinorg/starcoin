@@ -31,7 +31,7 @@ impl DummyConsensus {
 impl Consensus for DummyConsensus {
     fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
         let account_state_reader = AccountStateReader::new(reader);
-        let init_seconds = account_state_reader.timestamp()?.seconds;
+        let init_seconds = account_state_reader.get_timestamp()?.seconds;
         if init_seconds > 0 {
             info!("Adjust time service with on chain time: {}", init_seconds);
             //add 1 seconds to on chain seconds, for avoid time conflict

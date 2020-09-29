@@ -27,9 +27,6 @@ const DEFAULT_BOOGIE_FLAGS: &[&str] = &[
     "-doModSetAnalysis",
     "-printVerifiedProceduresCount:0",
     "-printModel:4",
-    // Right now, we let boogie only produce one error per procedure. The boogie wrapper isn't
-    // capable to sort out multiple errors and associate them with models otherwise.
-    "-errorLimit:1",
 ];
 
 /// Atomic used to prevent re-initialization of logging.
@@ -75,6 +72,8 @@ pub struct Options {
     /// Options for the ABI generator.
     pub abigen: AbigenOptions,
     /// Options for the error map generator.
+    /// TODO: this currently create errors during deserialization, so skip them for this.
+    #[serde(skip_serializing)]
     pub errmapgen: ErrmapOptions,
 }
 
@@ -125,11 +124,21 @@ pub struct ProverOptions {
     /// is accessed, instead of on function entry. This is currently known to be slower
     /// if one than off, so off by default.
     pub assume_invariant_on_access: bool,
+    /// Whether pack/unpack should recurse over the structure.
+    pub deep_pack_unpack: bool,
     /// Whether to automatically debug trace values of specification expression leafs.
     pub debug_trace: bool,
     /// Report warnings. This is not on by default. We may turn it on if the warnings
     /// are better filtered, e.g. do not contain unused schemas intended for other modules.
     pub report_warnings: bool,
+    /// Whether to dump the transformed stackless bytecode to a file
+    pub dump_bytecode: bool,
+    /// Number of Boogie instances to be run concurrently.
+    pub num_instances: usize,
+    /// Whether to run Boogie instances sequentially.
+    pub sequential_task: bool,
+    /// Run negative verification checks.
+    pub negative_checks: bool,
 }
 
 impl Default for ProverOptions {
@@ -140,12 +149,17 @@ impl Default for ProverOptions {
             minimize_execution_trace: true,
             omit_model_debug: false,
             stable_test_output: false,
-            verify_scope: VerificationScope::Public,
+            verify_scope: VerificationScope::All,
             resource_wellformed_axiom: false,
             assume_wellformed_on_access: false,
+            deep_pack_unpack: false,
             debug_trace: false,
             report_warnings: false,
             assume_invariant_on_access: false,
+            dump_bytecode: false,
+            num_instances: 1,
+            sequential_task: false,
+            negative_checks: false,
         }
     }
 }
@@ -300,6 +314,7 @@ impl Options {
             .arg(
                 Arg::with_name("generate-only")
                     .long("generate-only")
+                    .short("g")
                     .help("only generate boogie file but do not call boogie"),
             )
             .arg(
@@ -321,6 +336,10 @@ impl Options {
                     .help("keep intermediate artifacts of the backend around")
             )
             .arg(
+                Arg::with_name("negative")
+                    .long("negative")
+                    .help("run negative verification checks")
+            ).arg(
                 Arg::with_name("seed")
                     .long("seed")
                     .short("s")
@@ -354,6 +373,13 @@ impl Options {
                     .long("docgen")
                     .help("run the documentation generator instead of the prover. \
                     Generated docs will be written into the directory `./doc` unless configured otherwise via toml"),
+            )
+            .arg(
+                Arg::with_name("docgen-template")
+                    .long("docgen-template")
+                    .takes_value(true)
+                    .value_name("FILE")
+                    .help("a template for documentation generation."),
             )
             .arg(
                 Arg::with_name("abigen")
@@ -425,6 +451,29 @@ impl Options {
                     .validator(is_number)
                     .help("sets the lazy threshold for quantifier instantiation (default 100)")
             )
+            .arg(
+                Arg::with_name("dump-bytecode")
+                    .long("dump-bytecode")
+                    .help("whether to dump the transformed bytecode to a file")
+            )
+            .arg(
+                Arg::with_name("num-instances")
+                    .long("num-instances")
+                    .takes_value(true)
+                    .value_name("NUMBER")
+                    .validator(is_number)
+                    .help("sets the number of Boogie instances to run concurrently (default 1)")
+            )
+            .arg(
+                Arg::with_name("sequential")
+                    .long("sequential")
+                    .help("whether to run the Boogie instances sequentially")
+            )
+            .arg(
+                Arg::with_name("use-cvc4")
+                    .long("use-cvc4")
+                    .help("use cvc4 solver instead of z3")
+            )
             .after_help("More options available via `--config file` or `--config-str str`. \
             Use `--print-config` to see format and current values. \
             See `move-prover/src/cli.rs::Option` for documentation.");
@@ -469,6 +518,9 @@ impl Options {
                 _ => unreachable!("should not happen"),
             }
         }
+        if matches.is_present("generate-only") {
+            options.prover.generate_only = true;
+        }
         if matches.occurrences_of("sources") > 0 {
             options.move_sources = get_vec("sources");
         }
@@ -490,6 +542,11 @@ impl Options {
         if matches.is_present("docgen") {
             options.run_docgen = true;
         }
+        if matches.is_present("docgen-template") {
+            options.run_docgen = true;
+            options.docgen.root_doc_template =
+                matches.value_of("docgen-template").map(|s| s.to_string());
+        }
         if matches.is_present("abigen") {
             options.run_abigen = true;
         }
@@ -505,8 +562,24 @@ impl Options {
         if matches.is_present("trace") {
             options.prover.debug_trace = true;
         }
+        if matches.is_present("dump-bytecode") {
+            options.prover.dump_bytecode = true;
+        }
+        if matches.is_present("num-instances") {
+            let num_instances = matches
+                .value_of("num-instances")
+                .unwrap()
+                .parse::<usize>()?;
+            options.prover.num_instances = std::cmp::max(num_instances, 1); // at least one instance
+        }
+        if matches.is_present("sequential") {
+            options.prover.sequential_task = true;
+        }
         if matches.is_present("keep") {
             options.backend.keep_artifacts = true;
+        }
+        if matches.is_present("negative") {
+            options.prover.negative_checks = true;
         }
         if matches.is_present("seed") {
             options.backend.random_seed = matches.value_of("seed").unwrap().parse::<usize>()?;
@@ -528,6 +601,9 @@ impl Options {
                 .value_of("lazy-threshold")
                 .unwrap()
                 .parse::<usize>()?;
+        }
+        if matches.is_present("use-cvc4") {
+            options.backend.use_cvc4 = true;
         }
         if matches.is_present("print-config") {
             println!("{}", toml::to_string(&options).unwrap());
@@ -566,6 +642,11 @@ impl Options {
         let mut result = vec![self.backend.boogie_exe.clone()];
         let mut add = |sl: &[&str]| result.extend(sl.iter().map(|s| (*s).to_string()));
         add(DEFAULT_BOOGIE_FLAGS);
+        if !self.prover.negative_checks {
+            // Right now, we let boogie only produce one error per procedure. The boogie wrapper isn't
+            // capable to sort out multiple errors and associate them with models otherwise.
+            add(&["-errorLimit:1"]);
+        }
         if self.backend.use_cvc4 {
             add(&[
                 "-proverOpt:SOLVER=cvc4",
@@ -627,5 +708,10 @@ impl Options {
             "linux" | "freebsd" | "openbsd" => time + time,
             _ => time,
         }
+    }
+
+    /// Convenience function to enable debugging (like high verbosity) on this instance.
+    pub fn enable_debug(&mut self) {
+        self.verbosity_level = LevelFilter::Debug;
     }
 }

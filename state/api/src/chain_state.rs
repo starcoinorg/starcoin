@@ -18,7 +18,7 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{
-    Consensus as ConsensusConfig, EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
+    EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
 };
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
@@ -287,7 +287,7 @@ impl<'a> AccountStateReader<'a> {
         self.get_balance_by_type(address, token_code.into())
     }
 
-    pub fn epoch(&self) -> Result<EpochInfo> {
+    pub fn get_epoch_info(&self) -> Result<EpochInfo> {
         let epoch = self
             .get_resource::<EpochResource>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))?;
@@ -296,19 +296,15 @@ impl<'a> AccountStateReader<'a> {
             .get_resource::<EpochDataResource>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))?;
 
-        let consensus_conf = self
-            .get_on_chain_config::<ConsensusConfig>()?
-            .ok_or_else(|| format_err!("ConsensusConfig is none."))?;
-
-        Ok(EpochInfo::new(&epoch, epoch_data, &consensus_conf))
+        Ok(EpochInfo::new(epoch, epoch_data))
     }
 
-    pub fn timestamp(&self) -> Result<GlobalTimeOnChain> {
+    pub fn get_timestamp(&self) -> Result<GlobalTimeOnChain> {
         self.get_resource(genesis_address())?
             .ok_or_else(|| format_err!("Timestamp resource should exist."))
     }
 
-    pub fn chain_id(&self) -> Result<ChainId> {
+    pub fn get_chain_id(&self) -> Result<ChainId> {
         self.get_resource::<ChainId>(genesis_address())?
             .ok_or_else(|| format_err!("ChainId resource should exist at genesis address. "))
     }

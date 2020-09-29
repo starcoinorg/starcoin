@@ -47,8 +47,8 @@ pub struct BlockHeader {
     pub difficulty: U256,
     /// Consensus nonce field.
     pub nonce: u64,
-    /// hash for uncle blocks header
-    pub uncle_hash: Option<HashValue>,
+    /// hash for block body
+    pub body_hash: HashValue,
     /// The chain id
     pub chain_id: ChainId,
 }
@@ -65,7 +65,7 @@ impl BlockHeader {
         gas_used: u64,
         difficulty: U256,
         nonce: u64,
-        uncle_hash: Option<HashValue>,
+        body_hash: HashValue,
         chain_id: ChainId,
     ) -> BlockHeader {
         Self::new_with_auth(
@@ -80,7 +80,7 @@ impl BlockHeader {
             gas_used,
             difficulty,
             nonce,
-            uncle_hash,
+            body_hash,
             chain_id,
         )
     }
@@ -97,7 +97,7 @@ impl BlockHeader {
         gas_used: u64,
         difficulty: U256,
         nonce: u64,
-        uncle_hash: Option<HashValue>,
+        body_hash: HashValue,
         chain_id: ChainId,
     ) -> BlockHeader {
         BlockHeader {
@@ -112,7 +112,7 @@ impl BlockHeader {
             gas_used,
             difficulty,
             nonce,
-            uncle_hash,
+            body_hash,
             chain_id,
         }
     }
@@ -168,6 +168,9 @@ impl BlockHeader {
         self.number == 0
     }
 
+    pub fn body_hash(&self) -> HashValue {
+        self.body_hash
+    }
     pub fn genesis_block_header(
         parent_hash: HashValue,
         timestamp: u64,
@@ -175,6 +178,7 @@ impl BlockHeader {
         state_root: HashValue,
         difficulty: U256,
         nonce: u64,
+        body_hash: HashValue,
         chain_id: ChainId,
     ) -> Self {
         Self {
@@ -189,7 +193,7 @@ impl BlockHeader {
             gas_used: 0,
             difficulty,
             nonce,
-            uncle_hash: None,
+            body_hash,
             chain_id,
         }
     }
@@ -207,7 +211,7 @@ impl BlockHeader {
             gas_used: rand::random(),
             difficulty: U256::max_value(),
             nonce: 0,
-            uncle_hash: None,
+            body_hash: HashValue::random(),
             chain_id: ChainId::test(),
         }
     }
@@ -226,7 +230,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             state_root: self.state_root,
             gas_used: self.gas_used,
             difficulty: self.difficulty,
-            uncle_hash: self.uncle_hash,
+            body_hash: self.body_hash,
             chain_id: self.chain_id,
         }
     }
@@ -254,13 +258,15 @@ pub struct RawBlockHeader {
     pub gas_used: u64,
     /// Block difficulty
     pub difficulty: U256,
-    /// hash for uncle blocks header
-    pub uncle_hash: Option<HashValue>,
+    /// hash for block body
+    pub body_hash: HashValue,
     /// The chain id
     pub chain_id: ChainId,
 }
 
-#[derive(Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+)]
 pub struct BlockBody {
     /// The transactions in this block.
     pub transactions: Vec<SignedUserTransaction>,
@@ -285,6 +291,10 @@ impl BlockBody {
             transactions: Vec::new(),
             uncles: None,
         }
+    }
+
+    pub fn hash(&self) -> HashValue {
+        self.crypto_hash()
     }
 }
 
@@ -352,6 +362,8 @@ impl Block {
         nonce: u64,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
+        let chain_id = genesis_txn.chain_id();
+        let block_body = BlockBody::new(vec![genesis_txn], None);
         let header = BlockHeader::genesis_block_header(
             parent_hash,
             timestamp,
@@ -359,11 +371,12 @@ impl Block {
             state_root,
             difficulty,
             nonce,
-            genesis_txn.chain_id(),
+            block_body.hash(),
+            chain_id,
         );
         Self {
             header,
-            body: BlockBody::new(vec![genesis_txn], None),
+            body: block_body,
         }
     }
 
@@ -492,8 +505,8 @@ pub struct BlockTemplate {
     pub state_root: HashValue,
     /// Gas used for contracts execution.
     pub gas_used: u64,
-    /// hash for uncle blocks header
-    pub uncle_hash: Option<HashValue>,
+    /// hash for block body
+    pub body_hash: HashValue,
     pub body: BlockBody,
     /// The chain id
     pub chain_id: ChainId,
@@ -510,7 +523,7 @@ impl BlockTemplate {
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
-        uncle_hash: Option<HashValue>,
+        body_hash: HashValue,
         body: BlockBody,
         chain_id: ChainId,
     ) -> Self {
@@ -524,7 +537,7 @@ impl BlockTemplate {
             accumulator_root,
             state_root,
             gas_used,
-            uncle_hash,
+            body_hash,
             body,
             chain_id,
         }
@@ -543,7 +556,7 @@ impl BlockTemplate {
             self.gas_used,
             difficulty,
             nonce,
-            self.uncle_hash,
+            self.body_hash,
             self.chain_id,
         );
         Block {
@@ -563,7 +576,7 @@ impl BlockTemplate {
             parent_block_accumulator_root: self.parent_block_accumulator_root,
             state_root: self.state_root,
             gas_used: self.gas_used,
-            uncle_hash: self.uncle_hash,
+            body_hash: self.body_hash,
             difficulty,
             chain_id: self.chain_id,
         }
@@ -582,7 +595,7 @@ impl BlockTemplate {
             self.gas_used,
             difficulty,
             nonce,
-            self.uncle_hash,
+            self.body_hash,
             self.chain_id,
         )
     }
@@ -599,7 +612,7 @@ impl BlockTemplate {
             state_root: block.header().state_root,
             gas_used: block.header().gas_used,
             body: block.body,
-            uncle_hash: block.header.uncle_hash,
+            body_hash: block.header.body_hash,
             chain_id: block.header.chain_id,
         }
     }

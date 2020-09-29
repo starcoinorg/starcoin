@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-chain-mock"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -37,7 +37,7 @@ starcoin-open-block = { path = "../open-block" }
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-network-rpc-api = { path = "../../network-rpc/api" }
 starcoin-network = { path = "../../network" }
-proptest = { version = "0.10.0", default-features = false, optional = true }
+proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 starcoin-account-api = { path = "../../account/api" }
 starcoin-account-lib = { path = "../../account/lib" }
@@ -45,7 +45,7 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-chain = { path = "../../chain" }
 
 [dev-dependencies]
-proptest = { version = "0.10.0" }
+proptest = "0.10.1"
 proptest-derive = { version = "0.2.0" }
 test-helper = { path = "../../test-helper" }
 

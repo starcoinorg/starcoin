@@ -8,4 +8,7 @@ use 0x1::TransactionPublishOption;
 fun add_to_script_allow_list(account: &signer, hash: vector<u8>) {
     TransactionPublishOption::add_to_script_allow_list(account, hash)
 }
+    spec fun add_to_script_allow_list {
+        pragma verify = false;
+    }
 }

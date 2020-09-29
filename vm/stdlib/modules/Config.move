@@ -30,27 +30,11 @@ module Config {
         value: ConfigValue,
     }
 
-    // Get a copy of `ConfigValue` value stored under account.
-    public fun get<ConfigValue: copyable>(account: &signer): ConfigValue acquires Config {
-        let addr = Signer::address_of(account);
-        assert(exists<Config<ConfigValue>>(addr), ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST());
-        *&borrow_global<Config<ConfigValue>>(addr).payload
-    }
-
-    spec fun get {
-        aborts_if !exists<Config<ConfigValue>>(Signer::spec_address_of(account));
-        ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
-    }
 
     spec module {
         define spec_get<ConfigValue>(addr: address): ConfigValue {
             global<Config<ConfigValue>>(addr).payload
         }
-    }
-
-    spec schema Get<ConfigValue> {
-        account: &signer;
-        aborts_if !exists<Config<ConfigValue>>(Signer::spec_address_of(account));
     }
 
     // Get a copy of `ConfigValue` value stored under `addr`.

@@ -16,13 +16,17 @@ use log::{debug, info, warn};
 use crate::{
     boogie_helpers::{
         boogie_byte_blob, boogie_caller_resource_memory_domain_name, boogie_declare_global,
-        boogie_field_name, boogie_global_declarator, boogie_local_type,
+        boogie_field_name, boogie_global_declarator, boogie_inv_expr, boogie_local_type,
         boogie_resource_memory_name, boogie_saved_resource_memory_name,
         boogie_self_resource_memory_domain_name, boogie_spec_fun_name, boogie_spec_var_name,
         boogie_struct_name, boogie_type_value, boogie_type_value_array,
         boogie_type_value_array_from_strings, boogie_well_formed_expr, WellFormedMode,
     },
     cli::Options,
+};
+use bytecode::{
+    function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder,
+    stackless_bytecode::SpecBlockId, usage_analysis,
 };
 use itertools::Itertools;
 use spec_lang::{
@@ -32,16 +36,12 @@ use spec_lang::{
     env::{
         ConditionInfo, ConditionTag, GlobalEnv, GlobalId, QualifiedId, SpecVarId,
         ABORTS_IF_IS_PARTIAL_PRAGMA, ABORTS_IF_IS_STRICT_PRAGMA, CONDITION_ABORT_ASSERT_PROP,
-        CONDITION_ABORT_ASSUME_PROP, CONDITION_ABSTRACT_PROP, CONDITION_CONCRETE_PROP,
-        CONDITION_EXPORT_PROP, CONDITION_INJECTED_PROP, CONDITION_ISOLATED, EXPORT_ENSURES_PRAGMA,
-        OPAQUE_PRAGMA, REQUIRES_IF_ABORTS,
+        CONDITION_ABORT_ASSUME_PROP, CONDITION_ABSTRACT_PROP, CONDITION_CHECK_ABORT_CODES_PROP,
+        CONDITION_CONCRETE_PROP, CONDITION_EXPORT_PROP, CONDITION_INJECTED_PROP,
+        CONDITION_ISOLATED_PROP, EXPORT_ENSURES_PRAGMA, OPAQUE_PRAGMA, REQUIRES_IF_ABORTS_PRAGMA,
     },
     symbol::Symbol,
     ty::TypeDisplayContext,
-};
-use stackless_bytecode_generator::{
-    function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder,
-    stackless_bytecode::SpecBlockId, usage_analysis,
 };
 use std::collections::BTreeSet;
 
@@ -49,11 +49,18 @@ const REQUIRES_FAILS_MESSAGE: &str = "precondition does not hold at this call";
 const ENSURES_FAILS_MESSAGE: &str = "post-condition does not hold";
 const ABORTS_IF_FAILS_MESSAGE: &str = "function does not abort under this condition";
 const ABORTS_NOT_COVERED: &str = "abort not covered by any of the `aborts_if` clauses";
+const ABORTS_WITH_CHECK_FAILS_MESSAGE: &str = "abort not covered by this check";
 const WRONG_ABORTS_CODE: &str = "function does not abort with any of the expected codes";
 const SUCCEEDS_IF_FAILS_MESSAGE: &str = "function does not succeed under this condition";
 const INVARIANT_FAILS_MESSAGE: &str = "data invariant does not hold";
+const INVARIANT_FAILS_FOR_REF_MESSAGE: &str =
+    "data invariant does not hold for value extracted from reference";
 const GLOBAL_INVARIANT_FAILS_MESSAGE: &str = "global memory invariant does not hold";
 const MODIFY_TARGET_FAILS_MESSAGE: &str = "caller does not have permission for this modify target";
+
+fn aborts_with_negative_check_fails_message(code: &dyn std::fmt::Display) -> String {
+    format!("abort with {} does never occur", code)
+}
 
 pub enum SpecEnv<'env> {
     Module(ModuleEnv<'env>),
@@ -492,39 +499,37 @@ impl<'a> ConditionDistribution<'a> {
         let abstract_ = get_prop(CONDITION_ABSTRACT_PROP);
         let concrete = get_prop(CONDITION_CONCRETE_PROP);
 
-        let external = (!injected || exported) && !concrete;
+        // Determines when a condition will be propagated to the caller. This is the case if
+        // the condition is not injected via a schema apply or it is explicitly marked
+        // as exported, and if it is not marked as concrete. Conditions which are not propagated
+        // are only applied to the verification entry point.
+        let propagated_to_intra_caller = !concrete;
+        let propagated_to_inter_caller = (!injected || exported) && propagated_to_intra_caller;
 
+        use FunctionEntryPoint::*;
         match entry_point {
-            FunctionEntryPoint::DirectInterModule if opaque => {
+            DirectInterModule if propagated_to_inter_caller && opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
-                    Requires if external => self.requires.push(cond),
-                    Ensures if external => self.ensures.push(cond),
-                    AbortsIf | AbortsWith | SucceedsIf if external && asserted => {
-                        self.requires.push(cond)
-                    }
-                    AbortsIf | AbortsWith | SucceedsIf if external && !assumed => {
-                        self.ensures.push(cond)
-                    }
+                    Requires => self.requires.push(cond),
+                    Ensures => self.ensures.push(cond),
+                    AbortsIf | AbortsWith | SucceedsIf if asserted => self.requires.push(cond),
+                    AbortsIf | AbortsWith | SucceedsIf if !assumed => self.ensures.push(cond),
                     _ => {}
                 }
             }
-            FunctionEntryPoint::DirectInterModule if !opaque => {
+            DirectInterModule if propagated_to_inter_caller && !opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
-                    Requires if external => self.requires.push(cond),
-                    Ensures if external || export_ensures => self.ensures.push(cond),
-                    AbortsIf | SucceedsIf if external && asserted => self.requires.push(cond),
-                    AbortsIf | AbortsWith | SucceedsIf if external && assumed => {
-                        self.entry_assumes.push(cond)
-                    }
-                    AbortsIf | AbortsWith | SucceedsIf if external || export_ensures => {
-                        self.ensures.push(cond)
-                    }
+                    Requires => self.requires.push(cond),
+                    Ensures if export_ensures => self.ensures.push(cond),
+                    AbortsIf | SucceedsIf if asserted => self.requires.push(cond),
+                    AbortsIf | AbortsWith | SucceedsIf if assumed => self.entry_assumes.push(cond),
+                    AbortsIf | AbortsWith | SucceedsIf if export_ensures => self.ensures.push(cond),
                     _ => {}
                 }
             }
-            FunctionEntryPoint::DirectIntraModule if opaque => {
+            DirectIntraModule if propagated_to_intra_caller && opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires | RequiresModule => self.requires.push(cond),
@@ -534,7 +539,7 @@ impl<'a> ConditionDistribution<'a> {
                     _ => {}
                 }
             }
-            FunctionEntryPoint::DirectIntraModule if !opaque => {
+            DirectIntraModule if propagated_to_intra_caller && !opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
                     Requires | RequiresModule => self.requires.push(cond),
@@ -545,19 +550,23 @@ impl<'a> ConditionDistribution<'a> {
                     _ => {}
                 }
             }
-            FunctionEntryPoint::Indirect if opaque => {
+            Indirect if propagated_to_inter_caller && opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
-                    Ensures if external || export_ensures => self.ensures.push(cond),
+                    Ensures if propagated_to_inter_caller || export_ensures => {
+                        self.ensures.push(cond)
+                    }
                     AbortsIf | AbortsWith | SucceedsIf
-                        if !assumed && !asserted && (external || export_ensures) =>
+                        if !assumed
+                            && !asserted
+                            && (propagated_to_inter_caller || export_ensures) =>
                     {
                         self.ensures.push(cond)
                     }
                     _ => {}
                 }
             }
-            FunctionEntryPoint::Indirect if !opaque => {
+            Indirect if propagated_to_inter_caller && !opaque => {
                 use ConditionKind::*;
                 match &cond.kind {
                     Ensures if export_ensures => self.ensures.push(cond),
@@ -568,15 +577,14 @@ impl<'a> ConditionDistribution<'a> {
                     _ => {}
                 }
             }
-            FunctionEntryPoint::Verification => {
+            Verification if !abstract_ => {
+                // All conditions are included unless marked as abstract.
                 use ConditionKind::*;
-                if !abstract_ {
-                    match &cond.kind {
-                        Requires | RequiresModule => self.entry_assumes.push(cond),
-                        Ensures => self.ensures.push(cond),
-                        AbortsIf | AbortsWith | SucceedsIf => self.ensures.push(cond),
-                        _ => {}
-                    }
+                match &cond.kind {
+                    Requires | RequiresModule => self.entry_assumes.push(cond),
+                    Ensures => self.ensures.push(cond),
+                    AbortsIf | AbortsWith | SucceedsIf => self.ensures.push(cond),
+                    _ => {}
                 }
             }
             _ => {}
@@ -624,6 +632,7 @@ impl<'env> SpecTranslator<'env> {
             for_entry_point,
             Definition | VerificationDefinition
         ));
+        let env = self.global_env();
         let func_target = self.function_target();
         let opaque = func_target.is_pragma_true(OPAQUE_PRAGMA, || false);
         let spec = func_target.get_spec();
@@ -637,7 +646,7 @@ impl<'env> SpecTranslator<'env> {
         // emit preconditions for modifies
         // TODO: implement optimization to make sure that modifies checking is done once and not repeatedly
         for (ty, targets) in func_target.get_modify_targets() {
-            let ty_name = boogie_caller_resource_memory_domain_name(func_target.global_env(), *ty);
+            let ty_name = boogie_caller_resource_memory_domain_name(env, *ty);
             for target in targets {
                 let loc = self.module_env().get_node_loc(target.node_id());
                 self.writer.set_location(&loc);
@@ -647,7 +656,6 @@ impl<'env> SpecTranslator<'env> {
                 let args = target.call_args();
                 let rty = &self.module_env().get_node_instantiation(node_id)[0];
                 let (_, _, targs) = rty.require_struct();
-                let env = self.global_env();
                 let type_args = boogie_type_value_array(env, targs);
                 emit!(self.writer, "{}[{}, a#$Address(", ty_name, type_args);
                 self.translate_exp(&args[0]);
@@ -677,15 +685,20 @@ impl<'env> SpecTranslator<'env> {
         // (P1 || .. || Pn) <==> abort_flag. However, we generate different code to get
         // better error positions. We also need to respect the pragma `aborts_if_is_partial`
         // which changes the iff above into an implies.
-        let aborts_with = distribution
+        let all_aborts_with = distribution
             .ensures
             .iter()
             .filter(kind_filter(ConditionKind::AbortsWith))
             .copied()
             .collect_vec();
+        let (check_aborts_with, aborts_with): (Vec<&Condition>, Vec<&Condition>) =
+            all_aborts_with.iter().partition(|cond| {
+                env.is_property_true(&cond.properties, CONDITION_CHECK_ABORT_CODES_PROP)
+                    .unwrap_or(false)
+            });
         let aborts_if_is_partial =
             func_target.is_pragma_true(ABORTS_IF_IS_PARTIAL_PRAGMA, || false);
-        if aborts_if.is_empty() && aborts_with.is_empty() {
+        if aborts_if.is_empty() && aborts_with.is_empty() && !self.options.prover.negative_checks {
             if !aborts_if_is_partial
                 && func_target.is_pragma_true(ABORTS_IF_IS_STRICT_PRAGMA, || false)
                 && for_entry_point == Verification
@@ -705,12 +718,14 @@ impl<'env> SpecTranslator<'env> {
             // good error positions which Pi is expected to cause failure but doesn't. (Boogie
             // reports positions only back per entire ensures, not individual sub-expression.)
             for c in &aborts_if {
-                self.writer.set_location(&c.loc);
-                self.set_condition_info(&c.loc, ConditionTag::Ensures, ABORTS_IF_FAILS_MESSAGE);
-                let (exp, _) = c.exp.extract_cond_and_aborts_code();
-                emit!(self.writer, "ensures b#$Boolean(old(");
-                self.translate_exp(exp);
-                emitln!(self.writer, ")) ==> $abort_flag;");
+                if !self.options.prover.negative_checks {
+                    self.writer.set_location(&c.loc);
+                    self.set_condition_info(&c.loc, ConditionTag::Ensures, ABORTS_IF_FAILS_MESSAGE);
+                    let (exp, _) = c.exp.extract_cond_and_aborts_code();
+                    emit!(self.writer, "ensures b#$Boolean(old(");
+                    self.translate_exp(exp);
+                    emitln!(self.writer, ")) ==> $abort_flag;");
+                }
             }
 
             // If aborts_if is configured to be total,
@@ -718,7 +733,10 @@ impl<'env> SpecTranslator<'env> {
             // is reported on this condition, we catch the case where the function aborts but no
             // conditions covers it. We use as a position for the ensures the function itself,
             // because reporting on (non-covering) aborts_if conditions is misleading.
-            if !aborts_if_is_partial && !aborts_if.is_empty() {
+            if !aborts_if_is_partial
+                && !aborts_if.is_empty()
+                && !self.options.prover.negative_checks
+            {
                 self.writer.set_location(&func_target.get_loc());
                 self.set_condition_info(
                     &func_target.get_loc(),
@@ -764,40 +782,83 @@ impl<'env> SpecTranslator<'env> {
                     // aborts code specification is meaningless, because the unspecified
                     // aborts conditions can produce arbitrary codes. We better report an
                     // error in this case instead of silently ignoring the aborts code spec.
-                    self.global_env().error(
+                    env.error(
                         &abort_code_loc,
                         "`aborts_if_is_partial` is set but \
                             there are no abort codes specified with `aborts_with` to cover \
                             the codes of the unspecified abort cases",
                     );
                 }
-                self.writer.set_location(&abort_code_loc);
-                self.set_condition_info(&abort_code_loc, ConditionTag::Ensures, WRONG_ABORTS_CODE);
-                emit!(self.writer, "ensures $abort_flag ==> (");
-                self.translate_seq(aborts_if.iter().copied(), "\n    ||", |c: &Condition| {
-                    let (exp, code_opt) = c.exp.extract_cond_and_aborts_code();
-                    emit!(self.writer, "(b#$Boolean(old(");
-                    self.translate_exp(exp);
-                    if let Some(code) = code_opt {
-                        emit!(self.writer, ")) &&\n       $abort_code == i#$Integer(");
-                        self.translate_exp(code);
-                        emit!(self.writer, "))");
-                    } else {
-                        emit!(self.writer, ")))");
-                    }
-                });
-                if !aborts_if.is_empty() && !aborts_with.is_empty() {
-                    emit!(self.writer, "\n    ||");
-                }
-                self.translate_seq(aborts_with.iter().copied(), "\n    ||", |c: &Condition| {
-                    let codes = c.exp.extract_abort_codes();
-                    self.translate_seq(codes.iter(), " || ", |code| {
-                        emit!(self.writer, "$abort_code == i#$Integer(");
-                        self.translate_exp(code);
-                        emit!(self.writer, ")");
+                if !self.options.prover.negative_checks {
+                    self.writer.set_location(&abort_code_loc);
+                    self.set_condition_info(
+                        &abort_code_loc,
+                        ConditionTag::Ensures,
+                        WRONG_ABORTS_CODE,
+                    );
+                    emit!(self.writer, "ensures $abort_flag ==> (");
+                    self.translate_seq(aborts_if.iter().copied(), "\n    ||", |c: &Condition| {
+                        let (exp, code_opt) = c.exp.extract_cond_and_aborts_code();
+                        emit!(self.writer, "(b#$Boolean(old(");
+                        self.translate_exp(exp);
+                        if let Some(code) = code_opt {
+                            emit!(self.writer, ")) &&\n       $abort_code == i#$Integer(");
+                            self.translate_exp(code);
+                            emit!(self.writer, "))");
+                        } else {
+                            emit!(self.writer, ")))");
+                        }
                     });
+                    if !aborts_if.is_empty() && !aborts_with.is_empty() {
+                        emit!(self.writer, "\n    ||");
+                    }
+                    self.translate_seq(aborts_with.iter().copied(), "\n    ||", |c: &Condition| {
+                        let codes = c.exp.extract_abort_codes();
+                        self.translate_seq(codes.iter(), " || ", |code| {
+                            emit!(self.writer, "$abort_code == i#$Integer(");
+                            self.translate_exp(code);
+                            emit!(self.writer, ")");
+                        });
+                    });
+                    emitln!(self.writer, ");");
+                }
+            }
+        }
+
+        // Generate standalone aborts code checks for `aborts_with [check]` conditions.
+        for c in check_aborts_with {
+            let codes = c.exp.extract_abort_codes();
+            // Generate positive check
+            if !self.options.prover.negative_checks {
+                self.writer.set_location(&c.loc);
+                self.set_condition_info(
+                    &c.loc,
+                    ConditionTag::Ensures,
+                    ABORTS_WITH_CHECK_FAILS_MESSAGE,
+                );
+                emit!(self.writer, "ensures $abort_flag ==> (");
+                self.translate_seq(codes.iter(), " || ", |code| {
+                    emit!(self.writer, "$abort_code == i#$Integer(");
+                    self.translate_exp(code);
+                    emit!(self.writer, ")");
                 });
                 emitln!(self.writer, ");");
+            }
+            // Generate negative checks
+            if self.options.prover.negative_checks {
+                for code in codes {
+                    let loc = self.module_env().get_node_loc(code.node_id());
+                    self.writer.set_location(&loc);
+                    self.set_negative_condition_info(
+                        &loc,
+                        ConditionTag::NegativeTest,
+                        &aborts_with_negative_check_fails_message(&code.display(env)),
+                    );
+                    emit!(self.writer, "ensures $abort_flag ==> ");
+                    emit!(self.writer, "$abort_code != i#$Integer(");
+                    self.translate_exp(code);
+                    emitln!(self.writer, ");")
+                }
             }
         }
 
@@ -848,12 +909,16 @@ impl<'env> SpecTranslator<'env> {
         {
             for (i, ty) in func_target.get_return_types().iter().enumerate() {
                 let result_name = format!("$ret{}", i);
-                let check = boogie_well_formed_expr(
-                    self.global_env(),
-                    &result_name,
-                    ty,
-                    WellFormedMode::Default,
-                );
+                let mode = if func_target.is_public()
+                    || func_target.get_input_for_return_index(i).is_none()
+                {
+                    WellFormedMode::WithInvariant
+                } else {
+                    // This is input for a former &mut parameter of a private function.
+                    // The invariant is not guaranteed to hold.
+                    WellFormedMode::WithoutInvariant
+                };
+                let check = boogie_well_formed_expr(env, &result_name, ty, mode);
                 if !check.is_empty() {
                     emitln!(self.writer, "ensures {};", check)
                 }
@@ -887,7 +952,7 @@ impl<'env> SpecTranslator<'env> {
             if !matches!(
                 cond.kind,
                 ConditionKind::AbortsIf | ConditionKind::SucceedsIf
-            ) && func_target.is_pragma_true(REQUIRES_IF_ABORTS, || false)
+            ) && func_target.is_pragma_true(REQUIRES_IF_ABORTS_PRAGMA, || false)
             {
                 for aborts in aborts_if {
                     let (exp, _) = aborts.exp.extract_cond_and_aborts_code();
@@ -977,7 +1042,7 @@ impl<'env> SpecTranslator<'env> {
             self.writer.indent();
             emitln!(
                 self.writer,
-                "{}_is_well_formed({})",
+                "{}_$is_well_formed({})",
                 boogie_struct_name(&struct_env),
                 get_resource,
             );
@@ -1058,6 +1123,15 @@ impl<'env> SpecTranslator<'env> {
         self.global_env()
             .set_condition_info(loc.clone(), tag, ConditionInfo::for_message(message));
     }
+
+    /// Sets info for negative verification condition.
+    fn set_negative_condition_info(&self, loc: &Loc, tag: ConditionTag, message: &str) {
+        self.global_env().set_condition_info(
+            loc.clone(),
+            tag,
+            ConditionInfo::for_message(message).negative(),
+        );
+    }
 }
 
 /// Invariants
@@ -1067,8 +1141,10 @@ impl<'env> SpecTranslator<'env> {
     /// Emits functions and procedures needed for invariants.
     pub fn translate_invariant_functions(&self) {
         self.translate_assume_well_formed();
-        self.translate_before_update_invariant();
-        self.translate_after_update_invariant();
+        self.translate_unpack_ref(true);
+        self.translate_unpack_ref(false);
+        self.translate_pack_ref(true);
+        self.translate_pack_ref(false);
     }
 
     /// Generates functions which assumes the struct to be well-formed. The first function
@@ -1077,67 +1153,104 @@ impl<'env> SpecTranslator<'env> {
     /// the struct is not mutated.
     fn translate_assume_well_formed(&self) {
         let struct_env = self.struct_env();
-        let emit_field_checks = |mode: WellFormedMode| {
-            emitln!(self.writer, "$Vector_is_well_formed($this)");
-            emitln!(
-                self.writer,
-                "&& $vlen($this) == {}",
-                struct_env.get_fields().count()
-            );
+        let emit_field_checks = |with_types: bool, mode: WellFormedMode| -> bool {
+            let mut empty = true;
+            if with_types {
+                emitln!(self.writer, "$Vector_$is_well_formed($this)");
+                emitln!(
+                    self.writer,
+                    "&& $vlen($this) == {}",
+                    struct_env.get_fields().count()
+                );
+                empty = false;
+            }
             for field in struct_env.get_fields() {
                 let select = format!("$SelectField($this, {})", boogie_field_name(&field));
-                let type_check = boogie_well_formed_expr(
-                    struct_env.module_env.env,
-                    &select,
-                    &field.get_type(),
-                    mode,
-                );
-                if !type_check.is_empty() {
-                    emitln!(self.writer, "  && {}", type_check);
+                let check = if with_types {
+                    boogie_well_formed_expr(
+                        struct_env.module_env.env,
+                        &select,
+                        &field.get_type(),
+                        mode,
+                    )
+                } else {
+                    boogie_inv_expr(struct_env.module_env.env, &select, &field.get_type())
+                };
+                if !check.is_empty() {
+                    if !empty {
+                        emit!(self.writer, "  && ");
+                    }
+                    emitln!(self.writer, "{}", check);
+                    empty = false;
                 }
             }
+            empty
         };
         emitln!(
             self.writer,
-            "function {{:inline}} {}_is_well_formed_types($this: $Value): bool {{",
+            "function {{:inline}} {}_$is_well_typed($this: $Value): bool {{",
             boogie_struct_name(struct_env),
         );
         self.writer.indent();
-        emit_field_checks(WellFormedMode::WithoutInvariant);
+        emit_field_checks(true, WellFormedMode::WithoutInvariant);
         self.writer.unindent();
         emitln!(self.writer, "}");
 
         emitln!(
             self.writer,
-            "function {{:inline}} {}_is_well_formed($this: $Value): bool {{",
+            "function {{:inline}} {}_$invariant_holds($this: $Value): bool {{",
             boogie_struct_name(struct_env),
         );
         self.writer.indent();
-        emit_field_checks(WellFormedMode::WithInvariant);
+        let mut empty = emit_field_checks(false, WellFormedMode::WithInvariant);
         for inv in struct_env.get_spec().filter_kind(ConditionKind::Invariant) {
-            emit!(self.writer, "  && b#$Boolean(");
+            if !empty {
+                emit!(self.writer, "  && ");
+            }
+            emit!(self.writer, "b#$Boolean(");
             self.with_invariant_target("$this", "", || self.translate_exp(&inv.exp));
             emitln!(self.writer, ")");
+            empty = false;
         }
+        if empty {
+            emitln!(self.writer, "true");
+        }
+        self.writer.unindent();
+        emitln!(self.writer, "}");
+        emitln!(self.writer);
+
+        emitln!(
+            self.writer,
+            "function {{:inline}} {}_$is_well_formed($this: $Value): bool {{",
+            boogie_struct_name(struct_env),
+        );
+        self.writer.indent();
+        // emit_field_checks(true, WellFormedMode::WithInvariant);
+        emit!(
+            self.writer,
+            "{}_$is_well_typed($this) && {}_$invariant_holds($this)",
+            boogie_struct_name(struct_env),
+            boogie_struct_name(struct_env)
+        );
         self.writer.unindent();
         emitln!(self.writer, "}");
         emitln!(self.writer);
     }
 
     /// Determines whether a before-update invariant is generated for this struct.
-    pub fn has_before_update_invariant(struct_env: &StructEnv<'_>) -> bool {
+    pub fn has_unpack_ref(struct_env: &StructEnv<'_>) -> bool {
         use ConditionKind::*;
         struct_env.get_spec().any(|c| matches!(c.kind, VarUpdate(..)|VarUnpack(..)|Invariant))
                 // If any of the fields has it, it inherits to the struct.
                 || struct_env.get_fields().any(|fe| {
-                    Self::has_before_update_invariant_ty(struct_env.module_env.env, &fe.get_type())
+                    Self::has_unpack_ref_ty(struct_env.module_env.env, &fe.get_type())
                 })
     }
 
     /// Determines whether a before-update invariant is generated for this type.
-    pub fn has_before_update_invariant_ty(env: &GlobalEnv, ty: &Type) -> bool {
+    pub fn has_unpack_ref_ty(env: &GlobalEnv, ty: &Type) -> bool {
         if let Some((struct_env, _)) = ty.get_struct(env) {
-            Self::has_before_update_invariant(&struct_env)
+            Self::has_unpack_ref(&struct_env)
         } else {
             // TODO: vectors
             false
@@ -1152,15 +1265,16 @@ impl<'env> SpecTranslator<'env> {
     }
 
     /// Generates a procedure which asserts the before-update invariants of the struct.
-    pub fn translate_before_update_invariant(&self) {
+    pub fn translate_unpack_ref(&self, deep: bool) {
         let struct_env = self.struct_env();
-        if !Self::has_before_update_invariant(struct_env) {
+        if !Self::has_unpack_ref(struct_env) {
             return;
         }
         emitln!(
             self.writer,
-            "procedure {{:inline 1}} {}_before_update_inv({}) {{",
+            "procedure {{:inline 1}} {}_$unpack_ref{}({}) {{",
             boogie_struct_name(struct_env),
+            if deep { "_deep" } else { "" },
             Self::translate_type_parameters(struct_env)
                 .into_iter()
                 .chain(vec!["$before: $Value".to_string()])
@@ -1168,35 +1282,37 @@ impl<'env> SpecTranslator<'env> {
         );
         self.writer.indent();
 
-        // Emit call to before update invariant procedure for all fields which have one by their own.
-        for fe in struct_env.get_fields() {
-            if let Some((nested_struct_env, ty_args)) =
-                fe.get_type().get_struct(struct_env.module_env.env)
-            {
-                if Self::has_before_update_invariant(&nested_struct_env) {
-                    let field_name = boogie_field_name(&fe);
-                    let args = ty_args
-                        .iter()
-                        .map(|ty| self.translate_type(ty))
-                        .chain(vec![format!("$SelectField($before, {})", field_name)].into_iter())
-                        .join(", ");
-                    emitln!(
-                        self.writer,
-                        "call {}_before_update_inv({});",
-                        boogie_struct_name(&nested_struct_env),
-                        args,
-                    );
+        if deep {
+            // Emit call to before update invariant procedure for all fields which have one by their own.
+            for fe in struct_env.get_fields() {
+                if let Some((nested_struct_env, ty_args)) =
+                    fe.get_type().get_struct(struct_env.module_env.env)
+                {
+                    if Self::has_unpack_ref(&nested_struct_env) {
+                        let field_name = boogie_field_name(&fe);
+                        let args = ty_args
+                            .iter()
+                            .map(|ty| self.translate_type(ty))
+                            .chain(
+                                vec![format!("$SelectField($before, {})", field_name)].into_iter(),
+                            )
+                            .join(", ");
+                        emitln!(
+                            self.writer,
+                            "call {}_$unpack_ref({});",
+                            boogie_struct_name(&nested_struct_env),
+                            args,
+                        );
+                    }
                 }
             }
         }
 
         // Emit data invariants for this struct.
-        let spec = struct_env.get_spec();
-        self.emit_invariants_assume_or_assert(
-            "$before",
-            "",
-            true,
-            spec.filter_kind(ConditionKind::Invariant),
+        emitln!(
+            self.writer,
+            "assume {}_$invariant_holds($before);",
+            boogie_struct_name(struct_env)
         );
 
         // Emit call to spec var updates via unpack invariants.
@@ -1214,19 +1330,19 @@ impl<'env> SpecTranslator<'env> {
     }
 
     /// Determines whether a after-update invariant is generated for this struct.
-    pub fn has_after_update_invariant(struct_env: &StructEnv<'_>) -> bool {
+    pub fn pack_ref(struct_env: &StructEnv<'_>) -> bool {
         use ConditionKind::*;
         struct_env.get_spec().any(|c| matches!(c.kind, VarUpdate(..)|VarPack(..)|Invariant))
             // If any of the fields has it, it inherits to the struct.
             || struct_env.get_fields().any(|fe| {
-                Self::has_after_update_invariant_ty(struct_env.module_env.env, &fe.get_type())
+                Self::has_pack_ref_ty(struct_env.module_env.env, &fe.get_type())
             })
     }
 
     /// Determines whether a after-update invariant is generated for this type.
-    pub fn has_after_update_invariant_ty(env: &GlobalEnv, ty: &Type) -> bool {
+    pub fn has_pack_ref_ty(env: &GlobalEnv, ty: &Type) -> bool {
         if let Some((struct_env, _)) = ty.get_struct(env) {
-            Self::has_after_update_invariant(&struct_env)
+            Self::pack_ref(&struct_env)
         } else {
             // TODO: vectors
             false
@@ -1234,15 +1350,16 @@ impl<'env> SpecTranslator<'env> {
     }
 
     /// Generates a procedure which asserts the after-update invariants of the struct.
-    pub fn translate_after_update_invariant(&self) {
+    pub fn translate_pack_ref(&self, deep: bool) {
         let struct_env = self.struct_env();
-        if !Self::has_after_update_invariant(struct_env) {
+        if !Self::pack_ref(struct_env) {
             return;
         }
         emitln!(
             self.writer,
-            "procedure {{:inline 1}} {}_after_update_inv({}) {{",
+            "procedure {{:inline 1}} {}_$pack_ref{}({}) {{",
             boogie_struct_name(struct_env),
+            if deep { "_deep" } else { "" },
             Self::translate_type_parameters(struct_env)
                 .into_iter()
                 .chain(vec!["$after: $Value".to_string()])
@@ -1250,29 +1367,36 @@ impl<'env> SpecTranslator<'env> {
         );
         self.writer.indent();
 
-        // Emit call to after update invariant procedure for all fields which have one by their own.
-        for fe in struct_env.get_fields() {
-            if let Some((nested_struct_env, ty_args)) =
-                fe.get_type().get_struct(struct_env.module_env.env)
-            {
-                if Self::has_after_update_invariant(&nested_struct_env) {
-                    let field_name = boogie_field_name(&fe);
-                    let args = ty_args
-                        .iter()
-                        .map(|ty| self.translate_type(ty))
-                        .chain(vec![format!("$SelectField($after, {})", field_name)].into_iter())
-                        .join(", ");
-                    emitln!(
-                        self.writer,
-                        "call {}_after_update_inv({});",
-                        boogie_struct_name(&nested_struct_env),
-                        args
-                    );
+        if deep {
+            // Emit call to after update invariant procedure for all fields which have
+            // one by their own.
+            for fe in struct_env.get_fields() {
+                if let Some((nested_struct_env, ty_args)) =
+                    fe.get_type().get_struct(struct_env.module_env.env)
+                {
+                    if Self::pack_ref(&nested_struct_env) {
+                        let field_name = boogie_field_name(&fe);
+                        let args = ty_args
+                            .iter()
+                            .map(|ty| self.translate_type(ty))
+                            .chain(
+                                vec![format!("$SelectField($after, {})", field_name)].into_iter(),
+                            )
+                            .join(", ");
+                        emitln!(
+                            self.writer,
+                            "call {}_$pack_ref({});",
+                            boogie_struct_name(&nested_struct_env),
+                            args
+                        );
+                    }
                 }
             }
         }
 
-        // Emit data invariants for this struct.
+        // Emit asserts for data invariants for this struct. We emit each in a single assert
+        // statement for better error diagnosis instead of calling the invariant_holds function
+        // of the struct.
         let spec = struct_env.get_spec();
         self.emit_invariants_assume_or_assert(
             "$after",
@@ -1454,7 +1578,7 @@ impl<'env> SpecTranslator<'env> {
                 .get_global_invariant(*id)
                 .and_then(|inv| {
                     self.global_env()
-                        .is_property_true(&inv.properties, CONDITION_ISOLATED)
+                        .is_property_true(&inv.properties, CONDITION_ISOLATED_PROP)
                 })
                 .unwrap_or(false)
         };
@@ -1553,6 +1677,15 @@ impl<'env> SpecTranslator<'env> {
             );
             translator_for_exp.translate_exp(&inv.cond);
             emitln!(self.writer, ");")
+        }
+    }
+
+    /// Emit an assert of the data invariant for the given type.
+    pub fn emit_data_invariant_assert_for_ref_read(&self, loc: &Loc, ty: &Type, dest: &str) {
+        let inv_check = boogie_inv_expr(self.global_env(), dest, ty);
+        if !inv_check.is_empty() {
+            self.set_condition_info(loc, ConditionTag::Ensures, INVARIANT_FAILS_FOR_REF_MESSAGE);
+            emitln!(self.writer, "assert {};", inv_check);
         }
     }
 }
@@ -1712,11 +1845,12 @@ impl<'env> SpecTranslator<'env> {
                     // and needs to be fixed.
                     if let Some(local_index) = func_target.get_local_index(name) {
                         if *self.in_assert_or_assume.borrow() {
-                            if let Some(proxy_index) = if ty.is_reference() {
+                            let proxy = if ty.is_reference() {
                                 func_target.get_ref_proxy_index(*local_index)
                             } else {
                                 func_target.get_proxy_index(*local_index)
-                            } {
+                            };
+                            if let Some(proxy_index) = proxy {
                                 var_name = func_target
                                     .symbol_pool()
                                     .string(func_target.get_local_name(*proxy_index));
@@ -1787,6 +1921,9 @@ impl<'env> SpecTranslator<'env> {
             Operation::Tuple => self.error(&loc, "Tuple not yet supported"),
             Operation::Select(module_id, struct_id, field_id) => {
                 self.translate_select(*module_id, *struct_id, *field_id, args)
+            }
+            Operation::UpdateField(module_id, struct_id, field_id) => {
+                self.translate_update_field(*module_id, *struct_id, *field_id, args)
             }
             Operation::Local(sym) => {
                 self.translate_local_var(node_id, *sym);
@@ -1887,7 +2024,7 @@ impl<'env> SpecTranslator<'env> {
         };
         for memory in &fun_decl.used_memory {
             maybe_comma();
-            let memory = boogie_resource_memory_name(self.global_env(), *memory);
+            let memory = self.get_memory_name(*memory);
             emit!(self.writer, &memory);
         }
         for QualifiedId {
@@ -1934,6 +2071,24 @@ impl<'env> SpecTranslator<'env> {
             self.translate_exp(&args[0]);
         }
         emit!(self.writer, ", {})", field_name);
+    }
+
+    fn translate_update_field(
+        &self,
+        module_id: ModuleId,
+        struct_id: StructId,
+        field_id: FieldId,
+        args: &[Exp],
+    ) {
+        let module_env = self.global_env().get_module(module_id);
+        let struct_env = module_env.get_struct(struct_id);
+        let field_env = struct_env.get_field(field_id);
+        let field_name = boogie_field_name(&field_env);
+        emit!(self.writer, "$UpdateField(");
+        self.translate_exp(&args[0]);
+        emit!(self.writer, ", {}, ", field_name);
+        self.translate_exp(&args[1]);
+        emit!(self.writer, ")");
     }
 
     fn translate_type_value(&self, node_id: NodeId) {
@@ -2021,7 +2176,7 @@ impl<'env> SpecTranslator<'env> {
                         self.global_env(),
                         &var_name,
                         &domain_ty,
-                        WellFormedMode::Default,
+                        WellFormedMode::WithInvariant,
                     );
                     if type_check.is_empty() {
                         let tctx = TypeDisplayContext::WithEnv {
