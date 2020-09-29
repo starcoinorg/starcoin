@@ -502,17 +502,16 @@ impl StarcoinVM {
         remote_cache: &mut StateViewCache<'_>,
         block_metadata: BlockMetadata,
     ) -> Result<TransactionOutput, VMStatus> {
-        let mut txn_data = TransactionMetadata::default();
-        //process block metadata by genesis.
-        txn_data.sender = account_config::genesis_address();
-
+        let txn_sender = account_config::genesis_address();
+        // always use 0 gas for system.
+        let max_gas_amount = GasUnits::new(0);
         let gas_schedule = zero_cost_schedule();
-        let mut cost_strategy = CostStrategy::system(&gas_schedule, txn_data.max_gas_amount());
+        let mut cost_strategy = CostStrategy::system(&gas_schedule, max_gas_amount);
 
         let (parent_id, timestamp, author, author_public_key, uncles, number, chain_id) =
             block_metadata.into_inner();
         let args = vec![
-            Value::transaction_argument_signer_reference(txn_data.sender),
+            Value::transaction_argument_signer_reference(txn_sender),
             Value::vector_u8(parent_id.to_vec()),
             Value::u64(timestamp),
             Value::address(author),
@@ -531,7 +530,7 @@ impl StarcoinVM {
                 &account_config::BLOCK_PROLOGUE_NAME,
                 vec![],
                 args,
-                txn_data.sender(),
+                txn_sender,
                 &mut cost_strategy,
             )
             .or_else(convert_prologue_runtime_error)?;
@@ -539,7 +538,7 @@ impl StarcoinVM {
             &mut (),
             session,
             &cost_strategy,
-            &txn_data,
+            max_gas_amount,
             KeptVMStatus::Executed,
         )?)
     }
@@ -735,7 +734,7 @@ impl StarcoinVM {
                 &mut (),
                 session,
                 &cost_strategy,
-                txn_data,
+                txn_data.max_gas_amount,
                 KeptVMStatus::Executed,
             )?,
         ))
@@ -763,9 +762,14 @@ impl StarcoinVM {
                 {
                     return discard_error_vm_status(e);
                 }
-                let txn_output =
-                    get_transaction_output(&mut (), session, &cost_strategy, txn_data, status)
-                        .unwrap_or_else(|e| discard_error_vm_status(e).1);
+                let txn_output = get_transaction_output(
+                    &mut (),
+                    session,
+                    &cost_strategy,
+                    txn_data.max_gas_amount,
+                    status,
+                )
+                .unwrap_or_else(|e| discard_error_vm_status(e).1);
                 (error_code, txn_output)
             }
             TransactionStatus::Discard(status) => {
@@ -915,13 +919,10 @@ pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
     ap_cache: &mut A,
     session: Session<R>,
     cost_strategy: &CostStrategy,
-    txn_data: &TransactionMetadata,
+    max_gas_amount: GasUnits<GasCarrier>,
     status: KeptVMStatus,
 ) -> Result<TransactionOutput, VMStatus> {
-    let gas_used: u64 = txn_data
-        .max_gas_amount()
-        .sub(cost_strategy.remaining_gas())
-        .get();
+    let gas_used: u64 = max_gas_amount.sub(cost_strategy.remaining_gas()).get();
 
     let effects = session.finish().map_err(|e| e.into_vm_status())?;
     let (write_set, events) = txn_effects_to_writeset_and_events_cached(ap_cache, effects)?;
