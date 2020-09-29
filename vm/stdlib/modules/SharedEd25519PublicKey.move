@@ -40,8 +40,8 @@ module SharedEd25519PublicKey {
     }
 
     spec fun publish {
-        pragma verify = false;
         aborts_if !exists<Account::Account>(Signer::spec_address_of(account));
+        aborts_if 0x1::Option::spec_is_none(global<Account::Account>(Signer::spec_address_of(account)).key_rotation_capability);
         aborts_if !exists<Account::Account>(
                   0x1::Option::spec_get<Account::KeyRotationCapability>(
                       global<Account::Account>(Signer::spec_address_of(account))

@@ -119,6 +119,7 @@ module Vector {
         pop_back(v)
     }
 
+    // Split a vector into sub-vectors of size sub_len,
     public fun split<Element: copyable>(v: &vector<Element>, sub_len: u64): vector<vector<Element>> {
         let result = empty<vector<Element>>();
         let len = length(v) / sub_len;
@@ -154,7 +155,8 @@ module Vector {
     }
 
     spec fun split {
-        pragma verify = false;
+        pragma verify = false; // timeout, skip
+        aborts_if sub_len == 0;
     }
     // ------------------------------------------------------------------------
     // Specification
