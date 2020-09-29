@@ -1,5 +1,5 @@
 use crate::pool::AccountSeqNumberClient;
-use crate::TxStatus;
+use crate::{TxPoolActorService, TxPoolService, TxStatus};
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
@@ -8,8 +8,11 @@ use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
     DEFAULT_MAX_GAS_AMOUNT,
 };
+use starcoin_genesis::Genesis;
 // use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
+use starcoin_service_registry::bus::BusService;
+use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
@@ -54,7 +57,7 @@ impl AccountSeqNumberClient for MockNonceClient {
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
     let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
-    let txn = generate_txn(config);
+    let txn = generate_txn(config, 0);
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
     assert_eq!(pendings.len(), 1);
@@ -95,6 +98,52 @@ async fn test_tx_pool() -> Result<()> {
 async fn test_subscribe_txns() {
     let (pool, ..) = test_helper::start_txpool().await;
     let _ = pool.subscribe_txns();
+}
+
+#[stest::test]
+async fn test_pool_pending() -> Result<()> {
+    let mut config = NodeConfig::random_for_test();
+    let count = 5;
+    config.tx_pool.max_count = count;
+    let node_config = Arc::new(config);
+
+    let (storage, _startup_info, _) =
+        Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
+    let registry = RegistryService::launch();
+    registry.put_shared(node_config.clone()).await.unwrap();
+    registry.put_shared(storage.clone()).await.unwrap();
+    let bus = registry.service_ref::<BusService>().await.unwrap();
+    registry.put_shared(bus).await.unwrap();
+
+    let _ = registry.register::<TxPoolActorService>().await.unwrap();
+    delay_for(Duration::from_millis(200)).await;
+    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
+
+    let mut txn_vec = vec![];
+    let mut index = 0;
+    loop {
+        txn_vec.push(generate_txn(node_config.clone(), index));
+        index += 1;
+        if index > count * 2 {
+            break;
+        }
+    }
+    let _ = txpool_service.add_txns(txn_vec.clone());
+    let pending = txpool_service.get_pending_txns(Some(count), None);
+    assert!(!pending.is_empty());
+    delay_for(Duration::from_millis(200)).await;
+
+    txn_vec.clear();
+    loop {
+        txn_vec.push(generate_txn(node_config.clone(), index));
+        index += 1;
+        if index > count * 4 {
+            break;
+        }
+    }
+    let _ = txpool_service.add_txns(txn_vec.clone());
+    delay_for(Duration::from_millis(200)).await;
+    Ok(())
 }
 
 #[stest::test]
@@ -188,7 +237,7 @@ async fn test_rollback() -> Result<()> {
 async fn test_txpool_actor_service() {
     let (_txpool_service, _storage, config, tx_pool_actor, _registry) =
         test_helper::start_txpool().await;
-    let txn = generate_txn(config);
+    let txn = generate_txn(config, 0);
 
     tx_pool_actor
         .notify(PeerTransactions::new(vec![txn.clone()]))
@@ -202,7 +251,7 @@ async fn test_txpool_actor_service() {
     delay_for(Duration::from_millis(300)).await;
 }
 
-fn generate_txn(config: Arc<NodeConfig>) -> SignedUserTransaction {
+fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = create_signed_txn_with_association_account(
@@ -212,7 +261,7 @@ fn generate_txn(config: Arc<NodeConfig>) -> SignedUserTransaction {
             public_key.to_bytes().to_vec(),
             10000,
         )),
-        0,
+        seq,
         DEFAULT_MAX_GAS_AMOUNT,
         1,
         2,

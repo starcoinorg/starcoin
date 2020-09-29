@@ -29,7 +29,6 @@ mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
-use starcoin_logger::prelude::*;
 //TODO refactor TxPoolService and rename.
 #[derive(Clone)]
 pub struct TxPoolActorService {
@@ -88,7 +87,6 @@ impl ActorService for TxPoolActorService {
 /// Listen to txn status, and propagate to remote peers if necessary.
 impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
     fn handle_event(&mut self, item: TxnStatusFullEvent, ctx: &mut ServiceContext<Self>) {
-        debug!("TxPoolActorService handle event: {:?}", item.clone());
         {
             let status = self.inner.pool_status().status;
             let mem_usage = status.mem_usage;
@@ -128,10 +126,6 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
         if txns.is_empty() {
             return;
         }
-        debug!(
-            "TxPoolActorService handle ok, broadcast: {:?}",
-            txns.clone()
-        );
         ctx.broadcast(PropagateNewTransactions::new(txns));
     }
 }

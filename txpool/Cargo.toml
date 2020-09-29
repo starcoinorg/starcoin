@@ -23,13 +23,14 @@ serde_derive = "1.0"
 parking_lot = "0.11"
 linked-hash-map = "0.5"
 trace-time = "0.1"
+futures-timer = "3.0"
 starcoin-logger = {path = "../commons/logger"}
 stest = {path = "../commons/stest"}
 types = { package = "starcoin-types", path = "../types"}
 starcoin-txpool-api = {package = "starcoin-txpool-api", path ="api"}
 starcoin-state-api = {path = "../state/api"}
 crypto = {package = "starcoin-crypto", path = "../commons/crypto"}
-transaction-pool = "2.0.2"
+transaction-pool = "2.0.3"
 storage = {path = "../storage", package="starcoin-storage"}
 starcoin-statedb={ path="../state/statedb" }
 forkable-jellyfish-merkle = {path="../core/forkable-jellyfish-merkle"}

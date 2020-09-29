@@ -324,39 +324,10 @@ impl TransactionQueue {
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }
+        dbg!(self.status());
 
         results
     }
-
-    // /// Returns all transactions in the queue without explicit ordering.
-    // pub fn all_transactions(&self) -> Vec<Arc<pool::VerifiedTransaction>> {
-    //     let ready = |_tx: &pool::VerifiedTransaction| tx_pool::Readiness::Ready;
-    //     self.pool.unordered_pending(ready).collect()
-    // }
-
-    // /// Returns all transaction hashes in the queue without explicit ordering.
-    // pub fn all_transaction_hashes(&self) -> Vec<HashValue> {
-    //     let ready = |_tx: &pool::VerifiedTransaction| tx_pool::Readiness::Ready;
-    //     self.pool
-    //         .unordered_pending(ready)
-    //         .map(|tx| tx.hash)
-    //         .collect()
-    // }
-
-    // /// Computes unordered set of pending hashes.
-    // ///
-    // /// Since strict nonce-checking is not required, you may get some false positive future transactions as well.
-    // pub fn pending_hashes<N>(&self, nonce: N) -> BTreeSet<HashValue>
-    // where
-    //     N: Fn(&Address) -> Option<Nonce>,
-    // {
-    //     let ready = ready::OptionalState::new(nonce);
-    //     self.pool
-    //         .read()
-    //         .unordered_pending(ready)
-    //         .map(|tx| tx.hash)
-    //         .collect()
-    // }
 
     /// Returns current pending transactions ordered by priority.
     ///
@@ -378,15 +349,6 @@ impl TransactionQueue {
             ordering,
         } = settings;
 
-        // if let Some(pending) = self.cached_pending.pending(
-        //     block_number,
-        //     current_timestamp,
-        //     nonce_cap.as_ref(),
-        //     max_len,
-        // ) {
-        //     return pending;
-        // }
-
         let ready = Self::ready(client, block_number, current_timestamp);
 
         match ordering {
@@ -398,17 +360,7 @@ impl TransactionQueue {
                 .unordered_pending(ready)
                 .take(max_len)
                 .collect(),
-            PendingOrdering::Priority => {
-                self.pool.read().pending(ready).take(max_len).collect()
-                // *cached_pending = CachedPending {
-                //     block_number,
-                //     current_timestamp,
-                //     nonce_cap,
-                //     has_local_pending: self.has_local_pending_transactions(),
-                //     pending: Some(pending.clone()),
-                //     max_len,
-                // };
-            }
+            PendingOrdering::Priority => self.pool.read().pending(ready).take(max_len).collect(),
         }
     }
 
