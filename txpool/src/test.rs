@@ -9,7 +9,6 @@ use starcoin_executor::{
     DEFAULT_MAX_GAS_AMOUNT,
 };
 use starcoin_genesis::Genesis;
-// use starcoin_logger::prelude::*;
 use starcoin_open_block::OpenedBlock;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
@@ -100,7 +99,7 @@ async fn test_subscribe_txns() {
     let _ = pool.subscribe_txns();
 }
 
-#[stest::test]
+#[stest::test(timeout = 200)]
 async fn test_pool_pending() -> Result<()> {
     let mut config = NodeConfig::random_for_test();
     let count = 5;
@@ -129,8 +128,6 @@ async fn test_pool_pending() -> Result<()> {
         }
     }
     let _ = txpool_service.add_txns(txn_vec.clone());
-    let pending = txpool_service.get_pending_txns(Some(count), None);
-    assert!(!pending.is_empty());
     delay_for(Duration::from_millis(200)).await;
 
     txn_vec.clear();
@@ -142,6 +139,8 @@ async fn test_pool_pending() -> Result<()> {
         }
     }
     let _ = txpool_service.add_txns(txn_vec.clone());
+    let pending = txpool_service.get_pending_txns(Some(count), None);
+    assert!(!pending.is_empty());
     delay_for(Duration::from_millis(200)).await;
     Ok(())
 }

@@ -324,8 +324,6 @@ impl TransactionQueue {
         if results.iter().any(|r| r.is_ok()) {
             self.cached_pending.write().clear();
         }
-        dbg!(self.status());
-
         results
     }
 
