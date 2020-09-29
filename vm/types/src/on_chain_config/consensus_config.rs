@@ -180,7 +180,7 @@ impl EpochInfo {
     }
 
     pub fn epoch_number(&self) -> u64 {
-        self.epoch_number
+        self.epoch.epoch_number()
     }
 }
 
