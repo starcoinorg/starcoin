@@ -10,8 +10,22 @@ metadata:
 spec:
   ports:
   - port: 9840
+    name: node
     protocol: TCP
     targetPort: 9840
+  - port: 9850
+    name: http-rpc
+    protocol: TCP
+    targetPort: 9850
+  - port: 9860
+    name: tcp-rpc
+    protocol: TCP
+    targetPort: 9860
+  - port: 9870
+    name: ws-rpc
+    protocol: TCP
+    targetPort: 9870
+    
   selector:
     app: starcoin
     network: proxima
@@ -32,8 +46,21 @@ metadata:
 spec:
   ports:
   - port: 9840
+    name: node
     protocol: TCP
     targetPort: 9840
+  - port: 9850
+    name: http-rpc
+    protocol: TCP
+    targetPort: 9850
+  - port: 9860
+    name: tcp-rpc
+    protocol: TCP
+    targetPort: 9860
+  - port: 9870
+    name: ws-rpc
+    protocol: TCP
+    targetPort: 9870
   selector:
     app: starcoin
     network: proxima
@@ -54,8 +81,21 @@ metadata:
 spec:
   ports:
   - port: 9840
+    name: node
     protocol: TCP
     targetPort: 9840
+  - port: 9850
+    name: http-rpc
+    protocol: TCP
+    targetPort: 9850
+  - port: 9860
+    name: tcp-rpc
+    protocol: TCP
+    targetPort: 9860
+  - port: 9870
+    name: ws-rpc
+    protocol: TCP
+    targetPort: 9870
   selector:
     app: starcoin
     network: proxima
