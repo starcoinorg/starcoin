@@ -1618,12 +1618,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "doc-comment"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
-
-[[package]]
 name = "docgen"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=91b2ff47bcf5b0ece458738b25a625819104cf34#91b2ff47bcf5b0ece458738b25a625819104cf34"
@@ -5206,9 +5200,9 @@ checksum = "d883f78645c21b7281d21305181aa1f4dd9e9363e7cf2566c93121552cff003e"
 
 [[package]]
 name = "psutil"
-version = "3.1.0"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "094d0f0f32f77f62cd7d137d9b9599ef257d5c1323b36b25746679de2806f547"
+checksum = "7cdb732329774b8765346796abd1e896e9b3c86aae7f135bb1dda98c2c460f55"
 dependencies = [
  "cfg-if",
  "darwin-libproc",
@@ -5216,7 +5210,7 @@ dependencies = [
  "nix 0.17.0",
  "num_cpus",
  "once_cell",
- "snafu",
+ "thiserror",
 ]
 
 [[package]]
@@ -6245,27 +6239,6 @@ name = "smallvec"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
-
-[[package]]
-name = "snafu"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7f5aed652511f5c9123cf2afbe9c244c29db6effa2abb05c866e965c82405ce"
-dependencies = [
- "doc-comment",
- "snafu-derive",
-]
-
-[[package]]
-name = "snafu-derive"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebf8f7d5720104a9df0f7076a8682024e958bba0fe9848767bb44f251f3648e9"
-dependencies = [
- "proc-macro2 1.0.21",
- "quote 1.0.7",
- "syn 1.0.41",
-]
 
 [[package]]
 name = "snow"
