@@ -8,16 +8,25 @@ use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
+use starcoin_chain_mock::MockChain;
 use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy, TEST_CONFIG};
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use traits::WriteableChainService;
 use traits::{ChainReader, ChainWriter};
+
+async fn new_block_and_master_with_halley() -> (Block, MockChain) {
+    let mut mock_chain = MockChain::new(&ChainNetwork::HALLEY).unwrap();
+    let times = 5;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    let new_block = mock_chain.produce().unwrap();
+    (new_block, mock_chain)
+}
 
 async fn new_block_and_master() -> (Block, BlockChain) {
     let times = 5;
@@ -120,33 +129,79 @@ fn apply_with_illegal_uncle(
     Ok(new_block)
 }
 
+fn apply_legal_block(
+    consensus_strategy: ConsensusStrategy,
+    uncles: Vec<BlockHeader>,
+    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+) {
+    let miner_account = AccountInfo::random();
+    let (block_template, _) = writeable_block_chain_service
+        .get_master()
+        .create_block_template(
+            *miner_account.address(),
+            Some(miner_account.public_key.clone()),
+            None,
+            Vec::new(),
+            uncles,
+            None,
+        )
+        .unwrap();
+    let new_block = consensus_strategy
+        .create_block(writeable_block_chain_service.get_master(), block_template)
+        .unwrap();
+    writeable_block_chain_service
+        .try_connect(new_block)
+        .unwrap();
+}
+
+async fn test_verify_gas_limit(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.gas_used = u64::MAX;
+    }
+    master.apply(new_block)
+}
+
 #[stest::test]
 async fn test_verify_gas_limit_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.gas_used = u64::MAX;
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_gas_limit(true).await.is_ok());
+    let apply_failed = test_verify_gas_limit(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
+}
+
+async fn test_verify_body_hash(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.body_hash = HashValue::random();
+    }
+    master.apply(new_block)
 }
 
 #[stest::test]
 async fn test_verify_body_hash_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.body_hash = HashValue::random();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_body_hash(true).await.is_ok());
+    let apply_failed = test_verify_body_hash(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
+async fn test_verify_parent_id(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.parent_hash = HashValue::random();
+    }
+    master.apply(new_block)
+}
+
 #[stest::test]
 async fn test_verify_parent_id_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.parent_hash = HashValue::random();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_parent_id(true).await.is_ok());
+    let apply_failed = test_verify_parent_id(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
@@ -158,26 +213,58 @@ async fn test_verify_parent_not_exist() {
     // TODO
 }
 
+async fn test_verify_timestamp(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.timestamp = master.current_header().timestamp();
+    }
+    master.apply(new_block)
+}
+
 #[stest::test]
 async fn test_verify_timestamp_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.timestamp = master.current_header().timestamp();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_timestamp(true).await.is_ok());
+    let apply_failed = test_verify_timestamp(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
+}
+
+async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 1000;
+    }
+    master.apply(new_block)
 }
 
 #[stest::test]
 async fn test_verify_future_timestamp_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        + 1000;
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_future_timestamp(true).await.is_ok());
+    let apply_failed = test_verify_future_timestamp(false).await;
+    assert!(apply_failed.is_err());
+    if let Err(apply_err) = apply_failed {
+        error!("apply failed : {:?}", apply_err);
+    }
+}
+
+async fn test_verify_consensus(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master_with_halley().await;
+    if !succ {
+        new_block.header.difficulty = U256::from(1024u64);
+    }
+    master.apply(new_block)
+}
+
+#[stest::test(timeout = 120)]
+async fn test_verify_consensus_failed() {
+    assert!(test_verify_consensus(true).await.is_ok());
+    let apply_failed = test_verify_consensus(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
@@ -185,17 +272,12 @@ async fn test_verify_future_timestamp_failed() {
 }
 
 #[stest::test]
-async fn test_verify_consensus_failed() {
-    // TODO: fix me, change test consensus to halley consensus.
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.difficulty = U256::from(1024u64);
-    let apply_failed = master.apply(new_block);
-    assert!(apply_failed.is_ok());
-}
-
-#[stest::test]
-async fn test_verify_switch_epoch_uncle_count_failed() {
-    // TODO
+async fn test_verify_new_epoch_block_uncle_should_none_failed() {
+    let apply_failed = test_verify_uncles_in_old_epoch(true).await;
+    assert!(apply_failed.is_err());
+    if let Err(apply_err) = apply_failed {
+        error!("apply failed : {:?}", apply_err);
+    }
 }
 
 #[stest::test]
@@ -286,74 +368,164 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     }
 }
 
-#[stest::test]
-async fn test_verify_illegal_uncle_timestamp_failed() {
+async fn test_verify_illegal_uncle_timestamp(succ: bool) -> Result<Block> {
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain().await;
-    uncle_header.timestamp = writeable_block_chain_service
-        .get_master()
-        .get_header(uncle_header.parent_hash)
-        .unwrap()
-        .unwrap()
-        .timestamp();
+    if !succ {
+        uncle_header.timestamp = writeable_block_chain_service
+            .get_master()
+            .get_header(uncle_header.parent_hash)
+            .unwrap()
+            .unwrap()
+            .timestamp();
+    }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
-    let apply_failed = apply_with_illegal_uncle(
+    apply_with_illegal_uncle(
         node_config.net().consensus(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
-    );
+    )
+}
+
+#[stest::test]
+async fn test_verify_illegal_uncle_timestamp_failed() {
+    assert!(test_verify_illegal_uncle_timestamp(true).await.is_ok());
+    let apply_failed = test_verify_illegal_uncle_timestamp(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
+}
+
+async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block> {
+    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
+        uncle_block_and_writeable_block_chain().await;
+    if !succ {
+        uncle_header.timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            + 1000;
+    }
+    let mut uncles = Vec::new();
+    uncles.push(uncle_header);
+    apply_with_illegal_uncle(
+        node_config.net().consensus(),
+        uncles,
+        &mut writeable_block_chain_service,
+        storage,
+    )
 }
 
 #[stest::test]
 async fn test_verify_illegal_uncle_future_timestamp_failed() {
-    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
-        uncle_block_and_writeable_block_chain().await;
-    uncle_header.timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-        + 1000;
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
-    let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
-        uncles,
-        &mut writeable_block_chain_service,
-        storage,
-    );
+    assert!(test_verify_illegal_uncle_future_timestamp(true)
+        .await
+        .is_ok());
+    let apply_failed = test_verify_illegal_uncle_future_timestamp(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
-#[stest::test]
+async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
+    let mut mock_chain = MockChain::new(&ChainNetwork::HALLEY).unwrap();
+    let mut times = 3;
+    mock_chain.produce_and_apply_times(times).unwrap();
+
+    // 1. new branch head id
+    let fork_id = mock_chain.head().current_header().id();
+    times = 2;
+    mock_chain.produce_and_apply_times(times).unwrap();
+
+    // 2. fork new branch and create a uncle block
+    let fork_block_chain = mock_chain.fork_new_branch(Some(fork_id)).unwrap();
+    let miner = mock_chain.miner();
+    let (block_template, _) = fork_block_chain
+        .create_block_template(
+            *miner.address(),
+            Some(miner.public_key.clone()),
+            None,
+            Vec::new(),
+            Vec::new(),
+            None,
+        )
+        .unwrap();
+    let uncle_block = fork_block_chain
+        .consensus()
+        .create_block(&fork_block_chain, block_template)
+        .unwrap();
+    let mut uncle_block_header = uncle_block.header().clone();
+
+    if !succ {
+        uncle_block_header.nonce = 0;
+    }
+
+    // 3. master and create a new block with uncle block
+    let mut uncles = Vec::new();
+    uncles.push(uncle_block_header);
+    let mut master_block_chain = mock_chain.fork_new_branch(None).unwrap();
+    let (block_template, _) = master_block_chain
+        .create_block_template(
+            *miner.address(),
+            Some(miner.public_key.clone()),
+            None,
+            Vec::new(),
+            uncles,
+            None,
+        )
+        .unwrap();
+    let new_block = fork_block_chain
+        .consensus()
+        .create_block(&master_block_chain, block_template)
+        .unwrap();
+
+    master_block_chain.apply(new_block)
+}
+
+#[stest::test(timeout = 120)]
 async fn test_verify_illegal_uncle_consensus_failed() {
-    // TODO
+    assert!(test_verify_illegal_uncle_consensus(true).await.is_ok());
+    let apply_failed = test_verify_illegal_uncle_consensus(false).await;
+    assert!(apply_failed.is_err());
+    if let Err(apply_err) = apply_failed {
+        error!("apply failed : {:?}", apply_err);
+    }
+}
+
+async fn test_verify_state_root(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.state_root = HashValue::random();
+    }
+    master.apply(new_block)
 }
 
 #[stest::test]
 async fn test_verify_state_root_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.state_root = HashValue::random();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_state_root(true).await.is_ok());
+    let apply_failed = test_verify_state_root(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
+async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.gas_used = 1;
+    }
+    master.apply(new_block)
+}
+
 #[stest::test]
 async fn test_verify_block_used_gas_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.gas_used = 1;
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_block_used_gas(true).await.is_ok());
+    let apply_failed = test_verify_block_used_gas(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
@@ -376,53 +548,67 @@ async fn test_verify_txn_count_failed() {
     }
 }
 
+async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.accumulator_root = HashValue::random();
+    }
+    master.apply(new_block)
+}
+
 #[stest::test]
 async fn test_verify_accumulator_root_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.accumulator_root = HashValue::random();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_accumulator_root(true).await.is_ok());
+    let apply_failed = test_verify_accumulator_root(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
-#[stest::test]
-async fn test_verify_block_accumulator_root_succ() {
-    let (new_block, mut master) = new_block_and_master().await;
-    let apply_failed = master.apply(new_block);
-    assert!(apply_failed.is_ok());
+async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
+    let (mut new_block, mut master) = new_block_and_master().await;
+    if !succ {
+        new_block.header.parent_block_accumulator_root = HashValue::random();
+    }
+    master.apply(new_block)
 }
 
 #[stest::test]
 async fn test_verify_block_accumulator_root_failed() {
-    let (mut new_block, mut master) = new_block_and_master().await;
-    new_block.header.parent_block_accumulator_root = HashValue::random();
-    let apply_failed = master.apply(new_block);
+    assert!(test_verify_block_accumulator_root(true).await.is_ok());
+    let apply_failed = test_verify_block_accumulator_root(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
-async fn test_verify_block_number_failed(flag: bool) {
+async fn test_verify_block_number_failed(succ: bool, order: bool) {
     let (mut new_block, mut master) = new_block_and_master().await;
-    if flag {
-        new_block.header.number -= 1;
-    } else {
-        new_block.header.number += 1;
+    if !succ {
+        if order {
+            new_block.header.number -= 1;
+        } else {
+            new_block.header.number += 1;
+        }
     }
     let apply_failed = master.apply(new_block);
-    assert!(apply_failed.is_err());
-    if let Err(apply_err) = apply_failed {
-        error!("apply failed : {:?}", apply_err);
+    if !succ {
+        assert!(apply_failed.is_err());
+        if let Err(apply_err) = apply_failed {
+            error!("apply failed : {:?}", apply_err);
+        }
+    } else {
+        assert!(apply_failed.is_ok());
     }
 }
 
 #[stest::test]
 async fn test_verify_block_illegal_number_failed() {
-    test_verify_block_number_failed(false).await;
-    test_verify_block_number_failed(true).await;
+    test_verify_block_number_failed(true, false).await;
+    test_verify_block_number_failed(false, false).await;
+    test_verify_block_number_failed(false, true).await;
 }
 
 async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
@@ -453,32 +639,93 @@ async fn test_verify_uncles_count_failed() {
     }
 }
 
-#[stest::test]
-async fn test_verify_uncles_number_failed() {
+async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain().await;
-    uncle_header.number = writeable_block_chain_service
-        .get_master()
-        .current_header()
-        .number()
-        + 1;
+    if !succ {
+        uncle_header.number = writeable_block_chain_service
+            .get_master()
+            .current_header()
+            .number()
+            + 1;
+    }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
-    let apply_failed = apply_with_illegal_uncle(
+    apply_with_illegal_uncle(
         node_config.net().consensus(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
-    );
+    )
+}
+
+#[stest::test]
+async fn test_verify_uncles_number_failed() {
+    assert!(test_verify_uncles_number(true).await.is_ok());
+    let apply_failed = test_verify_uncles_number(false).await;
     assert!(apply_failed.is_err());
     if let Err(apply_err) = apply_failed {
         error!("apply failed : {:?}", apply_err);
     }
 }
 
+async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
+    let (uncle_header, mut writeable_block_chain_service, node_config, storage) =
+        uncle_block_and_writeable_block_chain().await;
+
+    let end_number = if begin_epoch {
+        TEST_CONFIG.epoch_block_count - 1
+    } else {
+        TEST_CONFIG.epoch_block_count + 1
+    };
+    let old_epoch_num = writeable_block_chain_service
+        .get_master()
+        .epoch_info()
+        .unwrap()
+        .epoch_number();
+    // create block loop
+    loop {
+        apply_legal_block(
+            node_config.net().consensus(),
+            Vec::new(),
+            &mut writeable_block_chain_service,
+        );
+        let block_number = writeable_block_chain_service
+            .get_master()
+            .current_header()
+            .number();
+        if block_number == end_number {
+            let epoch_info = writeable_block_chain_service
+                .get_master()
+                .epoch_info()
+                .unwrap();
+            if begin_epoch {
+                assert_eq!(old_epoch_num, epoch_info.epoch_number());
+                assert_eq!(block_number + 1, epoch_info.end_number());
+            } else {
+                assert_eq!(old_epoch_num + 1, epoch_info.epoch_number());
+            }
+            break;
+        }
+    }
+
+    let mut uncles = Vec::new();
+    uncles.push(uncle_header);
+    apply_with_illegal_uncle(
+        node_config.net().consensus(),
+        uncles,
+        &mut writeable_block_chain_service,
+        storage,
+    )
+}
+
 #[stest::test]
-async fn test_verify_uncles_epoch_number_failed() {
-    // TODO
+async fn test_verify_uncles_in_old_epoch_failed() {
+    let apply_failed = test_verify_uncles_in_old_epoch(false).await;
+    assert!(apply_failed.is_err());
+    if let Err(apply_err) = apply_failed {
+        error!("apply failed : {:?}", apply_err);
+    }
 }
 
 #[stest::test]
