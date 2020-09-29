@@ -930,7 +930,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    stdlib_version: StdlibVersion::Latest,
+    stdlib_version: StdlibVersion::new(0, 4),
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
