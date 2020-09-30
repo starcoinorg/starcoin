@@ -377,7 +377,8 @@ async fn test_verify_illegal_uncle_timestamp(succ: bool) -> Result<Block> {
             .get_header(uncle_header.parent_hash)
             .unwrap()
             .unwrap()
-            .timestamp();
+            .timestamp()
+            - 1;
     }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
