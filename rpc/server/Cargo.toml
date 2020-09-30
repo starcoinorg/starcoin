@@ -22,7 +22,7 @@ jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "14.2"
 jsonrpc-http-server = "14.0"
 jsonrpc-tcp-server = "14.0"
-jsonrpc-ipc-server = "14.0"
+jsonrpc-ipc-server = "15.1"
 jsonrpc-ws-server = "14.0"
 jsonrpc-server-utils = "14.0"
 jsonrpc-pubsub = "14.0"
