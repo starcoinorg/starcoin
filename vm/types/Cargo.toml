@@ -13,7 +13,7 @@ serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 num_enum = "0.5.1"
 hex = "0.4.2"
-chrono = { version = "0.4.18", default-features = false, features = ["clock"] }
+chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 
 proptest = "0.10.1"
 proptest-derive = { version = "0.2.0"}
