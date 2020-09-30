@@ -178,6 +178,10 @@ impl EpochInfo {
     pub fn total_reward(&self) -> u128 {
         self.epoch_data.total_reward
     }
+
+    pub fn epoch_number(&self) -> u64 {
+        self.epoch.epoch_number()
+    }
 }
 
 /// The Epoch data resource held under an account.

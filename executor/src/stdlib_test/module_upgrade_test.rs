@@ -1,70 +1,22 @@
 use crate::execute_readonly_function;
 use crate::test_helper::*;
-use anyhow::{bail, Result};
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use anyhow::Result;
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::{HashValue, PrivateKey};
+use starcoin_crypto::HashValue;
 use starcoin_functional_tests::account::Account;
 use starcoin_state_api::StateView;
-use starcoin_transaction_builder::{encode_create_account_script, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_transaction_builder::encode_create_account_script;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::{Script, TransactionStatus};
-use starcoin_vm_types::account_config::{association_address, genesis_address};
+use starcoin_types::transaction::Script;
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::genesis_config::{ChainId, GenesisConfig};
 use starcoin_vm_types::token::stc::stc_type_tag;
-use starcoin_vm_types::transaction::{
-    Package, RawUserTransaction, Transaction, TransactionPayload,
-};
+use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::{VMValueCast, Value};
-use starcoin_vm_types::vm_status::KeptVMStatus;
-use statedb::ChainStateDB;
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
-
-#[allow(unused)]
-fn genesis_execute(
-    config: &GenesisConfig,
-    state: &ChainStateDB,
-    payload: TransactionPayload,
-) -> Result<()> {
-    user_execute(
-        genesis_address(),
-        &config.genesis_key_pair.as_ref().unwrap().0,
-        state,
-        payload,
-    )
-}
-fn association_execute(
-    config: &GenesisConfig,
-    state: &ChainStateDB,
-    payload: TransactionPayload,
-) -> Result<()> {
-    user_execute(
-        association_address(),
-        &config.genesis_key_pair.as_ref().unwrap().0,
-        state,
-        payload,
-    )
-}
-fn account_execute(
-    account: &Account,
-    state: &ChainStateDB,
-    payload: TransactionPayload,
-) -> Result<()> {
-    user_execute(*account.address(), &account.privkey, state, payload)
-}
-fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()> {
-    let txn = Transaction::BlockMetadata(meta);
-    let output = execute_and_apply(state, txn);
-    if let TransactionStatus::Discard(s) = output.status() {
-        bail!("txn discard, status: {:?}", s);
-    }
-
-    Ok(())
-}
 
 fn quorum_vote(token: TypeTag, state_view: &dyn StateView) -> u128 {
     let mut ret = execute_readonly_function(
@@ -104,53 +56,6 @@ fn proposal_state(
     .unwrap();
     assert_eq!(ret.len(), 1);
     ret.pop().unwrap().1.cast().unwrap()
-}
-
-fn user_execute(
-    user_address: AccountAddress,
-    prikey: &Ed25519PrivateKey,
-    state: &ChainStateDB,
-    payload: TransactionPayload,
-) -> Result<()> {
-    let seq_number = get_sequence_number(user_address, state);
-
-    let now: u64 = {
-        let mut ret = execute_readonly_function(
-            state,
-            &ModuleId::new(genesis_address(), Identifier::new("Timestamp").unwrap()),
-            &Identifier::new("now_seconds").unwrap(),
-            vec![],
-            vec![],
-        )?;
-        assert_eq!(ret.len(), 1);
-        // should never fail
-        ret.pop().unwrap().1.cast().unwrap()
-    };
-
-    let txn = RawUserTransaction::new(
-        user_address,
-        seq_number,
-        payload,
-        DEFAULT_MAX_GAS_AMOUNT,
-        1,
-        now + 60 * 60,
-        ChainId::test(),
-    );
-    let txn = txn.sign(prikey, prikey.public_key()).unwrap().into_inner();
-    let txn = Transaction::UserTransaction(txn);
-    let output = execute_and_apply(state, txn);
-
-    match output.status() {
-        TransactionStatus::Discard(s) => {
-            bail!("txn discard, status: {:?}", s);
-        }
-        TransactionStatus::Keep(s) => {
-            if s != &KeptVMStatus::Executed {
-                bail!("txn executing error, {:?}", s)
-            }
-        }
-    }
-    Ok(())
 }
 
 #[stest::test]
@@ -457,9 +362,3 @@ fn read_foo(state_view: &dyn StateView) -> u8 {
     assert_eq!(ret.len(), 1);
     ret.pop().unwrap().1.cast().unwrap()
 }
-
-const TEST_MODULE: &str = r#"
-    module M {
-        public fun foo(): u8 { 1 }
-    }
-    "#;

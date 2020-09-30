@@ -14,6 +14,7 @@ construct_uint! {
 construct_uint! {
     pub struct U512(8);
 }
+
 #[macro_export]
 macro_rules! impl_uint_serde {
     ($name: ident, $len: expr) => {
@@ -22,7 +23,7 @@ macro_rules! impl_uint_serde {
                 let mut bytes = [0u8; $len * 8];
                 self.to_big_endian(&mut bytes);
                 if serializer.is_human_readable() {
-                    serializer.serialize_str(&hex::encode(&bytes))
+                    serializer.serialize_str(&to_hex(&bytes, true))
                 } else {
                     use ser::SerializeTuple;
                     let mut seq = serializer.serialize_tuple($len * 8)?;
@@ -142,6 +143,21 @@ impl Into<HashValue> for U256 {
     }
 }
 
+fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
+    let bytes = if skip_leading_zero {
+        let non_zero = bytes.iter().take_while(|b| **b == 0).count();
+        let bytes = &bytes[non_zero..];
+        if bytes.is_empty() {
+            return "0".into();
+        } else {
+            bytes
+        }
+    } else {
+        bytes
+    };
+    hex::encode(bytes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,5 +181,13 @@ mod tests {
         let human_encode = serde_json::to_string_pretty(&U256::max_value()).unwrap();
         let human_decode: U256 = serde_json::from_str(&human_encode).unwrap();
         assert_eq!(human_decode, U256::max_value());
+        assert_eq!(
+            "\"0400\"",
+            serde_json::to_string_pretty(&U256::from(1024)).unwrap()
+        );
+        assert_eq!(
+            "\"0\"",
+            serde_json::to_string_pretty(&U256::from(0)).unwrap()
+        );
     }
 }
