@@ -674,9 +674,9 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
         uncle_block_and_writeable_block_chain().await;
 
     let end_number = if begin_epoch {
-        TEST_CONFIG.epoch_block_count - 1
+        TEST_CONFIG.consensus_config.epoch_block_count - 1
     } else {
-        TEST_CONFIG.epoch_block_count + 1
+        TEST_CONFIG.consensus_config.epoch_block_count + 1
     };
     let old_epoch_num = writeable_block_chain_service
         .get_master()
