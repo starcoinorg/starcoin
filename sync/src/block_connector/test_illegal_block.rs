@@ -368,38 +368,6 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     }
 }
 
-async fn test_verify_illegal_uncle_timestamp(succ: bool) -> Result<Block> {
-    let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
-        uncle_block_and_writeable_block_chain().await;
-    if !succ {
-        uncle_header.timestamp = writeable_block_chain_service
-            .get_master()
-            .get_header(uncle_header.parent_hash)
-            .unwrap()
-            .unwrap()
-            .timestamp()
-            - 1;
-    }
-    let mut uncles = Vec::new();
-    uncles.push(uncle_header);
-    apply_with_illegal_uncle(
-        node_config.net().consensus(),
-        uncles,
-        &mut writeable_block_chain_service,
-        storage,
-    )
-}
-
-#[stest::test]
-async fn test_verify_illegal_uncle_timestamp_failed() {
-    assert!(test_verify_illegal_uncle_timestamp(true).await.is_ok());
-    let apply_failed = test_verify_illegal_uncle_timestamp(false).await;
-    assert!(apply_failed.is_err());
-    if let Err(apply_err) = apply_failed {
-        error!("apply failed : {:?}", apply_err);
-    }
-}
-
 async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block> {
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain().await;
