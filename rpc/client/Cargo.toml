@@ -22,7 +22,7 @@ tokio = "0.2"
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "14.2"
 jsonrpc-server-utils = "14.0"
-jsonrpc-pubsub = "14.0"
+jsonrpc-pubsub = "15.1"
 jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "14.2", features = ["http", "ipc", "ws", "arbitrary_precision"] }
 futures03 = { package="futures",version = "0.3", features = ["compat"] }

@@ -2834,8 +2834,8 @@ dependencies = [
  "futures 0.1.29",
  "hyper 0.12.35",
  "hyper-tls 0.3.2",
- "jsonrpc-core",
- "jsonrpc-pubsub",
+ "jsonrpc-core 14.2.0",
+ "jsonrpc-pubsub 14.2.0",
  "jsonrpc-server-utils",
  "log 0.4.11",
  "parity-tokio-ipc 0.2.0",
@@ -2851,6 +2851,19 @@ name = "jsonrpc-core"
 version = "14.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0747307121ffb9703afd93afbd0fb4f854c38fb873f2c8b90e0e902f27c7b62"
+dependencies = [
+ "futures 0.1.29",
+ "log 0.4.11",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "jsonrpc-core"
+version = "15.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0745a6379e3edc893c84ec203589790774e4247420033e71a76d3ab4687991fa"
 dependencies = [
  "futures 0.1.29",
  "log 0.4.11",
@@ -2887,7 +2900,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0da906d682799df05754480dac1b9e70ec92e12c19ebafd2662a5ea1c9fd6522"
 dependencies = [
  "hyper 0.12.35",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-server-utils",
  "log 0.4.11",
  "net2",
@@ -2901,7 +2914,7 @@ version = "14.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dedccd693325d833963b549e959137f30a7a0ea650cde92feda81dc0c1393cb5"
 dependencies = [
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-server-utils",
  "log 0.4.11",
  "parity-tokio-ipc 0.4.0",
@@ -2915,7 +2928,20 @@ version = "14.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d44f5602a11d657946aac09357956d2841299ed422035edf140c552cb057986"
 dependencies = [
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
+ "log 0.4.11",
+ "parking_lot 0.10.2",
+ "rand 0.7.3",
+ "serde",
+]
+
+[[package]]
+name = "jsonrpc-pubsub"
+version = "15.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "639558e0604013be9787ae52f798506ae42bf4220fe587bdc5625871cc8b9c77"
+dependencies = [
+ "jsonrpc-core 15.1.0",
  "log 0.4.11",
  "parking_lot 0.10.2",
  "rand 0.7.3",
@@ -2930,7 +2956,7 @@ checksum = "56cbfb462e7f902e21121d9f0d1c2b77b2c5b642e1a4e8f4ebfa2e15b94402bb"
 dependencies = [
  "bytes 0.4.12",
  "globset",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "lazy_static",
  "log 0.4.11",
  "tokio 0.1.22",
@@ -2944,7 +2970,7 @@ version = "14.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2440e85136678ee956aef8bcd68154a174b35694e3b4d0d9363a6c35711eb130"
 dependencies = [
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-server-utils",
  "log 0.4.11",
  "parking_lot 0.10.2",
@@ -2957,7 +2983,7 @@ version = "14.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "903d3109fe7c4acb932b567e1e607e0f524ed04741b09fb0e61841bc40a022fc"
 dependencies = [
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-server-utils",
  "log 0.4.11",
  "parking_lot 0.10.2",
@@ -7013,7 +7039,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "indicatif",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-tcp-server",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -7298,10 +7324,10 @@ dependencies = [
  "anyhow",
  "futures 0.3.5",
  "hex",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
- "jsonrpc-pubsub",
+ "jsonrpc-pubsub 15.1.0",
  "jsonrpc-server-utils",
  "serde",
  "serde_json",
@@ -7331,10 +7357,10 @@ dependencies = [
  "futures 0.1.29",
  "futures 0.3.5",
  "jsonrpc-client-transports",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
- "jsonrpc-pubsub",
+ "jsonrpc-pubsub 15.1.0",
  "jsonrpc-server-utils",
  "serde",
  "serde_json",
@@ -7365,7 +7391,7 @@ dependencies = [
  "failure",
  "futures 0.3.5",
  "futures01",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "once_cell",
  "rand 0.7.3",
  "starcoin-logger",
@@ -7385,12 +7411,12 @@ dependencies = [
  "futures 0.3.5",
  "futures-channel",
  "hex",
- "jsonrpc-core",
+ "jsonrpc-core 14.2.0",
  "jsonrpc-core-client",
  "jsonrpc-derive",
  "jsonrpc-http-server",
  "jsonrpc-ipc-server",
- "jsonrpc-pubsub",
+ "jsonrpc-pubsub 15.1.0",
  "jsonrpc-server-utils",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
