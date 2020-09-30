@@ -1,5 +1,8 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::pool::AccountSeqNumberClient;
-use crate::{TxPoolActorService, TxPoolService, TxStatus};
+use crate::TxStatus;
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
@@ -8,10 +11,7 @@ use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
     DEFAULT_MAX_GAS_AMOUNT,
 };
-use starcoin_genesis::Genesis;
 use starcoin_open_block::OpenedBlock;
-use starcoin_service_registry::bus::BusService;
-use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
 use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
@@ -101,24 +101,9 @@ async fn test_subscribe_txns() {
 
 #[stest::test(timeout = 200)]
 async fn test_pool_pending() -> Result<()> {
-    let mut config = NodeConfig::random_for_test();
     let count = 5;
-    config.metrics.enable_metrics = false;
-    config.tx_pool.max_count = count;
-    let node_config = Arc::new(config);
-
-    let (storage, _startup_info, _) =
-        Genesis::init_storage_for_test(node_config.net()).expect("init storage by genesis fail.");
-    let registry = RegistryService::launch();
-    registry.put_shared(node_config.clone()).await.unwrap();
-    registry.put_shared(storage.clone()).await.unwrap();
-    let bus = registry.service_ref::<BusService>().await.unwrap();
-    registry.put_shared(bus).await.unwrap();
-
-    let _ = registry.register::<TxPoolActorService>().await.unwrap();
-    delay_for(Duration::from_millis(200)).await;
-    let txpool_service = registry.get_shared::<TxPoolService>().await.unwrap();
-
+    let (txpool_service, _storage, node_config, _, _) =
+        test_helper::start_txpool_with_size(count).await;
     let mut txn_vec = vec![];
     let mut index = 0;
     loop {

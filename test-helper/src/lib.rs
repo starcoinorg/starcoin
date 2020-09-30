@@ -14,4 +14,4 @@ pub use network::build_network;
 pub use node::{run_node_by_config, run_test_node};
 pub use starcoin_genesis::{Genesis, GenesisOpt};
 pub use starcoin_node::{node::NodeStartedHandle, NodeHandle};
-pub use txpool::start_txpool;
+pub use txpool::{start_txpool, start_txpool_with_size};
