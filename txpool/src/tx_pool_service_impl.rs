@@ -11,6 +11,7 @@ use crate::{
     pool_client::{NonceCache, PoolClient},
 };
 
+use crate::pool::TransactionQueue;
 use anyhow::Result;
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
@@ -153,7 +154,7 @@ impl TxPoolSyncService for TxPoolService {
     }
 }
 
-pub(crate) type TxnQueue = pool::TransactionQueue;
+pub(crate) type TxnQueue = TransactionQueue;
 #[derive(Clone)]
 pub(crate) struct Inner {
     node_config: Arc<NodeConfig>,
