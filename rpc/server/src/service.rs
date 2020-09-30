@@ -191,7 +191,7 @@ impl RpcService {
         Ok(match &self.config.rpc.http_address {
             Some(address) => {
                 let io_handler = self.api_registry.get_apis(&[APIType::Public]);
-                let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
+                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
                     .meta_extractor(RpcExtractor)
                     .cors(DomainsValidation::AllowOnly(vec![
                         AccessControlAllowOrigin::Null,
@@ -212,7 +212,7 @@ impl RpcService {
         Ok(match &self.config.rpc.tcp_address {
             Some(address) => {
                 let io_handler = self.api_registry.get_apis(&[APIType::Public]);
-                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler.clone())
+                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
                     .session_meta_extractor(RpcExtractor)
                     .start(address)?;
                 info!("Rpc: tcp server start at: {}", address);

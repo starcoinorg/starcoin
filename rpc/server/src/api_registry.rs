@@ -31,7 +31,7 @@ impl ApiRegistry {
 
     pub fn get_apis(&self, api_types: &[APIType]) -> MetaIoHandler<Metadata, MetricMiddleware> {
         api_types
-            .into_iter()
+            .iter()
             .map(|api_type| self.apis.get(api_type).cloned())
             .fold(
                 MetaIoHandler::<Metadata, MetricMiddleware>::with_middleware(MetricMiddleware),
