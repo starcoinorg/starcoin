@@ -171,7 +171,7 @@ pub(crate) fn build_raw_txn(
         ret.pop().unwrap().1.cast().unwrap()
     };
 
-    let txn = RawUserTransaction::new(
+    RawUserTransaction::new(
         user_address,
         seq_number,
         payload,
@@ -179,9 +179,7 @@ pub(crate) fn build_raw_txn(
         1,
         now + 60 * 60,
         chain_id,
-    );
-
-    txn
+    )
 }
 
 fn user_execute(

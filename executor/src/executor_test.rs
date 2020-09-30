@@ -98,7 +98,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     );
 
     let signed_by_bob = bob.sign_txn(txn);
-    let verify_result = vm.verify_transaction(&NullStateView, signed_by_bob.clone());
+    let verify_result = vm.verify_transaction(&NullStateView, signed_by_bob);
     assert!(verify_result.is_some());
     assert_eq!(
         verify_result.unwrap().status_code(),
@@ -153,7 +153,7 @@ fn test_package_txn() -> Result<()> {
         let txn = alice.sign_txn(build_raw_txn(
             *alice.address(),
             &chain_state,
-            TransactionPayload::Package(package.clone()),
+            TransactionPayload::Package(package),
             net.chain_id(),
         ));
         let verify_result = vm.verify_transaction(&chain_state, txn);
@@ -192,7 +192,7 @@ fn test_package_txn() -> Result<()> {
         let txn = alice.sign_txn(build_raw_txn(
             *alice.address(),
             &chain_state,
-            TransactionPayload::Package(package.clone()),
+            TransactionPayload::Package(package),
             net.chain_id(),
         ));
         let verify_result = vm.verify_transaction(&chain_state, txn);
