@@ -5,21 +5,223 @@ use super::test_helper::{
     compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
     prepare_genesis,
 };
+use crate::encode_create_account_script;
+use crate::test_helper::{
+    account_execute, association_execute, build_raw_txn, TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
+};
+use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_config::ChainNetwork;
 use starcoin_consensus::Consensus;
+
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
 };
 use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_types::identifier::Identifier;
+use starcoin_types::language_storage::ModuleId;
+use starcoin_types::transaction::RawUserTransaction;
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
 };
+use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::state_view::StateView;
+use starcoin_vm_types::token::stc::stc_type_tag;
+use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
 use stdlib::transaction_scripts::compiled_transaction_script;
+use vm_runtime::starcoin_vm::StarcoinVM;
+
+#[derive(Default)]
+pub struct NullStateView;
+
+impl StateView for NullStateView {
+    fn get(&self, _access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
+        Err(anyhow!("No data"))
+    }
+
+    fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
+        Err(anyhow!("No data"))
+    }
+
+    fn is_genesis(&self) -> bool {
+        false
+    }
+}
+
+#[stest::test]
+fn test_vm_version() {
+    let (chain_state, _net) = prepare_genesis();
+
+    let mut vm = StarcoinVM::new();
+    let version_module_id = ModuleId::new(genesis_address(), Identifier::new("Version").unwrap());
+    let mut read_version = vm
+        .execute_readonly_function(
+            &chain_state,
+            &version_module_id,
+            &Identifier::new("get").unwrap(),
+            vec![],
+            vec![],
+        )
+        .unwrap();
+    let readed_version: u64 = read_version.pop().unwrap().1.cast().unwrap();
+    let version = vm.get_version().unwrap().major;
+    assert_eq!(readed_version, version);
+}
+
+#[stest::test]
+fn test_txn_verify_err_case() -> Result<()> {
+    let (_chain_state, net) = prepare_genesis();
+    let mut vm = StarcoinVM::new();
+    let alice = Account::new();
+    let bob = Account::new();
+    let script = encode_create_account_script(
+        net.stdlib_version(),
+        stc_type_tag(),
+        alice.address(),
+        alice.pubkey.to_bytes().to_vec(),
+        100000,
+    );
+    let txn = RawUserTransaction::new(
+        *alice.address(),
+        0,
+        TransactionPayload::Script(script),
+        10000000,
+        1,
+        1000 + 60 * 60,
+        ChainId::test(),
+    );
+
+    let signed_by_bob = bob.sign_txn(txn);
+    let verify_result = vm.verify_transaction(&NullStateView, signed_by_bob);
+    assert!(verify_result.is_some());
+    assert_eq!(
+        verify_result.unwrap().status_code(),
+        StatusCode::VM_STARTUP_FAILURE
+    );
+    Ok(())
+}
+
+#[stest::test]
+fn test_package_txn() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = Account::new();
+    let bob = Account::new();
+    let pre_mint_amount = net.genesis_config().pre_mine_amount;
+
+    // create alice, bob accounts
+    {
+        let script = encode_create_account_script(
+            net.stdlib_version(),
+            stc_type_tag(),
+            alice.address(),
+            alice.pubkey.to_bytes().to_vec(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            net.genesis_config(),
+            &chain_state,
+            TransactionPayload::Script(script),
+        )?;
+
+        let script = encode_create_account_script(
+            net.stdlib_version(),
+            stc_type_tag(),
+            bob.address(),
+            bob.pubkey.to_bytes().to_vec(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            net.genesis_config(),
+            &chain_state,
+            TransactionPayload::Script(script),
+        )?;
+    }
+
+    // test on invalid sender on package txn
+    {
+        let module = compile_module_with_address(*bob.address(), TEST_MODULE);
+        let package = Package::new_with_module(module)?;
+        // let package_hash = package.crypto_hash();
+
+        let mut vm = StarcoinVM::new();
+        let txn = alice.sign_txn(build_raw_txn(
+            *alice.address(),
+            &chain_state,
+            TransactionPayload::Package(package),
+            net.chain_id(),
+        ));
+        let verify_result = vm.verify_transaction(&chain_state, txn);
+        assert!(verify_result.is_some());
+        let vm_status = verify_result.unwrap();
+        assert_eq!(
+            vm_status.status_code(),
+            StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+        );
+    }
+
+    // verify package txn
+    {
+        let module = compile_module_with_address(*alice.address(), TEST_MODULE);
+        let package = Package::new_with_module(module)?;
+        // let package_hash = package.crypto_hash();
+
+        let mut vm = StarcoinVM::new();
+        let txn = alice.sign_txn(build_raw_txn(
+            *alice.address(),
+            &chain_state,
+            TransactionPayload::Package(package.clone()),
+            net.chain_id(),
+        ));
+        let verify_result = vm.verify_transaction(&chain_state, txn);
+        assert!(verify_result.is_none());
+        // execute the package txn
+        account_execute(&alice, &chain_state, TransactionPayload::Package(package)).unwrap();
+    }
+
+    // now, upgrade to test module_1
+    {
+        let module = compile_module_with_address(*alice.address(), TEST_MODULE_1);
+        let package = Package::new_with_module(module)?;
+        let mut vm = StarcoinVM::new();
+        let txn = alice.sign_txn(build_raw_txn(
+            *alice.address(),
+            &chain_state,
+            TransactionPayload::Package(package),
+            net.chain_id(),
+        ));
+        let verify_result = vm.verify_transaction(&chain_state, txn);
+        assert!(verify_result.is_some());
+        assert_eq!(
+            verify_result.unwrap().status_code(),
+            StatusCode::VERIFICATION_ERROR
+        );
+    }
+
+    // now, upgrade the test module
+    {
+        let module = compile_module_with_address(*alice.address(), TEST_MODULE_2);
+        let package = Package::new_with_module(module)?;
+        let mut vm = StarcoinVM::new();
+        let txn = alice.sign_txn(build_raw_txn(
+            *alice.address(),
+            &chain_state,
+            TransactionPayload::Package(package.clone()),
+            net.chain_id(),
+        ));
+        let verify_result = vm.verify_transaction(&chain_state, txn);
+        assert!(verify_result.is_none());
+        // execute the package txn
+        account_execute(&alice, &chain_state, TransactionPayload::Package(package)).unwrap();
+    }
+
+    Ok(())
+}
 
 #[stest::test(timeout = 200)]
 fn test_block_execute_gas_limit() -> Result<()> {

@@ -1,7 +1,12 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::pool::AccountSeqNumberClient;
+use crate::TxStatus;
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use parking_lot::RwLock;
+use starcoin_config::NodeConfig;
 use starcoin_executor::{
     create_signed_txn_with_association_account, encode_transfer_script, DEFAULT_EXPIRATION_TIME,
     DEFAULT_MAX_GAS_AMOUNT,
@@ -9,9 +14,12 @@ use starcoin_executor::{
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::ChainStateWriter;
 use starcoin_statedb::ChainStateDB;
-use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_txpool_api::{TxPoolSyncService, TxnStatusFullEvent};
+use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
+use stest::actix_export::time::delay_for;
 use storage::BlockStore;
+use tx_relay::PeerTransactions;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
@@ -47,23 +55,8 @@ impl AccountSeqNumberClient for MockNonceClient {
 
 #[stest::test]
 async fn test_txn_expire() -> Result<()> {
-    let (txpool_service, _storage, config, _) = test_helper::start_txpool().await;
-
-    let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
-    let account_address = account_address::from_public_key(&public_key);
-    let txn = create_signed_txn_with_association_account(
-        TransactionPayload::Script(encode_transfer_script(
-            config.net().stdlib_version(),
-            account_address,
-            public_key.to_bytes().to_vec(),
-            10000,
-        )),
-        0,
-        DEFAULT_MAX_GAS_AMOUNT,
-        1,
-        2,
-        config.net(),
-    );
+    let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
+    let txn = generate_txn(config, 0);
     txpool_service.add_txns(vec![txn]).pop().unwrap()?;
     let pendings = txpool_service.get_pending_txns(None, Some(0));
     assert_eq!(pendings.len(), 1);
@@ -76,7 +69,7 @@ async fn test_txn_expire() -> Result<()> {
 
 #[stest::test]
 async fn test_tx_pool() -> Result<()> {
-    let (txpool_service, _storage, config, _) = test_helper::start_txpool().await;
+    let (txpool_service, _storage, config, _, _) = test_helper::start_txpool().await;
     let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
     let account_address = account_address::from_public_key(&public_key);
     let txn = starcoin_executor::build_transfer_from_association(
@@ -106,9 +99,41 @@ async fn test_subscribe_txns() {
     let _ = pool.subscribe_txns();
 }
 
+#[stest::test(timeout = 200)]
+async fn test_pool_pending() -> Result<()> {
+    let count = 5;
+    let (txpool_service, _storage, node_config, _, _) =
+        test_helper::start_txpool_with_size(count).await;
+    let mut txn_vec = vec![];
+    let mut index = 0;
+    loop {
+        txn_vec.push(generate_txn(node_config.clone(), index));
+        index += 1;
+        if index > count * 2 {
+            break;
+        }
+    }
+    let _ = txpool_service.add_txns(txn_vec.clone());
+    delay_for(Duration::from_millis(200)).await;
+
+    txn_vec.clear();
+    loop {
+        txn_vec.push(generate_txn(node_config.clone(), index));
+        index += 1;
+        if index > count * 4 {
+            break;
+        }
+    }
+    let _ = txpool_service.add_txns(txn_vec.clone());
+    let pending = txpool_service.get_pending_txns(Some(count), None);
+    assert!(!pending.is_empty());
+    delay_for(Duration::from_millis(200)).await;
+    Ok(())
+}
+
 #[stest::test]
 async fn test_rollback() -> Result<()> {
-    let (pool, storage, config, _) = test_helper::start_txpool().await;
+    let (pool, storage, config, _, _) = test_helper::start_txpool().await;
     let start_timestamp = 0;
     let retracted_txn = {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
@@ -191,4 +216,41 @@ async fn test_rollback() -> Result<()> {
     let txns = pool.get_pending_txns(Some(100), Some(start_timestamp + 60 * 10));
     assert_eq!(txns.len(), 0);
     Ok(())
+}
+
+#[stest::test(timeout = 480)]
+async fn test_txpool_actor_service() {
+    let (_txpool_service, _storage, config, tx_pool_actor, _registry) =
+        test_helper::start_txpool().await;
+    let txn = generate_txn(config, 0);
+
+    tx_pool_actor
+        .notify(PeerTransactions::new(vec![txn.clone()]))
+        .unwrap();
+
+    delay_for(Duration::from_millis(200)).await;
+    tx_pool_actor
+        .notify(TxnStatusFullEvent::new(vec![(txn.id(), TxStatus::Added)]))
+        .unwrap();
+
+    delay_for(Duration::from_millis(300)).await;
+}
+
+fn generate_txn(config: Arc<NodeConfig>, seq: u64) -> SignedUserTransaction {
+    let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
+    let account_address = account_address::from_public_key(&public_key);
+    let txn = create_signed_txn_with_association_account(
+        TransactionPayload::Script(encode_transfer_script(
+            config.net().stdlib_version(),
+            account_address,
+            public_key.to_bytes().to_vec(),
+            10000,
+        )),
+        seq,
+        DEFAULT_MAX_GAS_AMOUNT,
+        1,
+        2,
+        config.net(),
+    );
+    txn
 }

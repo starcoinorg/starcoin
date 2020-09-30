@@ -89,7 +89,7 @@ impl Priority {
     }
 }
 /// Transaction to verify.
-#[cfg_attr(test, derive(Clone))]
+#[derive(Clone)]
 pub enum PoolTransaction {
     /// Fresh, never verified transaction.
     ///
