@@ -7,12 +7,18 @@ use starcoin_account_api::AccountInfo;
 use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
+use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
+use starcoin_types::block::Block;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 use traits::{ChainReader, WriteableChainService};
 
-async fn create_writeable_block_chain(
-) -> (WriteBlockChainService<MockTxPoolService>, Arc<NodeConfig>) {
+pub async fn create_writeable_block_chain() -> (
+    WriteBlockChainService<MockTxPoolService>,
+    Arc<NodeConfig>,
+    Arc<dyn Store>,
+) {
     let node_config = NodeConfig::random_for_test();
     let node_config = Arc::new(node_config);
 
@@ -25,50 +31,70 @@ async fn create_writeable_block_chain(
         WriteBlockChainService::new(
             node_config.clone(),
             startup_info,
-            storage,
+            storage.clone(),
             txpool_service,
             bus,
             None,
         )
         .unwrap(),
         node_config,
+        storage,
     )
 }
 
-fn gen_blocks(
-    node_config: Arc<NodeConfig>,
+pub fn gen_blocks(
+    consensus_strategy: &ConsensusStrategy,
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
 ) {
     let miner_account = AccountInfo::random();
-    let consensus_strategy = node_config.net().consensus();
     if times > 0 {
         for _i in 0..times {
-            let block_chain = writeable_block_chain_service.get_master();
-            let (block_template, _) = block_chain
-                .create_block_template(
-                    *miner_account.address(),
-                    Some(miner_account.public_key.clone()),
-                    None,
-                    Vec::new(),
-                    vec![],
-                    None,
-                )
-                .unwrap();
-            let block = consensus_strategy
-                .create_block(block_chain, block_template)
-                .unwrap();
-
+            let block = new_block(
+                Some(&miner_account),
+                &consensus_strategy,
+                writeable_block_chain_service,
+            );
             writeable_block_chain_service.try_connect(block).unwrap();
         }
     }
 }
 
+pub fn new_block(
+    miner_account: Option<&AccountInfo>,
+    consensus_strategy: &ConsensusStrategy,
+    writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+) -> Block {
+    let miner = match miner_account {
+        Some(m) => m.clone(),
+        None => AccountInfo::random(),
+    };
+    let miner_address = *miner.address();
+    let block_chain = writeable_block_chain_service.get_master();
+    let (block_template, _) = block_chain
+        .create_block_template(
+            miner_address,
+            Some(miner.public_key),
+            None,
+            Vec::new(),
+            vec![],
+            None,
+        )
+        .unwrap();
+    consensus_strategy
+        .create_block(block_chain, block_template)
+        .unwrap()
+}
+
 #[stest::test]
 async fn test_block_chain_apply() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
-    gen_blocks(node_config, times, &mut writeable_block_chain_service);
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    gen_blocks(
+        &node_config.net().consensus(),
+        times,
+        &mut writeable_block_chain_service,
+    );
     assert_eq!(
         writeable_block_chain_service
             .get_master()
@@ -124,9 +150,9 @@ fn gen_fork_block_chain(
 #[stest::test]
 async fn test_block_chain_forks() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     gen_blocks(
-        node_config.clone(),
+        &node_config.net().consensus(),
         times,
         &mut writeable_block_chain_service,
     );
@@ -157,9 +183,9 @@ async fn test_block_chain_forks() {
 #[stest::test]
 async fn test_block_chain_switch_master() {
     let times = 10;
-    let (mut writeable_block_chain_service, node_config) = create_writeable_block_chain().await;
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     gen_blocks(
-        node_config.clone(),
+        &node_config.net().consensus(),
         times,
         &mut writeable_block_chain_service,
     );

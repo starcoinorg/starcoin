@@ -130,6 +130,7 @@ impl SNetworkService {
         self.service.broadcast_message(protocol_name, message).await;
     }
 
+    #[cfg(test)]
     pub fn add_peer_for_test(&mut self, peer: String) -> Result<()> {
         self.service
             .add_reserved_peer(peer)
