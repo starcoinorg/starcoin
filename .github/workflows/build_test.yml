@@ -33,6 +33,10 @@ jobs:
           args: -- --check
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
+      - name: run cargo clean
+        uses: actions-rs/cargo@v1
+        with:
+          command: clean
       - name: run cargo check
         if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
