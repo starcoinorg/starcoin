@@ -7,7 +7,6 @@ use crate::{
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
-use starcoin_vm_types::genesis_config::{BuiltinNetwork, ChainNetwork};
 use std::net::{IpAddr, SocketAddr};
 use std::path::{Path, PathBuf};
 
@@ -64,18 +63,11 @@ impl ConfigModule for RpcConfig {
         } else {
             vec![DEFAULT_HTTP_PORT, DEFAULT_TCP_PORT, DEFAULT_WEB_SOCKET_PORT]
         };
-        let rpc_address: IpAddr = match base.net {
-            ChainNetwork::Builtin(BuiltinNetwork::Dev) => opt
-                .rpc_address
-                .clone()
-                .unwrap_or_else(|| "0.0.0.0".to_string())
-                .parse()?,
-            _ => opt
-                .rpc_address
-                .clone()
-                .unwrap_or_else(|| "127.0.0.1".to_string())
-                .parse()?,
-        };
+        let rpc_address: IpAddr = opt
+            .rpc_address
+            .clone()
+            .unwrap_or_else(|| "0.0.0.0".to_string())
+            .parse()?;
 
         let http_address = Some(
             format!("{}:{}", rpc_address, ports[0])
