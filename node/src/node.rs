@@ -91,6 +91,8 @@ impl Handler<NodeRequest> for Node {
                 if let Err(e) = self.registry.shutdown_system_sync() {
                     error!("Shutdown registry error: {}", e);
                 };
+                //wait a seconds for registry shutdown, then stop System.
+                std::thread::sleep(Duration::from_millis(2000));
                 System::current().stop();
                 NodeResponse::Result(Ok(()))
             }
@@ -187,18 +189,16 @@ pub async fn start(
     registry.register::<CreateBlockTemplateService>().await?;
     registry.register::<MinerService>().await?;
 
-    let miner_client_config = config.miner.client_config.clone();
-    registry.put_shared(miner_client_config).await?;
-    let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
-    registry.put_shared(job_client).await?;
-    registry
-        .register::<MinerClientService<JobBusClient>>()
-        .await?;
-    if !config.miner.enable_miner_client {
-        info!("Config.miner.enable_miner_client is false, so stop MinerClientService.");
+    if config.miner.enable_miner_client {
+        let miner_client_config = config.miner.client_config.clone();
+        registry.put_shared(miner_client_config).await?;
+        let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
+        registry.put_shared(job_client).await?;
         registry
-            .stop_service(MinerClientService::<JobBusClient>::service_name())
+            .register::<MinerClientService<JobBusClient>>()
             .await?;
+    } else {
+        info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
     }
     registry.register::<RpcService>().await?;
 

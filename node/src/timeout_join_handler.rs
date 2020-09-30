@@ -23,7 +23,8 @@ pub fn spawn<T: Send + 'static, F: FnOnce() -> T + Send + 'static>(f: F) -> Time
     let (send, recv) = channel();
     let t = thread::spawn(move || {
         let x = f();
-        send.send(()).unwrap();
+        //ignore send error.
+        let _e = send.send(());
         x
     });
     TimeoutJoinHandle {
