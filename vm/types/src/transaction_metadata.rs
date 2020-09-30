@@ -1,20 +1,18 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::STC_TOKEN_CODE;
 use crate::genesis_config::ChainId;
 use crate::token::token_code::TokenCode;
 use crate::{
     account_address::AccountAddress,
-    transaction::{authenticator::AuthenticationKeyPreimage, SignedUserTransaction},
+    transaction::SignedUserTransaction,
     transaction::{TransactionPayload, TransactionPayloadType},
 };
 use move_core_types::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasPrice, GasUnits,
 };
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::{ed25519::Ed25519PrivateKey, HashValue, PrivateKey};
-use std::convert::TryFrom;
+use starcoin_crypto::HashValue;
 use std::str::FromStr;
 
 pub enum TransactionPayloadMetadata {
@@ -114,26 +112,5 @@ impl TransactionMetadata {
 
     pub fn payload(&self) -> &TransactionPayloadMetadata {
         &self.payload
-    }
-}
-
-impl Default for TransactionMetadata {
-    //TODO remove this default construct.
-    fn default() -> Self {
-        let mut buf = [0u8; Ed25519PrivateKey::LENGTH];
-        buf[Ed25519PrivateKey::LENGTH - 1] = 1;
-        let public_key = Ed25519PrivateKey::try_from(&buf[..]).unwrap().public_key();
-        TransactionMetadata {
-            sender: AccountAddress::ZERO,
-            authentication_key_preimage: AuthenticationKeyPreimage::ed25519(&public_key).into_vec(),
-            sequence_number: 0,
-            max_gas_amount: GasUnits::new(100_000_000),
-            gas_unit_price: GasPrice::new(0),
-            gas_token_code: STC_TOKEN_CODE.clone(),
-            transaction_size: AbstractMemorySize::new(0),
-            expiration_timestamp_secs: 0,
-            chain_id: ChainId::test(),
-            payload: TransactionPayloadMetadata::Script(HashValue::zero()),
-        }
     }
 }
