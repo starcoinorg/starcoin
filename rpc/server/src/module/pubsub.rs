@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::metadata::Metadata;
 use futures::channel::mpsc;
 use futures::compat::Sink01CompatExt;
 use futures::future::AbortHandle;
@@ -12,10 +11,12 @@ use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
+use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
 use starcoin_types::system_events::MintBlockEvent;
@@ -23,7 +24,6 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
 use std::sync::{atomic, Arc};
-use txpool::TxPoolService;
 
 #[cfg(test)]
 pub mod tests;
@@ -88,6 +88,7 @@ impl StarcoinPubSub for PubSubImpl {
     }
 }
 
+//TODO refactor this to ActorService
 #[derive(Clone)]
 pub struct PubSubService {
     subscriber_id: Arc<atomic::AtomicU64>,

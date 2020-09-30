@@ -198,17 +198,21 @@ impl Registry {
             .collect()
     }
 
-    pub fn service_ref<S>(&self) -> Result<ServiceRef<S>>
+    pub fn service_ref<S>(&self) -> Option<ServiceRef<S>>
     where
         S: ActorService,
     {
-        self.do_with_proxy(S::service_name(), |proxy| {
-            proxy
-                .as_any()
-                .downcast_ref::<ServiceHolder<S>>()
-                .ok_or_else(|| format_err!("Downcast ServiceHandle fail."))
-                .map(|holder| holder.service_ref.clone())
-        })
+        let service_name = S::service_name();
+        self.services
+            .iter()
+            .find(|proxy| proxy.service_name() == service_name)
+            .map(|proxy| {
+                proxy
+                    .as_any()
+                    .downcast_ref::<ServiceHolder<S>>()
+                    .expect("Downcast to ServiceHolder should success.")
+            })
+            .map(|holder| holder.service_ref.clone())
     }
 
     fn do_with_proxy<T, F: FnOnce(&Box<dyn ServiceRefProxy>) -> Result<T>>(
@@ -443,7 +447,7 @@ impl<S> ServiceRequest for ServiceRefRequest<S>
 where
     S: ActorService,
 {
-    type Response = Result<ServiceRef<S>>;
+    type Response = Option<ServiceRef<S>>;
 }
 
 impl<S> ServiceHandler<Self, ServiceRefRequest<S>> for RegistryService
@@ -454,7 +458,7 @@ where
         &mut self,
         _msg: ServiceRefRequest<S>,
         _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Result<ServiceRef<S>> {
+    ) -> Option<ServiceRef<S>> {
         self.registry.service_ref::<S>()
     }
 }
@@ -708,14 +712,16 @@ pub trait RegistryAsyncService {
 
     async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
     where
-        S: ActorService + 'static;
-
-    fn service_ref_sync<S>(&self) -> Result<ServiceRef<S>>
-    where
         S: ActorService + 'static,
     {
-        block_on(async { self.service_ref::<S>().await })
+        self.service_ref_opt()
+            .await?
+            .ok_or_else(|| format_err!("Can not find service: {}", S::service_name()))
     }
+
+    async fn service_ref_opt<S>(&self) -> Result<Option<ServiceRef<S>>>
+    where
+        S: ActorService + 'static;
 
     async fn list_service(&self) -> Result<Vec<ServiceInfo>>;
 
@@ -827,11 +833,11 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
         self.send(RegisterMockerRequest::new(handler)).await?
     }
 
-    async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
+    async fn service_ref_opt<S>(&self) -> Result<Option<ServiceRef<S>>>
     where
         S: ActorService + 'static,
     {
-        self.send(ServiceRefRequest::new()).await?
+        self.send(ServiceRefRequest::new()).await
     }
 
     async fn list_service(&self) -> Result<Vec<ServiceInfo>> {

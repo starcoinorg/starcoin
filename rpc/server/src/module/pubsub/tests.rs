@@ -1,7 +1,7 @@
-use crate::{
-    metadata::Metadata,
-    module::{PubSubImpl, PubSubService},
-};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::module::{PubSubImpl, PubSubService};
 use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
@@ -16,6 +16,7 @@ use starcoin_crypto::{
 };
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::pubsub::StarcoinPubSub;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_service_registry::bus::{Bus, BusService};

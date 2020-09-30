@@ -1,120 +1,253 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::api_registry::{APIType, ApiRegistry};
 use crate::extractors::{RpcExtractor, WsExtractor};
-use crate::metadata::Metadata;
-use jsonrpc_core::MetaIoHandler;
+use crate::module::{
+    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NodeRpcImpl, PubSubImpl,
+    PubSubService, StateRpcImpl, TxPoolRpcImpl,
+};
+use anyhow::Result;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
+use starcoin_account_service::AccountService;
+use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
+use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_middleware::MetricMiddleware;
+use starcoin_logger::LoggerHandle;
+use starcoin_miner::MinerService;
+use starcoin_network::NetworkAsyncService;
+use starcoin_rpc_api::metadata::Metadata;
+use starcoin_rpc_api::{
+    account::AccountApi, chain::ChainApi, debug::DebugApi, dev::DevApi, miner::MinerApi,
+    node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
+};
+use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory};
+use starcoin_state_service::ChainStateService;
+use starcoin_storage::Storage;
+use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
 
 pub struct RpcService {
+    config: Arc<NodeConfig>,
+    api_registry: ApiRegistry,
     ipc: Option<jsonrpc_ipc_server::Server>,
     http: Option<jsonrpc_http_server::Server>,
     tcp: Option<jsonrpc_tcp_server::Server>,
     ws: Option<jsonrpc_ws_server::Server>,
 }
 
+impl ActorService for RpcService {
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+        self.ipc = self.start_ipc()?;
+        self.http = self.start_http()?;
+        self.tcp = self.start_tcp()?;
+        self.ws = self.start_ws()?;
+        Ok(())
+    }
+
+    fn stopped(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+        self.close();
+        Ok(())
+    }
+}
+
+impl ServiceFactory<Self> for RpcService {
+    fn create(ctx: &mut ServiceContext<RpcService>) -> Result<RpcService> {
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let bus = ctx.bus_ref().clone();
+        let storage = ctx.get_shared::<Arc<Storage>>()?;
+        let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
+        let network_service = ctx.get_shared::<NetworkAsyncService>()?;
+        let node_api = NodeRpcImpl::new(config.clone(), Some(network_service));
+        let chain_api = ctx
+            .service_ref_opt::<ChainReaderService>()?
+            .map(|service_ref| ChainRpcImpl::new(service_ref.clone()));
+        let txpool_service = ctx.get_shared::<TxPoolService>()?;
+        let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));
+        let account_api = ctx
+            .service_ref_opt::<AccountService>()?
+            .map(|service_ref| AccountRpcImpl::new(service_ref.clone()));
+        let state_api = ctx
+            .service_ref_opt::<ChainStateService>()?
+            .map(|service_ref| StateRpcImpl::new(service_ref.clone()));
+        let pubsub_service = PubSubService::new(bus, txpool_service);
+        let pubsub_api = Some(PubSubImpl::new(pubsub_service));
+        let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));
+        let miner_api = ctx
+            .service_ref_opt::<MinerService>()?
+            .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
+
+        let dev_api = ctx
+            .service_ref_opt::<ChainStateService>()?
+            .map(|service_ref| {
+                let dev_playground = PlaygroudService::new(storage);
+                DevRpcImpl::new(service_ref.clone(), dev_playground)
+            });
+        Ok(Self::new_with_api(
+            config,
+            node_api,
+            chain_api,
+            txpool_api,
+            account_api,
+            state_api,
+            pubsub_api,
+            debug_api,
+            miner_api,
+            dev_api,
+        ))
+    }
+}
+
 impl RpcService {
-    pub fn new(
+    pub fn new(config: Arc<NodeConfig>, api_registry: ApiRegistry) -> Self {
+        Self {
+            config,
+            api_registry,
+            ipc: None,
+            http: None,
+            tcp: None,
+            ws: None,
+        }
+    }
+
+    pub fn new_with_api<C, N, T, A, S, D, P, M, DEV>(
         config: Arc<NodeConfig>,
-        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
-    ) -> RpcService {
-        let ipc = Self::start_ipc(&config, io_handler.clone());
-        let http = match &config.rpc.http_address {
+        node_api: N,
+        chain_api: Option<C>,
+        txpool_api: Option<T>,
+        account_api: Option<A>,
+        state_api: Option<S>,
+        pubsub_api: Option<P>,
+        debug_api: Option<D>,
+        miner_api: Option<M>,
+        dev_api: Option<DEV>,
+    ) -> Self
+    where
+        N: NodeApi,
+        C: ChainApi,
+        T: TxPoolApi,
+        A: AccountApi,
+        S: StateApi,
+        P: StarcoinPubSub<Metadata = Metadata>,
+        D: DebugApi,
+        M: MinerApi,
+        DEV: DevApi,
+    {
+        let mut api_registry = ApiRegistry::default();
+        //TODO Current NodeApi is node info api, so should public.
+        // Add a new Node Manager api to manager node.
+        api_registry.register(APIType::Public, NodeApi::to_delegate(node_api));
+        if let Some(chain_api) = chain_api {
+            api_registry.register(APIType::Public, ChainApi::to_delegate(chain_api));
+        }
+        if let Some(txpool_api) = txpool_api {
+            api_registry.register(APIType::Public, TxPoolApi::to_delegate(txpool_api));
+        }
+        if let Some(account_api) = account_api {
+            api_registry.register(APIType::Personal, AccountApi::to_delegate(account_api));
+        }
+        if let Some(state_api) = state_api {
+            api_registry.register(APIType::Public, StateApi::to_delegate(state_api));
+        }
+        if let Some(pubsub_api) = pubsub_api {
+            api_registry.register(APIType::Public, StarcoinPubSub::to_delegate(pubsub_api));
+        }
+        if let Some(debug_api) = debug_api {
+            api_registry.register(APIType::Admin, DebugApi::to_delegate(debug_api));
+        }
+        if let Some(miner_api) = miner_api {
+            api_registry.register(APIType::Public, MinerApi::to_delegate(miner_api));
+        }
+        if let Some(dev_api) = dev_api {
+            api_registry.register(APIType::Admin, DevApi::to_delegate(dev_api));
+        }
+        Self::new(config, api_registry)
+    }
+
+    #[cfg(not(windows))]
+    fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
+        let ipc_file = self.config.rpc.get_ipc_file();
+        let io_handler =
+            self.api_registry
+                .get_apis(&[APIType::Public, APIType::Personal, APIType::Admin]);
+
+        info!("Ipc rpc server start at :{:?}", ipc_file);
+        Ok(Some(
+            jsonrpc_ipc_server::ServerBuilder::new(io_handler)
+                .session_meta_extractor(RpcExtractor)
+                .start(ipc_file.to_str().expect("Path to string should success."))?,
+        ))
+    }
+
+    //IPC raise a error on windows: The filename, directory name, or volume label syntax is incorrect.
+    #[cfg(windows)]
+    fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
+        Ok(None)
+    }
+
+    fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
+        Ok(match &self.config.rpc.http_address {
             Some(address) => {
-                let http = jsonrpc_http_server::ServerBuilder::new(io_handler.clone())
+                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
+                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
                     .meta_extractor(RpcExtractor)
                     .cors(DomainsValidation::AllowOnly(vec![
                         AccessControlAllowOrigin::Null,
                         AccessControlAllowOrigin::Any,
                     ]))
-                    .threads(config.rpc.threads.unwrap_or_else(num_cpus::get))
-                    .max_request_body_size(config.rpc.max_request_body_size)
+                    .threads(self.config.rpc.threads.unwrap_or_else(num_cpus::get))
+                    .max_request_body_size(self.config.rpc.max_request_body_size)
                     .health_api(("/status", "status"))
-                    .start_http(address)
-                    .expect("Unable to start RPC server.");
+                    .start_http(address)?;
                 info!("Http rpc server start at :{}", address);
                 Some(http)
             }
             None => None,
-        };
-        let tcp_server = match &config.rpc.tcp_address {
+        })
+    }
+
+    fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
+        Ok(match &self.config.rpc.tcp_address {
             Some(address) => {
-                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler.clone())
+                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
+                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
                     .session_meta_extractor(RpcExtractor)
-                    .start(address)
-                    .expect("rpc: start tcp server should ok");
+                    .start(address)?;
                 info!("Rpc: tcp server start at: {}", address);
                 Some(tcp_server)
             }
             None => None,
-        };
+        })
+    }
 
-        let ws_server = match &config.rpc.ws_address {
+    fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
+        Ok(match &self.config.rpc.ws_address {
             None => None,
             Some(address) => {
+                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
                 let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
                     .session_meta_extractor(WsExtractor)
-                    .max_payload(config.rpc.max_request_body_size)
-                    .start(address)
-                    .expect("rpc: start ws server should ok");
+                    .max_payload(self.config.rpc.max_request_body_size)
+                    .start(address)?;
                 info!("Rpc: websocket server start at: {}", address);
                 Some(ws_server)
             }
-        };
-
-        RpcService {
-            ipc,
-            http,
-            tcp: tcp_server,
-            ws: ws_server,
-        }
+        })
     }
 
-    #[cfg(not(windows))]
-    fn start_ipc(
-        config: &NodeConfig,
-        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
-    ) -> Option<jsonrpc_ipc_server::Server> {
-        let ipc_file = config.rpc.get_ipc_file();
-        info!("Ipc rpc server start at :{:?}", ipc_file);
-        Some(
-            jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(RpcExtractor)
-                .start(ipc_file.to_str().expect("Path to string should success."))
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "Unable to start IPC server with ipc file: {:?}, error: {:?}",
-                        ipc_file, e
-                    )
-                }),
-        )
-    }
-
-    //IPC raise a error on windows: The filename, directory name, or volume label syntax is incorrect.
-    #[cfg(windows)]
-    fn start_ipc(
-        _config: &NodeConfig,
-        io_handler: MetaIoHandler<Metadata, MetricMiddleware>,
-    ) -> Option<jsonrpc_ipc_server::Server> {
-        None
-    }
-
-    pub fn close(self) {
-        if let Some(ipc) = self.ipc {
+    pub fn close(&mut self) {
+        if let Some(ipc) = self.ipc.take() {
             ipc.close();
         }
-        if let Some(http) = self.http {
+        if let Some(http) = self.http.take() {
             http.close();
         }
-        if let Some(tcp) = self.tcp {
+        if let Some(tcp) = self.tcp.take() {
             tcp.close();
         }
-        if let Some(ws) = self.ws {
+        if let Some(ws) = self.ws.take() {
             ws.close();
         }
         info!("Rpc Sever is closed.");

@@ -33,13 +33,12 @@ num_cpus = "1.10"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = {path = "../../types"}
 starcoin-config = {path = "../../config"}
-txpool = {path = "../../txpool", package="starcoin-txpool"}
 starcoin-logger = { path = "../../commons/logger"}
-stest = { path = "../../commons/stest"}
 starcoin-rpc-api = { path = "../api"}
 starcoin-rpc-middleware = { path = "../middleware"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-chain = {path ="../../chain"}
+starcoin-chain-service = {path ="../../chain/service"}
 starcoin-chain-notify = {path = "../../chain/chain-notify"}
 starcoin-account-service = { path = "../../account/service"}
 starcoin-statedb = { path = "../../state/statedb"}
@@ -49,6 +48,7 @@ starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-state-service = { path = "../../state/service"}
 starcoin-txpool-api = {path = "../../txpool/api"}
+starcoin-txpool = {path = "../../txpool"}
 starcoin-network = {path = "../../network"}
 starcoin-metrics = {path = "../../commons/metrics"}
 starcoin-storage = {path = "../../storage"}
@@ -62,6 +62,7 @@ network-api = { path = "../../network/api" }
 lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34"}
 
 [dev-dependencies]
+stest = { path = "../../commons/stest"}
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}

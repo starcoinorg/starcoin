@@ -21,6 +21,7 @@ jsonrpc-pubsub = "14.0"
 jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 futures = { version = "0.3", features = ["compat"] }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+starcoin-rpc-middleware = { path = "../middleware" }
 starcoin-types = { path = "../../types"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
