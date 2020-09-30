@@ -181,6 +181,60 @@ mod tests {
         assert_eq!(pending_res, Some(Arc::new(vec![*tx.hash()])));
     }
 
+    #[test]
+    fn test_notify() {
+        // given
+        let (full_sender, mut full_receiver) = mpsc::unbounded();
+        let mut tx_listener = TransactionsPoolNotifier::default();
+        tx_listener.add_full_listener(full_sender);
+
+        // rejected
+        let tx = new_tx();
+        tx_listener.rejected(&tx, &tx_pool::Error::AlreadyImported(tx.hash));
+        tx_listener.notify();
+        let full_res = full_receiver.try_next().unwrap();
+        assert_eq!(
+            full_res,
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Rejected)]))
+        );
+
+        // dropped
+        tx_listener.dropped(&tx, None);
+        tx_listener.notify();
+        let full_res = full_receiver.try_next().unwrap();
+        assert_eq!(
+            full_res,
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Dropped)]))
+        );
+
+        // canceled
+        tx_listener.canceled(&tx);
+        tx_listener.notify();
+        let full_res = full_receiver.try_next().unwrap();
+        assert_eq!(
+            full_res,
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Canceled)]))
+        );
+
+        // culled
+        tx_listener.culled(&tx);
+        tx_listener.notify();
+        let full_res = full_receiver.try_next().unwrap();
+        assert_eq!(
+            full_res,
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Culled)]))
+        );
+
+        // invalid
+        tx_listener.invalid(&tx);
+        tx_listener.notify();
+        let full_res = full_receiver.try_next().unwrap();
+        assert_eq!(
+            full_res,
+            Some(Arc::new(vec![(*tx.hash(), TxStatus::Invalid)]))
+        );
+    }
+
     fn new_tx() -> Arc<Transaction> {
         let raw = transaction::RawUserTransaction::new(
             AccountAddress::random(),

@@ -36,7 +36,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     starcoin_logger::init_for_test();
     // prepare
 
-    let (txpool_service, storage, config, registry) = test_helper::start_txpool().await;
+    let (txpool_service, storage, config, _, registry) = test_helper::start_txpool().await;
     let startup_info = storage.get_startup_info()?.unwrap();
     let mut block_chain = BlockChain::new(config.net().consensus(), startup_info.master, storage)?;
     let miner_account = AccountInfo::random();
@@ -144,7 +144,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 #[stest::test]
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
-    let (txpool_service, _, config, registry) = test_helper::start_txpool().await;
+    let (txpool_service, _, config, _, registry) = test_helper::start_txpool().await;
     let bus = registry.service_ref::<BusService>().await?;
     let service = PubSubService::new(bus, txpool_service.clone());
     let pubsub = PubSubImpl::new(service);

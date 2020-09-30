@@ -29,7 +29,6 @@ mod pool_client;
 #[cfg(test)]
 mod test;
 mod tx_pool_service_impl;
-
 //TODO refactor TxPoolService and rename.
 #[derive(Clone)]
 pub struct TxPoolActorService {
