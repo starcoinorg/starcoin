@@ -18,7 +18,7 @@ logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
 crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
-jsonrpc-tcp-server = "14.0"
+jsonrpc-tcp-server = "15.1"
 serde_json = { version = "1.0", features = ["arbitrary_precision"] }
 serde = { version = "1.0", features = ["derive"] }
 rust-argon2 = "0.8"
