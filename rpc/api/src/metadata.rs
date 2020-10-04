@@ -13,6 +13,14 @@ pub struct Metadata {
     pub session: Option<Arc<Session>>,
 }
 
+impl Metadata {
+    pub fn new(session: Arc<Session>) -> Self {
+        Self {
+            session: Some(session),
+        }
+    }
+}
+
 impl jsonrpc_core::Metadata for Metadata {}
 impl PubSubMetadata for Metadata {
     fn session(&self) -> Option<Arc<Session>> {

@@ -44,3 +44,5 @@ starcoin-rpc-server = { path = "../server" }
 starcoin-config = { path = "../../config"}
 starcoin-traits = { path = "../../core/traits"}
 stest = { path = "../../commons/stest"}
+test-helper = { path = "../../test-helper"}
+starcoin-service-registry = { path = "../../commons/service-registry" }

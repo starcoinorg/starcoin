@@ -14,6 +14,7 @@ pub mod metadata;
 pub mod miner;
 pub mod node;
 pub mod pubsub;
+pub mod service;
 pub mod state;
 pub mod txpool;
 pub mod types;
