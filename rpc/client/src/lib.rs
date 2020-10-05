@@ -18,7 +18,8 @@ use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
-    miner::MinerClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
+    miner::MinerClient, node::NodeClient, node_manager::NodeManagerClient, state::StateClient,
+    txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -47,6 +48,7 @@ mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::ContractCall;
+use starcoin_service_registry::ServiceInfo;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
@@ -185,6 +187,42 @@ impl RpcClient {
     pub fn node_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
         self.call_rpc_blocking(|inner| async move { inner.node_client.peers().compat().await })
             .map_err(map_err)
+    }
+
+    pub fn node_list_service(&self) -> anyhow::Result<Vec<ServiceInfo>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.node_manager_client.list_service().compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_start_service(&self, service_name: String) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .start_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_stop_service(&self, service_name: String) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .stop_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_shutdown_system(&self) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.node_manager_client.shutdown_system().compat().await
+        })
+        .map_err(map_err)
     }
 
     pub fn next_sequence_number_in_txpool(
@@ -668,6 +706,7 @@ impl RpcClient {
 #[derive(Clone)]
 pub(crate) struct RpcClientInner {
     node_client: NodeClient,
+    node_manager_client: NodeManagerClient,
     txpool_client: TxPoolClient,
     account_client: AccountClient,
     state_client: StateClient,
@@ -682,6 +721,7 @@ impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
             node_client: channel.clone().into(),
+            node_manager_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
             account_client: channel.clone().into(),
             state_client: channel.clone().into(),

@@ -5,7 +5,6 @@ use consensus::Consensus;
 use crypto::hash::PlainCryptoHash;
 use crypto::HashValue;
 use futures::executor::block_on;
-use logger::prelude::*;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
@@ -27,9 +26,10 @@ use types::{
 fn test_miner() {
     let mut config = NodeConfig::random_for_test();
     config.miner.enable_miner_client = false;
-    let handle = test_helper::run_node_by_config(Arc::new(config)).unwrap();
+    let config = Arc::new(config);
+    let handle = test_helper::run_node_by_config(config.clone()).unwrap();
+    let bus = handle.bus().unwrap();
     let fut = async move {
-        let bus = handle.bus().unwrap();
         let new_block_receiver = bus.oneshot::<NewHeadBlock>().await.unwrap();
         bus.broadcast(GenerateBlockEvent::new(false)).unwrap();
         // mint client handle mint block event
@@ -39,8 +39,7 @@ fn test_miner() {
             .unwrap()
             .await
             .unwrap();
-        let nonce = handle
-            .config()
+        let nonce = config
             .net()
             .consensus()
             .solve_consensus_nonce(mint_block_event.minting_hash, mint_block_event.difficulty);
@@ -98,7 +97,6 @@ async fn test_miner_service() {
     assert!(miner.is_ok());
 
     let miner = miner.unwrap();
-    miner.start_self().unwrap();
     miner.notify(GenerateBlockEvent::new(false)).unwrap();
 
     delay_for(Duration::from_millis(200)).await;
@@ -115,7 +113,6 @@ async fn test_miner_service() {
     miner
         .notify(SubmitSealEvent::new(header_hash, nonce))
         .unwrap();
-    debug!("status: {:?}", miner.self_status());
 
-    registry.stop_self().unwrap();
+    registry.shutdown_system().await.unwrap();
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::crash_handler::setup_panic_handler;
+use crate::rpc_service_factory::RpcServiceFactory;
 use crate::{timeout_join_handler, NodeHandle};
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
@@ -77,7 +78,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 );
                 NodeResponse::Result(self.registry.start_service_sync(service_name.as_str()))
             }
-            NodeRequest::StopSystem => {
+            NodeRequest::ShutdownSystem => {
                 info!("Receive StopSystem request, try to stop system.");
                 if let Err(e) = self.registry.shutdown_system_sync() {
                     error!("Shutdown registry error: {}", e);
@@ -246,13 +247,16 @@ impl NodeService {
         } else {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
-        registry.register::<RpcService>().await?;
 
         bus.broadcast(StartSyncTxnEvent)?;
         bus.broadcast(SystemStarted)?;
 
         registry.register::<OndemandPacemaker>().await?;
         registry.register::<HeadBlockPacemaker>().await?;
+
+        registry
+            .register_by_factory::<RpcService, RpcServiceFactory>()
+            .await?;
 
         Ok((registry, node_service))
     }

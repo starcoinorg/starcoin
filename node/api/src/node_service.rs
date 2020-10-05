@@ -19,7 +19,7 @@ pub trait NodeAsyncService:
 
     async fn stop_pacemaker(&self) -> Result<()>;
 
-    async fn stop_system(&self) -> Result<()>;
+    async fn shutdown_system(&self) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -74,8 +74,8 @@ where
         }
     }
 
-    async fn stop_system(&self) -> Result<()> {
-        self.try_send(NodeRequest::StopSystem)?;
+    async fn shutdown_system(&self) -> Result<()> {
+        self.try_send(NodeRequest::ShutdownSystem)?;
         Ok(())
     }
 }

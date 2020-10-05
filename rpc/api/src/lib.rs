@@ -13,6 +13,7 @@ pub mod errors;
 pub mod metadata;
 pub mod miner;
 pub mod node;
+pub mod node_manager;
 pub mod pubsub;
 pub mod service;
 pub mod state;

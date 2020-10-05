@@ -7224,8 +7224,6 @@ dependencies = [
 name = "starcoin-node-api"
 version = "0.5.1"
 dependencies = [
- "actix",
- "actix-rt",
  "anyhow",
  "async-trait",
  "backtrace",
@@ -7399,7 +7397,6 @@ dependencies = [
  "jsonrpc-server-utils",
  "jsonrpc-tcp-server",
  "jsonrpc-ws-server",
- "libra-canonical-serialization",
  "log 0.4.11",
  "network-api",
  "num_cpus",
@@ -7423,6 +7420,7 @@ dependencies = [
  "starcoin-metrics",
  "starcoin-miner",
  "starcoin-network",
+ "starcoin-node-api",
  "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-rpc-middleware",

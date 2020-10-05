@@ -97,7 +97,7 @@ impl Registry {
             services: vec![],
         };
         registry
-            .register::<BusService>()
+            .register::<BusService, BusService>()
             .expect("Registry BusService should success");
         registry
     }
@@ -168,11 +168,12 @@ impl Registry {
         Ok(service_ref)
     }
 
-    pub fn register<S>(&mut self) -> Result<ServiceRef<S>>
+    pub fn register<S, F>(&mut self) -> Result<ServiceRef<S>>
     where
-        S: ActorService + ServiceFactory<S> + 'static,
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static,
     {
-        self.do_register(ServiceActor::new::<S>)
+        self.do_register(ServiceActor::new::<F>)
     }
 
     pub fn register_mocker<S>(&mut self, mocker: Box<dyn MockHandler<S>>) -> Result<ServiceRef<S>>
@@ -305,16 +306,19 @@ impl ActorService for RegistryService {
     }
 }
 
-pub struct RegisterRequest<S>
+pub struct RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S> + 'static,
+    S: ActorService + 'static,
+    F: ServiceFactory<S> + 'static,
 {
-    phantom: PhantomData<S>,
+    phantom_service: PhantomData<S>,
+    phantom_factory: PhantomData<F>,
 }
 
-impl<S> Debug for RegisterRequest<S>
+impl<S, F> Debug for RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", type_name::<Self>())
@@ -322,34 +326,38 @@ where
 }
 
 #[allow(clippy::new_without_default)]
-impl<S> RegisterRequest<S>
+impl<S, F> RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     pub fn new() -> Self {
         Self {
-            phantom: PhantomData,
+            phantom_service: PhantomData,
+            phantom_factory: PhantomData,
         }
     }
 }
 
-impl<S> ServiceRequest for RegisterRequest<S>
+impl<S, F> ServiceRequest for RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     type Response = Result<ServiceRef<S>>;
 }
 
-impl<S> ServiceHandler<Self, RegisterRequest<S>> for RegistryService
+impl<S, F> ServiceHandler<Self, RegisterRequest<S, F>> for RegistryService
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     fn handle(
         &mut self,
-        _msg: RegisterRequest<S>,
+        _msg: RegisterRequest<S, F>,
         _ctx: &mut ServiceContext<RegistryService>,
     ) -> Result<ServiceRef<S>> {
-        self.registry.register::<S>()
+        self.registry.register::<S, F>()
     }
 }
 
@@ -698,6 +706,11 @@ pub trait RegistryAsyncService {
     where
         S: ActorService + ServiceFactory<S> + 'static;
 
+    async fn register_by_factory<S, F>(&self) -> Result<ServiceRef<S>>
+    where
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static;
+
     async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
     where
         S: ActorService + 'static,
@@ -821,7 +834,15 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
     where
         S: ActorService + ServiceFactory<S> + 'static,
     {
-        self.send(RegisterRequest::new()).await?
+        self.send(RegisterRequest::<S, S>::new()).await?
+    }
+
+    async fn register_by_factory<S, F>(&self) -> Result<ServiceRef<S>>
+    where
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static,
+    {
+        self.send(RegisterRequest::<S, F>::new()).await?
     }
 
     async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>

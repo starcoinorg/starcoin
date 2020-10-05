@@ -245,7 +245,7 @@ where
     fn handle_event(&mut self, msg: M, ctx: &mut ServiceContext<S>);
 }
 
-pub trait ServiceFactory<S>
+pub trait ServiceFactory<S>: Send
 where
     S: ActorService,
 {

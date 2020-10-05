@@ -21,6 +21,7 @@ use tokio::runtime::Runtime;
 
 pub mod crash_handler;
 pub mod node;
+pub mod rpc_service_factory;
 pub mod timeout_join_handler;
 
 pub struct NodeHandle {
@@ -87,7 +88,7 @@ impl NodeHandle {
 
     pub fn stop(self) -> Result<()> {
         self.node_service
-            .try_send(NodeRequest::StopSystem)
+            .try_send(NodeRequest::ShutdownSystem)
             .map_err(|_| format_err!("Stop message send fail."))?;
         self.join_handle
             .join(Duration::from_millis(5000))

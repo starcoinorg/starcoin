@@ -3,7 +3,7 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
 use structopt::StructOpt;
@@ -24,12 +24,7 @@ impl CommandAction for ListCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let handle = ctx.state().node_handle();
-        match handle {
-            Some(handle) => handle.list_service(),
-            None => {
-                bail!("Remote attached console not support node service command.");
-            }
-        }
+        let client = ctx.state().client();
+        client.node_list_service()
     }
 }
