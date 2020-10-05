@@ -31,22 +31,33 @@ fn run() -> Result<()> {
                     } else {
                         info!("Start starcoin node...");
                         let (node_handle, config) = starcoin_node::run_node_by_opt(opt)?;
-                        let ipc_file = config.rpc.get_ipc_file();
-                        helper::wait_until_file_created(ipc_file)?;
-                        info!(
-                            "Attach a new console by ipc: starcoin -c {} console",
-                            ipc_file.to_str().expect("invalid ipc file path.")
-                        );
-                        if let Some(http_address) = config.rpc.get_http_address() {
-                            info!(
-                                "Attach a new console by rpc: starcoin -c {} console",
-                                http_address
-                            );
+                        match node_handle {
+                            //first cli use local connect.
+                            Some(node_handle) => {
+                                info!("Connect by in process channel");
+                                let rpc_service = node_handle.rpc_service()?;
+                                let client = RpcClient::connect_local(rpc_service)?;
+                                (client, Some(node_handle))
+                            }
+                            None => {
+                                let ipc_file = config.rpc.get_ipc_file();
+                                helper::wait_until_file_created(ipc_file)?;
+                                info!(
+                                    "Attach a new console by ipc: starcoin -c {} console",
+                                    ipc_file.to_str().expect("invalid ipc file path.")
+                                );
+                                if let Some(http_address) = config.rpc.get_http_address() {
+                                    info!(
+                                        "Attach a new console by rpc: starcoin -c {} console",
+                                        http_address
+                                    );
+                                }
+                                info!("Starcoin node started.");
+                                info!("Try to connect node by ipc: {:?}", ipc_file);
+                                let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
+                                (client, None)
+                            }
                         }
-                        info!("Starcoin node started.");
-                        info!("Try to connect node by ipc: {:?}", ipc_file);
-                        let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
-                        (client, node_handle)
                     }
                 }
                 Connect::WebSocket(address) => {

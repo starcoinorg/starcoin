@@ -29,20 +29,18 @@ fn test_miner() {
     config.miner.enable_miner_client = false;
     let handle = test_helper::run_node_by_config(Arc::new(config)).unwrap();
     let fut = async move {
-        let bus = handle.start_handle().bus.clone();
+        let bus = handle.bus().unwrap();
         let new_block_receiver = bus.oneshot::<NewHeadBlock>().await.unwrap();
         bus.broadcast(GenerateBlockEvent::new(false)).unwrap();
         // mint client handle mint block event
         let mint_block_event = bus
-            .clone()
             .oneshot::<MintBlockEvent>()
             .await
             .unwrap()
             .await
             .unwrap();
         let nonce = handle
-            .start_handle()
-            .config
+            .config()
             .net()
             .consensus()
             .solve_consensus_nonce(mint_block_event.minting_hash, mint_block_event.difficulty);

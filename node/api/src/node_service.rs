@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::message::{NodeRequest, NodeResponse};
-use actix::dev::ToEnvelope;
-use actix::{Actor, Addr, Handler};
 use anyhow::Result;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_service_registry::{ActorService, ServiceHandler, ServiceInfo, ServiceRef};
 
 #[async_trait::async_trait]
 pub trait NodeAsyncService:
@@ -25,11 +23,10 @@ pub trait NodeAsyncService:
 }
 
 #[async_trait::async_trait]
-impl<A> NodeAsyncService for Addr<A>
+impl<A> NodeAsyncService for ServiceRef<A>
 where
-    A: Actor,
-    A: Handler<NodeRequest>,
-    A::Context: ToEnvelope<A, NodeRequest>,
+    A: ActorService,
+    A: ServiceHandler<A, NodeRequest>,
     A: std::marker::Send,
 {
     async fn list_service(&self) -> Result<Vec<ServiceInfo>> {

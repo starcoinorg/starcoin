@@ -26,7 +26,7 @@ fn test_broadcast_with_difficulty() {
         first_config.network.self_peer_id().unwrap()
     );
     let first_node = run_node_by_config(first_config.clone()).unwrap();
-    let first_chain = block_on(async { first_node.start_handle().chain_service().await });
+    let first_chain = first_node.chain_service().unwrap();
     let count = 5;
     for _i in 0..count {
         first_node.generate_block().unwrap();
@@ -52,7 +52,7 @@ fn test_broadcast_with_difficulty() {
     second_config.sync.set_mode(SyncMode::FULL);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
-    let second_chain = block_on(async { second_node.start_handle().chain_service().await });
+    let second_chain = second_node.chain_service().unwrap();
 
     let not_broadcast_block = second_node.generate_block().unwrap();
     let mut number_2 = 0;

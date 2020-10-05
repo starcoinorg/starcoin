@@ -13,21 +13,14 @@ pub fn test_sync(sync_mode: SyncMode) {
         first_config.network.self_peer_id().unwrap()
     );
     let first_node = run_node_by_config(first_config.clone()).unwrap();
-    let first_chain = block_on(async { first_node.start_handle().chain_service().await });
+    let first_chain = first_node.chain_service().unwrap();
     let count = 5;
     for _i in 0..count {
         first_node.generate_block().unwrap();
     }
     //wait block generate.
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async {
-        first_chain
-            .clone()
-            .master_head_block()
-            .await
-            .unwrap()
-            .unwrap()
-    });
+    let block_1 = block_on(async { first_chain.master_head_block().await.unwrap().unwrap() });
     let number_1 = block_1.header().number();
     debug!("first chain head block number is {}", number_1);
     assert_eq!(number_1, count);
@@ -42,20 +35,13 @@ pub fn test_sync(sync_mode: SyncMode) {
     second_config.sync.set_mode(sync_mode);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
-    let second_chain = block_on(async { second_node.start_handle().chain_service().await });
+    let second_chain = second_node.chain_service().unwrap();
 
     //TODO add more check.
     let mut number_2 = 0;
     for i in 0..10 as usize {
         std::thread::sleep(Duration::from_secs(2));
-        let block_2 = block_on(async {
-            second_chain
-                .clone()
-                .master_head_block()
-                .await
-                .unwrap()
-                .unwrap()
-        });
+        let block_2 = block_on(async { second_chain.master_head_block().await.unwrap().unwrap() });
         number_2 = block_2.header().number();
         debug!("index : {}, second chain number is {}", i, number_2);
         if number_2 == number_1 {

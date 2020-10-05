@@ -5,8 +5,6 @@ use anyhow::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
-use starcoin_rpc_server::service::RpcService;
-use starcoin_service_registry::RegistryAsyncService;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -23,13 +21,7 @@ fn test_multi_client() -> Result<()> {
 
     let node_handle = test_helper::run_node_by_config(config)?;
 
-    let rpc_service_ref = futures03::executor::block_on(async {
-        node_handle
-            .start_handle()
-            .registry
-            .service_ref::<RpcService>()
-            .await
-    })?;
+    let rpc_service_ref = node_handle.rpc_service()?;
     let mut rt = tokio_compat::runtime::Runtime::new()?;
 
     std::thread::sleep(Duration::from_millis(300));
