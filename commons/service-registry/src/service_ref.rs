@@ -9,7 +9,6 @@ use crate::{
 use actix::dev::SendError;
 use actix::{Addr, MailboxError, Recipient};
 use anyhow::Result;
-use futures::executor::block_on;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use log::warn;
@@ -189,13 +188,13 @@ where
     }
 
     /// Get self service status
-    pub fn self_status(&self) -> ServiceStatus {
-        match block_on(async move {
-            self.addr
-                .send(ServiceQuery::Status)
-                .timeout(Duration::from_millis(50))
-                .await
-        }) {
+    pub async fn self_status(&self) -> ServiceStatus {
+        match self
+            .addr
+            .send(ServiceQuery::Status)
+            .timeout(Duration::from_millis(50))
+            .await
+        {
             Ok(status) => match status {
                 ServiceQueryResult::Status(status) => status,
                 _ => unreachable!(),

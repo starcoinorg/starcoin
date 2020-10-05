@@ -13,17 +13,31 @@ use actix::{Actor, AsyncContext};
 use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use log::info;
 use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::time::Duration;
+
+trait ServiceRefProxy: Send + Sync {
+    fn service_name(&self) -> &'static str;
+    fn service_info(&self) -> ServiceInfo;
+    fn status(&self) -> ServiceStatus;
+    fn check_status(&mut self) -> BoxFuture<ServiceStatus>;
+    fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()>;
+    fn shutdown(&self) -> Result<()>;
+    fn as_any(&self) -> &dyn Any;
+}
 
 struct ServiceHolder<S>
 where
     S: ActorService + 'static,
 {
     arbiter: Arbiter,
+    status: ServiceStatus,
     service_ref: ServiceRef<S>,
 }
 
@@ -34,18 +48,10 @@ where
     pub fn new(arbiter: Arbiter, service_ref: ServiceRef<S>) -> Self {
         Self {
             arbiter,
+            status: ServiceStatus::Started,
             service_ref,
         }
     }
-}
-
-trait ServiceRefProxy: Send + Sync {
-    fn service_name(&self) -> &'static str;
-    fn service_info(&self) -> ServiceInfo;
-    fn status(&self) -> ServiceStatus;
-    fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()>;
-    fn shutdown(&self) -> Result<()>;
-    fn as_any(&self) -> &dyn Any;
 }
 
 impl<S> ServiceRefProxy for ServiceHolder<S>
@@ -64,7 +70,17 @@ where
     }
 
     fn status(&self) -> ServiceStatus {
-        self.service_ref.self_status()
+        self.status
+    }
+
+    fn check_status(&mut self) -> BoxFuture<ServiceStatus> {
+        let service_ref = self.service_ref.clone();
+        async move {
+            let status = service_ref.self_status().await;
+            self.status = status;
+            status
+        }
+        .boxed()
     }
 
     fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()> {
@@ -252,24 +268,13 @@ impl Registry {
     }
 
     // Check service status and removed shutdown status service ref.
-    fn check_service(&mut self) {
-        let has_shutdown = self
+    async fn check_service(&mut self) {
+        let status_futs: Vec<BoxFuture<ServiceStatus>> = self
             .services
-            .iter()
-            .any(|service| service.status() == ServiceStatus::Shutdown);
-        if has_shutdown {
-            self.services.retain(|service| {
-                if service.status() == ServiceStatus::Shutdown {
-                    info!(
-                        "{} status is shutdown, remove service registry ref.",
-                        service.service_name()
-                    );
-                    false
-                } else {
-                    true
-                }
-            });
-        }
+            .iter_mut()
+            .map(|proxy| proxy.check_status())
+            .collect();
+        futures::future::join_all(status_futs).await;
     }
 }
 
@@ -297,11 +302,10 @@ impl RegistryService {
 }
 
 impl ActorService for RegistryService {
-    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        //TODO check service will cause registry actor blocked, fixme.
-        // ctx.run_interval(Duration::from_millis(2000), |ctx| {
-        //     ctx.notify(CheckServiceEvent)
-        // });
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.run_interval(Duration::from_millis(2000), |ctx| {
+            ctx.notify(CheckServiceEvent)
+        });
         Ok(())
     }
 }
@@ -696,7 +700,10 @@ impl EventHandler<Self, CheckServiceEvent> for RegistryService {
         _msg: CheckServiceEvent,
         _ctx: &mut ServiceContext<RegistryService>,
     ) {
-        self.registry.check_service();
+        //TODO avoid block_on
+        block_on(async {
+            self.registry.check_service().await;
+        });
     }
 }
 

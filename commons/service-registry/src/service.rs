@@ -197,7 +197,7 @@ where
                 error!("ServiceContext exec future send result error.");
             }
         });
-        self.ctx.wait(fut);
+        self.ctx.spawn(fut);
         receiver
     }
 
