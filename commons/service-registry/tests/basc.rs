@@ -30,16 +30,16 @@ async fn test_basic() {
     // BusService + CounterService = 2
     assert_eq!(2, services.len());
 
-    let status = service_ref.self_status();
+    let status = service_ref.self_status().await;
     assert_eq!(status, ServiceStatus::Started);
     service_ref.stop_self().unwrap();
 
-    let status = service_ref.self_status();
+    let status = service_ref.self_status().await;
     assert_eq!(status, ServiceStatus::Stopped);
 
     service_ref.start_self().unwrap();
 
-    let status = service_ref.self_status();
+    let status = service_ref.self_status().await;
     assert_eq!(status, ServiceStatus::Started);
 
     let result = service_ref.add(1).await.unwrap();

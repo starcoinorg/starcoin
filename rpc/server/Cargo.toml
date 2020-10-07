@@ -12,6 +12,7 @@ parking_lot = "0.11"
 futures-channel = "0.3"
 anyhow = "1.0.32"
 thiserror = "1.0"
+failure = "0.1"
 dashmap = "3.11"
 hex = { version = "0.4.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
@@ -59,7 +60,7 @@ starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-api = { path = "../../network/api" }
-lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34"}
+starcoin-node-api = { path = "../../node/api"}
 
 [dev-dependencies]
 stest = { path = "../../commons/stest"}

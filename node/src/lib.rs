@@ -1,35 +1,34 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crash_handler::setup_panic_handler;
-use crate::node::{Node, NodeStartedHandle};
-use actix::prelude::*;
+use crate::node::NodeService;
 use anyhow::{format_err, Result};
 use futures::executor::block_on;
+use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
-use starcoin_logger::LoggerHandle;
+use starcoin_network::NetworkAsyncService;
 use starcoin_node_api::message::NodeRequest;
 use starcoin_node_api::node_service::NodeAsyncService;
-use starcoin_service_registry::bus::Bus;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_rpc_server::service::RpcService;
+use starcoin_service_registry::bus::{Bus, BusService};
+use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
 use starcoin_types::block::BlockDetail;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::runtime::Runtime;
-use tokio::sync::oneshot;
 
 pub mod crash_handler;
 pub mod node;
+pub mod rpc_service_factory;
 pub mod timeout_join_handler;
 
 pub struct NodeHandle {
     runtime: Runtime,
     join_handle: timeout_join_handler::TimeoutJoinHandle<Result<()>>,
-    node_addr: Addr<Node>,
-    //TODO remove this field after refactor node
-    start_handle: NodeStartedHandle,
+    node_service: ServiceRef<NodeService>,
+    registry: ServiceRef<RegistryService>,
 }
 
 #[cfg(unix)]
@@ -69,14 +68,14 @@ mod platform {
 impl NodeHandle {
     pub fn new(
         join_handle: timeout_join_handler::TimeoutJoinHandle<Result<()>>,
-        node_addr: Addr<Node>,
-        start_handle: NodeStartedHandle,
+        node_service: ServiceRef<NodeService>,
+        registry: ServiceRef<RegistryService>,
     ) -> Self {
         Self {
             runtime: Runtime::new().unwrap(),
             join_handle,
-            node_addr,
-            start_handle,
+            node_service,
+            registry,
         }
     }
 
@@ -88,8 +87,8 @@ impl NodeHandle {
     }
 
     pub fn stop(self) -> Result<()> {
-        self.node_addr
-            .try_send(NodeRequest::StopSystem)
+        self.node_service
+            .try_send(NodeRequest::ShutdownSystem)
             .map_err(|_| format_err!("Stop message send fail."))?;
         self.join_handle
             .join(Duration::from_millis(5000))
@@ -98,33 +97,58 @@ impl NodeHandle {
         Ok(())
     }
 
-    pub fn node_addr(&self) -> Addr<Node> {
-        self.node_addr.clone()
+    pub fn registry(&self) -> &ServiceRef<RegistryService> {
+        &self.registry
     }
 
-    pub fn start_handle(&self) -> &NodeStartedHandle {
-        &self.start_handle
+    pub fn node_service(&self) -> &ServiceRef<NodeService> {
+        &self.node_service
+    }
+
+    pub fn config(&self) -> Arc<NodeConfig> {
+        self.registry
+            .get_shared_sync::<Arc<NodeConfig>>()
+            .expect("NodeConfig must exist.")
+    }
+
+    pub fn bus(&self) -> Result<ServiceRef<BusService>> {
+        block_on(async { self.registry.service_ref::<BusService>().await })
+    }
+
+    pub fn network(&self) -> NetworkAsyncService {
+        self.registry
+            .get_shared_sync::<NetworkAsyncService>()
+            .expect("NetworkAsyncService must exist.")
+    }
+
+    pub fn rpc_service(&self) -> Result<ServiceRef<RpcService>> {
+        block_on(async { self.registry.service_ref::<RpcService>().await })
+    }
+
+    pub fn chain_service(&self) -> Result<ServiceRef<ChainReaderService>> {
+        block_on(async { self.registry.service_ref::<ChainReaderService>().await })
     }
 
     pub fn list_service(&self) -> Result<Vec<ServiceInfo>> {
-        let node_addr = self.node_addr();
+        let node_addr = self.node_service();
         block_on(async { node_addr.list_service().await })
     }
 
     pub fn stop_service(&self, service_name: String) -> Result<()> {
-        let node_addr = self.node_addr();
+        let node_addr = self.node_service();
         block_on(async { node_addr.stop_service(service_name).await })
     }
 
     pub fn start_service(&self, service_name: String) -> Result<()> {
-        let node_addr = self.node_addr();
+        let node_addr = self.node_service();
         block_on(async { node_addr.start_service(service_name).await })
     }
 
     /// Just for test
     pub fn generate_block(&self) -> Result<BlockDetail> {
-        let bus = self.start_handle.bus.clone();
+        let registry = &self.registry;
         block_on(async move {
+            let bus = registry.service_ref::<BusService>().await?;
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new(false))?;
             let new_head_block = receiver.await?;
@@ -150,62 +174,5 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
 /// Run node in a new Thread, and return a NodeHandle.
 pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
     let logger_handle = starcoin_logger::init();
-    run_node_with_log(config, logger_handle)
-}
-
-pub fn run_node_with_log(
-    config: Arc<NodeConfig>,
-    logger_handle: Arc<LoggerHandle>,
-) -> Result<NodeHandle> {
-    info!("Final data-dir is : {:?}", config.data_dir());
-    if config.logger.enable_file() {
-        let file_log_path = config.logger.get_log_path();
-        info!("Write log to file: {:?}", file_log_path);
-        logger_handle.enable_file(
-            file_log_path,
-            config.logger.max_file_size,
-            config.logger.max_backup,
-        );
-    }
-    if config.logger.enable_stderr {
-        logger_handle.enable_stderr();
-    } else {
-        logger_handle.disable_stderr();
-    }
-
-    // start metric server
-    if config.metrics.enable_metrics {
-        starcoin_metrics::metric_server::start_server(
-            config.metrics.address.clone(),
-            config.metrics.port,
-        );
-    }
-
-    let (start_sender, start_receiver) = oneshot::channel();
-    let join_handle = timeout_join_handler::spawn(move || {
-        setup_panic_handler();
-        let mut system = System::builder().stop_on_panic(true).name("main").build();
-        system.block_on(async {
-            match node::start(config, logger_handle).await {
-                Err(e) => {
-                    error!("Node start fail: {:?}.", e);
-                    if start_sender.send(Err(e)).is_err() {
-                        info!("Start send error.");
-                    };
-                }
-                Ok(node_handle) => {
-                    if start_sender.send(Ok(node_handle)).is_err() {
-                        info!("Start send error.");
-                    }
-                }
-            };
-        });
-        system.run().map_err(|e| e.into())
-    });
-    let start_handle = block_on(async { start_receiver.await }).expect("Wait node start error.")?;
-    Ok(NodeHandle::new(
-        join_handle,
-        start_handle.node_addr.clone(),
-        start_handle,
-    ))
+    NodeService::launch(config, logger_handle)
 }

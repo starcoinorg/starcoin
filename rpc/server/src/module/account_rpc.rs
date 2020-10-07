@@ -151,29 +151,3 @@ where
         Box::new(fut.boxed().compat())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use jsonrpc_core::IoHandler;
-    use starcoin_account_api::mock::MockAccountService;
-    use starcoin_rpc_client::RpcClient;
-    use tokio_compat::runtime::Runtime;
-
-    #[test]
-    fn test_account() {
-        let mut io = IoHandler::new();
-        let mut runtime = Runtime::new().unwrap();
-        let account_service = MockAccountService::new().unwrap();
-        io.extend_with(AccountRpcImpl::new(account_service).to_delegate());
-        let client = RpcClient::connect_local(io, &mut runtime);
-        let account = client.account_create("passwd".to_string()).unwrap();
-        let accounts = client.account_list().unwrap();
-        assert!(!accounts.is_empty());
-        assert!(accounts.iter().any(|a| a.address() == account.address()));
-        // assert!(accounts.contains(&account));
-        let raw_txn = RawUserTransaction::mock_by_sender(account.address);
-        let signed_txn = client.account_sign_txn(raw_txn).unwrap();
-        assert!(signed_txn.check_signature().is_ok())
-    }
-}

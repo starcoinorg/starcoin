@@ -7,9 +7,8 @@ use actix::{Addr, System};
 use failure::Fail;
 use futures::future::Future as Future01;
 use futures03::channel::oneshot;
-use futures03::{future::FutureExt, select, stream::StreamExt, TryStream, TryStreamExt};
-use jsonrpc_core::{MetaIoHandler, Metadata};
-use jsonrpc_core_client::{transports::ipc, transports::local, transports::ws, RpcChannel};
+use futures03::{TryStream, TryStreamExt};
+use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
@@ -19,7 +18,8 @@ use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
-    miner::MinerClient, node::NodeClient, state::StateClient, txpool::TxPoolClient,
+    miner::MinerClient, node::NodeClient, node_manager::NodeManagerClient, state::StateClient,
+    txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -33,7 +33,6 @@ use starcoin_types::transaction::{
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -47,7 +46,9 @@ mod pubsub_client;
 mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::ContractCall;
+use starcoin_service_registry::ServiceInfo;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
@@ -96,7 +97,7 @@ impl ConnectionProvider {
 }
 
 impl RpcClient {
-    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner, rt: &mut Runtime) -> Self {
+    pub(crate) fn new(conn_source: ConnSource, inner: RpcClientInner) -> Self {
         let (tx, rx) = oneshot::channel();
         let pubsub_client = inner.pubsub_client.clone();
         let handle = std::thread::spawn(move || {
@@ -106,7 +107,7 @@ impl RpcClient {
             tx.send(watcher).unwrap();
             let _ = sys.run();
         });
-        let watcher = rt.block_on_std(rx).unwrap();
+        let watcher = futures03::executor::block_on(rx).expect("Init chain watcher fail.");
 
         Self {
             inner: RefCell::new(Some(inner)),
@@ -115,53 +116,32 @@ impl RpcClient {
             watcher_handle: handle,
         }
     }
+
     pub fn connect_websocket(url: &str, rt: &mut Runtime) -> anyhow::Result<Self> {
         let conn = ws::try_connect(url).map_err(|e| anyhow::Error::new(e.compat()))?;
         let client = rt.block_on(conn.map_err(map_err))?;
-        Ok(Self::new(
-            ConnSource::WebSocket(url.to_string()),
-            client,
-            rt,
-        ))
+        Ok(Self::new(ConnSource::WebSocket(url.to_string()), client))
     }
 
-    pub fn connect_local<THandler, TMetadata>(handler: THandler, rt: &mut Runtime) -> Self
+    pub fn connect_local<S>(rpc_service: S) -> anyhow::Result<Self>
     where
-        THandler: Deref<Target = MetaIoHandler<TMetadata>> + std::marker::Send + 'static,
-        TMetadata: Metadata + Default,
+        S: RpcAsyncService,
     {
-        let (client, future) = local::connect(handler);
-        // process server event interval.
-        // TODO use more graceful method.
-        rt.spawn_std(async {
-            let mut future = future
-                .map_err(|e| error!("rpc error: {:?}", e))
-                .compat()
-                .fuse();
-            let mut timer = tokio::time::interval(Duration::from_millis(10)).fuse();
-            loop {
-                select! {
-                res = future => {
-                },
-                t = timer.select_next_some() =>{
-                }
-                complete => break,
-                };
-            }
-        });
-        Self::new(ConnSource::Local, client, rt)
+        let client = futures03::executor::block_on(async { rpc_service.connect_local().await })?;
+        Ok(Self::new(ConnSource::Local, client.into()))
     }
 
     pub fn connect_ipc<P: AsRef<Path>>(sock_path: P, rt: &mut Runtime) -> anyhow::Result<Self> {
         let reactor = Reactor::new().unwrap();
         let path = sock_path.as_ref().to_path_buf();
-        let fut = ipc::connect(sock_path, &reactor.handle())?;
-        let client_inner = rt.block_on(fut.map_err(map_err))?;
+        let conn = ipc::connect(sock_path, &reactor.handle())?;
+        let client_inner = rt.block_on(conn.map_err(map_err))?;
+        //TODO use futures block_on replace rt.
+        //let client_inner = futures03::executor::block_on(conn.map_err(map_err).compat())?;
 
         Ok(Self::new(
             ConnSource::Ipc(path, Arc::new(reactor)),
             client_inner,
-            rt,
         ))
     }
 
@@ -207,6 +187,42 @@ impl RpcClient {
     pub fn node_peers(&self) -> anyhow::Result<Vec<PeerInfo>> {
         self.call_rpc_blocking(|inner| async move { inner.node_client.peers().compat().await })
             .map_err(map_err)
+    }
+
+    pub fn node_list_service(&self) -> anyhow::Result<Vec<ServiceInfo>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.node_manager_client.list_service().compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_start_service(&self, service_name: String) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .start_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_stop_service(&self, service_name: String) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .stop_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_shutdown_system(&self) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.node_manager_client.shutdown_system().compat().await
+        })
+        .map_err(map_err)
     }
 
     pub fn next_sequence_number_in_txpool(
@@ -690,6 +706,7 @@ impl RpcClient {
 #[derive(Clone)]
 pub(crate) struct RpcClientInner {
     node_client: NodeClient,
+    node_manager_client: NodeManagerClient,
     txpool_client: TxPoolClient,
     account_client: AccountClient,
     state_client: StateClient,
@@ -704,6 +721,7 @@ impl RpcClientInner {
     pub fn new(channel: RpcChannel) -> Self {
         Self {
             node_client: channel.clone().into(),
+            node_manager_client: channel.clone().into(),
             txpool_client: channel.clone().into(),
             account_client: channel.clone().into(),
             state_client: channel.clone().into(),

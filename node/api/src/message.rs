@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
 use anyhow::Result;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_service_registry::{ServiceInfo, ServiceRequest};
 
 #[derive(Debug, Clone)]
 pub enum NodeRequest {
@@ -12,7 +11,7 @@ pub enum NodeRequest {
     StopService(String),
     StopPacemaker,
     StartPacemaker,
-    StopSystem,
+    ShutdownSystem,
 }
 
 #[derive(Debug)]
@@ -21,6 +20,6 @@ pub enum NodeResponse {
     Result(Result<()>),
 }
 
-impl Message for NodeRequest {
-    type Result = NodeResponse;
+impl ServiceRequest for NodeRequest {
+    type Response = NodeResponse;
 }

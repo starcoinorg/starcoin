@@ -3,30 +3,31 @@
 
 use crate::api_registry::{APIType, ApiRegistry};
 use crate::extractors::{RpcExtractor, WsExtractor};
-use crate::module::{
-    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NodeRpcImpl, PubSubImpl,
-    PubSubService, StateRpcImpl, TxPoolRpcImpl,
-};
 use anyhow::Result;
+use failure::format_err;
+use futures::compat::Future01CompatExt;
+use futures::FutureExt;
+use jsonrpc_core::futures::sync::mpsc;
+use jsonrpc_core::futures::Stream;
+use jsonrpc_core::MetaIoHandler;
+use jsonrpc_core_client::{
+    transports::{duplex, local::LocalRpc},
+    RpcChannel, RpcError,
+};
+use jsonrpc_pubsub::Session;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
-use starcoin_account_service::AccountService;
-use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_dev::playground::PlaygroudService;
 use starcoin_logger::prelude::*;
-use starcoin_logger::LoggerHandle;
-use starcoin_miner::MinerService;
-use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::metadata::Metadata;
+use starcoin_rpc_api::node_manager::NodeManagerApi;
+use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
     account::AccountApi, chain::ChainApi, debug::DebugApi, dev::DevApi, miner::MinerApi,
     node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
-use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory};
-use starcoin_state_service::ChainStateService;
-use starcoin_storage::Storage;
-use starcoin_txpool::TxPoolService;
+use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
+use std::ops::Deref;
 use std::sync::Arc;
 
 pub struct RpcService {
@@ -53,53 +54,6 @@ impl ActorService for RpcService {
     }
 }
 
-impl ServiceFactory<Self> for RpcService {
-    fn create(ctx: &mut ServiceContext<RpcService>) -> Result<RpcService> {
-        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let bus = ctx.bus_ref().clone();
-        let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
-        let network_service = ctx.get_shared::<NetworkAsyncService>()?;
-        let node_api = NodeRpcImpl::new(config.clone(), Some(network_service));
-        let chain_api = ctx
-            .service_ref_opt::<ChainReaderService>()?
-            .map(|service_ref| ChainRpcImpl::new(service_ref.clone()));
-        let txpool_service = ctx.get_shared::<TxPoolService>()?;
-        let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));
-        let account_api = ctx
-            .service_ref_opt::<AccountService>()?
-            .map(|service_ref| AccountRpcImpl::new(service_ref.clone()));
-        let state_api = ctx
-            .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| StateRpcImpl::new(service_ref.clone()));
-        let pubsub_service = PubSubService::new(bus, txpool_service);
-        let pubsub_api = Some(PubSubImpl::new(pubsub_service));
-        let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));
-        let miner_api = ctx
-            .service_ref_opt::<MinerService>()?
-            .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
-
-        let dev_api = ctx
-            .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| {
-                let dev_playground = PlaygroudService::new(storage);
-                DevRpcImpl::new(service_ref.clone(), dev_playground)
-            });
-        Ok(Self::new_with_api(
-            config,
-            node_api,
-            chain_api,
-            txpool_api,
-            account_api,
-            state_api,
-            pubsub_api,
-            debug_api,
-            miner_api,
-            dev_api,
-        ))
-    }
-}
-
 impl RpcService {
     pub fn new(config: Arc<NodeConfig>, api_registry: ApiRegistry) -> Self {
         Self {
@@ -112,9 +66,10 @@ impl RpcService {
         }
     }
 
-    pub fn new_with_api<C, N, T, A, S, D, P, M, DEV>(
+    pub fn new_with_api<C, N, NM, T, A, S, D, P, M, DEV>(
         config: Arc<NodeConfig>,
         node_api: N,
+        node_manager_api: Option<NM>,
         chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
@@ -126,6 +81,7 @@ impl RpcService {
     ) -> Self
     where
         N: NodeApi,
+        NM: NodeManagerApi,
         C: ChainApi,
         T: TxPoolApi,
         A: AccountApi,
@@ -136,9 +92,14 @@ impl RpcService {
         DEV: DevApi,
     {
         let mut api_registry = ApiRegistry::default();
-        //TODO Current NodeApi is node info api, so should public.
-        // Add a new Node Manager api to manager node.
+
         api_registry.register(APIType::Public, NodeApi::to_delegate(node_api));
+        if let Some(node_manager_api) = node_manager_api {
+            api_registry.register(
+                APIType::Admin,
+                NodeManagerApi::to_delegate(node_manager_api),
+            );
+        }
         if let Some(chain_api) = chain_api {
             api_registry.register(APIType::Public, ChainApi::to_delegate(chain_api));
         }
@@ -251,5 +212,49 @@ impl RpcService {
             ws.close();
         }
         info!("Rpc Sever is closed.");
+    }
+}
+
+struct IoHandlerWrap(MetaIoHandler<Metadata>);
+
+impl Deref for IoHandlerWrap {
+    type Target = MetaIoHandler<Metadata>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// Connects with pubsub.
+pub fn connect_local(
+    handler: MetaIoHandler<Metadata>,
+) -> (
+    RpcChannel,
+    impl jsonrpc_core::futures::Future<Item = (), Error = RpcError>,
+) {
+    let (tx, rx) = mpsc::channel(0);
+    let meta = Metadata::new(Arc::new(Session::new(tx)));
+    let (sink, stream) = LocalRpc::with_metadata(IoHandlerWrap(handler), meta).split();
+    let stream = stream
+        .select(rx.map_err(|_| RpcError::Other(format_err!("Pubsub channel returned an error"))));
+    let (rpc_client, sender) = duplex(sink, stream);
+    (sender, rpc_client)
+}
+
+impl ServiceHandler<Self, ConnectLocal> for RpcService {
+    fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> RpcChannel {
+        let io_handler =
+            self.api_registry
+                .get_apis(&[APIType::Public, APIType::Personal, APIType::Admin]);
+        //remove middleware.
+        let mut local_io_handler = MetaIoHandler::default();
+        local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
+        let (rpc_channel, fut) = connect_local(local_io_handler);
+        ctx.spawn(fut.compat().map(|rs| {
+            if let Err(e) = rs {
+                error!("Local connect rpc error: {:?}", e);
+            }
+        }));
+        rpc_channel
     }
 }

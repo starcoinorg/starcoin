@@ -25,7 +25,7 @@ fn test_network_rpc() {
         (gen_chain_env(config_1).unwrap(), net_addr)
     };
 
-    let network_1 = handle1.start_handle().network.clone();
+    let network_1 = handle1.network();
     let handle2 = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
@@ -33,7 +33,7 @@ fn test_network_rpc() {
     };
     handle2.generate_block().unwrap();
 
-    let network_2 = handle2.start_handle().network.clone();
+    let network_2 = handle2.network();
     // network rpc client for chain 1
     let peer_id_2 = network_2.identify();
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
