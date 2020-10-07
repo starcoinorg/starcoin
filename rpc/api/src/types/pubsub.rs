@@ -8,7 +8,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, BlockNumber};
-use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use starcoin_types::language_storage::TypeTag;
@@ -145,6 +145,21 @@ pub struct Event {
     )]
     pub event_key: EventKey,
     pub event_seq_number: u64,
+}
+
+impl From<ContractEventInfo> for Event {
+    fn from(info: ContractEventInfo) -> Self {
+        Event {
+            block_hash: Some(info.block_hash),
+            block_number: Some(info.block_number),
+            transaction_hash: Some(info.transaction_hash),
+            transaction_index: Some(info.transaction_index),
+            data: info.event.event_data().to_vec(),
+            type_tags: info.event.type_tag().clone(),
+            event_key: *info.event.key(),
+            event_seq_number: info.event.sequence_number(),
+        }
+    }
 }
 
 impl Event {

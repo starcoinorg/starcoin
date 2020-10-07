@@ -7,6 +7,8 @@ use starcoin_service_registry::ServiceRequest;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
+    contract_event::ContractEventInfo,
+    filter::Filter,
     startup_info::{ChainInfo, StartupInfo},
     transaction::{Transaction, TransactionInfo},
 };
@@ -35,6 +37,7 @@ pub enum ChainRequest {
     GetEventsByTxnInfoId { txn_info_id: HashValue },
     GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
+    MasterEvents(Filter),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -55,6 +58,7 @@ pub enum ChainResponse {
     TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     Events(Option<Vec<ContractEvent>>),
+    MasterEvents(Vec<ContractEventInfo>),
     None,
     Conn(Result<()>),
     BlockState(Option<Box<BlockState>>),

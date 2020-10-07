@@ -5,6 +5,7 @@ use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
+use starcoin_rpc_api::types::pubsub::{Event, EventFilter};
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
@@ -12,6 +13,7 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use std::convert::TryInto;
 
 pub struct ChainRpcImpl<S>
 where
@@ -141,6 +143,19 @@ where
 
         Box::new(fut.boxed().compat())
     }
+
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let filter = filter.try_into()?;
+            service.master_events(filter).await
+        }
+        .map_ok(|d| d.into_iter().map(|e| e.into()).collect())
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
+
     fn branches(&self) -> FutureResult<Vec<ChainInfo>> {
         let service = self.service.clone();
         let fut = async move { service.master_startup_info().await };

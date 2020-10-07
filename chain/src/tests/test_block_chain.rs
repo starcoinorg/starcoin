@@ -10,8 +10,47 @@ use starcoin_config::NodeConfig;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
+use starcoin_types::filter::Filter;
+use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
+
+#[stest::test]
+fn test_chain_filter_events() {
+    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let times = 10;
+    mock_chain.produce_and_apply_times(times).unwrap();
+    {
+        let evt_key = EventKey::new_from_address(&genesis_address(), 4);
+        let event_filter = Filter {
+            from_block: 1,
+            to_block: 5,
+            event_keys: vec![evt_key],
+            limit: None,
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 5);
+        let evt = evts.first().unwrap();
+        assert_eq!(evt.block_number, 1);
+        assert_eq!(evt.transaction_index, 0);
+        assert_eq!(evt.event.key(), &evt_key);
+    }
+
+    {
+        let event_filter = Filter {
+            from_block: 1,
+            to_block: 10,
+            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            limit: Some(5),
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 5);
+        let evt = evts.last().unwrap();
+        assert_eq!(evt.block_number, 5);
+        assert_eq!(evt.transaction_index, 0);
+    }
+}
 
 #[stest::test]
 fn test_block_chain_head() {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as ChainClient;
+use crate::types::pubsub::{Event, EventFilter};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
@@ -55,6 +56,9 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_events_by_txn_info_id")]
     fn get_events_by_txn_info_id(&self, txn_info_id: HashValue)
         -> FutureResult<Vec<ContractEvent>>;
+
+    #[rpc(name = "chain.get_events")]
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>>;
 
     /// Get branches of current chain, first is master.
     #[rpc(name = "chain.branches")]

@@ -6,7 +6,8 @@ use crypto::HashValue;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
-    contract_event::ContractEvent,
+    contract_event::{ContractEvent, ContractEventInfo},
+    filter::Filter,
     startup_info::{ChainInfo, StartupInfo},
     transaction::{Transaction, TransactionInfo},
 };
@@ -104,6 +105,10 @@ impl ChainAsyncService for MockChainService {
     }
 
     async fn get_global_time_by_number(&self, _number: BlockNumber) -> Result<GlobalTimeOnChain> {
+        unimplemented!()
+    }
+
+    async fn master_events(&self, _filter: Filter) -> Result<Vec<ContractEventInfo>> {
         unimplemented!()
     }
 }

@@ -12,6 +12,8 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::filter::Filter;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
@@ -169,6 +171,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetGlobalTimeByNumber(number) => Ok(ChainResponse::GlobalTime(
                 self.inner.get_global_time_by_number(number)?,
             )),
+            ChainRequest::MasterEvents(filter) => Ok(ChainResponse::MasterEvents(
+                self.inner.get_master_events(filter)?,
+            )),
         }
     }
 }
@@ -320,6 +325,9 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
         self.get_master().get_global_time_by_number(number)
+    }
+    fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        self.get_master().filter_events(filter)
     }
 }
 
