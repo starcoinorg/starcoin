@@ -6,7 +6,8 @@ use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::block::BlockState;
-use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
+use starcoin_types::filter::Filter;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
@@ -49,6 +50,7 @@ pub trait ReadableChainService {
     fn epoch_info(&self) -> Result<EpochInfo>;
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
+    fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
 }
 
 /// Writeable block chain service trait
@@ -98,6 +100,7 @@ pub trait ChainAsyncService:
     async fn epoch_info(&self) -> Result<EpochInfo>;
     async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
+    async fn master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
 }
 
 #[async_trait::async_trait]
@@ -323,6 +326,14 @@ where
             Ok(global_time)
         } else {
             bail!("get global time error.")
+        }
+    }
+    async fn master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        let response = self.send(ChainRequest::MasterEvents(filter)).await??;
+        if let ChainResponse::MasterEvents(evts) = response {
+            Ok(evts)
+        } else {
+            bail!("[chain-actor]: get master events error.")
         }
     }
 }

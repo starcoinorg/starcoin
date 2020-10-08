@@ -3,6 +3,8 @@
 // #![feature(vec_remove_item)]
 #![forbid(unsafe_code)]
 
+mod event_info;
+
 pub mod access_path {
     pub use starcoin_vm_types::access_path::{
         into_inner, random_code, random_resource, AccessPath, DataType,
@@ -26,6 +28,7 @@ pub mod block_metadata {
 }
 
 pub mod contract_event {
+    pub use crate::event_info::ContractEventInfo;
     pub use starcoin_vm_types::contract_event::*;
 }
 

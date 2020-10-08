@@ -16,6 +16,8 @@ use starcoin_chain_api::{
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
+use starcoin_types::contract_event::ContractEventInfo;
+use starcoin_types::filter::Filter;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{
@@ -474,6 +476,72 @@ impl ChainReader for BlockChain {
         } else {
             Err(format_err!("Block is none when query global time."))
         }
+    }
+}
+
+impl BlockChain {
+    pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        let chain_header = self.current_header();
+        let mut event_with_infos = vec![];
+        let mut cur_block_number = filter.from_block;
+        let max_block_number = chain_header.number.min(filter.to_block);
+        'outer: while cur_block_number <= max_block_number {
+            let block = self.get_block_by_number(cur_block_number)?.ok_or_else(|| {
+                anyhow::anyhow!(format!(
+                    "cannot find block({}) on master chain(head: {})",
+                    cur_block_number,
+                    chain_header.id()
+                ))
+            })?;
+            let block_id = block.id();
+            let block_number = block.header().number;
+            let txn_info_ids = self.storage.get_block_txn_info_ids(block_id)?;
+            for (idx, id) in txn_info_ids.iter().enumerate() {
+                let events = self.storage.get_contract_events(*id)?.ok_or_else(|| {
+                    anyhow::anyhow!(format!(
+                        "cannot find events of txn with txn_info_id {} on master chain(header: {})",
+                        id,
+                        chain_header.id()
+                    ))
+                })?;
+                let mut filtered_events = events
+                    .into_iter()
+                    .filter(|evt| filter.matching(block_number, evt))
+                    .peekable();
+                if filtered_events.peek().is_none() {
+                    continue;
+                }
+
+                let txn_info = self.storage.get_transaction_info(*id)?.ok_or_else(|| {
+                    anyhow::anyhow!(format!(
+                        "cannot find txn info with txn_info_id {} on master chain(head: {})",
+                        id,
+                        chain_header.id()
+                    ))
+                })?;
+
+                event_with_infos.extend(filtered_events.map(|evt| ContractEventInfo {
+                    block_hash: block_id,
+                    block_number: block.header().number,
+                    transaction_hash: txn_info.transaction_hash(),
+                    transaction_index: idx as u64,
+                    event: evt,
+                }));
+                if let Some(limit) = filter.limit {
+                    if event_with_infos.len() >= limit {
+                        break 'outer;
+                    }
+                }
+            }
+
+            cur_block_number += 1;
+        }
+
+        // remove additional events in respect limit filter.
+        if let Some(limit) = filter.limit {
+            event_with_infos.truncate(limit);
+        }
+        Ok(event_with_infos)
     }
 }
 
