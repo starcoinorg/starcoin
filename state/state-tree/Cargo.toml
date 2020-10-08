@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.32"
+anyhow = "1.0.33"
 starcoin-types = {path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0" }
