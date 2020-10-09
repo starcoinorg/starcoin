@@ -1481,7 +1481,7 @@ source = "git+https://github.com/starcoinorg/libra?rev=91b2ff47bcf5b0ece458738b2
 dependencies = [
  "libra-workspace-hack",
  "regex",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "termcolor",
  "walkdir",
 ]
@@ -3995,7 +3995,7 @@ dependencies = [
  "starcoin-canonical-serialization",
  "starcoin-types",
  "starcoin-vm-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
 ]
 
 [[package]]
@@ -4036,7 +4036,7 @@ dependencies = [
  "move-ir-types",
  "petgraph",
  "regex",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tempfile",
  "vm",
  "walkdir",
@@ -5883,7 +5883,7 @@ dependencies = [
  "rustyline",
  "serde",
  "serde_json",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "thiserror",
 ]
 
@@ -5962,7 +5962,7 @@ dependencies = [
  "serde-reflection",
  "serde_bytes",
  "serde_yaml",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "textwrap 0.12.1",
 ]
 
@@ -6639,7 +6639,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tokio 0.2.22",
  "tokio-compat",
 ]
@@ -6663,7 +6663,7 @@ dependencies = [
  "starcoin-logger",
  "starcoin-types",
  "starcoin-vm-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "thiserror",
  "toml",
 ]
@@ -6812,7 +6812,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-runtime",
  "starcoin-vm-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tokio 0.2.22",
 ]
 
@@ -6833,7 +6833,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tiny_http",
  "tokio 0.2.22",
  "tokio-compat",
@@ -6890,7 +6890,7 @@ dependencies = [
  "starcoin-storage",
  "starcoin-traits",
  "starcoin-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
 ]
 
 [[package]]
@@ -6917,7 +6917,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "stest",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "thiserror",
 ]
 
@@ -7031,7 +7031,7 @@ dependencies = [
  "starcoin-traits",
  "starcoin-types",
  "stest",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "thiserror",
  "tokio 0.2.22",
  "tokio-compat",
@@ -7685,7 +7685,7 @@ dependencies = [
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tokio 0.2.22",
  "tokio-compat",
 ]
@@ -7975,13 +7975,13 @@ dependencies = [
 
 [[package]]
 name = "structopt"
-version = "0.3.18"
+version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a33f6461027d7f08a13715659b2948e1602c31a3756aeae9378bfe7518c72e82"
+checksum = "a7a7159e7d0dbcab6f9c980d7971ef50f3ff5753081461eeda120d5974a4ee95"
 dependencies = [
  "clap",
  "lazy_static",
- "structopt-derive 0.4.11",
+ "structopt-derive 0.4.12",
 ]
 
 [[package]]
@@ -7998,9 +7998,9 @@ dependencies = [
 
 [[package]]
 name = "structopt-derive"
-version = "0.4.11"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c92e775028122a4b3dd55d58f14fc5120289c69bee99df1d117ae30f84b225c9"
+checksum = "8fc47de4dfba76248d1e9169ccff240eea2a4dc1e34e309b95b2393109b4b383"
 dependencies = [
  "heck",
  "proc-macro-error",
@@ -8259,7 +8259,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "static_assertions",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tokio-compat",
 ]
 
@@ -8775,7 +8775,7 @@ dependencies = [
  "serde-generate",
  "serde-reflection",
  "serde_yaml",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "tempfile",
  "textwrap 0.12.1",
 ]
