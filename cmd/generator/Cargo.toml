@@ -14,7 +14,7 @@ futures = { version = "0.3" }
 hex = { version = "0.4.2", default-features = false }
 futures-timer = "3.0"
 ascii = "0.8"
-structopt = "0.3.18"
+structopt = "0.3.19"
 scmd = { path = "../../commons/scmd" }
 starcoin-traits = { path = "../../core/traits" }
 starcoin-logger = { path = "../../commons/logger" }
