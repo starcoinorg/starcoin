@@ -6,6 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
+use std::thread::sleep;
+use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
@@ -29,6 +31,8 @@ impl CommandAction for StopCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         client.node_stop_service(ctx.opt().name.clone())?;
+        //wait service registry update service status.
+        sleep(Duration::from_millis(3000));
         client.node_list_service()
     }
 }
