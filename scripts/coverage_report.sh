@@ -30,7 +30,7 @@ if [ "$(pwd)" != "$STARCOIN_DIR" ]; then
   exit 1
 fi
 
-set -e
+#set -e
 
 # Check that grcov is installed
 if ! [ -x "$(command -v grcov)" ]; then
