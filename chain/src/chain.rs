@@ -546,6 +546,16 @@ impl BlockChain {
 }
 
 impl BlockChain {
+    #[cfg(test)]
+    pub fn save_fot_test(
+        &mut self,
+        block_id: HashValue,
+        transactions: Vec<Transaction>,
+        txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>,
+    ) -> Result<()> {
+        self.save(block_id, transactions, txn_infos)
+    }
+
     fn save(
         &mut self,
         block_id: HashValue,
@@ -993,6 +1003,15 @@ impl BlockChain {
             self.head = Some(block);
         }
         Ok(())
+    }
+
+    #[cfg(test)]
+    pub fn verify_txns_for_test(
+        &self,
+        block_id: HashValue,
+        txns: &[Transaction],
+    ) -> Result<executor::BlockExecutedData> {
+        self.verify_txns(block_id, txns)
     }
 
     fn verify_txns(
