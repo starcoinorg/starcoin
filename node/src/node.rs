@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::crash_handler::setup_panic_handler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::{timeout_join_handler, NodeHandle};
 use actix::{clock::delay_for, prelude::*};
@@ -136,7 +135,6 @@ impl NodeService {
 
         let (start_sender, start_receiver) = oneshot::channel();
         let join_handle = timeout_join_handler::spawn(move || {
-            setup_panic_handler();
             let mut system = System::builder().stop_on_panic(true).name("main").build();
             system.block_on(async {
                 match Self::init_system(config, logger_handle).await {
