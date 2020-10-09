@@ -82,8 +82,8 @@ echo "Cleaning project..."
 
 # Run tests
 echo "Running tests..."
-cargo test --no-fail-fast
-#cargo test --test integration --no-fail-fast -- -e "cmd"
+cargo test --no-fail-fast || true
+cargo test --test integration --no-fail-fast -- -e "cmd" || true
 
 # Make the coverage directory if it doesn't exist
 if [ ! -d "$COVERAGE_DIR" ]; then

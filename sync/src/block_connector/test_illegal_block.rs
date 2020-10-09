@@ -491,7 +491,7 @@ async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test(timeout = 240)]
+#[stest::test(timeout = 360)]
 async fn test_verify_block_used_gas_failed() {
     assert!(test_verify_block_used_gas(true).await.is_ok());
     let apply_failed = test_verify_block_used_gas(false).await;
