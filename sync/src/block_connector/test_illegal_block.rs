@@ -491,7 +491,7 @@ async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 240)]
 async fn test_verify_block_used_gas_failed() {
     assert!(test_verify_block_used_gas(true).await.is_ok());
     let apply_failed = test_verify_block_used_gas(false).await;
@@ -598,7 +598,7 @@ async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
     )
 }
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 240)]
 async fn test_verify_uncles_count_failed() {
     assert!(test_verify_uncles_count(true).await.is_ok());
     let apply_failed = test_verify_uncles_count(false).await;
