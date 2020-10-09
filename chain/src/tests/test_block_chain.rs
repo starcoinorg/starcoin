@@ -16,7 +16,7 @@ use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let times = 10;
@@ -52,7 +52,7 @@ fn test_chain_filter_events() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_block_chain_head() {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let times = 10;
@@ -112,7 +112,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
         .unwrap()
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner();
@@ -131,7 +131,7 @@ fn test_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -156,7 +156,7 @@ fn test_uncle_exist() {
     assert!(mock_chain.apply(block).is_err());
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -173,7 +173,7 @@ fn test_uncle_son() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
     let miner = mock_chain.miner();

@@ -61,7 +61,7 @@ fn test_create_block_template_by_net(net: ChainNetwork) {
     assert_eq!(block_template.number, 1);
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_switch_master() {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
@@ -266,7 +266,7 @@ fn test_do_uncles() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_new_head() {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
@@ -306,7 +306,7 @@ fn test_new_head() {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_new_branch() {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())

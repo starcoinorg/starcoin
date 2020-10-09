@@ -162,7 +162,7 @@ async fn test_verify_gas_limit(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_gas_limit_failed() {
     assert!(test_verify_gas_limit(true).await.is_ok());
     let apply_failed = test_verify_gas_limit(false).await;
@@ -180,7 +180,7 @@ async fn test_verify_body_hash(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_body_hash_failed() {
     assert!(test_verify_body_hash(true).await.is_ok());
     let apply_failed = test_verify_body_hash(false).await;
@@ -198,7 +198,7 @@ async fn test_verify_parent_id(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_parent_id_failed() {
     assert!(test_verify_parent_id(true).await.is_ok());
     let apply_failed = test_verify_parent_id(false).await;
@@ -221,7 +221,7 @@ async fn test_verify_timestamp(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_timestamp_failed() {
     assert!(test_verify_timestamp(true).await.is_ok());
     let apply_failed = test_verify_timestamp(false).await;
@@ -243,7 +243,7 @@ async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_future_timestamp_failed() {
     assert!(test_verify_future_timestamp(true).await.is_ok());
     let apply_failed = test_verify_future_timestamp(false).await;
@@ -388,7 +388,7 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
     )
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_illegal_uncle_future_timestamp_failed() {
     assert!(test_verify_illegal_uncle_future_timestamp(true)
         .await
@@ -473,7 +473,7 @@ async fn test_verify_state_root(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_state_root_failed() {
     assert!(test_verify_state_root(true).await.is_ok());
     let apply_failed = test_verify_state_root(false).await;
@@ -525,7 +525,7 @@ async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_accumulator_root_failed() {
     assert!(test_verify_accumulator_root(true).await.is_ok());
     let apply_failed = test_verify_accumulator_root(false).await;
@@ -543,7 +543,7 @@ async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
     master.apply(new_block)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_block_accumulator_root_failed() {
     assert!(test_verify_block_accumulator_root(true).await.is_ok());
     let apply_failed = test_verify_block_accumulator_root(false).await;
@@ -573,7 +573,7 @@ async fn test_verify_block_number_failed(succ: bool, order: bool) {
     }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_verify_block_illegal_number_failed() {
     test_verify_block_number_failed(true, false).await;
     test_verify_block_number_failed(false, false).await;
