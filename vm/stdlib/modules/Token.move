@@ -199,7 +199,7 @@ module Token {
         amount: u128,
     ): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
-        let (token_address, module_name, token_name) = name_of<TokenType>();
+        let (token_address, module_name, token_name) = name_of_token<TokenType>();
         let share = amount_to_share<TokenType>(amount);
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
         info.total_value = info.total_value + (share as u128);
@@ -227,19 +227,17 @@ module Token {
     }
 
     spec fun burn {
-        pragma verify = false;
-        //Todo: fix name_of()
-        aborts_if !exists<BurnCapability<TokenType>>(Signer::address_of(account));
+        aborts_if !exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
     }
 
     public fun burn_with_capability<TokenType>(
         _capability: &BurnCapability<TokenType>,
         tokens: Token<TokenType>,
     ) acquires TokenInfo {
-        let (token_address, module_name, token_name) = name_of<TokenType>();
+        let (token_address, module_name, token_name) = name_of_token<TokenType>();
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
         let Token { value } = tokens;
-        info.total_value = info.total_value - (value as u128);
+        info.total_value = info.total_value - value;
         Event::emit_event(
             &mut info.burn_events,
             BurnEvent {
@@ -250,9 +248,7 @@ module Token {
     }
 
     spec fun burn_with_capability {
-        pragma verify = false;
-        //Todo: fix name_of()
-        //aborts_if !exists<TokenInfo<TokenType>>(token_address);
+        aborts_if false;
     }
 
     /// Create a new Token::Token<TokenType> with a value of 0
@@ -457,21 +453,17 @@ module Token {
     }
 
     spec fun set_scaling_factor_with_capability {
-        // Todo: fix name_of()
-        pragma verify = false;
-        //let x  = name_of();
-        //aborts_if !exists<TokenInfo<TokenType>>(x);
+        aborts_if false;
     }
 
     /// Returns the representable fractional part for the `TokenType` token.
     public fun fractional_part<TokenType>(): u128 acquires TokenInfo {
-        let (token_address, _, _) = name_of<TokenType>();
+        let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).fractional_part
     }
 
     spec fun fractional_part {
-        // Todo: fix name_of()
-        pragma verify = false;
+        aborts_if false;
     }
 
     /// Return the total amount of token of type `TokenType` considering current `scaling_factor`
@@ -519,9 +511,13 @@ module Token {
         addr
     }
 
+    // The specification of this function is abstracted to avoid the complexity to
+    // return a real address to caller
     spec fun token_address {
+        pragma opaque = true;
         aborts_if false;
-    }
+        ensures [abstract] exists<TokenInfo<TokenType>>(result);
+}
 
     /// Return the token code for the registered token.
     public fun token_code<TokenType>(): vector<u8> {
@@ -551,7 +547,21 @@ module Token {
     native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);
 
     spec fun name_of {
-        pragma intrinsic = true;
+        pragma opaque = true;
+        aborts_if false;
     }
+
+    fun name_of_token<TokenType>(): (address, vector<u8>, vector<u8>) {
+        name_of<TokenType>()
+    }
+
+    // The specification of this function is abstracted to avoid the complexity to
+    // return a real address to caller
+    spec fun name_of_token {
+        pragma opaque = true;
+        aborts_if false;
+        ensures [abstract] exists<TokenInfo<TokenType>>(result_1);
+        ensures [abstract] global<TokenInfo<TokenType>>(result_1).total_value == MAX_U128;
+}
 }
 }
