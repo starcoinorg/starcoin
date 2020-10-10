@@ -118,6 +118,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Offer.md#0x1_Offer_create">create</a>&lt;Offered&gt;(account: &signer, offered: Offered, for: address, lock_peroid: u64) {
     <b>let</b> time_lock = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + lock_peroid;
+    //TODO should support multi <a href="Offer.md#0x1_Offer">Offer</a>?
     move_to(account, <a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt; { offered, for, time_lock });
 }
 </code></pre>

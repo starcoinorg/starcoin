@@ -332,8 +332,8 @@ pub fn build_stdlib_package(
             vec![
                 TransactionArgument::U64(genesis_config.reward_delay),
                 TransactionArgument::U128(genesis_config.pre_mine_amount),
-                TransactionArgument::U128(genesis_config.time_locked_amount),
-                TransactionArgument::U64(genesis_config.time_locked_period),
+                TransactionArgument::U128(genesis_config.time_mint_amount),
+                TransactionArgument::U64(genesis_config.time_mint_period),
                 TransactionArgument::U8Vector(genesis_config.parent_hash.to_vec()),
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),

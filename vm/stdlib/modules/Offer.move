@@ -21,6 +21,7 @@ module Offer {
     // either the `for` address or the transaction sender.
     public fun create<Offered>(account: &signer, offered: Offered, for: address, lock_peroid: u64) {
         let time_lock = Timestamp::now_seconds() + lock_peroid;
+        //TODO should support multi Offer?
         move_to(account, Offer<Offered> { offered, for, time_lock });
     }
 

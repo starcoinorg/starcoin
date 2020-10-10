@@ -7,6 +7,7 @@
 
 -  [Function <code>sqrt</code>](#0x1_Math_sqrt)
 -  [Function <code>pow</code>](#0x1_Math_pow)
+-  [Function <code>percent_multi</code>](#0x1_Math_percent_multi)
 -  [Specification](#@Specification_0)
     -  [Function <code>sqrt</code>](#@Specification_0_sqrt)
     -  [Function <code>pow</code>](#@Specification_0_pow)
@@ -77,6 +78,34 @@
         z = z / 2;
     };
     result
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Math_percent_multi"></a>
+
+## Function `percent_multi`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_percent_multi">percent_multi</a>(x: u128, y: u128, z: u128): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_percent_multi">percent_multi</a>(x: u128, y: u128, z: u128): u128 {
+    <b>if</b> (y &gt; z) {
+        y / z * x
+    }<b>else</b> {
+        x * y / z
+    }
 }
 </code></pre>
 

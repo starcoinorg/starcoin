@@ -5,6 +5,18 @@ module Math {
         pragma verify;
         pragma aborts_if_is_strict;
     }
+
+    const U64_MAX:u64 = 18446744073709551615;
+    const U128_MAX:u128 = 340282366920938463463374607431768211455;
+
+    public fun u64_max(): u64 {
+        U64_MAX
+    }
+
+    public fun u128_max(): u128 {
+        U128_MAX
+    }
+
     // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
     public fun sqrt(y: u128): u64 {
         if (y < 4) {
@@ -48,6 +60,24 @@ module Math {
     spec fun pow {
         pragma verify = false;
         //aborts_if y > 0 && x * x > max_u128();
+    }
+
+    //https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
+    // calculate x * y /z with as little loss of precision as possible and avoid overflow
+    public fun mul_div(x: u128, y: u128, z: u128): u128 {
+        if ( y  == z ) {
+            return x
+        };
+        if ( x > z) {
+            return x/z*y
+        };
+        let a = x / z;
+        let b = x % z;
+        //x = a * z + b;
+        let c = y / z;
+        let d = y % z;
+        //y = c * z + d;
+        a * b * z + a * d + b * c + b * d / z
     }
 }
 }

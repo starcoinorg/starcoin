@@ -1,4 +1,4 @@
-// Test the token offer
+// Test the token lock
 //! account: alice, 100000 0x1::STC::STC
 //! account: bob, 0 0x1::STC::STC
 
@@ -21,11 +21,12 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::TokenLockPool::{Self, LinearTimeLockKey};
+    use 0x1::Box;
+    use 0x1::TokenLockPool::{LinearTimeLockKey};
 
     fun redeem_offer(account: &signer) {
         let key = Offer::redeem<LinearTimeLockKey<STC>>(account, {{alice}});
-        TokenLockPool::save_linear_key(account, key);
+        Box::put(account, key);
     }
 }
 
@@ -40,12 +41,13 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::TokenLockPool;
+    use 0x1::Box;
+    use 0x1::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = TokenLockPool::take_linear_key<STC>(account);
-        let token = TokenLockPool::unlock_by_linear(&mut key);
-        TokenLockPool::save_linear_key(account, key);
+        let key = Box::take<LinearTimeLockKey<STC>>(account);
+        let token = TokenLockPool::unlock_with_linear_key(&mut key);
+        Box::put(account, key);
         Account::deposit(account, token);
     }
 }
@@ -63,13 +65,14 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token;
-    use 0x1::TokenLockPool;
+    use 0x1::Box;
+    use 0x1::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = TokenLockPool::take_linear_key<STC>(account);
-        let token = TokenLockPool::unlock_by_linear(&mut key);
+        let key = Box::take<LinearTimeLockKey<STC>>(account);
+        let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::share(&token) == 1, 1002);
-        TokenLockPool::save_linear_key(account, key);
+        Box::put(account, key);
         Account::deposit(account, token);
     }
 }
@@ -86,12 +89,13 @@ script {
     use 0x1::Account;
     use 0x1::STC::STC;
     use 0x1::Token;
-    use 0x1::TokenLockPool;
+    use 0x1::Box;
+    use 0x1::TokenLockPool::{Self, LinearTimeLockKey};
 
     fun unlock(account: &signer) {
-        let key = TokenLockPool::take_linear_key<STC>(account);
+        let key = Box::take<LinearTimeLockKey<STC>>(account);
         //unlock all remain
-        let token = TokenLockPool::unlock_by_linear(&mut key);
+        let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::share(&token) == 99, 1003);
         TokenLockPool::destroy_empty(key);
         Account::deposit(account, token);

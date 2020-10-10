@@ -641,10 +641,11 @@ pub struct GenesisConfig {
     pub nonce: u64,
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
-    /// Time locked STC amount to  Association account.
-    pub time_locked_amount: u128,
-    /// Time locked period in seconds.
-    pub time_locked_period: u64,
+    /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account
+    /// LinearTimeMintKey's total.
+    pub time_mint_amount: u128,
+    /// LinearTimeMintKey's period in seconds.
+    pub time_mint_period: u64,
     /// VM config for publishing_option and gas_schedule
     pub vm_config: VMConfig,
     /// Script allow list and Module publish option
@@ -763,8 +764,8 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         difficulty: 1.into(),
         nonce: 0,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_locked_period: 3600,
+        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: 3600,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
@@ -806,8 +807,8 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         difficulty: 1.into(),
         nonce: 0,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_locked_period: 3600 * 24,
+        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: 3600 * 24,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
@@ -852,8 +853,8 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         difficulty: 100000.into(),
         nonce: 0,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-        time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-        time_locked_period: 3600 * 24 * 31,
+        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: 3600 * 24 * 31,
         vm_config: VMConfig {
             gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
         },
@@ -902,8 +903,8 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     difficulty: 10.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-    time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-    time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
+    time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+    time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
     },
@@ -944,8 +945,8 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     difficulty: 10.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-    time_locked_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-    time_locked_period: DEFAULT_TIME_LOCKED_PERIOD,
+    time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+    time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
     },

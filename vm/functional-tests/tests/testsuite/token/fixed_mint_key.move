@@ -1,17 +1,18 @@
-// Test the token lock
-//! account: alice, 100000 0x1::STC::STC
+// Test the token mint key
+//! account: alice, 0 0x1::STC::STC
 //! account: bob, 0 0x1::STC::STC
 
-//! sender: alice
+// Minting from a privileged account should work
+//! sender: genesis
 script {
-    use 0x1::Account;
-    use 0x1::TokenLockPool;
+    use 0x1::Token;
     use 0x1::STC::STC;
     use 0x1::Offer;
 
-    fun create_lock(account: &signer) {
-        let token = Account::withdraw<STC>(account, 10000);
-        let key = TokenLockPool::create_fixed_lock<STC>(token, 5);
+    fun create_key(account: &signer) {
+        let cap = Token::remove_mint_capability<STC>(account);
+        let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 5);
+        Token::add_mint_capability(account, cap);
         Offer::create(account, key, {{bob}}, 0);
     }
 }
@@ -21,11 +22,11 @@ script {
 script {
     use 0x1::Offer;
     use 0x1::STC::STC;
-    use 0x1::TokenLockPool::{FixedTimeLockKey};
+    use 0x1::Token::{FixedTimeMintKey};
     use 0x1::Box;
 
     fun redeem_offer(account: &signer) {
-        let key = Offer::redeem<FixedTimeLockKey<STC>>(account, {{alice}});
+        let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
         Box::put(account,key);
     }
 }
@@ -40,12 +41,12 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::TokenLockPool::{Self, FixedTimeLockKey};
+    use 0x1::Token::{Self, FixedTimeMintKey};
     use 0x1::Box;
 
-    fun unlock(account: &signer) {
-        let key = Box::take<FixedTimeLockKey<STC>>(account);
-        let token = TokenLockPool::unlock_with_fixed_key(key);
+    fun mint(account: &signer) {
+        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        let token = Token::mint_with_fixed_key(key);
         Account::deposit(account, token);
     }
 }
@@ -63,13 +64,12 @@ script {
 script {
     use 0x1::Account;
     use 0x1::STC::STC;
-    use 0x1::Token;
-    use 0x1::TokenLockPool::{Self, FixedTimeLockKey};
+    use 0x1::Token::{Self, FixedTimeMintKey};
     use 0x1::Box;
 
-    fun unlock(account: &signer) {
-        let key = Box::take<FixedTimeLockKey<STC>>(account);
-        let token = TokenLockPool::unlock_with_fixed_key(key);
+    fun mint(account: &signer) {
+        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        let token = Token::mint_with_fixed_key(key);
         assert(Token::share(&token) == 10000, 1001);
         Account::deposit(account, token);
     }
