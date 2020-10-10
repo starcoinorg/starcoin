@@ -107,7 +107,7 @@ fn test_txn_verify_err_case() -> Result<()> {
     Ok(())
 }
 
-#[stest::test]
+#[stest::test(timeout = 360)]
 fn test_package_txn() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let alice = Account::new();

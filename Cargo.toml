@@ -40,6 +40,7 @@ members = [
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
+    "devtools/x",
     "node/api",
     "node",
     "sync",

@@ -382,7 +382,7 @@ mod tests {
         Ok(())
     }
 
-    #[stest::test]
+    #[stest::test(timeout = 120)]
     pub fn test_builtin_genesis() -> Result<()> {
         for net in ChainNetwork::builtin_networks() {
             let temp_dir = starcoin_config::temp_path();
