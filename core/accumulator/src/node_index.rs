@@ -259,12 +259,12 @@ fn smear_ones_for_u64(v: u64) -> u64 {
 
 /// Finds the rightmost 0-bit, turns off all bits, and sets this bit to 1 in
 fn isolate_rightmost_zero_bit(v: u64) -> u64 {
-    !v & (v + 1)
+    !v & v.overflowing_add(1).0
 }
 
 /// Turn off n right most bits
 fn turn_off_right_most_n_bits(v: u64, n: u32) -> u64 {
-    precondition!(n < 64);
+    debug_checked_precondition!(n < 64);
     (v >> n as u64) << n as u64
 }
 

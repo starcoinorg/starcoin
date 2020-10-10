@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "1.0" }
-libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/libra", rev="91b2ff47bcf5b0ece458738b25a625819104cf34" }
+libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/libra", rev="c2c69f2046031dabb39d890da348c53d89cc24b6" }
 scs = { package="starcoin-canonical-serialization", path = "../scs"}
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.7.3"
