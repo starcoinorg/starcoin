@@ -81,6 +81,7 @@ impl NodeHandle {
 
     pub fn join(mut self) -> Result<()> {
         self.runtime.block_on(async {
+            //TODO also wait actor system stop signal, support stop system by command.
             platform::wait_signal().await;
         });
         self.stop()

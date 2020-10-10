@@ -8,15 +8,15 @@ use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "shutdown")]
-pub struct ShutdownOpt {}
+#[structopt(name = "shutdown_system")]
+pub struct ShutdownSystemOpt {}
 
-pub struct ShutdownCommand;
+pub struct ShutdownSystemCommand;
 
-impl CommandAction for ShutdownCommand {
+impl CommandAction for ShutdownSystemCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ShutdownOpt;
+    type Opt = ShutdownSystemOpt;
     type ReturnItem = ();
 
     fn run(

@@ -42,6 +42,16 @@ Feature: cmd integration test
     Examples:
       |  |
 
+# node service
+  Scenario Outline: [cmd] node service test
+    Then cmd: "node service list"
+    Then cmd: "node service stop starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
+    Then cmd: "node service start starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
+    Then stop
+
+    Examples:
+      |  |
+
 # multisig account
   Scenario Outline: [cmd] multisig account
     Then cmd: "account unlock"

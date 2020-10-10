@@ -14,6 +14,8 @@ use anyhow::{format_err, Result};
 use log::{debug, error, info};
 use std::fmt::Debug;
 
+const DEFAULT_MAIL_BOX_CAP: usize = 64;
+
 pub struct ServiceActor<S>
 where
     S: ActorService + 'static,
@@ -54,6 +56,7 @@ where
     type Context = Context<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
+        ctx.set_mailbox_capacity(DEFAULT_MAIL_BOX_CAP);
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
         if let Err(e) = self.proxy.start(&mut service_ctx) {
             error!("{} service start fail: {:?}.", S::service_name(), e);

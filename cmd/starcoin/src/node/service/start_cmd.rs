@@ -6,7 +6,9 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
+use std::thread::sleep;
 use structopt::StructOpt;
+use tokio::time::Duration;
 
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "start")]
@@ -29,6 +31,8 @@ impl CommandAction for StartCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         client.node_start_service(ctx.opt().name.clone())?;
+        //wait service registry update service status.
+        sleep(Duration::from_millis(3000));
         client.node_list_service()
     }
 }

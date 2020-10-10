@@ -21,11 +21,11 @@ fn handle_panic(panic_info: &PanicInfo<'_>) {
     let backtrace = format!("{:#?}", Backtrace::new());
 
     error!("panic occurred:");
-    println!("panic occurred:");
+    eprintln!("panic occurred:");
     error!("details: {}", details);
-    println!("details: {}", details);
+    eprintln!("details: {}", details);
     error!("backtrace: {}", backtrace);
-    println!("backtrace: {}", backtrace);
+    eprintln!("backtrace: {}", backtrace);
 
     // Provide some time to save the log to disk
     thread::sleep(time::Duration::from_millis(100));

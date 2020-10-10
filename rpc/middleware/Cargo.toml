@@ -14,9 +14,9 @@ thiserror = "1.0"
 failure = "0.1"
 # for ipc connect
 once_cell = "1.4.1"
-jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
+jsonrpc-core = { version = "15.1.0", features = ["arbitrary_precision"] }
 futures = { version = "0.3", features = ["compat"] }
-futures01 = "0.1.29"
+futures01 = "0.1.30"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-metrics = { path = "../../commons/metrics"}
 

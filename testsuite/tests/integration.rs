@@ -125,9 +125,7 @@ after!(an_after_fn => |_scenario| {
 });
 
 // A setup function to be called before everything else
-fn setup() {
-    starcoin_cmd::crash_handler::setup_panic_handler();
-}
+fn setup() {}
 
 cucumber! {
     features: "./features", // Path to our feature files
