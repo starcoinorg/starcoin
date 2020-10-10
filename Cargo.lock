@@ -5716,7 +5716,7 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "475e68978dc5b743f2f40d8e0a8fdc83f1c5e78cbf4b8fa5e74e73beebc340de"
 dependencies = [
- "proc-macro2 1.0.23",
+ "proc-macro2 1.0.24",
  "quote 1.0.7",
  "syn 1.0.42",
 ]
@@ -8031,7 +8031,7 @@ dependencies = [
  "log 0.4.11",
  "serde",
  "serde_json",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "toml",
  "x",
  "x-core",
@@ -9630,7 +9630,7 @@ dependencies = [
  "log 0.4.11",
  "serde",
  "serde_json",
- "structopt 0.3.18",
+ "structopt 0.3.19",
  "toml",
  "x-core",
  "x-lint",
