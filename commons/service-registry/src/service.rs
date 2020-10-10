@@ -8,7 +8,7 @@ use crate::{RegistryAsyncService, RegistryService};
 use crate::{ServiceRef, ServiceRequest};
 use actix::fut::{wrap_future, IntoActorFuture};
 use actix::{ActorContext, ActorFuture, AsyncContext, Context};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use futures::channel::oneshot::{channel, Receiver};
 use futures::executor::block_on;
 use futures::{Future, Stream, StreamExt};
@@ -61,10 +61,20 @@ where
     }
 
     pub fn bus_ref(&mut self) -> &ServiceRef<BusService> {
-        self.cache.bus_ref()
+        //TODO return error?
+        self.cache.bus_ref().expect("Get bus ref should success.")
     }
 
     pub fn service_ref<DepS>(&mut self) -> Result<&ServiceRef<DepS>>
+    where
+        DepS: ActorService,
+    {
+        self.cache
+            .service_ref::<DepS>()?
+            .ok_or_else(|| format_err!("Can not find service :{:?}", DepS::service_name()))
+    }
+
+    pub fn service_ref_opt<DepS>(&mut self) -> Result<Option<&ServiceRef<DepS>>>
     where
         DepS: ActorService,
     {
@@ -187,7 +197,7 @@ where
                 error!("ServiceContext exec future send result error.");
             }
         });
-        self.ctx.wait(fut);
+        self.ctx.spawn(fut);
         receiver
     }
 
@@ -235,7 +245,7 @@ where
     fn handle_event(&mut self, msg: M, ctx: &mut ServiceContext<S>);
 }
 
-pub trait ServiceFactory<S>
+pub trait ServiceFactory<S>: Send
 where
     S: ActorService,
 {

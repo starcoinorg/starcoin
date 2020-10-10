@@ -13,17 +13,31 @@ use actix::{Actor, AsyncContext};
 use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use log::info;
 use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::time::Duration;
+
+trait ServiceRefProxy: Send + Sync {
+    fn service_name(&self) -> &'static str;
+    fn service_info(&self) -> ServiceInfo;
+    fn status(&self) -> ServiceStatus;
+    fn check_status(&mut self) -> BoxFuture<ServiceStatus>;
+    fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()>;
+    fn shutdown(&self) -> Result<()>;
+    fn as_any(&self) -> &dyn Any;
+}
 
 struct ServiceHolder<S>
 where
     S: ActorService + 'static,
 {
     arbiter: Arbiter,
+    status: ServiceStatus,
     service_ref: ServiceRef<S>,
 }
 
@@ -34,18 +48,10 @@ where
     pub fn new(arbiter: Arbiter, service_ref: ServiceRef<S>) -> Self {
         Self {
             arbiter,
+            status: ServiceStatus::Started,
             service_ref,
         }
     }
-}
-
-trait ServiceRefProxy: Send + Sync {
-    fn service_name(&self) -> &'static str;
-    fn service_info(&self) -> ServiceInfo;
-    fn status(&self) -> ServiceStatus;
-    fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()>;
-    fn shutdown(&self) -> Result<()>;
-    fn as_any(&self) -> &dyn Any;
 }
 
 impl<S> ServiceRefProxy for ServiceHolder<S>
@@ -64,7 +70,17 @@ where
     }
 
     fn status(&self) -> ServiceStatus {
-        self.service_ref.self_status()
+        self.status
+    }
+
+    fn check_status(&mut self) -> BoxFuture<ServiceStatus> {
+        let service_ref = self.service_ref.clone();
+        async move {
+            let status = service_ref.self_status().await;
+            self.status = status;
+            status
+        }
+        .boxed()
     }
 
     fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()> {
@@ -97,7 +113,7 @@ impl Registry {
             services: vec![],
         };
         registry
-            .register::<BusService>()
+            .register::<BusService, BusService>()
             .expect("Registry BusService should success");
         registry
     }
@@ -168,11 +184,12 @@ impl Registry {
         Ok(service_ref)
     }
 
-    pub fn register<S>(&mut self) -> Result<ServiceRef<S>>
+    pub fn register<S, F>(&mut self) -> Result<ServiceRef<S>>
     where
-        S: ActorService + ServiceFactory<S> + 'static,
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static,
     {
-        self.do_register(ServiceActor::new::<S>)
+        self.do_register(ServiceActor::new::<F>)
     }
 
     pub fn register_mocker<S>(&mut self, mocker: Box<dyn MockHandler<S>>) -> Result<ServiceRef<S>>
@@ -198,17 +215,21 @@ impl Registry {
             .collect()
     }
 
-    pub fn service_ref<S>(&self) -> Result<ServiceRef<S>>
+    pub fn service_ref<S>(&self) -> Option<ServiceRef<S>>
     where
         S: ActorService,
     {
-        self.do_with_proxy(S::service_name(), |proxy| {
-            proxy
-                .as_any()
-                .downcast_ref::<ServiceHolder<S>>()
-                .ok_or_else(|| format_err!("Downcast ServiceHandle fail."))
-                .map(|holder| holder.service_ref.clone())
-        })
+        let service_name = S::service_name();
+        self.services
+            .iter()
+            .find(|proxy| proxy.service_name() == service_name)
+            .map(|proxy| {
+                proxy
+                    .as_any()
+                    .downcast_ref::<ServiceHolder<S>>()
+                    .expect("Downcast to ServiceHolder should success.")
+            })
+            .map(|holder| holder.service_ref.clone())
     }
 
     fn do_with_proxy<T, F: FnOnce(&Box<dyn ServiceRefProxy>) -> Result<T>>(
@@ -247,24 +268,13 @@ impl Registry {
     }
 
     // Check service status and removed shutdown status service ref.
-    fn check_service(&mut self) {
-        let has_shutdown = self
+    async fn check_service(&mut self) {
+        let status_futs: Vec<BoxFuture<ServiceStatus>> = self
             .services
-            .iter()
-            .any(|service| service.status() == ServiceStatus::Shutdown);
-        if has_shutdown {
-            self.services.retain(|service| {
-                if service.status() == ServiceStatus::Shutdown {
-                    info!(
-                        "{} status is shutdown, remove service registry ref.",
-                        service.service_name()
-                    );
-                    false
-                } else {
-                    true
-                }
-            });
-        }
+            .iter_mut()
+            .map(|proxy| proxy.check_status())
+            .collect();
+        futures::future::join_all(status_futs).await;
     }
 }
 
@@ -292,25 +302,27 @@ impl RegistryService {
 }
 
 impl ActorService for RegistryService {
-    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        //TODO check service will cause registry actor blocked, fixme.
-        // ctx.run_interval(Duration::from_millis(2000), |ctx| {
-        //     ctx.notify(CheckServiceEvent)
-        // });
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.run_interval(Duration::from_millis(2000), |ctx| {
+            ctx.notify(CheckServiceEvent)
+        });
         Ok(())
     }
 }
 
-pub struct RegisterRequest<S>
+pub struct RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S> + 'static,
+    S: ActorService + 'static,
+    F: ServiceFactory<S> + 'static,
 {
-    phantom: PhantomData<S>,
+    phantom_service: PhantomData<S>,
+    phantom_factory: PhantomData<F>,
 }
 
-impl<S> Debug for RegisterRequest<S>
+impl<S, F> Debug for RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", type_name::<Self>())
@@ -318,34 +330,38 @@ where
 }
 
 #[allow(clippy::new_without_default)]
-impl<S> RegisterRequest<S>
+impl<S, F> RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     pub fn new() -> Self {
         Self {
-            phantom: PhantomData,
+            phantom_service: PhantomData,
+            phantom_factory: PhantomData,
         }
     }
 }
 
-impl<S> ServiceRequest for RegisterRequest<S>
+impl<S, F> ServiceRequest for RegisterRequest<S, F>
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     type Response = Result<ServiceRef<S>>;
 }
 
-impl<S> ServiceHandler<Self, RegisterRequest<S>> for RegistryService
+impl<S, F> ServiceHandler<Self, RegisterRequest<S, F>> for RegistryService
 where
-    S: ActorService + ServiceFactory<S>,
+    S: ActorService,
+    F: ServiceFactory<S>,
 {
     fn handle(
         &mut self,
-        _msg: RegisterRequest<S>,
+        _msg: RegisterRequest<S, F>,
         _ctx: &mut ServiceContext<RegistryService>,
     ) -> Result<ServiceRef<S>> {
-        self.registry.register::<S>()
+        self.registry.register::<S, F>()
     }
 }
 
@@ -443,7 +459,7 @@ impl<S> ServiceRequest for ServiceRefRequest<S>
 where
     S: ActorService,
 {
-    type Response = Result<ServiceRef<S>>;
+    type Response = Option<ServiceRef<S>>;
 }
 
 impl<S> ServiceHandler<Self, ServiceRefRequest<S>> for RegistryService
@@ -454,7 +470,7 @@ where
         &mut self,
         _msg: ServiceRefRequest<S>,
         _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Result<ServiceRef<S>> {
+    ) -> Option<ServiceRef<S>> {
         self.registry.service_ref::<S>()
     }
 }
@@ -684,7 +700,10 @@ impl EventHandler<Self, CheckServiceEvent> for RegistryService {
         _msg: CheckServiceEvent,
         _ctx: &mut ServiceContext<RegistryService>,
     ) {
-        self.registry.check_service();
+        //TODO avoid block_on
+        block_on(async {
+            self.registry.check_service().await;
+        });
     }
 }
 
@@ -693,6 +712,11 @@ pub trait RegistryAsyncService {
     async fn register<S>(&self) -> Result<ServiceRef<S>>
     where
         S: ActorService + ServiceFactory<S> + 'static;
+
+    async fn register_by_factory<S, F>(&self) -> Result<ServiceRef<S>>
+    where
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static;
 
     async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
     where
@@ -708,14 +732,16 @@ pub trait RegistryAsyncService {
 
     async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
     where
-        S: ActorService + 'static;
-
-    fn service_ref_sync<S>(&self) -> Result<ServiceRef<S>>
-    where
         S: ActorService + 'static,
     {
-        block_on(async { self.service_ref::<S>().await })
+        self.service_ref_opt()
+            .await?
+            .ok_or_else(|| format_err!("Can not find service: {}", S::service_name()))
     }
+
+    async fn service_ref_opt<S>(&self) -> Result<Option<ServiceRef<S>>>
+    where
+        S: ActorService + 'static;
 
     async fn list_service(&self) -> Result<Vec<ServiceInfo>>;
 
@@ -815,7 +841,15 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
     where
         S: ActorService + ServiceFactory<S> + 'static,
     {
-        self.send(RegisterRequest::new()).await?
+        self.send(RegisterRequest::<S, S>::new()).await?
+    }
+
+    async fn register_by_factory<S, F>(&self) -> Result<ServiceRef<S>>
+    where
+        S: ActorService + 'static,
+        F: ServiceFactory<S> + 'static,
+    {
+        self.send(RegisterRequest::<S, F>::new()).await?
     }
 
     async fn register_mocker<S, Mocker>(&self, mocker: Mocker) -> Result<ServiceRef<S>>
@@ -827,11 +861,11 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
         self.send(RegisterMockerRequest::new(handler)).await?
     }
 
-    async fn service_ref<S>(&self) -> Result<ServiceRef<S>>
+    async fn service_ref_opt<S>(&self) -> Result<Option<ServiceRef<S>>>
     where
         S: ActorService + 'static,
     {
-        self.send(ServiceRefRequest::new()).await?
+        self.send(ServiceRefRequest::new()).await
     }
 
     async fn list_service(&self) -> Result<Vec<ServiceInfo>> {

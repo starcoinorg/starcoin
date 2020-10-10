@@ -7,13 +7,13 @@ edition = "2018"
 [dependencies]
 starcoin-types = { path = "../../types" }
 actix = "0.10.0"
-anyhow = "1.0.32"
+anyhow = "1.0.33"
 futures = "0.3"
 serde = { version = "1.0", default-features = false }
 rand = "0.7.3"
 starcoin-crypto = { path = "../../commons/crypto" }
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
-async-trait = "0.1.40"
+async-trait = "0.1.41"
 libp2p = "0.22.0"
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-rpc-core = { path = "../../network-rpc/core" }

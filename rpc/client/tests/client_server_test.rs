@@ -1,71 +1,48 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2
 
-use actix::prelude::*;
 use anyhow::Result;
-use futures03::channel::oneshot;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::node::NodeApi;
 use starcoin_rpc_client::RpcClient;
-use starcoin_rpc_server::module::NodeRpcImpl;
-use starcoin_rpc_server::RpcActor;
 use std::sync::Arc;
 use std::time::Duration;
 
-#[ignore]
-#[test]
+#[stest::test]
 fn test_multi_client() -> Result<()> {
-    starcoin_logger::init_for_test();
-    let mut system = System::new("test");
-
-    let config = Arc::new(NodeConfig::random_for_test());
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.miner.enable_miner_client = false;
+    let config = Arc::new(node_config);
     let ws_address = config.rpc.ws_address.as_ref().unwrap();
     let ipc_file = config.rpc.get_ipc_file().to_path_buf();
     let url = format!("ws://{}", ws_address.to_string());
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
+
+    let node_handle = test_helper::run_node_by_config(config)?;
+
+    let rpc_service_ref = node_handle.rpc_service()?;
     let mut rt = tokio_compat::runtime::Runtime::new()?;
 
-    system.block_on(async {
-        let (stop_sender, stop_receiver) = oneshot::channel::<bool>();
-        //io_handler.add_method("status", |_params: Params| Ok(Value::Bool(true)));
-        let (_rpc_actor, _) = RpcActor::launch_with_method(
-            config.clone(),
-            NodeRpcImpl::new(config, None).to_delegate(),
-        )
-        .unwrap();
+    std::thread::sleep(Duration::from_millis(300));
 
-        let client_task = move || {
-            info!("client thread start.");
-            std::thread::sleep(Duration::from_millis(300));
+    let local_client = RpcClient::connect_local(rpc_service_ref)?;
+    let status0 = local_client.node_status()?;
+    info!("local_client status: {}", status0);
 
-            let ws_client = RpcClient::connect_websocket(url.as_str(), &mut rt).unwrap();
-            let status = ws_client.node_status().unwrap();
-            info!("http_client status: {}", status);
-            assert!(status);
+    let ipc_client = RpcClient::connect_ipc(ipc_file, &mut rt).expect("connect ipc fail.");
+    let status1 = ipc_client.node_status()?;
+    info!("ipc_client status: {}", status1);
 
-            let ipc_client = RpcClient::connect_ipc(ipc_file, &mut rt).unwrap();
-            let status1 = ipc_client.node_status().unwrap();
-            info!("ipc_client status: {}", status1);
-            assert_eq!(status, status1);
-
-            // json_rpc's LocalRpc is not support middleware MetaIoHandler.
-            // let local_client = RpcClient::connect_local(iohandler);
-            // let status2 = local_client.node_status().unwrap();
-            // info!("local_client status: {}", status2);
-            // assert!(status2);
-
-            drop(stop_sender);
-        };
-
-        let handle = std::thread::spawn(client_task);
-
-        debug!("wait server stop");
-        debug!("stop receiver: {}", stop_receiver.await.is_ok());
-        handle.join().unwrap();
-        debug!("server stop.");
-    });
-
+    let ws_client =
+        RpcClient::connect_websocket(url.as_str(), &mut rt).expect("connect websocket fail.");
+    let status = ws_client.node_status()?;
+    info!("ws_client node_status: {}", status);
+    local_client.close();
+    ipc_client.close();
+    ws_client.close();
+    if let Err(e) = node_handle.stop() {
+        error!("node stop error: {:?}", e)
+    }
     Ok(())
 }

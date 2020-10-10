@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.32"
+anyhow = "1.0.33"
 rand = "0.7.3"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -15,7 +15,7 @@ crossbeam-channel = "0.4.4"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-structopt = "0.3.18"
+structopt = "0.3.19"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
 starcoin-crypto = {path = "../../commons/crypto"}

@@ -11,8 +11,8 @@ name = "starcoin_txfactory"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = "1.0.32"
-structopt = "0.3.18"
+anyhow = "1.0.33"
+structopt = "0.3.19"
 ctrlc = { version = "3.1", features = ["termination"] }
 futures = { version = "0.3"}
 tokio = { version = "0.2", features = ["full"] }

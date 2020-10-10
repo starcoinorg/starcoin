@@ -17,8 +17,7 @@ fn test_txn_sync_actor() {
     let first_config = Arc::new(first_config);
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     let txpool_1 = first_node
-        .start_handle()
-        .registry
+        .registry()
         .get_shared_sync::<TxPoolService>()
         .unwrap();
 
@@ -34,8 +33,7 @@ fn test_txn_sync_actor() {
 
     let second_node = run_node_by_config(second_config.clone()).unwrap();
     let txpool_2 = second_node
-        .start_handle()
-        .registry
+        .registry()
         .get_shared_sync::<TxPoolService>()
         .unwrap();
     //wait sync finish.

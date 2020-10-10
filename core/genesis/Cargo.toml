@@ -8,9 +8,9 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.32"
+anyhow = "1.0.33"
 thiserror = "1.0"
-structopt = "0.3.18"
+structopt = "0.3.19"
 once_cell = "1.4.1"
 starcoin-types = {path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}

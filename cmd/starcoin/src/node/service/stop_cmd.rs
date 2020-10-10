@@ -3,9 +3,11 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_service_registry::ServiceInfo;
+use std::thread::sleep;
+use std::time::Duration;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
@@ -27,15 +29,10 @@ impl CommandAction for StopCommand {
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
-        let handle = ctx.state().node_handle();
-        match handle {
-            Some(handle) => {
-                handle.stop_service(ctx.opt().name.clone())?;
-                handle.list_service()
-            }
-            None => {
-                bail!("Remote attached console not support node service command.");
-            }
-        }
+        let client = ctx.state().client();
+        client.node_stop_service(ctx.opt().name.clone())?;
+        //wait service registry update service status.
+        sleep(Duration::from_millis(3000));
+        client.node_list_service()
     }
 }

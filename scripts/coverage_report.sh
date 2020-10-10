@@ -47,21 +47,6 @@ if ! [ -x "$(command -v grcov)" ]; then
   fi
 fi
 
-# Check that covfix is installed
-if ! [ -x "$(command -v rust-covfix)" ]; then
-  echo "Error: rust-covfix is not installed." >&2
-  if [ $SKIP_PROMPTS -eq 0 ]; then
-    read -p "Install rust-covfix? [yY/*] " -n 1 -r
-    echo ""
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      [[ "$0" == "$BASH_SOURCE" ]] && exit 1 || return 1
-    fi
-    cargo install rust-covfix
-  else
-    exit 1
-  fi
-fi
-
 # Check that lcov is installed
 if ! [ -x "$(command -v lcov)" ]; then
   echo "Error: lcov is not installed." >&2
@@ -97,14 +82,8 @@ echo "Cleaning project..."
 
 # Run tests
 echo "Running tests..."
-while read -r line; do
-  dirline=$(realpath $(dirname "$line"))
-  # Don't fail out of the loop here. We just want to run the test binary
-  # to collect its profile data.
-  (cd "$dirline" && pwd && cargo test || true)
-done < <(find "$TEST_DIR" -name 'Cargo.toml')
-
-#cargo test --test integration -- -e "cmd"
+cargo test --no-fail-fast
+#cargo test --test integration --no-fail-fast -- -e "cmd"
 
 # Make the coverage directory if it doesn't exist
 if [ ! -d "$COVERAGE_DIR" ]; then
@@ -113,10 +92,7 @@ fi
 
 # Generate lcov report
 echo "Generating lcov report at ${COVERAGE_DIR}/lcov.info..."
-grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" -o "$COVERAGE_DIR/lcov.info"
-
-# fix cov data
-#rust-covfix -o "$COVERAGE_DIR/lcov_correct.info" "$COVERAGE_DIR/lcov.info"
+grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" --ignore "vm/transaction-builder-generator" -o "$COVERAGE_DIR/lcov.info"
 
 # Generate HTML report
 echo "Generating report at ${COVERAGE_DIR}..."

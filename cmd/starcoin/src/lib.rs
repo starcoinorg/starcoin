@@ -53,7 +53,9 @@ pub fn add_command(
                     Command::with_name("service")
                         .subcommand(node::service::ListCommand)
                         .subcommand(node::service::StartCommand)
-                        .subcommand(node::service::StopCommand),
+                        .subcommand(node::service::StopCommand)
+                    //TODO support shutdown by command    
+                    //.subcommand(node::service::ShutdownSystemCommand),
                 ),
         )
         .command(
