@@ -19,6 +19,7 @@ serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0"
 actix-rt = "1.1"
 tokio = "0.2"
+parking_lot = "0.11.0"
 jsonrpc-core = { version = "15.1.0", features = ["arbitrary_precision"] }
 jsonrpc-derive = "15.1.0"
 jsonrpc-server-utils = "15.1.0"
