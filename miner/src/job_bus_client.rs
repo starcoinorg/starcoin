@@ -8,7 +8,6 @@ use starcoin_miner_client::JobClient;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use types::U256;
 
 #[derive(Clone)]
 pub struct JobBusClient {
@@ -23,14 +22,9 @@ impl JobBusClient {
 }
 
 impl JobClient for JobBusClient {
-    fn subscribe(&self) -> Result<BoxStream<Result<(HashValue, U256)>>> {
+    fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
         let bus = self.bus.clone();
-        block_on(async move {
-            let receiver = bus.channel::<MintBlockEvent>().await;
-            receiver
-                .map(|r| r.map(|b| Ok((b.minting_hash, b.difficulty))))
-                .map(|s| s.boxed())
-        })
+        block_on(async move { bus.channel::<MintBlockEvent>().await.map(|s| s.boxed()) })
     }
 
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
