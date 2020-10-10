@@ -7,14 +7,18 @@ use logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
+use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct JobRpcClient {
-    rpc_client: RpcClient,
+    rpc_client: Arc<RpcClient>,
 }
 
 impl JobRpcClient {
     pub fn new(rpc_client: RpcClient) -> Self {
-        Self { rpc_client }
+        Self {
+            rpc_client: Arc::new(rpc_client),
+        }
     }
 }
 
