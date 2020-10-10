@@ -22,7 +22,6 @@ use tokio::runtime::Runtime;
 pub mod crash_handler;
 pub mod node;
 pub mod rpc_service_factory;
-pub mod timeout_join_handler;
 
 pub struct NodeHandle {
     runtime: Runtime,
