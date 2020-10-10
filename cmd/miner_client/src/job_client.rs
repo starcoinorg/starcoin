@@ -3,9 +3,10 @@ use anyhow::Result;
 use crypto::HashValue;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, TryStreamExt};
+use logger::prelude::*;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::genesis_config::ConsensusStrategy;
-use starcoin_types::U256;
+use starcoin_types::system_events::MintBlockEvent;
 
 pub struct JobRpcClient {
     rpc_client: RpcClient,
@@ -18,11 +19,19 @@ impl JobRpcClient {
 }
 
 impl JobClient for JobRpcClient {
-    fn subscribe(&self) -> Result<BoxStream<Result<(HashValue, U256)>>> {
-        self.rpc_client
-            .subscribe_new_mint_blocks()
-            .map(|stream| stream.map_ok(|b| (b.minting_hash, b.difficulty)))
-            .map(|s| s.boxed())
+    fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>> {
+        let stream = self.rpc_client.subscribe_new_mint_blocks()?.into_stream();
+        Ok(stream
+            .filter_map(|r| async move {
+                match r {
+                    Ok(b) => Some(MintBlockEvent::new(b.minting_hash, b.difficulty)),
+                    Err(e) => {
+                        error!("Failed to subscribe mint block:{}", e);
+                        None
+                    }
+                }
+            })
+            .boxed())
     }
 
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
