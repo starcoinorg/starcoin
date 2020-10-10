@@ -132,7 +132,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let notification = serde_json::from_str::<jsonrpc_core::Notification>(res.as_str()).unwrap();
     match notification.params {
         jsonrpc_core::Params::Map(s) => {
-            let v = s.get("result").unwrap().get("blockNumber").unwrap();
+            let v = s.get("result").unwrap().get("block_number").unwrap();
             assert_eq!(v.as_u64(), Some(1));
         }
         p => {
