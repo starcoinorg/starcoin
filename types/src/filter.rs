@@ -21,6 +21,20 @@ pub struct Filter {
     /// If None, return all events
     /// If specified, should only return *last* `n` events.
     pub limit: Option<usize>,
+    /// return events in reverse order.
+    pub reverse: bool,
+}
+
+impl Default for Filter {
+    fn default() -> Self {
+        Self {
+            from_block: 0,
+            to_block: 0,
+            event_keys: vec![],
+            limit: None,
+            reverse: true,
+        }
+    }
 }
 
 impl Filter {

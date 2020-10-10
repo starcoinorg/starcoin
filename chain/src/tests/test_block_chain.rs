@@ -34,6 +34,7 @@ fn test_chain_filter_events() {
             to_block: 5,
             event_keys: vec![evt_key],
             limit: None,
+            reverse: false,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -49,11 +50,26 @@ fn test_chain_filter_events() {
             to_block: 10,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
             limit: Some(5),
+            reverse: false,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
         let evt = evts.last().unwrap();
         assert_eq!(evt.block_number, 5);
+        assert_eq!(evt.transaction_index, 0);
+    }
+    {
+        let event_filter = Filter {
+            from_block: 1,
+            to_block: 10,
+            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            limit: Some(5),
+            reverse: true,
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 5);
+        let evt = evts.first().unwrap();
+        assert_eq!(evt.block_number, 10);
         assert_eq!(evt.transaction_index, 0);
     }
 }
