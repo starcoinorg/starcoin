@@ -1,7 +1,8 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{config::CargoConfig, utils::project_root, Result};
+use crate::project_root;
+use crate::{config::CargoConfig, Result};
 use anyhow::anyhow;
 use log::{info, warn};
 use std::{

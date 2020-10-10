@@ -82,21 +82,6 @@ echo "Cleaning project..."
 
 # Run tests
 echo "Running tests..."
-#cargo test --no-fail-fast || true
-#cargo test --test integration --no-fail-fast -- -e "cmd" || true
-cargo xtest --html-lcov-dir="${COVERAGE_DIR}" --no-fail-fast -j 10 || true
-# Make the coverage directory if it doesn't exist
-#if [ ! -d "$COVERAGE_DIR" ]; then
-#  mkdir "$COVERAGE_DIR"
-#fi
-
-## Generate lcov report
-#echo "Generating lcov report at ${COVERAGE_DIR}/lcov.info..."
-#grcov target -t lcov --llvm --branch --ignore "/*" --ignore "benchmarks/*" --ignore "testsuite/*" --ignore "vm/transaction-builder-generator" -o "$COVERAGE_DIR/lcov.info"
-#
-## Generate HTML report
-#echo "Generating report at ${COVERAGE_DIR}..."
-## Flag "--ignore-errors source" ignores missing source files
-#genhtml -o "$COVERAGE_DIR" --show-details --highlight --ignore-errors source --legend "$COVERAGE_DIR/lcov.info"
+cargo xtest --html-lcov-dir="${COVERAGE_DIR}" --no-fail-fast --lib -j 10 || true
 
 echo "Done. Please view report at ${COVERAGE_DIR}/index.html"

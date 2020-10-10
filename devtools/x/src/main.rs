@@ -7,23 +7,61 @@ use chrono::Local;
 use env_logger::{self, fmt::Color};
 use log::Level;
 use std::io::Write;
+use std::path::Path;
 use structopt::StructOpt;
 
-mod bench;
-mod cargo;
-mod check;
-mod clippy;
-mod config;
-mod context;
-mod diff_summary;
-mod fix;
-mod fmt;
-mod generate_summaries;
-mod installer;
-mod lint;
-mod test;
-mod tools;
-mod utils;
+pub mod bench {
+    pub use libra_x::bench::*;
+}
+
+pub mod check {
+    pub use libra_x::check::*;
+}
+pub mod clippy {
+    pub use libra_x::clippy::*;
+}
+pub mod config {
+    pub use libra_x::config::*;
+}
+pub mod context {
+    pub use libra_x::context::*;
+}
+pub mod diff_summary {
+    pub use libra_x::diff_summary::*;
+}
+pub mod fix {
+    pub use libra_x::fix::*;
+}
+pub mod fmt {
+    pub use libra_x::fmt::*;
+}
+pub mod generate_summaries {
+    pub use libra_x::generate_summaries::*;
+}
+pub mod installer {
+    pub use libra_x::installer::*;
+}
+pub mod lint {
+    pub use libra_x::lint::*;
+}
+pub mod test;
+
+pub mod cargo;
+
+pub mod tools {
+    pub use libra_x::tools::*;
+}
+
+pub mod utils {
+    pub use libra_x::utils::*;
+}
+
+pub fn project_root() -> &'static Path {
+    Path::new(&env!("CARGO_MANIFEST_DIR"))
+        .ancestors()
+        .nth(2)
+        .unwrap()
+}
 
 type Result<T> = anyhow::Result<T>;
 
@@ -91,7 +129,9 @@ fn main() -> Result<()> {
 
     let args = Args::from_args();
     let xctx = context::XContext::new()?;
-
+    // let config = libra_x::config::Config::from_file("./x.toml")?;
+    // let xctx = context::XContext::with_config(config);
+    // dbg!(xctx.config());
     match args.cmd {
         Command::Tools(args) => tools::run(args, xctx),
         Command::Test(args) => test::run(args, xctx),

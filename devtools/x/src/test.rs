@@ -3,14 +3,15 @@
 
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::{
-    cargo::{CargoArgs, CargoCommand},
+use crate::cargo::{CargoArgs, CargoCommand};
+use crate::project_root;
+use anyhow::{Error, Result};
+use libra_x::{
+    // cargo::{CargoArgs, CargoCommand},
     context::XContext,
     utils,
-    utils::project_root,
-    Result,
+    // utils::project_root,
 };
-use anyhow::Error;
 use log::info;
 use std::{
     ffi::OsString,
@@ -55,6 +56,7 @@ pub struct Args {
 
 pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
     args.args.extend(args.testname.clone());
+
     let config = xctx.config();
 
     let generate_coverage = args.html_cov_dir.is_some() || args.html_lcov_dir.is_some();
