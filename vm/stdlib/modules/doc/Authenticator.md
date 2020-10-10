@@ -6,8 +6,10 @@
 
 
 -  [Struct <code><a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a></code>](#0x1_Authenticator_MultiEd25519PublicKey)
+-  [Const <code><a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a></code>](#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH)
 -  [Const <code><a href="Authenticator.md#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_ED25519_SCHEME_ID)
 -  [Const <code><a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
+-  [Function <code>EWRONG_AUTHENTICATION_KEY_LENGTH</code>](#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH)
 -  [Function <code>create_multi_ed25519</code>](#0x1_Authenticator_create_multi_ed25519)
 -  [Function <code>ed25519_authentication_key</code>](#0x1_Authenticator_ed25519_authentication_key)
 -  [Function <code>derived_address</code>](#0x1_Authenticator_derived_address)
@@ -56,6 +58,17 @@
 
 </details>
 
+<a name="0x1_Authenticator_AUTHENTICATION_KEY_LENGTH"></a>
+
+## Const `AUTHENTICATION_KEY_LENGTH`
+
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>: u64 = 32;
+</code></pre>
+
+
+
 <a name="0x1_Authenticator_ED25519_SCHEME_ID"></a>
 
 ## Const `ED25519_SCHEME_ID`
@@ -77,6 +90,28 @@
 </code></pre>
 
 
+
+<a name="0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH"></a>
+
+## Function `EWRONG_AUTHENTICATION_KEY_LENGTH`
+
+
+
+<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Authenticator_create_multi_ed25519"></a>
 
@@ -155,6 +190,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;):address {
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == <a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>, <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>());
     <b>let</b> address_bytes = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
 
     <b>let</b> i = 16;
@@ -316,7 +352,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> len(authentication_key) != 32;
 </code></pre>
 
 

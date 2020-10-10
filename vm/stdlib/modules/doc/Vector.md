@@ -688,6 +688,7 @@ pragma aborts_if_is_strict;
 
 
 <pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> sub_len == 0;
 </code></pre>
 
 
