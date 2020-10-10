@@ -19,15 +19,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 actix = "0.10.0"
 actix-rt = "1.1"
-jsonrpc-core = { version = "14.0", features = ["arbitrary_precision"] }
-jsonrpc-derive = "14.2"
-jsonrpc-http-server = "14.0"
-jsonrpc-tcp-server = "14.0"
-jsonrpc-ipc-server = "14.0"
-jsonrpc-ws-server = "14.0"
-jsonrpc-server-utils = "14.0"
-jsonrpc-pubsub = "14.0"
-jsonrpc-core-client = { version = "14.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
+jsonrpc-core = { version = "15.1.0", features = ["arbitrary_precision"] }
+jsonrpc-derive = "15.1.0"
+jsonrpc-http-server = "15.1.0"
+jsonrpc-tcp-server = "15.1.0"
+jsonrpc-ipc-server = "15.1.0"
+jsonrpc-ws-server = "15.1.0"
+jsonrpc-server-utils = "15.1.0"
+jsonrpc-pubsub = "15.1.0"
+jsonrpc-core-client = { version = "15.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 tokio01 = { version="0.1", package="tokio"}
 futures = { version = "0.3", features = ["compat"] }
 num_cpus = "1.10"
