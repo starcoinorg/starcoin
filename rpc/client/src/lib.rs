@@ -9,6 +9,7 @@ use futures::future::Future as Future01;
 use futures03::channel::oneshot;
 use futures03::{TryStream, TryStreamExt};
 use jsonrpc_core_client::{transports::ipc, transports::ws, RpcChannel};
+use parking_lot::Mutex;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
@@ -31,7 +32,6 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
-use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -64,7 +64,7 @@ enum ConnSource {
 }
 
 pub struct RpcClient {
-    inner: RefCell<Option<RpcClientInner>>,
+    inner: Mutex<Option<RpcClientInner>>,
     conn_source: ConnSource,
     chain_watcher: Addr<ChainWatcher>,
     //hold the watch thread handle.
@@ -110,7 +110,7 @@ impl RpcClient {
         let watcher = futures03::executor::block_on(rx).expect("Init chain watcher fail.");
 
         Self {
-            inner: RefCell::new(Some(inner)),
+            inner: Mutex::new(Some(inner)),
             conn_source,
             chain_watcher: watcher,
             watcher_handle: handle,
@@ -655,14 +655,14 @@ impl RpcClient {
     where
         F: std::future::Future<Output = Result<T, jsonrpc_client_transports::RpcError>> + Send,
     {
-        let inner_opt = self.inner.borrow().as_ref().cloned();
+        let inner_opt = self.inner.lock().as_ref().cloned();
         let inner = match inner_opt {
             Some(inner) => inner,
             None => {
                 let conn_source = self.conn_source.clone();
                 let f = async { Self::get_rpc_channel(conn_source).await.map(|c| c.into()) };
                 let new_inner: RpcClientInner = futures03::executor::block_on(f)?;
-                *self.inner.borrow_mut() = Some(new_inner.clone());
+                *(self.inner.lock()) = Some(new_inner.clone());
                 new_inner
             }
         };
@@ -673,7 +673,7 @@ impl RpcClient {
         if let Err(rpc_error) = &result {
             if let jsonrpc_client_transports::RpcError::Other(e) = rpc_error {
                 error!("rpc error due to {:?}", e);
-                *self.inner.borrow_mut() = None;
+                *(self.inner.lock()) = None;
             }
         }
 

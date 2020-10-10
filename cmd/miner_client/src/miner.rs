@@ -16,10 +16,7 @@ use starcoin_types::U256;
 use std::sync::Mutex;
 use std::thread;
 
-pub struct MinerClient<C>
-where
-    C: JobClient,
-{
+pub struct MinerClient<C: JobClient> {
     nonce_rx: Option<mpsc::UnboundedReceiver<(Vec<u8>, u64)>>,
     worker_controller: WorkerController,
     job_client: C,
@@ -27,10 +24,7 @@ where
     num_seals_found: Mutex<u64>,
 }
 
-impl<C> MinerClient<C>
-where
-    C: JobClient,
-{
+impl<C: JobClient> MinerClient<C> {
     pub fn new(config: MinerClientConfig, job_client: C) -> Result<Self> {
         let consensus_strategy = job_client.consensus()?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
@@ -55,29 +49,6 @@ where
             num_seals_found: Mutex::new(0),
         })
     }
-
-    pub async fn start(&mut self) -> Result<()> {
-        info!("Miner client started");
-        let mut job_rx = self.job_client.subscribe()?.fuse();
-        let mut seals = self
-            .nonce_rx
-            .take()
-            .expect("Inner error nonce rx must exist");
-        loop {
-            debug!("In miner client select loop");
-            futures::select! {
-                job = job_rx.select_next_some() => {
-                    self.start_mint_work(job.minting_hash, job.difficulty);
-                },
-                seal = seals.select_next_some() => {
-                    let (pow_header, nonce) = seal;
-                    let hash = HashValue::from_slice(&pow_header).expect("Inner error, invalid hash");
-                    self.submit_seal(hash, nonce);
-                }
-            }
-        }
-    }
-
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) {
         if let Err(err) = self.job_client.submit_seal(pow_hash, nonce) {
             error!("Submit seal to failed: {:?}", err);
@@ -106,17 +77,11 @@ where
     }
 }
 
-pub struct MinerClientService<C>
-where
-    C: JobClient + Send + Unpin + Clone + Sync + 'static,
-{
+pub struct MinerClientService<C: JobClient> {
     inner: MinerClient<C>,
 }
 
-impl<C> ActorService for MinerClientService<C>
-where
-    C: JobClient + Send + Unpin + Clone + Sync,
-{
+impl<C: JobClient> ActorService for MinerClientService<C> {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         let jobs = self.inner.job_client.subscribe()?;
         ctx.add_stream(jobs);
@@ -134,10 +99,7 @@ where
     }
 }
 
-impl<C> ServiceFactory<Self> for MinerClientService<C>
-where
-    C: JobClient + Send + Unpin + Clone + Sync,
-{
+impl<C: JobClient> ServiceFactory<Self> for MinerClientService<C> {
     fn create(ctx: &mut ServiceContext<MinerClientService<C>>) -> Result<MinerClientService<C>> {
         let config = ctx.get_shared::<MinerClientConfig>()?;
         let job_client = ctx.get_shared::<C>()?;
@@ -146,10 +108,7 @@ where
     }
 }
 
-impl<C> EventHandler<Self, MintBlockEvent> for MinerClientService<C>
-where
-    C: JobClient + Send + Unpin + Clone + Sync,
-{
+impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> {
     fn handle_event(
         &mut self,
         event: MintBlockEvent,
@@ -160,10 +119,7 @@ where
     }
 }
 
-impl<C> EventHandler<Self, SealEvent> for MinerClientService<C>
-where
-    C: JobClient + Send + Unpin + Clone + Sync,
-{
+impl<C: JobClient> EventHandler<Self, SealEvent> for MinerClientService<C> {
     fn handle_event(&mut self, event: SealEvent, _ctx: &mut ServiceContext<MinerClientService<C>>) {
         self.inner.submit_seal(event.pow_hash, event.nonce)
     }
