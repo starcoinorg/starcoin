@@ -7235,6 +7235,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "thiserror",
+ "timeout-join-handler",
  "tokio 0.2.22",
 ]
 
@@ -7916,10 +7917,12 @@ version = "0.5.1"
 dependencies = [
  "actix",
  "actix-rt",
+ "anyhow",
  "futures 0.3.5",
  "log 0.4.11",
  "starcoin-logger",
  "stest-macro",
+ "timeout-join-handler",
  "tokio 0.2.22",
 ]
 
@@ -8357,6 +8360,13 @@ checksum = "ca8a50ef2360fbd1eeb0ecd46795a87a19024eb4b53c5dc916ca1fd95fe62438"
 dependencies = [
  "libc",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "timeout-join-handler"
+version = "0.5.1"
+dependencies = [
+ "anyhow",
 ]
 
 [[package]]

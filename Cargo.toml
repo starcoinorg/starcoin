@@ -12,6 +12,7 @@ members = [
     "commons/utils",
     "commons/proptest-helpers",
     "commons/service-registry",
+    "commons/timeout-join-handler",
     "types",
     "types/uint",
     "core/traits",
