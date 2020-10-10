@@ -5,16 +5,17 @@ pub mod job_client;
 pub mod miner;
 mod worker;
 
+use actix::prelude::*;
 use anyhow::Result;
 use crypto::HashValue;
 use futures::stream::BoxStream;
 use rand::Rng;
 use starcoin_types::genesis_config::ConsensusStrategy;
-use starcoin_types::U256;
+use starcoin_types::system_events::MintBlockEvent;
 use std::ops::Range;
 
 pub trait JobClient {
-    fn subscribe(&self) -> Result<BoxStream<Result<(HashValue, U256)>>>;
+    fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()>;
     fn consensus(&self) -> Result<ConsensusStrategy>;
 }
@@ -34,4 +35,11 @@ fn nonce_generator(range: Range<u64>) -> impl FnMut() -> u64 {
     let mut rng = rand::thread_rng();
     let Range { start, end } = range;
     move || rng.gen_range(start, end)
+}
+
+#[derive(Clone, Debug, Message)]
+#[rtype(result = "Result<()>")]
+pub struct SealEvent {
+    pow_hash: HashValue,
+    nonce: u64,
 }
