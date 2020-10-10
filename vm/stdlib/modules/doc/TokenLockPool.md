@@ -14,8 +14,8 @@
 -  [Function <code>initialize</code>](#0x1_TokenLockPool_initialize)
 -  [Function <code>create_linear_lock</code>](#0x1_TokenLockPool_create_linear_lock)
 -  [Function <code>create_fixed_lock</code>](#0x1_TokenLockPool_create_fixed_lock)
--  [Function <code>unlock_by_linear</code>](#0x1_TokenLockPool_unlock_by_linear)
--  [Function <code>unlock_by_fixed</code>](#0x1_TokenLockPool_unlock_by_fixed)
+-  [Function <code>unlock_with_linear_key</code>](#0x1_TokenLockPool_unlock_with_linear_key)
+-  [Function <code>unlock_with_fixed_key</code>](#0x1_TokenLockPool_unlock_with_fixed_key)
 -  [Function <code>unlocked_amount_of_linear_key</code>](#0x1_TokenLockPool_unlocked_amount_of_linear_key)
 -  [Function <code>unlocked_amount_of_fixed_key</code>](#0x1_TokenLockPool_unlocked_amount_of_fixed_key)
 -  [Function <code>end_time_of</code>](#0x1_TokenLockPool_end_time_of)
@@ -294,13 +294,13 @@
 
 </details>
 
-<a name="0x1_TokenLockPool_unlock_by_linear"></a>
+<a name="0x1_TokenLockPool_unlock_with_linear_key"></a>
 
-## Function `unlock_by_linear`
+## Function `unlock_with_linear_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_by_linear">unlock_by_linear</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">TokenLockPool::LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_linear_key">unlock_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">TokenLockPool::LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -309,7 +309,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_by_linear">unlock_by_linear</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_linear_key">unlock_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_linear_key">unlocked_amount_of_linear_key</a>(key);
     <b>assert</b>(amount &gt; 0, <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>());
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
@@ -323,13 +323,13 @@
 
 </details>
 
-<a name="0x1_TokenLockPool_unlock_by_fixed"></a>
+<a name="0x1_TokenLockPool_unlock_with_fixed_key"></a>
 
-## Function `unlock_by_fixed`
+## Function `unlock_with_fixed_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_by_fixed">unlock_by_fixed</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">TokenLockPool::FixedTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_fixed_key">unlock_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">TokenLockPool::FixedTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -338,7 +338,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_by_fixed">unlock_by_fixed</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;  <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_fixed_key">unlock_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;  <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_fixed_key">unlocked_amount_of_fixed_key</a>(&key);
     <b>assert</b>(amount &gt; 0, <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>());
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
@@ -373,7 +373,7 @@
     <b>if</b> (elapsed_time &gt;= key.peroid) {
         key.total - key.taked
     }<b>else</b> {
-        <a href="Math.md#0x1_Math_percent_multi">Math::percent_multi</a>(key.total, (elapsed_time <b>as</b> u128), (key.peroid <b>as</b> u128)) - key.taked
+        <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(key.total, (elapsed_time <b>as</b> u128), (key.peroid <b>as</b> u128)) - key.taked
     }
 }
 </code></pre>

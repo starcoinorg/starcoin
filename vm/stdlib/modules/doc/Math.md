@@ -5,13 +5,87 @@
 
 
 
+-  [Const <code><a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a></code>](#0x1_Math_U64_MAX)
+-  [Const <code><a href="Math.md#0x1_Math_U128_MAX">U128_MAX</a></code>](#0x1_Math_U128_MAX)
+-  [Function <code>u64_max</code>](#0x1_Math_u64_max)
+-  [Function <code>u128_max</code>](#0x1_Math_u128_max)
 -  [Function <code>sqrt</code>](#0x1_Math_sqrt)
 -  [Function <code>pow</code>](#0x1_Math_pow)
--  [Function <code>percent_multi</code>](#0x1_Math_percent_multi)
+-  [Function <code>mul_div</code>](#0x1_Math_mul_div)
 -  [Specification](#@Specification_0)
     -  [Function <code>sqrt</code>](#@Specification_0_sqrt)
     -  [Function <code>pow</code>](#@Specification_0_pow)
 
+
+<a name="0x1_Math_U64_MAX"></a>
+
+## Const `U64_MAX`
+
+
+
+<pre><code><b>const</b> <a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a>: u64 = 18446744073709551615;
+</code></pre>
+
+
+
+<a name="0x1_Math_U128_MAX"></a>
+
+## Const `U128_MAX`
+
+
+
+<pre><code><b>const</b> <a href="Math.md#0x1_Math_U128_MAX">U128_MAX</a>: u128 = 340282366920938463463374607431768211455;
+</code></pre>
+
+
+
+<a name="0x1_Math_u64_max"></a>
+
+## Function `u64_max`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u64_max">u64_max</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u64_max">u64_max</a>(): u64 {
+    <a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a>
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Math_u128_max"></a>
+
+## Function `u128_max`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u128_max">u128_max</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_u128_max">u128_max</a>(): u128 {
+    <a href="Math.md#0x1_Math_U128_MAX">U128_MAX</a>
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Math_sqrt"></a>
 
@@ -85,13 +159,13 @@
 
 </details>
 
-<a name="0x1_Math_percent_multi"></a>
+<a name="0x1_Math_mul_div"></a>
 
-## Function `percent_multi`
+## Function `mul_div`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_percent_multi">percent_multi</a>(x: u128, y: u128, z: u128): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_mul_div">mul_div</a>(x: u128, y: u128, z: u128): u128
 </code></pre>
 
 
@@ -100,12 +174,20 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_percent_multi">percent_multi</a>(x: u128, y: u128, z: u128): u128 {
-    <b>if</b> (y &gt; z) {
-        y / z * x
-    }<b>else</b> {
-        x * y / z
-    }
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_mul_div">mul_div</a>(x: u128, y: u128, z: u128): u128 {
+    <b>if</b> ( y  == z ) {
+        <b>return</b> x
+    };
+    <b>if</b> ( x &gt; z) {
+        <b>return</b> x/z*y
+    };
+    <b>let</b> a = x / z;
+    <b>let</b> b = x % z;
+    //x = a * z + b;
+    <b>let</b> c = y / z;
+    <b>let</b> d = y % z;
+    //y = c * z + d;
+    a * b * z + a * d + b * c + b * d / z
 }
 </code></pre>
 

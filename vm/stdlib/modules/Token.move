@@ -88,7 +88,7 @@ module Token {
         fractional_part: u128,
     ) {
         let token_address = token_address<TokenType>();
-        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER);
+        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER());
         // assert(module_name == token_name, ETOKEN_NAME);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});

@@ -7,13 +7,17 @@
 
 -  [Resource <code><a href="Token.md#0x1_Token">Token</a></code>](#0x1_Token_Token)
 -  [Resource <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>](#0x1_Token_MintCapability)
+-  [Resource <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>](#0x1_Token_FixedTimeMintKey)
+-  [Resource <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>](#0x1_Token_LinearTimeMintKey)
 -  [Resource <code><a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a></code>](#0x1_Token_BurnCapability)
 -  [Resource <code><a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a></code>](#0x1_Token_ScalingFactorModifyCapability)
 -  [Struct <code><a href="Token.md#0x1_Token_MintEvent">MintEvent</a></code>](#0x1_Token_MintEvent)
 -  [Struct <code><a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a></code>](#0x1_Token_BurnEvent)
 -  [Resource <code><a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a></code>](#0x1_Token_TokenInfo)
--  [Const <code><a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a></code>](#0x1_Token_ETOKEN_REGISTER)
--  [Const <code><a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a></code>](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
+-  [Function <code>ETOKEN_REGISTER</code>](#0x1_Token_ETOKEN_REGISTER)
+-  [Function <code>EAMOUNT_EXCEEDS_COIN_VALUE</code>](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
+-  [Function <code>EMINT_KEY_TIME_LIMIT</code>](#0x1_Token_EMINT_KEY_TIME_LIMIT)
+-  [Function <code>EDESTROY_KEY_NOT_EMPTY</code>](#0x1_Token_EDESTROY_KEY_NOT_EMPTY)
 -  [Function <code>register_token</code>](#0x1_Token_register_token)
 -  [Function <code>remove_scaling_factor_modify_capability</code>](#0x1_Token_remove_scaling_factor_modify_capability)
 -  [Function <code>add_scaling_factor_modify_capability</code>](#0x1_Token_add_scaling_factor_modify_capability)
@@ -26,6 +30,15 @@
 -  [Function <code>destroy_burn_capability</code>](#0x1_Token_destroy_burn_capability)
 -  [Function <code>mint</code>](#0x1_Token_mint)
 -  [Function <code>mint_with_capability</code>](#0x1_Token_mint_with_capability)
+-  [Function <code>do_mint</code>](#0x1_Token_do_mint)
+-  [Function <code>issue_fixed_mint_key</code>](#0x1_Token_issue_fixed_mint_key)
+-  [Function <code>issue_linear_mint_key</code>](#0x1_Token_issue_linear_mint_key)
+-  [Function <code>mint_with_fixed_key</code>](#0x1_Token_mint_with_fixed_key)
+-  [Function <code>mint_with_linear_key</code>](#0x1_Token_mint_with_linear_key)
+-  [Function <code>mint_amount_of_linear_key</code>](#0x1_Token_mint_amount_of_linear_key)
+-  [Function <code>mint_amount_of_fixed_key</code>](#0x1_Token_mint_amount_of_fixed_key)
+-  [Function <code>end_time_of_key</code>](#0x1_Token_end_time_of_key)
+-  [Function <code>destroy_empty_key</code>](#0x1_Token_destroy_empty_key)
 -  [Function <code>burn</code>](#0x1_Token_burn)
 -  [Function <code>burn_with_capability</code>](#0x1_Token_burn_with_capability)
 -  [Function <code>zero</code>](#0x1_Token_zero)
@@ -144,6 +157,84 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 <dl>
 <dt>
 <code>dummy_field: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Token_FixedTimeMintKey"></a>
+
+## Resource `FixedTimeMintKey`
+
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>total: u128</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>end_time: u64</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Token_LinearTimeMintKey"></a>
+
+## Resource `LinearTimeMintKey`
+
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>total: u128</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>minted: u128</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>start_time: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>peroid: u64</code>
 </dt>
 <dd>
 
@@ -336,26 +427,100 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 <a name="0x1_Token_ETOKEN_REGISTER"></a>
 
-## Const `ETOKEN_REGISTER`
+## Function `ETOKEN_REGISTER`
 
 Token register's address should same as TokenType's address.
 
 
-<pre><code><b>const</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>: u64 = 100;
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>(): u64
 </code></pre>
 
 
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>(): u64 {
+    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE"></a>
 
-## Const `EAMOUNT_EXCEEDS_COIN_VALUE`
+## Function `EAMOUNT_EXCEEDS_COIN_VALUE`
 
 
 
-<pre><code><b>const</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>: u64 = 102;
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>(): u64
 </code></pre>
 
 
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>(): u64 {
+    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_EMINT_KEY_TIME_LIMIT"></a>
+
+## Function `EMINT_KEY_TIME_LIMIT`
+
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>(): u64 {
+    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_EDESTROY_KEY_NOT_EMPTY"></a>
+
+## Function `EDESTROY_KEY_NOT_EMPTY`
+
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64 {
+    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4
+}
+</code></pre>
+
+
+
+</details>
 
 <a name="0x1_Token_register_token"></a>
 
@@ -379,7 +544,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
     fractional_part: u128,
 ) {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>());
     // <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
@@ -679,6 +844,30 @@ Only the Association account can acquire such a reference, and it can do so only
     _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
     amount: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+    <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_do_mint"></a>
+
+## Function `do_mint`
+
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     // <b>update</b> market cap <b>resource</b> <b>to</b> reflect minting
     <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;();
     <b>let</b> share = <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount);
@@ -692,6 +881,234 @@ Only the Association account can acquire such a reference, and it can do so only
         },
     );
     <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: share }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_issue_fixed_mint_key"></a>
+
+## Function `issue_fixed_mint_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+                                 amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
+    <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(amount &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <b>let</b> end_time = now + peroid;
+    <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
+        total: amount,
+        end_time,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_issue_linear_mint_key"></a>
+
+## Function `issue_linear_mint_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
+                                            amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
+    <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(amount &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
+        total: amount,
+        minted: 0,
+        start_time,
+        peroid
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_mint_with_fixed_key"></a>
+
+## Function `mint_with_fixed_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+    <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>(&key);
+    <b>assert</b>(amount &gt; 0, <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>());
+    <b>let</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a> { total, end_time:_} = key;
+    <a href="Token.md#0x1_Token_do_mint">do_mint</a>(total)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_mint_with_linear_key"></a>
+
+## Function `mint_with_linear_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+    <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>(key);
+    <b>assert</b>(amount &gt; 0, <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>());
+    <b>let</b> token = <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount);
+    key.minted = key.minted + amount;
+    token
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_mint_amount_of_linear_key"></a>
+
+## Function `mint_amount_of_linear_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): u128 {
+    <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <b>let</b> elapsed_time = now - key.start_time;
+    <b>if</b> (elapsed_time &gt;= key.peroid) {
+        key.total - key.minted
+    }<b>else</b> {
+        <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(key.total, (elapsed_time <b>as</b> u128), (key.peroid <b>as</b> u128)) - key.minted
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_mint_amount_of_fixed_key"></a>
+
+## Function `mint_amount_of_fixed_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u128 {
+    <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <b>if</b> (now &gt;= key.end_time) {
+        key.total
+    }<b>else</b>{
+        0
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_end_time_of_key"></a>
+
+## Function `end_time_of_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_end_time_of_key">end_time_of_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_end_time_of_key">end_time_of_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u64 {
+    key.end_time
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_destroy_empty_key"></a>
+
+## Function `destroy_empty_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) {
+    <b>let</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; { total, minted, start_time: _, peroid: _ } = key;
+    <b>assert</b>(total == minted, <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>());
 }
 </code></pre>
 
@@ -950,7 +1367,7 @@ Fails if the tokens value is less than <code>share</code>
     share: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
     // Check that `share` is less than the token's value
-    <b>assert</b>(token.value &gt;= share, <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>);
+    <b>assert</b>(token.value &gt;= share, <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>());
     token.value = token.value - share;
     <a href="Token.md#0x1_Token">Token</a> { value: share }
 }
