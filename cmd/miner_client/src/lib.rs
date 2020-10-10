@@ -14,7 +14,7 @@ use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use std::ops::Range;
 
-pub trait JobClient {
+pub trait JobClient: Send + Unpin + Sync + Clone {
     fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()>;
     fn consensus(&self) -> Result<ConsensusStrategy>;
