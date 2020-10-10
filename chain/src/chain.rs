@@ -638,11 +638,11 @@ impl BlockChain {
             uncles.len(),
             header.id()
         );
-        let mut tmp_uncles = HashSet::<HashValue>::new();
+        let mut uncle_ids = HashSet::<HashValue>::new();
         for uncle in uncles {
             verify_block!(
                 VerifyBlockField::Uncle,
-                !tmp_uncles.contains(&uncle.id()),
+                !uncle_ids.contains(&uncle.id()),
                 "repeat uncle {:?} in current block {:?}",
                 uncle.id(),
                 header.id()
@@ -654,7 +654,7 @@ impl BlockChain {
                "uncle block number bigger than or equal to current block ,uncle block number is {} , current block number is {}", uncle.number, header.number
             );
 
-            tmp_uncles.insert(uncle.id());
+            uncle_ids.insert(uncle.id());
         }
 
         let (epoch_start_number, epoch_end_number) = if let Some(epoch) = &self.epoch {
@@ -675,33 +675,29 @@ impl BlockChain {
             .into());
         };
 
-        let uncle_ids: Vec<_> = uncles.iter().map(|uncle| uncle.id()).collect();
+        //let uncle_ids: Vec<_> = uncles.iter().map(|uncle| uncle.id()).collect();
         debug!("verify block : {:?} uncle ids {:?}", header.id(), uncle_ids);
         for uncle_id in uncle_ids {
-            if self.exist_block(uncle_id) {
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    false,
-                    "legal master block can not be uncle block,block id is {:?}",
-                    uncle_id
-                );
-            }
+            verify_block!(
+                VerifyBlockField::Uncle,
+                !self.exist_block(uncle_id),
+                "legal master block can not be uncle block,block id is {:?}",
+                uncle_id
+            );
 
-            if self.uncles.contains(&uncle_id) {
-                debug!("uncle block exists in master,uncle id is {:?}", uncle_id,);
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    false,
-                    "uncle block exists in master,uncle id is {:?}",
-                    uncle_id
-                );
-            }
+            debug!("uncle block exists in master,uncle id is {:?}", uncle_id,);
+            verify_block!(
+                VerifyBlockField::Uncle,
+                !self.uncles.contains(&uncle_id),
+                "uncle block exists in master,uncle id is {:?}",
+                uncle_id
+            );
         }
 
         for uncle in uncles {
             verify_block!(
                 VerifyBlockField::Uncle,
-                uncle.number() >= epoch_start_number && uncle.number() < epoch_start_number,
+                uncle.number() >= epoch_start_number && uncle.number() < epoch_end_number,
                 "uncle not in epoch, id is: {:?}, number is: {:?}, epoch start {:?} and end {:?}",
                 uncle.id(),
                 uncle.number(),
@@ -709,32 +705,32 @@ impl BlockChain {
                 epoch_end_number
             );
 
-            if !self.exist_block(uncle.parent_hash()) {
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    false,
-                    "can't find parent, uncle id is {:?}, and parent id is {:?}",
-                    uncle.id(),
-                    uncle.parent_hash()
-                );
-            } else if let Some(parent_header) = self.get_header(uncle.parent_hash())? {
-                let next_number = parent_header.number() + 1;
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    next_number == uncle.number(),
-                    "illegal uncle number {}, parent number is {}",
-                    uncle.number(),
-                    parent_header.number()
-                );
-            } else {
-                verify_block!(
-                    VerifyBlockField::Uncle,
-                    false,
-                    "can't find parent header by id {:?} for uncle id {:?} ",
-                    uncle.parent_hash(),
-                    uncle.id()
-                );
-            }
+            verify_block!(
+                VerifyBlockField::Uncle,
+                self.exist_block(uncle.parent_hash()),
+                "can't find parent, uncle id is {:?}, and parent id is {:?}",
+                uncle.id(),
+                uncle.parent_hash()
+            );
+
+            let parent_header = self.get_header(uncle.parent_hash())?;
+            verify_block!(
+                VerifyBlockField::Uncle,
+                parent_header.is_some(),
+                "can't find parent header by id {:?} for uncle id {:?} ",
+                uncle.parent_hash(),
+                uncle.id()
+            );
+
+            let parent_header = parent_header.expect("Parent header is none.");
+            let next_number = parent_header.number() + 1;
+            verify_block!(
+                VerifyBlockField::Uncle,
+                next_number == uncle.number(),
+                "illegal uncle number {}, parent number is {}",
+                uncle.number(),
+                parent_header.number()
+            );
         }
 
         Ok(())
@@ -778,27 +774,26 @@ impl BlockChain {
             self.verify_header(&header, false, &epoch_info)?;
 
             // verify block accumulator
-            if let Some(parent_block_info) = self.get_block_info(Some(header.parent_hash()))? {
-                verify_block!(
-                    VerifyBlockField::Header,
-                    parent_block_info
-                        .get_block_accumulator_info()
-                        .get_accumulator_root()
-                        == &header.parent_block_accumulator_root(),
-                    "Block accumulator root miss match {:?} : {:?}",
-                    parent_block_info
-                        .get_block_accumulator_info()
-                        .get_accumulator_root(),
-                    header.parent_block_accumulator_root(),
-                );
-            } else {
-                verify_block!(
-                    VerifyBlockField::Header,
-                    false,
-                    "Can not find BlockInfo by parent id : {:?}",
-                    header.parent_hash(),
-                );
-            }
+            let parent_block_info = self.get_block_info(Some(header.parent_hash()))?;
+            verify_block!(
+                VerifyBlockField::Header,
+                parent_block_info.is_some(),
+                "Can not find BlockInfo by parent id : {:?}",
+                header.parent_hash(),
+            );
+            let parent_block_info = parent_block_info.expect("Parent block info is none.");
+            verify_block!(
+                VerifyBlockField::Header,
+                parent_block_info
+                    .get_block_accumulator_info()
+                    .get_accumulator_root()
+                    == &header.parent_block_accumulator_root(),
+                "Block accumulator root miss match {:?} : {:?}",
+                parent_block_info
+                    .get_block_accumulator_info()
+                    .get_accumulator_root(),
+                header.parent_block_accumulator_root(),
+            );
 
             verify_block!(
                 VerifyBlockField::Header,
@@ -1010,27 +1005,23 @@ impl BlockChain {
 
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
 
-        if txn_infos.len() != txns.len() {
-            verify_block!(
-                VerifyBlockField::Body,
-                false,
-                "txn infos len ({:?}) is not equals txns len ({:?}).",
-                txn_infos.len(),
-                txns.len()
-            );
-        }
+        verify_block!(
+            VerifyBlockField::Body,
+            txn_infos.len() == txns.len(),
+            "txn infos len ({:?}) is not equals txns len ({:?}).",
+            txn_infos.len(),
+            txns.len()
+        );
         let mut state_root = None;
         for i in 0..txns.len() {
             let id = txns[i].id();
-            if id != txn_infos[i].transaction_hash() {
-                verify_block!(
-                    VerifyBlockField::Body,
-                    false,
-                    "txn {:?} is not match with txn_info ({:?}).",
-                    id,
-                    txn_infos[i]
-                );
-            }
+            verify_block!(
+                VerifyBlockField::Body,
+                id == txn_infos[i].transaction_hash(),
+                "txn {:?} is not match with txn_info ({:?}).",
+                id,
+                txn_infos[i]
+            );
             state_root = Some(txn_infos[i].state_root_hash());
         }
         block_executed_data.state_root =
