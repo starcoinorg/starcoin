@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::rpc_service_factory::RpcServiceFactory;
-use crate::{timeout_join_handler, NodeHandle};
+use crate::NodeHandle;
 use actix::{clock::delay_for, prelude::*};
 use anyhow::Result;
 use futures::channel::oneshot;
