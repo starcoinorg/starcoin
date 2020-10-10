@@ -28,6 +28,12 @@ struct TestAttributeOpts {
 /// }
 ///
 /// #[stest::test]
+/// async fn my_async_test_with_result() -> anyhow::Result<()> {
+///     assert!(true);
+///     Ok(())
+/// }
+///
+/// #[stest::test]
 /// fn my_sync_test() {
 ///     assert!(true);
 /// }
@@ -80,16 +86,7 @@ struct TestAttributeOpts {
 /// async fn my_async_test_actor() {
 ///     let myactor = MyActor {};
 ///     myactor.start();
-///
-///     assert!(false);
 /// }
-///
-///
-/// #[stest::test(timeout = 10)]
-/// fn my_sync_test_actor() {
-///     assert!(false);
-/// }
-///
 ///
 ///
 /// ```
