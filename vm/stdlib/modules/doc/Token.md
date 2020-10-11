@@ -53,6 +53,7 @@
 -  [Function <code>token_code</code>](#0x1_Token_token_code)
 -  [Function <code>code_to_bytes</code>](#0x1_Token_code_to_bytes)
 -  [Function <code>name_of</code>](#0x1_Token_name_of)
+-  [Function <code>name_of_token</code>](#0x1_Token_name_of_token)
 -  [Specification](#@Specification_0)
     -  [Function <code>register_token</code>](#@Specification_0_register_token)
     -  [Function <code>remove_scaling_factor_modify_capability</code>](#@Specification_0_remove_scaling_factor_modify_capability)
@@ -92,6 +93,7 @@
     -  [Function <code>token_code</code>](#@Specification_0_token_code)
     -  [Function <code>code_to_bytes</code>](#@Specification_0_code_to_bytes)
     -  [Function <code>name_of</code>](#@Specification_0_name_of)
+    -  [Function <code>name_of_token</code>](#@Specification_0_name_of_token)
 
 
 <a name="0x1_Token_Token"></a>
@@ -376,7 +378,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
     base_scaling_factor: u128,
     fractional_part: u128,
 ) {
-    <b>let</b> (token_address, _module_name, _token_name) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>);
     // <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
@@ -678,10 +680,10 @@ Only the Association account can acquire such a reference, and it can do so only
     amount: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     // <b>update</b> market cap <b>resource</b> <b>to</b> reflect minting
-    <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;();
     <b>let</b> share = <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount);
     <b>let</b> info = borrow_global_mut&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address);
-    info.total_value = info.total_value + (share <b>as</b> u128);
+    info.total_value = info.total_value + share;
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
         &<b>mut</b> info.mint_events,
         <a href="Token.md#0x1_Token_MintEvent">MintEvent</a> {
@@ -744,10 +746,10 @@ Only the Association account can acquire such a reference, and it can do so only
     _capability: &<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;,
     tokens: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
 ) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;();
     <b>let</b> info = borrow_global_mut&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address);
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = tokens;
-    info.total_value = info.total_value - (value <b>as</b> u128);
+    info.total_value = info.total_value - value;
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
         &<b>mut</b> info.burn_events,
         <a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a> {
@@ -1124,7 +1126,7 @@ Returns the scaling factor for the <code>TokenType</code> token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> (token_address, _, _) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).scaling_factor
 }
 </code></pre>
@@ -1149,7 +1151,7 @@ Returns the scaling factor for the <code>TokenType</code> token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> (token_address, _, _) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).base_scaling_factor
 }
 </code></pre>
@@ -1234,7 +1236,7 @@ Returns the representable fractional part for the <code>TokenType</code> token.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> (token_address, _, _) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).fractional_part
 }
 </code></pre>
@@ -1285,7 +1287,7 @@ Return the total share of token minted.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> (token_address, _, _) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
+    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).total_value
 }
 </code></pre>
@@ -1449,6 +1451,30 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 </details>
 
+<a name="0x1_Token_name_of_token"></a>
+
+## Function `name_of_token`
+
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;) {
+    <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;()
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="@Specification_0"></a>
 
 ## Specification
@@ -1472,7 +1498,15 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 </code></pre>
 
 
@@ -1488,7 +1522,8 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
 </code></pre>
 
 
@@ -1504,7 +1539,8 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
+<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
 </code></pre>
 
 
@@ -1520,7 +1556,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1626,7 +1662,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount) &gt; MAX_U128;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 </code></pre>
 
@@ -1643,7 +1679,9 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount) &gt; MAX_U128;
+<b>ensures</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() ==
+        <b>old</b>(<b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value) + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
 </code></pre>
 
 
@@ -1659,8 +1697,8 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() - tokens.<a href="Token.md#0x1_Token_value">value</a> &lt; 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 </code></pre>
 
 
@@ -1676,7 +1714,9 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() - tokens.<a href="Token.md#0x1_Token_value">value</a> &lt; 0;
+<b>ensures</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() ==
+        <b>old</b>(<b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value) - tokens.value;
 </code></pre>
 
 
@@ -1703,7 +1743,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt;{hold: token.value};
 </code></pre>
 
 
@@ -1719,7 +1759,8 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt;;
+<b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
 </code></pre>
 
 
@@ -1736,6 +1777,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; share;
+<b>ensures</b> <b>old</b>(token.value) == result_1.value + result_2.value;
 </code></pre>
 
 
@@ -1751,7 +1793,10 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt;;
+<b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
+<b>ensures</b> result.value == <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
+<b>ensures</b> token.value == <b>old</b>(token).value - <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
 </code></pre>
 
 
@@ -1836,7 +1881,21 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> amount * <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
+<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() == 0;
+</code></pre>
+
+
+
+
+<a name="0x1_Token_AmountToShareAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt; {
+    amount: u128;
+    <b>aborts_if</b> amount * <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
+    <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() == 0;
+}
 </code></pre>
 
 
@@ -1852,7 +1911,21 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> hold * <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
+<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() == 0;
+</code></pre>
+
+
+
+
+<a name="0x1_Token_ShareToAmountAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt; {
+    hold: u128;
+    <b>aborts_if</b> hold * <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
+    <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() == 0;
+}
 </code></pre>
 
 
@@ -1868,7 +1941,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1884,7 +1957,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1900,7 +1973,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
 </code></pre>
 
 
@@ -1916,7 +1989,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1932,7 +2005,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1948,7 +2021,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt;{hold: <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;()};
 </code></pre>
 
 
@@ -1964,7 +2037,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -2012,7 +2085,13 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+<b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result);
+<b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).total_value == 100000000u128;
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).base_scaling_factor == 2;
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).scaling_factor == 1;
 </code></pre>
 
 
@@ -2060,5 +2139,59 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_0_name_of_token"></a>
+
+### Function `name_of_token`
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;(): (address, vector&lt;u8&gt;, vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+<b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1);
+<b>ensures</b> [abstract] result_1 == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).total_value == 100000000u128;
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).base_scaling_factor == 2;
+<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).scaling_factor == 1;
+</code></pre>
+
+
+
+
+<a name="0x1_Token_SPEC_TOKEN_TEST_ADDRESS"></a>
+
+
+<pre><code><b>define</b> <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>(): address {
+    0x2
+}
+<a name="0x1_Token_spec_abstract_scaling_factor"></a>
+<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;(): u128 {
+    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).scaling_factor
+}
+<a name="0x1_Token_spec_abstract_base_scaling_factor"></a>
+<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;(): u128 {
+    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).base_scaling_factor
+}
+<a name="0x1_Token_spec_abstract_total_value"></a>
+<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;(): u128 {
+    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value
+}
+<a name="0x1_Token_spec_abstract_amount_to_share"></a>
+<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128 {
+    amount * 2
+}
+<a name="0x1_Token_spec_abstract_share_to_amount"></a>
+<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_share_to_amount">spec_abstract_share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128 {
+    hold / 2
+}
 </code></pre>
