@@ -481,11 +481,24 @@ impl ChainReader for BlockChain {
 
 impl BlockChain {
     pub fn filter_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        let reverse = filter.reverse;
         let chain_header = self.current_header();
-        let mut event_with_infos = vec![];
-        let mut cur_block_number = filter.from_block;
         let max_block_number = chain_header.number.min(filter.to_block);
-        'outer: while cur_block_number <= max_block_number {
+        let (mut cur_block_number, tail) = if reverse {
+            (max_block_number, filter.from_block)
+        } else {
+            (filter.from_block, max_block_number)
+        };
+        let is_end = |reverse: bool, cur: u64, tail: u64| {
+            if reverse {
+                cur < tail
+            } else {
+                cur > tail
+            }
+        };
+
+        let mut event_with_infos = vec![];
+        'outer: while !is_end(reverse, cur_block_number, tail) {
             let block = self.get_block_by_number(cur_block_number)?.ok_or_else(|| {
                 anyhow::anyhow!(format!(
                     "cannot find block({}) on master chain(head: {})",
@@ -495,8 +508,16 @@ impl BlockChain {
             })?;
             let block_id = block.id();
             let block_number = block.header().number;
-            let txn_info_ids = self.storage.get_block_txn_info_ids(block_id)?;
-            for (idx, id) in txn_info_ids.iter().enumerate() {
+            let mut txn_info_ids = self
+                .storage
+                .get_block_txn_info_ids(block_id)?
+                .into_iter()
+                .enumerate()
+                .collect::<Vec<_>>();
+            if reverse {
+                txn_info_ids.reverse();
+            }
+            for (idx, id) in txn_info_ids.iter() {
                 let events = self.storage.get_contract_events(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
                         "cannot find events of txn with txn_info_id {} on master chain(header: {})",
@@ -520,13 +541,19 @@ impl BlockChain {
                     ))
                 })?;
 
-                event_with_infos.extend(filtered_events.map(|evt| ContractEventInfo {
+                let filtered_event_with_info = filtered_events.map(|evt| ContractEventInfo {
                     block_hash: block_id,
                     block_number: block.header().number,
                     transaction_hash: txn_info.transaction_hash(),
-                    transaction_index: idx as u64,
+                    transaction_index: *idx as u64,
                     event: evt,
-                }));
+                });
+                if reverse {
+                    event_with_infos.extend(filtered_event_with_info.rev())
+                } else {
+                    event_with_infos.extend(filtered_event_with_info);
+                }
+
                 if let Some(limit) = filter.limit {
                     if event_with_infos.len() >= limit {
                         break 'outer;
@@ -534,7 +561,11 @@ impl BlockChain {
                 }
             }
 
-            cur_block_number += 1;
+            if filter.reverse {
+                cur_block_number -= 1;
+            } else {
+                cur_block_number += 1;
+            }
         }
 
         // remove additional events in respect limit filter.

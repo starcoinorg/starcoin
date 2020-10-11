@@ -124,6 +124,7 @@ impl TryInto<Filter> for EventFilter {
             to_block: self.to_block.unwrap_or(std::u64::MAX),
             event_keys: self.event_keys,
             limit: self.limit,
+            reverse: true,
         })
     }
 }
