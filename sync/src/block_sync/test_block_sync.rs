@@ -135,7 +135,7 @@ fn gen_handlers() -> (TestSyncDataEventHandler, TestNextTimeEventHandler) {
     (handler_1, handler_2)
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 async fn test_block_sync_inner() {
     let (handler_1, handler_2) = gen_handlers();
     let times = 15;

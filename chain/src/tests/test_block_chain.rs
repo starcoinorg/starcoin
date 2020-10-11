@@ -22,7 +22,7 @@ use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let times = 10;
@@ -34,6 +34,7 @@ fn test_chain_filter_events() {
             to_block: 5,
             event_keys: vec![evt_key],
             limit: None,
+            reverse: false,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -49,6 +50,7 @@ fn test_chain_filter_events() {
             to_block: 10,
             event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
             limit: Some(5),
+            reverse: false,
         };
         let evts = mock_chain.head().filter_events(event_filter).unwrap();
         assert_eq!(evts.len(), 5);
@@ -56,9 +58,23 @@ fn test_chain_filter_events() {
         assert_eq!(evt.block_number, 5);
         assert_eq!(evt.transaction_index, 0);
     }
+    {
+        let event_filter = Filter {
+            from_block: 1,
+            to_block: 10,
+            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            limit: Some(5),
+            reverse: true,
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 5);
+        let evt = evts.first().unwrap();
+        assert_eq!(evt.block_number, 10);
+        assert_eq!(evt.transaction_index, 0);
+    }
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_block_chain_head() {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     let times = 10;
@@ -118,7 +134,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
         .unwrap()
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner();
@@ -137,7 +153,7 @@ fn test_uncle() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 1);
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle_exist() {
     let (mut mock_chain, _, uncle_block_header) = gen_uncle();
     let miner = mock_chain.miner().clone();
@@ -162,7 +178,7 @@ fn test_uncle_exist() {
     assert!(mock_chain.apply(block).is_err());
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_uncle_son() {
     let (mut mock_chain, mut fork_block_chain, _) = gen_uncle();
     let miner = mock_chain.miner();
@@ -179,7 +195,7 @@ fn test_uncle_son() {
     assert_eq!(mock_chain.head().current_epoch_uncles_size(), 0);
 }
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_random_uncle() {
     let (mut mock_chain, _, _) = gen_uncle();
     let miner = mock_chain.miner();
