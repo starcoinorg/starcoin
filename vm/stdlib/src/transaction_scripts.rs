@@ -133,9 +133,14 @@ pub enum StdlibScript {
     SetOpenModule,
     SetOpenScript,
     CastVote,
+    RevokeVote,
+    UnstakeVote,
+    DestroyTerminatedProposal,
     ProposeModuleUpgrade,
+    ProposeModifyDaoConfig,
     QueueProposalAction,
     SubmitModuleUpgradePlan,
+    ExecuteModifyDaoConfigProposal,
     // ...add new scripts here
 }
 
@@ -144,6 +149,7 @@ impl StdlibScript {
     /// StdlibScript enum)
     pub fn all() -> Vec<Self> {
         use StdlibScript::*;
+
         vec![
             AcceptToken,
             CreateAccount,
@@ -155,9 +161,14 @@ impl StdlibScript {
             SetOpenModule,
             SetOpenScript,
             CastVote,
+            RevokeVote,
+            UnstakeVote,
+            DestroyTerminatedProposal,
             ProposeModuleUpgrade,
+            ProposeModifyDaoConfig,
             QueueProposalAction,
             SubmitModuleUpgradePlan,
+            ExecuteModifyDaoConfigProposal,
             // ...add new scripts here
         ]
     }
@@ -209,6 +220,11 @@ impl fmt::Display for StdlibScript {
                 ProposeModuleUpgrade => "propose_module_upgrade",
                 QueueProposalAction => "queue_proposal_action",
                 SubmitModuleUpgradePlan => "submit_module_upgrade_plan",
+                RevokeVote => "revoke_vote",
+                UnstakeVote => "unstake_vote",
+                DestroyTerminatedProposal => "destroy_terminated_proposal",
+                ProposeModifyDaoConfig => "propose_modify_dao_config",
+                ExecuteModifyDaoConfigProposal => "execute_modify_dao_config_proposal",
             }
         )
     }
