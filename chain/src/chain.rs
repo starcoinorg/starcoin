@@ -484,21 +484,19 @@ impl BlockChain {
         let reverse = filter.reverse;
         let chain_header = self.current_header();
         let max_block_number = chain_header.number.min(filter.to_block);
+
+        // quick return.
+        if filter.from_block > max_block_number {
+            return Ok(vec![]);
+        }
+
         let (mut cur_block_number, tail) = if reverse {
             (max_block_number, filter.from_block)
         } else {
             (filter.from_block, max_block_number)
         };
-        let is_end = |reverse: bool, cur: u64, tail: u64| {
-            if reverse {
-                cur < tail
-            } else {
-                cur > tail
-            }
-        };
-
         let mut event_with_infos = vec![];
-        'outer: while !is_end(reverse, cur_block_number, tail) {
+        'outer: loop {
             let block = self.get_block_by_number(cur_block_number)?.ok_or_else(|| {
                 anyhow::anyhow!(format!(
                     "cannot find block({}) on master chain(head: {})",
@@ -561,7 +559,16 @@ impl BlockChain {
                 }
             }
 
-            if filter.reverse {
+            let should_break = match reverse {
+                true => cur_block_number <= tail,
+                false => cur_block_number >= tail,
+            };
+
+            if should_break {
+                break 'outer;
+            }
+
+            if reverse {
                 cur_block_number -= 1;
             } else {
                 cur_block_number += 1;

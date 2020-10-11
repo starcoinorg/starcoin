@@ -72,6 +72,38 @@ fn test_chain_filter_events() {
         assert_eq!(evt.block_number, 10);
         assert_eq!(evt.transaction_index, 0);
     }
+
+    // test on from_block is 0
+    {
+        let event_filter = Filter {
+            from_block: 0,
+            to_block: 10,
+            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            limit: Some(20),
+            reverse: true,
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 10);
+        let evt = evts.first().unwrap();
+        assert_eq!(evt.block_number, 10);
+        assert_eq!(evt.transaction_index, 0);
+    }
+
+    // test on to_block is too large
+    {
+        let event_filter = Filter {
+            from_block: 0,
+            to_block: 20,
+            event_keys: vec![EventKey::new_from_address(&genesis_address(), 4)],
+            limit: Some(20),
+            reverse: true,
+        };
+        let evts = mock_chain.head().filter_events(event_filter).unwrap();
+        assert_eq!(evts.len(), 10);
+        let evt = evts.first().unwrap();
+        assert_eq!(evt.block_number, 10);
+        assert_eq!(evt.transaction_index, 0);
+    }
 }
 
 #[stest::test(timeout = 120)]
