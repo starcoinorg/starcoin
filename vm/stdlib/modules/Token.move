@@ -5,6 +5,8 @@ module Token {
     use 0x1::Vector;
     use 0x1::LCS;
     use 0x1::ErrorCode;
+    use 0x1::Timestamp;
+    use 0x1::Math;
 
     spec module {
         pragma verify = true;
@@ -19,6 +21,12 @@ module Token {
 
     /// A minting capability allows tokens of type `TokenType` to be minted
     resource struct MintCapability<TokenType> { }
+
+    // A fixed time mint key which can mint token until global time > end_time
+    resource struct FixedTimeMintKey<TokenType> { total: u128, end_time: u64 }
+
+    // A linear time mint key which can mint token in a peroid by time-based linear release.
+    resource struct LinearTimeMintKey<TokenType> { total: u128, minted: u128, start_time: u64, peroid: u64 }
 
     resource struct BurnCapability<TokenType> { }
 
@@ -57,10 +65,21 @@ module Token {
     }
 
     /// Token register's address should same as TokenType's address.
-    const ETOKEN_REGISTER: u64 = 100;
-    // TokenType's name should same as Token's Module name.
-    // const ETOKEN_NAME: u64 = 101;
-    const EAMOUNT_EXCEEDS_COIN_VALUE: u64 = 102;
+    fun ETOKEN_REGISTER(): u64 {
+        ErrorCode::ECODE_BASE() + 1
+    }
+
+    fun EAMOUNT_EXCEEDS_COIN_VALUE(): u64 {
+        ErrorCode::ECODE_BASE() + 2
+    }
+    // Mint key time limit
+    fun EMINT_KEY_TIME_LIMIT(): u64 {
+        ErrorCode::ECODE_BASE() + 3
+    }
+
+    fun EDESTROY_KEY_NOT_EMPTY(): u64 {
+        ErrorCode::ECODE_BASE() + 4
+    }
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
@@ -69,7 +88,7 @@ module Token {
         fractional_part: u128,
     ) {
         let token_address = token_address<TokenType>();
-        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER);
+        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER());
         // assert(module_name == token_name, ETOKEN_NAME);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
@@ -206,6 +225,10 @@ module Token {
         _capability: &MintCapability<TokenType>,
         amount: u128,
     ): Token<TokenType> acquires TokenInfo {
+        do_mint(amount)
+    }
+
+    fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
         let share = amount_to_share<TokenType>(amount);
@@ -226,6 +249,76 @@ module Token {
         ensures spec_abstract_total_value<TokenType>() ==
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + spec_abstract_amount_to_share<TokenType>(amount);
 
+    }
+
+    public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
+                                     amount: u128, peroid: u64): FixedTimeMintKey<TokenType>{
+        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(amount > 0, ErrorCode::EINVALID_ARGUMENT());
+        let now = Timestamp::now_seconds();
+        let end_time = now + peroid;
+        FixedTimeMintKey{
+            total: amount,
+            end_time,
+        }
+    }
+
+    public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
+                                                amount: u128, peroid: u64): LinearTimeMintKey<TokenType>{
+        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(amount > 0, ErrorCode::EINVALID_ARGUMENT());
+        let start_time = Timestamp::now_seconds();
+        LinearTimeMintKey<TokenType> {
+            total: amount,
+            minted: 0,
+            start_time,
+            peroid
+        }
+    }
+
+    public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
+        let amount = mint_amount_of_fixed_key(&key);
+        assert(amount > 0, EMINT_KEY_TIME_LIMIT());
+        let FixedTimeMintKey { total, end_time:_} = key;
+        do_mint(total)
+    }
+
+    public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
+        let amount = mint_amount_of_linear_key(key);
+        assert(amount > 0, EMINT_KEY_TIME_LIMIT());
+        let token = do_mint(amount);
+        key.minted = key.minted + amount;
+        token
+    }
+
+    // Returns the amount of the LinearTimeMintKey can mint now.
+    public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
+        let now = Timestamp::now_seconds();
+        let elapsed_time = now - key.start_time;
+        if (elapsed_time >= key.peroid) {
+            key.total - key.minted
+        }else {
+            Math::mul_div(key.total, (elapsed_time as u128), (key.peroid as u128)) - key.minted
+        }
+    }
+
+    // Returns the mint amount of the FixedTimeMintKey.
+    public fun mint_amount_of_fixed_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u128 {
+        let now = Timestamp::now_seconds();
+        if (now >= key.end_time) {
+            key.total
+        }else{
+            0
+        }
+    }
+
+    public fun end_time_of_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u64 {
+        key.end_time
+    }
+
+    public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
+        let LinearTimeMintKey<TokenType> { total, minted, start_time: _, peroid: _ } = key;
+        assert(total == minted, EDESTROY_KEY_NOT_EMPTY());
     }
 
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
@@ -339,7 +432,7 @@ module Token {
         share: u128,
     ): Token<TokenType> {
         // Check that `share` is less than the token's value
-        assert(token.value >= share, EAMOUNT_EXCEEDS_COIN_VALUE);
+        assert(token.value >= share, EAMOUNT_EXCEEDS_COIN_VALUE());
         token.value = token.value - share;
         Token { value: share }
     }
@@ -620,5 +713,6 @@ module Token {
             hold / 2
         }
     }
+
 }
 }
