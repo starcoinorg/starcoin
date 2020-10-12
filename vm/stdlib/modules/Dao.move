@@ -5,6 +5,7 @@ module Dao {
     use 0x1::Timestamp;
     use 0x1::Option;
     use 0x1::Config;
+    use 0x1::Event;
 
     /// default voting_delay: 1hour
     const DEFAULT_VOTING_DELAY: u64 = 60 * 60;
@@ -43,6 +44,8 @@ module Dao {
 
     resource struct DaoGlobalInfo<Token> {
         next_proposal_id: u64,
+        proposal_create_event: Event::EventHandle<ProposalCreatedEvent>,
+        vote_changed_event: Event::EventHandle<VoteChangedEvent>,
     }
 
     struct DaoConfig<TokenT: copyable> {
@@ -50,6 +53,22 @@ module Dao {
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
+    }
+
+    /// emitted when proposal created.
+    struct ProposalCreatedEvent {
+        proposal_id: u64,
+        proposer: address,
+    }
+
+    /// emitted when user vote/revoke_vote.
+    struct VoteChangedEvent {
+        proposal_id: u64,
+        proposer: address,
+        voter: address,
+        agree: bool,
+        /// latest vote of the voter.
+        vote: u128,
     }
 
     /// TODO: support that one can propose mutli proposals.
@@ -97,7 +116,11 @@ module Dao {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
         // let proposal_id = ProposalId {next: 0};
-        let gov_info = DaoGlobalInfo<TokenT> { next_proposal_id: 0 };
+        let gov_info = DaoGlobalInfo<TokenT> {
+            next_proposal_id: 0,
+            proposal_create_event: Event::new_event_handle<ProposalCreatedEvent>(signer),
+            vote_changed_event: Event::new_event_handle<VoteChangedEvent>(signer),
+        };
         move_to(signer, gov_info);
         let config = new_dao_config<TokenT>(
             voting_delay,
@@ -132,10 +155,11 @@ module Dao {
     ) acquires DaoGlobalInfo {
         assert(action_delay >= min_action_delay<TokenT>(), ERR_ACTION_DELAY_TOO_SMALL);
         let proposal_id = generate_next_proposal_id<TokenT>();
+        let proposer = Signer::address_of(signer);
         let start_time = Timestamp::now_seconds() + voting_delay<TokenT>();
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
-            proposer: Signer::address_of(signer),
+            proposer,
             start_time,
             end_time: start_time + voting_period<TokenT>(),
             for_votes: 0,
@@ -145,6 +169,12 @@ module Dao {
             action: Option::some(action),
         };
         move_to(signer, proposal);
+        // emit event
+        let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
+        Event::emit_event(
+            &mut gov_info.proposal_create_event,
+            ProposalCreatedEvent { proposal_id, proposer },
+        );
     }
 
     /// votes for a proposal.
@@ -157,7 +187,7 @@ module Dao {
         proposal_id: u64,
         stake: Token::Token<TokenT>,
         agree: bool,
-    ) acquires Proposal {
+    ) acquires Proposal, DaoGlobalInfo {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can cast vote.
@@ -173,6 +203,18 @@ module Dao {
             proposal.against_votes = proposal.against_votes + stake_value;
         };
         move_to(signer, my_vote);
+        // emit event
+        let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
+        Event::emit_event(
+            &mut gov_info.vote_changed_event,
+            VoteChangedEvent {
+                proposal_id,
+                proposer: proposer_address,
+                voter: Signer::address_of(signer),
+                agree,
+                vote: stake_value,
+            },
+        );
     }
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.
@@ -181,7 +223,7 @@ module Dao {
         proposer_address: address,
         proposal_id: u64,
         voting_power: u128,
-    ): Token::Token<TokenT> acquires Proposal, Vote {
+    ): Token::Token<TokenT> acquires Proposal, Vote, DaoGlobalInfo {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can revoke vote.
@@ -198,6 +240,18 @@ module Dao {
         } else {
             proposal.against_votes = proposal.against_votes - voting_power;
         };
+        // emit vote changed event
+        let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
+        Event::emit_event(
+            &mut gov_info.vote_changed_event,
+            VoteChangedEvent {
+                proposal_id,
+                proposer: proposer_address,
+                voter: Signer::address_of(signer),
+                agree: my_vote.agree,
+                vote: Token::share(&my_vote.stake),
+            },
+        );
         reverted_stake
     }
 

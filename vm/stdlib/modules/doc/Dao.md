@@ -7,6 +7,8 @@
 
 -  [Resource <code><a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a></code>](#0x1_Dao_DaoGlobalInfo)
 -  [Struct <code><a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a></code>](#0x1_Dao_DaoConfig)
+-  [Struct <code><a href="Dao.md#0x1_Dao_ProposalCreatedEvent">ProposalCreatedEvent</a></code>](#0x1_Dao_ProposalCreatedEvent)
+-  [Struct <code><a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a></code>](#0x1_Dao_VoteChangedEvent)
 -  [Resource <code><a href="Dao.md#0x1_Dao_Proposal">Proposal</a></code>](#0x1_Dao_Proposal)
 -  [Resource <code><a href="Dao.md#0x1_Dao_Vote">Vote</a></code>](#0x1_Dao_Vote)
 -  [Const <code><a href="Dao.md#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a></code>](#0x1_Dao_DEFAULT_VOTING_DELAY)
@@ -80,6 +82,18 @@
 <dd>
 
 </dd>
+<dt>
+<code>proposal_create_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_ProposalCreatedEvent">Dao::ProposalCreatedEvent</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>vote_changed_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_VoteChangedEvent">Dao::VoteChangedEvent</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -124,6 +138,92 @@
 </dt>
 <dd>
 
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Dao_ProposalCreatedEvent"></a>
+
+## Struct `ProposalCreatedEvent`
+
+emitted when proposal created.
+
+
+<pre><code><b>struct</b> <a href="Dao.md#0x1_Dao_ProposalCreatedEvent">ProposalCreatedEvent</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>proposal_id: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>proposer: address</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Dao_VoteChangedEvent"></a>
+
+## Struct `VoteChangedEvent`
+
+emitted when user vote/revoke_vote.
+
+
+<pre><code><b>struct</b> <a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>proposal_id: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>proposer: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>voter: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>agree: bool</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>vote: u128</code>
+</dt>
+<dd>
+ latest vote of the voter.
 </dd>
 </dl>
 
@@ -581,7 +681,11 @@ can optin this moudle by call this <code>register function</code>.
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
     // <b>let</b> proposal_id = ProposalId {next: 0};
-    <b>let</b> gov_info = <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; { next_proposal_id: 0 };
+    <b>let</b> gov_info = <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; {
+        next_proposal_id: 0,
+        proposal_create_event: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Dao.md#0x1_Dao_ProposalCreatedEvent">ProposalCreatedEvent</a>&gt;(signer),
+        vote_changed_event: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a>&gt;(signer),
+    };
     move_to(signer, gov_info);
     <b>let</b> config = <a href="Dao.md#0x1_Dao_new_dao_config">new_dao_config</a>&lt;TokenT&gt;(
         voting_delay,
@@ -656,10 +760,11 @@ propose a proposal.
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     <b>assert</b>(action_delay &gt;= <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;(), <a href="Dao.md#0x1_Dao_ERR_ACTION_DELAY_TOO_SMALL">ERR_ACTION_DELAY_TOO_SMALL</a>);
     <b>let</b> proposal_id = <a href="Dao.md#0x1_Dao_generate_next_proposal_id">generate_next_proposal_id</a>&lt;TokenT&gt;();
+    <b>let</b> proposer = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + <a href="Dao.md#0x1_Dao_voting_delay">voting_delay</a>&lt;TokenT&gt;();
     <b>let</b> proposal = <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt; {
         id: proposal_id,
-        proposer: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
+        proposer,
         start_time,
         end_time: start_time + <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT&gt;(),
         for_votes: 0,
@@ -669,6 +774,12 @@ propose a proposal.
         action: <a href="Option.md#0x1_Option_some">Option::some</a>(action),
     };
     move_to(signer, proposal);
+    // emit event
+    <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
+        &<b>mut</b> gov_info.proposal_create_event,
+        <a href="Dao.md#0x1_Dao_ProposalCreatedEvent">ProposalCreatedEvent</a> { proposal_id, proposer },
+    );
 }
 </code></pre>
 
@@ -701,7 +812,7 @@ So think twice before casting vote.
     proposal_id: u64,
     stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;,
     agree: bool,
-) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
+) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>, <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can cast vote.
@@ -717,6 +828,18 @@ So think twice before casting vote.
         proposal.against_votes = proposal.against_votes + stake_value;
     };
     move_to(signer, my_vote);
+    // emit event
+    <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
+        &<b>mut</b> gov_info.vote_changed_event,
+        <a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a> {
+            proposal_id,
+            proposer: proposer_address,
+            voter: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
+            agree,
+            vote: stake_value,
+        },
+    );
 }
 </code></pre>
 
@@ -745,7 +868,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     proposer_address: address,
     proposal_id: u64,
     voting_power: u128,
-): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>, <a href="Dao.md#0x1_Dao_Vote">Vote</a> {
+): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>, <a href="Dao.md#0x1_Dao_Vote">Vote</a>, <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can revoke vote.
@@ -762,6 +885,18 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     } <b>else</b> {
         proposal.against_votes = proposal.against_votes - voting_power;
     };
+    // emit vote changed event
+    <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
+        &<b>mut</b> gov_info.vote_changed_event,
+        <a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a> {
+            proposal_id,
+            proposer: proposer_address,
+            voter: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
+            agree: my_vote.agree,
+            vote: <a href="Token.md#0x1_Token_share">Token::share</a>(&my_vote.stake),
+        },
+    );
     reverted_stake
 }
 </code></pre>
