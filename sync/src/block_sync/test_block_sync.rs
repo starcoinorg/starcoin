@@ -4,7 +4,7 @@ use crate::sync_task::SyncTaskState;
 use crate::verified_rpc_client::VerifiedRpcClient;
 use chain::BlockChain;
 use config::NodeConfig;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use futures::executor::block_on;
 use futures_timer::Delay;
 use logger::prelude::*;

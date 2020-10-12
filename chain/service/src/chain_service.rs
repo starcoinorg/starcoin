@@ -149,7 +149,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
                 self.inner.get_transaction_info(hash)?,
             )),
-            ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::VecBlock(
+            ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::BlockVec(
                 self.inner.master_blocks_by_number(number, count)?,
             )),
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
@@ -174,6 +174,18 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::MasterEvents(filter) => Ok(ChainResponse::MasterEvents(
                 self.inner.get_master_events(filter)?,
             )),
+            ChainRequest::GetBlockIds {
+                start_number,
+                reverse,
+                max_size,
+            } => Ok(ChainResponse::HashVec(self.inner.get_block_ids(
+                start_number,
+                reverse,
+                max_size,
+            )?)),
+            ChainRequest::GetBlocks(ids) => {
+                Ok(ChainResponse::BlockOptionVec(self.inner.get_blocks(ids)?))
+            }
         }
     }
 }
@@ -249,6 +261,10 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_block_by_hash(hash)
     }
 
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        self.storage.get_blocks(ids)
+    }
+
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>> {
         self.storage.get_block_state(hash)
     }
@@ -262,7 +278,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.get_master().get_transaction_info(txn_hash)
+        self.master.get_transaction_info(txn_hash)
     }
 
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
@@ -285,23 +301,23 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn master_head_header(&self) -> BlockHeader {
-        self.get_master().current_header()
+        self.master.current_header()
     }
 
     fn master_head_block(&self) -> Block {
-        self.get_master().head_block()
+        self.master.head_block()
     }
 
     fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.get_master().get_block_by_number(number)
+        self.master.get_block_by_number(number)
     }
 
     fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        self.get_master().get_latest_block_by_uncle(uncle_id, 500)
+        self.master.get_latest_block_by_uncle(uncle_id, 500)
     }
 
     fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
-        self.get_master().get_header_by_number(number)
+        self.master.get_header_by_number(number)
     }
     fn master_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
@@ -312,22 +328,32 @@ impl ReadableChainService for ChainReaderServiceInner {
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>> {
-        self.get_master().get_blocks_by_number(number, count)
+        self.master.get_blocks_by_number(number, count)
     }
 
     fn epoch_info(&self) -> Result<EpochInfo> {
-        self.get_master().epoch_info()
+        self.master.epoch_info()
     }
 
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
-        self.get_master().get_epoch_info_by_number(Some(number))
+        self.master.get_epoch_info_by_number(Some(number))
     }
 
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        self.get_master().get_global_time_by_number(number)
+        self.master.get_global_time_by_number(number)
     }
+
     fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
-        self.get_master().filter_events(filter)
+        self.master.filter_events(filter)
+    }
+
+    fn get_block_ids(
+        &self,
+        start_number: u64,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>> {
+        self.master.get_block_ids(start_number, reverse, max_size)
     }
 }
 

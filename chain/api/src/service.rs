@@ -21,6 +21,7 @@ use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
 pub trait ReadableChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
@@ -51,6 +52,12 @@ pub trait ReadableChainService {
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>>;
 }
 
 /// Writeable block chain service trait
@@ -70,6 +77,7 @@ pub trait ChainAsyncService:
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
+    async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
@@ -101,6 +109,12 @@ pub trait ChainAsyncService:
     async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     async fn master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    async fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>>;
 }
 
 #[async_trait::async_trait]
@@ -132,14 +146,25 @@ where
         }
     }
 
+    async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        if let ChainResponse::BlockOptionVec(blocks) =
+            self.send(ChainRequest::GetBlocks(ids)).await??
+        {
+            Ok(blocks)
+        } else {
+            bail!("get blocks error.")
+        }
+    }
+
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>> {
         if let ChainResponse::BlockState(Some(block_state)) = self
             .send(ChainRequest::GetBlockStateByHash(*hash))
             .await??
         {
-            return Ok(Some(*block_state));
+            Ok(Some(*block_state))
+        } else {
+            bail!("get block state by hash error.")
         }
-        Ok(None)
     }
 
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>> {
@@ -258,7 +283,7 @@ where
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>> {
-        if let ChainResponse::VecBlock(blocks) = self
+        if let ChainResponse::BlockVec(blocks) = self
             .send(ChainRequest::GetBlocksByNumber(number, count))
             .await??
         {
@@ -333,7 +358,27 @@ where
         if let ChainResponse::MasterEvents(evts) = response {
             Ok(evts)
         } else {
-            bail!("[chain-actor]: get master events error.")
+            bail!("get master events error.")
+        }
+    }
+
+    async fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>> {
+        let response = self
+            .send(ChainRequest::GetBlockIds {
+                start_number,
+                reverse,
+                max_size,
+            })
+            .await??;
+        if let ChainResponse::HashVec(ids) = response {
+            Ok(ids)
+        } else {
+            bail!("get_block_ids invalid response")
         }
     }
 }

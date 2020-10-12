@@ -5,7 +5,7 @@ use super::metrics::WRITE_BLOCK_CHAIN_METRICS;
 use anyhow::{ensure, format_err, Result};
 use chain::BlockChain;
 use config::NodeConfig;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use logger::prelude::*;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_service_registry::bus::{Bus, BusService};

@@ -9,7 +9,7 @@ use chain::BlockChain;
 use config::NodeConfig;
 use consensus::duration_since_epoch;
 use consensus::Consensus;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::MockChain;

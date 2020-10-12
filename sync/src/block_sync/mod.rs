@@ -10,7 +10,7 @@ use crate::Downloader;
 use actix::prelude::*;
 use actix::{Actor, ActorContext, Addr, Context, Handler};
 use anyhow::Result;
-use crypto::hash::HashValue;
+use starcoin_crypto::hash::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network_api::PeerId;

@@ -9,6 +9,7 @@ pub mod state_sync;
 mod sync;
 mod sync_metrics;
 mod sync_task;
+pub mod task;
 pub mod txn_sync;
 
 pub use download::Downloader;
@@ -17,8 +18,8 @@ pub use sync::SyncService;
 mod sync_event_handle;
 pub mod verified_rpc_client;
 
-use crypto::HashValue;
 use dyn_clone::DynClone;
+use starcoin_crypto::HashValue;
 
 #[async_trait::async_trait]
 pub trait StateSyncReset: DynClone + Send + Sync {

@@ -10,7 +10,7 @@ use crate::sync_task::{SyncTask, SyncTaskType};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
