@@ -171,7 +171,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, public_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, public_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8, parent_gas_used: u64)
 </code></pre>
 
 
@@ -189,6 +189,7 @@
     uncles: u64,
     number: u64,
     chain_id: u8,
+    parent_gas_used: u64,
 ) {
     // Can only be invoked by genesis account
     <b>assert</b>(
@@ -210,6 +211,7 @@
         timestamp,
         uncles,
         number,
+        parent_gas_used,
     );
     <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, public_key_vec);
 }
