@@ -1,4 +1,4 @@
-name: starcoin benchmark
+name: Starcoin benchmark
 on:
   workflow_dispatch:
   schedule:
