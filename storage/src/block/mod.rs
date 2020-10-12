@@ -1,21 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
-use crate::batch::WriteBatch;
 use crate::define_storage;
-use crate::storage::{CodecStorage, KeyCodec, StorageInstance, ValueCodec};
+use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
     BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
 };
-use anyhow::{bail, Error, Result};
-use byteorder::{BigEndian, ReadBytesExt};
+use anyhow::{bail, Result};
 use crypto::HashValue;
 use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
-use std::io::Write;
-use std::mem::size_of;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StorageBlock {
@@ -113,45 +109,6 @@ impl ValueCodec for BlockBody {
     }
 }
 
-impl ValueCodec for Vec<HashValue> {
-    fn encode_value(&self) -> Result<Vec<u8>> {
-        let mut encoded = vec![];
-        for hash in self {
-            encoded.write_all(&hash.to_vec())?
-        }
-        Ok(encoded)
-    }
-
-    fn decode_value(data: &[u8]) -> Result<Self> {
-        let hash_size = size_of::<HashValue>();
-        let mut decoded = vec![];
-        let mut ends = hash_size;
-        let len = data.len();
-        let mut begin: usize = 0;
-        loop {
-            if ends <= len {
-                let hash = HashValue::from_slice(&data[begin..ends])?;
-                decoded.push(hash);
-            } else {
-                break;
-            }
-            begin = ends;
-            ends += hash_size;
-        }
-        Ok(decoded)
-    }
-}
-
-impl KeyCodec for BlockNumber {
-    fn encode_key(&self) -> Result<Vec<u8>> {
-        Ok(self.to_be_bytes().to_vec())
-    }
-
-    fn decode_key(data: &[u8]) -> Result<Self, Error> {
-        Ok((&data[..]).read_u64::<BigEndian>()?)
-    }
-}
-
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
         BlockStorage {
@@ -181,8 +138,7 @@ impl BlockStorage {
     pub fn get_headers(&self) -> Result<Vec<HashValue>> {
         let mut key_hashes = vec![];
         for hash in self.header_store.keys()? {
-            let hashval = HashValue::from_slice(hash.as_slice())?;
-            key_hashes.push(hashval)
+            key_hashes.push(hash)
         }
         Ok(key_hashes)
     }

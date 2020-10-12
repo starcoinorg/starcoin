@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
 use crate::define_storage;
-use crate::storage::{CodecStorage, ValueCodec};
+use crate::storage::{CodecKVStore, ValueCodec};
 use crate::{ContractEventStore, CONTRACT_EVENT_PREFIX_NAME};
 use anyhow::Result;
 use crypto::HashValue;
@@ -33,10 +32,10 @@ impl ContractEventStore for ContractEventStorage {
         txn_info_id: HashValue,
         events: Vec<ContractEvent>,
     ) -> Result<()> {
-        self.store.put(txn_info_id, events)
+        self.put(txn_info_id, events)
     }
 
     fn get_contract_events(&self, txn_info_id: HashValue) -> Result<Option<Vec<ContractEvent>>> {
-        self.store.get(txn_info_id)
+        self.get(txn_info_id)
     }
 }

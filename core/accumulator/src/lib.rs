@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::accumulator_info::AccumulatorInfo;
-use crate::node::AccumulatorStoreType;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
@@ -12,6 +11,7 @@ use parking_lot::Mutex;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
+pub use tree_store::AccumulatorTreeStore;
 
 pub mod accumulator_info;
 #[cfg(test)]
@@ -50,44 +50,9 @@ pub trait Accumulator {
     /// Get current accumulator tree number of nodes.
     fn num_nodes(&self) -> u64;
     /// Get frozen subtree roots.
-    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>>;
-}
-
-pub trait AccumulatorReader {
-    ///get node by node hash
-    fn get_node(
-        &self,
-        store_type: AccumulatorStoreType,
-        hash: HashValue,
-    ) -> Result<Option<AccumulatorNode>>;
-    /// multiple get nodes
-    fn multiple_get(
-        &self,
-        store_type: AccumulatorStoreType,
-        hash_vec: Vec<HashValue>,
-    ) -> Result<Vec<AccumulatorNode>>;
-}
-
-pub trait AccumulatorWriter {
-    /// save node
-    fn save_node(&self, store_type: AccumulatorStoreType, node: AccumulatorNode) -> Result<()>;
-    /// batch save nodes
-    fn save_nodes(
-        &self,
-        store_type: AccumulatorStoreType,
-        nodes: Vec<AccumulatorNode>,
-    ) -> Result<()>;
-    ///delete node
-    fn delete_nodes(
-        &self,
-        store_type: AccumulatorStoreType,
-        node_hash_vec: Vec<HashValue>,
-    ) -> Result<()>;
-}
-
-pub trait AccumulatorTreeStore:
-    AccumulatorReader + AccumulatorWriter + std::marker::Send + std::marker::Sync
-{
+    fn get_frozen_subtree_roots(&self) -> Vec<HashValue>;
+    /// Get accumulator info
+    fn get_info(&self) -> AccumulatorInfo;
 }
 
 /// MerkleAccumulator is a accumulator algorithm implement and it is stateless.
@@ -101,52 +66,44 @@ impl MerkleAccumulator {
         frozen_subtree_roots: Vec<HashValue>,
         num_leaves: LeafCount,
         num_notes: NodeCount,
-        store_type: AccumulatorStoreType,
         node_store: Arc<dyn AccumulatorTreeStore>,
-    ) -> Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             tree: Mutex::new(AccumulatorTree::new(
                 frozen_subtree_roots,
                 num_leaves,
                 num_notes,
                 root_hash,
-                store_type,
-                node_store.clone(),
+                node_store,
             )),
-        })
+        }
     }
 
     pub fn new_with_info(
         acc_info: AccumulatorInfo,
-        store_type: AccumulatorStoreType,
         node_store: Arc<dyn AccumulatorTreeStore>,
-    ) -> Result<Self> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             tree: Mutex::new(AccumulatorTree::new(
                 acc_info.frozen_subtree_roots,
                 acc_info.num_leaves,
                 acc_info.num_nodes,
                 acc_info.accumulator_root,
-                store_type,
-                node_store.clone(),
+                node_store,
             )),
-        })
+        }
     }
 
-    pub fn new_empty(
-        store_type: AccumulatorStoreType,
-        node_store: Arc<dyn AccumulatorTreeStore>,
-    ) -> Result<Self> {
-        Ok(Self {
+    pub fn new_empty(node_store: Arc<dyn AccumulatorTreeStore>) -> Self {
+        Self {
             tree: Mutex::new(AccumulatorTree::new(
                 vec![],
                 0,
                 0,
                 *ACCUMULATOR_PLACEHOLDER_HASH,
-                store_type,
-                node_store.clone(),
+                node_store,
             )),
-        })
+        }
     }
 }
 
@@ -203,7 +160,16 @@ impl Accumulator for MerkleAccumulator {
         self.tree.lock().num_nodes
     }
 
-    fn get_frozen_subtree_roots(&self) -> Result<Vec<HashValue>, Error> {
+    fn get_frozen_subtree_roots(&self) -> Vec<HashValue> {
         self.tree.lock().get_frozen_subtree_roots()
+    }
+
+    fn get_info(&self) -> AccumulatorInfo {
+        AccumulatorInfo::new(
+            self.root_hash(),
+            self.get_frozen_subtree_roots(),
+            self.num_leaves(),
+            self.num_nodes(),
+        )
     }
 }

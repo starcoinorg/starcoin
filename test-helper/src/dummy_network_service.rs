@@ -138,7 +138,8 @@ impl DummyNetworkService {
     ) -> Result<Option<AccumulatorNode>> {
         self.chain
             .get_storage()
-            .get_node(req.accumulator_storage_type, req.node_hash)
+            .get_accumulator_store(req.accumulator_storage_type)
+            .get_node(req.node_hash)
             .map_err(|e| e.into())
     }
 

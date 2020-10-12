@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::node::AccumulatorStoreType;
 use crate::{
-    node_index::NodeIndex, tree_store::MockAccumulatorStore, Accumulator, AccumulatorNode,
+    node_index::NodeIndex, tree_store::mock::MockAccumulatorStore, Accumulator, AccumulatorNode,
     LeafCount, MerkleAccumulator,
 };
 use starcoin_crypto::{hash::ACCUMULATOR_PLACEHOLDER_HASH, HashValue};
@@ -19,10 +18,8 @@ fn test_get_leaves() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (root_hash, index) = accumulator.append(leaves.as_slice()).unwrap();
     dbg!(root_hash);
     let mut i = index;
@@ -62,10 +59,8 @@ fn test_accumulator_append() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
 
     // test to append empty leaf to an empty accumulator
     accumulator.append(&[]).unwrap();
@@ -91,10 +86,8 @@ fn test_error_on_bad_parameters() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     assert!(accumulator.get_proof(10).is_err());
 }
 
@@ -107,14 +100,12 @@ fn test_multiple_chain() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         mock_store.clone(),
-    )
-    .unwrap();
+    );
     let (root_hash, _index1) = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
-    let frozen_node = accumulator.get_frozen_subtree_roots().unwrap();
+    let frozen_node = accumulator.get_frozen_subtree_roots();
     for node in frozen_node.clone() {
         let acc = accumulator
             .get_node(node)
@@ -127,15 +118,7 @@ fn test_multiple_chain() {
             assert_eq!(right.is_frozen(), true);
         }
     }
-    let accumulator2 = MerkleAccumulator::new(
-        root_hash,
-        frozen_node,
-        2,
-        3,
-        AccumulatorStoreType::Transaction,
-        mock_store,
-    )
-    .unwrap();
+    let accumulator2 = MerkleAccumulator::new(root_hash, frozen_node, 2, 3, mock_store);
     assert_eq!(accumulator.root_hash(), accumulator2.root_hash());
     let leaves2 = create_leaves(54..58);
     let leaves3 = create_leaves(60..64);
@@ -165,10 +148,8 @@ fn test_one_leaf() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (root_hash, _) = accumulator.append(&[hash]).unwrap();
     assert_eq!(hash, root_hash);
     proof_verify(&accumulator, root_hash, &[hash], 0);
@@ -187,10 +168,8 @@ fn test_proof() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let batch1 = create_leaves(500..600);
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     accumulator.flush().unwrap();
@@ -206,10 +185,8 @@ fn test_multiple_leaves() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let batch2 = create_leaves(609..613);
@@ -228,23 +205,13 @@ fn test_multiple_tree() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         arc_store.clone(),
-    )
-    .unwrap();
+    );
     let (root_hash1, _) = accumulator.append(&batch1).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
-    let frozen_hash = accumulator.get_frozen_subtree_roots().unwrap();
-    let accumulator2 = MerkleAccumulator::new(
-        root_hash1,
-        frozen_hash,
-        8,
-        15,
-        AccumulatorStoreType::Transaction,
-        arc_store,
-    )
-    .unwrap();
+    let frozen_hash = accumulator.get_frozen_subtree_roots();
+    let accumulator2 = MerkleAccumulator::new(root_hash1, frozen_hash, 8, 15, arc_store);
     let root_hash2 = accumulator2.root_hash();
     assert_eq!(root_hash1, root_hash2);
     proof_verify(&accumulator2, root_hash2, &batch1, 0);
@@ -260,10 +227,8 @@ fn test_update_left_leaf() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
 }
@@ -277,10 +242,8 @@ fn test_update_right_leaf() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (root_hash, _) = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
 }
@@ -293,10 +256,8 @@ fn test_flush() {
         vec![],
         0,
         0,
-        AccumulatorStoreType::Transaction,
         Arc::new(mock_store),
-    )
-    .unwrap();
+    );
     let (_root_hash, _) = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage

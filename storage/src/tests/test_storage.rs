@@ -5,7 +5,7 @@ extern crate chrono;
 
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
-use crate::storage::{InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
+use crate::storage::{CodecKVStore, InnerStore, StorageInstance, ValueCodec, CACHE_NONE_OBJECT};
 use crate::{
     Storage, TransactionInfoStore, DEFAULT_PREFIX_NAME, TRANSACTION_INFO_PREFIX_NAME,
     VEC_PREFIX_NAME,
