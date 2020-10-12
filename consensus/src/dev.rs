@@ -33,7 +33,7 @@ impl Consensus for DevConsensus {
     ) -> Result<U256> {
         info!("epoch: {:?}", epoch);
         let current_header = chain.current_header();
-        let now = self.time_service.now();
+        let now = self.time_service.now_as_millisecond();
         //in dev mode, if disable_empty_block = true,
         //may escape a long time between block,
         //so, just set the difficulty to 1 for sleep less time for this case.
