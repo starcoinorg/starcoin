@@ -33,6 +33,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         0,
         1,
         net.chain_id(),
+        0,
     ));
     let output_normal = execute_and_apply(&chain_state, txn_normal);
     assert_eq!(
@@ -49,6 +50,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         0,
         3, //EBLOCK_NUMBER_MISMATCH
         net.chain_id(),
+        0,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(
@@ -65,6 +67,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         0,
         2,
         net.chain_id(),
+        0,
     ));
     let output2 = execute_and_apply(&chain_state, txn2);
     assert_eq!(
@@ -84,6 +87,7 @@ fn test_block_metadata_error_code() -> Result<()> {
             + 1, //MAX_UNCLES_PER_BLOCK_IS_WRONG
         2,
         net.chain_id(),
+        0,
     ));
     let output3 = execute_and_apply(&chain_state, txn3);
     assert_eq!(

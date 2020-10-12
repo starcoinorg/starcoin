@@ -34,6 +34,7 @@ pub struct BlockMetadata {
     uncles: u64,
     number: u64,
     chain_id: ChainId,
+    parent_gas_used: u64,
 }
 
 impl BlockMetadata {
@@ -45,6 +46,7 @@ impl BlockMetadata {
         uncles: u64,
         number: u64,
         chain_id: ChainId,
+        parent_gas_used: u64,
     ) -> Self {
         Self {
             parent_hash,
@@ -54,6 +56,7 @@ impl BlockMetadata {
             uncles,
             number,
             chain_id,
+            parent_gas_used,
         }
     }
 
@@ -67,6 +70,7 @@ impl BlockMetadata {
         u64,
         u64,
         ChainId,
+        u64,
     ) {
         (
             self.parent_hash,
@@ -76,6 +80,7 @@ impl BlockMetadata {
             self.uncles,
             self.number,
             self.chain_id,
+            self.parent_gas_used,
         )
     }
 

@@ -95,6 +95,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             uncles,
             *number,
             ChainNetwork::TEST.chain_id(),
+            0,
         ))
     } else {
         Err(ErrorKind::Other("Cannot generate block metadata".to_string()).into())

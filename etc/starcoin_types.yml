@@ -45,6 +45,7 @@ BlockMetadata:
     - number: U64
     - chain_id:
         TYPENAME: ChainId
+    - parent_gas_used: U64
 ChainId:
   STRUCT:
     - id: U8

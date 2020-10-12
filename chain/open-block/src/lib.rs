@@ -66,6 +66,7 @@ impl OpenedBlock {
             uncles.len() as u64,
             previous_header.number + 1,
             chain_id,
+            previous_header.gas_used(),
         );
         let mut opened_block = Self {
             previous_block_info: block_info,
@@ -229,7 +230,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, author_public_key, _uncles, number, _) =
+        let (parent_id, timestamp, author, author_public_key, _uncles, number, _, _) =
             self.block_meta.into_inner();
 
         let uncles = if !self.uncles.is_empty() {
