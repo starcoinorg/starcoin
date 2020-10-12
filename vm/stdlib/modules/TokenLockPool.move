@@ -44,7 +44,7 @@ module TokenLockPool {
     public fun create_linear_lock<TokenType>(token: Token<TokenType>, peroid: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
         assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
         let start_time = Timestamp::now_seconds();
-        let total = Token::share(&token);
+        let total = Token::value(&token);
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         Token::deposit(&mut token_pool.token, token);
         LinearTimeLockKey<TokenType> {
@@ -59,7 +59,7 @@ module TokenLockPool {
     public fun create_fixed_lock<TokenType>(token: Token<TokenType>, peroid: u64): FixedTimeLockKey<TokenType> acquires TokenPool {
         assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
         let now = Timestamp::now_seconds();
-        let total = Token::share(&token);
+        let total = Token::value(&token);
         let end_time = now + peroid;
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         Token::deposit(&mut token_pool.token, token);
@@ -74,7 +74,7 @@ module TokenLockPool {
         let amount = unlocked_amount_of_linear_key(key);
         assert(amount > 0, ETIMELOCK_NOT_UNLOCKED());
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
-        let token = Token::withdraw_share(&mut token_pool.token, amount);
+        let token = Token::withdraw(&mut token_pool.token, amount);
         key.taked = key.taked + amount;
         token
     }
@@ -84,7 +84,7 @@ module TokenLockPool {
         let amount = unlocked_amount_of_fixed_key(&key);
         assert(amount > 0, ETIMELOCK_NOT_UNLOCKED());
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
-        let token = Token::withdraw_share(&mut token_pool.token, key.total);
+        let token = Token::withdraw(&mut token_pool.token, key.total);
         let FixedTimeLockKey { total: _, end_time: _ } = key;
         token
     }

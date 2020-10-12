@@ -245,7 +245,7 @@
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_create_linear_lock">create_linear_lock</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, peroid: u64): <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>let</b> total = <a href="Token.md#0x1_Token_share">Token::share</a>(&token);
+    <b>let</b> total = <a href="Token.md#0x1_Token_value">Token::value</a>(&token);
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> token_pool.token, token);
     <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt; {
@@ -279,7 +279,7 @@
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_create_fixed_lock">create_fixed_lock</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, peroid: u64): <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>let</b> total = <a href="Token.md#0x1_Token_share">Token::share</a>(&token);
+    <b>let</b> total = <a href="Token.md#0x1_Token_value">Token::value</a>(&token);
     <b>let</b> end_time = now + peroid;
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> token_pool.token, token);
@@ -313,7 +313,7 @@
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_linear_key">unlocked_amount_of_linear_key</a>(key);
     <b>assert</b>(amount &gt; 0, <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>());
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>let</b> token = <a href="Token.md#0x1_Token_withdraw_share">Token::withdraw_share</a>(&<b>mut</b> token_pool.token, amount);
+    <b>let</b> token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> token_pool.token, amount);
     key.taked = key.taked + amount;
     token
 }
@@ -342,7 +342,7 @@
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_fixed_key">unlocked_amount_of_fixed_key</a>(&key);
     <b>assert</b>(amount &gt; 0, <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>());
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>let</b> token = <a href="Token.md#0x1_Token_withdraw_share">Token::withdraw_share</a>(&<b>mut</b> token_pool.token, key.total);
+    <b>let</b> token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> token_pool.token, key.total);
     <b>let</b> <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a> { total: _, end_time: _ } = key;
     token
 }

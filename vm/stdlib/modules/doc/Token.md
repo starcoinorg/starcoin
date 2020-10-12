@@ -10,7 +10,6 @@
 -  [Resource <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>](#0x1_Token_FixedTimeMintKey)
 -  [Resource <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>](#0x1_Token_LinearTimeMintKey)
 -  [Resource <code><a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a></code>](#0x1_Token_BurnCapability)
--  [Resource <code><a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a></code>](#0x1_Token_ScalingFactorModifyCapability)
 -  [Struct <code><a href="Token.md#0x1_Token_MintEvent">MintEvent</a></code>](#0x1_Token_MintEvent)
 -  [Struct <code><a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a></code>](#0x1_Token_BurnEvent)
 -  [Resource <code><a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a></code>](#0x1_Token_TokenInfo)
@@ -19,9 +18,6 @@
 -  [Function <code>EMINT_KEY_TIME_LIMIT</code>](#0x1_Token_EMINT_KEY_TIME_LIMIT)
 -  [Function <code>EDESTROY_KEY_NOT_EMPTY</code>](#0x1_Token_EDESTROY_KEY_NOT_EMPTY)
 -  [Function <code>register_token</code>](#0x1_Token_register_token)
--  [Function <code>remove_scaling_factor_modify_capability</code>](#0x1_Token_remove_scaling_factor_modify_capability)
--  [Function <code>add_scaling_factor_modify_capability</code>](#0x1_Token_add_scaling_factor_modify_capability)
--  [Function <code>destroy_scaling_factor_modify_capability</code>](#0x1_Token_destroy_scaling_factor_modify_capability)
 -  [Function <code>remove_mint_capability</code>](#0x1_Token_remove_mint_capability)
 -  [Function <code>add_mint_capability</code>](#0x1_Token_add_mint_capability)
 -  [Function <code>destroy_mint_capability</code>](#0x1_Token_destroy_mint_capability)
@@ -43,23 +39,13 @@
 -  [Function <code>burn_with_capability</code>](#0x1_Token_burn_with_capability)
 -  [Function <code>zero</code>](#0x1_Token_zero)
 -  [Function <code>value</code>](#0x1_Token_value)
--  [Function <code>share</code>](#0x1_Token_share)
 -  [Function <code>split</code>](#0x1_Token_split)
--  [Function <code>split_share</code>](#0x1_Token_split_share)
 -  [Function <code>withdraw</code>](#0x1_Token_withdraw)
--  [Function <code>withdraw_share</code>](#0x1_Token_withdraw_share)
 -  [Function <code>join</code>](#0x1_Token_join)
 -  [Function <code>deposit</code>](#0x1_Token_deposit)
 -  [Function <code>destroy_zero</code>](#0x1_Token_destroy_zero)
--  [Function <code>amount_to_share</code>](#0x1_Token_amount_to_share)
--  [Function <code>share_to_amount</code>](#0x1_Token_share_to_amount)
--  [Function <code>scaling_factor</code>](#0x1_Token_scaling_factor)
--  [Function <code>base_scaling_factor</code>](#0x1_Token_base_scaling_factor)
--  [Function <code>set_scaling_factor</code>](#0x1_Token_set_scaling_factor)
--  [Function <code>set_scaling_factor_with_capability</code>](#0x1_Token_set_scaling_factor_with_capability)
 -  [Function <code>fractional_part</code>](#0x1_Token_fractional_part)
 -  [Function <code>market_cap</code>](#0x1_Token_market_cap)
--  [Function <code>total_share</code>](#0x1_Token_total_share)
 -  [Function <code>is_registered_in</code>](#0x1_Token_is_registered_in)
 -  [Function <code>is_same_token</code>](#0x1_Token_is_same_token)
 -  [Function <code>token_address</code>](#0x1_Token_token_address)
@@ -69,9 +55,6 @@
 -  [Function <code>name_of_token</code>](#0x1_Token_name_of_token)
 -  [Specification](#@Specification_0)
     -  [Function <code>register_token</code>](#@Specification_0_register_token)
-    -  [Function <code>remove_scaling_factor_modify_capability</code>](#@Specification_0_remove_scaling_factor_modify_capability)
-    -  [Function <code>add_scaling_factor_modify_capability</code>](#@Specification_0_add_scaling_factor_modify_capability)
-    -  [Function <code>destroy_scaling_factor_modify_capability</code>](#@Specification_0_destroy_scaling_factor_modify_capability)
     -  [Function <code>remove_mint_capability</code>](#@Specification_0_remove_mint_capability)
     -  [Function <code>add_mint_capability</code>](#@Specification_0_add_mint_capability)
     -  [Function <code>destroy_mint_capability</code>](#@Specification_0_destroy_mint_capability)
@@ -85,21 +68,12 @@
     -  [Function <code>zero</code>](#@Specification_0_zero)
     -  [Function <code>value</code>](#@Specification_0_value)
     -  [Function <code>split</code>](#@Specification_0_split)
-    -  [Function <code>split_share</code>](#@Specification_0_split_share)
     -  [Function <code>withdraw</code>](#@Specification_0_withdraw)
-    -  [Function <code>withdraw_share</code>](#@Specification_0_withdraw_share)
     -  [Function <code>join</code>](#@Specification_0_join)
     -  [Function <code>deposit</code>](#@Specification_0_deposit)
     -  [Function <code>destroy_zero</code>](#@Specification_0_destroy_zero)
-    -  [Function <code>amount_to_share</code>](#@Specification_0_amount_to_share)
-    -  [Function <code>share_to_amount</code>](#@Specification_0_share_to_amount)
-    -  [Function <code>scaling_factor</code>](#@Specification_0_scaling_factor)
-    -  [Function <code>base_scaling_factor</code>](#@Specification_0_base_scaling_factor)
-    -  [Function <code>set_scaling_factor</code>](#@Specification_0_set_scaling_factor)
-    -  [Function <code>set_scaling_factor_with_capability</code>](#@Specification_0_set_scaling_factor_with_capability)
     -  [Function <code>fractional_part</code>](#@Specification_0_fractional_part)
     -  [Function <code>market_cap</code>](#@Specification_0_market_cap)
-    -  [Function <code>total_share</code>](#@Specification_0_total_share)
     -  [Function <code>is_registered_in</code>](#@Specification_0_is_registered_in)
     -  [Function <code>is_same_token</code>](#@Specification_0_is_same_token)
     -  [Function <code>token_address</code>](#@Specification_0_token_address)
@@ -271,33 +245,6 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 </details>
 
-<a name="0x1_Token_ScalingFactorModifyCapability"></a>
-
-## Resource `ScalingFactorModifyCapability`
-
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>dummy_field: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x1_Token_MintEvent"></a>
 
 ## Struct `MintEvent`
@@ -386,19 +333,6 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 <dd>
  The total value for the token represented by
  <code>TokenType</code>. Mutable.
-</dd>
-<dt>
-<code>scaling_factor: u128</code>
-</dt>
-<dd>
- The scaling factor for the token (i.e. the amount to multiply by
- to get to the human-readable reprentation for this token). e.g. 10^6 for Token1
-</dd>
-<dt>
-<code>base_scaling_factor: u128</code>
-</dt>
-<dd>
-
 </dd>
 <dt>
 <code>fractional_part: u128</code>
@@ -529,7 +463,7 @@ Token register's address should same as TokenType's address.
 Register the type <code>TokenType</code> as a Token and got MintCapability and BurnCapability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, base_scaling_factor: u128, fractional_part: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, fractional_part: u128)
 </code></pre>
 
 
@@ -540,105 +474,21 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(
     account: &signer,
-    base_scaling_factor: u128,
     fractional_part: u128,
 ) {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>());
-    // <b>assert</b>(module_name == token_name, ETOKEN_NAME);
     move_to(account, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
-    move_to(account, <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt; {});
     move_to(
         account,
         <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt; {
             total_value: 0,
-            scaling_factor: base_scaling_factor,
-            base_scaling_factor,
             fractional_part,
             mint_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Token.md#0x1_Token_MintEvent">MintEvent</a>&gt;(account),
             burn_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a>&gt;(account),
         },
     );
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_remove_scaling_factor_modify_capability"></a>
-
-## Function `remove_scaling_factor_modify_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_scaling_factor_modify_capability">remove_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_scaling_factor_modify_capability">remove_scaling_factor_modify_capability</a>&lt;TokenType&gt;(
-    signer: &signer,
-): <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a> {
-    move_from&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_add_scaling_factor_modify_capability"></a>
-
-## Function `add_scaling_factor_modify_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_scaling_factor_modify_capability">add_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_scaling_factor_modify_capability">add_scaling_factor_modify_capability</a>&lt;TokenType&gt;(
-    signer: &signer,
-    cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;,
-) {
-    move_to&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(signer, cap)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_destroy_scaling_factor_modify_capability"></a>
-
-## Function `destroy_scaling_factor_modify_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_scaling_factor_modify_capability">destroy_scaling_factor_modify_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_scaling_factor_modify_capability">destroy_scaling_factor_modify_capability</a>&lt;TokenType&gt;(
-    cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;,
-) {
-    <b>let</b> <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt; { } = cap;
 }
 </code></pre>
 
@@ -826,7 +676,8 @@ Fails if the sender does not have a published MintCapability.
 
 ## Function `mint_with_capability`
 
-Mint a new Token::Token worth <code>amount</code> considering current <code>scaling_factor</code>. The caller must have a reference to a MintCapability.
+Mint a new Token::Token worth <code>amount</code>.
+The caller must have a reference to a MintCapability.
 Only the Association account can acquire such a reference, and it can do so only via
 <code>borrow_sender_mint_capability</code>
 
@@ -870,17 +721,16 @@ Only the Association account can acquire such a reference, and it can do so only
 <pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     // <b>update</b> market cap <b>resource</b> <b>to</b> reflect minting
     <b>let</b> (token_address, module_name, token_name) = <a href="Token.md#0x1_Token_name_of_token">name_of_token</a>&lt;TokenType&gt;();
-    <b>let</b> share = <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount);
     <b>let</b> info = borrow_global_mut&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address);
-    info.total_value = info.total_value + share;
+    info.total_value = info.total_value + amount;
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
         &<b>mut</b> info.mint_events,
         <a href="Token.md#0x1_Token_MintEvent">MintEvent</a> {
-            amount: share,
+            amount,
             token_code: <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(token_address, module_name, token_name),
         },
     );
-    <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: share }
+    <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
 }
 </code></pre>
 
@@ -1210,7 +1060,7 @@ Create a new Token::Token<TokenType> with a value of 0
 
 ## Function `value`
 
-Scaled value of the token considering the <code>scaling_factor</code>.
+Public accessor for the value of a token
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
@@ -1222,32 +1072,7 @@ Scaled value of the token considering the <code>scaling_factor</code>.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <a href="Token.md#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(<a href="Token.md#0x1_Token_share">share</a>(token))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_share"></a>
-
-## Function `share`
-
-Public accessor for the value of a token
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_share">share</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_share">share</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;): u128 {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_value">value</a>&lt;TokenType&gt;(token: &<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;): u128 {
     token.value
 }
 </code></pre>
@@ -1261,10 +1086,9 @@ Public accessor for the value of a token
 ## Function `split`
 
 Splits the given token into two and returns them both
-It leverages <code><a href="Token.md#0x1_Token_split_share">Self::split_share</a></code> for any verifications of the values
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -1275,39 +1099,9 @@ It leverages <code><a href="Token.md#0x1_Token_split_share">Self::split_share</a
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(
     token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-    amount: u128,
-): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <a href="Token.md#0x1_Token_split_share">split_share</a>&lt;TokenType&gt;(token, <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_split_share"></a>
-
-## Function `split_share`
-
-Splits the given token into two and returns them both
-It leverages <code><a href="Token.md#0x1_Token_withdraw_share">Self::withdraw_share</a></code> for any verifications of the values.
-It operates on token value directly regardless of the <code>scaling_factor</code> of the token.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_share">split_share</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_share">split_share</a>&lt;TokenType&gt;(
-    token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-    share: u128,
+    value: u128,
 ): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
-    <b>let</b> other = <a href="Token.md#0x1_Token_withdraw_share">withdraw_share</a>(&<b>mut</b> token, share);
+    <b>let</b> other = <a href="Token.md#0x1_Token_withdraw">withdraw</a>(&<b>mut</b> token, value);
     (token, other)
 }
 </code></pre>
@@ -1321,10 +1115,12 @@ It operates on token value directly regardless of the <code>scaling_factor</code
 ## Function `withdraw`
 
 "Divides" the given token into two, where the original token is modified in place.
-This will consider the scaling_factor of the <code><a href="Token.md#0x1_Token">Token</a></code>.
+The original token will have value = original value - <code>value</code>
+The new token will have a value = <code>value</code>
+Fails if the tokens value is less than <code>value</code>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1333,43 +1129,14 @@ This will consider the scaling_factor of the <code><a href="Token.md#0x1_Token">
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
-<b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <a href="Token.md#0x1_Token_withdraw_share">withdraw_share</a>&lt;TokenType&gt;(token, <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount))
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_withdraw_share"></a>
-
-## Function `withdraw_share`
-
-It operates on token value directly regardless of the <code>scaling_factor</code> of the token.
-The original token will have value = original value - <code>share</code>
-The new token will have a value = <code>share</code>
-Fails if the tokens value is less than <code>share</code>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw_share">withdraw_share</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw_share">withdraw_share</a>&lt;TokenType&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(
     token: &<b>mut</b> <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-    share: u128,
+    value: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
-    // Check that `share` is less than the token's value
-    <b>assert</b>(token.value &gt;= share, <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>());
-    token.value = token.value - share;
-    <a href="Token.md#0x1_Token">Token</a> { value: share }
+    // Check that `value` is less than the token's value
+    <b>assert</b>(token.value &gt;= value, <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>());
+    token.value = token.value - value;
+    <a href="Token.md#0x1_Token">Token</a> { value: value }
 }
 </code></pre>
 
@@ -1464,178 +1231,6 @@ so you cannot "burn" any non-zero amount of Token
 
 </details>
 
-<a name="0x1_Token_amount_to_share"></a>
-
-## Function `amount_to_share`
-
-convenient function to calculate hold of the input <code>amount</code> based the current scaling_factor.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> base = <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;();
-    <b>let</b> scaled = <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;();
-    // shortcut <b>to</b> avoid bignumber cal.
-    <b>if</b> (base == scaled) {
-        amount
-    } <b>else</b> {
-        amount * base / scaled
-    }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_share_to_amount"></a>
-
-## Function `share_to_amount`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> base = <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;();
-    <b>let</b> scaled = <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;();
-    <b>if</b> (base == scaled) {
-        hold
-    } <b>else</b> {
-        hold * scaled / base
-    }
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_scaling_factor"></a>
-
-## Function `scaling_factor`
-
-Returns the scaling factor for the <code>TokenType</code> token.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).scaling_factor
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_base_scaling_factor"></a>
-
-## Function `base_scaling_factor`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).base_scaling_factor
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_set_scaling_factor"></a>
-
-## Function `set_scaling_factor`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor">set_scaling_factor</a>&lt;TokenType&gt;(signer: &signer, value: u128)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor">set_scaling_factor</a>&lt;TokenType&gt;(signer: &signer, value: u128)
-<b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>, <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a> {
-    <b>let</b> cap = borrow_global&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
-    );
-    <a href="Token.md#0x1_Token_set_scaling_factor_with_capability">set_scaling_factor_with_capability</a>(cap, value)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_set_scaling_factor_with_capability"></a>
-
-## Function `set_scaling_factor_with_capability`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor_with_capability">set_scaling_factor_with_capability</a>&lt;TokenType&gt;(_cap: &<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;, value: u128)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor_with_capability">set_scaling_factor_with_capability</a>&lt;TokenType&gt;(
-    _cap: &<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;,
-    value: u128,
-) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    <b>let</b> info = borrow_global_mut&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address);
-    info.scaling_factor = value;
-
-    // TODO: emit event
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Token_fractional_part"></a>
 
 ## Function `fractional_part`
@@ -1666,7 +1261,7 @@ Returns the representable fractional part for the <code>TokenType</code> token.
 
 ## Function `market_cap`
 
-Return the total amount of token of type <code>TokenType</code> considering current <code>scaling_factor</code>
+Return the total amount of token of type <code>TokenType</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128
@@ -1679,31 +1274,6 @@ Return the total amount of token of type <code>TokenType</code> considering curr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_market_cap">market_cap</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
-    <a href="Token.md#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(<a href="Token.md#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;())
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_total_share"></a>
-
-## Function `total_share`
-
-Return the total share of token minted.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).total_value
 }
@@ -1909,7 +1479,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `register_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, base_scaling_factor: u128, fractional_part: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, fractional_part: u128)
 </code></pre>
 
 
@@ -1918,62 +1488,10 @@ pragma aborts_if_is_strict = <b>true</b>;
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
-</code></pre>
-
-
-
-<a name="@Specification_0_remove_scaling_factor_modify_capability"></a>
-
-### Function `remove_scaling_factor_modify_capability`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_remove_scaling_factor_modify_capability">remove_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer): <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
-<b>ensures</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
-</code></pre>
-
-
-
-<a name="@Specification_0_add_scaling_factor_modify_capability"></a>
-
-### Function `add_scaling_factor_modify_capability`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_add_scaling_factor_modify_capability">add_scaling_factor_modify_capability</a>&lt;TokenType&gt;(signer: &signer, cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
-<b>ensures</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
-</code></pre>
-
-
-
-<a name="@Specification_0_destroy_scaling_factor_modify_capability"></a>
-
-### Function `destroy_scaling_factor_modify_capability`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_scaling_factor_modify_capability">destroy_scaling_factor_modify_capability</a>&lt;TokenType&gt;(cap: <a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -2079,7 +1597,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount) &gt; MAX_U128;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + amount &gt; MAX_U128;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 </code></pre>
 
@@ -2096,9 +1614,9 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount) &gt; MAX_U128;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + amount &gt; MAX_U128;
 <b>ensures</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() ==
-        <b>old</b>(<b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value) + <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
+        <b>old</b>(<b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value) + amount;
 </code></pre>
 
 
@@ -2160,7 +1678,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt;{hold: token.value};
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt;{amount: token.value};
 </code></pre>
 
 
@@ -2170,30 +1688,13 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `split`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split">split</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt;;
-<b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
-</code></pre>
-
-
-
-<a name="@Specification_0_split_share"></a>
-
-### Function `split_share`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_share">split_share</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; share;
+<pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; value;
 <b>ensures</b> <b>old</b>(token.value) == result_1.value + result_2.value;
 </code></pre>
 
@@ -2204,34 +1705,15 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `withdraw`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw">withdraw</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, value: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt;;
-<b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
-<b>ensures</b> result.value == <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
-<b>ensures</b> token.value == <b>old</b>(token).value - <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount);
-</code></pre>
-
-
-
-<a name="@Specification_0_withdraw_share"></a>
-
-### Function `withdraw_share`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_withdraw_share">withdraw_share</a>&lt;TokenType&gt;(token: &<b>mut</b> <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, share: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; share;
-<b>ensures</b> result.value == share;
-<b>ensures</b> token.value == <b>old</b>(token).value - share;
+<pre><code><b>aborts_if</b> token.<a href="Token.md#0x1_Token_value">value</a> &lt; value;
+<b>ensures</b> result.value == value;
+<b>ensures</b> token.value == <b>old</b>(token).value - value;
 </code></pre>
 
 
@@ -2287,126 +1769,14 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_amount_to_share"></a>
 
-### Function `amount_to_share`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_amount_to_share">amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128
-</code></pre>
+<a name="0x1_Token_AmountAbortsIf"></a>
 
 
-
-
-<pre><code><b>aborts_if</b> amount * <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
-<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() == 0;
-</code></pre>
-
-
-
-
-<a name="0x1_Token_AmountToShareAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="Token.md#0x1_Token_AmountToShareAbortsIf">AmountToShareAbortsIf</a>&lt;TokenType&gt; {
+<pre><code><b>schema</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt; {
     amount: u128;
-    <b>aborts_if</b> amount * <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
-    <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() == 0;
+    <b>aborts_if</b> amount &gt; MAX_U128;
 }
-</code></pre>
-
-
-
-<a name="@Specification_0_share_to_amount"></a>
-
-### Function `share_to_amount`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_share_to_amount">share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> hold * <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
-<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() == 0;
-</code></pre>
-
-
-
-
-<a name="0x1_Token_ShareToAmountAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt; {
-    hold: u128;
-    <b>aborts_if</b> hold * <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;() &gt; MAX_U128;
-    <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;() == 0;
-}
-</code></pre>
-
-
-
-<a name="@Specification_0_scaling_factor"></a>
-
-### Function `scaling_factor`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_0_base_scaling_factor"></a>
-
-### Function `base_scaling_factor`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_base_scaling_factor">base_scaling_factor</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_0_set_scaling_factor"></a>
-
-### Function `set_scaling_factor`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor">set_scaling_factor</a>&lt;TokenType&gt;(signer: &signer, value: u128)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">ScalingFactorModifyCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer));
-</code></pre>
-
-
-
-<a name="@Specification_0_set_scaling_factor_with_capability"></a>
-
-### Function `set_scaling_factor_with_capability`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_set_scaling_factor_with_capability">set_scaling_factor_with_capability</a>&lt;TokenType&gt;(_cap: &<a href="Token.md#0x1_Token_ScalingFactorModifyCapability">Token::ScalingFactorModifyCapability</a>&lt;TokenType&gt;, value: u128)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -2438,23 +1808,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_ShareToAmountAbortsIf">ShareToAmountAbortsIf</a>&lt;TokenType&gt;{hold: <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;()};
-</code></pre>
-
-
-
-<a name="@Specification_0_total_share"></a>
-
-### Function `total_share`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_total_share">total_share</a>&lt;TokenType&gt;(): u128
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt;{amount: <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;()};
 </code></pre>
 
 
@@ -2507,8 +1861,6 @@ pragma aborts_if_is_strict = <b>true</b>;
 <b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result);
 <b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).total_value == 100000000u128;
-<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).base_scaling_factor == 2;
-<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result).scaling_factor == 1;
 </code></pre>
 
 
@@ -2578,8 +1930,6 @@ pragma aborts_if_is_strict = <b>true</b>;
 <b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1);
 <b>ensures</b> [abstract] result_1 == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).total_value == 100000000u128;
-<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).base_scaling_factor == 2;
-<b>ensures</b> [abstract] <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1).scaling_factor == 1;
 </code></pre>
 
 
@@ -2591,24 +1941,8 @@ pragma aborts_if_is_strict = <b>true</b>;
 <pre><code><b>define</b> <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>(): address {
     0x2
 }
-<a name="0x1_Token_spec_abstract_scaling_factor"></a>
-<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_scaling_factor">spec_abstract_scaling_factor</a>&lt;TokenType&gt;(): u128 {
-    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).scaling_factor
-}
-<a name="0x1_Token_spec_abstract_base_scaling_factor"></a>
-<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_base_scaling_factor">spec_abstract_base_scaling_factor</a>&lt;TokenType&gt;(): u128 {
-    <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).base_scaling_factor
-}
 <a name="0x1_Token_spec_abstract_total_value"></a>
 <b>define</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;(): u128 {
     <b>global</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>()).total_value
-}
-<a name="0x1_Token_spec_abstract_amount_to_share"></a>
-<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_amount_to_share">spec_abstract_amount_to_share</a>&lt;TokenType&gt;(amount: u128): u128 {
-    amount * 2
-}
-<a name="0x1_Token_spec_abstract_share_to_amount"></a>
-<b>define</b> <a href="Token.md#0x1_Token_spec_abstract_share_to_amount">spec_abstract_share_to_amount</a>&lt;TokenType&gt;(hold: u128): u128 {
-    hold / 2
 }
 </code></pre>

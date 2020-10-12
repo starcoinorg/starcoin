@@ -7,7 +7,6 @@
 
 -  [Struct <code><a href="STC.md#0x1_STC">STC</a></code>](#0x1_STC_STC)
 -  [Resource <code><a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a></code>](#0x1_STC_SharedBurnCapability)
--  [Const <code><a href="STC.md#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a></code>](#0x1_STC_BASE_SCALING_FACTOR)
 -  [Const <code><a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a></code>](#0x1_STC_FRACTIONAL_PART)
 -  [Function <code>initialize</code>](#0x1_STC_initialize)
 -  [Function <code>is_stc</code>](#0x1_STC_is_stc)
@@ -74,26 +73,14 @@
 
 </details>
 
-<a name="0x1_STC_BASE_SCALING_FACTOR"></a>
-
-## Const `BASE_SCALING_FACTOR`
-
-scaling_factor = 10^9
-
-
-<pre><code><b>const</b> <a href="STC.md#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>: u128 = 1000000000;
-</code></pre>
-
-
-
 <a name="0x1_STC_FRACTIONAL_PART"></a>
 
 ## Const `FRACTIONAL_PART`
 
-fractional_part = 10^3
+fractional_part = 10^9
 
 
-<pre><code><b>const</b> <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000;
+<pre><code><b>const</b> <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000000000;
 </code></pre>
 
 
@@ -114,7 +101,7 @@ fractional_part = 10^3
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, <a href="STC.md#0x1_STC_BASE_SCALING_FACTOR">BASE_SCALING_FACTOR</a>, <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>);
+    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
     move_to(account, <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
     <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(

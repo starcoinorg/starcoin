@@ -70,7 +70,7 @@ script {
     fun unlock(account: &signer) {
         let key = Box::take<FixedTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_fixed_key(key);
-        assert(Token::share(&token) == 10000, 1001);
+        assert(Token::value(&token) == 10000, 1001);
         Account::deposit(account, token);
     }
 }
