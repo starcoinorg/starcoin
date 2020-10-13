@@ -30,7 +30,6 @@ module Token {
 
     resource struct BurnCapability<TokenType> { }
 
-    resource struct ScalingFactorModifyCapability<TokenType> { }
 
     struct MintEvent {
         /// funds added to the system
@@ -50,14 +49,10 @@ module Token {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
-        /// The scaling factor for the token (i.e. the amount to multiply by
-        /// to get to the human-readable reprentation for this token). e.g. 10^6 for Token1
+        /// The scaling factor for the coin (i.e. the amount to divide by
+        /// to get to the human-readable representation for this currency).
+        /// e.g. 10^6 for `Coin1`
         scaling_factor: u128,
-        base_scaling_factor: u128,
-        /// The smallest fractional part (number of decimal places) to be
-        /// used in the human-readable representation for the token (e.g.
-        /// 10^2 for Token1 cents)
-        fractional_part: u128,
         /// event stream for minting
         mint_events: Event::EventHandle<MintEvent>,
         /// event stream for burning
@@ -80,26 +75,29 @@ module Token {
     fun EDESTROY_KEY_NOT_EMPTY(): u64 {
         ErrorCode::ECODE_BASE() + 4
     }
+    fun EPRECISION_TOO_LARGE(): u64 {
+        ErrorCode::ECODE_BASE() + 5
+    }
+
+    /// 2^128 < 10**39
+    const MAX_PRECISION: u8 = 38;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
         account: &signer,
-        base_scaling_factor: u128,
-        fractional_part: u128,
+        precision: u8,
     ) {
+        assert(precision <= MAX_PRECISION, EPRECISION_TOO_LARGE());
+        let scaling_factor = Math::pow(10, (precision as u64));
         let token_address = token_address<TokenType>();
         assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER());
-        // assert(module_name == token_name, ETOKEN_NAME);
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
-        move_to(account, ScalingFactorModifyCapability<TokenType> {});
         move_to(
             account,
             TokenInfo<TokenType> {
                 total_value: 0,
-                scaling_factor: base_scaling_factor,
-                base_scaling_factor,
-                fractional_part,
+                scaling_factor,
                 mint_events: Event::new_event_handle<MintEvent>(account),
                 burn_events: Event::new_event_handle<BurnEvent>(account),
             },
@@ -110,45 +108,10 @@ module Token {
         aborts_if Signer::spec_address_of(account) != SPEC_TOKEN_TEST_ADDRESS();
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
-        aborts_if exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<TokenInfo<TokenType>>(Signer::spec_address_of(account));
         ensures exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         ensures exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
-        ensures exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(account));
         ensures exists<TokenInfo<TokenType>>(Signer::spec_address_of(account));
-    }
-
-    public fun remove_scaling_factor_modify_capability<TokenType>(
-        signer: &signer,
-    ): ScalingFactorModifyCapability<TokenType> acquires ScalingFactorModifyCapability {
-        move_from<ScalingFactorModifyCapability<TokenType>>(Signer::address_of(signer))
-    }
-
-    spec fun remove_scaling_factor_modify_capability {
-        aborts_if !exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(signer));
-        ensures !exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(signer));
-    }
-
-    public fun add_scaling_factor_modify_capability<TokenType>(
-        signer: &signer,
-        cap: ScalingFactorModifyCapability<TokenType>,
-    ) {
-        move_to<ScalingFactorModifyCapability<TokenType>>(signer, cap)
-    }
-
-    spec fun add_scaling_factor_modify_capability {
-        aborts_if exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(signer));
-        ensures exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(signer));
-}
-
-    public fun destroy_scaling_factor_modify_capability<TokenType>(
-        cap: ScalingFactorModifyCapability<TokenType>,
-    ) {
-        let ScalingFactorModifyCapability<TokenType> { } = cap;
-    }
-
-    spec fun destroy_scaling_factor_modify_capability {
-        aborts_if false;
     }
 
     public fun remove_mint_capability<TokenType>(signer: &signer): MintCapability<TokenType>
@@ -214,11 +177,12 @@ module Token {
     }
 
     spec fun mint {
-        aborts_if spec_abstract_total_value<TokenType>() + spec_abstract_amount_to_share<TokenType>(amount) > MAX_U128;
+        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
         aborts_if !exists<MintCapability<TokenType>>(Signer::address_of(account));
     }
 
-    /// Mint a new Token::Token worth `amount` considering current `scaling_factor`. The caller must have a reference to a MintCapability.
+    /// Mint a new Token::Token worth `amount`.
+    /// The caller must have a reference to a MintCapability.
     /// Only the Association account can acquire such a reference, and it can do so only via
     /// `borrow_sender_mint_capability`
     public fun mint_with_capability<TokenType>(
@@ -231,23 +195,22 @@ module Token {
     fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
-        let share = amount_to_share<TokenType>(amount);
         let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
-        info.total_value = info.total_value + share;
+        info.total_value = info.total_value + amount;
         Event::emit_event(
             &mut info.mint_events,
             MintEvent {
-                amount: share,
+                amount,
                 token_code: code_to_bytes(token_address, module_name, token_name),
             },
         );
-        Token<TokenType> { value: share }
+        Token<TokenType> { value: amount }
     }
 
     spec fun mint_with_capability {
-        aborts_if spec_abstract_total_value<TokenType>() + spec_abstract_amount_to_share<TokenType>(amount) > MAX_U128;
+        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
         ensures spec_abstract_total_value<TokenType>() ==
-                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + spec_abstract_amount_to_share<TokenType>(amount);
+                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
 
     }
 
@@ -365,82 +328,48 @@ module Token {
     spec fun zero {
     }
 
-    /// Scaled value of the token considering the `scaling_factor`.
-    public fun value<TokenType>(token: &Token<TokenType>): u128 acquires TokenInfo {
-        share_to_amount<TokenType>(share(token))
-    }
-
-    spec fun value {
-        include ShareToAmountAbortsIf<TokenType>{hold: token.value};
-    }
 
     /// Public accessor for the value of a token
-    public fun share<TokenType>(token: &Token<TokenType>): u128 {
+    public fun value<TokenType>(token: &Token<TokenType>): u128 {
         token.value
     }
 
+    spec fun value {
+        include AmountAbortsIf<TokenType>{amount: token.value};
+    }
+
     /// Splits the given token into two and returns them both
-    /// It leverages `Self::split_share` for any verifications of the values
     public fun split<TokenType>(
         token: Token<TokenType>,
-        amount: u128,
-    ): (Token<TokenType>, Token<TokenType>) acquires TokenInfo {
-        split_share<TokenType>(token, amount_to_share<TokenType>(amount))
-    }
-
-    spec fun split {
-        include AmountToShareAbortsIf<TokenType>;
-        aborts_if token.value < spec_abstract_amount_to_share<TokenType>(amount);
-    }
-
-    /// Splits the given token into two and returns them both
-    /// It leverages `Self::withdraw_share` for any verifications of the values.
-    /// It operates on token value directly regardless of the `scaling_factor` of the token.
-    public fun split_share<TokenType>(
-        token: Token<TokenType>,
-        share: u128,
+        value: u128,
     ): (Token<TokenType>, Token<TokenType>) {
-        let other = withdraw_share(&mut token, share);
+        let other = withdraw(&mut token, value);
         (token, other)
     }
 
-    spec fun split_share {
-        aborts_if token.value < share;
+    spec fun split {
+        aborts_if token.value < value;
         ensures old(token.value) == result_1.value + result_2.value;
     }
 
     /// "Divides" the given token into two, where the original token is modified in place.
-    /// This will consider the scaling_factor of the `Token`.
-    public fun withdraw<TokenType>(token: &mut Token<TokenType>, amount: u128): Token<TokenType>
-    acquires TokenInfo {
-        withdraw_share<TokenType>(token, amount_to_share<TokenType>(amount))
-    }
-
-     spec fun withdraw {
-         include AmountToShareAbortsIf<TokenType>;
-         aborts_if token.value < spec_abstract_amount_to_share<TokenType>(amount);
-         ensures result.value == spec_abstract_amount_to_share<TokenType>(amount);
-         ensures token.value == old(token).value - spec_abstract_amount_to_share<TokenType>(amount);
-     }
-
-    /// It operates on token value directly regardless of the `scaling_factor` of the token.
-    /// The original token will have value = original value - `share`
-    /// The new token will have a value = `share`
-    /// Fails if the tokens value is less than `share`
-    public fun withdraw_share<TokenType>(
+    /// The original token will have value = original value - `value`
+    /// The new token will have a value = `value`
+    /// Fails if the tokens value is less than `value`
+    public fun withdraw<TokenType>(
         token: &mut Token<TokenType>,
-        share: u128,
+        value: u128,
     ): Token<TokenType> {
-        // Check that `share` is less than the token's value
-        assert(token.value >= share, EAMOUNT_EXCEEDS_COIN_VALUE());
-        token.value = token.value - share;
-        Token { value: share }
+        // Check that `value` is less than the token's value
+        assert(token.value >= value, EAMOUNT_EXCEEDS_COIN_VALUE());
+        token.value = token.value - value;
+        Token { value: value }
     }
 
-    spec fun withdraw_share {
-        aborts_if token.value < share;
-        ensures result.value == share;
-        ensures token.value == old(token).value - share;
+    spec fun withdraw {
+        aborts_if token.value < value;
+        ensures result.value == value;
+        ensures token.value == old(token).value - value;
     }
 
     /// Merges two tokens of the same token and returns a new token whose
@@ -485,51 +414,12 @@ module Token {
         aborts_if token.value > 0;
     }
 
-    /// convenient function to calculate hold of the input `amount` based the current scaling_factor.
-    public fun amount_to_share<TokenType>(amount: u128): u128 acquires TokenInfo {
-        let base = base_scaling_factor<TokenType>();
-        let scaled = scaling_factor<TokenType>();
-        // shortcut to avoid bignumber cal.
-        if (base == scaled) {
-            amount
-        } else {
-            amount * base / scaled
-        }
-    }
-
-    spec fun amount_to_share {
-        aborts_if amount * spec_abstract_base_scaling_factor<TokenType>() > MAX_U128;
-        aborts_if spec_abstract_scaling_factor<TokenType>() == 0;
-    }
-
-    spec schema AmountToShareAbortsIf<TokenType> {
+    spec schema AmountAbortsIf<TokenType> {
         amount: u128;
-        aborts_if amount * spec_abstract_base_scaling_factor<TokenType>() > MAX_U128;
-        aborts_if spec_abstract_scaling_factor<TokenType>() == 0;
+        aborts_if amount > MAX_U128;
     }
 
-    public fun share_to_amount<TokenType>(hold: u128): u128 acquires TokenInfo {
-        let base = base_scaling_factor<TokenType>();
-        let scaled = scaling_factor<TokenType>();
-        if (base == scaled) {
-            hold
-        } else {
-            hold * scaled / base
-        }
-    }
-
-    spec fun share_to_amount {
-        aborts_if hold * spec_abstract_scaling_factor<TokenType>() > MAX_U128;
-        aborts_if spec_abstract_base_scaling_factor<TokenType>() == 0;
-    }
-
-    spec schema ShareToAmountAbortsIf<TokenType> {
-        hold: u128;
-        aborts_if hold * spec_abstract_scaling_factor<TokenType>() > MAX_U128;
-        aborts_if spec_abstract_base_scaling_factor<TokenType>() == 0;
-    }
-
-    /// Returns the scaling factor for the `TokenType` token.
+    /// Returns the scaling_factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
@@ -539,69 +429,14 @@ module Token {
         aborts_if false;
     }
 
-    public fun base_scaling_factor<TokenType>(): u128 acquires TokenInfo {
-        let token_address = token_address<TokenType>();
-        borrow_global<TokenInfo<TokenType>>(token_address).base_scaling_factor
-    }
-
-    spec fun base_scaling_factor {
-        aborts_if false;
-    }
-
-    public fun set_scaling_factor<TokenType>(signer: &signer, value: u128)
-    acquires TokenInfo, ScalingFactorModifyCapability {
-        let cap = borrow_global<ScalingFactorModifyCapability<TokenType>>(
-            Signer::address_of(signer),
-        );
-        set_scaling_factor_with_capability(cap, value)
-    }
-
-    spec fun set_scaling_factor {
-        aborts_if !exists<ScalingFactorModifyCapability<TokenType>>(Signer::spec_address_of(signer));
-    }
-
-    public fun set_scaling_factor_with_capability<TokenType>(
-        _cap: &ScalingFactorModifyCapability<TokenType>,
-        value: u128,
-    ) acquires TokenInfo {
-        let token_address = token_address<TokenType>();
-        let info = borrow_global_mut<TokenInfo<TokenType>>(token_address);
-        info.scaling_factor = value;
-
-        // TODO: emit event
-    }
-
-    spec fun set_scaling_factor_with_capability {
-        aborts_if false;
-    }
-
-    /// Returns the representable fractional part for the `TokenType` token.
-    public fun fractional_part<TokenType>(): u128 acquires TokenInfo {
-        let token_address = token_address<TokenType>();
-        borrow_global<TokenInfo<TokenType>>(token_address).fractional_part
-    }
-
-    spec fun fractional_part {
-        aborts_if false;
-    }
-
-    /// Return the total amount of token of type `TokenType` considering current `scaling_factor`
+    /// Return the total amount of token of type `TokenType`.
     public fun market_cap<TokenType>(): u128 acquires TokenInfo {
-        share_to_amount<TokenType>(total_share<TokenType>())
-    }
-
-    spec fun market_cap {
-        include ShareToAmountAbortsIf<TokenType>{hold: spec_abstract_total_value<TokenType>()};
-    }
-
-    /// Return the total share of token minted.
-    public fun total_share<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
         borrow_global<TokenInfo<TokenType>>(token_address).total_value
     }
 
-    spec fun total_share {
-        aborts_if false;
+    spec fun market_cap {
+        include AmountAbortsIf<TokenType>{amount: spec_abstract_total_value<TokenType>()};
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
@@ -636,8 +471,6 @@ module Token {
         ensures [abstract] exists<TokenInfo<TokenType>>(result);
         ensures [abstract] result == SPEC_TOKEN_TEST_ADDRESS();
         ensures [abstract] global<TokenInfo<TokenType>>(result).total_value == 100000000u128;
-        ensures [abstract] global<TokenInfo<TokenType>>(result).base_scaling_factor == 2;
-        ensures [abstract] global<TokenInfo<TokenType>>(result).scaling_factor == 1;
 }
 
     /// Return the token code for the registered token.
@@ -684,8 +517,6 @@ module Token {
         ensures [abstract] exists<TokenInfo<TokenType>>(result_1);
         ensures [abstract] result_1 == SPEC_TOKEN_TEST_ADDRESS();
         ensures [abstract] global<TokenInfo<TokenType>>(result_1).total_value == 100000000u128;
-        ensures [abstract] global<TokenInfo<TokenType>>(result_1).base_scaling_factor == 2;
-        ensures [abstract] global<TokenInfo<TokenType>>(result_1).scaling_factor == 1;
     }
 
     spec module {
@@ -693,25 +524,10 @@ module Token {
             0x2
         }
 
-        define spec_abstract_scaling_factor<TokenType>(): u128 {
-            global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).scaling_factor
-        }
-
-        define spec_abstract_base_scaling_factor<TokenType>(): u128 {
-            global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).base_scaling_factor
-        }
-
         define spec_abstract_total_value<TokenType>(): u128 {
             global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value
         }
 
-        define spec_abstract_amount_to_share<TokenType>(amount: u128): u128 {
-            amount * 2
-        }
-
-        define spec_abstract_share_to_amount<TokenType>(hold: u128): u128 {
-            hold / 2
-        }
     }
 
 }

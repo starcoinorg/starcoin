@@ -195,7 +195,7 @@ module Dao {
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
-        let stake_value = Token::share(&stake);
+        let stake_value = Token::value(&stake);
         let my_vote = Vote<TokenT> { proposer: proposer_address, id: proposal_id, stake, agree };
         if (agree) {
             proposal.for_votes = proposal.for_votes + stake_value;
@@ -234,7 +234,7 @@ module Dao {
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
         assert(my_vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
         assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
-        let reverted_stake = Token::withdraw_share(&mut my_vote.stake, voting_power);
+        let reverted_stake = Token::withdraw(&mut my_vote.stake, voting_power);
         if (my_vote.agree) {
             proposal.for_votes = proposal.for_votes - voting_power;
         } else {
@@ -249,7 +249,7 @@ module Dao {
                 proposer: proposer_address,
                 voter: Signer::address_of(signer),
                 agree: my_vote.agree,
-                vote: Token::share(&my_vote.stake),
+                vote: Token::value(&my_vote.stake),
             },
         );
         reverted_stake
@@ -390,12 +390,12 @@ module Dao {
         let vote = borrow_global<Vote<TokenT>>(voter);
         assert(vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
         assert(vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
-        (vote.agree, Token::share(&vote.stake))
+        (vote.agree, Token::value(&vote.stake))
     }
 
     /// Quorum votes to make proposal pass.
     public fun quorum_votes<TokenT: copyable>(): u128 {
-        let supply = Token::total_share<TokenT>();
+        let supply = Token::market_cap<TokenT>();
         supply / 100 * (voting_quorum_rate<TokenT>() as u128)
     }
 

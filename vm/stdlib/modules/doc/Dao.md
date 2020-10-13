@@ -820,7 +820,7 @@ So think twice before casting vote.
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
-    <b>let</b> stake_value = <a href="Token.md#0x1_Token_share">Token::share</a>(&stake);
+    <b>let</b> stake_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&stake);
     <b>let</b> my_vote = <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt; { proposer: proposer_address, id: proposal_id, stake, agree };
     <b>if</b> (agree) {
         proposal.for_votes = proposal.for_votes + stake_value;
@@ -879,7 +879,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
     <b>assert</b>(my_vote.proposer == proposer_address, <a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
     <b>assert</b>(my_vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
-    <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw_share">Token::withdraw_share</a>(&<b>mut</b> my_vote.stake, voting_power);
+    <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> my_vote.stake, voting_power);
     <b>if</b> (my_vote.agree) {
         proposal.for_votes = proposal.for_votes - voting_power;
     } <b>else</b> {
@@ -894,7 +894,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
             proposer: proposer_address,
             voter: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
             agree: my_vote.agree,
-            vote: <a href="Token.md#0x1_Token_share">Token::share</a>(&my_vote.stake),
+            vote: <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake),
         },
     );
     reverted_stake
@@ -1195,7 +1195,7 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
     <b>let</b> vote = borrow_global&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
     <b>assert</b>(vote.proposer == proposer_address, <a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
     <b>assert</b>(vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
-    (vote.agree, <a href="Token.md#0x1_Token_share">Token::share</a>(&vote.stake))
+    (vote.agree, <a href="Token.md#0x1_Token_value">Token::value</a>(&vote.stake))
 }
 </code></pre>
 
@@ -1220,7 +1220,7 @@ Quorum votes to make proposal pass.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128 {
-    <b>let</b> supply = <a href="Token.md#0x1_Token_total_share">Token::total_share</a>&lt;TokenT&gt;();
+    <b>let</b> supply = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
     supply / 100 * (<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;() <b>as</b> u128)
 }
 </code></pre>

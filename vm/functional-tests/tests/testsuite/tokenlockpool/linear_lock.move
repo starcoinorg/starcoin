@@ -49,7 +49,7 @@ script {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5
-        assert(Token::share(&token) == 2000, 1001);
+        assert(Token::value(&token) == 2000, 1001);
         Box::put(account, key);
         Account::deposit(account, token);
     }
@@ -73,7 +73,7 @@ script {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         // withdraw 10000/5 again
-        assert(Token::share(&token) == 2000, 1002);
+        assert(Token::value(&token) == 2000, 1002);
         Box::put(account, key);
         Account::deposit(account, token);
     }
@@ -97,7 +97,7 @@ script {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         //unlock all remain
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
-        assert(Token::share(&token) == 6000, 1003);
+        assert(Token::value(&token) == 6000, 1003);
         TokenLockPool::destroy_empty(key);
         Account::deposit(account, token);
     }
