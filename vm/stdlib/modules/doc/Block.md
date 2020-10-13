@@ -216,7 +216,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, _parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, parent_gas_used: u64): u128
 </code></pre>
 
 
@@ -225,7 +225,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64, _parent_gas_used:u64): u128 <b>acquires</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64, parent_gas_used:u64): u128 <b>acquires</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>{
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
 
     <b>let</b> block_metadata_ref = borrow_global_mut&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
@@ -234,7 +234,7 @@
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;
 
-    <b>let</b> reward = <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">ConsensusConfig::adjust_epoch</a>(account, number, timestamp, uncles);
+    <b>let</b> reward = <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">ConsensusConfig::adjust_epoch</a>(account, number, timestamp, uncles, parent_gas_used);
 
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a>&gt;(
       &<b>mut</b> block_metadata_ref.new_block_events,
@@ -335,7 +335,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `process_block_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, _parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, parent_gas_used: u64): u128
 </code></pre>
 
 
