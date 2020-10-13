@@ -17,6 +17,7 @@ use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction, U256};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::{ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -173,6 +174,16 @@ pub enum EventDataView {
         proposer: BytesView,
         proposed_time: u64,
     },
+    #[serde(rename = "proposal_created")]
+    ProposalCreated { proposal_id: u64, proposer: String },
+    #[serde(rename = "vote_changed")]
+    VoteChanged {
+        proposal_id: u64,
+        proposer: String,
+        voter: String,
+        agree: bool,
+        vote: u128,
+    },
     #[serde(rename = "unknown")]
     Unknown {},
 }
@@ -216,6 +227,27 @@ impl From<ContractEvent> for EventView {
                 })
             } else {
                 Err(format_err!("Unable to parse MintEvent"))
+            }
+        } else if event.type_tag() == &TypeTag::Struct(ProposalCreatedEvent::struct_tag()) {
+            if let Ok(event) = ProposalCreatedEvent::try_from_bytes(&event.event_data()) {
+                Ok(EventDataView::ProposalCreated {
+                    proposal_id: event.proposal_id,
+                    proposer: format!("{}", event.proposer),
+                })
+            } else {
+                Err(format_err!("Unable to parse ProposalCreatedEvent"))
+            }
+        } else if event.type_tag() == &TypeTag::Struct(VoteChangedEvent::struct_tag()) {
+            if let Ok(event) = VoteChangedEvent::try_from_bytes(&event.event_data()) {
+                Ok(EventDataView::VoteChanged {
+                    proposal_id: event.proposal_id,
+                    proposer: format!("{}", event.proposer),
+                    voter: format!("{}", event.voter),
+                    agree: event.agree,
+                    vote: event.vote,
+                })
+            } else {
+                Err(format_err!("Unable to parse VoteChangedEvent"))
             }
         } else {
             Err(format_err!("Unknown events"))

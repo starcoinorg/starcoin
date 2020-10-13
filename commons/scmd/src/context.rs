@@ -176,7 +176,7 @@ where
     /// Execute command by parse std::env::args_os() and print result.
     pub fn exec(self) -> Result<()> {
         let (output_format, result) = self.exec_inner(&mut std::env::args_os())?;
-        print_action_result(output_format, result)
+        print_action_result(output_format, result, false)
     }
 
     /// Execute command by args and return Command execute ReturnItem
@@ -213,7 +213,15 @@ where
                 if let Some((init_action, quit_action)) = self.console_support {
                     let commands = self.commands;
 
-                    Self::console_inner(app, global_opt, state, commands, init_action, quit_action);
+                    Self::console_inner(
+                        app,
+                        global_opt,
+                        state,
+                        commands,
+                        init_action,
+                        quit_action,
+                        output_format,
+                    );
                     Ok(Value::Null)
                 } else {
                     return Err(CmdError::InvalidCommand {
@@ -253,6 +261,7 @@ where
             dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>),
         >,
         quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
+        output_format: OutputFormat,
     ) {
         //insert version, quit, history command
         let mut app = app
@@ -365,7 +374,7 @@ where
                                                 global_opt.clone(),
                                                 &arg_matches,
                                             );
-                                            print_action_result(OutputFormat::TABLE, result)
+                                            print_action_result(output_format, result, true)
                                                 .expect("Print result should success.")
                                         }
                                         Err(e) => {
