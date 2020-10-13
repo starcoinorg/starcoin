@@ -448,7 +448,7 @@ fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>)
         .get_header(block.header().parent_hash())
         .unwrap()
         .unwrap();
-    let block_metadata = block.into_metadata(parent_block_header.gas_used());
+    let block_metadata = block.to_metadata(parent_block_header.gas_used());
     let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
     txns.extend(
         block

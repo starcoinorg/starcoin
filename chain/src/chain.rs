@@ -876,7 +876,7 @@ impl BlockChain {
                     header.parent_hash()
                 );
                 let block_metadata =
-                    block.into_metadata(parent_header.expect("header is none.").gas_used());
+                    block.to_metadata(parent_header.expect("header is none.").gas_used());
                 vec![Transaction::BlockMetadata(block_metadata)]
             };
             t.extend(

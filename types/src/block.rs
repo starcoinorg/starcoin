@@ -380,7 +380,7 @@ impl Block {
         }
     }
 
-    pub fn into_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn to_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
