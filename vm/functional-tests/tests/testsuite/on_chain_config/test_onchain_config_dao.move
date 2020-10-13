@@ -30,7 +30,7 @@ script {
     use 0x1::Vector;
     fun propose(signer: &signer) {
         let new_config = TransactionPublishOption::new_transaction_publish_option(Vector::empty(), false);
-        OnChainConfigDao::propose_update<STC, TransactionPublishOption::TransactionPublishOption>(signer, new_config);
+        OnChainConfigDao::propose_update<STC, TransactionPublishOption::TransactionPublishOption>(signer, new_config, 0);
     }
 }
 // check: EXECUTED
@@ -39,7 +39,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 2
-//! block-time: 172800000
+//! block-time: 87000000
 
 
 //! new-transaction
@@ -64,14 +64,14 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 3
-//! block-time: 259200000
+//! block-time: 110000000
 
 
 
 //! block-prologue
 //! author: genesis
 //! block-number: 4
-//! block-time: 300000000
+//! block-time: 120000000
 
 //! new-transaction
 //! sender: bob
@@ -101,7 +101,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 5
-//! block-time: 390000000
+//! block-time: 130000000
 
 
 

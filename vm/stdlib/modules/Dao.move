@@ -49,9 +49,15 @@ module Dao {
     }
 
     struct DaoConfig<TokenT: copyable> {
+        /// after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
+        /// how long the voting window is.
         voting_period: u64,
+        /// the quorum rate to agree on the proposal.
+        /// if 50% votes needed, then the voting_quorum_rate should be 50.
+        /// it should between (0, 100].
         voting_quorum_rate: u8,
+        /// how long the proposal should wait before it can be executed.
         min_action_delay: u64,
     }
 
@@ -100,6 +106,7 @@ module Dao {
     const ERR_PROPOSER_MISMATCH: u64 = 1405;
     const ERR_QUROM_RATE_INVALID: u64 = 1406;
     const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
+    const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
@@ -153,7 +160,11 @@ module Dao {
         action: ActionT,
         action_delay: u64,
     ) acquires DaoGlobalInfo {
-        assert(action_delay >= min_action_delay<TokenT>(), ERR_ACTION_DELAY_TOO_SMALL);
+        if (action_delay == 0) {
+            action_delay = min_action_delay<TokenT>();
+        } else {
+            assert(action_delay >= min_action_delay<TokenT>(), ERR_ACTION_DELAY_TOO_SMALL);
+        };
         let proposal_id = generate_next_proposal_id<TokenT>();
         let proposer = Signer::address_of(signer);
         let start_time = Timestamp::now_seconds() + voting_delay<TokenT>();
@@ -187,7 +198,7 @@ module Dao {
         proposal_id: u64,
         stake: Token::Token<TokenT>,
         agree: bool,
-    ) acquires Proposal, DaoGlobalInfo {
+    ) acquires Proposal, DaoGlobalInfo, Vote {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can cast vote.
@@ -196,13 +207,27 @@ module Dao {
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
         let stake_value = Token::value(&stake);
-        let my_vote = Vote<TokenT> { proposer: proposer_address, id: proposal_id, stake, agree };
+        let total_voted = if (exists<Vote<TokenT>>(Signer::address_of(signer))) {
+            let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
+            assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+            assert(my_vote.agree == agree, ERR_VOTE_STATE_MISMATCH);
+            Token::deposit(&mut my_vote.stake, stake);
+            Token::value(&my_vote.stake)
+        } else {
+            let my_vote = Vote<TokenT> {
+                proposer: proposer_address,
+                id: proposal_id,
+                stake,
+                agree,
+            };
+            move_to(signer, my_vote);
+            stake_value
+        };
         if (agree) {
             proposal.for_votes = proposal.for_votes + stake_value;
         } else {
             proposal.against_votes = proposal.against_votes + stake_value;
         };
-        move_to(signer, my_vote);
         // emit event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         Event::emit_event(
@@ -212,9 +237,51 @@ module Dao {
                 proposer: proposer_address,
                 voter: Signer::address_of(signer),
                 agree,
-                vote: stake_value,
+                vote: total_voted,
             },
         );
+    }
+
+    /// Let user change their vote during the voting time.
+    public fun change_vote<TokenT: copyable, ActionT>(
+        signer: &signer,
+        proposer_address: address,
+        proposal_id: u64,
+        agree: bool,
+    ) acquires Proposal, DaoGlobalInfo, Vote {
+        {
+            let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
+            // only when proposal is active, use can change vote.
+            assert(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+        };
+        let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
+        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
+        assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        // flip the vote
+        if (my_vote.agree != agree) {
+            my_vote.agree = agree;
+            let total_voted = Token::value(&my_vote.stake);
+            if (agree) {
+                proposal.for_votes = proposal.for_votes + total_voted;
+                proposal.against_votes = proposal.against_votes - total_voted;
+            } else {
+                proposal.for_votes = proposal.for_votes - total_voted;
+                proposal.against_votes = proposal.against_votes + total_voted;
+            };
+            // emit event
+            let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
+            Event::emit_event(
+                &mut gov_info.vote_changed_event,
+                VoteChangedEvent {
+                    proposal_id,
+                    proposer: proposer_address,
+                    voter: Signer::address_of(signer),
+                    agree,
+                    vote: total_voted,
+                },
+            );
+        };
     }
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.

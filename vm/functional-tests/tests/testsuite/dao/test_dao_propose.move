@@ -27,7 +27,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: &signer) {
-        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 50, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
@@ -36,7 +36,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 2
-//! block-time: 172800000
+//! block-time: 87000000
 
 
 //! new-transaction
@@ -60,7 +60,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 3
-//! block-time: 259200000
+//! block-time: 88000000
 
 
 //! new-transaction
@@ -83,10 +83,48 @@ script {
 // check: EXECUTED
 
 
+//! new-transaction
+//! sender: bob
+
+script {
+    use 0x1::ModifyDaoConfigProposal;
+    use 0x1::STC::STC;
+    use 0x1::Dao;
+    use 0x1::Signer;
+    use 0x1::Account;
+    fun recast_vote(signer: &signer) {
+        let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
+        assert(state == 2, (state as u64));
+        {
+            let balance = Account::balance<STC>(Signer::address_of(signer));
+            let balance = Account::withdraw<STC>(signer, balance);
+            Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, balance, true);
+        }
+    }
+}
+// check: EXECUTED
+
+//! new-transaction
+//! sender: bob
+
+script {
+    use 0x1::ModifyDaoConfigProposal;
+    use 0x1::STC::STC;
+    use 0x1::Dao;
+    fun flip_vote(signer: &signer) {
+        // flip
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, false);
+        // flip back
+        Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, true);
+    }
+}
+// check: EXECUTED
+
+
 //! block-prologue
 //! author: genesis
 //! block-number: 4
-//! block-time: 300000000
+//! block-time: 180000000
 
 
 //! new-transaction
@@ -136,7 +174,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 5
-//! block-time: 390000000
+//! block-time: 250000000
 
 
 //! new-transaction
@@ -174,7 +212,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 6
-//! block-time: 400000000000
+//! block-time: 300000000
 
 
 //! new-transaction
@@ -185,7 +223,7 @@ script {
     use 0x1::STC::STC;
 
     fun re_propose(signer: &signer) {
-        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 0, 0, 0);
     }
 }
 // check: RESOURCE_ALREADY_EXISTS
@@ -194,7 +232,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 7
-//! block-time: 500000000000
+//! block-time: 310000000
 
 
 //! new-transaction

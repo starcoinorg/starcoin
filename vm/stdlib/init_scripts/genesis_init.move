@@ -65,6 +65,12 @@ script {
         max_transaction_size_in_bytes: u64,
         gas_unit_scaling_factor: u64,
         default_account_size: u64,
+
+        // dao config
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
     ) {
         assert(Timestamp::is_genesis(), 1);
         // create genesis account
@@ -125,7 +131,7 @@ script {
         );
         // stc should be initialized after genesis_account's module upgrade strategy set.
         {
-            STC::initialize(&genesis_account);
+            STC::initialize(&genesis_account, voting_delay, voting_period, voting_quorum_rate, min_action_delay);
             Account::accept_token<STC>(&genesis_account);
             DummyToken::initialize(&genesis_account);
             Account::accept_token<STC>(&association);
