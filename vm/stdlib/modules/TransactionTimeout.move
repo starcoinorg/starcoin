@@ -57,7 +57,7 @@ module TransactionTimeout {
   }
   spec fun is_valid_transaction_timestamp {
     pragma verify = false;
-    aborts_if !exists<Timestamp::CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     // Todo: function does not abort under this condition?
     aborts_if !exists<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS());
