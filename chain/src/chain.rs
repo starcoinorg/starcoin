@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
+use consensus::duration_since_epoch;
 use consensus::Consensus;
 use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
@@ -34,7 +35,6 @@ use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
 use std::cmp::min;
 use std::iter::Extend;
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{collections::HashSet, convert::TryInto, sync::Arc};
 use storage::Store;
 
@@ -645,7 +645,7 @@ impl BlockChain {
         if !header.is_genesis() {
             //block header time check in block prologue.
 
-            let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+            let now = duration_since_epoch().as_millis() as u64;
             verify_block!(
                 VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,

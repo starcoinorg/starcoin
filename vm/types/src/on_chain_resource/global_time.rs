@@ -7,13 +7,19 @@ use move_core_types::move_resource::MoveResource;
 
 const TIMESTAMP_MODULE_NAME: &str = "Timestamp";
 
-/// The CurrentTimeSeconds on chain.
+/// The CurrentTimeMilliseconds on chain.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct GlobalTimeOnChain {
-    pub seconds: u64,
+    pub milliseconds: u64,
+}
+
+impl GlobalTimeOnChain {
+    pub fn seconds(&self) -> u64 {
+        self.milliseconds / 1000
+    }
 }
 
 impl MoveResource for GlobalTimeOnChain {
     const MODULE_NAME: &'static str = TIMESTAMP_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "CurrentTimeSeconds";
+    const STRUCT_NAME: &'static str = "CurrentTimeMilliseconds";
 }

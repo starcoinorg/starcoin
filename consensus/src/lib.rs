@@ -12,7 +12,7 @@ pub mod keccak;
 mod time;
 
 pub use consensus::Consensus;
-pub use time::TimeService;
+pub use time::{duration_since_epoch, TimeService};
 
 use crate::argon::ArgonConsensus;
 use crate::dev::DevConsensus;

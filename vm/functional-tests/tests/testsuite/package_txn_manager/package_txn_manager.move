@@ -69,7 +69,7 @@ fun main(account: &signer) {
 
 //! block-prologue
 //! author: bob
-//! block-time: 100000000
+//! block-time: 100000000000
 //! block-number: 1
 
 //! new-transaction

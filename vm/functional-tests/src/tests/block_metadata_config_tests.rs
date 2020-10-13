@@ -35,9 +35,9 @@ fn parse_simple_negative() {
 #[test]
 fn parse_timestamp() {
     for s in &[
-        "//! block-time:77",
+        "//! block-time:77000",
         "//!block-time:0",
-        "//! block-time:  123",
+        "//! block-time:  123000",
     ] {
         s.parse::<Entry>().unwrap();
     }
@@ -73,7 +73,7 @@ fn build_transaction_config_1() {
 
     parse_and_build_config(&global, r"
         //! author: alice
-        //! block-time: 6
+        //! block-time: 6000
         //! block-number: 1
     ").unwrap();
 
@@ -82,7 +82,7 @@ fn build_transaction_config_1() {
     ").unwrap_err();
 
     parse_and_build_config(&global, r"
-        //! block-time: 6
+        //! block-time: 6000
     ").unwrap_err();
 }
 
@@ -95,6 +95,6 @@ fn build_transaction_config_3() {
 
     parse_and_build_config(&global, r"
         //! author: bob
-        //! block-time: 6
+        //! block-time: 6000
     ").unwrap_err();
 }

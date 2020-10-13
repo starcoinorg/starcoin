@@ -83,7 +83,7 @@ fn gen_header(
     )
 }
 
-fn gen_scrit_payload(version: StdlibVersion) -> TransactionPayload {
+fn gen_script_payload(version: StdlibVersion) -> TransactionPayload {
     TransactionPayload::Script(Script::new(
         compiled_transaction_script(version, StdlibScript::EmptyScript).into_vec(),
         vec![],
@@ -107,7 +107,7 @@ fn txn_transfer(
                     temp_index.unwrap(),
                     &mut universe,
                     expired,
-                    Some(gen_scrit_payload(ChainNetwork::TEST.stdlib_version())),
+                    Some(gen_script_payload(ChainNetwork::TEST.stdlib_version())),
                 )
                 .into_inner(),
             )

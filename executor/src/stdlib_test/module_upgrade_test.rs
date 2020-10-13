@@ -1,6 +1,7 @@
 use crate::execute_readonly_function;
 use crate::test_helper::*;
 use anyhow::Result;
+use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_functional_tests::account::Account;
@@ -64,7 +65,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let alice = Account::new();
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
-    let one_day: u64 = 60 * 60 * 24;
+    let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
     {
         let block_number = 1;
@@ -72,7 +73,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 genesis_address(),
                 None,
                 0,
@@ -124,7 +125,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -163,7 +164,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -210,7 +211,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -235,7 +236,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -281,7 +282,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -321,7 +322,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                one_day * block_number,
+                net.consensus().now() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,

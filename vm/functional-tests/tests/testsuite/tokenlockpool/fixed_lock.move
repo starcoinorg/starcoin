@@ -32,7 +32,7 @@ script {
 
 //! block-prologue
 //! author: alice
-//! block-time: 1
+//! block-time: 1000
 //! block-number: 1
 
 //! new-transaction
@@ -55,7 +55,7 @@ script {
 
 //! block-prologue
 //! author: alice
-//! block-time: 5
+//! block-time: 5000
 //! block-number: 2
 
 //! new-transaction

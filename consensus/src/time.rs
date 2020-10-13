@@ -12,12 +12,21 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+// Gives the duration since the Unix epoch, notice the expect.
+pub fn duration_since_epoch() -> Duration {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time is before the UNIX_EPOCH")
+}
+
 /// A generic service for providing time related operations (e.g., returning the current time and
 /// sleeping).
 pub trait TimeService {
     /// Returns the current time since the UNIX_EPOCH in seconds as a u64.
     fn now(&self) -> u64;
 
+    /// Returns the current time since the UNIX_EPOCH in milliseconds as a u64.
+    fn now_as_millisecond(&self) -> u64;
     /// Sleeps the calling thread for (at least) the specified number of seconds. This call may
     /// sleep longer than specified, never less.
     fn sleep(&self, seconds: u64);
@@ -35,10 +44,11 @@ impl RealTimeService {
 
 impl TimeService for RealTimeService {
     fn now(&self) -> u64 {
-        SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
+        duration_since_epoch().as_secs() as u64
+    }
+
+    fn now_as_millisecond(&self) -> u64 {
+        duration_since_epoch().as_millis() as u64
     }
 
     fn sleep(&self, seconds: u64) {
@@ -81,6 +91,10 @@ impl MockTimeService {
 impl TimeService for MockTimeService {
     fn now(&self) -> u64 {
         self.now.load(Ordering::Relaxed)
+    }
+
+    fn now_as_millisecond(&self) -> u64 {
+        self.now()
     }
 
     fn sleep(&self, seconds: u64) {

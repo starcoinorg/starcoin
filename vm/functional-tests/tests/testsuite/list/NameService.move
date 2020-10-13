@@ -192,32 +192,32 @@ fun main(account: &signer) {
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1001
+//! block-time: 1001000
 //! block-number: 1
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1002
+//! block-time: 1002000
 //! block-number: 2
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1003
+//! block-time: 1003000
 //! block-number: 3
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1004
+//! block-time: 1004000
 //! block-number: 4
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1005
+//! block-time: 1005000
 //! block-number: 5
 
 //! block-prologue
 //! author: vivian
-//! block-time: 1006
+//! block-time: 1006000
 //! block-number: 6
 
 //! new-transaction
