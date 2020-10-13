@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     register_histogram_vec, register_int_counter, register_int_gauge, HistogramOpts, HistogramVec,

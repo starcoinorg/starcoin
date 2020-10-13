@@ -1,9 +1,13 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::block_connector::{
     create_writeable_block_chain, gen_blocks, new_block, WriteBlockChainService,
 };
 use anyhow::Result;
 use chain::BlockChain;
 use config::NodeConfig;
+use consensus::duration_since_epoch;
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -375,11 +379,7 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
     let (mut uncle_header, mut writeable_block_chain_service, node_config, storage) =
         uncle_block_and_writeable_block_chain(count, count - 2).await;
     if !succ {
-        uncle_header.timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-            + 1000;
+        uncle_header.timestamp = (duration_since_epoch().as_millis() + 1000) as u64;
     }
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
