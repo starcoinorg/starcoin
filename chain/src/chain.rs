@@ -875,9 +875,8 @@ impl BlockChain {
                     "invalid block: parent block header {} is none.",
                     header.parent_hash()
                 );
-                let block_metadata = block
-                    .clone()
-                    .into_metadata(parent_header.expect("header is none.").gas_used());
+                let block_metadata =
+                    block.into_metadata(parent_header.expect("header is none.").gas_used());
                 vec![Transaction::BlockMetadata(block_metadata)]
             };
             t.extend(

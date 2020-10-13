@@ -380,7 +380,7 @@ impl Block {
         }
     }
 
-    pub fn into_metadata(self, parent_gas_used: u64) -> BlockMetadata {
+    pub fn into_metadata(&self, parent_gas_used: u64) -> BlockMetadata {
         let uncles = self
             .body
             .uncles
@@ -392,7 +392,7 @@ impl Block {
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
-            self.header.author_public_key,
+            self.header.author_public_key.clone(),
             uncles,
             self.header.number,
             self.header.chain_id,
