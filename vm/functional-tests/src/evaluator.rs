@@ -259,7 +259,7 @@ struct TransactionParameters<'a> {
     pub sequence_number: u64,
     pub max_gas_amount: u64,
     pub gas_unit_price: u64,
-    pub expiration_timestamp_milliseconds: u64,
+    pub expiration_timestamp_seconds: u64,
 }
 
 /// Gets the transaction parameters from the current execution environment and the config.
@@ -295,7 +295,7 @@ fn get_transaction_parameters<'a>(
             .unwrap_or_else(|| account_resource.sequence_number()),
         max_gas_amount,
         gas_unit_price,
-        expiration_timestamp_milliseconds: exec.read_timestamp()
+        expiration_timestamp_seconds: exec.read_timestamp()
             + config.expiration_time.unwrap_or(3600),
     }
 }
@@ -317,7 +317,7 @@ fn make_script_transaction(
         script,
         params.max_gas_amount,
         params.gas_unit_price,
-        params.expiration_timestamp_milliseconds,
+        params.expiration_timestamp_seconds,
         ChainId::test(),
     )
     .sign(params.privkey, params.pubkey.clone())?
@@ -341,7 +341,7 @@ fn make_module_transaction(
         module,
         params.max_gas_amount,
         params.gas_unit_price,
-        params.expiration_timestamp_milliseconds,
+        params.expiration_timestamp_seconds,
         ChainId::test(),
     )
     .sign(params.privkey, params.pubkey.clone())?
