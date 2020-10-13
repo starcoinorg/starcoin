@@ -13,6 +13,7 @@ use starcoin_move_compiler::{
 };
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
+use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
@@ -81,9 +82,17 @@ pub struct ExecuteOpt {
     /// Whether dry-run in local cli or remote node.
     local_mode: bool,
 
-    #[structopt(name = "move_file", parse(from_os_str))]
+    #[structopt(long = "script", name = "builtin-script")]
+    /// builtin script name to execute
+    script_name: Option<StdlibScript>,
+
+    #[structopt(
+        name = "move_file",
+        parse(from_os_str),
+        required_unless = "builtin-script"
+    )]
     /// bytecode file or move script source file
-    move_file: PathBuf,
+    move_file: Option<PathBuf>,
 
     #[structopt(name = "dependency_path", long = "dep")]
     /// path of dependency used to build, only used when using move source file
@@ -109,41 +118,52 @@ impl CommandAction for ExecuteCommand {
             ctx.state().default_account()?.address
         };
 
-        let move_file_path = ctx.opt().move_file.clone();
-        let ext = move_file_path
-            .as_path()
-            .extension()
-            .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
-            .unwrap_or_else(|| "");
-        let (bytecode, is_script) = if ext == MOVE_EXTENSION {
-            let mut deps = stdlib::stdlib_files();
-            // add extra deps
-            deps.append(&mut ctx.opt().deps.clone());
-            let (sources, compile_result) = compile_source_string_no_report(
-                std::fs::read_to_string(move_file_path.as_path())?.as_str(),
-                &deps,
-                sender,
-            )?;
-            let compile_unit = match compile_result {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!(
-                        "{}",
-                        String::from_utf8_lossy(
-                            errors::report_errors_to_color_buffer(sources, e).as_slice()
-                        )
-                    );
-                    bail!("compile error")
-                }
-            };
-
-            let is_script = match compile_unit {
-                CompiledUnit::Module { .. } => false,
-                CompiledUnit::Script { .. } => true,
-            };
-            (compile_unit.serialize(), is_script)
+        let (bytecode, is_script) = if let Some(builtin_script) = opt.script_name.as_ref() {
+            let code =
+                compiled_transaction_script(ctx.state().net().stdlib_version(), *builtin_script)
+                    .into_vec();
+            (code, true)
         } else {
-            load_bytecode_file(move_file_path.as_path())?
+            let move_file_path = ctx
+                .opt()
+                .move_file
+                .clone()
+                .ok_or_else(|| format_err!("expect a move file path"))?;
+            let ext = move_file_path
+                .as_path()
+                .extension()
+                .map(|os_str| os_str.to_str().expect("file extension should is utf8 str"))
+                .unwrap_or_else(|| "");
+            if ext == MOVE_EXTENSION {
+                let mut deps = stdlib::stdlib_files();
+                // add extra deps
+                deps.append(&mut ctx.opt().deps.clone());
+                let (sources, compile_result) = compile_source_string_no_report(
+                    std::fs::read_to_string(move_file_path.as_path())?.as_str(),
+                    &deps,
+                    sender,
+                )?;
+                let compile_unit = match compile_result {
+                    Ok(c) => c,
+                    Err(e) => {
+                        eprintln!(
+                            "{}",
+                            String::from_utf8_lossy(
+                                errors::report_errors_to_color_buffer(sources, e).as_slice()
+                            )
+                        );
+                        bail!("compile error")
+                    }
+                };
+
+                let is_script = match compile_unit {
+                    CompiledUnit::Module { .. } => false,
+                    CompiledUnit::Script { .. } => true,
+                };
+                (compile_unit.serialize(), is_script)
+            } else {
+                load_bytecode_file(move_file_path.as_path())?
+            }
         };
 
         let type_tags = opt.type_tags.clone();
