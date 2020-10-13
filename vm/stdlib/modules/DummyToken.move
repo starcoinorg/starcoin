@@ -5,13 +5,12 @@ module DummyToken {
 
     struct DummyToken { }
 
-    const SCALING_FACTOR : u128 = 1000000;
-    const FRACTIONAL_PART: u128 = 1000;
-    
+    const PRECISION: u8 = 3;
+
     resource struct SharedBurnCapability{
         cap: Token::BurnCapability<DummyToken>,
     }
-    
+
     resource struct SharedMintCapability{
         cap: Token::MintCapability<DummyToken>,
     }
@@ -19,13 +18,12 @@ module DummyToken {
     public fun initialize(account: &signer) {
         Token::register_token<DummyToken>(
             account,
-            SCALING_FACTOR, // scaling_factor = 10^6
-            FRACTIONAL_PART,    // fractional_part = 10^3
+            PRECISION,
         );
 
         let burn_cap = Token::remove_burn_capability<DummyToken>(account);
         move_to(account, SharedBurnCapability{cap: burn_cap});
-        
+
         let burn_cap = Token::remove_mint_capability<DummyToken>(account);
         move_to(account, SharedMintCapability{cap: burn_cap});
     }

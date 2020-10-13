@@ -18,18 +18,15 @@ module STC {
 
     struct STC { }
 
-    // TODO: make decision of how long the factor should be
-    /// scaling_factor = 10^9
-    const BASE_SCALING_FACTOR: u128 = 1000000000;
-    /// fractional_part = 10^3
-    const FRACTIONAL_PART: u128 = 1000;
+    /// precision of STC token.
+    const PRECISION: u8 = 9;
 
     resource struct SharedBurnCapability {
         cap: Token::BurnCapability<STC>,
     }
 
     public fun initialize(account: &signer) {
-        Token::register_token<STC>(account, BASE_SCALING_FACTOR, FRACTIONAL_PART);
+        Token::register_token<STC>(account, PRECISION);
         let burn_cap = Token::remove_burn_capability<STC>(account);
         move_to(account, SharedBurnCapability { cap: burn_cap });
         Dao::plugin<STC>(

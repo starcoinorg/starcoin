@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenInfoResource {
     total_value: u128,
-    scaling_factor: u64,
     fractional_part: u64,
     mint_events: EventHandle,
     burn_events: EventHandle,
@@ -28,10 +27,6 @@ impl MoveResource for TokenInfoResource {
 }
 
 impl TokenInfoResource {
-    pub fn scaling_factor(&self) -> u64 {
-        self.scaling_factor
-    }
-
     pub fn fractional_part(&self) -> u64 {
         self.fractional_part
     }

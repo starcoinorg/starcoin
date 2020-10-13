@@ -71,7 +71,7 @@ script {
     fun unlock(account: &signer) {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
-        assert(Token::share(&token) == 1, 1002);
+        assert(Token::value(&token) == 1, 1002);
         Box::put(account, key);
         Account::deposit(account, token);
     }
@@ -96,7 +96,7 @@ script {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         //unlock all remain
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
-        assert(Token::share(&token) == 99, 1003);
+        assert(Token::value(&token) == 99, 1003);
         TokenLockPool::destroy_empty(key);
         Account::deposit(account, token);
     }
