@@ -212,6 +212,8 @@ module Token {
         ensures spec_abstract_total_value<TokenType>() ==
                 old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
 
+    spec fun do_mint {
+        pragma verify = false;
     }
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -224,6 +226,10 @@ module Token {
             total: amount,
             end_time,
         }
+    }
+
+    spec fun issue_fixed_mint_key {
+        pragma verify = false;
     }
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -239,11 +245,19 @@ module Token {
         }
     }
 
+    spec fun issue_linear_mint_key {
+        pragma verify = false;
+    }
+
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
         assert(amount > 0, EMINT_KEY_TIME_LIMIT());
         let FixedTimeMintKey { total, end_time:_} = key;
         do_mint(total)
+    }
+
+    spec fun mint_with_fixed_key {
+        pragma verify = false;
     }
 
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
@@ -252,6 +266,10 @@ module Token {
         let token = do_mint(amount);
         key.minted = key.minted + amount;
         token
+    }
+
+    spec fun mint_with_linear_key {
+        pragma verify = false;
     }
 
     // Returns the amount of the LinearTimeMintKey can mint now.
@@ -265,6 +283,10 @@ module Token {
         }
     }
 
+    spec fun mint_amount_of_linear_key {
+        pragma verify = false;
+    }
+
     // Returns the mint amount of the FixedTimeMintKey.
     public fun mint_amount_of_fixed_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
@@ -275,6 +297,10 @@ module Token {
         }
     }
 
+    spec fun mint_amount_of_fixed_key {
+        pragma verify = false;
+    }
+
     public fun end_time_of_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u64 {
         key.end_time
     }
@@ -282,6 +308,10 @@ module Token {
     public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time: _, peroid: _ } = key;
         assert(total == minted, EDESTROY_KEY_NOT_EMPTY());
+    }
+
+    spec fun destroy_empty_key {
+        pragma verify = false;
     }
 
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
@@ -471,6 +501,8 @@ module Token {
         ensures [abstract] exists<TokenInfo<TokenType>>(result);
         ensures [abstract] result == SPEC_TOKEN_TEST_ADDRESS();
         ensures [abstract] global<TokenInfo<TokenType>>(result).total_value == 100000000u128;
+        ensures [abstract] global<TokenInfo<TokenType>>(result).base_scaling_factor == 2;
+        ensures [abstract] global<TokenInfo<TokenType>>(result).scaling_factor == 1;
 }
 
     /// Return the token code for the registered token.
@@ -480,8 +512,14 @@ module Token {
     }
 
     spec fun token_code {
+        pragma opaque = true;
         aborts_if false;
+        ensures [abstract] result == spec_token_code<TokenType>();
     }
+
+    /// We use an uninterpreted function to represent the result of derived address. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_token_code<TokenType>(): vector<u8>;
 
     fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
         let code = LCS::to_bytes(&addr);

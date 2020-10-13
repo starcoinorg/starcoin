@@ -79,5 +79,9 @@ module Math {
         //y = c * z + d;
         a * b * z + a * d + b * c + b * d / z
     }
+
+    spec fun mul_div {
+        pragma verify = false;
+    }
 }
 }
