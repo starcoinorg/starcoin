@@ -5,7 +5,7 @@ module DummyToken {
 
     struct DummyToken { }
 
-    const FRACTIONAL_PART: u128 = 1000;
+    const PRECISION: u8 = 3;
 
     resource struct SharedBurnCapability{
         cap: Token::BurnCapability<DummyToken>,
@@ -18,7 +18,7 @@ module DummyToken {
     public fun initialize(account: &signer) {
         Token::register_token<DummyToken>(
             account,
-            FRACTIONAL_PART,    // fractional_part = 10^3
+            PRECISION,
         );
 
         let burn_cap = Token::remove_burn_capability<DummyToken>(account);

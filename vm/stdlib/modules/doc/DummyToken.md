@@ -8,7 +8,7 @@
 -  [Struct <code><a href="DummyToken.md#0x1_DummyToken">DummyToken</a></code>](#0x1_DummyToken_DummyToken)
 -  [Resource <code><a href="DummyToken.md#0x1_DummyToken_SharedBurnCapability">SharedBurnCapability</a></code>](#0x1_DummyToken_SharedBurnCapability)
 -  [Resource <code><a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a></code>](#0x1_DummyToken_SharedMintCapability)
--  [Const <code><a href="DummyToken.md#0x1_DummyToken_FRACTIONAL_PART">FRACTIONAL_PART</a></code>](#0x1_DummyToken_FRACTIONAL_PART)
+-  [Const <code><a href="DummyToken.md#0x1_DummyToken_PRECISION">PRECISION</a></code>](#0x1_DummyToken_PRECISION)
 -  [Function <code>initialize</code>](#0x1_DummyToken_initialize)
 -  [Function <code>is_dummy_token</code>](#0x1_DummyToken_is_dummy_token)
 -  [Function <code>burn</code>](#0x1_DummyToken_burn)
@@ -97,13 +97,13 @@
 
 </details>
 
-<a name="0x1_DummyToken_FRACTIONAL_PART"></a>
+<a name="0x1_DummyToken_PRECISION"></a>
 
-## Const `FRACTIONAL_PART`
+## Const `PRECISION`
 
 
 
-<pre><code><b>const</b> <a href="DummyToken.md#0x1_DummyToken_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000;
+<pre><code><b>const</b> <a href="DummyToken.md#0x1_DummyToken_PRECISION">PRECISION</a>: u8 = 3;
 </code></pre>
 
 
@@ -126,7 +126,7 @@
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_initialize">initialize</a>(account: &signer) {
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="DummyToken.md#0x1_DummyToken">DummyToken</a>&gt;(
         account,
-        <a href="DummyToken.md#0x1_DummyToken_FRACTIONAL_PART">FRACTIONAL_PART</a>,    // fractional_part = 10^3
+        <a href="DummyToken.md#0x1_DummyToken_PRECISION">PRECISION</a>,
     );
 
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="DummyToken.md#0x1_DummyToken">DummyToken</a>&gt;(account);

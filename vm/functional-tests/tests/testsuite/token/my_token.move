@@ -14,7 +14,7 @@ module MyToken {
 
         Token::register_token<MyToken>(
                     account,
-                    1000,    // fractional_part = 10^3
+                    3,
         );
     }
 }

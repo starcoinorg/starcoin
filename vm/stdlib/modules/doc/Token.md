@@ -13,10 +13,12 @@
 -  [Struct <code><a href="Token.md#0x1_Token_MintEvent">MintEvent</a></code>](#0x1_Token_MintEvent)
 -  [Struct <code><a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a></code>](#0x1_Token_BurnEvent)
 -  [Resource <code><a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a></code>](#0x1_Token_TokenInfo)
+-  [Const <code><a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a></code>](#0x1_Token_MAX_PRECISION)
 -  [Function <code>ETOKEN_REGISTER</code>](#0x1_Token_ETOKEN_REGISTER)
 -  [Function <code>EAMOUNT_EXCEEDS_COIN_VALUE</code>](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
 -  [Function <code>EMINT_KEY_TIME_LIMIT</code>](#0x1_Token_EMINT_KEY_TIME_LIMIT)
 -  [Function <code>EDESTROY_KEY_NOT_EMPTY</code>](#0x1_Token_EDESTROY_KEY_NOT_EMPTY)
+-  [Function <code>EPRECISION_TOO_LARGE</code>](#0x1_Token_EPRECISION_TOO_LARGE)
 -  [Function <code>register_token</code>](#0x1_Token_register_token)
 -  [Function <code>remove_mint_capability</code>](#0x1_Token_remove_mint_capability)
 -  [Function <code>add_mint_capability</code>](#0x1_Token_add_mint_capability)
@@ -44,7 +46,7 @@
 -  [Function <code>join</code>](#0x1_Token_join)
 -  [Function <code>deposit</code>](#0x1_Token_deposit)
 -  [Function <code>destroy_zero</code>](#0x1_Token_destroy_zero)
--  [Function <code>fractional_part</code>](#0x1_Token_fractional_part)
+-  [Function <code>scaling_factor</code>](#0x1_Token_scaling_factor)
 -  [Function <code>market_cap</code>](#0x1_Token_market_cap)
 -  [Function <code>is_registered_in</code>](#0x1_Token_is_registered_in)
 -  [Function <code>is_same_token</code>](#0x1_Token_is_same_token)
@@ -72,7 +74,7 @@
     -  [Function <code>join</code>](#@Specification_0_join)
     -  [Function <code>deposit</code>](#@Specification_0_deposit)
     -  [Function <code>destroy_zero</code>](#@Specification_0_destroy_zero)
-    -  [Function <code>fractional_part</code>](#@Specification_0_fractional_part)
+    -  [Function <code>scaling_factor</code>](#@Specification_0_scaling_factor)
     -  [Function <code>market_cap</code>](#@Specification_0_market_cap)
     -  [Function <code>is_registered_in</code>](#@Specification_0_is_registered_in)
     -  [Function <code>is_same_token</code>](#@Specification_0_is_same_token)
@@ -335,12 +337,12 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
  <code>TokenType</code>. Mutable.
 </dd>
 <dt>
-<code>fractional_part: u128</code>
+<code>scaling_factor: u128</code>
 </dt>
 <dd>
- The smallest fractional part (number of decimal places) to be
- used in the human-readable representation for the token (e.g.
- 10^2 for Token1 cents)
+ The scaling factor for the coin (i.e. the amount to divide by
+ to get to the human-readable representation for this currency).
+ e.g. 10^6 for <code>Coin1</code>
 </dd>
 <dt>
 <code>mint_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Token.md#0x1_Token_MintEvent">Token::MintEvent</a>&gt;</code>
@@ -358,6 +360,18 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 </details>
+
+<a name="0x1_Token_MAX_PRECISION"></a>
+
+## Const `MAX_PRECISION`
+
+2^128 < 10**39
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>: u8 = 38;
+</code></pre>
+
+
 
 <a name="0x1_Token_ETOKEN_REGISTER"></a>
 
@@ -456,6 +470,30 @@ Token register's address should same as TokenType's address.
 
 </details>
 
+<a name="0x1_Token_EPRECISION_TOO_LARGE"></a>
+
+## Function `EPRECISION_TOO_LARGE`
+
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>(): u64 {
+    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 5
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Token_register_token"></a>
 
 ## Function `register_token`
@@ -463,7 +501,7 @@ Token register's address should same as TokenType's address.
 Register the type <code>TokenType</code> as a Token and got MintCapability and BurnCapability.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, fractional_part: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, precision: u8)
 </code></pre>
 
 
@@ -474,8 +512,10 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(
     account: &signer,
-    fractional_part: u128,
+    precision: u8,
 ) {
+    <b>assert</b>(precision &lt;= <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>, <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>());
+    <b>let</b> scaling_factor = <a href="Math.md#0x1_Math_pow">Math::pow</a>(10, (precision <b>as</b> u64));
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>());
     move_to(account, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
@@ -484,7 +524,7 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
         account,
         <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt; {
             total_value: 0,
-            fractional_part,
+            scaling_factor,
             mint_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Token.md#0x1_Token_MintEvent">MintEvent</a>&gt;(account),
             burn_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a>&gt;(account),
         },
@@ -1231,14 +1271,14 @@ so you cannot "burn" any non-zero amount of Token
 
 </details>
 
-<a name="0x1_Token_fractional_part"></a>
+<a name="0x1_Token_scaling_factor"></a>
 
-## Function `fractional_part`
+## Function `scaling_factor`
 
-Returns the representable fractional part for the <code>TokenType</code> token.
+Returns the scaling_factor for the <code>TokenType</code> token.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
 </code></pre>
 
 
@@ -1247,9 +1287,9 @@ Returns the representable fractional part for the <code>TokenType</code> token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128 <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).fractional_part
+    borrow_global&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(token_address).scaling_factor
 }
 </code></pre>
 
@@ -1479,7 +1519,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 ### Function `register_token`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, fractional_part: u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_register_token">register_token</a>&lt;TokenType&gt;(account: &signer, precision: u8)
 </code></pre>
 
 
@@ -1781,12 +1821,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_fractional_part"></a>
+<a name="@Specification_0_scaling_factor"></a>
 
-### Function `fractional_part`
+### Function `scaling_factor`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_fractional_part">fractional_part</a>&lt;TokenType&gt;(): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_scaling_factor">scaling_factor</a>&lt;TokenType&gt;(): u128
 </code></pre>
 
 

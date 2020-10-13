@@ -83,7 +83,7 @@ module TokenSwap {
     fun register_liquidity_token<X, Y>(signer: &signer) {
         assert_admin(signer);
 
-        Token::register_token<LiquidityToken<X, Y>>(signer, 1000);
+        Token::register_token<LiquidityToken<X, Y>>(signer, 3);
 
         let mint_capability = Token::remove_mint_capability<LiquidityToken<X, Y>>(signer);
         let burn_capability = Token::remove_burn_capability<LiquidityToken<X, Y>>(signer);
@@ -231,7 +231,7 @@ use 0x1::STC;
 fun main(signer: &signer) {
     Token::register_token<Token1::Token1>(
         signer,
-        1000,    // fractional_part = 10^3
+        3,
     );
     TokenSwap::register_swap_pair<STC::STC, Token1::Token1>(signer);
 }

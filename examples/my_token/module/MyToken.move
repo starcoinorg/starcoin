@@ -5,10 +5,7 @@ module MyToken {
      struct MyToken { }
 
      public fun init(account: &signer) {
-         Token::register_token<MyToken>(
-                     account,
-                     1000,    // fractional_part = 10^3
-         );
+         Token::register_token<MyToken>(account, 3);
          Account::accept_token<MyToken>(account);
      }
 

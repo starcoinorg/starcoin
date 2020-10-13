@@ -49,10 +49,10 @@ module Token {
         /// The total value for the token represented by
         /// `TokenType`. Mutable.
         total_value: u128,
-        /// The smallest fractional part (number of decimal places) to be
-        /// used in the human-readable representation for the token (e.g.
-        /// 10^2 for Token1 cents)
-        fractional_part: u128,
+        /// The scaling factor for the coin (i.e. the amount to divide by
+        /// to get to the human-readable representation for this currency).
+        /// e.g. 10^6 for `Coin1`
+        scaling_factor: u128,
         /// event stream for minting
         mint_events: Event::EventHandle<MintEvent>,
         /// event stream for burning
@@ -75,12 +75,20 @@ module Token {
     fun EDESTROY_KEY_NOT_EMPTY(): u64 {
         ErrorCode::ECODE_BASE() + 4
     }
+    fun EPRECISION_TOO_LARGE(): u64 {
+        ErrorCode::ECODE_BASE() + 5
+    }
+
+    /// 2^128 < 10**39
+    const MAX_PRECISION: u8 = 38;
 
     /// Register the type `TokenType` as a Token and got MintCapability and BurnCapability.
     public fun register_token<TokenType>(
         account: &signer,
-        fractional_part: u128,
+        precision: u8,
     ) {
+        assert(precision <= MAX_PRECISION, EPRECISION_TOO_LARGE());
+        let scaling_factor = Math::pow(10, (precision as u64));
         let token_address = token_address<TokenType>();
         assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER());
         move_to(account, MintCapability<TokenType> {});
@@ -89,7 +97,7 @@ module Token {
             account,
             TokenInfo<TokenType> {
                 total_value: 0,
-                fractional_part,
+                scaling_factor,
                 mint_events: Event::new_event_handle<MintEvent>(account),
                 burn_events: Event::new_event_handle<BurnEvent>(account),
             },
@@ -411,13 +419,13 @@ module Token {
         aborts_if amount > MAX_U128;
     }
 
-    /// Returns the representable fractional part for the `TokenType` token.
-    public fun fractional_part<TokenType>(): u128 acquires TokenInfo {
+    /// Returns the scaling_factor for the `TokenType` token.
+    public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
-        borrow_global<TokenInfo<TokenType>>(token_address).fractional_part
+        borrow_global<TokenInfo<TokenType>>(token_address).scaling_factor
     }
 
-    spec fun fractional_part {
+    spec fun scaling_factor {
         aborts_if false;
     }
 

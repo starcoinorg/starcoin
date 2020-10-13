@@ -7,7 +7,7 @@
 
 -  [Struct <code><a href="STC.md#0x1_STC">STC</a></code>](#0x1_STC_STC)
 -  [Resource <code><a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a></code>](#0x1_STC_SharedBurnCapability)
--  [Const <code><a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a></code>](#0x1_STC_FRACTIONAL_PART)
+-  [Const <code><a href="STC.md#0x1_STC_PRECISION">PRECISION</a></code>](#0x1_STC_PRECISION)
 -  [Function <code>initialize</code>](#0x1_STC_initialize)
 -  [Function <code>is_stc</code>](#0x1_STC_is_stc)
 -  [Function <code>burn</code>](#0x1_STC_burn)
@@ -73,14 +73,14 @@
 
 </details>
 
-<a name="0x1_STC_FRACTIONAL_PART"></a>
+<a name="0x1_STC_PRECISION"></a>
 
-## Const `FRACTIONAL_PART`
+## Const `PRECISION`
 
-fractional_part = 10^9
+precision of STC token.
 
 
-<pre><code><b>const</b> <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>: u128 = 1000000000;
+<pre><code><b>const</b> <a href="STC.md#0x1_STC_PRECISION">PRECISION</a>: u8 = 9;
 </code></pre>
 
 
@@ -101,7 +101,7 @@ fractional_part = 10^9
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer) {
-    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, <a href="STC.md#0x1_STC_FRACTIONAL_PART">FRACTIONAL_PART</a>);
+    <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, <a href="STC.md#0x1_STC_PRECISION">PRECISION</a>);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
     move_to(account, <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
     <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(
