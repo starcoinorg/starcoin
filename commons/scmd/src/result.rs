@@ -8,6 +8,7 @@ use flatten_json::flatten;
 use serde_json::{json, Value};
 use std::str::FromStr;
 
+#[derive(Copy, Clone, Debug)]
 pub enum OutputFormat {
     JSON,
     TABLE,
@@ -24,9 +25,19 @@ impl FromStr for OutputFormat {
     }
 }
 
-pub fn print_action_result(format: OutputFormat, result: Result<Value>) -> Result<()> {
+pub fn print_action_result(
+    format: OutputFormat,
+    result: Result<Value>,
+    console_mode: bool,
+) -> Result<()> {
     match format {
         OutputFormat::JSON => {
+            // if in console, and is err, print error directly.
+            if console_mode && result.is_err() {
+                println!("{}", result.unwrap_err().to_string());
+                return Ok(());
+            }
+
             let value = match result {
                 Ok(value) => json!({ "ok": value }),
                 Err(err) => json!({"err": err.to_string()}),
