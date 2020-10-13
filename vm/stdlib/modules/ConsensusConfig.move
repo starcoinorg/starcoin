@@ -278,13 +278,13 @@ module ConsensusConfig {
     }
 
     public fun compute_gas_limit(config: &ConsensusConfig, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128) : Option::Option<u64> {
-        let maybe_adjust_gas_limit = (last_epoch_total_gas >= Math::mul_div((last_epoch_block_gas_limit as u128) * (config.epoch_block_count as u128), (80 as u128), (HUNDRED as u128)));
+        let gas_limit_threshold = (last_epoch_total_gas >= Math::mul_div((last_epoch_block_gas_limit as u128) * (config.epoch_block_count as u128), (80 as u128), (HUNDRED as u128)));
         let new_gas_limit = Option::none<u64>();
         if (last_epoch_time_target == new_epoch_time_target) {
-            if (new_epoch_time_target == config.min_block_time_target && !maybe_adjust_gas_limit) {
+            if (new_epoch_time_target == config.min_block_time_target && gas_limit_threshold) {
                 let increase_gas_limit = in_or_decrease_gas_limit(last_epoch_block_gas_limit, 110, config.base_block_gas_limit);
                 new_gas_limit = Option::some(increase_gas_limit);
-            } else if (new_epoch_time_target == config.max_block_time_target && maybe_adjust_gas_limit) {
+            } else if (new_epoch_time_target == config.max_block_time_target && !gas_limit_threshold) {
                 let decrease_gas_limit = in_or_decrease_gas_limit(last_epoch_block_gas_limit, 90, config.base_block_gas_limit);
                 new_gas_limit = Option::some(decrease_gas_limit);
             }

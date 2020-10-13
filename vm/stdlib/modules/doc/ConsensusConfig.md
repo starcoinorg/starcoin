@@ -961,13 +961,13 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_compute_gas_limit">compute_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128) : <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt; {
-    <b>let</b> maybe_adjust_gas_limit = (last_epoch_total_gas &gt;= <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>((last_epoch_block_gas_limit <b>as</b> u128) * (config.epoch_block_count <b>as</b> u128), (80 <b>as</b> u128), (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128)));
+    <b>let</b> gas_limit_threshold = (last_epoch_total_gas &gt;= <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>((last_epoch_block_gas_limit <b>as</b> u128) * (config.epoch_block_count <b>as</b> u128), (80 <b>as</b> u128), (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128)));
     <b>let</b> new_gas_limit = <a href="Option.md#0x1_Option_none">Option::none</a>&lt;u64&gt;();
     <b>if</b> (last_epoch_time_target == new_epoch_time_target) {
-        <b>if</b> (new_epoch_time_target == config.min_block_time_target && !maybe_adjust_gas_limit) {
+        <b>if</b> (new_epoch_time_target == config.min_block_time_target && gas_limit_threshold) {
             <b>let</b> increase_gas_limit = <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit, 110, config.base_block_gas_limit);
             new_gas_limit = <a href="Option.md#0x1_Option_some">Option::some</a>(increase_gas_limit);
-        } <b>else</b> <b>if</b> (new_epoch_time_target == config.max_block_time_target && maybe_adjust_gas_limit) {
+        } <b>else</b> <b>if</b> (new_epoch_time_target == config.max_block_time_target && !gas_limit_threshold) {
             <b>let</b> decrease_gas_limit = <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit, 90, config.base_block_gas_limit);
             new_gas_limit = <a href="Option.md#0x1_Option_some">Option::some</a>(decrease_gas_limit);
         }

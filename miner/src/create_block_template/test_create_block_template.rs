@@ -22,7 +22,7 @@ fn test_create_block_template() {
     test_create_block_template_by_net(ChainNetwork::TEST);
     test_create_block_template_by_net(ChainNetwork::DEV);
     test_create_block_template_by_net(ChainNetwork::HALLEY);
-    test_create_block_template_by_net(ChainNetwork::PROXIMA);
+    //test_create_block_template_by_net(ChainNetwork::PROXIMA);
 }
 
 fn test_create_block_template_by_net(net: ChainNetwork) {
