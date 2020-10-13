@@ -13,6 +13,12 @@ pub struct GlobalTimeOnChain {
     pub milliseconds: u64,
 }
 
+impl GlobalTimeOnChain {
+    pub fn seconds(&self) -> u64 {
+        self.milliseconds / 1000
+    }
+}
+
 impl MoveResource for GlobalTimeOnChain {
     const MODULE_NAME: &'static str = TIMESTAMP_MODULE_NAME;
     const STRUCT_NAME: &'static str = "CurrentTimeMilliseconds";

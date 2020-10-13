@@ -127,7 +127,7 @@ impl FakeExecutor {
             .expect("account must exist in data store")
             .expect("data must exist in data store");
         let time: GlobalTimeOnChain = scs::from_bytes(data_blob.as_slice()).unwrap();
-        time.milliseconds
+        time.seconds()
     }
 
     /// Reads the resource [`Value`] for an account from this executor's data store.

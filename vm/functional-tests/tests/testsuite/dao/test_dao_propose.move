@@ -4,7 +4,7 @@
 //! block-prologue
 //! author: genesis
 //! block-number: 1
-//! block-time: 86400
+//! block-time: 86400000
 
 //! new-transaction
 //! sender: association
@@ -36,7 +36,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 2
-//! block-time: 172800
+//! block-time: 172800000
 
 
 //! new-transaction
@@ -60,7 +60,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 3
-//! block-time: 259200
+//! block-time: 259200000
 
 
 //! new-transaction
@@ -86,7 +86,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 4
-//! block-time: 300000
+//! block-time: 300000000
 
 
 //! new-transaction
@@ -136,7 +136,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 5
-//! block-time: 390000
+//! block-time: 390000000
 
 
 //! new-transaction
@@ -174,7 +174,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 6
-//! block-time: 400000
+//! block-time: 400000000000
 
 
 //! new-transaction
@@ -194,7 +194,7 @@ script {
 //! block-prologue
 //! author: genesis
 //! block-number: 7
-//! block-time: 500000
+//! block-time: 500000000000
 
 
 //! new-transaction

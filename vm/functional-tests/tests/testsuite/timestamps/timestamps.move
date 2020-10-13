@@ -74,8 +74,7 @@ fun main(signer: &signer) {
     Timestamp::update_global_time(signer, now);
 }
 }
-//TODO set check abort after refactor timestamp.
-// check: EXECUTED
+// check: ABORTED
 
 //! new-transaction
 //! sender: genesis
