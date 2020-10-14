@@ -187,6 +187,10 @@ module ConsensusConfig {
         aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
+    spec define spec_get_config(): ConsensusConfig {
+        global<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).payload
+    }
+
     public fun uncle_rate_target(config: &ConsensusConfig): u64 {
         config.uncle_rate_target
     }
@@ -233,7 +237,10 @@ module ConsensusConfig {
     }
 
     spec fun compute_reward_per_block {
-        pragma verify = false;
+        aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if spec_get_config().base_reward_per_block * new_epoch_block_time_target > MAX_U128;
+        aborts_if spec_get_config().base_reward_per_block * new_epoch_block_time_target * THOUSAND_U128 > MAX_U128;
+        aborts_if spec_get_config().base_block_time_target == 0;
     }
 
     fun do_compute_reward_per_block(config: &ConsensusConfig, new_epoch_block_time_target: u64): u128 {
@@ -243,7 +250,9 @@ module ConsensusConfig {
     }
 
     spec fun do_compute_reward_per_block {
-        pragma verify = false;
+        aborts_if config.base_reward_per_block * new_epoch_block_time_target > MAX_U128;
+        aborts_if config.base_reward_per_block * new_epoch_block_time_target * THOUSAND_U128 > MAX_U128;
+        aborts_if config.base_block_time_target == 0;
     }
 
     public fun adjust_epoch(account: &signer, block_number: u64, now: u64, uncles: u64, parent_gas_used:u64): u128
@@ -307,7 +316,13 @@ module ConsensusConfig {
     }
 
     spec fun adjust_epoch {
-        pragma verify = false;
+        pragma verify = false; //timeouta
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<Epoch>(Signer::spec_address_of(account));
+        aborts_if global<Epoch>(Signer::spec_address_of(account)).max_uncles_per_block < uncles;
+        aborts_if exists<EpochData>(Signer::spec_address_of(account));
+        aborts_if block_number == global<Epoch>(Signer::spec_address_of(account)).end_number && uncles != 0;
+        // ...
     }
 
     fun adjust_gas_limit(config: &ConsensusConfig, epoch_ref: &mut Epoch, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_total_gas:u128) {
@@ -315,6 +330,10 @@ module ConsensusConfig {
         if (Option::is_some(&new_gas_limit)) {
             epoch_ref.block_gas_limit = Option::destroy_some(new_gas_limit);
         }
+    }
+
+    spec fun adjust_gas_limit {
+        pragma verify = false; //mul_div() timeout
     }
 
     public fun compute_gas_limit(config: &ConsensusConfig, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128) : Option::Option<u64> {
@@ -333,6 +352,10 @@ module ConsensusConfig {
         new_gas_limit
     }
 
+    spec fun compute_gas_limit {
+        pragma verify = false; //mul_div() timeout
+    }
+
     fun in_or_decrease_gas_limit(last_epoch_block_gas_limit: u64, percent: u64, min_block_gas_limit: u64): u64 {
         let tmp_gas_limit = Math::mul_div((last_epoch_block_gas_limit as u128), (percent as u128), (HUNDRED as u128));
         let new_gas_limit = if (tmp_gas_limit > (min_block_gas_limit  as u128)) {
@@ -342,6 +365,10 @@ module ConsensusConfig {
         };
 
         new_gas_limit
+    }
+
+    spec fun in_or_decrease_gas_limit {
+        pragma verify = false; //mul_div() timeout
     }
 
     fun update_epoch_data(epoch_data: &mut EpochData, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used:u64) {
@@ -357,7 +384,9 @@ module ConsensusConfig {
     }
 
     spec fun update_epoch_data {
-        pragma verify = false;
+        aborts_if !new_epoch && epoch_data.total_reward + reward > MAX_U128;
+        aborts_if !new_epoch && epoch_data.uncles + uncles > MAX_U64;
+        aborts_if !new_epoch && epoch_data.total_gas + parent_gas_used > MAX_U128;
     }
 
     fun emit_epoch_event(epoch_ref: &mut Epoch, previous_epoch_total_reward: u128) {
@@ -402,9 +431,17 @@ module ConsensusConfig {
         epoch_data.total_gas
     }
 
+    spec fun epoch_total_gas {
+        aborts_if !exists<EpochData>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
     public fun epoch_block_gas_limit(): u64 acquires Epoch {
         let epoch_ref = borrow_global<Epoch>(CoreAddresses::GENESIS_ADDRESS());
         epoch_ref.block_gas_limit
+    }
+
+    spec fun epoch_block_gas_limit {
+        aborts_if !exists<Epoch>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
     public fun epoch_start_block_number(): u64 acquires Epoch {
