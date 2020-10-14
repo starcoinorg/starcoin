@@ -19,8 +19,8 @@ module OnChainConfigDao {
     public fun plugin<TokenT, ConfigT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
-        let config_moidify_cap = Config::extract_modify_config_capability<ConfigT>(signer);
-        let cap = WrappedConfigModifyCapability<TokenT, ConfigT> { cap: config_moidify_cap };
+        let config_modify_cap = Config::extract_modify_config_capability<ConfigT>(signer);
+        let cap = WrappedConfigModifyCapability<TokenT, ConfigT> { cap: config_modify_cap };
         move_to(signer, cap);
     }
 

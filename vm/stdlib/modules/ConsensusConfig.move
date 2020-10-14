@@ -87,16 +87,22 @@ module ConsensusConfig {
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             ErrorCode::ENOT_GENESIS_ACCOUNT(),
         );
-        assert(uncle_rate_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(epoch_block_count > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_difficulty_window > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_reward_per_uncle_percent > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(min_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_gas_limit >= 0, ErrorCode::EINVALID_ARGUMENT());
 
+        Config::publish_new_config<Self::ConsensusConfig>(
+            account,
+            new_consensus_config(
+                uncle_rate_target,
+                base_block_time_target,
+                base_reward_per_block,
+                epoch_block_count,
+                base_block_difficulty_window,
+                base_reward_per_uncle_percent,
+                min_block_time_target,
+                max_block_time_target,
+                base_max_uncles_per_block,
+                base_block_gas_limit,
+            ),
+        );
         move_to<Epoch>(
             account,
             Epoch {
@@ -114,21 +120,6 @@ module ConsensusConfig {
             },
         );
         move_to<EpochData>(account, EpochData { uncles: 0, total_reward: 0, total_gas: 0 });
-        Config::publish_new_config<Self::ConsensusConfig>(
-            account,
-            new_consensus_config(
-                uncle_rate_target,
-                base_block_time_target,
-                base_reward_per_block,
-                epoch_block_count,
-                base_block_difficulty_window,
-                base_reward_per_uncle_percent,
-                min_block_time_target,
-                max_block_time_target,
-                base_max_uncles_per_block,
-                base_block_gas_limit,
-            ),
-        );
     }
 
     public fun new_consensus_config(uncle_rate_target: u64,
@@ -141,6 +132,17 @@ module ConsensusConfig {
                                     max_block_time_target: u64,
                                     base_max_uncles_per_block: u64,
                                     base_block_gas_limit: u64,): ConsensusConfig {
+        assert(uncle_rate_target > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(epoch_block_count > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_difficulty_window > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_reward_per_uncle_percent > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(min_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(max_block_time_target >= min_block_time_target, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(base_block_gas_limit >= 0, ErrorCode::EINVALID_ARGUMENT());
+
         ConsensusConfig {
             uncle_rate_target,
             base_block_time_target,
