@@ -10,6 +10,7 @@ module STC {
     use 0x1::VMConfig;
     use 0x1::ConsensusConfig;
     use 0x1::Version;
+    use 0x1::RewardConfig;
 
     spec module {
         pragma verify;
@@ -48,6 +49,7 @@ module STC {
         OnChainConfigDao::plugin<STC, VMConfig::VMConfig>(account);
         OnChainConfigDao::plugin<STC, Version::Version>(account);
         OnChainConfigDao::plugin<STC, ConsensusConfig::ConsensusConfig>(account);
+        OnChainConfigDao::plugin<STC, RewardConfig::RewardConfig>(account);
     }
 
     spec fun initialize {
