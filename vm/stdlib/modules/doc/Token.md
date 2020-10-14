@@ -65,6 +65,14 @@
     -  [Function <code>destroy_burn_capability</code>](#@Specification_0_destroy_burn_capability)
     -  [Function <code>mint</code>](#@Specification_0_mint)
     -  [Function <code>mint_with_capability</code>](#@Specification_0_mint_with_capability)
+    -  [Function <code>do_mint</code>](#@Specification_0_do_mint)
+    -  [Function <code>issue_fixed_mint_key</code>](#@Specification_0_issue_fixed_mint_key)
+    -  [Function <code>issue_linear_mint_key</code>](#@Specification_0_issue_linear_mint_key)
+    -  [Function <code>mint_with_fixed_key</code>](#@Specification_0_mint_with_fixed_key)
+    -  [Function <code>mint_with_linear_key</code>](#@Specification_0_mint_with_linear_key)
+    -  [Function <code>mint_amount_of_linear_key</code>](#@Specification_0_mint_amount_of_linear_key)
+    -  [Function <code>mint_amount_of_fixed_key</code>](#@Specification_0_mint_amount_of_fixed_key)
+    -  [Function <code>destroy_empty_key</code>](#@Specification_0_destroy_empty_key)
     -  [Function <code>burn</code>](#@Specification_0_burn)
     -  [Function <code>burn_with_capability</code>](#@Specification_0_burn_with_capability)
     -  [Function <code>zero</code>](#@Specification_0_zero)
@@ -1513,6 +1521,17 @@ pragma aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of derived address. The actual value
+does not matter for the verification of callers.
+
+
+<a name="0x1_Token_spec_token_code"></a>
+
+
+<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;;
+</code></pre>
+
+
 
 <a name="@Specification_0_register_token"></a>
 
@@ -1525,7 +1544,9 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> precision &gt; <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
@@ -1661,6 +1682,162 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
+<a name="@Specification_0_do_mint"></a>
+
+### Function `do_mint`
+
+
+<pre><code><b>fun</b> <a href="Token.md#0x1_Token_do_mint">do_mint</a>&lt;TokenType&gt;(amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>());
+<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + amount &gt; MAX_U128;
+</code></pre>
+
+
+
+<a name="@Specification_0_issue_fixed_mint_key"></a>
+
+### Function `issue_fixed_mint_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> peroid == 0;
+<b>aborts_if</b> amount == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + peroid &gt; MAX_U64;
+</code></pre>
+
+
+
+<a name="@Specification_0_issue_linear_mint_key"></a>
+
+### Function `issue_linear_mint_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> peroid == 0;
+<b>aborts_if</b> amount == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+<a name="@Specification_0_mint_with_fixed_key"></a>
+
+### Function `mint_with_fixed_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_mint_amount_of_fixed_key">spec_mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key) == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>());
+<b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;() + key.total &gt; MAX_U128;
+</code></pre>
+
+
+
+<a name="@Specification_0_mint_with_linear_key"></a>
+
+### Function `mint_with_linear_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_0_mint_amount_of_linear_key"></a>
+
+### Function `mint_amount_of_linear_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma verify = <b>false</b>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &lt; key.start_time;
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &gt;= key.peroid && key.total &lt; key.minted;
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &lt; key.peroid && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>(key.total) &lt; key.minted;
+</code></pre>
+
+
+
+<a name="@Specification_0_mint_amount_of_fixed_key"></a>
+
+### Function `mint_amount_of_fixed_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;): u128
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+
+<a name="0x1_Token_spec_mint_amount_of_fixed_key"></a>
+
+
+<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_mint_amount_of_fixed_key">spec_mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u128 {
+<b>if</b> (<a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &gt;= key.end_time) {
+   key.total
+}<b>else</b>{
+   0
+}
+}
+</code></pre>
+
+
+
+<a name="@Specification_0_destroy_empty_key"></a>
+
+### Function `destroy_empty_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> key.total != key.minted;
+</code></pre>
+
+
+
 <a name="@Specification_0_burn"></a>
 
 ### Function `burn`
@@ -1718,7 +1895,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt;{amount: token.value};
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1809,18 +1986,6 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-
-<a name="0x1_Token_AmountAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt; {
-    amount: u128;
-    <b>aborts_if</b> amount &gt; MAX_U128;
-}
-</code></pre>
-
-
-
 <a name="@Specification_0_scaling_factor"></a>
 
 ### Function `scaling_factor`
@@ -1848,7 +2013,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>include</b> <a href="Token.md#0x1_Token_AmountAbortsIf">AmountAbortsIf</a>&lt;TokenType&gt;{amount: <a href="Token.md#0x1_Token_spec_abstract_total_value">spec_abstract_total_value</a>&lt;TokenType&gt;()};
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1916,7 +2081,9 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;();
 </code></pre>
 
 

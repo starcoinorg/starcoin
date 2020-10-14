@@ -132,6 +132,7 @@ module ConsensusConfig {
         aborts_if base_block_difficulty_window == 0;
         aborts_if base_reward_per_uncle_percent == 0;
         aborts_if min_block_time_target == 0;
+        aborts_if max_block_time_target < min_block_time_target;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
 
         aborts_if exists<Epoch>(Signer::spec_address_of(account));
@@ -176,7 +177,14 @@ module ConsensusConfig {
     }
 
     spec fun new_consensus_config {
-        aborts_if false;
+        aborts_if uncle_rate_target == 0;
+        aborts_if epoch_block_count == 0;
+        aborts_if base_reward_per_block == 0;
+        aborts_if base_block_time_target == 0;
+        aborts_if base_block_difficulty_window == 0;
+        aborts_if base_reward_per_uncle_percent == 0;
+        aborts_if min_block_time_target == 0;
+        aborts_if max_block_time_target < min_block_time_target;
     }
 
     public fun get_config(): ConsensusConfig {
@@ -316,7 +324,7 @@ module ConsensusConfig {
     }
 
     spec fun adjust_epoch {
-        pragma verify = false; //timeouta
+        pragma verify = false; //timeout
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<Epoch>(Signer::spec_address_of(account));
         aborts_if global<Epoch>(Signer::spec_address_of(account)).max_uncles_per_block < uncles;

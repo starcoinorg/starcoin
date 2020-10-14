@@ -15,6 +15,7 @@
 -  [Specification](#@Specification_0)
     -  [Function <code>sqrt</code>](#@Specification_0_sqrt)
     -  [Function <code>pow</code>](#@Specification_0_pow)
+    -  [Function <code>mul_div</code>](#@Specification_0_mul_div)
 
 
 <a name="0x1_Math_U64_MAX"></a>
@@ -206,6 +207,26 @@ pragma aborts_if_is_strict;
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of pow. The actual value
+does not matter for the verification of callers.
+
+
+<a name="0x1_Math_spec_pow"></a>
+
+
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>(): u128 { 10000 }
+</code></pre>
+
+
+
+
+<a name="0x1_Math_spec_mul_div"></a>
+
+
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x: u128): u128;
+</code></pre>
+
+
 
 <a name="@Specification_0_sqrt"></a>
 
@@ -237,5 +258,28 @@ pragma timeout = 120;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>();
+</code></pre>
+
+
+
+<a name="@Specification_0_mul_div"></a>
+
+### Function `mul_div`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_mul_div">mul_div</a>(x: u128, y: u128, z: u128): u128
+</code></pre>
+
+
+
+
+<pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
+<b>aborts_if</b> x &gt; z && z == 0;
+<b>aborts_if</b> x / z * y &gt; MAX_U128;
+<b>aborts_if</b> x /z * x % z * z + x / z * y % z + x % z * y / z + x % z * y % z / z &gt; MAX_U128;
+<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x);
 </code></pre>
