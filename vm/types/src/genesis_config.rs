@@ -24,6 +24,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
+use std::convert::TryFrom;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub enum StdlibVersion {
@@ -56,7 +57,7 @@ impl Default for StdlibVersion {
 }
 
 #[derive(
-    Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, IntoPrimitive,
+    Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, IntoPrimitive, TryFromPrimitive,
 )]
 #[repr(u8)]
 #[serde(tag = "type")]
@@ -517,7 +518,7 @@ impl ChainNetwork {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.genesis_config().consensus_strategy
+        ConsensusStrategy::try_from(self.genesis_config().consensus_config.strategy).expect("consensus strategy config error.")
     }
 
     pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
@@ -657,8 +658,6 @@ pub struct GenesisConfig {
     pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
     /// genesis account's key pair
     pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
-    /// consensus strategy for chain
-    pub consensus_strategy: ConsensusStrategy,
 
     pub stdlib_version: StdlibVersion,
 }
@@ -782,10 +781,10 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
-        consensus_strategy: ConsensusStrategy::Dummy,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -825,10 +824,10 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::Dev.value(),
         },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
-        consensus_strategy: ConsensusStrategy::Dev,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -871,6 +870,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::Keccak.value(),
         },
         association_key_pair: (
             None,
@@ -880,7 +880,6 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             .expect("decode public key must success."),
         ),
         genesis_key_pair: None,
-        consensus_strategy: ConsensusStrategy::Keccak,
         stdlib_version: StdlibVersion::Latest,
     }
 });
@@ -921,6 +920,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
         base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
         base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+        strategy: ConsensusStrategy::Keccak.value(),
     },
     association_key_pair: (
         None,
@@ -930,8 +930,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         .expect("decode public key must success."),
     ),
     genesis_key_pair: None,
-    consensus_strategy: ConsensusStrategy::Keccak,
-    stdlib_version: StdlibVersion::new(0, 4),
+    stdlib_version: StdlibVersion::Latest,
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -963,6 +962,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
         base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
         base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+        strategy: ConsensusStrategy::Keccak.value(),
     },
     association_key_pair: (
         None,
@@ -972,6 +972,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         .expect("decode public key must success."),
     ),
     genesis_key_pair: None,
-    consensus_strategy: ConsensusStrategy::Keccak,
     stdlib_version: StdlibVersion::Latest,
 });

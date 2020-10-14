@@ -32,7 +32,6 @@ script {
         association_auth_key: vector<u8>,
         genesis_auth_key: vector<u8>,
         chain_id: u8,
-        consensus_strategy: u8,
         genesis_timestamp: u64,
 
         //consensus config
@@ -46,6 +45,7 @@ script {
         max_block_time_target: u64,
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
+        strategy: u8,
 
         //vm config
         merged_script_allow_list: vector<u8>,
@@ -72,7 +72,7 @@ script {
         //Init global time
         Timestamp::initialize(&genesis_account, genesis_timestamp);
         ChainId::initialize(&genesis_account, chain_id);
-        ConsensusStrategy::initialize(&genesis_account, consensus_strategy);
+        ConsensusStrategy::initialize(&genesis_account, strategy);
         Block::initialize(&genesis_account, parent_hash);
         TransactionPublishOption::initialize(
             &genesis_account,
@@ -110,6 +110,7 @@ script {
             max_block_time_target,
             base_max_uncles_per_block,
             base_block_gas_limit,
+            strategy,
         );
         BlockReward::initialize(&genesis_account, reward_delay);
         TransactionFee::initialize(&genesis_account);
