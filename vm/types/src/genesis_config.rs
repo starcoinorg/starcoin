@@ -19,12 +19,12 @@ use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use starcoin_uint::U256;
+use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
-use std::convert::TryFrom;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub enum StdlibVersion {
@@ -57,7 +57,18 @@ impl Default for StdlibVersion {
 }
 
 #[derive(
-    Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize, IntoPrimitive, TryFromPrimitive,
+    Clone,
+    Copy,
+    Debug,
+    Deserialize,
+    Eq,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Serialize,
+    IntoPrimitive,
+    TryFromPrimitive,
 )]
 #[repr(u8)]
 #[serde(tag = "type")]
@@ -518,7 +529,8 @@ impl ChainNetwork {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        ConsensusStrategy::try_from(self.genesis_config().consensus_config.strategy).expect("consensus strategy config error.")
+        ConsensusStrategy::try_from(self.genesis_config().consensus_config.strategy)
+            .expect("consensus strategy config error.")
     }
 
     pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
