@@ -132,7 +132,7 @@ module ConsensusConfig {
         aborts_if base_block_difficulty_window == 0;
         aborts_if base_reward_per_uncle_percent == 0;
         aborts_if min_block_time_target == 0;
-        aborts_if !exists<Timestamp::CurrentTimeSeconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
 
         aborts_if exists<Epoch>(Signer::spec_address_of(account));
         aborts_if exists<EpochData>(Signer::spec_address_of(account));

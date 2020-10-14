@@ -105,6 +105,8 @@ module Token {
     }
 
     spec fun register_token {
+        pragma verify = false; // missing spec for Math::pow
+        aborts_if precision > MAX_PRECISION;
         aborts_if Signer::spec_address_of(account) != SPEC_TOKEN_TEST_ADDRESS();
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
@@ -192,6 +194,12 @@ module Token {
         do_mint(amount)
     }
 
+    spec fun mint_with_capability {
+        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
+        ensures spec_abstract_total_value<TokenType>() ==
+                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
+    }
+
     fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
@@ -207,13 +215,9 @@ module Token {
         Token<TokenType> { value: amount }
     }
 
-    spec fun mint_with_capability {
-        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
-        ensures spec_abstract_total_value<TokenType>() ==
-                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
-
     spec fun do_mint {
-        pragma verify = false;
+        aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
+        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
     }
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -229,7 +233,10 @@ module Token {
     }
 
     spec fun issue_fixed_mint_key {
-        pragma verify = false;
+        aborts_if peroid == 0;
+        aborts_if amount == 0;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Timestamp::spec_now_seconds() + peroid > MAX_U64;
     }
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -246,7 +253,9 @@ module Token {
     }
 
     spec fun issue_linear_mint_key {
-        pragma verify = false;
+        aborts_if peroid == 0;
+        aborts_if amount == 0;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
@@ -257,7 +266,10 @@ module Token {
     }
 
     spec fun mint_with_fixed_key {
-        pragma verify = false;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if spec_mint_amount_of_fixed_key<TokenType>(key) == 0;
+        aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
+        aborts_if spec_abstract_total_value<TokenType>() + key.total > MAX_U128;
     }
 
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
@@ -269,7 +281,7 @@ module Token {
     }
 
     spec fun mint_with_linear_key {
-        pragma verify = false;
+        pragma verify = false; //timeout, fix later
     }
 
     // Returns the amount of the LinearTimeMintKey can mint now.
@@ -284,7 +296,11 @@ module Token {
     }
 
     spec fun mint_amount_of_linear_key {
-        pragma verify = false;
+        pragma verify = false; // timeout, fix later
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Timestamp::spec_now_seconds() < key.start_time;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.peroid && key.total < key.minted;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div(key.total) < key.minted;
     }
 
     // Returns the mint amount of the FixedTimeMintKey.
@@ -298,7 +314,15 @@ module Token {
     }
 
     spec fun mint_amount_of_fixed_key {
-        pragma verify = false;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
+    spec define spec_mint_amount_of_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): u128 {
+        if (Timestamp::spec_now_seconds() >= key.end_time) {
+            key.total
+        }else{
+            0
+        }
     }
 
     public fun end_time_of_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u64 {
@@ -311,7 +335,7 @@ module Token {
     }
 
     spec fun destroy_empty_key {
-        pragma verify = false;
+        aborts_if key.total != key.minted;
     }
 
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
@@ -365,7 +389,7 @@ module Token {
     }
 
     spec fun value {
-        include AmountAbortsIf<TokenType>{amount: token.value};
+        aborts_if false;
     }
 
     /// Splits the given token into two and returns them both
@@ -444,11 +468,6 @@ module Token {
         aborts_if token.value > 0;
     }
 
-    spec schema AmountAbortsIf<TokenType> {
-        amount: u128;
-        aborts_if amount > MAX_U128;
-    }
-
     /// Returns the scaling_factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
@@ -466,7 +485,7 @@ module Token {
     }
 
     spec fun market_cap {
-        include AmountAbortsIf<TokenType>{amount: spec_abstract_total_value<TokenType>()};
+        aborts_if false;
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
@@ -501,8 +520,6 @@ module Token {
         ensures [abstract] exists<TokenInfo<TokenType>>(result);
         ensures [abstract] result == SPEC_TOKEN_TEST_ADDRESS();
         ensures [abstract] global<TokenInfo<TokenType>>(result).total_value == 100000000u128;
-        ensures [abstract] global<TokenInfo<TokenType>>(result).base_scaling_factor == 2;
-        ensures [abstract] global<TokenInfo<TokenType>>(result).scaling_factor == 1;
 }
 
     /// Return the token code for the registered token.

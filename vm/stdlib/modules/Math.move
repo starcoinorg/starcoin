@@ -58,9 +58,15 @@ module Math {
     }
 
     spec fun pow {
-        pragma verify = false;
+        pragma opaque = true;
+        pragma verify = false; // missing boogie pow operation
         //aborts_if y > 0 && x * x > max_u128();
+        ensures [abstract] result == spec_pow();
     }
+
+    /// We use an uninterpreted function to represent the result of pow. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_pow(): u128 { 10000 }
 
     //https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
     // calculate x * y /z with as little loss of precision as possible and avoid overflow
@@ -81,7 +87,15 @@ module Math {
     }
 
     spec fun mul_div {
+        // Timeout
+        pragma opaque = true;
         pragma verify = false;
+        aborts_if x > z && z == 0;
+        aborts_if x / z * y > MAX_U128;
+        aborts_if x /z * x % z * z + x / z * y % z + x % z * y / z + x % z * y % z / z > MAX_U128;
+        ensures [abstract] result == spec_mul_div(x);
     }
+
+    spec define spec_mul_div(x: u128): u128;
 }
 }

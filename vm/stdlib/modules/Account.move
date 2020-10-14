@@ -218,7 +218,7 @@ module Account {
     }
 
     spec fun deposit {
-        aborts_if Token::spec_abstract_share_to_amount<TokenType>(to_deposit.value) == 0;
+        aborts_if to_deposit.value == 0;
         aborts_if !exists<Account>(Signer::address_of(account));
         aborts_if exists<Balance<TokenType>>(Signer::address_of(account)) && global<Balance<TokenType>>(Signer::address_of(account)).token.value + to_deposit.value > max_u128();
         ensures exists<Balance<TokenType>>(Signer::address_of(account));
@@ -295,7 +295,7 @@ module Account {
         payee: address;
         to_deposit: Token<TokenType>;
 
-        aborts_if Token::spec_abstract_share_to_amount<TokenType>(to_deposit.value) == 0;
+        aborts_if to_deposit.value == 0;
         aborts_if !exists<Account>(payer);
         aborts_if !exists<Account>(payee);
         aborts_if !exists<Balance<TokenType>>(payee);
@@ -308,8 +308,7 @@ module Account {
     }
 
     spec fun withdraw_from_balance {
-        include Token::WithdrawAbortsIf<TokenType>{token: balance.token};
-        //ensures balance.token.value == old(balance.token.value) - amount;
+        aborts_if balance.token.value < amount;
     }
 
     // Withdraw `amount` Token<TokenType> from the account balance
@@ -324,14 +323,17 @@ module Account {
     }
 
     spec fun withdraw {
+        pragma opaque = true;
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
-        include Token::WithdrawAbortsIf<TokenType>{token: global<Balance<TokenType>>(Signer::spec_address_of(account)).token};
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
-        ensures [abstract] result == spec_withdraw<TokenType>();
+        ensures [abstract] result == spec_withdraw<TokenType>(account, amount);
     }
 
-    spec define spec_withdraw<TokenType>(): Token<TokenType>;
+    spec define spec_withdraw<TokenType>(account: signer, amount: u128): Token<TokenType> {
+        Token<TokenType> { value: amount }
+    }
 
     // Withdraw `amount` Token<TokenType> from the account under cap.account_address
     public fun withdraw_with_capability<TokenType>(
@@ -343,9 +345,7 @@ module Account {
 
     spec fun withdraw_with_capability {
         aborts_if !exists<Balance<TokenType>>(cap.account_address);
-        include Token::WithdrawAbortsIf<TokenType>{token: global<Balance<TokenType>>(cap.account_address).token};
-        //        ensures global<Balance<TokenType>>(cap.account_address).token.value
-//                == old(global<Balance<TokenType>>(cap.account_address).token.value) - amount;
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
     }
 
     // Return a unique capability granting permission to withdraw from the sender's account balance.
@@ -394,14 +394,14 @@ module Account {
 
     spec fun pay_from_capability {
         pragma verify = false;
-        aborts_if Token::spec_abstract_share_to_amount<TokenType>(Token::spec_abstract_amount_to_share<TokenType>(amount)) == 0;
+        aborts_if amount == 0;
         aborts_if !exists<Account>(cap.account_address);
         aborts_if !exists<Balance<TokenType>>(cap.account_address);
         aborts_if !exists<Account>(payee);
         aborts_if !exists<Balance<TokenType>>(payee);
-        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < Token::spec_abstract_amount_to_share<TokenType>(amount);
-        aborts_if global<Balance<TokenType>>(payee).token.value + Token::spec_abstract_amount_to_share<TokenType>(amount) > max_u128();
-        ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + Token::spec_abstract_amount_to_share<TokenType>(amount);
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
+        aborts_if global<Balance<TokenType>>(payee).token.value + amount > max_u128();
+        ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
 
         //ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
 
@@ -426,15 +426,15 @@ module Account {
 
     spec fun pay_from_with_metadata {
         pragma verify = false;
-
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
-        include Token::WithdrawAbortsIf<TokenType>{token: global<Balance<TokenType>>(Signer::spec_address_of(account)).token};
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
 
         include DepositWithPayerAndMetadataAbortsIf<TokenType>{
             payer: Signer::spec_address_of(account),
-            to_deposit: spec_withdraw<TokenType>()
+            payee: payee,
+            to_deposit: spec_withdraw<TokenType>(account, amount)
         };
     }
 
@@ -454,12 +454,12 @@ module Account {
 
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
-        include Token::WithdrawAbortsIf<TokenType>{token: global<Balance<TokenType>>(Signer::spec_address_of(account)).token};
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
         aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
 
         include DepositWithPayerAndMetadataAbortsIf<TokenType>{
-            payer: Signer::address_of(account),
-            to_deposit: spec_withdraw<TokenType>()
+            payer: Signer::spec_address_of(account),
+            to_deposit: spec_withdraw<TokenType>(account, amount)
         };
     }
 
@@ -518,7 +518,7 @@ module Account {
     }
 
     spec fun balance_for {
-        include Token::ShareToAmountAbortsIf<TokenType>{hold: balance.token.value};
+        aborts_if false;
     }
 
     // Return the current TokenType balance of the account at `addr`.
@@ -528,7 +528,6 @@ module Account {
 
     spec fun balance {
         aborts_if !exists<Balance<TokenType>>(addr);
-        include Token::ShareToAmountAbortsIf<TokenType>{hold: global<Balance<TokenType>>(addr).token.value};
     }
 
     // Add a balance of `Token` type to the sending account.
@@ -680,7 +679,7 @@ module Account {
         aborts_if txn_gas_price * txn_max_gas_units > max_u64();
         aborts_if !exists<Balance<TokenType>>(txn_sender);
         //abort condition for assert(balance_amount >= max_transaction_fee)
-        aborts_if Token::spec_abstract_share_to_amount<TokenType>(global<Balance<TokenType>>(txn_sender).token.value) < txn_gas_price * txn_max_gas_units;
+        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
         aborts_if txn_sequence_number < global<Account>(txn_sender).sequence_number;
         aborts_if txn_sequence_number != global<Account>(txn_sender).sequence_number;
     }
@@ -728,7 +727,7 @@ module Account {
         aborts_if !exists<Balance<TokenType>>(txn_sender);
         aborts_if txn_max_gas_units < gas_units_remaining;
         aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
-        aborts_if Token::spec_abstract_share_to_amount<TokenType>(global<Balance<TokenType>>(txn_sender).token.value) < txn_gas_price * (txn_max_gas_units - gas_units_remaining);
+        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * (txn_max_gas_units - gas_units_remaining);
         aborts_if txn_sequence_number + 1 > max_u64();
         aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > 0 &&
                    !exists<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
