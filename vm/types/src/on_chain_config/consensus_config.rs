@@ -189,6 +189,7 @@ impl EpochInfo {
 pub struct EpochDataResource {
     uncles: u64,
     total_reward: u128,
+    total_gas: u128,
 }
 
 impl MoveResource for EpochDataResource {
@@ -197,10 +198,11 @@ impl MoveResource for EpochDataResource {
 }
 
 impl EpochDataResource {
-    pub fn new(uncles: u64, total_reward: u128) -> Self {
+    pub fn new(uncles: u64, total_reward: u128, total_gas: u128) -> Self {
         Self {
             uncles,
             total_reward,
+            total_gas,
         }
     }
 

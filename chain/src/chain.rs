@@ -868,7 +868,15 @@ impl BlockChain {
             let mut t = if is_genesis {
                 vec![]
             } else {
-                let block_metadata = block.clone().into_metadata();
+                let parent_header = self.get_header(header.parent_hash())?;
+                verify_block!(
+                    VerifyBlockField::Header,
+                    parent_header.is_some(),
+                    "invalid block: parent block header {} is none.",
+                    header.parent_hash()
+                );
+                let block_metadata =
+                    block.to_metadata(parent_header.expect("header is none.").gas_used());
                 vec![Transaction::BlockMetadata(block_metadata)]
             };
             t.extend(

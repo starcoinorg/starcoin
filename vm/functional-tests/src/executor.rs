@@ -233,6 +233,7 @@ impl FakeExecutor {
             0,
             self.block_time,
             self.chain_id,
+            0,
         );
         let (_vm_status, output) = self
             .execute_transaction_block(vec![Transaction::BlockMetadata(new_block)])

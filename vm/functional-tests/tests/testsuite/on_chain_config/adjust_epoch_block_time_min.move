@@ -16,7 +16,7 @@ fun main(genesis_account: &signer) {
         if (block_number == ConsensusConfig::epoch_end_block_number()) {
             Debug::print(&ConsensusConfig::block_time_target());
         };
-        let _reward = ConsensusConfig::adjust_epoch(genesis_account, block_number, block_time, 0);
+        let _reward = ConsensusConfig::adjust_epoch(genesis_account, block_number, block_time, 0, 0);
         let block_time_target = ConsensusConfig::block_time_target();
         assert(block_time_target >= min_block_time_target, 100);
         assert(block_time_target <= base_block_time_target, 101);

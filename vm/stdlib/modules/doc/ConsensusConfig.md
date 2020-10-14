@@ -30,10 +30,15 @@
 -  [Function <code>compute_reward_per_block</code>](#0x1_ConsensusConfig_compute_reward_per_block)
 -  [Function <code>do_compute_reward_per_block</code>](#0x1_ConsensusConfig_do_compute_reward_per_block)
 -  [Function <code>adjust_epoch</code>](#0x1_ConsensusConfig_adjust_epoch)
+-  [Function <code>adjust_gas_limit</code>](#0x1_ConsensusConfig_adjust_gas_limit)
+-  [Function <code>compute_gas_limit</code>](#0x1_ConsensusConfig_compute_gas_limit)
+-  [Function <code>in_or_decrease_gas_limit</code>](#0x1_ConsensusConfig_in_or_decrease_gas_limit)
 -  [Function <code>update_epoch_data</code>](#0x1_ConsensusConfig_update_epoch_data)
 -  [Function <code>emit_epoch_event</code>](#0x1_ConsensusConfig_emit_epoch_event)
 -  [Function <code>epoch_start_time</code>](#0x1_ConsensusConfig_epoch_start_time)
 -  [Function <code>uncles</code>](#0x1_ConsensusConfig_uncles)
+-  [Function <code>epoch_total_gas</code>](#0x1_ConsensusConfig_epoch_total_gas)
+-  [Function <code>epoch_block_gas_limit</code>](#0x1_ConsensusConfig_epoch_block_gas_limit)
 -  [Function <code>epoch_start_block_number</code>](#0x1_ConsensusConfig_epoch_start_block_number)
 -  [Function <code>epoch_end_block_number</code>](#0x1_ConsensusConfig_epoch_end_block_number)
 -  [Function <code>epoch_number</code>](#0x1_ConsensusConfig_epoch_number)
@@ -300,6 +305,12 @@
 <dd>
 
 </dd>
+<dt>
+<code>total_gas: u128</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -445,7 +456,7 @@
             new_epoch_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_NewEpochEvent">NewEpochEvent</a>&gt;(account),
         },
     );
-    move_to&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(account, <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> { uncles: 0, total_reward: 0 });
+    move_to&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(account, <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> { uncles: 0, total_reward: 0, total_gas: 0 });
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">Self::ConsensusConfig</a>&gt;(
         account,
         <a href="ConsensusConfig.md#0x1_ConsensusConfig_new_consensus_config">new_consensus_config</a>(
@@ -833,7 +844,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64, parent_gas_used: u64): u128
 </code></pre>
 
 
@@ -842,7 +853,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64, parent_gas_used:u64): u128
 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
@@ -859,6 +870,7 @@
         //start a new epoch
         <b>assert</b>(uncles == 0, <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
         <b>let</b> config = <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">get_config</a>();
+        <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
         <b>let</b> total_time = now - epoch_ref.epoch_start_time;
         <b>let</b> total_uncles = epoch_data.uncles;
         <b>let</b> blocks = epoch_ref.end_number - epoch_ref.start_number;
@@ -866,8 +878,6 @@
         <b>let</b> uncles_rate = total_uncles * <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a> / blocks;
         <b>let</b> new_epoch_block_time_target = (<a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a> + uncles_rate) * avg_block_time /
             (config.uncle_rate_target + <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a>);
-        //TODO adjust block gas limit.
-        <b>let</b> new_block_gas_limit = config.base_block_gas_limit;
 
         <b>if</b> (new_epoch_block_time_target &lt; config.min_block_time_target) {
             new_epoch_block_time_target = config.min_block_time_target;
@@ -887,19 +897,114 @@
         epoch_ref.reward_per_uncle_percent = config.base_reward_per_uncle_percent;
         epoch_ref.block_difficulty_window = config.base_block_difficulty_window;
         epoch_ref.max_uncles_per_block = config.base_max_uncles_per_block;
-        epoch_ref.block_gas_limit = new_block_gas_limit;
 
         epoch_data.uncles = 0;
+        <b>let</b> last_epoch_total_gas = epoch_data.total_gas + (parent_gas_used <b>as</b> u128);
+        <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_gas_limit">adjust_gas_limit</a>(&config, epoch_ref, last_epoch_time_target, new_epoch_block_time_target, last_epoch_total_gas);
         <a href="ConsensusConfig.md#0x1_ConsensusConfig_emit_epoch_event">emit_epoch_event</a>(epoch_ref, epoch_data.total_reward);
         (<b>true</b>, new_reward_per_block)
     } <b>else</b> {
-        //This should never happend.
+        //This should never happened.
         <b>abort</b> <a href="ErrorCode.md#0x1_ErrorCode_EUNREACHABLE">ErrorCode::EUNREACHABLE</a>()
     };
     <b>let</b> reward = reward_per_block +
-        reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / 100;
-    <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles);
+        reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128);
+    <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data, new_epoch, reward, uncles, parent_gas_used);
     reward
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ConsensusConfig_adjust_gas_limit"></a>
+
+## Function `adjust_gas_limit`
+
+
+
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_gas_limit">adjust_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, epoch_ref: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">ConsensusConfig::Epoch</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_total_gas: u128)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_gas_limit">adjust_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, epoch_ref: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_total_gas:u128) {
+    <b>let</b> new_gas_limit = <a href="ConsensusConfig.md#0x1_ConsensusConfig_compute_gas_limit">compute_gas_limit</a>(config, last_epoch_time_target, new_epoch_time_target, epoch_ref.block_gas_limit, last_epoch_total_gas);
+    <b>if</b> (<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&new_gas_limit)) {
+        epoch_ref.block_gas_limit = <a href="Option.md#0x1_Option_destroy_some">Option::destroy_some</a>(new_gas_limit);
+    }
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ConsensusConfig_compute_gas_limit"></a>
+
+## Function `compute_gas_limit`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_compute_gas_limit">compute_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128): <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_compute_gas_limit">compute_gas_limit</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, new_epoch_time_target: u64, last_epoch_block_gas_limit: u64, last_epoch_total_gas: u128) : <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;u64&gt; {
+    <b>let</b> gas_limit_threshold = (last_epoch_total_gas &gt;= <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>((last_epoch_block_gas_limit <b>as</b> u128) * (config.epoch_block_count <b>as</b> u128), (80 <b>as</b> u128), (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128)));
+    <b>let</b> new_gas_limit = <a href="Option.md#0x1_Option_none">Option::none</a>&lt;u64&gt;();
+    <b>if</b> (last_epoch_time_target == new_epoch_time_target) {
+        <b>if</b> (new_epoch_time_target == config.min_block_time_target && gas_limit_threshold) {
+            <b>let</b> increase_gas_limit = <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit, 110, config.base_block_gas_limit);
+            new_gas_limit = <a href="Option.md#0x1_Option_some">Option::some</a>(increase_gas_limit);
+        } <b>else</b> <b>if</b> (new_epoch_time_target == config.max_block_time_target && !gas_limit_threshold) {
+            <b>let</b> decrease_gas_limit = <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit, 90, config.base_block_gas_limit);
+            new_gas_limit = <a href="Option.md#0x1_Option_some">Option::some</a>(decrease_gas_limit);
+        }
+    };
+
+    new_gas_limit
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ConsensusConfig_in_or_decrease_gas_limit"></a>
+
+## Function `in_or_decrease_gas_limit`
+
+
+
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit: u64, percent: u64, min_block_gas_limit: u64): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_in_or_decrease_gas_limit">in_or_decrease_gas_limit</a>(last_epoch_block_gas_limit: u64, percent: u64, min_block_gas_limit: u64): u64 {
+    <b>let</b> tmp_gas_limit = <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>((last_epoch_block_gas_limit <b>as</b> u128), (percent <b>as</b> u128), (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128));
+    <b>let</b> new_gas_limit = <b>if</b> (tmp_gas_limit &gt; (min_block_gas_limit  <b>as</b> u128)) {
+        (tmp_gas_limit <b>as</b> u64)
+    } <b>else</b> {
+        min_block_gas_limit
+    };
+
+    new_gas_limit
 }
 </code></pre>
 
@@ -913,7 +1018,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">ConsensusConfig::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64)
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">ConsensusConfig::EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used: u64)
 </code></pre>
 
 
@@ -922,13 +1027,15 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>, new_epoch: bool, reward: u128, uncles: u64) {
+<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_update_epoch_data">update_epoch_data</a>(epoch_data: &<b>mut</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used:u64) {
     <b>if</b> (new_epoch) {
         epoch_data.total_reward = reward;
         epoch_data.uncles = uncles;
+        epoch_data.total_reward = 0;
     } <b>else</b> {
         epoch_data.total_reward = epoch_data.total_reward + reward;
         epoch_data.uncles = epoch_data.uncles + uncles;
+        epoch_data.total_gas = epoch_data.total_gas + (parent_gas_used <b>as</b> u128);
     }
 }
 </code></pre>
@@ -1015,6 +1122,56 @@
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_uncles">uncles</a>(): u64 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> {
     <b>let</b> epoch_data = borrow_global&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     epoch_data.uncles
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ConsensusConfig_epoch_total_gas"></a>
+
+## Function `epoch_total_gas`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_total_gas">epoch_total_gas</a>(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_total_gas">epoch_total_gas</a>(): u128 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> {
+    <b>let</b> epoch_data = borrow_global&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    epoch_data.total_gas
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_ConsensusConfig_epoch_block_gas_limit"></a>
+
+## Function `epoch_block_gas_limit`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_block_gas_limit">epoch_block_gas_limit</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_block_gas_limit">epoch_block_gas_limit</a>(): u64 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a> {
+    <b>let</b> epoch_ref = borrow_global&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    epoch_ref.block_gas_limit
 }
 </code></pre>
 

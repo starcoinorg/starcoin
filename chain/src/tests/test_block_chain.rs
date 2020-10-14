@@ -443,7 +443,12 @@ fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>)
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
     let block = mock_chain.head().head_block();
-    let block_metadata = block.clone().into_metadata();
+    let parent_block_header = mock_chain
+        .head()
+        .get_header(block.header().parent_hash())
+        .unwrap()
+        .unwrap();
+    let block_metadata = block.to_metadata(parent_block_header.gas_used());
     let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
     txns.extend(
         block

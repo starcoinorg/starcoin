@@ -113,6 +113,7 @@ impl TransactionGenerator {
                 0,
                 self.block_number,
                 self.net.chain_id(),
+                0,
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));
@@ -155,6 +156,7 @@ impl TransactionGenerator {
                 0,
                 self.block_number,
                 self.net.chain_id(),
+                0,
             );
             self.block_number += 1;
             transactions.push(Transaction::BlockMetadata(block_meta));

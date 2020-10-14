@@ -150,7 +150,8 @@ prop_compose! {
         p_header.author_public_key,
         0,
         p_header.number + 1,
-        ChainNetwork::TEST.chain_id()
+        ChainNetwork::TEST.chain_id(),
+        p_header.gas_used,
         );
         txns.insert(0, Transaction::BlockMetadata(block_metadata));
 

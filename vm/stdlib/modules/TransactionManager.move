@@ -126,6 +126,7 @@ module TransactionManager {
         uncles: u64,
         number: u64,
         chain_id: u8,
+        parent_gas_used: u64,
     ) {
         // Can only be invoked by genesis account
         assert(
@@ -147,6 +148,7 @@ module TransactionManager {
             timestamp,
             uncles,
             number,
+            parent_gas_used,
         );
         BlockReward::process_block_reward(account, number, reward, author, public_key_vec);
     }

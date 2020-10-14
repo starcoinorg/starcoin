@@ -18,7 +18,7 @@ use 0x1::Debug;
                 uncles = 0;
                 Debug::print(&ConsensusConfig::block_time_target());
             };
-            let _reward = ConsensusConfig::adjust_epoch(genesis_account, block_number, block_time, uncles);
+            let _reward = ConsensusConfig::adjust_epoch(genesis_account, block_number, block_time, uncles, 0);
 
             let block_time_target = ConsensusConfig::block_time_target();
             assert(block_time_target >= base_block_time_target, 102);

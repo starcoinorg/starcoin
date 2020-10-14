@@ -79,6 +79,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let script = encode_create_account_script(
@@ -131,6 +132,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
 
@@ -170,6 +172,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let script =
@@ -217,6 +220,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let state = proposal_state(
@@ -242,6 +246,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let state = proposal_state(
@@ -288,6 +293,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let state = proposal_state(
@@ -328,6 +334,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 0,
                 block_number,
                 net.chain_id(),
+                0,
             ),
         )?;
         let state = proposal_state(

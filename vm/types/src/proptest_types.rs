@@ -394,9 +394,18 @@ impl Arbitrary for BlockMetadata {
             public_key_strategy,
             any::<u64>(),
             any::<u64>(),
+            any::<u64>(),
         )
             .prop_map(
-                |(parent_hash, timestamp, addresses, author_public_key, uncles, number)| {
+                |(
+                    parent_hash,
+                    timestamp,
+                    addresses,
+                    author_public_key,
+                    uncles,
+                    number,
+                    parent_gas_used,
+                )| {
                     BlockMetadata::new(
                         parent_hash,
                         timestamp,
@@ -405,6 +414,7 @@ impl Arbitrary for BlockMetadata {
                         uncles,
                         number,
                         ChainNetwork::TEST.chain_id(),
+                        parent_gas_used,
                     )
                 },
             )
