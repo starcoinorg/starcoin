@@ -319,6 +319,7 @@ pub struct NodeInfoView {
     pub peer_info: PeerInfoView,
     pub self_address: String,
     pub net: ChainNetwork,
+    pub now: u64,
 }
 
 impl From<NodeInfo> for NodeInfoView {
@@ -327,6 +328,7 @@ impl From<NodeInfo> for NodeInfoView {
             peer_info: node_info.peer_info.into(),
             self_address: node_info.self_address,
             net: node_info.net,
+            now: node_info.now,
         }
     }
 }
