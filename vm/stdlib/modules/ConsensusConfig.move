@@ -104,6 +104,7 @@ module ConsensusConfig {
                 max_block_time_target,
                 base_max_uncles_per_block,
                 base_block_gas_limit,
+                strategy,
             ),
         );
         move_to<Epoch>(

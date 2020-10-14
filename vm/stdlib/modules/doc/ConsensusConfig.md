@@ -27,6 +27,7 @@
 -  [Function <code>max_block_time_target</code>](#0x1_ConsensusConfig_max_block_time_target)
 -  [Function <code>base_max_uncles_per_block</code>](#0x1_ConsensusConfig_base_max_uncles_per_block)
 -  [Function <code>base_block_gas_limit</code>](#0x1_ConsensusConfig_base_block_gas_limit)
+-  [Function <code>strategy</code>](#0x1_ConsensusConfig_strategy)
 -  [Function <code>compute_reward_per_block</code>](#0x1_ConsensusConfig_compute_reward_per_block)
 -  [Function <code>do_compute_reward_per_block</code>](#0x1_ConsensusConfig_do_compute_reward_per_block)
 -  [Function <code>adjust_epoch</code>](#0x1_ConsensusConfig_adjust_epoch)
@@ -122,6 +123,12 @@
 <dd>
 
 </dd>
+<dt>
+<code>strategy: u8</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -199,6 +206,12 @@
 </dd>
 <dt>
 <code>block_gas_limit: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>strategy: u8</code>
 </dt>
 <dd>
 
@@ -403,7 +416,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_initialize">initialize</a>(account: &signer, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_initialize">initialize</a>(account: &signer, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8)
 </code></pre>
 
 
@@ -424,6 +437,7 @@
     max_block_time_target: u64,
     base_max_uncles_per_block: u64,
     base_block_gas_limit: u64,
+    strategy: u8,
 ) {
     <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
     <b>assert</b>(
@@ -444,6 +458,7 @@
             max_block_time_target,
             base_max_uncles_per_block,
             base_block_gas_limit,
+            strategy,
         ),
     );
     move_to&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(
@@ -459,6 +474,7 @@
             block_difficulty_window: base_block_difficulty_window,
             max_uncles_per_block: base_max_uncles_per_block,
             block_gas_limit: base_block_gas_limit,
+            strategy: strategy,
             new_epoch_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_NewEpochEvent">NewEpochEvent</a>&gt;(account),
         },
     );
@@ -476,7 +492,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64): <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_new_consensus_config">new_consensus_config</a>(uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8): <a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>
 </code></pre>
 
 
@@ -494,7 +510,8 @@
                                 min_block_time_target: u64,
                                 max_block_time_target: u64,
                                 base_max_uncles_per_block: u64,
-                                base_block_gas_limit: u64,): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
+                                base_block_gas_limit: u64,
+                                strategy: u8,): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
     <b>assert</b>(uncle_rate_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>assert</b>(base_block_time_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>assert</b>(base_reward_per_block &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
@@ -505,6 +522,7 @@
     <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
     <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(strategy &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
 
     <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
         uncle_rate_target,
@@ -517,6 +535,7 @@
         max_block_time_target,
         base_max_uncles_per_block,
         base_block_gas_limit,
+        strategy,
     }
 }
 </code></pre>
@@ -789,6 +808,30 @@
 
 </details>
 
+<a name="0x1_ConsensusConfig_strategy"></a>
+
+## Function `strategy`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_strategy">strategy</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_strategy">strategy</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>): u8 {
+    config.strategy
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_ConsensusConfig_compute_reward_per_block"></a>
 
 ## Function `compute_reward_per_block`
@@ -899,6 +942,7 @@
         epoch_ref.reward_per_uncle_percent = config.base_reward_per_uncle_percent;
         epoch_ref.block_difficulty_window = config.base_block_difficulty_window;
         epoch_ref.max_uncles_per_block = config.base_max_uncles_per_block;
+        epoch_ref.strategy = config.strategy;
 
         epoch_data.uncles = 0;
         <b>let</b> last_epoch_total_gas = epoch_data.total_gas + (parent_gas_used <b>as</b> u128);
