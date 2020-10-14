@@ -256,8 +256,8 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         request: GetAccumulatorNodeByNodeHash,
     ) -> BoxFuture<Result<Option<AccumulatorNode>>> {
         let storage = self.storage.clone();
-        let fut =
-            async move { storage.get_node(request.accumulator_storage_type, request.node_hash) };
+        let acc_store = storage.get_accumulator_store(request.accumulator_storage_type);
+        let fut = async move { acc_store.get_node(request.node_hash) };
         Box::pin(fut)
     }
 

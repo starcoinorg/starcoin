@@ -8,8 +8,7 @@ use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{
-    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator,
-    AccumulatorTreeStore, MerkleAccumulator,
+    accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
@@ -35,7 +34,7 @@ use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
 use std::cmp::min;
 use std::iter::Extend;
-use std::{collections::HashSet, convert::TryInto, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 use storage::Store;
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
@@ -72,13 +71,13 @@ impl BlockChain {
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info.clone(),
                 AccumulatorStoreType::Transaction,
-                storage.clone().into_super_arc(),
-            )?,
+                storage.as_ref(),
+            ),
             block_accumulator: info_2_accumulator(
                 block_accumulator_info.clone(),
                 AccumulatorStoreType::Block,
-                storage.clone().into_super_arc(),
-            )?,
+                storage.as_ref(),
+            ),
             head: Some(head),
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
             storage,
@@ -89,16 +88,14 @@ impl BlockChain {
         Ok(chain)
     }
 
-    pub fn init_empty_chain(consensus: ConsensusStrategy, storage: Arc<dyn Store>) -> Result<Self> {
+    pub fn init_empty_chain(consensus: ConsensusStrategy, storage: Arc<dyn Store>) -> Self {
         let txn_accumulator = MerkleAccumulator::new_empty(
-            AccumulatorStoreType::Transaction,
-            storage.clone().into_super_arc(),
-        )?;
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
         let block_accumulator = MerkleAccumulator::new_empty(
-            AccumulatorStoreType::Block,
-            storage.clone().into_super_arc(),
-        )?;
-        let chain = Self {
+            storage.get_accumulator_store(AccumulatorStoreType::Block),
+        );
+        Self {
             consensus,
             txn_accumulator,
             block_accumulator,
@@ -107,8 +104,7 @@ impl BlockChain {
             storage,
             uncles: HashSet::new(),
             epoch: None,
-        };
-        Ok(chain)
+        }
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
@@ -954,8 +950,8 @@ impl BlockChain {
 
         self.block_accumulator.append(&[block.id()])?;
         self.block_accumulator.flush()?;
-        let txn_accumulator_info: AccumulatorInfo = (&self.txn_accumulator).try_into()?;
-        let block_accumulator_info: AccumulatorInfo = (&self.block_accumulator).try_into()?;
+        let txn_accumulator_info: AccumulatorInfo = self.txn_accumulator.get_info();
+        let block_accumulator_info: AccumulatorInfo = self.block_accumulator.get_info();
         let block_info = BlockInfo::new_with_accumulator_info(
             header.id(),
             txn_accumulator_info,
@@ -1003,13 +999,13 @@ impl BlockChain {
         self.txn_accumulator = info_2_accumulator(
             txn_accumulator_info.clone(),
             AccumulatorStoreType::Transaction,
-            self.storage.clone().into_super_arc(),
-        )?;
+            self.storage.as_ref(),
+        );
         self.block_accumulator = info_2_accumulator(
             block_accumulator_info.clone(),
             AccumulatorStoreType::Block,
-            self.storage.clone().into_super_arc(),
-        )?;
+            self.storage.as_ref(),
+        );
         self.chain_state =
             ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         if self.epoch.is_some()
@@ -1123,7 +1119,10 @@ impl ChainWriter for BlockChain {
 pub(crate) fn info_2_accumulator(
     accumulator_info: AccumulatorInfo,
     store_type: AccumulatorStoreType,
-    node_store: Arc<dyn AccumulatorTreeStore>,
-) -> Result<MerkleAccumulator> {
-    MerkleAccumulator::new_with_info(accumulator_info, store_type, node_store)
+    node_store: &dyn Store,
+) -> MerkleAccumulator {
+    MerkleAccumulator::new_with_info(
+        accumulator_info,
+        node_store.get_accumulator_store(store_type),
+    )
 }

@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{bail, format_err, Result};
 use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
@@ -51,9 +54,8 @@ impl OpenedBlock {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
-            AccumulatorStoreType::Transaction,
-            storage.clone().into_super_arc(),
-        )?;
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
 
         let chain_state =
             ChainStateDB::new(storage.into_super_arc(), Some(previous_header.state_root()));

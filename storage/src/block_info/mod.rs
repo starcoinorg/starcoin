@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
 use crate::define_storage;
-use crate::storage::{CodecStorage, ValueCodec};
+use crate::storage::ValueCodec;
 use crate::BLOCK_INFO_PREFIX_NAME;
 use anyhow::Result;
 use crypto::HashValue;

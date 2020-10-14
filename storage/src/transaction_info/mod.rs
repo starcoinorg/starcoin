@@ -1,8 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
-use crate::storage::{CodecStorage, ValueCodec};
+use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
 use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
 use crate::TRANSACTION_INFO_PREFIX_NAME;
 use crate::{define_storage, TransactionInfoStore};
@@ -51,7 +50,7 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
         &self,
         txn_hash: HashValue,
     ) -> Result<Vec<HashValue>, Error> {
-        if let Ok(Some(txn_id_vec)) = self.store.get(txn_hash) {
+        if let Ok(Some(txn_id_vec)) = self.get(txn_hash) {
             Ok(txn_id_vec)
         } else {
             bail!("get transaction_info ids error.")
@@ -59,21 +58,21 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new();
+        let mut batch = CodecWriteBatch::new();
         for txn_info in vec_txn_info {
-            if let Ok(Some(mut id_vec)) = self.store.get(txn_info.transaction_hash()) {
+            if let Ok(Some(mut id_vec)) = self.get(txn_info.transaction_hash()) {
                 id_vec.push(txn_info.id());
                 batch.put(txn_info.transaction_hash(), id_vec)?;
             } else {
                 batch.put(txn_info.transaction_hash(), vec![txn_info.id()])?;
             }
         }
-        self.store.write_batch(batch)
+        self.write_batch(batch)
     }
 }
 impl TransactionInfoStore for TransactionInfoStorage {
     fn get_transaction_info(&self, id: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.store.get(id)
+        self.get(id)
     }
 
     fn get_transaction_info_by_hash(
@@ -91,10 +90,10 @@ impl TransactionInfoStore for TransactionInfoStorage {
     }
 
     fn save_transaction_infos(&self, vec_txn_info: Vec<TransactionInfo>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new();
+        let mut batch = CodecWriteBatch::new();
         for txn_info in vec_txn_info {
             batch.put(txn_info.id(), txn_info)?;
         }
-        self.store.write_batch(batch)
+        self.write_batch(batch)
     }
 }

@@ -1,12 +1,12 @@
-use crate::{Accumulator, MerkleAccumulator};
-use anyhow::{Error, Result};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
 };
-use std::convert::TryFrom;
 
 /// `AccumulatorInfo` is the object we store in the storage. It consists of the
 /// info that we can create MerkleAccumulator.
@@ -62,18 +62,5 @@ impl Default for AccumulatorInfo {
             num_leaves: 0,
             num_nodes: 0,
         }
-    }
-}
-
-impl TryFrom<&MerkleAccumulator> for AccumulatorInfo {
-    type Error = Error;
-
-    fn try_from(block_accumulator: &MerkleAccumulator) -> Result<AccumulatorInfo> {
-        Ok(AccumulatorInfo::new(
-            block_accumulator.root_hash(),
-            block_accumulator.get_frozen_subtree_roots()?,
-            block_accumulator.num_leaves(),
-            block_accumulator.num_nodes(),
-        ))
     }
 }

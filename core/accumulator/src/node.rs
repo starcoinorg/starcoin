@@ -9,7 +9,7 @@ use starcoin_crypto::{
     HashValue,
 };
 
-//TODO should eliminate this type.
+//TODO move to a more suitable crate.
 #[derive(
     Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]

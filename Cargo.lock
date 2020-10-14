@@ -4902,6 +4902,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "paste"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0520af26d4cf99643dbbe093a61507922b57232d9978d8491fdc8f7b44573c8c"
+
+[[package]]
 name = "pathdiff"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7737,6 +7743,7 @@ dependencies = [
  "lru 0.6.0",
  "once_cell",
  "parking_lot 0.11.0",
+ "paste",
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
