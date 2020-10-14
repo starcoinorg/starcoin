@@ -7,12 +7,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum GenesisError {
-    #[error(
-        "Genesis version mismatch expect: {expect:?}, real: {real:?}, please clean your data_dir."
-    )]
+    #[error("Genesis version mismatch expect: {expect:?}, real: {real:?}.")]
     GenesisVersionMismatch { expect: HashValue, real: HashValue },
-    #[error("Genesis load fail {0:?}, please check your data_dir.")]
+    #[error("Genesis load fail {0:?}")]
     GenesisLoadFailure(Error),
-    #[error("Genesis block not exist in {0}, please check your data_dir.")]
+    #[error("Genesis block not exist in {0}.")]
     GenesisNotExist(String),
 }

@@ -13,7 +13,7 @@ use starcoin_block_relayer::BlockRelayer;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
-use starcoin_genesis::Genesis;
+use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
@@ -22,6 +22,7 @@ use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
 use starcoin_network_rpc::NetworkRpcService;
+use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -32,6 +33,7 @@ use starcoin_service_registry::{
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
+use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_sync::download::DownloadService;
@@ -108,7 +110,10 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
 }
 
 impl NodeService {
-    pub fn launch(config: Arc<NodeConfig>, logger_handle: Arc<LoggerHandle>) -> Result<NodeHandle> {
+    pub fn launch(
+        config: Arc<NodeConfig>,
+        logger_handle: Arc<LoggerHandle>,
+    ) -> Result<NodeHandle, NodeStartError> {
         info!("Final data-dir is : {:?}", config.data_dir());
         if config.logger.enable_file() {
             let file_log_path = config.logger.get_log_path();
@@ -139,8 +144,14 @@ impl NodeService {
             system.block_on(async {
                 match Self::init_system(config, logger_handle).await {
                     Err(e) => {
-                        error!("Node start fail: {:?}.", e);
-                        if start_sender.send(Err(e)).is_err() {
+                        let node_start_err = match e.downcast::<GenesisError>() {
+                            Ok(e) => NodeStartError::GenesisError(e),
+                            Err(e) => match e.downcast::<StorageInitError>() {
+                                Ok(e) => NodeStartError::StorageInitError(e),
+                                Err(e) => NodeStartError::Other(e),
+                            },
+                        };
+                        if start_sender.send(Err(node_start_err)).is_err() {
                             info!("Start send error.");
                         };
                     }
@@ -172,7 +183,7 @@ impl NodeService {
         let bus = registry.service_ref::<BusService>().await?;
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(config.storage.dir()),
+            DBStorage::new(config.storage.dir())?,
         ))?);
         registry.put_shared(storage.clone()).await?;
         let (startup_info, genesis_hash) =

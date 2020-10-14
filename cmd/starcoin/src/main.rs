@@ -5,9 +5,9 @@ use scmd::CmdContext;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_config::Connect;
-use starcoin_genesis::GenesisError;
 use starcoin_logger::prelude::*;
 use starcoin_node::crash_handler;
+use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 
@@ -111,12 +111,27 @@ fn main() {
     match run() {
         Ok(()) => {}
         Err(e) => {
-            error!("Node exits abnormally: {:?}", e);
-            match e.downcast::<GenesisError>() {
-                Ok(_e) => {
-                    std::process::exit(EXIT_CODE_NEED_HELP);
-                }
-                Err(_e) => {
+            match e.downcast::<NodeStartError>() {
+                Ok(e) => match e {
+                    //TODO not suggest clean data dir in main network.
+                    NodeStartError::LoadConfigError(e) => {
+                        error!("{:?}, please fix config.", e);
+                        std::process::exit(EXIT_CODE_NEED_HELP);
+                    }
+                    NodeStartError::StorageInitError(e) => {
+                        error!("{:?}, please clean your data dir.", e);
+                        std::process::exit(EXIT_CODE_NEED_HELP);
+                    }
+                    NodeStartError::GenesisError(e) => {
+                        error!("{:?}, please clean your data dir.", e);
+                        std::process::exit(EXIT_CODE_NEED_HELP);
+                    }
+                    _ => {
+                        std::process::exit(1);
+                    }
+                },
+                Err(e) => {
+                    error!("Node exits abnormally: {:?}", e);
                     std::process::exit(1);
                 }
             }

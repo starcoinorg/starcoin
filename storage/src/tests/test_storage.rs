@@ -21,7 +21,7 @@ fn test_reopen() {
     let key = HashValue::random();
     let value = HashValue::zero();
     {
-        let db = DBStorage::new(tmpdir.path());
+        let db = DBStorage::new(tmpdir.path()).unwrap();
         db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec())
             .unwrap();
         assert_eq!(
@@ -30,7 +30,7 @@ fn test_reopen() {
         );
     }
     {
-        let db = DBStorage::new(tmpdir.path());
+        let db = DBStorage::new(tmpdir.path()).unwrap();
         assert_eq!(
             db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap(),
             Some(value.to_vec())
@@ -41,7 +41,7 @@ fn test_reopen() {
 #[test]
 fn test_open_read_only() {
     let tmpdir = starcoin_config::temp_path();
-    let db = DBStorage::new(tmpdir.path());
+    let db = DBStorage::new(tmpdir.path()).unwrap();
     let key = HashValue::random();
     let value = HashValue::zero();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
@@ -59,7 +59,7 @@ fn test_storage() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()),
+        DBStorage::new(tmpdir.path()).unwrap(),
     ))
     .unwrap();
     let transaction_info1 = TransactionInfo::new(
@@ -83,7 +83,7 @@ fn test_two_level_storage() {
     let tmpdir = starcoin_config::temp_path();
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()),
+        DBStorage::new(tmpdir.path()).unwrap(),
     );
     let cache_storage = instance.cache().unwrap();
     let db_storage = instance.db().unwrap();
@@ -147,9 +147,9 @@ fn test_two_level_storage_read_through() -> Result<()> {
     let id = transaction_info1.id();
 
     {
-        let storage = Storage::new(StorageInstance::new_db_instance(DBStorage::new(
-            tmpdir.path(),
-        )))
+        let storage = Storage::new(StorageInstance::new_db_instance(
+            DBStorage::new(tmpdir.path()).unwrap(),
+        ))
         .unwrap();
         storage
             .transaction_info_storage
@@ -158,7 +158,7 @@ fn test_two_level_storage_read_through() -> Result<()> {
     }
     let storage_instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()),
+        DBStorage::new(tmpdir.path()).unwrap(),
     );
     let storage2 = Storage::new(storage_instance.clone()).unwrap();
 
@@ -180,7 +180,7 @@ fn test_missing_key_handle() -> Result<()> {
     let tmpdir = starcoin_config::temp_path();
     let instance = StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()),
+        DBStorage::new(tmpdir.path()).unwrap(),
     );
     let cache_storage = instance.cache().unwrap();
     let db_storage = instance.db().unwrap();

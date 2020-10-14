@@ -7759,6 +7759,7 @@ dependencies = [
  "starcoin-state-store-api",
  "starcoin-types",
  "starcoin-uint",
+ "thiserror",
 ]
 
 [[package]]

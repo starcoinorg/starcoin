@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::batch::WriteBatch;
+use crate::errors::StorageInitError;
 use crate::metrics::record_metrics;
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
-use anyhow::{bail, ensure, format_err, Error, Result};
+use anyhow::{ensure, format_err, Error, Result};
 use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
 use std::collections::HashSet;
 use std::path::Path;
@@ -16,10 +17,9 @@ pub struct DBStorage {
 }
 
 impl DBStorage {
-    pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Self {
+    pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Result<Self> {
         let path = db_root_path.as_ref().join("starcoindb");
         Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false)
-            .expect("Unable to open StarcoinDB")
     }
 
     pub fn open_with_cfs(
@@ -38,15 +38,25 @@ impl DBStorage {
         }
         if Self::db_exists(path) {
             let cf_vec = Self::list_cf(path)?;
-            for cf in cf_vec {
-                if cf != DEFAULT_PREFIX_NAME && cfs_set.get(&cf.as_str()).is_none() {
-                    bail!(
-                        "db path cf: {:?} is not equal,please clear dir: {:?}",
-                        path,
-                        cf
-                    );
-                }
-            }
+            let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
+            db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
+            ensure!(
+                db_cfs_set.len() == cfs_set.len(),
+                StorageInitError::StorageCheckError(format_err!(
+                    "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
+                    column_families,
+                    cf_vec
+                ))
+            );
+            db_cfs_set.retain(|k| cfs_set.contains(&k.as_str()));
+            ensure!(
+                db_cfs_set.len() == cfs_set.len(),
+                StorageInitError::StorageCheckError(format_err!(
+                    "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
+                    column_families,
+                    cf_vec
+                ))
+            );
         }
 
         let db = if readonly {

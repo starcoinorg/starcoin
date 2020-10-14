@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.33"
+thiserror = "1.0"
 serde = { version = "1.0" }
 starcoin-types = {path = "../types"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}

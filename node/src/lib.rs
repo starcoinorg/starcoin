@@ -8,6 +8,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkAsyncService;
+use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::NodeRequest;
 use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_server::service::RpcService;
@@ -157,8 +158,12 @@ impl NodeHandle {
     }
 }
 
-pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<NodeConfig>)> {
-    let config = Arc::new(starcoin_config::load_config_with_opt(opt)?);
+pub fn run_node_by_opt(
+    opt: &StarcoinOpt,
+) -> Result<(Option<NodeHandle>, Arc<NodeConfig>), NodeStartError> {
+    let config = Arc::new(
+        starcoin_config::load_config_with_opt(opt).map_err(NodeStartError::LoadConfigError)?,
+    );
     let ipc_file = config.rpc.get_ipc_file();
     let node_handle = if !ipc_file.exists() {
         let node_handle = run_node(config.clone())?;
@@ -172,7 +177,7 @@ pub fn run_node_by_opt(opt: &StarcoinOpt) -> Result<(Option<NodeHandle>, Arc<Nod
 }
 
 /// Run node in a new Thread, and return a NodeHandle.
-pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle> {
+pub fn run_node(config: Arc<NodeConfig>) -> Result<NodeHandle, NodeStartError> {
     let logger_handle = starcoin_logger::init();
     NodeService::launch(config, logger_handle)
 }
