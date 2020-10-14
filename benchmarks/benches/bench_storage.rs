@@ -18,7 +18,7 @@ fn storage_transaction(c: &mut Criterion) {
     c.bench_function("storage_transaction", |b| {
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(starcoin_config::temp_path().as_ref()),
+            DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
         ))
         .unwrap();
         let bencher = StorageBencher::new(storage);
@@ -33,7 +33,7 @@ fn accumulator_append(c: &mut Criterion) {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(starcoin_config::temp_path().as_ref()),
+                DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
             ))
             .unwrap(),
         );

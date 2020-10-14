@@ -47,7 +47,7 @@ proptest! {
         let tmpdir = starcoin_config::temp_path();
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(tmpdir.path()),
+            DBStorage::new(tmpdir.path()).unwrap(),
         ))
         .unwrap();
         let txns = init_store(universe, gens, &storage);

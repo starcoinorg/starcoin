@@ -10,9 +10,9 @@ use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
 
 #[test]
 fn test_storage() {
-    let storage = Storage::new(StorageInstance::new_db_instance(DBStorage::new(
-        starcoin_config::temp_path().as_ref(),
-    )))
+    let storage = Storage::new(StorageInstance::new_db_instance(
+        DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
+    ))
     .unwrap();
 
     let acc_node = AccumulatorNode::new_leaf(NodeIndex::new(1), HashValue::random());

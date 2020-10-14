@@ -55,7 +55,7 @@ pub fn steps() -> Steps<MyWorld> {
         .given("a storage", |world: &mut MyWorld, _step| {
             let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(starcoin_config::temp_path().as_ref()),
+                DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
             ))
             .unwrap();
             info!("storage created!");
