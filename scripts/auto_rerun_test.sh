@@ -5,7 +5,13 @@ STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 TEST_RESULT_FILE="$STARCOIN_DIR/target/debug/test_result.txt"
 TEST_RESULT_FAILED_FILE="$STARCOIN_DIR/target/debug/test_result_failed.txt"
 
-RUST_LOG=OFF RUST_BACKTRACE=0 cargo test -q --no-fail-fast -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
+if [[ "$(whoami)" == "root" ]]; then
+  BOOGIE_PATH="/root/.dotnet/tools/boogie"
+else
+  BOOGIE_PATH="/home/$(whoami)/.dotnet/tools/boogie"
+fi
+
+BOOGIE_EXE=$BOOGIE_PATH Z3_EXE=/usr/local/bin/z3 RUST_LOG=OFF RUST_BACKTRACE=0 cargo test -q --no-fail-fast -- --color never --format pretty |tee "$TEST_RESULT_FILE" ||true
 grep -e '^test[[:space:]][^[:space:]]*[[:space:]]\.\.\.[[:space:]]FAILED' "$TEST_RESULT_FILE" >"$TEST_RESULT_FAILED_FILE" ||true
 
 status=0
