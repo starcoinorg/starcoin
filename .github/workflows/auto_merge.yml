@@ -3,13 +3,10 @@ name: Auto Merge Bot
 on:
   pull_request:
     types: [labeled]
-    branches:
-      - develop/* # The branch you want to automatically merge pull request
-      - feature/*
-      - test/*
 
 jobs:
-  Run Actions:
+  auto_merge:
+    name: Auto Merge
     runs-on: ubuntu-latest
     steps:
       - name: Automatically Merge PR
