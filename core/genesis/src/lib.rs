@@ -138,9 +138,8 @@ impl Genesis {
 
         let accumulator = MerkleAccumulator::new_with_info(
             AccumulatorInfo::default(),
-            AccumulatorStoreType::Transaction,
-            storage,
-        )?;
+            storage.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
         let txn_info_hash = transaction_info.id();
 
         let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
@@ -252,7 +251,7 @@ impl Genesis {
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
         let Genesis { block } = self;
-        let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone())?;
+        let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone());
         genesis_chain.apply(block)?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
         storage.save_startup_info(startup_info.clone())?;
@@ -480,9 +479,8 @@ mod tests {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let txn_accumulator = MerkleAccumulator::new_with_info(
             txn_accumulator_info.clone(),
-            AccumulatorStoreType::Transaction,
-            storage2.clone().into_super_arc(),
-        )?;
+            storage2.get_accumulator_store(AccumulatorStoreType::Transaction),
+        );
         //ensure block_accumulator can work.
         txn_accumulator.append(&[HashValue::random()])?;
         txn_accumulator.flush()?;
@@ -490,9 +488,8 @@ mod tests {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let block_accumulator = MerkleAccumulator::new_with_info(
             block_accumulator_info.clone(),
-            AccumulatorStoreType::Block,
-            storage2.into_super_arc(),
-        )?;
+            storage2.get_accumulator_store(AccumulatorStoreType::Block),
+        );
         let hash = block_accumulator.get_leaf(0)?.expect("leaf 0 must exist.");
         assert_eq!(hash, block_info.block_id);
         //ensure block_accumulator can work.

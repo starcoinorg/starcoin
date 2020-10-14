@@ -199,10 +199,10 @@ impl BlockConnector {
             if pivot_block.block_accumulator.is_none() {
                 let block_accumulator = MerkleAccumulator::new_with_info(
                     block_accumulator_info.clone(),
-                    AccumulatorStoreType::Block,
-                    pivot_block.storage.clone().into_super_arc(),
-                )
-                .unwrap();
+                    pivot_block
+                        .storage
+                        .get_accumulator_store(AccumulatorStoreType::Block),
+                );
                 pivot_block.block_accumulator = Some(Arc::new(block_accumulator));
             }
             pivot_block.block_accumulator.clone().unwrap()

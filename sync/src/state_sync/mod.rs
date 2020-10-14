@@ -537,7 +537,10 @@ impl Inner {
                 .sync_total_count
                 .with_label_values(&[LABEL_ACCUMULATOR])
                 .inc();
-            if let Ok(Some(_)) = self.storage.get_node(AccumulatorStoreType::Block, node_key) {
+            let acc_store = self
+                .storage
+                .get_accumulator_store(AccumulatorStoreType::Block);
+            if let Ok(Some(_)) = acc_store.get_node(node_key) {
                 debug!("find accumulator_node {:?} in db.", node_key);
                 state_sync_task_event_handler.send_event(StateSyncTaskEvent::new_accumulator(
                     true,
@@ -581,11 +584,11 @@ impl Inner {
         let current_node_key = task_event.key;
         let mut done = false;
         let mut accumulator_node = None;
+        let acc_store = self
+            .storage
+            .get_accumulator_store(AccumulatorStoreType::Block);
         if task_event.local() {
-            if let Ok(Some(node)) = self
-                .storage
-                .get_node(AccumulatorStoreType::Block, current_node_key)
-            {
+            if let Ok(Some(node)) = acc_store.get_node(current_node_key) {
                 done = true;
                 accumulator_node = Some(node);
             }
@@ -601,10 +604,7 @@ impl Inner {
             }
             let _ = self.block_accumulator_sync_task.remove(&task_event.peer_id);
             if let TaskType::BlockAccumulator(Some(node)) = task_event.task_type {
-                if let Err(e) = self
-                    .storage
-                    .save_node(AccumulatorStoreType::Block, node.clone())
-                {
+                if let Err(e) = acc_store.save_node(node.clone()) {
                     debug!("{:?}", e);
                 } else {
                     debug!("receive accumulator_node: {:?}", node);

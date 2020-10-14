@@ -1,11 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::batch::WriteBatch;
-use crate::storage::{CodecStorage, ValueCodec};
+use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
 use crate::TRANSACTION_PREFIX_NAME;
 use crate::{define_storage, TransactionStore};
-use anyhow::Error;
 use anyhow::Result;
 use crypto::HashValue;
 use scs::SCSCodec;
@@ -29,20 +27,18 @@ impl ValueCodec for Transaction {
 }
 
 impl TransactionStore for TransactionStorage {
-    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
-        self.store.get(txn_hash)
+    fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
+        self.get(txn_hash)
     }
 
-    fn save_transaction(&self, txn_info: Transaction) -> Result<(), Error> {
-        self.store.put(txn_info.id(), txn_info)
+    fn save_transaction(&self, txn_info: Transaction) -> Result<()> {
+        self.put(txn_info.id(), txn_info)
     }
 
-    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<(), Error> {
-        let mut batch = WriteBatch::new();
-        for transaction in txn_vec {
-            batch.put(transaction.id(), transaction)?;
-        }
-        self.store.write_batch(batch)
+    fn save_transaction_batch(&self, txn_vec: Vec<Transaction>) -> Result<()> {
+        let batch =
+            CodecWriteBatch::new_puts(txn_vec.into_iter().map(|txn| (txn.id(), txn)).collect());
+        self.write_batch(batch)
     }
 }
 

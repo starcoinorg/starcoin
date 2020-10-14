@@ -9,9 +9,8 @@ use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::{KeyCodec, ValueCodec};
 use starcoin_storage::{
-    batch::WriteBatch,
     define_storage,
-    storage::{CodecStorage, ColumnFamilyName, StorageInstance},
+    storage::{CodecKVStore, ColumnFamilyName, StorageInstance},
 };
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::token_code::TokenCode;

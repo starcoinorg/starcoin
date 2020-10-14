@@ -6,7 +6,6 @@ use crypto::HashValue;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
-use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
@@ -234,10 +233,8 @@ fn gen_root_hashes(
                 vec![],
                 0,
                 0,
-                AccumulatorStoreType::Transaction,
-                storage,
-            )
-            .unwrap();
+                Arc::new(storage.get_transaction_accumulator_storage()),
+            );
 
             let included_txn_info_hashes: Vec<_> = executed_data
                 .txn_infos

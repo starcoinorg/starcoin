@@ -5,9 +5,8 @@ use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
 use crypto::HashValue;
-use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::node_index::NodeIndex;
-use starcoin_accumulator::{AccumulatorNode, AccumulatorReader, AccumulatorWriter};
+use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
 
 #[test]
 fn test_storage() {
@@ -19,22 +18,22 @@ fn test_storage() {
     let acc_node = AccumulatorNode::new_leaf(NodeIndex::new(1), HashValue::random());
     let node_hash = acc_node.hash();
     storage
-        .accumulator_storage
-        .save_node(AccumulatorStoreType::Transaction, acc_node.clone())
+        .transaction_accumulator_storage
+        .save_node(acc_node.clone())
         .unwrap();
     let acc_node2 = storage
-        .accumulator_storage
-        .get_node(AccumulatorStoreType::Transaction, node_hash)
+        .transaction_accumulator_storage
+        .get_node(node_hash)
         .unwrap()
         .unwrap();
     assert_eq!(acc_node, acc_node2);
     storage
-        .accumulator_storage
-        .save_node(AccumulatorStoreType::Block, acc_node.clone())
+        .block_accumulator_storage
+        .save_node(acc_node.clone())
         .unwrap();
     let acc_node3 = storage
-        .accumulator_storage
-        .get_node(AccumulatorStoreType::Block, node_hash)
+        .block_accumulator_storage
+        .get_node(node_hash)
         .unwrap()
         .unwrap();
     assert_eq!(acc_node, acc_node3);
