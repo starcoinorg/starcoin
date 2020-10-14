@@ -29,6 +29,7 @@ module ConsensusConfig {
         max_block_time_target: u64,
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
+        strategy: u8,
     }
 
     resource struct Epoch {
@@ -42,6 +43,7 @@ module ConsensusConfig {
         block_difficulty_window: u64,
         max_uncles_per_block: u64,
         block_gas_limit: u64,
+        strategy: u8,
         new_epoch_events: Event::EventHandle<NewEpochEvent>,
     }
 
@@ -81,6 +83,7 @@ module ConsensusConfig {
         max_block_time_target: u64,
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
+        strategy: u8,
     ) {
         assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
         assert(
@@ -116,6 +119,7 @@ module ConsensusConfig {
                 block_difficulty_window: base_block_difficulty_window,
                 max_uncles_per_block: base_max_uncles_per_block,
                 block_gas_limit: base_block_gas_limit,
+                strategy: strategy,
                 new_epoch_events: Event::new_event_handle<NewEpochEvent>(account),
             },
         );
@@ -150,7 +154,8 @@ module ConsensusConfig {
                                     min_block_time_target: u64,
                                     max_block_time_target: u64,
                                     base_max_uncles_per_block: u64,
-                                    base_block_gas_limit: u64,): ConsensusConfig {
+                                    base_block_gas_limit: u64,
+                                    strategy: u8,): ConsensusConfig {
         assert(uncle_rate_target > 0, ErrorCode::EINVALID_ARGUMENT());
         assert(base_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
         assert(base_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
@@ -161,6 +166,7 @@ module ConsensusConfig {
         assert(max_block_time_target >= min_block_time_target, ErrorCode::EINVALID_ARGUMENT());
         assert(base_max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
         assert(base_block_gas_limit >= 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(strategy >= 0, ErrorCode::EINVALID_ARGUMENT());
 
         ConsensusConfig {
             uncle_rate_target,
@@ -173,6 +179,7 @@ module ConsensusConfig {
             max_block_time_target,
             base_max_uncles_per_block,
             base_block_gas_limit,
+            strategy,
         }
     }
 
@@ -237,6 +244,10 @@ module ConsensusConfig {
 
     public fun base_block_gas_limit(config: &ConsensusConfig): u64 {
         config.base_block_gas_limit
+    }
+
+    public fun strategy(config: &ConsensusConfig): u8 {
+        config.strategy
     }
 
     public fun compute_reward_per_block(new_epoch_block_time_target: u64): u128 {
@@ -307,6 +318,7 @@ module ConsensusConfig {
             epoch_ref.reward_per_uncle_percent = config.base_reward_per_uncle_percent;
             epoch_ref.block_difficulty_window = config.base_block_difficulty_window;
             epoch_ref.max_uncles_per_block = config.base_max_uncles_per_block;
+            epoch_ref.strategy = config.strategy;
 
             epoch_data.uncles = 0;
             let last_epoch_total_gas = epoch_data.total_gas + (parent_gas_used as u128);

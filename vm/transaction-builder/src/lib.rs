@@ -294,7 +294,6 @@ pub fn build_stdlib_package(
     if with_init_script {
         let genesis_config = net.genesis_config();
         let chain_id = net.chain_id().id();
-        let consensus_strategy = net.consensus();
         let genesis_timestamp = net.genesis_config().timestamp;
 
         let genesis_auth_key = genesis_config
@@ -338,7 +337,6 @@ pub fn build_stdlib_package(
                 TransactionArgument::U8Vector(association_auth_key),
                 TransactionArgument::U8Vector(genesis_auth_key),
                 TransactionArgument::U8(chain_id),
-                TransactionArgument::U8(consensus_strategy.value()),
                 TransactionArgument::U64(genesis_timestamp),
                 //consensus config
                 TransactionArgument::U64(genesis_config.consensus_config.uncle_rate_target),
@@ -357,6 +355,7 @@ pub fn build_stdlib_package(
                 TransactionArgument::U64(genesis_config.consensus_config.max_block_time_target),
                 TransactionArgument::U64(genesis_config.consensus_config.base_max_uncles_per_block),
                 TransactionArgument::U64(genesis_config.consensus_config.base_block_gas_limit),
+                TransactionArgument::U8(genesis_config.consensus_config.strategy),
                 //vm config
                 TransactionArgument::U8Vector(merged_script_allow_list),
                 TransactionArgument::Bool(genesis_config.publishing_option.is_open()),
