@@ -24,6 +24,7 @@ pub struct ConsensusConfig {
     pub max_block_time_target: u64,
     pub base_max_uncles_per_block: u64,
     pub base_block_gas_limit: u64,
+    pub strategy: u8,
 }
 
 impl OnChainConfig for ConsensusConfig {
