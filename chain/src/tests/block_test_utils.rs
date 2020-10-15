@@ -144,7 +144,7 @@ prop_compose! {
     let p_header = parent_header.clone();
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
-        ChainNetwork::TEST.consensus().now(),
+        ChainNetwork::TEST.consensus().now_secs(),
         p_header.author,
         p_header.author_public_key,
         0,
