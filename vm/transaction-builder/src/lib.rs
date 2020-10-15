@@ -400,6 +400,8 @@ pub fn build_stdlib_package(
                 TransactionArgument::U64(genesis_config.dao_config.voting_period),
                 TransactionArgument::U8(genesis_config.dao_config.voting_quorum_rate),
                 TransactionArgument::U64(genesis_config.dao_config.min_action_delay),
+                //transaction timeout config
+                TransactionArgument::U64(genesis_config.transaction_timeout),
             ],
         ));
     }
