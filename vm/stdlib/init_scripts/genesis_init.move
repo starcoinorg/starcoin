@@ -20,9 +20,11 @@ script {
     use 0x1::TransactionPublishOption;
     use 0x1::TokenLockPool;
     use 0x1::Box;
+    use 0x1::TransactionTimeoutConfig;
 
     fun genesis_init(
 
+        // block reward config
         reward_delay: u64,
 
         pre_mine_amount: u128,
@@ -71,6 +73,9 @@ script {
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
+
+        // transaction timeout config
+        transaction_timeout: u64,
     ) {
         assert(Timestamp::is_genesis(), 1);
         // create genesis account
@@ -103,7 +108,7 @@ script {
             default_account_size,
         );
         Version::initialize(&genesis_account);
-        TransactionTimeout::initialize(&genesis_account);
+        TransactionTimeoutConfig::initialize(&genesis_account, transaction_timeout);
         ConsensusConfig::initialize(
             &genesis_account,
             uncle_rate_target,
