@@ -2,7 +2,6 @@ script {
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::Signer;
-    use 0x1::TransactionTimeout;
     use 0x1::Timestamp;
     use 0x1::Token;
     use 0x1::STC::{Self, STC};

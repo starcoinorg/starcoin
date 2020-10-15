@@ -1,10 +1,8 @@
 address 0x1 {
 
 module TransactionTimeout {
-  use 0x1::Signer;
   use 0x1::CoreAddresses;
   use 0x1::Timestamp;
-  use 0x1::ErrorCode;
   use 0x1::Block;
   use 0x1::TransactionTimeoutConfig;
 

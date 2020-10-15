@@ -756,7 +756,7 @@ static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
 
 pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
-pub const ONE_DAY: u64 = 8640;
+pub const ONE_DAY: u64 = 86400;
 
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
