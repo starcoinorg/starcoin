@@ -91,7 +91,7 @@ precision of STC token.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
 </code></pre>
 
 
@@ -100,16 +100,22 @@ precision of STC token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer) {
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(
+    account: &signer,
+    voting_delay: u64,
+    voting_period: u64,
+    voting_quorum_rate: u8,
+    min_action_delay: u64,
+) {
     <a href="Token.md#0x1_Token_register_token">Token::register_token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, <a href="STC.md#0x1_STC_PRECISION">PRECISION</a>);
     <b>let</b> burn_cap = <a href="Token.md#0x1_Token_remove_burn_capability">Token::remove_burn_capability</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
     move_to(account, <a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a> { cap: burn_cap });
     <a href="Dao.md#0x1_Dao_plugin">Dao::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(
         account,
-        <a href="Dao.md#0x1_Dao_default_voting_delay">Dao::default_voting_delay</a>(),
-        <a href="Dao.md#0x1_Dao_default_voting_period">Dao::default_voting_period</a>(),
-        <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">Dao::default_voting_quorum_rate</a>(),
-        <a href="Dao.md#0x1_Dao_default_min_action_delay">Dao::default_min_action_delay</a>(),
+        voting_delay,
+        voting_period,
+        voting_quorum_rate,
+        min_action_delay,
     );
     <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">ModifyDaoConfigProposal::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
     <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">UpgradeModuleDaoProposal::plugin</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
@@ -222,7 +228,7 @@ pragma aborts_if_is_strict;
 ### Function `initialize`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="STC.md#0x1_STC_initialize">initialize</a>(account: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
 </code></pre>
 
 
@@ -255,7 +261,8 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;() - token.value &lt; 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
 </code></pre>
 
 

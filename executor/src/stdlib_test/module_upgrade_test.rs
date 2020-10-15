@@ -19,19 +19,6 @@ use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::{VMValueCast, Value};
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 
-fn quorum_vote(token: TypeTag, state_view: &dyn StateView) -> u128 {
-    let mut ret = execute_readonly_function(
-        state_view,
-        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
-        &Identifier::new("quorum_votes").unwrap(),
-        vec![token],
-        vec![],
-    )
-    .unwrap();
-    assert_eq!(ret.len(), 1);
-    ret.pop().unwrap().1.cast().unwrap()
-}
-
 const PENDING: u8 = 1;
 const ACTIVE: u8 = 2;
 #[allow(unused)]
@@ -59,6 +46,57 @@ fn proposal_state(
     ret.pop().unwrap().1.cast().unwrap()
 }
 
+fn quorum_vote(state_view: &dyn StateView, token: TypeTag) -> u128 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &Identifier::new("quorum_votes").unwrap(),
+        vec![token],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
+}
+
+fn voting_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &Identifier::new("voting_delay").unwrap(),
+        vec![token],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
+}
+fn voting_period(state_view: &dyn StateView, token: TypeTag) -> u64 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &Identifier::new("voting_period").unwrap(),
+        vec![token],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
+}
+
+fn min_action_delay(state_view: &dyn StateView, token: TypeTag) -> u64 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Dao").unwrap()),
+        &Identifier::new("min_action_delay").unwrap(),
+        vec![token],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
+}
+
 #[stest::test]
 fn test_dao_upgrade_module() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
@@ -67,13 +105,14 @@ fn test_dao_upgrade_module() -> Result<()> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
+    let block_number = 1;
+    let block_timestamp = net.consensus().now() + one_day * block_number;
     {
-        let block_number = 1;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 genesis_address(),
                 None,
                 0,
@@ -120,13 +159,14 @@ fn test_dao_upgrade_module() -> Result<()> {
         type_params: vec![],
     });
     // block 2
+    let block_number = 2;
+    let block_timestamp = net.consensus().now() + one_day * block_number;
     {
-        let block_number = 2;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -146,6 +186,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             vec![
                 TransactionArgument::Address(genesis_address()),
                 TransactionArgument::U8Vector(package_hash.to_vec()),
+                TransactionArgument::U64(0),
             ],
         );
         account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
@@ -160,13 +201,15 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     // block 3
+    let block_number = 3;
+    let block_timestamp =
+        block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
     {
-        let block_number = 3;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -194,7 +237,7 @@ fn test_dao_upgrade_module() -> Result<()> {
         // vote first.
         account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
 
-        let quorum = quorum_vote(stc_type_tag(), &chain_state);
+        let quorum = quorum_vote(&chain_state, stc_type_tag());
         println!("quorum: {}", quorum);
 
         let state = proposal_state(
@@ -208,13 +251,15 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     // block 4
+    let block_number = 4;
+    let block_timestamp =
+        block_timestamp + voting_period(&chain_state, stc_type_tag()) * 1000 - 10 * 1000;
     {
-        let block_number = 4;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -234,13 +279,14 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     // block 5
+    let block_number = 5;
+    let block_timestamp = block_timestamp + 20 * 1000;
     {
-        let block_number = 5;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -281,13 +327,14 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     // block 6
+    let block_number = 6;
+    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag()) * 1000;
     {
-        let block_number = 6;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -322,13 +369,14 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     // block 7
+    let block_number = 7;
+    let block_timestamp = block_timestamp + 1000;
     {
-        let block_number = 7;
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                block_timestamp,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,

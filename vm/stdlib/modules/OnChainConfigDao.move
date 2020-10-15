@@ -28,11 +28,12 @@ module OnChainConfigDao {
     public fun propose_update<TokenT: copyable, ConfigT: copyable>(
         signer: &signer,
         new_config: ConfigT,
+        exec_delay: u64,
     ) {
         Dao::propose<TokenT, OnChainConfigUpdate<ConfigT>>(
             signer,
             OnChainConfigUpdate { value: new_config },
-            Dao::min_action_delay<TokenT>(),
+            exec_delay,
         );
     }
 

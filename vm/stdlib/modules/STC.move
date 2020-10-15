@@ -26,16 +26,22 @@ module STC {
         cap: Token::BurnCapability<STC>,
     }
 
-    public fun initialize(account: &signer) {
+    public fun initialize(
+        account: &signer,
+        voting_delay: u64,
+        voting_period: u64,
+        voting_quorum_rate: u8,
+        min_action_delay: u64,
+    ) {
         Token::register_token<STC>(account, PRECISION);
         let burn_cap = Token::remove_burn_capability<STC>(account);
         move_to(account, SharedBurnCapability { cap: burn_cap });
         Dao::plugin<STC>(
             account,
-            Dao::default_voting_delay(),
-            Dao::default_voting_period(),
-            Dao::default_voting_quorum_rate(),
-            Dao::default_min_action_delay(),
+            voting_delay,
+            voting_period,
+            voting_quorum_rate,
+            min_action_delay,
         );
         ModifyDaoConfigProposal::plugin<STC>(account);
         UpgradeModuleDaoProposal::plugin<STC>(account);
@@ -71,8 +77,8 @@ module STC {
     }
 
     spec fun burn {
-        // Todo: fix name_of()
-        pragma verify = false;
+        aborts_if Token::spec_abstract_total_value<STC>() - token.value < 0;
+        aborts_if !exists<SharedBurnCapability>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 
     public fun token_address(): address {
