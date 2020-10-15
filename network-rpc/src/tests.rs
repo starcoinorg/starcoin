@@ -7,7 +7,8 @@ use futures::executor::block_on;
 use network_api::PeerProvider;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
-    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetStateWithProof, Ping,
+    gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,
+    Ping,
 };
 use starcoin_node::NodeHandle;
 use starcoin_state_api::StateWithProof;
@@ -94,6 +95,22 @@ fn test_network_rpc() {
 
     let rpc_info = starcoin_gen_client::get_rpc_info();
     debug!("{:?}", rpc_info);
+
+    let req = GetBlockIds {
+        start_number: 0,
+        reverse: false,
+        max_size: 100,
+    };
+    let block_ids = block_on(async { client.get_block_ids(peer_id_2.clone(), req).await.unwrap() });
+    assert_eq!(2, block_ids.len());
+
+    let blocks = block_on(async {
+        client
+            .get_blocks(peer_id_2.clone(), block_ids)
+            .await
+            .unwrap()
+    });
+    assert_eq!(2, blocks.len());
 
     handle2.stop().unwrap();
     handle1.stop().unwrap();

@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::node::NodeService;
-use anyhow::{format_err, Result};
+use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
+use futures_timer::Delay;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{NodeConfig, StarcoinOpt};
+use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
 use starcoin_network::NetworkAsyncService;
 use starcoin_node_api::errors::NodeStartError;
@@ -14,7 +16,9 @@ use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceInfo, ServiceRef};
-use starcoin_types::block::BlockDetail;
+use starcoin_storage::Storage;
+use starcoin_traits::ChainAsyncService;
+use starcoin_types::block::Block;
 use starcoin_types::system_events::{GenerateBlockEvent, NewHeadBlock};
 use std::sync::Arc;
 use std::time::Duration;
@@ -112,6 +116,18 @@ impl NodeHandle {
             .expect("NodeConfig must exist.")
     }
 
+    pub fn storage(&self) -> Arc<Storage> {
+        self.registry
+            .get_shared_sync::<Arc<Storage>>()
+            .expect("Storage must exist.")
+    }
+
+    pub fn genesis(&self) -> Genesis {
+        self.registry
+            .get_shared_sync::<Genesis>()
+            .expect("Genesis must exist.")
+    }
+
     pub fn bus(&self) -> Result<ServiceRef<BusService>> {
         block_on(async { self.registry.service_ref::<BusService>().await })
     }
@@ -146,14 +162,31 @@ impl NodeHandle {
     }
 
     /// Just for test
-    pub fn generate_block(&self) -> Result<BlockDetail> {
+    pub fn generate_block(&self) -> Result<Block> {
         let registry = &self.registry;
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
+            let chain_service = registry.service_ref::<ChainReaderService>().await?;
+            let head = chain_service.master_head_block().await?.unwrap();
+            debug!("generate_block: current head block: {:?}", head.header);
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new(false))?;
-            let new_head_block = receiver.await?;
-            Ok(new_head_block.0.as_ref().clone())
+            let block = if let Ok(Ok(event)) =
+                async_std::future::timeout(Duration::from_secs(5), receiver).await
+            {
+                //wait for new block event to been processed.
+                Delay::new(Duration::from_millis(100)).await;
+                event.0.get_block().clone()
+            } else {
+                let latest_head = chain_service.master_head_block().await?.unwrap();
+                debug!("generate_block: latest block: {:?}", latest_head.header);
+                if latest_head.header().number() > head.header().number() {
+                    latest_head
+                } else {
+                    bail!("Wait timeout for generate_block")
+                }
+            };
+            Ok(block)
         })
     }
 }

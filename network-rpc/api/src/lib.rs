@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::Message;
 use anyhow::Result;
 use futures::future::BoxFuture;
 use network_rpc_derive::*;
@@ -12,7 +11,7 @@ use starcoin_crypto::HashValue;
 use starcoin_state_api::StateWithProof;
 use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
-use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
 
@@ -157,8 +156,12 @@ pub struct GetAccountState {
     pub account_address: AccountAddress,
 }
 
-impl Message for GetStateWithProof {
-    type Result = Result<StateWithProof>;
+/// Get block id list by block number, the `start_number` is include.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetBlockIds {
+    pub start_number: BlockNumber,
+    pub reverse: bool,
+    pub max_size: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
@@ -239,4 +242,13 @@ pub trait NetworkRpc: Sized + Send + Sync + 'static {
         peer_id: PeerId,
         req: GetAccountState,
     ) -> BoxFuture<Result<Option<AccountState>>>;
+
+    fn get_block_ids(&self, peer_id: PeerId, req: GetBlockIds)
+        -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn get_blocks(
+        &self,
+        peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<Block>>>>;
 }

@@ -96,6 +96,8 @@ pub trait BlockStore {
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
 
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+
     fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>>;
 
     fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>>;
@@ -249,6 +251,10 @@ impl BlockStore for Storage {
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get(block_id)
+    }
+
+    fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        self.block_storage.get_blocks(ids)
     }
 
     fn get_block_state(&self, block_id: HashValue) -> Result<Option<BlockState>> {

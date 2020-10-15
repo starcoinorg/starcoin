@@ -161,6 +161,18 @@ impl BlockStorage {
         )
     }
 
+    pub fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        Ok(self
+            .block_store
+            .multiple_get(ids)?
+            .into_iter()
+            .map(|storage_block| match storage_block {
+                Some(storage_block) => Some(storage_block.block),
+                None => None,
+            })
+            .collect())
+    }
+
     pub fn get_body(&self, block_id: HashValue) -> Result<Option<BlockBody>> {
         self.body_store.get(block_id)
     }

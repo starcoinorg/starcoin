@@ -246,13 +246,12 @@ impl Genesis {
     }
 
     pub fn execute_genesis_block(
-        self,
+        &self,
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
-        let Genesis { block } = self;
         let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone());
-        genesis_chain.apply(block)?;
+        genesis_chain.apply(self.block.clone())?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
@@ -305,9 +304,9 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<Storage>,
         data_dir: &Path,
-    ) -> Result<(StartupInfo, HashValue)> {
+    ) -> Result<(StartupInfo, Genesis)> {
         debug!("load startup_info.");
-        let (startup_info, genesis_hash) = match storage.get_startup_info() {
+        let (startup_info, genesis) = match storage.get_startup_info() {
             Ok(Some(startup_info)) => {
                 info!("Get startup info from db");
                 info!("Check genesis file.");
@@ -329,23 +328,28 @@ impl Genesis {
                     }
                     Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
                 }
-                (startup_info, genesis.block().header().id())
+                (startup_info, genesis)
             }
             Ok(None) => {
                 let genesis = Self::load_and_check_genesis(net, data_dir, true)?;
-                let genesis_hash = genesis.block().header().id();
                 let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
-                (startup_info, genesis_hash)
+                (startup_info, genesis)
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
         };
-        let latest_block = storage
-            .get_block_header_by_hash(startup_info.master)?
-            .ok_or_else(|| format_err!("startup info block should exist."))?;
+        let latest_block = if startup_info.master == genesis.block.id() {
+            genesis.block.header().clone()
+        } else {
+            storage
+                .get_block_header_by_hash(startup_info.master)?
+                .ok_or_else(|| {
+                    format_err!("startup info block {:?} should exist.", startup_info.master)
+                })?
+        };
         let state_root = latest_block.state_root;
         net.consensus()
             .init(&ChainStateDB::new(storage, Some(state_root)))?;
-        Ok((startup_info, genesis_hash))
+        Ok((startup_info, genesis))
     }
 
     pub fn init_storage_for_test(
@@ -404,15 +408,14 @@ mod tests {
 
     pub fn do_test_genesis(net: &ChainNetwork, data_dir: &Path) -> Result<()> {
         let storage1 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (startup_info1, genesis_hash1) =
-            Genesis::init_and_check_storage(net, storage1, data_dir)?;
+        let (startup_info1, genesis1) = Genesis::init_and_check_storage(net, storage1, data_dir)?;
 
         let storage2 = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
-        let (startup_info2, genesis_hash2) =
+        let (startup_info2, genesis2) =
             Genesis::init_and_check_storage(net, storage2.clone(), data_dir)?;
 
         assert_eq!(
-            genesis_hash1, genesis_hash2,
+            genesis1, genesis2,
             "genesis execute startup info different."
         );
 

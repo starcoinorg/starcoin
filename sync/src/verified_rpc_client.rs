@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use crypto::hash::HashValue;
-use crypto::hash::PlainCryptoHash;
 use logger::prelude::*;
 use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
+use starcoin_crypto::hash::HashValue;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetTxns, RawRpcClient, TransactionsData,
+    GetBlockHeadersByNumber, GetBlockIds, GetTxns, RawRpcClient, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
 use starcoin_types::block::Block;
@@ -302,5 +302,46 @@ impl VerifiedRpcClient {
                 node_key
             ))
         }
+    }
+
+    pub async fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>> {
+        let peer_id = self.random_peer()?;
+        let request = GetBlockIds {
+            start_number,
+            reverse,
+            max_size,
+        };
+        self.client.get_block_ids(peer_id, request).await
+    }
+
+    pub async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+        let peer_id = self.random_peer()?;
+        let blocks: Vec<Option<Block>> =
+            self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
+        Ok(ids
+            .into_iter()
+            .zip(blocks)
+            .map(|(id, block)| {
+                if let Some(block) = block {
+                    let actual_id = block.id();
+                    if actual_id != id {
+                        warn!(
+                            "Get block by id: {:?} from peer: {:?}, but got block: {:?}",
+                            id, peer_id, actual_id
+                        );
+                        None
+                    } else {
+                        Some(block)
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect())
     }
 }
