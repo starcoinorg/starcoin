@@ -23,11 +23,11 @@ module MintDaoProposal {
         move_to(signer, WrappedMintCapability { cap: mint_cap });
     }
 
-    public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128) {
+    public fun propose_mint_to<TokenT: copyable>(signer: &signer, receiver: address, amount: u128, exec_delay: u64) {
         Dao::propose<TokenT, MintToken>(
             signer,
             MintToken { receiver, amount },
-            Dao::min_action_delay<TokenT>(),
+            exec_delay,
         );
     }
 

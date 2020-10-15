@@ -395,6 +395,11 @@ pub fn build_stdlib_package(
                 ),
                 TransactionArgument::U64(genesis_config.gas_constants.gas_unit_scaling_factor),
                 TransactionArgument::U64(genesis_config.gas_constants.default_account_size.get()),
+                // dao config params
+                TransactionArgument::U64(genesis_config.dao_config.voting_delay),
+                TransactionArgument::U64(genesis_config.dao_config.voting_period),
+                TransactionArgument::U8(genesis_config.dao_config.voting_quorum_rate),
+                TransactionArgument::U64(genesis_config.dao_config.min_action_delay),
             ],
         ));
     }

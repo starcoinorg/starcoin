@@ -39,6 +39,7 @@ module ModifyDaoConfigProposal {
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
+        exec_delay: u64,
     ) {
         assert(voting_quorum_rate <= 100, ERR_QUROM_RATE_INVALID);
         let action = DaoConfigUpdate {
@@ -47,7 +48,7 @@ module ModifyDaoConfigProposal {
             voting_quorum_rate,
             min_action_delay,
         };
-        Dao::propose<TokenT, DaoConfigUpdate>(signer, action, Dao::min_action_delay<TokenT>());
+        Dao::propose<TokenT, DaoConfigUpdate>(signer, action, exec_delay);
     }
 
     public fun execute<TokenT: copyable>(proposer_address: address, proposal_id: u64)

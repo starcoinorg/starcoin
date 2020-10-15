@@ -147,7 +147,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -162,6 +162,7 @@ if any field is <code>0</code>, that means the proposal want to update.
     voting_period: u64,
     voting_quorum_rate: u8,
     min_action_delay: u64,
+    exec_delay: u64,
 ) {
     <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
     <b>let</b> action = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
@@ -170,7 +171,7 @@ if any field is <code>0</code>, that means the proposal want to update.
         voting_quorum_rate,
         min_action_delay,
     };
-    <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;(signer, action, <a href="Dao.md#0x1_Dao_min_action_delay">Dao::min_action_delay</a>&lt;TokenT&gt;());
+    <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;(signer, action, exec_delay);
 }
 </code></pre>
 

@@ -109,7 +109,7 @@ pub enum StdlibType {
 
 /// An enum specifying whether the compiled stdlib/scripts should be used or freshly built versions
 /// should be used.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum StdLibOptions {
     Compiled(StdlibVersion),
     Fresh,
