@@ -150,11 +150,18 @@ module Account {
     }
 
     spec fun create_account {
-        pragma verify = false;
-        // missing spec_token_code()
-        //aborts_if token_code<TokenType>() != token_code<STC>() && exists<Balance<TokenType>>(fresh_address);
-        aborts_if len(public_key_vec) != 32;
+        //abort condition for derived_address
+        aborts_if len(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != 32;
+        //abort condition for assert
+        aborts_if Authenticator::spec_derived_address(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != fresh_address;
+        //abort condition for make_account
         aborts_if exists<Account>(fresh_address);
+        //abort condition for accept_token<STC>
+        aborts_if Token::spec_token_code<TokenType>() != Token::spec_token_code<STC>() && exists<Balance<STC>>(fresh_address);
+        //abort condition for accept_token<TokenType>
+        aborts_if exists<Balance<TokenType>>(fresh_address);
+        ensures exists_at(fresh_address);
+        ensures exists<Balance<TokenType>>(fresh_address);
     }
 
     fun make_account(
@@ -184,6 +191,7 @@ module Account {
     spec fun make_account {
         aborts_if len(authentication_key) != 32;
         aborts_if exists<Account>(Signer::address_of(new_account));
+        ensures exists_at(Signer::address_of(new_account));
     }
 
     native fun create_signer(addr: address): signer;
@@ -196,8 +204,7 @@ module Account {
     }
 
     spec fun deposit_to {
-        pragma verify = false;
-        //include Deposit_With_Payer_And_Metadata<TokenType>{payer: Signer::spec_address_of(account)};
+        include DepositWithPayerAndMetadataAbortsIf<TokenType>{payer: Signer::spec_address_of(account)};
     }
 
     // Deposits the `to_deposit` token into the account balance
@@ -211,12 +218,10 @@ module Account {
     }
 
     spec fun deposit {
-        pragma verify = false; //Todo: fix me
         aborts_if to_deposit.value == 0;
         aborts_if !exists<Account>(Signer::address_of(account));
-        aborts_if global<Balance<TokenType>>(Signer::address_of(account)).token.value + to_deposit.value > max_u128();
-        ensures global<Balance<TokenType>>(Signer::address_of(account)).token.value == old(global<Balance<TokenType>>(Signer::address_of(account)).token.value) + to_deposit.value;
-
+        aborts_if exists<Balance<TokenType>>(Signer::address_of(account)) && global<Balance<TokenType>>(Signer::address_of(account)).token.value + to_deposit.value > max_u128();
+        ensures exists<Balance<TokenType>>(Signer::address_of(account));
     }
 
     // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata`
@@ -234,8 +239,7 @@ module Account {
     }
 
     spec fun deposit_with_metadata {
-        pragma verify = false;
-        //include Deposit_With_Payer_And_Metadata<TokenType>{payer: Signer::spec_address_of(account)};
+        include DepositWithPayerAndMetadataAbortsIf<TokenType>{payer: Signer::spec_address_of(account)};
     }
 
     // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata` and
@@ -283,11 +287,10 @@ module Account {
     }
 
     spec fun deposit_with_payer_and_metadata {
-        pragma verify = false;
-        //include Deposit_With_Payer_And_Metadata<TokenType>;
+        include DepositWithPayerAndMetadataAbortsIf<TokenType>;
     }
 
-    spec schema Deposit_With_Payer_And_Metadata<TokenType> {
+    spec schema DepositWithPayerAndMetadataAbortsIf<TokenType> {
         payer: address;
         payee: address;
         to_deposit: Token<TokenType>;
@@ -297,7 +300,6 @@ module Account {
         aborts_if !exists<Account>(payee);
         aborts_if !exists<Balance<TokenType>>(payee);
         aborts_if global<Balance<TokenType>>(payee).token.value + to_deposit.value > max_u128();
-        ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + to_deposit.value;
     }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
@@ -306,9 +308,7 @@ module Account {
     }
 
     spec fun withdraw_from_balance {
-        pragma verify = false;
-//        aborts_if balance.token.value < amount;
-//        ensures balance.token.value == old(balance.token.value) - amount;
+        aborts_if balance.token.value < amount;
     }
 
     // Withdraw `amount` Token<TokenType> from the account balance
@@ -323,13 +323,16 @@ module Account {
     }
 
     spec fun withdraw {
-        pragma verify = false;
-//        aborts_if Option::spec_is_none(global<Account>(Signer::address_of(account)).withdrawal_capability);
-//        aborts_if !exists<Account>(Signer::address_of(account));
-//        aborts_if !exists<Balance<TokenType>>(Signer::address_of(account));
-//        aborts_if global<Balance<TokenType>>(Signer::address_of(account)).token.value < amount;
-//        ensures global<Balance<TokenType>>(Signer::address_of(account)).token.value
-//                == old(global<Balance<TokenType>>(Signer::address_of(account)).token.value) - amount;
+        pragma opaque = true;
+        aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
+        aborts_if !exists<Account>(Signer::spec_address_of(account));
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
+        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
+        ensures [abstract] result == spec_withdraw<TokenType>(account, amount);
+    }
+
+    spec define spec_withdraw<TokenType>(account: signer, amount: u128): Token<TokenType> {
+        Token<TokenType> { value: amount }
     }
 
     // Withdraw `amount` Token<TokenType> from the account under cap.account_address
@@ -341,11 +344,8 @@ module Account {
     }
 
     spec fun withdraw_with_capability {
-        pragma verify = false;
-//        aborts_if !exists<Balance<TokenType>>(cap.account_address);
-//        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
-//        ensures global<Balance<TokenType>>(cap.account_address).token.value
-//                == old(global<Balance<TokenType>>(cap.account_address).token.value) - amount;
+        aborts_if !exists<Balance<TokenType>>(cap.account_address);
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
     }
 
     // Return a unique capability granting permission to withdraw from the sender's account balance.
@@ -393,17 +393,16 @@ module Account {
     }
 
     spec fun pay_from_capability {
-        pragma verify = false; //Todo: fix me
-
-        aborts_if !exists<Balance<TokenType>>(cap.account_address);
-        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
-
-
+        pragma verify = false;
         aborts_if amount == 0;
         aborts_if !exists<Account>(cap.account_address);
+        aborts_if !exists<Balance<TokenType>>(cap.account_address);
         aborts_if !exists<Account>(payee);
         aborts_if !exists<Balance<TokenType>>(payee);
-        //aborts_if global<Balance<TokenType>>(payee).token.value + amount > max_u128();
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
+        aborts_if global<Balance<TokenType>>(payee).token.value + amount > max_u128();
+        ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
+
         //ensures global<Balance<TokenType>>(payee).token.value == old(global<Balance<TokenType>>(payee).token.value) + amount;
 
     }
@@ -427,15 +426,15 @@ module Account {
 
     spec fun pay_from_with_metadata {
         pragma verify = false;
+        aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
+        aborts_if !exists<Account>(Signer::spec_address_of(account));
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
+        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
 
-        aborts_if !exists<Balance<TokenType>>(Signer::address_of(account));
-        aborts_if global<Balance<TokenType>>(Signer::address_of(account)).token.value < amount;
-        ensures global<Balance<TokenType>>(Signer::address_of(account)).token.value
-                == old(global<Balance<TokenType>>(Signer::address_of(account)).token.value) - amount;
-
-        include Deposit_With_Payer_And_Metadata<TokenType>{
-            payer: Signer::address_of(account),
-            to_deposit: Token<TokenType> { value: amount }
+        include DepositWithPayerAndMetadataAbortsIf<TokenType>{
+            payer: Signer::spec_address_of(account),
+            payee: payee,
+            to_deposit: spec_withdraw<TokenType>(account, amount)
         };
     }
 
@@ -453,14 +452,14 @@ module Account {
     spec fun pay_from {
         pragma verify = false;
 
-        aborts_if !exists<Balance<TokenType>>(Signer::address_of(account));
-        aborts_if global<Balance<TokenType>>(Signer::address_of(account)).token.value < amount;
-        ensures global<Balance<TokenType>>(Signer::address_of(account)).token.value
-                == old(global<Balance<TokenType>>(Signer::address_of(account)).token.value) - amount;
+        aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
+        aborts_if !exists<Account>(Signer::spec_address_of(account));
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
+        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
 
-        include Deposit_With_Payer_And_Metadata<TokenType>{
-            payer: Signer::address_of(account),
-            to_deposit: Token<TokenType> { value: amount }
+        include DepositWithPayerAndMetadataAbortsIf<TokenType>{
+            payer: Signer::spec_address_of(account),
+            to_deposit: spec_withdraw<TokenType>(account, amount)
         };
     }
 
@@ -519,8 +518,7 @@ module Account {
     }
 
     spec fun balance_for {
-        pragma verify = false;
-        //aborts_if false;
+        aborts_if false;
     }
 
     // Return the current TokenType balance of the account at `addr`.
@@ -529,8 +527,7 @@ module Account {
     }
 
     spec fun balance {
-        pragma verify = false;
-        //aborts_if !exists<Balance<TokenType>>(addr);
+        aborts_if !exists<Balance<TokenType>>(addr);
     }
 
     // Add a balance of `Token` type to the sending account.
@@ -676,15 +673,15 @@ module Account {
     }
 
     spec fun txn_prologue {
-        pragma verify = false;
-//        aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
-//        aborts_if !exists<Account>(txn_sender);
-//        aborts_if Hash::sha3_256(txn_public_key) != global<Account>(txn_sender).authentication_key;
-//        aborts_if txn_gas_price * txn_max_gas_units > max_u64();
-//        aborts_if !exists<Balance<TokenType>>(txn_sender);
-//        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
-//        aborts_if txn_sequence_number < global<Account>(txn_sender).sequence_number;
-//        aborts_if txn_sequence_number != global<Account>(txn_sender).sequence_number;
+        aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<Account>(txn_sender);
+        aborts_if Hash::sha3_256(txn_public_key) != global<Account>(txn_sender).authentication_key;
+        aborts_if txn_gas_price * txn_max_gas_units > max_u64();
+        aborts_if !exists<Balance<TokenType>>(txn_sender);
+        //abort condition for assert(balance_amount >= max_transaction_fee)
+        aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
+        aborts_if txn_sequence_number < global<Account>(txn_sender).sequence_number;
+        aborts_if txn_sequence_number != global<Account>(txn_sender).sequence_number;
     }
 
     // The epilogue is invoked at the end of transactions.
@@ -728,14 +725,13 @@ module Account {
         aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<Account>(txn_sender);
         aborts_if !exists<Balance<TokenType>>(txn_sender);
-        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
         aborts_if txn_max_gas_units < gas_units_remaining;
+        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
         aborts_if global<Balance<TokenType>>(txn_sender).token.value < txn_gas_price * (txn_max_gas_units - gas_units_remaining);
         aborts_if txn_sequence_number + 1 > max_u64();
         aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > 0 &&
                    !exists<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if global<TransactionFee::TransactionFee<TokenType>>(CoreAddresses::SPEC_GENESIS_ADDRESS()).fee.value + txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u128();
-
     }
 }
 

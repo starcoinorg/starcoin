@@ -77,8 +77,8 @@ module STC {
     }
 
     spec fun burn {
-        // Todo: fix name_of()
-        pragma verify = false;
+        aborts_if Token::spec_abstract_total_value<STC>() - token.value < 0;
+        aborts_if !exists<SharedBurnCapability>(Token::SPEC_TOKEN_TEST_ADDRESS());
     }
 
     public fun token_address(): address {

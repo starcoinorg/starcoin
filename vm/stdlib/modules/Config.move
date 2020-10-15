@@ -119,6 +119,18 @@ module Config {
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
+    spec schema PublishNewConfigAbortsIf<ConfigValue> {
+        account: signer;
+        aborts_if exists<Config<ConfigValue>>(Signer::spec_address_of(account));
+        aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
+    }
+
+    spec schema PublishNewConfigEnsures<ConfigValue> {
+        account: signer;
+        ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
+        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
+    }
+
     // Extract account's ModifyConfigCapability for ConfigValue type
     public fun extract_modify_config_capability<ConfigValue: copyable>(account: &signer): ModifyConfigCapability<ConfigValue> acquires ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);

@@ -261,7 +261,8 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;() - token.value &lt; 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a>&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
 </code></pre>
 
 

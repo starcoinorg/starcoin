@@ -189,7 +189,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;):address {
+<pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;): address {
     <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == <a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>, <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>());
     <b>let</b> address_bytes = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
 
@@ -306,6 +306,28 @@ pragma aborts_if_is_strict;
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of key construction. The actual value
+does not matter for the verification of callers.
+
+
+<a name="0x1_Authenticator_spec_ed25519_authentication_key"></a>
+
+
+<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;;
+</code></pre>
+
+
+We use an uninterpreted function to represent the result of derived address. The actual value
+does not matter for the verification of callers.
+
+
+<a name="0x1_Authenticator_spec_derived_address"></a>
+
+
+<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key: vector&lt;u8&gt;): address;
+</code></pre>
+
+
 
 <a name="@Specification_0_create_multi_ed25519"></a>
 
@@ -336,7 +358,9 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key);
 </code></pre>
 
 
@@ -352,7 +376,9 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code><b>aborts_if</b> len(authentication_key) != 32;
+<pre><code>pragma opaque = <b>true</b>;
+<b>aborts_if</b> len(authentication_key) != 32;
+<b>ensures</b> [abstract] result == <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key);
 </code></pre>
 
 

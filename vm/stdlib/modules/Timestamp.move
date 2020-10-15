@@ -47,7 +47,7 @@ module Timestamp {
     spec fun update_global_time {
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if timestamp < global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds;
+        aborts_if timestamp <= global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds;
         ensures global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds == timestamp;
     }
 
