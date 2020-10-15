@@ -232,12 +232,12 @@ fn test_block_execute_gas_limit() -> Result<()> {
         &account1,
         sequence_number1,
         50_000_000,
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net,
     ));
     let output = execute_and_apply(&chain_state, txn1);
     info!("output: {:?}", output.gas_used());
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
 
     // pre-run a txn to get gas_used
     // transferring to an non-exists account uses about 700 gas.
@@ -247,7 +247,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
             &Account::new(),
             0,
             10_000,
-            net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+            net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
             net.chain_id(),
         ));
         crate::execute_transactions(&chain_state, vec![txn])
@@ -263,7 +263,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
     let block_meta = BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
+        net.consensus().now_millis(),
         *account1.address(),
         Some(account1.clone().pubkey),
         0,
@@ -281,7 +281,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
                     &Account::new(),
                     seq_number,
                     10_000,
-                    net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+                    net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
                     net.chain_id(),
                 ))
             })
@@ -304,11 +304,11 @@ fn test_block_execute_gas_limit() -> Result<()> {
 
     let latest_seq_number = max_include_txn_num;
 
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
 
     let block_meta2 = BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
+        net.consensus().now_millis(),
         *account1.address(),
         Some(account1.clone().pubkey),
         0,
@@ -330,7 +330,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
                     &Account::new(),
                     seq_number,
                     10_000,
-                    net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+                    net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
                     net.chain_id(),
                 ))
             })
@@ -404,7 +404,7 @@ fn test_validate_txn() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
     let txn2 = account1.sign_txn(raw_txn);
@@ -551,7 +551,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
 
@@ -583,7 +583,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     )));
 
@@ -595,7 +595,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
         1000,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     )));
 
@@ -725,11 +725,10 @@ fn test_block_metadata() -> Result<()> {
 
     for i in 0..genesis_config.reward_delay + 1 {
         debug!("execute block metadata: {}", i);
-        net.consensus().time().sleep(1);
-        let timestamp = net.consensus().now();
+        net.consensus().time().sleep(1000);
         let txn = Transaction::BlockMetadata(BlockMetadata::new(
             starcoin_crypto::HashValue::random(),
-            timestamp,
+            net.consensus().now_millis(),
             *account1.address(),
             Some(account1.clone().pubkey),
             0,

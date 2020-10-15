@@ -223,7 +223,7 @@ impl BlockChain {
             final_block_gas_limit,
             author,
             author_public_key,
-            self.consensus.now(),
+            self.consensus.now_millis(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
