@@ -106,13 +106,13 @@ fn test_dao_upgrade_module() -> Result<()> {
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
     let block_number = 1;
-    let block_timestamp = net.consensus().now() + one_day * block_number;
+    let block_timestamp = net.consensus().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now_millis() + one_day * block_number,
+                block_timestamp,
                 genesis_address(),
                 None,
                 0,
