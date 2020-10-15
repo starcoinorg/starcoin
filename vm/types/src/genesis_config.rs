@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::dao_config::DaoConfig;
 use crate::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
 };
@@ -661,6 +662,7 @@ pub struct GenesisConfig {
     pub consensus_strategy: ConsensusStrategy,
 
     pub stdlib_version: StdlibVersion,
+    pub dao_config: DaoConfig,
 }
 
 impl GenesisConfig {
@@ -787,6 +789,12 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dummy,
         stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60,       // 1min
+            voting_period: 60 * 60, // 1h
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60, // 1h
+        },
     }
 });
 
@@ -830,6 +838,12 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dev,
         stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60,       // 1min
+            voting_period: 60 * 60, // 1h
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60, // 1h
+        },
     }
 });
 
@@ -882,6 +896,12 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Keccak,
         stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60,       // 1min
+            voting_period: 60 * 60, // 1h
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60, // 1h
+        },
     }
 });
 
@@ -931,7 +951,13 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    stdlib_version: StdlibVersion::new(0, 4),
+    stdlib_version: StdlibVersion::Latest,
+    dao_config: DaoConfig {
+        voting_delay: 60 * 60,           // 1h
+        voting_period: 60 * 60 * 24 * 2, // 2d
+        voting_quorum_rate: 4,
+        min_action_delay: 60 * 60 * 24, // 1d
+    },
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -974,4 +1000,10 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
     stdlib_version: StdlibVersion::Latest,
+    dao_config: DaoConfig {
+        voting_delay: 60 * 60,           // 1h
+        voting_period: 60 * 60 * 24 * 2, // 2d
+        voting_quorum_rate: 4,
+        min_action_delay: 60 * 60 * 24, // 1d
+    },
 });

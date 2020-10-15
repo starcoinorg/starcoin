@@ -57,12 +57,13 @@ module UpgradeModuleDaoProposal {
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,
+        exec_delay: u64,
     ) acquires UpgradeModuleCapabilities {
         assert(able_to_upgrade<TokenT>(module_address), ERR_UNABLE_TO_UPGRADE);
         Dao::propose<TokenT, UpgradeModule>(
             signer,
             UpgradeModule { module_address, package_hash },
-            Dao::min_action_delay<TokenT>(),
+            exec_delay,
         );
     }
 
