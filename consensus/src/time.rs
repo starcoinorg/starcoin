@@ -23,13 +23,13 @@ pub fn duration_since_epoch() -> Duration {
 /// sleeping).
 pub trait TimeService {
     /// Returns the current time since the UNIX_EPOCH in seconds as a u64.
-    fn now(&self) -> u64;
+    fn now_secs(&self) -> u64;
 
     /// Returns the current time since the UNIX_EPOCH in milliseconds as a u64.
-    fn now_as_millisecond(&self) -> u64;
-    /// Sleeps the calling thread for (at least) the specified number of seconds. This call may
+    fn now_millis(&self) -> u64;
+    /// Sleeps the calling thread for (at least) the specified number of milliseconds. This call may
     /// sleep longer than specified, never less.
-    fn sleep(&self, seconds: u64);
+    fn sleep(&self, millis: u64);
 }
 
 /// A real-time TimeService
@@ -43,16 +43,16 @@ impl RealTimeService {
 }
 
 impl TimeService for RealTimeService {
-    fn now(&self) -> u64 {
+    fn now_secs(&self) -> u64 {
         duration_since_epoch().as_secs() as u64
     }
 
-    fn now_as_millisecond(&self) -> u64 {
+    fn now_millis(&self) -> u64 {
         duration_since_epoch().as_millis() as u64
     }
 
-    fn sleep(&self, seconds: u64) {
-        sleep(Duration::new(seconds, 0));
+    fn sleep(&self, millis: u64) {
+        sleep(Duration::from_millis(millis));
     }
 }
 
@@ -89,16 +89,16 @@ impl MockTimeService {
 }
 
 impl TimeService for MockTimeService {
-    fn now(&self) -> u64 {
+    fn now_secs(&self) -> u64 {
         self.now.load(Ordering::Relaxed)
     }
 
-    fn now_as_millisecond(&self) -> u64 {
-        self.now()
+    fn now_millis(&self) -> u64 {
+        self.now_secs()
     }
 
-    fn sleep(&self, seconds: u64) {
-        self.increment_by(seconds);
+    fn sleep(&self, millis: u64) {
+        self.increment_by(millis);
     }
 }
 
@@ -116,9 +116,9 @@ mod tests {
         let service = MockTimeService::new();
         test_time_service(&service);
 
-        assert_eq!(service.now(), 0);
+        assert_eq!(service.now_secs(), 0);
         service.increment();
-        assert_eq!(service.now(), 1);
+        assert_eq!(service.now_secs(), 1);
     }
 
     #[test]
@@ -137,13 +137,13 @@ mod tests {
     }
 
     fn verify_sleep<T: TimeService>(service: &T, sleep_time: u64) {
-        let current_time = service.now();
+        let current_time = service.now_millis();
         service.sleep(sleep_time);
 
-        assert!(service.now() >= current_time + sleep_time);
+        assert!(service.now_millis() >= current_time + sleep_time);
     }
 
     fn test_time_service<T: TimeService>(service: &T) {
-        service.now();
+        service.now_secs();
     }
 }

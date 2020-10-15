@@ -73,7 +73,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 genesis_address(),
                 None,
                 0,
@@ -126,7 +126,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -166,7 +166,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -214,7 +214,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -240,7 +240,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -287,7 +287,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,
@@ -328,7 +328,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                net.consensus().now() + one_day * block_number,
+                net.consensus().now_millis() + one_day * block_number,
                 *alice.address(),
                 Some(alice.pubkey.clone()),
                 0,

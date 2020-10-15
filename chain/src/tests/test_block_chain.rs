@@ -6,6 +6,7 @@ use anyhow::Result;
 use consensus::Consensus;
 use crypto::HashValue;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
+use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
@@ -346,7 +347,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             public_key.to_bytes().to_vec(),
             0,
             10000,
-            config.net().consensus().now() + 40000,
+            config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()

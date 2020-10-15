@@ -101,13 +101,13 @@ impl TransactionGenerator {
     /// Generates transactions that allocate `init_account_balance` to every account.
     fn gen_create_account_transactions(&mut self, init_account_balance: u64, block_size: usize) {
         for (_i, block) in self.accounts.chunks(block_size).enumerate() {
-            self.net.consensus().time().sleep(1);
+            self.net.consensus().time().sleep(1000);
 
             let mut transactions = Vec::with_capacity(block_size + 1);
             let minter_account = AccountData::random();
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
-                self.net.consensus().now(),
+                self.net.consensus().now_millis(),
                 minter_account.address,
                 Some(minter_account.public_key),
                 0,
@@ -128,7 +128,7 @@ impl TransactionGenerator {
                         account.public_key_vec(),
                         init_account_balance as u128,
                     ),
-                    self.net.consensus().now() + j as u64 + 1,
+                    self.net.consensus().now_secs() + j as u64 + 1,
                 );
                 transactions.push(txn);
                 self.sequence += 1;
@@ -145,12 +145,12 @@ impl TransactionGenerator {
     /// Generates transactions for random pairs of accounts.
     fn gen_transfer_transactions(&mut self, block_size: usize, num_blocks: usize) {
         for _i in 0..num_blocks {
-            self.net.consensus().time().sleep(1);
+            self.net.consensus().time().sleep(1000);
             let mut transactions = Vec::with_capacity(block_size + 1);
             let minter_account = AccountData::random();
             let block_meta = BlockMetadata::new(
                 HashValue::random(),
-                self.net.consensus().now(),
+                self.net.consensus().now_millis(),
                 minter_account.address,
                 Some(minter_account.public_key),
                 0,
@@ -176,7 +176,7 @@ impl TransactionGenerator {
                         receiver.public_key.to_bytes().to_vec(),
                         1, /* amount */
                     ),
-                    self.net.consensus().now() + j as u64 + 1,
+                    self.net.consensus().now_secs() + j as u64 + 1,
                 );
                 transactions.push(txn);
 
