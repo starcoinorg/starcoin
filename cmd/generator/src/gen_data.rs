@@ -45,8 +45,9 @@ impl CommandAction for GenDataCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let global_opt = ctx.global_opt();
-        let (config, storage, mut startup_info, genesis_hash, account) =
+        let (config, storage, mut startup_info, genesis, account) =
             init_or_load_data_dir(global_opt, None)?;
+        let genesis_hash = genesis.block().header().id();
         if startup_info.master != genesis_hash {
             warn!("start block is not genesis.")
         }

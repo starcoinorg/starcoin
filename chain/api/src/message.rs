@@ -33,11 +33,22 @@ pub enum ChainRequest {
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
-    GetTransactionInfoByBlockAndIndex { block_id: HashValue, txn_idx: u64 },
-    GetEventsByTxnInfoId { txn_info_id: HashValue },
+    GetTransactionInfoByBlockAndIndex {
+        block_id: HashValue,
+        txn_idx: u64,
+    },
+    GetEventsByTxnInfoId {
+        txn_info_id: HashValue,
+    },
     GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
     MasterEvents(Filter),
+    GetBlockIds {
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    },
+    GetBlocks(Vec<HashValue>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -54,7 +65,8 @@ pub enum ChainResponse {
     StartupInfo(StartupInfo),
     ChainInfo(ChainInfo),
     Transaction(Box<Transaction>),
-    VecBlock(Vec<Block>),
+    BlockVec(Vec<Block>),
+    BlockOptionVec(Vec<Option<Block>>),
     TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     Events(Option<Vec<ContractEvent>>),
@@ -64,4 +76,5 @@ pub enum ChainResponse {
     BlockState(Option<Box<BlockState>>),
     EpochInfo(EpochInfo),
     GlobalTime(GlobalTimeOnChain),
+    HashVec(Vec<HashValue>),
 }

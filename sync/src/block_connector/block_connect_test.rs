@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::FutureBlockPool;
-use crypto::HashValue;
+use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 
 fn _gen_future_block_pool(block_ct: usize) -> (FutureBlockPool, HashValue, Vec<HashValue>) {

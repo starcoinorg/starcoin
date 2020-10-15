@@ -10,12 +10,13 @@ use network_rpc_core::NetRpcError;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetStateWithProof, GetTxns, Ping, TransactionsData,
+    GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof, GetTxns, Ping, TransactionsData,
 };
 use starcoin_service_registry::ServiceRef;
 use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Store;
+use starcoin_types::block::Block;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
@@ -295,5 +296,25 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         } else {
             futures::future::ready(Ok(req.msg)).boxed()
         }
+    }
+
+    fn get_block_ids(
+        &self,
+        _peer_id: PeerId,
+        req: GetBlockIds,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        //TODO limit max_size
+        self.chain_service
+            .get_block_ids(req.start_number, req.reverse, req.max_size)
+            .boxed()
+    }
+
+    fn get_blocks(
+        &self,
+        _peer_id: PeerId,
+        ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<Option<Block>>>> {
+        //TODO limit ids length.
+        self.chain_service.get_blocks(ids).boxed()
     }
 }
