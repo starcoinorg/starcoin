@@ -177,7 +177,7 @@ async fn test_rollback() -> Result<()> {
             u64::MAX,
             account_address,
             Some(public_key),
-            start_timestamp + 60 * 10,
+            (start_timestamp + 60 * 10) * 1000,
             vec![],
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;

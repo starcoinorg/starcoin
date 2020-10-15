@@ -1,6 +1,7 @@
 use config::NodeConfig;
 use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{account_address, transaction::SignedUserTransaction};
@@ -39,7 +40,7 @@ fn test_txn_sync_actor() {
     //wait sync finish.
     //Delay::new(Duration::from_secs(2)).await;
     std::thread::sleep(Duration::from_secs(2));
-    let current_timestamp = second_config.net().consensus().now();
+    let current_timestamp = second_config.net().consensus().now_secs();
     // check txn
     let mut txns = txpool_2.get_pending_txns(None, Some(current_timestamp));
     assert_eq!(txns.len(), 1);
@@ -57,7 +58,7 @@ fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
         public_key.to_bytes().to_vec(),
         0,
         10000,
-        config.net().consensus().now() + 40000,
+        config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         config.net(),
     );
     txn.as_signed_user_txn().unwrap().clone()

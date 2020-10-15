@@ -4,15 +4,14 @@
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
 use crate::time::MockTimeService;
-use crate::ARGON;
 use crate::{difficult_to_target, set_header_nonce, target_to_difficulty, TimeService};
+use crate::{duration_since_epoch, ARGON};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::U256;
 use std::collections::VecDeque;
-use std::time::SystemTime;
 
 #[stest::test]
 fn raw_hash_test() {
@@ -57,15 +56,12 @@ fn simulate_blocks(time_plan: u64, init_difficulty: U256) -> u64 {
         let ts = MockTimeService::new_with_value(current);
         let used_time = difficulty.as_u64() / 10;
         ts.sleep(used_time);
-        ts.now()
+        ts.now_millis()
     }
 
     let mut diff = init_difficulty;
     let mut blocks = VecDeque::new();
-    let mut now = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
+    let mut now = duration_since_epoch().as_millis() as u64;
     for _ in 0..500 {
         let timestamp = liner_hash_pow(diff, now);
         now = timestamp;
