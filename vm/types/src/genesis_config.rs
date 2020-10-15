@@ -663,6 +663,9 @@ pub struct GenesisConfig {
 
     pub stdlib_version: StdlibVersion,
     pub dao_config: DaoConfig,
+
+    /// transaction timeout
+    pub transaction_timeout: u64,
 }
 
 impl GenesisConfig {
@@ -753,6 +756,8 @@ static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
 
 pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
+pub const ONE_DAY: u64 = 86400;
+
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
@@ -795,6 +800,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60, // 1h
         },
+        transaction_timeout: ONE_DAY,
     }
 });
 
@@ -844,6 +850,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60, // 1h
         },
+        transaction_timeout: ONE_DAY,
     }
 });
 
@@ -902,6 +909,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             voting_quorum_rate: 4,
             min_action_delay: 60 * 60, // 1h
         },
+        transaction_timeout: ONE_DAY,
     }
 });
 
@@ -958,6 +966,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         voting_quorum_rate: 4,
         min_action_delay: 60 * 60 * 24, // 1d
     },
+    transaction_timeout: ONE_DAY,
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
@@ -1006,4 +1015,5 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         voting_quorum_rate: 4,
         min_action_delay: 60 * 60 * 24, // 1d
     },
+    transaction_timeout: ONE_DAY,
 });

@@ -22,7 +22,6 @@ module RewardConfig {
     }
 
     public fun new_reward_config(reward_delay: u64) : RewardConfig {
-        assert(reward_delay > 0, ErrorCode::EINVALID_ARGUMENT());
         RewardConfig {reward_delay: reward_delay}
     }
 
