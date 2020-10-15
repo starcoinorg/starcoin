@@ -186,10 +186,12 @@ impl NodeService {
             DBStorage::new(config.storage.dir())?,
         ))?);
         registry.put_shared(storage.clone()).await?;
-        let (startup_info, genesis_hash) =
+        let (startup_info, genesis) =
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
         info!("Start node with startup info: {}", startup_info);
+        let genesis_hash = genesis.block().header().id();
+        registry.put_shared(genesis).await?;
 
         let vault_config = &config.vault;
         let account_storage = AccountStorage::create_from_path(vault_config.dir())?;

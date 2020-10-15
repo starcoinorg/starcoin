@@ -167,5 +167,4 @@ mod tests {
         assert_eq!(info1, info2);
         Ok(())
     }
-    
 }

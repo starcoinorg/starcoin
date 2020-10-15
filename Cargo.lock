@@ -7371,6 +7371,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "async-trait",
  "backtrace",
  "futures 0.3.5",

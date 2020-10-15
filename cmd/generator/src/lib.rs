@@ -6,7 +6,6 @@ use starcoin_account_api::AccountInfo;
 use starcoin_account_lib::account_storage::AccountStorage;
 use starcoin_account_lib::AccountManager;
 use starcoin_config::{NodeConfig, StarcoinOpt};
-use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;

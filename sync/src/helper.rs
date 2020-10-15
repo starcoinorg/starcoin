@@ -1,8 +1,8 @@
 use anyhow::{format_err, Result};
-use starcoin_crypto::hash::HashValue;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
+use starcoin_crypto::hash::HashValue;
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetTxns, TransactionsData,
