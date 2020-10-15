@@ -7,7 +7,7 @@ module Authenticator {
     use 0x1::Hash;
     use 0x1::LCS;
     use 0x1::Vector;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -27,24 +27,39 @@ module Authenticator {
         threshold: u8,
     }
 
-    fun EWRONG_AUTHENTICATION_KEY_LENGTH(): u64 { ErrorCode::ECODE_BASE() + 1}
+    fun EWRONG_AUTHENTICATION_KEY_LENGTH(): u64 { Errors::ECODE_BASE() + 1}
 
-    // Create a a multisig policy from a vector of ed25519 public keys and a threshold.
-    // Note: this does *not* check uniqueness of keys. Repeated keys are convenient to
-    // encode weighted multisig policies. For example Alice AND 1 of Bob or Carol is
-    // public_key: {alice_key, alice_key, bob_key, carol_key}, threshold: 3
-    // Aborts if threshold is zero or bigger than the length of `public_keys`.
+    /// Maximum number of keys allowed in a MultiEd25519 public/private key
+    const MAX_MULTI_ED25519_KEYS: u64 = 32;
+
+    /// Threshold provided was 0 which can't be used to create a `MultiEd25519` key
+    const EZERO_THRESHOLD: u64 = 0;
+    /// Not enough keys were provided for the specified threshold when creating an `MultiEd25519` key
+    const ENOT_ENOUGH_KEYS_FOR_THRESHOLD: u64 = 1;
+    /// Too many keys were provided for the specified threshold when creating an `MultiEd25519` key
+    const ENUM_KEYS_ABOVE_MAX_THRESHOLD: u64 = 2;
+
+    /// Create a a multisig policy from a vector of ed25519 public keys and a threshold.
+    /// Note: this does *not* check uniqueness of keys. Repeated keys are convenient to
+    /// encode weighted multisig policies. For example Alice AND 1 of Bob or Carol is
+    /// public_key: {alice_key, alice_key, bob_key, carol_key}, threshold: 3
+    /// Aborts if threshold is zero or bigger than the length of `public_keys`.
     public fun create_multi_ed25519(
         public_keys: vector<vector<u8>>,
         threshold: u8
     ): MultiEd25519PublicKey {
-        // check theshold requirements
+        // check threshold requirements
         let len = Vector::length(&public_keys);
-        assert(threshold != 0, 7001);
-        assert((threshold as u64) <= len, 7002);
-        // TODO: add constant MULTI_ED25519_MAX_KEYS
+        assert(threshold != 0, Errors::invalid_argument(EZERO_THRESHOLD));
+        assert(
+            (threshold as u64) <= len,
+            Errors::invalid_argument(ENOT_ENOUGH_KEYS_FOR_THRESHOLD)
+        );
         // the multied25519 signature scheme allows at most 32 keys
-        assert(len <= 32, 7003);
+        assert(
+            len <= MAX_MULTI_ED25519_KEYS,
+            Errors::invalid_argument(ENUM_KEYS_ABOVE_MAX_THRESHOLD)
+        );
 
         MultiEd25519PublicKey { public_keys, threshold }
     }
@@ -74,7 +89,7 @@ module Authenticator {
 
     //convert authentication key to address
     public fun derived_address(authentication_key: vector<u8>): address {
-        assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, EWRONG_AUTHENTICATION_KEY_LENGTH());
+        assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, Errors::invalid_argument(EWRONG_AUTHENTICATION_KEY_LENGTH()));
         let address_bytes = Vector::empty<u8>();
 
         let i = 16;

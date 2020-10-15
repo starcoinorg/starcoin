@@ -4,7 +4,7 @@ module Token {
     use 0x1::Signer;
     use 0x1::Vector;
     use 0x1::LCS;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
     use 0x1::Timestamp;
     use 0x1::Math;
 
@@ -61,22 +61,22 @@ module Token {
 
     /// Token register's address should same as TokenType's address.
     fun ETOKEN_REGISTER(): u64 {
-        ErrorCode::ECODE_BASE() + 1
+        Errors::ECODE_BASE() + 1
     }
 
     fun EAMOUNT_EXCEEDS_COIN_VALUE(): u64 {
-        ErrorCode::ECODE_BASE() + 2
+        Errors::ECODE_BASE() + 2
     }
     // Mint key time limit
     fun EMINT_KEY_TIME_LIMIT(): u64 {
-        ErrorCode::ECODE_BASE() + 3
+        Errors::ECODE_BASE() + 3
     }
 
     fun EDESTROY_KEY_NOT_EMPTY(): u64 {
-        ErrorCode::ECODE_BASE() + 4
+        Errors::ECODE_BASE() + 4
     }
     fun EPRECISION_TOO_LARGE(): u64 {
-        ErrorCode::ECODE_BASE() + 5
+        Errors::ECODE_BASE() + 5
     }
 
     /// 2^128 < 10**39
@@ -87,10 +87,10 @@ module Token {
         account: &signer,
         precision: u8,
     ) {
-        assert(precision <= MAX_PRECISION, EPRECISION_TOO_LARGE());
+        assert(precision <= MAX_PRECISION, Errors::invalid_argument(EPRECISION_TOO_LARGE()));
         let scaling_factor = Math::pow(10, (precision as u64));
         let token_address = token_address<TokenType>();
-        assert(Signer::address_of(account) == token_address, ETOKEN_REGISTER());
+        assert(Signer::address_of(account) == token_address, Errors::requires_address(ETOKEN_REGISTER()));
         move_to(account, MintCapability<TokenType> {});
         move_to(account, BurnCapability<TokenType> {});
         move_to(
@@ -222,8 +222,8 @@ module Token {
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                      amount: u128, peroid: u64): FixedTimeMintKey<TokenType>{
-        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(amount > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(amount > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
         let now = Timestamp::now_seconds();
         let end_time = now + peroid;
         FixedTimeMintKey{
@@ -241,8 +241,8 @@ module Token {
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                                 amount: u128, peroid: u64): LinearTimeMintKey<TokenType>{
-        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(amount > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(amount > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
         let start_time = Timestamp::now_seconds();
         LinearTimeMintKey<TokenType> {
             total: amount,
@@ -260,7 +260,7 @@ module Token {
 
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
-        assert(amount > 0, EMINT_KEY_TIME_LIMIT());
+        assert(amount > 0, Errors::invalid_argument(EMINT_KEY_TIME_LIMIT()));
         let FixedTimeMintKey { total, end_time:_} = key;
         do_mint(total)
     }
@@ -274,7 +274,7 @@ module Token {
 
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_linear_key(key);
-        assert(amount > 0, EMINT_KEY_TIME_LIMIT());
+        assert(amount > 0, Errors::invalid_argument(EMINT_KEY_TIME_LIMIT()));
         let token = do_mint(amount);
         key.minted = key.minted + amount;
         token
@@ -331,7 +331,7 @@ module Token {
 
     public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time: _, peroid: _ } = key;
-        assert(total == minted, EDESTROY_KEY_NOT_EMPTY());
+        assert(total == minted, Errors::invalid_argument(EDESTROY_KEY_NOT_EMPTY()));
     }
 
     spec fun destroy_empty_key {
@@ -415,7 +415,7 @@ module Token {
         value: u128,
     ): Token<TokenType> {
         // Check that `value` is less than the token's value
-        assert(token.value >= value, EAMOUNT_EXCEEDS_COIN_VALUE());
+        assert(token.value >= value, Errors::limit_exceeded(EAMOUNT_EXCEEDS_COIN_VALUE()));
         token.value = token.value - value;
         Token { value: value }
     }
@@ -461,7 +461,7 @@ module Token {
     /// so you cannot "burn" any non-zero amount of Token
     public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token { value } = token;
-        assert(value == 0, ErrorCode::EDESTORY_TOKEN_NON_ZERO())
+        assert(value == 0, Errors::invalid_state(Errors::EDESTORY_TOKEN_NON_ZERO()))
     }
 
     spec fun destroy_zero {

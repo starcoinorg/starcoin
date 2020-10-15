@@ -144,7 +144,7 @@ script {
         Account::deposit(signer, token);
     }
 }
-// check: 1403
+// check: 359169
 
 
 //! new-transaction
@@ -188,7 +188,7 @@ script {
         Dao::destroy_terminated_proposal<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
     }
 }
-// check: 1403
+// check: 359169
 
 
 //! new-transaction

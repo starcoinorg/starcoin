@@ -5,7 +5,7 @@ module TokenLockPool {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::STC::STC;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
     use 0x1::Math;
 
     // A global pool for lock token.
@@ -19,22 +19,22 @@ module TokenLockPool {
 
     // The key which to destory is not empty.
     fun EDESTROY_KEY_NOT_EMPTY(): u64 {
-        ErrorCode::ECODE_BASE() + 1
+        Errors::ECODE_BASE() + 1
     }
 
     // Timelock is not unlocked yet.
     fun ETIMELOCK_NOT_UNLOCKED(): u64 {
-        ErrorCode::ECODE_BASE() + 2
+        Errors::ECODE_BASE() + 2
     }
 
     // Amount too big than locked token's value.
     fun EAMOUNT_TOO_BIG(): u64 {
-        ErrorCode::ECODE_BASE() + 3
+        Errors::ECODE_BASE() + 3
     }
 
     public fun initialize(account: &signer) {
-        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
         let token_pool = TokenPool<STC> { token: Token::zero() };
         move_to(account, token_pool);
         //TODO how to init other token's pool.
@@ -42,7 +42,7 @@ module TokenLockPool {
 
     // Create a LinearTimeLock by token and peroid in seconds.
     public fun create_linear_lock<TokenType>(token: Token<TokenType>, peroid: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
-        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
         let start_time = Timestamp::now_seconds();
         let total = Token::value(&token);
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
@@ -57,7 +57,7 @@ module TokenLockPool {
 
     // Create a FixedTimeLock by token and peroid in seconds.
     public fun create_fixed_lock<TokenType>(token: Token<TokenType>, peroid: u64): FixedTimeLockKey<TokenType> acquires TokenPool {
-        assert(peroid > 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
         let now = Timestamp::now_seconds();
         let total = Token::value(&token);
         let end_time = now + peroid;
@@ -72,7 +72,7 @@ module TokenLockPool {
     // Unlock token with LinearTimeLockKey
     public fun unlock_with_linear_key<TokenType>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
         let amount = unlocked_amount_of_linear_key(key);
-        assert(amount > 0, ETIMELOCK_NOT_UNLOCKED());
+        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED()));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         let token = Token::withdraw(&mut token_pool.token, amount);
         key.taked = key.taked + amount;
@@ -82,7 +82,7 @@ module TokenLockPool {
     // Unlock token with FixedTimeLockKey
     public fun unlock_with_fixed_key<TokenType>(key: FixedTimeLockKey<TokenType>): Token<TokenType>  acquires TokenPool {
         let amount = unlocked_amount_of_fixed_key(&key);
-        assert(amount > 0, ETIMELOCK_NOT_UNLOCKED());
+        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED()));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         let token = Token::withdraw(&mut token_pool.token, key.total);
         let FixedTimeLockKey { total: _, end_time: _ } = key;
@@ -117,7 +117,7 @@ module TokenLockPool {
 
     public fun destroy_empty<TokenType>(key: LinearTimeLockKey<TokenType>) {
         let LinearTimeLockKey<TokenType> { total, taked, start_time: _, peroid: _ } = key;
-        assert(total == taked, EDESTROY_KEY_NOT_EMPTY());
+        assert(total == taked, Errors::invalid_state(EDESTROY_KEY_NOT_EMPTY()));
     }
 
 }

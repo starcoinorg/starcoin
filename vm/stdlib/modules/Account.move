@@ -12,7 +12,7 @@ module Account {
     use 0x1::Option::{Self, Option};
     use 0x1::TransactionFee;
     use 0x1::CoreAddresses;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
     use 0x1::STC::{Self, STC};
 
     spec module {
@@ -97,10 +97,10 @@ module Account {
         token_code: vector<u8>,
     }
 
-    fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 1}
-    fun EMALFORMED_AUTHENTICATION_KEY(): u64 { ErrorCode::ECODE_BASE() + 2}
-    fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { ErrorCode::ECODE_BASE() + 3}
-    fun ADDRESS_PUBLIC_KEY_INCONSISTENT(): u64 { ErrorCode::ECODE_BASE() + 4}
+    fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { Errors::ECODE_BASE() + 1}
+    fun EMALFORMED_AUTHENTICATION_KEY(): u64 { Errors::ECODE_BASE() + 2}
+    fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { Errors::ECODE_BASE() + 3}
+    fun ADDRESS_PUBLIC_KEY_INCONSISTENT(): u64 { Errors::ECODE_BASE() + 4}
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -109,7 +109,7 @@ module Account {
     public fun create_genesis_account(
         new_account_address: address,
     ) :signer {
-        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
         let new_account = create_signer(new_account_address);
         make_account(&new_account, DUMMY_AUTH_KEY);
         new_account
@@ -137,7 +137,7 @@ module Account {
     public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
         let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
         let new_address = Authenticator::derived_address(copy authentication_key);
-        assert(new_address == fresh_address, ADDRESS_PUBLIC_KEY_INCONSISTENT());
+        assert(new_address == fresh_address, Errors::invalid_argument(ADDRESS_PUBLIC_KEY_INCONSISTENT()));
 
         let new_account = create_signer(new_address);
         make_account(&new_account, authentication_key);
@@ -168,7 +168,7 @@ module Account {
         new_account: &signer,
         authentication_key: vector<u8>,
     ) {
-        assert(Vector::length(&authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
+        assert(Vector::length(&authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY()));
         let new_account_addr = Signer::address_of(new_account);
         Event::publish_generator(new_account);
         move_to(new_account, Account {
@@ -252,7 +252,7 @@ module Account {
     ) acquires Account, Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, ErrorCode::ECOIN_DEPOSIT_IS_ZERO());
+        assert(deposit_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
 
         let token_code = Token::token_code<TokenType>();
 
@@ -317,7 +317,7 @@ module Account {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
         // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
-        assert(!delegated_withdraw_capability(sender_addr), EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED());
+        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED()));
         // The sender_addr has retained her withdrawal privileges--proceed.
         withdraw_from_balance<TokenType>(sender_addr, sender_balance, amount)
     }
@@ -354,7 +354,7 @@ module Account {
     ): WithdrawCapability acquires Account {
         let sender_addr = Signer::address_of(sender);
         // Abort if we already extracted the unique withdraw capability for this account.
-        assert(!delegated_withdraw_capability(sender_addr), EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED());
+        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED()));
         let account = borrow_global_mut<Account>(sender_addr);
         Option::extract(&mut account.withdrawal_capability)
     }
@@ -470,7 +470,7 @@ module Account {
     ) acquires Account  {
         let sender_account_resource = borrow_global_mut<Account>(cap.account_address);
         // Don't allow rotating to clearly invalid key
-        assert(Vector::length(&new_authentication_key) == 32, EMALFORMED_AUTHENTICATION_KEY());
+        assert(Vector::length(&new_authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY()));
         sender_account_resource.authentication_key = new_authentication_key;
     }
 
@@ -490,7 +490,7 @@ module Account {
     acquires Account {
         let account_address = Signer::address_of(account);
         // Abort if we already extracted the unique key rotation capability for this account.
-        assert(!delegated_key_rotation_capability(account_address), EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED());
+        assert(!delegated_key_rotation_capability(account_address), Errors::invalid_state(EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED()));
         let account = borrow_global_mut<Account>(account_address);
         Option::extract(&mut account.key_rotation_capability)
     }
@@ -647,11 +647,11 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()));
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
-        assert(exists_at(txn_sender), ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST());
+        assert(exists_at(txn_sender), Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()));
 
         // Load the transaction sender's account
         let sender_account = borrow_global_mut<Account>(txn_sender);
@@ -659,17 +659,17 @@ module Account {
         // Check that the hash of the transaction's public key matches the account's auth key
         assert(
             Hash::sha3_256(txn_public_key) == *&sender_account.authentication_key,
-            ErrorCode::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY()
+            Errors::invalid_argument(Errors::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY())
         );
 
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
         let balance_amount = balance<TokenType>(txn_sender);
-        assert(balance_amount >= (max_transaction_fee as u128), ErrorCode::PROLOGUE_CANT_PAY_GAS_DEPOSIT());
+        assert(balance_amount >= (max_transaction_fee as u128), Errors::invalid_argument(Errors::PROLOGUE_CANT_PAY_GAS_DEPOSIT()));
 
         // Check that the transaction sequence number matches the sequence number of the account
-        assert(txn_sequence_number >= sender_account.sequence_number, ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD());
-        assert(txn_sequence_number == sender_account.sequence_number, ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW());
+        assert(txn_sequence_number >= sender_account.sequence_number, Errors::invalid_argument(Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD()));
+        assert(txn_sequence_number == sender_account.sequence_number, Errors::invalid_argument(Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW()));
     }
 
     spec fun txn_prologue {
@@ -694,7 +694,7 @@ module Account {
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
 
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<Account>(txn_sender);
@@ -704,7 +704,7 @@ module Account {
         let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert(
             balance_for(sender_balance) >= transaction_fee_amount,
-            ErrorCode::EINSUFFICIENT_BALANCE()
+            Errors::limit_exceeded(Errors::EINSUFFICIENT_BALANCE())
         );
 
         // Bump the sequence number

@@ -6,7 +6,7 @@ module TransactionFee {
     use 0x1::Signer;
     use 0x1::STC::{STC};
     use 0x1::Timestamp;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -24,8 +24,8 @@ module TransactionFee {
     public fun initialize(
         account: &signer,
     ) {
-        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
 
         // accept fees in all the currencies
         add_txn_fee_token<STC>(account);
@@ -73,7 +73,7 @@ module TransactionFee {
         account: &signer,
     ): Token<TokenType> acquires TransactionFee {
         let fee_address =  CoreAddresses::GENESIS_ADDRESS();
-        assert(Signer::address_of(account) == fee_address, ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == fee_address, Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
 
         // extract fees
         let txn_fees = borrow_global_mut<TransactionFee<TokenType>>(fee_address);
