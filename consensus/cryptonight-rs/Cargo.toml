@@ -1,0 +1,19 @@
+[package]
+name = "cryptonight-rs"
+version = "0.1.0"
+authors = ["fikgol <hit.cs.lijun@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+libc = "^0.2"
+
+[build-dependencies]
+cc = "1.0"
+
+[dev-dependencies]
+rustc-serialize = "^0.3"
+bencher = "0.1.5"
+
+[[bench]]
+name = "bench"
+harness = false

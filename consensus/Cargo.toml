@@ -23,11 +23,11 @@ hex = { version = "0.4.2", default-features = false }
 stest = { path = "../commons/stest" }
 starcoin-state-api = { path = "../state/api" }
 starcoin-statedb = { path = "../state/statedb" }
-starcoin-vm-types = { path = "../vm/types"}
-sha3 = { version = "0.9.1"}
+starcoin-vm-types = { path = "../vm/types" }
+sha3 = { version = "0.9.1" }
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-
+cryptonight-rs = { path = "cryptonight-rs" }
 [dev-dependencies]
 proptest = "0.10.1"
 proptest-derive = { version = "0.2.0" }
@@ -35,4 +35,4 @@ proptest-derive = { version = "0.2.0" }
 
 [features]
 default = []
-fuzzing = ["proptest","proptest-derive", "starcoin-types/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "starcoin-types/fuzzing"]
