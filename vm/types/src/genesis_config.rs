@@ -8,6 +8,7 @@ use crate::gas_schedule::{
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
+use crate::time::{MockTimeService, RealTimeService, TimeService};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -25,6 +26,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
 pub enum StdlibVersion {
@@ -521,6 +523,10 @@ impl ChainNetwork {
         self.genesis_config().consensus_strategy
     }
 
+    pub fn time_service(&self) -> Arc<dyn TimeService> {
+        self.genesis_config().time_service.clone()
+    }
+
     pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
         match self {
             Self::Builtin(net) => Some(net),
@@ -660,7 +666,8 @@ pub struct GenesisConfig {
     pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
     /// consensus strategy for chain
     pub consensus_strategy: ConsensusStrategy,
-
+    /// TimeService
+    pub time_service: Arc<dyn TimeService>,
     pub stdlib_version: StdlibVersion,
     pub dao_config: DaoConfig,
 }
@@ -788,6 +795,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dummy,
+        time_service: Arc::new(MockTimeService::new_with_value(1)),
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -837,6 +845,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dev,
+        time_service: Arc::new(RealTimeService::new()),
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -895,6 +904,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Keccak,
+        time_service: Arc::new(RealTimeService::new()),
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -951,6 +961,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
+    time_service: Arc::new(RealTimeService::new()),
     stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
@@ -999,6 +1010,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
+    time_service: Arc::new(RealTimeService::new()),
     stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h

@@ -101,8 +101,9 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 Ok(())
             } else {
                 debug!("Mint block template: {:?}", block_template);
-                let strategy = config.net().consensus();
-                let block_chain = BlockChain::new(strategy, block_template.parent_hash, storage)?;
+                let net = config.net();
+                let strategy = net.consensus();
+                let block_chain = BlockChain::new(strategy, net.time_service(),block_template.parent_hash, storage)?;
                 let epoch = ConsensusStrategy::epoch(&block_chain)?;
                 let difficulty =
                     strategy.calculate_next_difficulty(&block_chain, &epoch)?;

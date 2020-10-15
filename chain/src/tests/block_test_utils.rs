@@ -95,7 +95,7 @@ fn txn_transfer(
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = ChainNetwork::TEST.consensus().now_secs() + DEFAULT_EXPIRATION_TIME;
+    let expired = ChainNetwork::TEST.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {
@@ -144,7 +144,7 @@ prop_compose! {
     let p_header = parent_header.clone();
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
-        ChainNetwork::TEST.consensus().now_secs(),
+        ChainNetwork::TEST.time_service().now_secs(),
         p_header.author,
         p_header.author_public_key,
         0,

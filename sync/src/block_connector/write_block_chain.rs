@@ -65,8 +65,10 @@ where
         bus: ServiceRef<BusService>,
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
+        let net = config.net();
         let master = BlockChain::new(
-            config.net().consensus(),
+            net.consensus(),
+            net.time_service(),
             startup_info.master,
             storage.clone(),
         )?;
@@ -85,8 +87,10 @@ where
         WRITE_BLOCK_CHAIN_METRICS.try_connect_count.inc();
         let block_exist = self.block_exist(header.id());
         let block_chain = if self.block_exist(header.parent_hash()) {
+            let net = self.config.net();
             Some(BlockChain::new(
-                self.config.net().consensus(),
+                net.consensus(),
+                net.time_service(),
                 header.parent_hash(),
                 self.storage.clone(),
             )?)

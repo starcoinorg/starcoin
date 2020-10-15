@@ -120,9 +120,11 @@ fn gen_fork_block_chain(
         .unwrap()
     {
         let mut parent_id = block_header.id();
+        let net = node_config.clone().net();
         for _i in 0..times {
             let block_chain = BlockChain::new(
-                node_config.clone().net().consensus(),
+                net.consensus(),
+                net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_master().get_storage(),
             )

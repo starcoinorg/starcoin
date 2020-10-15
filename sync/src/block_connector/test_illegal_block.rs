@@ -18,6 +18,7 @@ use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::{block::Block, U256};
 use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy, TEST_CONFIG};
+use starcoin_vm_types::time::duration_since_epoch;
 use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -107,7 +108,7 @@ async fn uncle_block_and_writeable_block_chain(
 }
 
 fn apply_with_illegal_uncle(
-    consensus_strategy: ConsensusStrategy,
+    net: &ChainNetwork,
     uncles: Vec<BlockHeader>,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
     storage: Arc<dyn Store>,
@@ -123,6 +124,7 @@ fn apply_with_illegal_uncle(
             uncles,
             None,
         )?;
+    let consensus_strategy = net.consensus();
     let new_block = consensus_strategy
         .create_block(writeable_block_chain_service.get_master(), block_template)?;
 
@@ -130,7 +132,7 @@ fn apply_with_illegal_uncle(
         .get_master()
         .current_header()
         .id();
-    let mut master = BlockChain::new(consensus_strategy, head_id, storage)?;
+    let mut master = BlockChain::new(consensus_strategy, net.time_service(), head_id, storage)?;
     master.apply(new_block.clone())?;
     Ok(new_block)
 }
@@ -305,7 +307,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -363,7 +365,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -384,7 +386,7 @@ async fn test_verify_illegal_uncle_future_timestamp(succ: bool) -> Result<Block>
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -595,7 +597,7 @@ async fn test_verify_uncles_count(succ: bool) -> Result<Block> {
         uncles.push(tmp);
     }
     apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -626,7 +628,7 @@ async fn test_verify_uncles_number(succ: bool) -> Result<Block> {
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -687,7 +689,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -747,7 +749,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
             .number()
     );
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -768,7 +770,7 @@ async fn test_some_uncles_in_block_failed() {
         uncles.push(uncle_header.clone());
     }
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -821,7 +823,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
     uncles.push(uncle_header);
 
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,
@@ -861,7 +863,7 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
     let mut uncles = Vec::new();
     uncles.push(uncle_header);
     let apply_failed = apply_with_illegal_uncle(
-        node_config.net().consensus(),
+        node_config.net(),
         uncles,
         &mut writeable_block_chain_service,
         storage,

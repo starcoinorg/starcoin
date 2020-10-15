@@ -21,7 +21,7 @@ pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
         random_public_key.to_bytes().to_vec(),
         seq_num,
         1000,
-        ChainNetwork::TEST.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
+        ChainNetwork::TEST.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         &ChainNetwork::TEST,
     )
 }

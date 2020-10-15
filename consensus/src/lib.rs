@@ -113,15 +113,6 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce),
         }
     }
-
-    fn time(&self) -> &dyn TimeService {
-        match self {
-            ConsensusStrategy::Dummy => DUMMY.time(),
-            ConsensusStrategy::Dev => DEV.time(),
-            ConsensusStrategy::Argon => ARGON.time(),
-            ConsensusStrategy::Keccak => KECCAK.time(),
-        }
-    }
 }
 
 pub fn generate_nonce() -> u64 {

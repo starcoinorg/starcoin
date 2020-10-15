@@ -11,6 +11,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::U256;
+use starcoin_vm_types::time::{duration_since_epoch, MockTimeService, TimeService};
 use std::collections::VecDeque;
 
 #[stest::test]

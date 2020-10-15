@@ -13,14 +13,12 @@ use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct DevConsensus {
-    time_service: RealTimeService,
-}
+pub struct DevConsensus {}
 
 impl DevConsensus {
     pub fn new() -> Self {
         Self {
-            time_service: RealTimeService::new(),
+            // time_service: RealTimeService::new(),
         }
     }
 }
@@ -67,9 +65,5 @@ impl Consensus for DevConsensus {
 
     fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<HashValue> {
         unreachable!()
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        &self.time_service
     }
 }

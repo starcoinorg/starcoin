@@ -26,7 +26,7 @@ pub fn test_open_block() -> Result<()> {
             block_gas_limit,
             miner_account.address,
             Some(miner_account.public_key),
-            config.net().consensus().now_millis(),
+            config.net().time_service().now_millis(),
             vec![],
         )?
     };
@@ -41,7 +41,7 @@ pub fn test_open_block() -> Result<()> {
         receive_public_key.to_bytes().to_vec(),
         association_sequence_num,
         50_000_000,
-        config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
+        config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
         config.net(),
     )
     .try_into()?;
@@ -73,7 +73,7 @@ pub fn test_open_block() -> Result<()> {
             10_000,
             1,
             1_000_000,
-            config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net().chain_id(),
         )
         .sign(&receive_prikey, receive_public_key.clone())

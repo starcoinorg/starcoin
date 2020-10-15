@@ -108,7 +108,7 @@ impl TxPoolSyncService for TxPoolService {
             .with_label_values(&["get_pending_txns"])
             .start_timer();
         let current_timestamp_secs = current_timestamp_secs
-            .unwrap_or_else(|| self.inner.node_config.net().consensus().now_secs());
+            .unwrap_or_else(|| self.inner.node_config.net().time_service().now_secs());
         let r = self
             .inner
             .get_pending(max_len.unwrap_or(u64::MAX), current_timestamp_secs);

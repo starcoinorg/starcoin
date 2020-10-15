@@ -16,14 +16,14 @@ use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
 pub struct DummyConsensus {
-    time_service: MockTimeService,
+    // time_service: MockTimeService,
 }
 
 impl DummyConsensus {
     pub fn new() -> Self {
         Self {
             // 0 is genesis time, so default init with 1.
-            time_service: MockTimeService::new_with_value(1),
+            // time_service: MockTimeService::new_with_value(1),
         }
     }
 }
@@ -74,9 +74,5 @@ impl Consensus for DummyConsensus {
 
     fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<HashValue> {
         unreachable!()
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        &self.time_service
     }
 }

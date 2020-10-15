@@ -25,7 +25,7 @@ pub struct NodeInfo {
 impl NodeInfo {
     pub fn new(peer_info: PeerInfo, self_address: String, net: ChainNetwork) -> Self {
         let consensus = net.consensus();
-        let now = consensus.now_secs();
+        let now = net.time_service().now_secs();
         Self {
             peer_info,
             self_address,

@@ -106,7 +106,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
     let block_number = 1;
-    let block_timestamp = net.consensus().now_millis() + one_day * block_number;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
             &chain_state,
@@ -160,7 +160,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     });
     // block 2
     let block_number = 2;
-    let block_timestamp = net.consensus().now_millis() + one_day * block_number;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
             &chain_state,
