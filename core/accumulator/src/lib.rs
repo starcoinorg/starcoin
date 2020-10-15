@@ -5,7 +5,7 @@ use crate::accumulator_info::AccumulatorInfo;
 use crate::node_index::NodeIndex;
 use crate::proof::AccumulatorProof;
 use crate::tree::AccumulatorTree;
-use anyhow::{ensure, Error, Result};
+use anyhow::{ensure, format_err, Result};
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
@@ -32,9 +32,16 @@ pub const MAC_CACHE_SIZE: usize = 65535;
 /// accumulator method define
 pub trait Accumulator {
     /// Append leaves and return new root
-    fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64), Error>;
+    fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64)>;
     /// Get leaf node by index.
-    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error>;
+    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
+    /// Batch get leaves by index.
+    fn get_leaves(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>>;
     /// Get node by position.
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
@@ -108,29 +115,55 @@ impl MerkleAccumulator {
 }
 
 impl Accumulator for MerkleAccumulator {
-    fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64), Error> {
+    fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64)> {
         let mut tree_guard = self.tree.lock();
         let first_index_leaf = tree_guard.num_leaves;
         let root_hash = tree_guard.append_leaves(new_leaves)?;
         Ok((root_hash, first_index_leaf))
     }
 
-    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>, Error> {
-        Ok(Some(
-            self.tree
-                .lock()
-                .get_node_hash(NodeIndex::from_leaf_index(leaf_index))?,
-        ))
+    fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>> {
+        self.tree
+            .lock()
+            .get_node_hash(NodeIndex::from_leaf_index(leaf_index))
     }
 
-    fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>, Error> {
-        Ok(Some(
-            self.tree.lock().get_node_hash(NodeIndex::new(position))?,
-        ))
+    fn get_leaves(
+        &self,
+        start_index: u64,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>> {
+        let mut tree = self.tree.lock();
+        let max_size_u64 = max_size as u64;
+        let seq = if reverse {
+            let end = start_index + 1;
+            let begin = if end > max_size_u64 {
+                end - max_size_u64
+            } else {
+                0
+            };
+            begin..end
+        } else {
+            let mut end = start_index + max_size_u64;
+            if end > tree.num_leaves {
+                end = tree.num_leaves;
+            }
+            start_index..end
+        };
+        seq.map(|idx| {
+            tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
+                .ok_or_else(|| format_err!("Can not find accumulator leaf by index: {}", idx))
+        })
+        .collect()
     }
 
-    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>, Error> {
-        let tree_guard = self.tree.lock();
+    fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>> {
+        self.tree.lock().get_node_hash(NodeIndex::new(position))
+    }
+
+    fn get_proof(&self, leaf_index: u64) -> Result<Option<AccumulatorProof>> {
+        let mut tree_guard = self.tree.lock();
         ensure!(
             leaf_index < tree_guard.num_leaves as u64,
             "get proof invalid leaf_index {}, num_leaves {}",
@@ -142,11 +175,11 @@ impl Accumulator for MerkleAccumulator {
         Ok(Some(AccumulatorProof::new(siblings)))
     }
 
-    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>, Error> {
+    fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         self.tree.lock().get_node(hash)
     }
 
-    fn flush(&self) -> Result<(), Error> {
+    fn flush(&self) -> Result<()> {
         self.tree.lock().flush()
     }
 
