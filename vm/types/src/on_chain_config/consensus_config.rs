@@ -24,6 +24,7 @@ pub struct ConsensusConfig {
     pub max_block_time_target: u64,
     pub base_max_uncles_per_block: u64,
     pub base_block_gas_limit: u64,
+    pub strategy: u8,
 }
 
 impl OnChainConfig for ConsensusConfig {
@@ -43,6 +44,7 @@ pub struct EpochResource {
     block_difficulty_window: u64,
     max_uncles_per_block: u64,
     block_gas_limit: u64,
+    strategy: u8,
     new_epoch_events: EventHandle,
 }
 
@@ -58,6 +60,7 @@ impl EpochResource {
         block_difficulty_window: u64,
         max_uncles_per_block: u64,
         block_gas_limit: u64,
+        strategy: u8,
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {
@@ -71,6 +74,7 @@ impl EpochResource {
             block_difficulty_window,
             max_uncles_per_block,
             block_gas_limit,
+            strategy,
             new_epoch_events,
         }
     }
@@ -113,6 +117,10 @@ impl EpochResource {
 
     pub fn block_gas_limit(&self) -> u64 {
         self.block_gas_limit
+    }
+
+    pub fn strategy(&self) -> u8 {
+        self.strategy
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.
