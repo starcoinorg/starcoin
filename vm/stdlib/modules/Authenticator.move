@@ -63,11 +63,17 @@ module Authenticator {
     }
 
     spec fun ed25519_authentication_key {
+        pragma opaque = true;
         aborts_if false;
+        ensures [abstract] result == spec_ed25519_authentication_key(public_key);
     }
 
+    /// We use an uninterpreted function to represent the result of key construction. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_ed25519_authentication_key(public_key: vector<u8>): vector<u8>;
+
     //convert authentication key to address
-    public fun derived_address(authentication_key: vector<u8>):address {
+    public fun derived_address(authentication_key: vector<u8>): address {
         assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, EWRONG_AUTHENTICATION_KEY_LENGTH());
         let address_bytes = Vector::empty<u8>();
 
@@ -82,8 +88,14 @@ module Authenticator {
     }
 
     spec fun derived_address {
+        pragma opaque = true;
         aborts_if len(authentication_key) != 32;
+        ensures [abstract] result == spec_derived_address(authentication_key);
     }
+
+    /// We use an uninterpreted function to represent the result of derived address. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_derived_address(authentication_key: vector<u8>): address;
 
     // Compute a multied25519 account authentication key for the policy `k`
     public fun multi_ed25519_authentication_key(k: &MultiEd25519PublicKey): vector<u8> {

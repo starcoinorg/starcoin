@@ -49,6 +49,7 @@ module SharedEd25519PublicKey {
                   ).account_address);
         aborts_if !Signature::ed25519_validate_pubkey(key);
         aborts_if exists<SharedEd25519PublicKey>(Signer::spec_address_of(account));
+        aborts_if len(Authenticator::spec_ed25519_authentication_key(key)) != 32;
     }
 
     fun rotate_key_(shared_key: &mut SharedEd25519PublicKey, new_public_key: vector<u8>) {
@@ -67,6 +68,7 @@ module SharedEd25519PublicKey {
     spec fun rotate_key_ {
         aborts_if !exists<Account::Account>(shared_key.rotation_cap.account_address);
         aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
+        aborts_if len(Authenticator::spec_ed25519_authentication_key(new_public_key)) != 32;
     }
 
     // (1) rotate the public key stored `account`'s `SharedEd25519PublicKey` resource to
@@ -83,6 +85,7 @@ module SharedEd25519PublicKey {
         aborts_if !exists<SharedEd25519PublicKey>(Signer::address_of(account));
         aborts_if !exists<Account::Account>(global<SharedEd25519PublicKey>(Signer::address_of(account)).rotation_cap.account_address);
         aborts_if !Signature::ed25519_validate_pubkey(new_public_key);
+        aborts_if len(Authenticator::spec_ed25519_authentication_key(new_public_key)) != 32;
     }
 
     // Return the public key stored under `addr`.

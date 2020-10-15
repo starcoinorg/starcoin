@@ -196,3 +196,11 @@ a problem based on the output it passes to the underlying backends. There are tw
 - With the option `-C backend.generate_smt=true` the prover will generate, for each verification problem, a file in
   the smtlib format. The file is named after the verified function. This file contains the output Boogie
   passes on to Z3 or other connected SMT solvers.
+
+## Testing
+
+Run spec verification for stdlib module, for example Account.move, execute below command under directory vm/move-prover:
+
+```shell script
+cargo test modules/Account.move
+```

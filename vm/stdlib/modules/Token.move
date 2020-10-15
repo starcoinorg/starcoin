@@ -105,6 +105,8 @@ module Token {
     }
 
     spec fun register_token {
+        pragma verify = false; // missing spec for Math::pow
+        aborts_if precision > MAX_PRECISION;
         aborts_if Signer::spec_address_of(account) != SPEC_TOKEN_TEST_ADDRESS();
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
@@ -192,6 +194,12 @@ module Token {
         do_mint(amount)
     }
 
+    spec fun mint_with_capability {
+        aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
+        ensures spec_abstract_total_value<TokenType>() ==
+                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
+    }
+
     fun do_mint<TokenType>(amount: u128): Token<TokenType> acquires TokenInfo {
         // update market cap resource to reflect minting
         let (token_address, module_name, token_name) = name_of_token<TokenType>();
@@ -207,11 +215,9 @@ module Token {
         Token<TokenType> { value: amount }
     }
 
-    spec fun mint_with_capability {
+    spec fun do_mint {
+        aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
         aborts_if spec_abstract_total_value<TokenType>() + amount > MAX_U128;
-        ensures spec_abstract_total_value<TokenType>() ==
-                old(global<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS()).total_value) + amount;
-
     }
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -224,6 +230,13 @@ module Token {
             total: amount,
             end_time,
         }
+    }
+
+    spec fun issue_fixed_mint_key {
+        aborts_if peroid == 0;
+        aborts_if amount == 0;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Timestamp::spec_now_seconds() + peroid > MAX_U64;
     }
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
@@ -239,11 +252,24 @@ module Token {
         }
     }
 
+    spec fun issue_linear_mint_key {
+        aborts_if peroid == 0;
+        aborts_if amount == 0;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
         assert(amount > 0, EMINT_KEY_TIME_LIMIT());
         let FixedTimeMintKey { total, end_time:_} = key;
         do_mint(total)
+    }
+
+    spec fun mint_with_fixed_key {
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if spec_mint_amount_of_fixed_key<TokenType>(key) == 0;
+        aborts_if !exists<TokenInfo<TokenType>>(SPEC_TOKEN_TEST_ADDRESS());
+        aborts_if spec_abstract_total_value<TokenType>() + key.total > MAX_U128;
     }
 
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
@@ -252,6 +278,10 @@ module Token {
         let token = do_mint(amount);
         key.minted = key.minted + amount;
         token
+    }
+
+    spec fun mint_with_linear_key {
+        pragma verify = false; //timeout, fix later
     }
 
     // Returns the amount of the LinearTimeMintKey can mint now.
@@ -265,10 +295,30 @@ module Token {
         }
     }
 
+    spec fun mint_amount_of_linear_key {
+        pragma verify = false; // timeout, fix later
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Timestamp::spec_now_seconds() < key.start_time;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.peroid && key.total < key.minted;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div(key.total) < key.minted;
+    }
+
     // Returns the mint amount of the FixedTimeMintKey.
     public fun mint_amount_of_fixed_key<TokenType>(key: &FixedTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         if (now >= key.end_time) {
+            key.total
+        }else{
+            0
+        }
+    }
+
+    spec fun mint_amount_of_fixed_key {
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
+    spec define spec_mint_amount_of_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): u128 {
+        if (Timestamp::spec_now_seconds() >= key.end_time) {
             key.total
         }else{
             0
@@ -282,6 +332,10 @@ module Token {
     public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
         let LinearTimeMintKey<TokenType> { total, minted, start_time: _, peroid: _ } = key;
         assert(total == minted, EDESTROY_KEY_NOT_EMPTY());
+    }
+
+    spec fun destroy_empty_key {
+        aborts_if key.total != key.minted;
     }
 
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
@@ -335,7 +389,7 @@ module Token {
     }
 
     spec fun value {
-        include AmountAbortsIf<TokenType>{amount: token.value};
+        aborts_if false;
     }
 
     /// Splits the given token into two and returns them both
@@ -414,11 +468,6 @@ module Token {
         aborts_if token.value > 0;
     }
 
-    spec schema AmountAbortsIf<TokenType> {
-        amount: u128;
-        aborts_if amount > MAX_U128;
-    }
-
     /// Returns the scaling_factor for the `TokenType` token.
     public fun scaling_factor<TokenType>(): u128 acquires TokenInfo {
         let token_address = token_address<TokenType>();
@@ -436,7 +485,7 @@ module Token {
     }
 
     spec fun market_cap {
-        include AmountAbortsIf<TokenType>{amount: spec_abstract_total_value<TokenType>()};
+        aborts_if false;
     }
 
     /// Return true if the type `TokenType` is a registered in `token_address`.
@@ -480,8 +529,14 @@ module Token {
     }
 
     spec fun token_code {
+        pragma opaque = true;
         aborts_if false;
+        ensures [abstract] result == spec_token_code<TokenType>();
     }
+
+    /// We use an uninterpreted function to represent the result of derived address. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_token_code<TokenType>(): vector<u8>;
 
     fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
         let code = LCS::to_bytes(&addr);

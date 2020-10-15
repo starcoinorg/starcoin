@@ -518,6 +518,32 @@ pragma aborts_if_is_strict;
 
 
 
+
+<a name="0x1_Config_PublishNewConfigAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Config.md#0x1_Config_PublishNewConfigAbortsIf">PublishNewConfigAbortsIf</a>&lt;ConfigValue&gt; {
+    account: signer;
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>aborts_if</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Config_PublishNewConfigEnsures"></a>
+
+
+<pre><code><b>schema</b> <a href="Config.md#0x1_Config_PublishNewConfigEnsures">PublishNewConfigEnsures</a>&lt;ConfigValue&gt; {
+    account: signer;
+    <b>ensures</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+    <b>ensures</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+}
+</code></pre>
+
+
+
 <a name="@Specification_0_extract_modify_config_capability"></a>
 
 ### Function `extract_modify_config_capability`
