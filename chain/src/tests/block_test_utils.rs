@@ -95,7 +95,7 @@ fn txn_transfer(
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = ChainNetwork::TEST.consensus().now() + DEFAULT_EXPIRATION_TIME;
+    let expired = ChainNetwork::TEST.consensus().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {

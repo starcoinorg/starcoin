@@ -112,7 +112,7 @@ fn test_dao_upgrade_module() -> Result<()> {
             &chain_state,
             BlockMetadata::new(
                 HashValue::zero(),
-                block_timestamp,
+                net.consensus().now_millis() + one_day * block_number,
                 genesis_address(),
                 None,
                 0,
@@ -160,7 +160,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     });
     // block 2
     let block_number = 2;
-    let block_timestamp = net.consensus().now() + one_day * block_number;
+    let block_timestamp = net.consensus().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
             &chain_state,

@@ -80,11 +80,11 @@ pub trait Consensus {
 
     fn time(&self) -> &dyn TimeService;
 
-    fn now(&self) -> u64 {
-        self.time().now_as_millisecond()
+    fn now_millis(&self) -> u64 {
+        self.time().now_millis()
     }
 
-    fn now_seconds(&self) -> u64 {
-        self.time().now()
+    fn now_secs(&self) -> u64 {
+        self.time().now_secs()
     }
 }
