@@ -13,7 +13,7 @@ structopt = "0.3.20"
 anyhow = "1.0.33"
 colored-diff = "0.2.2"
 guppy = { version = "0.5.0", features = ["summaries"] }
-indoc = "1.0.2"
+indoc = "1.0.3"
 toml = "0.5.7"
 env_logger = "0.7.1"
 log = "0.4.11"
