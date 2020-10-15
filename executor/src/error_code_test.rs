@@ -24,10 +24,10 @@ fn test_block_metadata_error_code() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let account1 = Account::new();
 
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
     let txn_normal = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
+        net.consensus().now_millis(),
         *account1.address(),
         Some(account1.clone().pubkey),
         0,
@@ -41,10 +41,10 @@ fn test_block_metadata_error_code() -> Result<()> {
         *output_normal.status()
     );
 
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
     let txn1 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
+        net.consensus().now_millis(),
         *account1.address(),
         Some(account1.clone().pubkey),
         0,
@@ -58,7 +58,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         *output1.status()
     );
 
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
     let txn2 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
         0, //EINVALID_TIMESTAMP
@@ -75,10 +75,10 @@ fn test_block_metadata_error_code() -> Result<()> {
         *output2.status()
     );
 
-    net.consensus().time().sleep(1);
+    net.consensus().time().sleep(1000);
     let txn3 = Transaction::BlockMetadata(BlockMetadata::new(
         starcoin_crypto::HashValue::random(),
-        net.consensus().now(),
+        net.consensus().now_millis(),
         *account1.address(),
         Some(account1.clone().pubkey),
         net.genesis_config()
@@ -120,7 +120,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
         1,
         DEFAULT_MAX_GAS_AMOUNT,
         WRONG_TOKEN_CODE_FOR_TEST.clone(),
-        net.consensus().now() + DEFAULT_EXPIRATION_TIME,
+        net.consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
         net.chain_id(),
     );
 

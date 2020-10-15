@@ -51,7 +51,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
             public_key.to_bytes().to_vec(),
             0,
             10000,
-            config.net().consensus().now() + DEFAULT_EXPIRATION_TIME,
+            config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()
