@@ -83,4 +83,8 @@ pub trait Consensus {
     fn now(&self) -> u64 {
         self.time().now_as_millisecond()
     }
+
+    fn now_seconds(&self) -> u64 {
+        self.time().now()
+    }
 }
