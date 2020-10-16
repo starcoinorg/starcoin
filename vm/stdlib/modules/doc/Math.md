@@ -5,37 +5,41 @@
 
 
 
--  [Const <code><a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a></code>](#0x1_Math_U64_MAX)
--  [Const <code><a href="Math.md#0x1_Math_U128_MAX">U128_MAX</a></code>](#0x1_Math_U128_MAX)
--  [Function <code>u64_max</code>](#0x1_Math_u64_max)
--  [Function <code>u128_max</code>](#0x1_Math_u128_max)
--  [Function <code>sqrt</code>](#0x1_Math_sqrt)
--  [Function <code>pow</code>](#0x1_Math_pow)
--  [Function <code>mul_div</code>](#0x1_Math_mul_div)
--  [Specification](#@Specification_0)
-    -  [Function <code>sqrt</code>](#@Specification_0_sqrt)
-    -  [Function <code>pow</code>](#@Specification_0_pow)
-    -  [Function <code>mul_div</code>](#@Specification_0_mul_div)
+-  [Constants](#@Constants_0)
+-  [Function `u64_max`](#0x1_Math_u64_max)
+-  [Function `u128_max`](#0x1_Math_u128_max)
+-  [Function `sqrt`](#0x1_Math_sqrt)
+-  [Function `pow`](#0x1_Math_pow)
+-  [Function `mul_div`](#0x1_Math_mul_div)
+-  [Specification](#@Specification_1)
+    -  [Function `sqrt`](#@Specification_1_sqrt)
+    -  [Function `pow`](#@Specification_1_pow)
+    -  [Function `mul_div`](#@Specification_1_mul_div)
 
 
-<a name="0x1_Math_U64_MAX"></a>
-
-## Const `U64_MAX`
+<pre><code></code></pre>
 
 
 
-<pre><code><b>const</b> <a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a>: u64 = 18446744073709551615;
-</code></pre>
+<a name="@Constants_0"></a>
 
+## Constants
 
 
 <a name="0x1_Math_U128_MAX"></a>
 
-## Const `U128_MAX`
-
 
 
 <pre><code><b>const</b> <a href="Math.md#0x1_Math_U128_MAX">U128_MAX</a>: u128 = 340282366920938463463374607431768211455;
+</code></pre>
+
+
+
+<a name="0x1_Math_U64_MAX"></a>
+
+
+
+<pre><code><b>const</b> <a href="Math.md#0x1_Math_U64_MAX">U64_MAX</a>: u64 = 18446744073709551615;
 </code></pre>
 
 
@@ -196,14 +200,51 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
+</code></pre>
+
+
+
+<a name="@Specification_1_sqrt"></a>
+
+### Function `sqrt`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>pragma</b> timeout = 120;
+<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) + y/2 +1 &gt; max_u128();
+<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) &gt; max_u128();
+</code></pre>
+
+
+
+<a name="@Specification_1_pow"></a>
+
+### Function `pow`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>();
 </code></pre>
 
 
@@ -219,53 +260,7 @@ does not matter for the verification of callers.
 
 
 
-
-<a name="0x1_Math_spec_mul_div"></a>
-
-
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x: u128): u128;
-</code></pre>
-
-
-
-<a name="@Specification_0_sqrt"></a>
-
-### Function `sqrt`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_sqrt">sqrt</a>(y: u128): u64
-</code></pre>
-
-
-
-
-<pre><code>pragma verify = <b>false</b>;
-pragma timeout = 120;
-<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) + y/2 +1 &gt; max_u128();
-<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) &gt; max_u128();
-</code></pre>
-
-
-
-<a name="@Specification_0_pow"></a>
-
-### Function `pow`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Math.md#0x1_Math_pow">pow</a>(x: u64, y: u64): u128
-</code></pre>
-
-
-
-
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
-<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>();
-</code></pre>
-
-
-
-<a name="@Specification_0_mul_div"></a>
+<a name="@Specification_1_mul_div"></a>
 
 ### Function `mul_div`
 
@@ -276,10 +271,19 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> x &gt; z && z == 0;
 <b>aborts_if</b> x / z * y &gt; MAX_U128;
 <b>aborts_if</b> x /z * x % z * z + x / z * y % z + x % z * y / z + x % z * y % z / z &gt; MAX_U128;
 <b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x);
+</code></pre>
+
+
+
+
+<a name="0x1_Math_spec_mul_div"></a>
+
+
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x: u128): u128;
 </code></pre>

@@ -5,13 +5,18 @@
 
 
 
--  [Function <code>cmp_lcs_bytes</code>](#0x1_Compare_cmp_lcs_bytes)
--  [Function <code>cmp_u8</code>](#0x1_Compare_cmp_u8)
--  [Function <code>cmp_u64</code>](#0x1_Compare_cmp_u64)
+-  [Function `cmp_lcs_bytes`](#0x1_Compare_cmp_lcs_bytes)
+-  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
+-  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
 -  [Specification](#@Specification_0)
-    -  [Function <code>cmp_lcs_bytes</code>](#@Specification_0_cmp_lcs_bytes)
-    -  [Function <code>cmp_u8</code>](#@Specification_0_cmp_u8)
-    -  [Function <code>cmp_u64</code>](#@Specification_0_cmp_u64)
+    -  [Function `cmp_lcs_bytes`](#@Specification_0_cmp_lcs_bytes)
+    -  [Function `cmp_u8`](#@Specification_0_cmp_u8)
+    -  [Function `cmp_u64`](#@Specification_0_cmp_u64)
+
+
+<pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Compare_cmp_lcs_bytes"></a>
@@ -111,8 +116,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -128,7 +133,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 

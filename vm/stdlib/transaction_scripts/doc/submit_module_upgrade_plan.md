@@ -7,6 +7,11 @@
 
 
 
+<pre><code><b>use</b> <a href="../../modules/doc/UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal">0x1::UpgradeModuleDaoProposal</a>;
+</code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="submit_module_upgrade_plan.md#submit_module_upgrade_plan">submit_module_upgrade_plan</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(_signer: &signer, proposer_address: address, proposal_id: u64)
 </code></pre>

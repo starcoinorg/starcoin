@@ -5,16 +5,26 @@
 
 
 
--  [Resource <code><a href="TransactionFee.md#0x1_TransactionFee">TransactionFee</a></code>](#0x1_TransactionFee_TransactionFee)
--  [Function <code>initialize</code>](#0x1_TransactionFee_initialize)
--  [Function <code>add_txn_fee_token</code>](#0x1_TransactionFee_add_txn_fee_token)
--  [Function <code>pay_fee</code>](#0x1_TransactionFee_pay_fee)
--  [Function <code>distribute_transaction_fees</code>](#0x1_TransactionFee_distribute_transaction_fees)
+-  [Resource `TransactionFee`](#0x1_TransactionFee_TransactionFee)
+-  [Function `initialize`](#0x1_TransactionFee_initialize)
+-  [Function `add_txn_fee_token`](#0x1_TransactionFee_add_txn_fee_token)
+-  [Function `pay_fee`](#0x1_TransactionFee_pay_fee)
+-  [Function `distribute_transaction_fees`](#0x1_TransactionFee_distribute_transaction_fees)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>add_txn_fee_token</code>](#@Specification_0_add_txn_fee_token)
-    -  [Function <code>pay_fee</code>](#@Specification_0_pay_fee)
-    -  [Function <code>distribute_transaction_fees</code>](#@Specification_0_distribute_transaction_fees)
+    -  [Function `initialize`](#@Specification_0_initialize)
+    -  [Function `add_txn_fee_token`](#@Specification_0_add_txn_fee_token)
+    -  [Function `pay_fee`](#@Specification_0_pay_fee)
+    -  [Function `distribute_transaction_fees`](#@Specification_0_distribute_transaction_fees)
+
+
+<pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="ErrorCode.md#0x1_ErrorCode">0x1::ErrorCode</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+</code></pre>
+
 
 
 <a name="0x1_TransactionFee_TransactionFee"></a>
@@ -183,8 +193,8 @@ underlying fiat.
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -251,5 +261,5 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

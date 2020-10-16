@@ -5,13 +5,17 @@
 
 
 
--  [Function <code>and</code>](#0x1_BitOperators_and)
--  [Function <code>or</code>](#0x1_BitOperators_or)
--  [Function <code>xor</code>](#0x1_BitOperators_xor)
--  [Function <code>not</code>](#0x1_BitOperators_not)
--  [Function <code>lshift</code>](#0x1_BitOperators_lshift)
--  [Function <code>rshift</code>](#0x1_BitOperators_rshift)
+-  [Function `and`](#0x1_BitOperators_and)
+-  [Function `or`](#0x1_BitOperators_or)
+-  [Function `xor`](#0x1_BitOperators_xor)
+-  [Function `not`](#0x1_BitOperators_not)
+-  [Function `lshift`](#0x1_BitOperators_lshift)
+-  [Function `rshift`](#0x1_BitOperators_rshift)
 -  [Specification](#@Specification_0)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_BitOperators_and"></a>
@@ -164,5 +168,5 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

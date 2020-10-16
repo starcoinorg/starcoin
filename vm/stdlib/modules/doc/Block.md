@@ -5,19 +5,29 @@
 
 
 
--  [Resource <code><a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a></code>](#0x1_Block_BlockMetadata)
--  [Struct <code><a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a></code>](#0x1_Block_NewBlockEvent)
--  [Function <code>initialize</code>](#0x1_Block_initialize)
--  [Function <code>get_current_block_number</code>](#0x1_Block_get_current_block_number)
--  [Function <code>get_parent_hash</code>](#0x1_Block_get_parent_hash)
--  [Function <code>get_current_author</code>](#0x1_Block_get_current_author)
--  [Function <code>process_block_metadata</code>](#0x1_Block_process_block_metadata)
+-  [Resource `BlockMetadata`](#0x1_Block_BlockMetadata)
+-  [Struct `NewBlockEvent`](#0x1_Block_NewBlockEvent)
+-  [Function `initialize`](#0x1_Block_initialize)
+-  [Function `get_current_block_number`](#0x1_Block_get_current_block_number)
+-  [Function `get_parent_hash`](#0x1_Block_get_parent_hash)
+-  [Function `get_current_author`](#0x1_Block_get_current_author)
+-  [Function `process_block_metadata`](#0x1_Block_process_block_metadata)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>get_current_block_number</code>](#@Specification_0_get_current_block_number)
-    -  [Function <code>get_parent_hash</code>](#@Specification_0_get_parent_hash)
-    -  [Function <code>get_current_author</code>](#@Specification_0_get_current_author)
-    -  [Function <code>process_block_metadata</code>](#@Specification_0_process_block_metadata)
+    -  [Function `initialize`](#@Specification_0_initialize)
+    -  [Function `get_current_block_number`](#@Specification_0_get_current_block_number)
+    -  [Function `get_parent_hash`](#@Specification_0_get_parent_hash)
+    -  [Function `get_current_author`](#@Specification_0_get_current_author)
+    -  [Function `process_block_metadata`](#@Specification_0_process_block_metadata)
+
+
+<pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="ErrorCode.md#0x1_ErrorCode">0x1::ErrorCode</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_Block_BlockMetadata"></a>
@@ -258,8 +268,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict = <b>true</b>;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
@@ -341,7 +351,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> number != <b>global</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).number + 1;

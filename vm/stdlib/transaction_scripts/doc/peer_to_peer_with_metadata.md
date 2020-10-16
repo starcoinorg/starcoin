@@ -7,6 +7,11 @@
 
 
 
+<pre><code><b>use</b> <a href="../../modules/doc/Account.md#0x1_Account">0x1::Account</a>;
+</code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="peer_to_peer_with_metadata.md#peer_to_peer_with_metadata">peer_to_peer_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, payee_public_key: vector&lt;u8&gt;, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>

@@ -5,9 +5,13 @@
 
 
 
--  [Function <code>to_bytes</code>](#0x1_LCS_to_bytes)
--  [Function <code>to_address</code>](#0x1_LCS_to_address)
+-  [Function `to_bytes`](#0x1_LCS_to_bytes)
+-  [Function `to_address`](#0x1_LCS_to_address)
 -  [Specification](#@Specification_0)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_LCS_to_bytes"></a>
@@ -60,8 +64,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 

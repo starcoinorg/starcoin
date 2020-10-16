@@ -5,32 +5,50 @@
 
 
 
--  [Const <code><a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a></code>](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT)
--  [Const <code><a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a></code>](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE)
--  [Function <code>prologue</code>](#0x1_TransactionManager_prologue)
--  [Function <code>epilogue</code>](#0x1_TransactionManager_epilogue)
--  [Function <code>block_prologue</code>](#0x1_TransactionManager_block_prologue)
--  [Function <code>distribute</code>](#0x1_TransactionManager_distribute)
+-  [Constants](#@Constants_0)
+-  [Function `prologue`](#0x1_TransactionManager_prologue)
+-  [Function `epilogue`](#0x1_TransactionManager_epilogue)
+-  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
+-  [Function `distribute`](#0x1_TransactionManager_distribute)
 
 
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
-
-## Const `TXN_PAYLOAD_TYPE_SCRIPT`
-
-
-
-<pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>: u8 = 0;
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
+<b>use</b> <a href="BlockReward.md#0x1_BlockReward">0x1::BlockReward</a>;
+<b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="ErrorCode.md#0x1_ErrorCode">0x1::ErrorCode</a>;
+<b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="TransactionFee.md#0x1_TransactionFee">0x1::TransactionFee</a>;
+<b>use</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
+<b>use</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout">0x1::TransactionTimeout</a>;
 </code></pre>
 
 
 
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
+<a name="@Constants_0"></a>
 
-## Const `TXN_PAYLOAD_TYPE_PACKAGE`
+## Constants
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
 
 
 
 <pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
+
+
+
+<pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>: u8 = 0;
 </code></pre>
 
 

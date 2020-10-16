@@ -5,11 +5,20 @@
 
 
 
--  [Struct <code><a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a></code>](#0x1_RewardConfig_RewardConfig)
--  [Function <code>initialize</code>](#0x1_RewardConfig_initialize)
--  [Function <code>new_reward_config</code>](#0x1_RewardConfig_new_reward_config)
--  [Function <code>get_reward_config</code>](#0x1_RewardConfig_get_reward_config)
--  [Function <code>reward_delay</code>](#0x1_RewardConfig_reward_delay)
+-  [Struct `RewardConfig`](#0x1_RewardConfig_RewardConfig)
+-  [Function `initialize`](#0x1_RewardConfig_initialize)
+-  [Function `new_reward_config`](#0x1_RewardConfig_new_reward_config)
+-  [Function `get_reward_config`](#0x1_RewardConfig_get_reward_config)
+-  [Function `reward_delay`](#0x1_RewardConfig_reward_delay)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="ErrorCode.md#0x1_ErrorCode">0x1::ErrorCode</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_RewardConfig_RewardConfig"></a>
