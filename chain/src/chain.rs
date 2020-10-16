@@ -490,6 +490,16 @@ impl ChainReader for BlockChain {
             Err(format_err!("Block is none when query global time."))
         }
     }
+
+    fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>> {
+        self.block_accumulator
+            .get_leaves(start_number, reverse, max_size)
+    }
 }
 
 impl BlockChain {

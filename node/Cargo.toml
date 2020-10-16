@@ -16,6 +16,7 @@ tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 futures-timer = "3.0"
 async-trait = "0.1"
+async-std = "1.6"
 timeout-join-handler = {path = "../commons/timeout-join-handler"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-config = {path = "../config"}

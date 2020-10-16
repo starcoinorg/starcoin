@@ -35,6 +35,13 @@ pub trait ChainReader {
     fn epoch_info(&self) -> Result<EpochInfo>;
     fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo>;
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
+    /// Get block id vec by BlockNumber, `start_number`'s block id is include.
+    fn get_block_ids(
+        &self,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: usize,
+    ) -> Result<Vec<HashValue>>;
 }
 
 pub trait ChainWriter {

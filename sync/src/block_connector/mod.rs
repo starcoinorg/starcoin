@@ -4,11 +4,11 @@
 use crate::state_sync::StateSyncTaskRef;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
-use crypto::HashValue;
 use logger::prelude::*;
 use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
+use starcoin_crypto::HashValue;
 use starcoin_storage::Store;
 use starcoin_types::{
     block::{Block, BlockInfo, BlockNumber},

@@ -2,7 +2,6 @@ script {
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::Signer;
-    use 0x1::TransactionTimeout;
     use 0x1::Timestamp;
     use 0x1::Token;
     use 0x1::STC::{Self, STC};
@@ -20,9 +19,11 @@ script {
     use 0x1::TransactionPublishOption;
     use 0x1::TokenLockPool;
     use 0x1::Box;
+    use 0x1::TransactionTimeoutConfig;
 
     fun genesis_init(
 
+        // block reward config
         reward_delay: u64,
 
         pre_mine_amount: u128,
@@ -32,7 +33,6 @@ script {
         association_auth_key: vector<u8>,
         genesis_auth_key: vector<u8>,
         chain_id: u8,
-        consensus_strategy: u8,
         genesis_timestamp: u64,
 
         //consensus config
@@ -46,6 +46,7 @@ script {
         max_block_time_target: u64,
         base_max_uncles_per_block: u64,
         base_block_gas_limit: u64,
+        strategy: u8,
 
         //vm config
         merged_script_allow_list: vector<u8>,
@@ -71,6 +72,9 @@ script {
         voting_period: u64,
         voting_quorum_rate: u8,
         min_action_delay: u64,
+
+        // transaction timeout config
+        transaction_timeout: u64,
     ) {
         assert(Timestamp::is_genesis(), 1);
         // create genesis account
@@ -78,7 +82,7 @@ script {
         //Init global time
         Timestamp::initialize(&genesis_account, genesis_timestamp);
         ChainId::initialize(&genesis_account, chain_id);
-        ConsensusStrategy::initialize(&genesis_account, consensus_strategy);
+        ConsensusStrategy::initialize(&genesis_account, strategy);
         Block::initialize(&genesis_account, parent_hash);
         TransactionPublishOption::initialize(
             &genesis_account,
@@ -103,7 +107,7 @@ script {
             default_account_size,
         );
         Version::initialize(&genesis_account);
-        TransactionTimeout::initialize(&genesis_account);
+        TransactionTimeoutConfig::initialize(&genesis_account, transaction_timeout);
         ConsensusConfig::initialize(
             &genesis_account,
             uncle_rate_target,
@@ -116,6 +120,7 @@ script {
             max_block_time_target,
             base_max_uncles_per_block,
             base_block_gas_limit,
+            strategy,
         );
         BlockReward::initialize(&genesis_account, reward_delay);
         TransactionFee::initialize(&genesis_account);

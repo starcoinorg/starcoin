@@ -10,12 +10,12 @@ use crate::sync_task::{SyncTask, SyncTaskType};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
-use crypto::HashValue;
 use futures_timer::Delay;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::PeerProvider;
 use starcoin_chain_service::ChainReaderService;
+use starcoin_crypto::HashValue;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetBlockHeaders, RemoteChainStateReader,
 };

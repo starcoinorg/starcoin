@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::any::type_name;
 
-#[cfg(test)]
 pub mod mock;
 
 pub trait AccumulatorTreeStore: std::marker::Send + std::marker::Sync {

@@ -48,13 +48,13 @@ impl CommandAction for GenGenesisCommand {
         if global_opt.data_dir.is_none() {
             warn!("data_dir option is none, use default data_dir.")
         }
-        let (config, .., genesis_hash, account) =
+        let (config, .., genesis, account) =
             init_or_load_data_dir(&global_opt, opt.password.clone())?;
         Ok(GenGenesisResult {
             net: config.net().clone(),
             config_path: config.data_dir().join(starcoin_config::CONFIG_FILE_PATH),
             account_info: account,
-            genesis: genesis_hash,
+            genesis: genesis.block().id(),
         })
     }
 }
