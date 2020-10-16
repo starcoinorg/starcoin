@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use consensus::duration_since_epoch;
 use consensus::Consensus;
 use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
@@ -668,7 +667,7 @@ impl BlockChain {
         if !header.is_genesis() {
             //block header time check in block prologue.
 
-            let now = duration_since_epoch().as_millis() as u64;
+            let now = self.time_service.now_millis();
             verify_block!(
                 VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,

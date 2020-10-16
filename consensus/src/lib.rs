@@ -59,15 +59,6 @@ static KECCAK: Lazy<KeccakConsensus> = Lazy::new(KeccakConsensus::new);
 static CRYPTONIGHT: Lazy<CryptoNightConsensus> = Lazy::new(CryptoNightConsensus::new);
 
 impl Consensus for ConsensusStrategy {
-    fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
-        match self {
-            ConsensusStrategy::Dummy => DUMMY.init(reader),
-            ConsensusStrategy::Argon => ARGON.init(reader),
-            ConsensusStrategy::Keccak => KECCAK.init(reader),
-            ConsensusStrategy::CryptoNight => CRYPTONIGHT.init(reader),
-        }
-    }
-
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,

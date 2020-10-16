@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::{difficult_to_target, difficulty, set_header_nonce, target_to_difficulty};
+use crate::{
+    difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
+};
 use anyhow::Result;
 use argon2::{self, Config};
 use starcoin_crypto::HashValue;
