@@ -44,37 +44,58 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
         VMStatus::Executed => VMStatus::Executed,
         VMStatus::MoveAbort(_location, code) => {
             let (category, reason) = error_split(code);
-            error!("[starcoin_vm] Prologue error: {:?} (Category: {:?} Reason: {:?})", code, category, reason);
+            error!(
+                "[starcoin_vm] Prologue error: {:?} (Category: {:?} Reason: {:?})",
+                code, category, reason
+            );
             let new_major_status = match (category, reason) {
-                (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST,
-                (INVALID_ARGUMENT, PROLOGUE_INVALID_ACCOUNT_AUTH_KEY) => StatusCode::INVALID_AUTH_KEY,
-                (INVALID_ARGUMENT, PROLOGUE_SEQUENCE_NUMBER_TOO_OLD) => StatusCode::SEQUENCE_NUMBER_TOO_OLD,
-                (INVALID_ARGUMENT, PROLOGUE_SEQUENCE_NUMBER_TOO_NEW) => StatusCode::SEQUENCE_NUMBER_TOO_NEW,
+                (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {
+                    StatusCode::SENDING_ACCOUNT_DOES_NOT_EXIST
+                }
+                (INVALID_ARGUMENT, PROLOGUE_INVALID_ACCOUNT_AUTH_KEY) => {
+                    StatusCode::INVALID_AUTH_KEY
+                }
+                (INVALID_ARGUMENT, PROLOGUE_SEQUENCE_NUMBER_TOO_OLD) => {
+                    StatusCode::SEQUENCE_NUMBER_TOO_OLD
+                }
+                (INVALID_ARGUMENT, PROLOGUE_SEQUENCE_NUMBER_TOO_NEW) => {
+                    StatusCode::SEQUENCE_NUMBER_TOO_NEW
+                }
                 (INVALID_ARGUMENT, PROLOGUE_CANT_PAY_GAS_DEPOSIT) => {
                     StatusCode::INSUFFICIENT_BALANCE_FOR_TRANSACTION_FEE
                 }
                 (INVALID_ARGUMENT, PROLOGUE_TRANSACTION_EXPIRED) => StatusCode::TRANSACTION_EXPIRED,
                 (INVALID_ARGUMENT, PROLOGUE_BAD_CHAIN_ID) => StatusCode::BAD_CHAIN_ID,
-                (INVALID_ARGUMENT, PROLOGUE_MODULE_NOT_ALLOWED) => StatusCode::INVALID_MODULE_PUBLISHER,
+                (INVALID_ARGUMENT, PROLOGUE_MODULE_NOT_ALLOWED) => {
+                    StatusCode::INVALID_MODULE_PUBLISHER
+                }
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
                 (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
-                (INVALID_STATE, ENOT_GENESIS) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
+                (INVALID_STATE, ENOT_GENESIS) => {
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
                 (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
-                (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
-                (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
-                (INVALID_STATE, EDESTORY_TOKEN_NON_ZERO) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
-                (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
+                (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => {
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
+                (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => {
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
+                (INVALID_STATE, EDESTORY_TOKEN_NON_ZERO) => {
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
+                (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => {
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
                 // ToDo add corresponding error code into StatusCode
                 (_, _) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
             };
             VMStatus::Error(new_major_status)
         }
         status @ VMStatus::ExecutionFailure { .. } | status @ VMStatus::Error(_) => {
-            error!(
-                "[starcoin_vm] Unexpected prologue error: {:?}", status
-            );
+            error!("[starcoin_vm] Unexpected prologue error: {:?}", status);
             VMStatus::Error(StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION)
         }
     })
@@ -85,14 +106,15 @@ pub fn convert_normal_success_epilogue_error(error: VMError) -> Result<(), VMSta
     Err(match status {
         VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
-            error!("[starcoin_vm] Epilogue error: {:?} (Category: {:?} Reason: {:?}", code, category, reason);
+            error!(
+                "[starcoin_vm] Epilogue error: {:?} (Category: {:?} Reason: {:?}",
+                code, category, reason
+            );
             match (category, reason) {
                 (LIMIT_EXCEEDED, EINSUFFICIENT_BALANCE) => {
-                    if location != account_module_abort() {
-
-                    }
+                    if location != account_module_abort() {}
                     VMStatus::MoveAbort(location, code)
-                },
+                }
                 (category, reason) => {
                     error!(
                         "[starcoin_vm] Unexpected success epilogue Move abort: {:?}::{:?} (Category: {:?} Reason: {:?})",
