@@ -61,5 +61,5 @@ starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-storage = { path = "../storage" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 test-helper = { path = "../test-helper" }

@@ -4023,6 +4023,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mio"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53a6ea5f38c0a48ca42159868c6d8e1bd56c0451238856cc08d58563643bdc3"
+dependencies = [
+ "libc",
+ "log 0.4.11",
+ "miow 0.3.5",
+ "ntapi",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "mio-extras"
 version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4030,7 +4043,7 @@ checksum = "52403fe290012ce777c4626790c8951324a2b9e3316b3143779c72b029742f19"
 dependencies = [
  "lazycell",
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "slab",
 ]
 
@@ -4041,7 +4054,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656"
 dependencies = [
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "miow 0.3.5",
  "winapi 0.3.9",
 ]
@@ -4054,7 +4067,7 @@ checksum = "afcb699eb26d4332647cc848492bbc15eafb26f08d0304550d5aa1f612e066f0"
 dependencies = [
  "iovec",
  "libc",
- "mio",
+ "mio 0.6.22",
 ]
 
 [[package]]
@@ -4203,7 +4216,7 @@ dependencies = [
  "simplelog",
  "spec-lang",
  "test-utils",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "toml",
  "vm",
 ]
@@ -4482,6 +4495,15 @@ checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
 dependencies = [
  "memchr",
  "version_check 0.9.2",
+]
+
+[[package]]
+name = "ntapi"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a31937dea023539c72ddae0e3571deadc1414b300483fa7aaec176168cfa9d2"
+dependencies = [
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -4811,7 +4833,7 @@ dependencies = [
  "bytes 0.4.12",
  "httparse",
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "mio-extras",
  "rand 0.7.3",
  "sha-1 0.8.2",
@@ -6580,7 +6602,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tempfile",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -6632,7 +6654,7 @@ dependencies = [
  "starcoin-txpool-api",
  "starcoin-types",
  "stest",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -6690,7 +6712,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -6831,7 +6853,7 @@ dependencies = [
  "starcoin-vm-types",
  "stdlib",
  "structopt 0.3.20",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
 ]
 
@@ -7004,7 +7026,7 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "structopt 0.3.20",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7026,7 +7048,7 @@ dependencies = [
  "starcoin-types",
  "structopt 0.3.20",
  "tiny_http",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
  "tokio-executor 0.2.0-alpha.6",
 ]
@@ -7136,7 +7158,7 @@ dependencies = [
  "psutil",
  "serde_json",
  "starcoin-logger",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7187,7 +7209,7 @@ dependencies = [
  "stest",
  "test-helper",
  "thiserror",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7223,7 +7245,7 @@ dependencies = [
  "stest",
  "structopt 0.3.20",
  "thiserror",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
 ]
 
@@ -7288,7 +7310,7 @@ dependencies = [
  "stest",
  "tempfile",
  "test-helper",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "yamux 0.8.0",
  "zeroize",
 ]
@@ -7339,7 +7361,7 @@ dependencies = [
  "starcoin-vm-types",
  "stest",
  "test-helper",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7409,7 +7431,7 @@ dependencies = [
  "stest",
  "thiserror",
  "timeout-join-handler",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7548,7 +7570,7 @@ dependencies = [
  "test-helper",
  "thiserror",
  "tokio 0.1.22",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
 ]
 
@@ -7633,7 +7655,7 @@ dependencies = [
  "test-helper",
  "thiserror",
  "tokio 0.1.22",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
 ]
 
@@ -7817,7 +7839,7 @@ dependencies = [
  "starcoin-vm-types",
  "stest",
  "test-helper",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -7882,7 +7904,7 @@ dependencies = [
  "starcoin-state-api",
  "starcoin-types",
  "structopt 0.3.20",
- "tokio 0.2.22",
+ "tokio 0.3.0",
  "tokio-compat",
 ]
 
@@ -8122,7 +8144,7 @@ dependencies = [
  "starcoin-logger",
  "stest-macro",
  "timeout-join-handler",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -8436,7 +8458,7 @@ dependencies = [
  "starcoin-types",
  "stest",
  "thiserror",
- "tokio 0.2.22",
+ "tokio 0.3.0",
 ]
 
 [[package]]
@@ -8639,7 +8661,7 @@ checksum = "5a09c0b5bb588872ab2f09afa13ee6e9dac11e10a0ec9e8e3ba39a5a5d530af6"
 dependencies = [
  "bytes 0.4.12",
  "futures 0.1.30",
- "mio",
+ "mio 0.6.22",
  "num_cpus",
  "tokio-codec",
  "tokio-current-thread",
@@ -8668,10 +8690,30 @@ dependencies = [
  "lazy_static",
  "libc",
  "memchr",
- "mio",
- "mio-named-pipes",
+ "mio 0.6.22",
  "mio-uds",
  "num_cpus",
+ "pin-project-lite",
+ "signal-hook-registry",
+ "slab",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "tokio"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7137dbb0abee577362ccdc7df21605cfcbb949243aeab47dac9ea6ef7d830e21"
+dependencies = [
+ "bytes 0.5.6",
+ "fnv",
+ "futures-core",
+ "lazy_static",
+ "libc",
+ "memchr",
+ "mio 0.7.3",
+ "num_cpus",
+ "parking_lot 0.11.0",
  "pin-project-lite",
  "signal-hook-registry",
  "slab",
@@ -8773,9 +8815,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "0.2.5"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
+checksum = "d48caa7b66c7a6ec943edf78d21a594fbeb24e536c781da67d5c32edec54103f"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -8790,7 +8832,7 @@ checksum = "9d282d483052288b2308ba5ee795f5673b159c9bdf63c385a05609da782a5eae"
 dependencies = [
  "bytes 0.4.12",
  "futures 0.1.30",
- "mio",
+ "mio 0.6.22",
  "mio-named-pipes",
  "tokio 0.1.22",
 ]
@@ -8805,7 +8847,7 @@ dependencies = [
  "futures 0.1.30",
  "lazy_static",
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "num_cpus",
  "parking_lot 0.9.0",
  "slab",
@@ -8853,7 +8895,7 @@ dependencies = [
  "bytes 0.4.12",
  "futures 0.1.30",
  "iovec",
- "mio",
+ "mio 0.6.22",
  "tokio-io",
  "tokio-reactor",
 ]
@@ -8917,7 +8959,7 @@ dependencies = [
  "bytes 0.4.12",
  "futures 0.1.30",
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "tokio-codec",
  "tokio-io",
  "tokio-reactor",
@@ -8934,7 +8976,7 @@ dependencies = [
  "iovec",
  "libc",
  "log 0.4.11",
- "mio",
+ "mio 0.6.22",
  "mio-uds",
  "tokio-codec",
  "tokio-io",

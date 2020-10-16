@@ -29,7 +29,7 @@ starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 actix-rt = "1.1"
 hex = "0.4.2"
 libp2p = "0.22.0"

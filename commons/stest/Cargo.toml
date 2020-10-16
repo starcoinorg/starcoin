@@ -14,6 +14,6 @@ log = "0.4.11"
 actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 anyhow = "1.0.33"
 

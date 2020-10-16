@@ -16,7 +16,7 @@ bytes = "0.5.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.59"
 parity-codec = { version = "3.2", features = ["derive"] }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 once_cell = "1.4.1"
 
 netowrk-rpc-derive = {path = "derive", package = "network-rpc-derive"}

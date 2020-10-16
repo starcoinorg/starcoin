@@ -11,7 +11,7 @@ anyhow = "1.0.33"
 tiny_http = "0.6"
 futures = { version = "0.3"}
 hex = { version = "0.4.2", default-features = false }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 tokio-executor = { version = "0.2.0-alpha.6", features = ["blocking"] }
 tokio-compat = "0.1.5"
 futures-timer = "3.0"

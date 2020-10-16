@@ -12,7 +12,7 @@ rand = "0.7.3"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 crossbeam-channel = "0.5.0"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 structopt = "0.3.20"

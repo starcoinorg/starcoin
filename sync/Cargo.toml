@@ -45,7 +45,7 @@ starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-chain-service = { path = "../chain/service" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"

@@ -23,7 +23,7 @@ starcoin-storage = { path = "../storage" }
 executor = { path = "../executor", package = "starcoin-executor" }
 starcoin-txpool = { path = "../txpool" }
 tx-relay = { path = "../txpool/tx-relay", package = "starcoin-tx-relay" }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}

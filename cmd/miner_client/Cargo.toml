@@ -13,7 +13,7 @@ starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
 traits = { path = "../../core/traits", package = "starcoin-traits" }
 consensus = { path = "../../consensus", package = "starcoin-consensus" }
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 logger = { path = "../../commons/logger", package = "starcoin-logger" }
 futures-channel = "0.3"
 crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }

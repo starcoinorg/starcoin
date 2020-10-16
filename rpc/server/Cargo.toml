@@ -67,7 +67,7 @@ stest = { path = "../../commons/stest"}
 starcoin-rpc-client = { path = "../client"}
 starcoin-txpool-mock-service = {path ="../../txpool/mock-service"}
 starcoin-executor={path="../../executor"}
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.3", features = ["full"] }
 starcoin-genesis = {path = "../../core/genesis"}
 tokio-compat = "0.1.5"
 test-helper = { path = "../../test-helper" }
