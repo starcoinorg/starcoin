@@ -9,7 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
-use starcoin_vm_types::genesis_config::REAL_TIME_SERVICE;
+use starcoin_vm_types::genesis_config::MOKE_TIME_SERVICE;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
@@ -29,7 +29,7 @@ impl Consensus for DummyConsensus {
     ) -> Result<U256> {
         info!("epoch: {:?}", epoch);
         let current_header = chain.current_header();
-        let now = REAL_TIME_SERVICE.now_millis();
+        let now = MOKE_TIME_SERVICE.now_millis();
         //in dev mode, if disable_empty_block = true,
         //may escape a long time between block,
         //so, just set the difficulty to 1 for sleep less time for this case.
@@ -44,11 +44,11 @@ impl Consensus for DummyConsensus {
         let mut rng = rand::thread_rng();
         let time: u64 = rng.gen_range(1, difficulty.as_u64() * 2);
         info!(
-            "DevConsensus rand sleep time in millis second : {}, difficulty : {}",
+            "DummyConsensus rand sleep time in millis second : {}, difficulty : {}",
             time,
             difficulty.as_u64()
         );
-        REAL_TIME_SERVICE.sleep(time);
+        MOKE_TIME_SERVICE.sleep(time);
         time
     }
 

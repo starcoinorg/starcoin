@@ -6,7 +6,6 @@ use anyhow::{anyhow, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::AccountStateReader;
-use starcoin_statedb::ChainStateReader;
 use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},

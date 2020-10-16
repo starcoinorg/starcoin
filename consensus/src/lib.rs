@@ -21,7 +21,6 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
