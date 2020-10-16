@@ -870,7 +870,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
-            strategy: ConsensusStrategy::Dev.value(),
+            strategy: ConsensusStrategy::Dummy.value(),
         },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
