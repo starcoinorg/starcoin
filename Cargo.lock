@@ -33,7 +33,7 @@ dependencies = [
  "log 0.4.11",
  "once_cell",
  "parking_lot 0.11.0",
- "pin-project",
+ "pin-project 0.4.27",
  "smallvec 1.4.2",
  "tokio 0.2.22",
  "tokio-util",
@@ -2135,7 +2135,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr",
- "pin-project",
+ "pin-project 0.4.27",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -2172,7 +2172,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures 0.3.5",
  "memchr",
- "pin-project",
+ "pin-project 0.4.27",
 ]
 
 [[package]]
@@ -2184,7 +2184,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures 0.3.5",
  "memchr",
- "pin-project",
+ "pin-project 0.4.27",
 ]
 
 [[package]]
@@ -2680,7 +2680,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project",
+ "pin-project 0.4.27",
  "socket2",
  "tokio 0.2.22",
  "tower-service",
@@ -3185,7 +3185,7 @@ dependencies = [
  "multihash",
  "parity-multiaddr",
  "parking_lot 0.10.2",
- "pin-project",
+ "pin-project 0.4.27",
  "smallvec 1.4.2",
  "wasm-timer",
 ]
@@ -3210,7 +3210,7 @@ dependencies = [
  "multistream-select",
  "parity-multiaddr",
  "parking_lot 0.10.2",
- "pin-project",
+ "pin-project 0.4.27",
  "prost",
  "prost-build",
  "rand 0.7.3",
@@ -3442,7 +3442,7 @@ checksum = "37d0db10e139d22d7af0b23ed7949449ec86262798aa0fd01595abdbcb02dc87"
 dependencies = [
  "futures 0.3.5",
  "log 0.4.11",
- "pin-project",
+ "pin-project 0.4.27",
  "rand 0.7.3",
  "salsa20",
  "sha3 0.8.2",
@@ -3477,7 +3477,7 @@ dependencies = [
  "libp2p-core",
  "log 0.4.11",
  "parity-send-wrapper",
- "pin-project",
+ "pin-project 0.4.27",
  "prost",
  "prost-build",
  "quicksink",
@@ -4289,7 +4289,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures 0.3.5",
  "log 0.4.11",
- "pin-project",
+ "pin-project 0.4.27",
  "smallvec 1.4.2",
  "unsigned-varint 0.4.0",
 ]
@@ -4373,7 +4373,7 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.0",
  "peerset",
- "pin-project",
+ "pin-project 1.0.1",
  "prometheus",
  "prost",
  "rand 0.7.3",
@@ -5068,7 +5068,16 @@ version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ffbc8e94b38ea3d2d8ba92aea2983b503cd75d0888d75b86bb37970b5698e15"
 dependencies = [
- "pin-project-internal",
+ "pin-project-internal 0.4.27",
+]
+
+[[package]]
+name = "pin-project"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee41d838744f60d959d7074e3afb6b35c7456d0f61cad38a24e35e6553f73841"
+dependencies = [
+ "pin-project-internal 1.0.1",
 ]
 
 [[package]]
@@ -5076,6 +5085,17 @@ name = "pin-project-internal"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65ad2ae56b6abe3a1ee25f15ee605bacadb9a764edaba9c2bf4103800d4a1895"
+dependencies = [
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.44",
+]
+
+[[package]]
+name = "pin-project-internal"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81a4ffa594b66bff340084d4081df649a7dc049ac8d7fc458d8e628bfbbb2f86"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -5997,7 +6017,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4da5fcb054c46f5a5dff833b129285a93d3f0179531735e6c866e8cc307d2020"
 dependencies = [
  "futures 0.3.5",
- "pin-project",
+ "pin-project 0.4.27",
  "static_assertions",
 ]
 
