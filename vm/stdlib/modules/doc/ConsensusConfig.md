@@ -12,8 +12,8 @@
 -  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a></code>](#0x1_ConsensusConfig_THOUSAND)
 -  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND_U128">THOUSAND_U128</a></code>](#0x1_ConsensusConfig_THOUSAND_U128)
 -  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a></code>](#0x1_ConsensusConfig_HUNDRED)
--  [Function <code>MAX_UNCLES_PER_BLOCK_IS_WRONG</code>](#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG)
--  [Function <code>UNCLES_IS_NOT_ZERO</code>](#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO)
+-  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a></code>](#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG)
+-  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a></code>](#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO)
 -  [Function <code>initialize</code>](#0x1_ConsensusConfig_initialize)
 -  [Function <code>new_consensus_config</code>](#0x1_ConsensusConfig_new_consensus_config)
 -  [Function <code>get_config</code>](#0x1_ConsensusConfig_get_config)
@@ -383,51 +383,25 @@
 
 <a name="0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
 
-## Function `MAX_UNCLES_PER_BLOCK_IS_WRONG`
+## Const `MAX_UNCLES_PER_BLOCK_IS_WRONG`
 
 
 
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>: u64 = 101;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64 {
-    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO"></a>
 
-## Function `UNCLES_IS_NOT_ZERO`
+## Const `UNCLES_IS_NOT_ZERO`
 
 
 
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>: u64 = 102;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64 {
-    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 2
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_ConsensusConfig_initialize"></a>
 
@@ -925,14 +899,14 @@
     );
 
     <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>()));
+    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>));
 
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> (new_epoch, reward_per_block) = <b>if</b> (block_number &lt; epoch_ref.end_number) {
         (<b>false</b>, epoch_ref.reward_per_block)
     } <b>else</b> <b>if</b> (block_number == epoch_ref.end_number) {
         //start a new epoch
-        <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>()));
+        <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>));
         <b>let</b> config = <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">get_config</a>();
         <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
         <b>let</b> total_time = now - epoch_ref.epoch_start_time;

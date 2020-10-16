@@ -12,11 +12,11 @@
 -  [Struct <code><a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a></code>](#0x1_Account_SentPaymentEvent)
 -  [Struct <code><a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a></code>](#0x1_Account_ReceivedPaymentEvent)
 -  [Struct <code><a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a></code>](#0x1_Account_AcceptTokenEvent)
+-  [Const <code><a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a></code>](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
+-  [Const <code><a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a></code>](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
+-  [Const <code><a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a></code>](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
+-  [Const <code><a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a></code>](#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT)
 -  [Const <code><a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a></code>](#0x1_Account_DUMMY_AUTH_KEY)
--  [Function <code>EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</code>](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
--  [Function <code>EMALFORMED_AUTHENTICATION_KEY</code>](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
--  [Function <code>EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</code>](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
--  [Function <code>ADDRESS_PUBLIC_KEY_INCONSISTENT</code>](#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT)
 -  [Function <code>create_genesis_account</code>](#0x1_Account_create_genesis_account)
 -  [Function <code>release_genesis_signer</code>](#0x1_Account_release_genesis_signer)
 -  [Function <code>create_account</code>](#0x1_Account_create_account)
@@ -349,6 +349,50 @@ Message for accept token events
 
 </details>
 
+<a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
+
+## Const `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_Account_EMALFORMED_AUTHENTICATION_KEY"></a>
+
+## Const `EMALFORMED_AUTHENTICATION_KEY`
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED"></a>
+
+## Const `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT"></a>
+
+## Const `EADDRESS_PUBLIC_KEY_INCONSISTENT`
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>: u64 = 104;
+</code></pre>
+
+
+
 <a name="0x1_Account_DUMMY_AUTH_KEY"></a>
 
 ## Const `DUMMY_AUTH_KEY`
@@ -359,94 +403,6 @@ Message for accept token events
 </code></pre>
 
 
-
-<a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
-
-## Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_EMALFORMED_AUTHENTICATION_KEY"></a>
-
-## Function `EMALFORMED_AUTHENTICATION_KEY`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 2}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED"></a>
-
-## Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 3}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT"></a>
-
-## Function `ADDRESS_PUBLIC_KEY_INCONSISTENT`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 4}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Account_create_genesis_account"></a>
 
@@ -519,7 +475,7 @@ Message for accept token events
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
     <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
-    <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>()));
+    <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
 
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_address);
     <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
@@ -555,7 +511,7 @@ Message for accept token events
     new_account: &signer,
     authentication_key: vector&lt;u8&gt;,
 ) {
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>()));
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
     <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(new_account);
     move_to(new_account, <a href="Account.md#0x1_Account">Account</a> {
@@ -817,7 +773,7 @@ Message for accept token events
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>()));
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
     // The sender_addr has retained her withdrawal privileges--proceed.
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_addr, sender_balance, amount)
 }
@@ -874,7 +830,7 @@ Message for accept token events
 ): <a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a> <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
     // Abort <b>if</b> we already extracted the unique withdraw capability for this account.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>()));
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(sender_addr);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.withdrawal_capability)
 }
@@ -1027,7 +983,7 @@ Message for accept token events
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>  {
     <b>let</b> sender_account_resource = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
     // Don't allow rotating <b>to</b> clearly invalid key
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>()));
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
     sender_account_resource.authentication_key = new_authentication_key;
 }
 </code></pre>
@@ -1055,7 +1011,7 @@ Message for accept token events
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     // Abort <b>if</b> we already extracted the unique key rotation capability for this account.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>()));
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>));
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account_address);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.key_rotation_capability)
 }

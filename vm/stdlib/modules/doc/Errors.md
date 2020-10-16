@@ -46,7 +46,6 @@ framework evolves.
 -  [Function <code>EBLOCK_NUMBER_MISMATCH</code>](#0x1_Errors_EBLOCK_NUMBER_MISMATCH)
 -  [Function <code>EINVALID_ARGUMENT</code>](#0x1_Errors_EINVALID_ARGUMENT)
 -  [Function <code>EUNREACHABLE</code>](#0x1_Errors_EUNREACHABLE)
--  [Function <code>ECODE_BASE</code>](#0x1_Errors_ECODE_BASE)
 -  [Function <code>make</code>](#0x1_Errors_make)
 -  [Function <code>invalid_state</code>](#0x1_Errors_invalid_state)
 -  [Function <code>requires_address</code>](#0x1_Errors_requires_address)
@@ -611,28 +610,6 @@ There code should unreacheable
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_EUNREACHABLE">EUNREACHABLE</a>(): u64 {19}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Errors_ECODE_BASE"></a>
-
-## Function `ECODE_BASE`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_ECODE_BASE">ECODE_BASE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Errors.md#0x1_Errors_ECODE_BASE">ECODE_BASE</a>(): u64 {100}
 </code></pre>
 
 

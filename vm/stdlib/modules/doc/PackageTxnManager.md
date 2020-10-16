@@ -10,19 +10,19 @@
 -  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a></code>](#0x1_PackageTxnManager_ModuleUpgradeStrategy)
 -  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a></code>](#0x1_PackageTxnManager_ModuleMaintainer)
 -  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a></code>](#0x1_PackageTxnManager_TwoPhaseUpgrade)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a></code>](#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a></code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a></code>](#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a></code>](#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a></code>](#0x1_PackageTxnManager_ESTRATEGY_FREEZED)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a></code>](#0x1_PackageTxnManager_ESTRATEGY_INCORRECT)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a></code>](#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a></code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE)
+-  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a></code>](#0x1_PackageTxnManager_EUNKNOWN_STRATEGY)
 -  [Function <code>STRATEGY_ARBITRARY</code>](#0x1_PackageTxnManager_STRATEGY_ARBITRARY)
 -  [Function <code>STRATEGY_TWO_PHASE</code>](#0x1_PackageTxnManager_STRATEGY_TWO_PHASE)
 -  [Function <code>STRATEGY_NEW_MODULE</code>](#0x1_PackageTxnManager_STRATEGY_NEW_MODULE)
 -  [Function <code>STRATEGY_FREEZE</code>](#0x1_PackageTxnManager_STRATEGY_FREEZE)
--  [Function <code>ESENDER_IS_NOT_MAINTAINER</code>](#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER)
--  [Function <code>EUPGRADE_PLAN_IS_NONE</code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE)
--  [Function <code>EPACKAGE_HASH_INCORRECT</code>](#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT)
--  [Function <code>EACTIVE_TIME_INCORRECT</code>](#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT)
--  [Function <code>ESTRATEGY_FREEZED</code>](#0x1_PackageTxnManager_ESTRATEGY_FREEZED)
--  [Function <code>ESTRATEGY_INCORRECT</code>](#0x1_PackageTxnManager_ESTRATEGY_INCORRECT)
--  [Function <code>ESTRATEGY_NOT_TWO_PHASE</code>](#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE)
--  [Function <code>EUPGRADE_PLAN_IS_NOT_NONE</code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE)
--  [Function <code>EUNKNOWN_STRATEGY</code>](#0x1_PackageTxnManager_EUNKNOWN_STRATEGY)
 -  [Function <code>grant_maintainer</code>](#0x1_PackageTxnManager_grant_maintainer)
 -  [Function <code>update_module_upgrade_strategy</code>](#0x1_PackageTxnManager_update_module_upgrade_strategy)
 -  [Function <code>account_address</code>](#0x1_PackageTxnManager_account_address)
@@ -198,6 +198,105 @@
 
 </details>
 
+<a name="0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER"></a>
+
+## Const `ESENDER_IS_NOT_MAINTAINER`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE"></a>
+
+## Const `EUPGRADE_PLAN_IS_NONE`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT"></a>
+
+## Const `EPACKAGE_HASH_INCORRECT`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT"></a>
+
+## Const `EACTIVE_TIME_INCORRECT`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_ESTRATEGY_FREEZED"></a>
+
+## Const `ESTRATEGY_FREEZED`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_ESTRATEGY_INCORRECT"></a>
+
+## Const `ESTRATEGY_INCORRECT`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>: u64 = 106;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE"></a>
+
+## Const `ESTRATEGY_NOT_TWO_PHASE`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>: u64 = 107;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE"></a>
+
+## Const `EUPGRADE_PLAN_IS_NOT_NONE`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>: u64 = 108;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EUNKNOWN_STRATEGY"></a>
+
+## Const `EUNKNOWN_STRATEGY`
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>: u64 = 109;
+</code></pre>
+
+
+
 <a name="0x1_PackageTxnManager_STRATEGY_ARBITRARY"></a>
 
 ## Function `STRATEGY_ARBITRARY`
@@ -286,204 +385,6 @@
 
 </details>
 
-<a name="0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER"></a>
-
-## Function `ESENDER_IS_NOT_MAINTAINER`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE"></a>
-
-## Function `EUPGRADE_PLAN_IS_NONE`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 2}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT"></a>
-
-## Function `EPACKAGE_HASH_INCORRECT`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 3}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT"></a>
-
-## Function `EACTIVE_TIME_INCORRECT`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 4}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_ESTRATEGY_FREEZED"></a>
-
-## Function `ESTRATEGY_FREEZED`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 5}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_ESTRATEGY_INCORRECT"></a>
-
-## Function `ESTRATEGY_INCORRECT`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 6}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE"></a>
-
-## Function `ESTRATEGY_NOT_TWO_PHASE`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 7}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE"></a>
-
-## Function `EUPGRADE_PLAN_IS_NOT_NONE`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 8}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_EUNKNOWN_STRATEGY"></a>
-
-## Function `EUNKNOWN_STRATEGY`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 9}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_PackageTxnManager_grant_maintainer"></a>
 
 ## Function `grant_maintainer`
@@ -529,10 +430,10 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">update_module_upgrade_strategy</a>(account: &signer, strategy: u8) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>{
-    <b>assert</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_ARBITRARY">STRATEGY_ARBITRARY</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>()));
+    <b>assert</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_ARBITRARY">STRATEGY_ARBITRARY</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>() || strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>));
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> previous_strategy = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address);
-    <b>assert</b>(strategy &gt; previous_strategy, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>()));
+    <b>assert</b>(strategy &gt; previous_strategy, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>));
     <b>if</b> (<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(account_address)) {
         borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(account_address).strategy = strategy;
     }<b>else</b>{
@@ -624,7 +525,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap">extract_submit_upgrade_plan_cap</a>(account: &signer): <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a> <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>{
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>()));
+    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>));
     move_from&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(account_address)
 }
 </code></pre>
@@ -678,9 +579,9 @@
     //FIXME
     //<b>assert</b>(active_after_number &gt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>());
     <b>let</b> account_address = cap.account_address;
-    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>()));
+    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>));
     <b>let</b> tpu = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account_address);
-    <b>assert</b>(<a href="Option.md#0x1_Option_is_none">Option::is_none</a>(&tpu.plan), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>()));
+    <b>assert</b>(<a href="Option.md#0x1_Option_is_none">Option::is_none</a>(&tpu.plan), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>));
     tpu.plan = <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>{ package_hash, active_after_number});
 }
 </code></pre>
@@ -732,9 +633,9 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap">cancel_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
     <b>let</b> account_address = cap.account_address;
-    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>()));
+    <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>));
     <b>let</b> tpu = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account_address);
-    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&tpu.plan), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>()));
+    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&tpu.plan), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>));
     tpu.plan = <a href="Option.md#0x1_Option_none">Option::none</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>&gt;();
 }
 </code></pre>
@@ -845,20 +746,20 @@
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(sender: address, package_address: address, package_hash: vector&lt;u8&gt;) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
     <b>let</b> module_maintainer = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(package_address);
     //TODO <b>define</b> error code.
-    <b>assert</b>(module_maintainer == sender, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>()));
+    <b>assert</b>(module_maintainer == sender, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>));
     <b>let</b> strategy = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(package_address);
     <b>if</b> (strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_ARBITRARY">STRATEGY_ARBITRARY</a>()){
         //do nothing
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>()){
         <b>let</b> plan_opt = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_upgrade_plan">get_upgrade_plan</a>(package_address);
-        <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&plan_opt), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>()));
+        <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&plan_opt), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>));
         <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan_opt);
-        <b>assert</b>(*&plan.package_hash == package_hash, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>()));
-        <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>()));
+        <b>assert</b>(*&plan.package_hash == package_hash, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>));
+        <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>()){
         //do check at VM runtime.
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>()){
-        <b>abort</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a>())
+        <b>abort</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a>)
     };
 }
 </code></pre>

@@ -68,7 +68,7 @@
 The denominator provided was zero
 
 
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDENOMINATOR">EDENOMINATOR</a>: u64 = 0;
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDENOMINATOR">EDENOMINATOR</a>: u64 = 101;
 </code></pre>
 
 
@@ -80,7 +80,7 @@ The denominator provided was zero
 The quotient value would be too large to be held in a <code>u64</code>
 
 
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION">EDIVISION</a>: u64 = 1;
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION">EDIVISION</a>: u64 = 102;
 </code></pre>
 
 
@@ -92,7 +92,7 @@ The quotient value would be too large to be held in a <code>u64</code>
 The multiplied value would be too large to be held in a <code>u64</code>
 
 
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EMULTIPLICATION">EMULTIPLICATION</a>: u64 = 2;
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EMULTIPLICATION">EMULTIPLICATION</a>: u64 = 103;
 </code></pre>
 
 
@@ -104,7 +104,7 @@ The multiplied value would be too large to be held in a <code>u64</code>
 A division by zero was encountered
 
 
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION_BY_ZERO">EDIVISION_BY_ZERO</a>: u64 = 3;
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION_BY_ZERO">EDIVISION_BY_ZERO</a>: u64 = 104;
 </code></pre>
 
 
@@ -116,7 +116,7 @@ A division by zero was encountered
 The computed ratio when converting to a <code><a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a></code> would be unrepresentable
 
 
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_ERATIO_OUT_OF_RANGE">ERATIO_OUT_OF_RANGE</a>: u64 = 4;
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_ERATIO_OUT_OF_RANGE">ERATIO_OUT_OF_RANGE</a>: u64 = 105;
 </code></pre>
 
 

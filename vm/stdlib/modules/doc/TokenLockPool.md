@@ -8,9 +8,9 @@
 -  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a></code>](#0x1_TokenLockPool_TokenPool)
 -  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a></code>](#0x1_TokenLockPool_FixedTimeLockKey)
 -  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a></code>](#0x1_TokenLockPool_LinearTimeLockKey)
--  [Function <code>EDESTROY_KEY_NOT_EMPTY</code>](#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY)
--  [Function <code>ETIMELOCK_NOT_UNLOCKED</code>](#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED)
--  [Function <code>EAMOUNT_TOO_BIG</code>](#0x1_TokenLockPool_EAMOUNT_TOO_BIG)
+-  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a></code>](#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY)
+-  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a></code>](#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED)
+-  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a></code>](#0x1_TokenLockPool_EAMOUNT_TOO_BIG)
 -  [Function <code>initialize</code>](#0x1_TokenLockPool_initialize)
 -  [Function <code>create_linear_lock</code>](#0x1_TokenLockPool_create_linear_lock)
 -  [Function <code>create_fixed_lock</code>](#0x1_TokenLockPool_create_fixed_lock)
@@ -129,75 +129,36 @@
 
 <a name="0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY"></a>
 
-## Function `EDESTROY_KEY_NOT_EMPTY`
+## Const `EDESTROY_KEY_NOT_EMPTY`
 
 
 
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64
+<pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>: u64 = 101;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64 {
-    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED"></a>
 
-## Function `ETIMELOCK_NOT_UNLOCKED`
+## Const `ETIMELOCK_NOT_UNLOCKED`
 
 
 
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>(): u64
+<pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>: u64 = 102;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>(): u64 {
-    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 2
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_TokenLockPool_EAMOUNT_TOO_BIG"></a>
 
-## Function `EAMOUNT_TOO_BIG`
+## Const `EAMOUNT_TOO_BIG`
 
 
 
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a>(): u64
+<pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a>: u64 = 103;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a>(): u64 {
-    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 3
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_TokenLockPool_initialize"></a>
 
@@ -311,7 +272,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_linear_key">unlock_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_linear_key">unlocked_amount_of_linear_key</a>(key);
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>()));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>));
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> token_pool.token, amount);
     key.taked = key.taked + amount;
@@ -340,7 +301,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_unlock_with_fixed_key">unlock_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;  <b>acquires</b> <a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a> {
     <b>let</b> amount = <a href="TokenLockPool.md#0x1_TokenLockPool_unlocked_amount_of_fixed_key">unlocked_amount_of_fixed_key</a>(&key);
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>()));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>));
     <b>let</b> token_pool = borrow_global_mut&lt;<a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a>&lt;TokenType&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> token = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> token_pool.token, key.total);
     <b>let</b> <a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a> { total: _, end_time: _ } = key;
@@ -452,7 +413,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="TokenLockPool.md#0x1_TokenLockPool_destroy_empty">destroy_empty</a>&lt;TokenType&gt;(key: <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a>&lt;TokenType&gt; { total, taked, start_time: _, peroid: _ } = key;
-    <b>assert</b>(total == taked, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>()));
+    <b>assert</b>(total == taked, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>));
 }
 </code></pre>
 
