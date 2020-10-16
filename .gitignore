@@ -38,3 +38,6 @@ examples/*.mv
 
 # Move trace file.
 *.mvcov
+
+# Move Build Output
+move_build_output/
