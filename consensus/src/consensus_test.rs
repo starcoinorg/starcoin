@@ -3,9 +3,7 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
-use crate::{
-    difficult_to_target, set_header_nonce, target_to_difficulty, TimeService, CRYPTONIGHT,
-};
+use crate::{difficult_to_target, set_header_nonce, target_to_difficulty, ARGON, CRYPTONIGHT};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
