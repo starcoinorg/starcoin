@@ -40,12 +40,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let (txpool_service, storage, config, _, registry) = test_helper::start_txpool().await;
     let startup_info = storage.get_startup_info()?.unwrap();
     let net = config.net();
-    let mut block_chain = BlockChain::new(
-        net.consensus(),
-        net.time_service(),
-        startup_info.master,
-        storage,
-    )?;
+    let mut block_chain = BlockChain::new(net.time_service(), startup_info.master, storage)?;
     let miner_account = AccountInfo::random();
 
     let pri_key = Ed25519PrivateKey::genesis();

@@ -9,7 +9,6 @@ mod consensus_test;
 pub mod difficulty;
 pub mod dummy;
 pub mod keccak;
-mod time;
 
 pub use consensus::Consensus;
 pub use starcoin_vm_types::time::duration_since_epoch;

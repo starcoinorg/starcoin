@@ -16,7 +16,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 use traits::ChainReader;
@@ -139,7 +139,6 @@ impl ServiceHandler<Self, GetHeadRequest> for CreateBlockTemplateService {
 }
 
 pub struct Inner {
-    consensus: ConsensusStrategy,
     storage: Arc<dyn Store>,
     chain: BlockChain,
     txpool: TxPoolService,
@@ -166,15 +165,9 @@ impl Inner {
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
     ) -> Result<Self> {
-        let chain = BlockChain::new(
-            net.consensus(),
-            net.time_service(),
-            block_id,
-            storage.clone(),
-        )?;
+        let chain = BlockChain::new(net.time_service(), block_id, storage.clone())?;
 
         Ok(Inner {
-            consensus: net.consensus(),
             storage,
             chain,
             txpool,
@@ -187,12 +180,8 @@ impl Inner {
 
     pub fn update_chain(&mut self, block: Block) -> Result<()> {
         if block.header().parent_hash() != self.chain.current_header().id() {
-            self.chain = BlockChain::new(
-                self.consensus,
-                self.chain.time_service(),
-                block.id(),
-                self.storage.clone(),
-            )?;
+            self.chain =
+                BlockChain::new(self.chain.time_service(), block.id(), self.storage.clone())?;
         } else {
             self.chain.update_chain_head(block)?;
         }
