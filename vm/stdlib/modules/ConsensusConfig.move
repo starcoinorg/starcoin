@@ -63,13 +63,9 @@ module ConsensusConfig {
         total_gas: u128,
     }
 
-    fun MAX_UNCLES_PER_BLOCK_IS_WRONG(): u64 {
-        Errors::ECODE_BASE() + 1
-    }
+    const MAX_UNCLES_PER_BLOCK_IS_WRONG: u64 = 101;
 
-    fun UNCLES_IS_NOT_ZERO(): u64 {
-        Errors::ECODE_BASE() + 2
-    }
+    const UNCLES_IS_NOT_ZERO: u64 = 102;
 
     public fun initialize(
         account: &signer,
@@ -283,14 +279,14 @@ module ConsensusConfig {
         );
 
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
-        assert(epoch_ref.max_uncles_per_block >= uncles, Errors::invalid_argument(MAX_UNCLES_PER_BLOCK_IS_WRONG()));
+        assert(epoch_ref.max_uncles_per_block >= uncles, Errors::invalid_argument(MAX_UNCLES_PER_BLOCK_IS_WRONG));
 
         let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         let (new_epoch, reward_per_block) = if (block_number < epoch_ref.end_number) {
             (false, epoch_ref.reward_per_block)
         } else if (block_number == epoch_ref.end_number) {
             //start a new epoch
-            assert(uncles == 0, Errors::invalid_argument(UNCLES_IS_NOT_ZERO()));
+            assert(uncles == 0, Errors::invalid_argument(UNCLES_IS_NOT_ZERO));
             let config = get_config();
             let last_epoch_time_target = epoch_ref.block_time_target;
             let total_time = now - epoch_ref.epoch_start_time;

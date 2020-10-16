@@ -27,17 +27,16 @@ module Authenticator {
         threshold: u8,
     }
 
-    fun EWRONG_AUTHENTICATION_KEY_LENGTH(): u64 { Errors::ECODE_BASE() + 1}
-
     /// Maximum number of keys allowed in a MultiEd25519 public/private key
     const MAX_MULTI_ED25519_KEYS: u64 = 32;
 
+    const EWRONG_AUTHENTICATION_KEY_LENGTH: u64 = 101;
     /// Threshold provided was 0 which can't be used to create a `MultiEd25519` key
-    const EZERO_THRESHOLD: u64 = 0;
+    const EZERO_THRESHOLD: u64 = 102;
     /// Not enough keys were provided for the specified threshold when creating an `MultiEd25519` key
-    const ENOT_ENOUGH_KEYS_FOR_THRESHOLD: u64 = 1;
+    const ENOT_ENOUGH_KEYS_FOR_THRESHOLD: u64 = 103;
     /// Too many keys were provided for the specified threshold when creating an `MultiEd25519` key
-    const ENUM_KEYS_ABOVE_MAX_THRESHOLD: u64 = 2;
+    const ENUM_KEYS_ABOVE_MAX_THRESHOLD: u64 = 104;
 
     /// Create a a multisig policy from a vector of ed25519 public keys and a threshold.
     /// Note: this does *not* check uniqueness of keys. Repeated keys are convenient to
@@ -89,7 +88,7 @@ module Authenticator {
 
     //convert authentication key to address
     public fun derived_address(authentication_key: vector<u8>): address {
-        assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, Errors::invalid_argument(EWRONG_AUTHENTICATION_KEY_LENGTH()));
+        assert(Vector::length(&authentication_key) == AUTHENTICATION_KEY_LENGTH, Errors::invalid_argument(EWRONG_AUTHENTICATION_KEY_LENGTH));
         let address_bytes = Vector::empty<u8>();
 
         let i = 16;

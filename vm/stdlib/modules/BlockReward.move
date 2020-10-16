@@ -22,10 +22,10 @@ module BlockReward {
         miner: address,
     }
 
-    fun AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY(): u64 { Errors::ECODE_BASE() + 1}
-    fun CURRENT_NUMBER_IS_WRONG(): u64 { Errors::ECODE_BASE() + 2}
-    fun REWARD_NUMBER_IS_WRONG(): u64 { Errors::ECODE_BASE() + 3}
-    fun MINER_EXIST(): u64 { Errors::ECODE_BASE() + 4}
+    const EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY: u64 = 101;
+    const ECURRENT_NUMBER_IS_WRONG: u64 = 102;
+    const EREWARD_NUMBER_IS_WRONG: u64 = 103;
+    const EMINER_EXIST: u64 = 104;
 
     public fun initialize(account: &signer, reward_delay: u64) {
         assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
@@ -45,7 +45,7 @@ module BlockReward {
         if (current_number > 0) {
             let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
             let len = Vector::length(&rewards.infos);
-            assert((current_number == (rewards.reward_number + len + 1)), Errors::invalid_argument(CURRENT_NUMBER_IS_WRONG()));
+            assert((current_number == (rewards.reward_number + len + 1)), Errors::invalid_argument(ECURRENT_NUMBER_IS_WRONG));
 
             if (len >= RewardConfig::reward_delay()) {//pay and remove
                 let reward_delay = RewardConfig::reward_delay();
@@ -53,11 +53,11 @@ module BlockReward {
                 while (i >= reward_delay) {
                     let reward_number = *&rewards.reward_number + 1;
                     let first_info = *Vector::borrow(&rewards.infos, 0);
-                    assert((reward_number == first_info.number), Errors::invalid_argument(REWARD_NUMBER_IS_WRONG()));
+                    assert((reward_number == first_info.number), Errors::invalid_argument(EREWARD_NUMBER_IS_WRONG));
 
                     rewards.reward_number = reward_number;
                     if (first_info.reward > 0) {
-                        assert(Account::exists_at(first_info.miner), Errors::requires_address(MINER_EXIST()));
+                        assert(Account::exists_at(first_info.miner), Errors::requires_address(EMINER_EXIST));
                         let reward = Token::mint<STC>(account, first_info.reward);
                         Account::deposit_to<STC>(account, first_info.miner, reward);
                     };
@@ -68,7 +68,7 @@ module BlockReward {
 
             if (!Account::exists_at(current_author)) {
                 //create account from public key
-                assert(!Vector::is_empty(&public_key_vec), Errors::invalid_argument(AUTHOR_PUBLIC_KEY_IS_NOT_EMPTY()));
+                assert(!Vector::is_empty(&public_key_vec), Errors::invalid_argument(EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY));
                 Account::create_account<STC>(current_author, public_key_vec);
             };
             let current_info = RewardInfo {

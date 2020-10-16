@@ -22,7 +22,7 @@ module Option {
         invariant len(vec) <= 1;
     }
 
-    const EOPTION_ALREADY_FILLED: u64 = 0;
+    const EOPTION_ALREADY_FILLED: u64 = 101;
 
     /// Return an empty `Option`
     public fun none<Element>(): Option<Element> {

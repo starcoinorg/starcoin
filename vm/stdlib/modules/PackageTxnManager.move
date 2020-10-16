@@ -27,15 +27,15 @@ address 0x1 {
         public fun STRATEGY_NEW_MODULE(): u8{2}
         public fun STRATEGY_FREEZE(): u8{3}
 
-        public fun ESENDER_IS_NOT_MAINTAINER(): u64 { Errors::ECODE_BASE() + 1}
-        public fun EUPGRADE_PLAN_IS_NONE(): u64 { Errors::ECODE_BASE() + 2}
-        public fun EPACKAGE_HASH_INCORRECT(): u64 { Errors::ECODE_BASE() + 3}
-        public fun EACTIVE_TIME_INCORRECT(): u64 { Errors::ECODE_BASE() + 4}
-        public fun ESTRATEGY_FREEZED(): u64 { Errors::ECODE_BASE() + 5}
-        public fun ESTRATEGY_INCORRECT(): u64 { Errors::ECODE_BASE() + 6}
-        public fun ESTRATEGY_NOT_TWO_PHASE(): u64 { Errors::ECODE_BASE() + 7}
-        public fun EUPGRADE_PLAN_IS_NOT_NONE(): u64 { Errors::ECODE_BASE() + 8}
-        public fun EUNKNOWN_STRATEGY(): u64 { Errors::ECODE_BASE() + 9}
+        const ESENDER_IS_NOT_MAINTAINER: u64 = 101;
+        const EUPGRADE_PLAN_IS_NONE: u64 = 102;
+        const EPACKAGE_HASH_INCORRECT: u64 = 103;
+        const EACTIVE_TIME_INCORRECT: u64 = 104;
+        const ESTRATEGY_FREEZED: u64 = 105;
+        const ESTRATEGY_INCORRECT: u64 = 106;
+        const ESTRATEGY_NOT_TWO_PHASE: u64 = 107;
+        const EUPGRADE_PLAN_IS_NOT_NONE: u64 = 108;
+        const EUNKNOWN_STRATEGY: u64 = 109;
 
         resource struct ModuleUpgradeStrategy {
             // 0 arbitrary
@@ -70,10 +70,10 @@ address 0x1 {
 
         // Update account's ModuleUpgradeStrategy
         public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
-            assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), Errors::invalid_argument(EUNKNOWN_STRATEGY()));
+            assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), Errors::invalid_argument(EUNKNOWN_STRATEGY));
             let account_address = Signer::address_of(account);
             let previous_strategy = get_module_upgrade_strategy(account_address);
-            assert(strategy > previous_strategy, Errors::invalid_argument(ESTRATEGY_INCORRECT()));
+            assert(strategy > previous_strategy, Errors::invalid_argument(ESTRATEGY_INCORRECT));
             if (exists<ModuleUpgradeStrategy>(account_address)) {
                 borrow_global_mut<ModuleUpgradeStrategy>(account_address).strategy = strategy;
             }else{
@@ -117,7 +117,7 @@ address 0x1 {
 
         public fun extract_submit_upgrade_plan_cap(account: &signer): UpgradePlanCapability acquires ModuleUpgradeStrategy, UpgradePlanCapability{
             let account_address = Signer::address_of(account);
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE()));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             move_from<UpgradePlanCapability>(account_address)
         }
 
@@ -141,9 +141,9 @@ address 0x1 {
             //FIXME
             //assert(active_after_number >= Block::get_current_block_number(), EACTIVE_TIME_INCORRECT());
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE()));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_none(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NOT_NONE()));
+            assert(Option::is_none(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NOT_NONE));
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
         }
 
@@ -163,9 +163,9 @@ address 0x1 {
 
         public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE()));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE()));
+            assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
             tpu.plan = Option::none<UpgradePlan>();
         }
 
@@ -213,20 +213,20 @@ address 0x1 {
         public fun check_package_txn(sender: address, package_address: address, package_hash: vector<u8>) acquires ModuleMaintainer, TwoPhaseUpgrade, ModuleUpgradeStrategy{
             let module_maintainer = get_module_maintainer(package_address);
             //TODO define error code.
-            assert(module_maintainer == sender, Errors::requires_address(ESENDER_IS_NOT_MAINTAINER()));
+            assert(module_maintainer == sender, Errors::requires_address(ESENDER_IS_NOT_MAINTAINER));
             let strategy = get_module_upgrade_strategy(package_address);
             if (strategy == STRATEGY_ARBITRARY()){
                 //do nothing
             }else if(strategy == STRATEGY_TWO_PHASE()){
                 let plan_opt = get_upgrade_plan(package_address);
-                assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE()));
+                assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
                 let plan = Option::borrow(&plan_opt);
-                assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT()));
-                assert(plan.active_after_number <= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT()));
+                assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
+                assert(plan.active_after_number <= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             }else if(strategy == STRATEGY_NEW_MODULE()){
                 //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE()){
-                abort(ESTRATEGY_FREEZED())
+                abort(ESTRATEGY_FREEZED)
             };
         }
 

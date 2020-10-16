@@ -24,7 +24,7 @@ module SharedEd25519PublicKey {
         rotation_cap: Account::KeyRotationCapability,
     }
 
-    const EMALFORMED_PUBLIC_KEY: u64 = 100;
+    const EMALFORMED_PUBLIC_KEY: u64 = 101;
 
     // (1) Rotate the authentication key of the sender to `key`
     // (2) Publish a resource containing a 32-byte ed25519 public key and the rotation capability

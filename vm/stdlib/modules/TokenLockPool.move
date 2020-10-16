@@ -18,19 +18,13 @@ module TokenLockPool {
     resource struct LinearTimeLockKey<TokenType> { total: u128, taked: u128, start_time: u64, peroid: u64 }
 
     // The key which to destory is not empty.
-    fun EDESTROY_KEY_NOT_EMPTY(): u64 {
-        Errors::ECODE_BASE() + 1
-    }
+    const EDESTROY_KEY_NOT_EMPTY: u64 = 101;
 
     // Timelock is not unlocked yet.
-    fun ETIMELOCK_NOT_UNLOCKED(): u64 {
-        Errors::ECODE_BASE() + 2
-    }
+    const ETIMELOCK_NOT_UNLOCKED: u64 = 102;
 
     // Amount too big than locked token's value.
-    fun EAMOUNT_TOO_BIG(): u64 {
-        Errors::ECODE_BASE() + 3
-    }
+    const EAMOUNT_TOO_BIG: u64 = 103;
 
     public fun initialize(account: &signer) {
         assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
@@ -72,7 +66,7 @@ module TokenLockPool {
     // Unlock token with LinearTimeLockKey
     public fun unlock_with_linear_key<TokenType>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
         let amount = unlocked_amount_of_linear_key(key);
-        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED()));
+        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         let token = Token::withdraw(&mut token_pool.token, amount);
         key.taked = key.taked + amount;
@@ -82,7 +76,7 @@ module TokenLockPool {
     // Unlock token with FixedTimeLockKey
     public fun unlock_with_fixed_key<TokenType>(key: FixedTimeLockKey<TokenType>): Token<TokenType>  acquires TokenPool {
         let amount = unlocked_amount_of_fixed_key(&key);
-        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED()));
+        assert(amount > 0, Errors::invalid_state(ETIMELOCK_NOT_UNLOCKED));
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
         let token = Token::withdraw(&mut token_pool.token, key.total);
         let FixedTimeLockKey { total: _, end_time: _ } = key;
@@ -117,7 +111,7 @@ module TokenLockPool {
 
     public fun destroy_empty<TokenType>(key: LinearTimeLockKey<TokenType>) {
         let LinearTimeLockKey<TokenType> { total, taked, start_time: _, peroid: _ } = key;
-        assert(total == taked, Errors::invalid_state(EDESTROY_KEY_NOT_EMPTY()));
+        assert(total == taked, Errors::invalid_state(EDESTROY_KEY_NOT_EMPTY));
     }
 
 }

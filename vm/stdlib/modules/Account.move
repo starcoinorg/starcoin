@@ -97,10 +97,10 @@ module Account {
         token_code: vector<u8>,
     }
 
-    fun EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED(): u64 { Errors::ECODE_BASE() + 1}
-    fun EMALFORMED_AUTHENTICATION_KEY(): u64 { Errors::ECODE_BASE() + 2}
-    fun EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED(): u64 { Errors::ECODE_BASE() + 3}
-    fun ADDRESS_PUBLIC_KEY_INCONSISTENT(): u64 { Errors::ECODE_BASE() + 4}
+    const EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED: u64 = 101;
+    const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
+    const EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED: u64 = 103;
+    const EADDRESS_PUBLIC_KEY_INCONSISTENT: u64 = 104;
 
     const DUMMY_AUTH_KEY:vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -137,7 +137,7 @@ module Account {
     public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
         let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
         let new_address = Authenticator::derived_address(copy authentication_key);
-        assert(new_address == fresh_address, Errors::invalid_argument(ADDRESS_PUBLIC_KEY_INCONSISTENT()));
+        assert(new_address == fresh_address, Errors::invalid_argument(EADDRESS_PUBLIC_KEY_INCONSISTENT));
 
         let new_account = create_signer(new_address);
         make_account(&new_account, authentication_key);
@@ -168,7 +168,7 @@ module Account {
         new_account: &signer,
         authentication_key: vector<u8>,
     ) {
-        assert(Vector::length(&authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY()));
+        assert(Vector::length(&authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY));
         let new_account_addr = Signer::address_of(new_account);
         Event::publish_generator(new_account);
         move_to(new_account, Account {
@@ -317,7 +317,7 @@ module Account {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
         // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
-        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED()));
+        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED));
         // The sender_addr has retained her withdrawal privileges--proceed.
         withdraw_from_balance<TokenType>(sender_addr, sender_balance, amount)
     }
@@ -354,7 +354,7 @@ module Account {
     ): WithdrawCapability acquires Account {
         let sender_addr = Signer::address_of(sender);
         // Abort if we already extracted the unique withdraw capability for this account.
-        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED()));
+        assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED));
         let account = borrow_global_mut<Account>(sender_addr);
         Option::extract(&mut account.withdrawal_capability)
     }
@@ -470,7 +470,7 @@ module Account {
     ) acquires Account  {
         let sender_account_resource = borrow_global_mut<Account>(cap.account_address);
         // Don't allow rotating to clearly invalid key
-        assert(Vector::length(&new_authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY()));
+        assert(Vector::length(&new_authentication_key) == 32, Errors::invalid_argument(EMALFORMED_AUTHENTICATION_KEY));
         sender_account_resource.authentication_key = new_authentication_key;
     }
 
@@ -490,7 +490,7 @@ module Account {
     acquires Account {
         let account_address = Signer::address_of(account);
         // Abort if we already extracted the unique key rotation capability for this account.
-        assert(!delegated_key_rotation_capability(account_address), Errors::invalid_state(EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED()));
+        assert(!delegated_key_rotation_capability(account_address), Errors::invalid_state(EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED));
         let account = borrow_global_mut<Account>(account_address);
         Option::extract(&mut account.key_rotation_capability)
     }
