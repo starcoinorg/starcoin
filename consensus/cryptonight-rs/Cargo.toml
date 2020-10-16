@@ -12,6 +12,9 @@ libc = "^0.2"
 [build-dependencies]
 cc = "1.0"
 
+[lib]
+name = "cryptonight"
+
 [dev-dependencies]
 rustc-serialize = "^0.3"
 bencher = "0.1.5"

@@ -1,6 +1,6 @@
 use libc::{c_char, c_int, c_void, size_t};
 
-#[link(name = "cryptonight")]
+#[link(name = "cryptonight", kind = "static")]
 extern "C" {
     fn cn_slow_hash(
         data: *const c_void,

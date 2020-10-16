@@ -7,7 +7,7 @@ use crate::{
     difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
 };
 use anyhow::Result;
-use cryptonight_rs::cryptonight_r;
+use cryptonight::cryptonight_r;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
