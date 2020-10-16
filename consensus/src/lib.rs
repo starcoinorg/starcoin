@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 pub mod argon;
+pub mod cn;
 mod consensus;
 #[cfg(test)]
 mod consensus_test;
@@ -15,6 +16,7 @@ pub use consensus::Consensus;
 pub use time::{duration_since_epoch, TimeService};
 
 use crate::argon::ArgonConsensus;
+use crate::cn::CryptoNightConsensus;
 use crate::dev::DevConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
@@ -58,6 +60,7 @@ static DUMMY: Lazy<DummyConsensus> = Lazy::new(DummyConsensus::new);
 static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
 static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 static KECCAK: Lazy<KeccakConsensus> = Lazy::new(KeccakConsensus::new);
+static CRYPTONIGHT: Lazy<CryptoNightConsensus> = Lazy::new(CryptoNightConsensus::new);
 
 impl Consensus for ConsensusStrategy {
     fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
@@ -66,6 +69,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.init(reader),
             ConsensusStrategy::Argon => ARGON.init(reader),
             ConsensusStrategy::Keccak => KECCAK.init(reader),
+            ConsensusStrategy::CryptoNight => CRYPTONIGHT.init(reader),
         }
     }
 
@@ -79,6 +83,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Keccak => KECCAK.calculate_next_difficulty(reader, epoch),
+            ConsensusStrategy::CryptoNight => CRYPTONIGHT.calculate_next_difficulty(reader, epoch),
         }
     }
 
@@ -88,6 +93,9 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Keccak => KECCAK.solve_consensus_nonce(mining_hash, difficulty),
+            ConsensusStrategy::CryptoNight => {
+                CRYPTONIGHT.solve_consensus_nonce(mining_hash, difficulty)
+            }
         }
     }
 
@@ -102,6 +110,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.verify(reader, epoch, header),
             ConsensusStrategy::Argon => ARGON.verify(reader, epoch, header),
             ConsensusStrategy::Keccak => KECCAK.verify(reader, epoch, header),
+            ConsensusStrategy::CryptoNight => CRYPTONIGHT.verify(reader, epoch, header),
         }
     }
 
@@ -111,6 +120,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce),
+            ConsensusStrategy::CryptoNight => CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce),
         }
     }
 
@@ -120,6 +130,7 @@ impl Consensus for ConsensusStrategy {
             ConsensusStrategy::Dev => DEV.time(),
             ConsensusStrategy::Argon => ARGON.time(),
             ConsensusStrategy::Keccak => KECCAK.time(),
+            ConsensusStrategy::CryptoNight => CRYPTONIGHT.time(),
         }
     }
 }
