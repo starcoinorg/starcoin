@@ -3,7 +3,6 @@
 
 use anyhow::{format_err, Result};
 use chain::BlockChain;
-use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
 use logger::prelude::*;
@@ -167,7 +166,12 @@ impl Inner {
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
     ) -> Result<Self> {
-        let chain = BlockChain::new(net.consensus(), block_id, storage.clone())?;
+        let chain = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            block_id,
+            storage.clone(),
+        )?;
 
         Ok(Inner {
             consensus: net.consensus(),
@@ -183,7 +187,12 @@ impl Inner {
 
     pub fn update_chain(&mut self, block: Block) -> Result<()> {
         if block.header().parent_hash() != self.chain.current_header().id() {
-            self.chain = BlockChain::new(self.consensus, block.id(), self.storage.clone())?;
+            self.chain = BlockChain::new(
+                self.consensus,
+                self.chain.time_service(),
+                block.id(),
+                self.storage.clone(),
+            )?;
         } else {
             self.chain.update_chain_head(block)?;
         }
@@ -258,7 +267,7 @@ impl Inner {
             block_gas_limit,
             author,
             author_public_key,
-            self.consensus.now_millis(),
+            self.chain.time_service().now_millis(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;

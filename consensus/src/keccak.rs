@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::time::{RealTimeService, TimeService};
 use crate::{
     difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
 };
@@ -15,15 +14,11 @@ use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct KeccakConsensus {
-    time_service: RealTimeService,
-}
+pub struct KeccakConsensus {}
 
 impl KeccakConsensus {
     pub fn new() -> Self {
-        Self {
-            time_service: RealTimeService::new(),
-        }
+        Self {}
     }
 }
 
@@ -69,9 +64,5 @@ impl Consensus for KeccakConsensus {
         let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
         let pow_hash = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice());
         HashValue::from_slice(pow_hash.as_slice())
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        &self.time_service
     }
 }

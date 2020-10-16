@@ -79,12 +79,18 @@ fn test_switch_master() {
         .unwrap();
     let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
 
+    let net = node_config.net();
     for i in 0..times {
-        let mut master =
-            BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
+        let mut master = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            head_id,
+            storage.clone(),
+        )
+        .unwrap();
 
         let mut tmp_inner = Inner::new(
-            node_config.net(),
+            net,
             storage.clone(),
             head_id,
             txpool.clone(),
@@ -117,12 +123,17 @@ fn test_switch_master() {
     }
 
     for i in 0..3 {
-        let mut new_master =
-            BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
+        let mut new_master = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            head_id,
+            storage.clone(),
+        )
+        .unwrap();
 
         let block_template = if i == 0 {
             let tmp = Inner::new(
-                node_config.net(),
+                net,
                 storage.clone(),
                 head_id,
                 txpool.clone(),
@@ -184,12 +195,18 @@ fn test_do_uncles() {
         .unwrap();
     let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
 
+    let net = node_config.net();
     for _i in 0..times {
-        let mut master =
-            BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
+        let mut master = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            head_id,
+            storage.clone(),
+        )
+        .unwrap();
 
         let mut tmp_inner = Inner::new(
-            node_config.net(),
+            net,
             storage.clone(),
             head_id,
             txpool.clone(),
@@ -213,10 +230,15 @@ fn test_do_uncles() {
 
     // branch
     for _i in 0..times {
-        let mut branch =
-            BlockChain::new(node_config.net().consensus(), genesis_id, storage.clone()).unwrap();
+        let mut branch = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            genesis_id,
+            storage.clone(),
+        )
+        .unwrap();
         let inner = Inner::new(
-            node_config.net(),
+            net,
             storage.clone(),
             genesis_id,
             txpool.clone(),
@@ -242,8 +264,13 @@ fn test_do_uncles() {
 
     // uncles
     for i in 0..times {
-        let mut master =
-            BlockChain::new(node_config.net().consensus(), head_id, storage.clone()).unwrap();
+        let mut master = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            head_id,
+            storage.clone(),
+        )
+        .unwrap();
 
         let block_template = master_inner
             .as_ref()
@@ -344,11 +371,17 @@ fn test_new_branch() {
 
     // branch
     let mut new_head_id = genesis_id;
+    let net = node_config.net();
     for i in 0..(times * 2) {
-        let mut branch =
-            BlockChain::new(node_config.net().consensus(), new_head_id, storage.clone()).unwrap();
+        let mut branch = BlockChain::new(
+            net.consensus(),
+            net.time_service(),
+            new_head_id,
+            storage.clone(),
+        )
+        .unwrap();
         let inner = Inner::new(
-            node_config.net(),
+            net,
             storage.clone(),
             new_head_id,
             txpool.clone(),

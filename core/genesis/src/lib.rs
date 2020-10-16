@@ -34,7 +34,6 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_consensus::Consensus;
 use starcoin_vm_types::genesis_config::BuiltinNetwork;
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -250,7 +249,8 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
-        let mut genesis_chain = BlockChain::init_empty_chain(net.consensus(), storage.clone());
+        let mut genesis_chain =
+            BlockChain::init_empty_chain(net.consensus(), net.time_service(), storage.clone());
         genesis_chain.apply(self.block.clone())?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
         storage.save_startup_info(startup_info.clone())?;
@@ -337,18 +337,7 @@ impl Genesis {
             }
             Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
         };
-        let latest_block = if startup_info.master == genesis.block.id() {
-            genesis.block.header().clone()
-        } else {
-            storage
-                .get_block_header_by_hash(startup_info.master)?
-                .ok_or_else(|| {
-                    format_err!("startup info block {:?} should exist.", startup_info.master)
-                })?
-        };
-        let state_root = latest_block.state_root;
-        net.consensus()
-            .init(&ChainStateDB::new(storage, Some(state_root)))?;
+        //TODO add init time for TimeService
         Ok((startup_info, genesis))
     }
 

@@ -1,13 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::time::TimeService;
 use crate::{difficult_to_target, ChainReader};
 use anyhow::{anyhow, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::AccountStateReader;
-use starcoin_statedb::ChainStateReader;
 use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
@@ -19,11 +17,6 @@ pub trait Consensus {
     fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
         let account_reader = AccountStateReader::new(chain.chain_state_reader());
         account_reader.get_epoch_info()
-    }
-
-    /// Init consensus with on chain state
-    fn init(&self, _reader: &dyn ChainStateReader) -> Result<()> {
-        Ok(())
     }
 
     fn calculate_next_difficulty(
@@ -76,15 +69,5 @@ pub trait Consensus {
             anyhow::bail!("Invalid header:{:?}", header);
         }
         Ok(())
-    }
-
-    fn time(&self) -> &dyn TimeService;
-
-    fn now_millis(&self) -> u64 {
-        self.time().now_millis()
-    }
-
-    fn now_secs(&self) -> u64 {
-        self.time().now_secs()
     }
 }
