@@ -20,11 +20,6 @@ pub trait Consensus {
         account_reader.get_epoch_info()
     }
 
-    /// Init consensus with on chain state
-    fn init(&self, _reader: &dyn ChainStateReader) -> Result<()> {
-        Ok(())
-    }
-
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,

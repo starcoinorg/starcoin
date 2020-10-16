@@ -348,8 +348,7 @@ impl Genesis {
                 })?
         };
         let state_root = latest_block.state_root;
-        net.consensus()
-            .init(&ChainStateDB::new(storage, Some(state_root)))?;
+        //TODO add init time for TimeService
         Ok((startup_info, genesis))
     }
 
