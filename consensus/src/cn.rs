@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::{difficult_to_target, difficulty, set_header_nonce, target_to_difficulty};
+use crate::time::{RealTimeService, TimeService};
+use crate::{
+    difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
+};
 use anyhow::Result;
-use argon2::{self, Config};
+use cryptonight::cryptonight_r;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
@@ -12,15 +15,19 @@ use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct ArgonConsensus {}
+pub struct CryptoNightConsensus {
+    time_service: RealTimeService,
+}
 
-impl ArgonConsensus {
+impl CryptoNightConsensus {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            time_service: RealTimeService::new(),
+        }
     }
 }
 
-impl Consensus for ArgonConsensus {
+impl Consensus for CryptoNightConsensus {
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,
@@ -29,7 +36,7 @@ impl Consensus for ArgonConsensus {
         let target = difficulty::get_next_work_required(reader, epoch)?;
         Ok(target_to_difficulty(target))
     }
-    /// Only for unit testing
+
     fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
         let mut nonce = generate_nonce();
         loop {
@@ -57,11 +64,14 @@ impl Consensus for ArgonConsensus {
         self.verify_header_difficulty(difficulty, header)
     }
 
+    /// CryptoNight-R
     fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
         let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
-        let mut config = Config::default();
-        config.mem_cost = 1024;
-        let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;
-        HashValue::from_slice(output.as_slice())
+        let pow_hash = cryptonight_r(&mix_hash, mix_hash.len());
+        HashValue::from_slice(pow_hash.as_slice())
+    }
+
+    fn time(&self) -> &dyn TimeService {
+        &self.time_service
     }
 }

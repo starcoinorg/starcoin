@@ -27,6 +27,7 @@ members = [
     "config",
     "storage",
     "consensus",
+    "consensus/cryptonight-rs",
     "testsuite",
     "txpool",
     "txpool/api",

@@ -3,8 +3,9 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
-use crate::ARGON;
-use crate::{difficult_to_target, set_header_nonce, target_to_difficulty};
+use crate::{
+    difficult_to_target, set_header_nonce, target_to_difficulty, TimeService, CRYPTONIGHT,
+};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
@@ -34,9 +35,9 @@ fn verify_header_test() {
     let mut header = BlockHeader::random();
     header.difficulty = 1.into();
     let raw_header: RawBlockHeader = header.clone().into();
-    let nonce = ARGON.solve_consensus_nonce(raw_header.crypto_hash(), raw_header.difficulty);
+    let nonce = CRYPTONIGHT.solve_consensus_nonce(raw_header.crypto_hash(), raw_header.difficulty);
     header.nonce = nonce;
-    ARGON
+    CRYPTONIGHT
         .verify_header_difficulty(header.difficulty, &header)
         .unwrap()
 }
