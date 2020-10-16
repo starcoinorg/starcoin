@@ -51,7 +51,7 @@ async fn new_block_and_master() -> (Block, BlockChain) {
         .current_header()
         .id();
     let net = node_config.net();
-    let master = BlockChain::new(net.consensus(), net.time_service(), head_id, storage).unwrap();
+    let master = BlockChain::new(net.time_service(), head_id, storage).unwrap();
     (new_block, master)
 }
 
@@ -82,13 +82,7 @@ async fn uncle_block_and_writeable_block_chain(
         .unwrap()
         .id();
     let net = node_config.net();
-    let new_branch = BlockChain::new(
-        net.consensus(),
-        net.time_service(),
-        tmp_head,
-        storage.clone(),
-    )
-    .unwrap();
+    let new_branch = BlockChain::new(net.time_service(), tmp_head, storage.clone()).unwrap();
     let (block_template, _) = new_branch
         .create_block_template(
             *miner_account.address(),
@@ -138,7 +132,7 @@ fn apply_with_illegal_uncle(
         .get_master()
         .current_header()
         .id();
-    let mut master = BlockChain::new(consensus_strategy, net.time_service(), head_id, storage)?;
+    let mut master = BlockChain::new(net.time_service(), head_id, storage)?;
     master.apply(new_block.clone())?;
     Ok(new_block)
 }
@@ -345,13 +339,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         .unwrap()
         .id();
     let net = node_config.net();
-    let mut new_branch = BlockChain::new(
-        net.consensus(),
-        net.time_service(),
-        tmp_head,
-        storage.clone(),
-    )
-    .unwrap();
+    let mut new_branch = BlockChain::new(net.time_service(), tmp_head, storage.clone()).unwrap();
 
     for _i in 0..2 {
         let (block_template, _) = new_branch

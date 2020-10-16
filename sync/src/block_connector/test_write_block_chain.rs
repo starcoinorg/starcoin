@@ -123,7 +123,6 @@ fn gen_fork_block_chain(
         let net = node_config.net();
         for _i in 0..times {
             let block_chain = BlockChain::new(
-                net.consensus(),
                 net.time_service(),
                 parent_id,
                 writeable_block_chain_service.get_master().get_storage(),

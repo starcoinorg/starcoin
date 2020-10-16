@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::{
-    difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
-};
+use crate::{difficulty, set_header_nonce, target_to_difficulty};
 use anyhow::Result;
 use sha3::{Digest, Keccak256};
 use starcoin_crypto::HashValue;
@@ -30,23 +28,6 @@ impl Consensus for KeccakConsensus {
     ) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader, epoch)?;
         Ok(target_to_difficulty(target))
-    }
-
-    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
-        let mut nonce = generate_nonce();
-        loop {
-            let pow_hash: U256 = self
-                .calculate_pow_hash(mining_hash, nonce)
-                .expect("calculate hash should work")
-                .into();
-            let target = difficult_to_target(difficulty);
-            if pow_hash > target {
-                nonce += 1;
-                continue;
-            }
-            break;
-        }
-        nonce
     }
 
     fn verify(

@@ -42,13 +42,8 @@ impl ChainBencher {
             Genesis::init_and_check_storage(&net, storage.clone(), temp_path.path())
                 .expect("init storage by genesis fail.");
 
-        let chain = BlockChain::new(
-            net.consensus(),
-            net.time_service(),
-            startup_info.master,
-            storage,
-        )
-        .expect("create block chain should success.");
+        let chain = BlockChain::new(net.time_service(), startup_info.master, storage)
+            .expect("create block chain should success.");
         let miner_account = AccountInfo::random();
 
         ChainBencher {

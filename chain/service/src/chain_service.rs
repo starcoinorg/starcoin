@@ -204,12 +204,7 @@ impl ChainReaderServiceInner {
         storage: Arc<dyn Store>,
     ) -> Result<Self> {
         let net = config.net();
-        let master = BlockChain::new(
-            net.consensus(),
-            net.time_service(),
-            startup_info.master,
-            storage.clone(),
-        )?;
+        let master = BlockChain::new(net.time_service(), startup_info.master, storage.clone())?;
         Ok(Self {
             config,
             startup_info,
@@ -245,12 +240,7 @@ impl ChainReaderServiceInner {
                 .get_total_difficulty();
             assert!(new_difficulty > old_difficulty);
             let net = self.config.net();
-            self.master = BlockChain::new(
-                net.consensus(),
-                net.time_service(),
-                new_head_id,
-                self.storage.clone(),
-            )?;
+            self.master = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
         }
         Ok(())
     }

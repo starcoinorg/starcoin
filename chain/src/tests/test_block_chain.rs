@@ -399,14 +399,12 @@ fn test_verify_txn() {
     let head = mock_chain.head();
     let block = head.head_block();
     let master_read = BlockChain::new(
-        head.consensus(),
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
     let mut master_write = BlockChain::new(
-        head.consensus(),
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
@@ -422,7 +420,6 @@ fn verify_txn_failed(txns: &[Transaction]) {
     let head = mock_chain.head();
     let header = head.current_header();
     let master = BlockChainNotMock::new(
-        head.consensus(),
         head.time_service(),
         header.parent_hash(),
         mock_chain.head().get_storage(),
@@ -465,7 +462,6 @@ fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>)
     );
     let head = mock_chain.head();
     let mut master = BlockChainNotMock::new(
-        head.consensus(),
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),

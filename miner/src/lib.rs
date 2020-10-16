@@ -7,7 +7,6 @@ use consensus::Consensus;
 use futures::FutureExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use starcoin_config::ConsensusStrategy;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
@@ -25,6 +24,7 @@ pub mod ondemand_pacemaker;
 
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
+use traits::ChainReader;
 pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -102,11 +102,10 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
             } else {
                 debug!("Mint block template: {:?}", block_template);
                 let net = config.net();
-                let strategy = net.consensus();
-                let block_chain = BlockChain::new(strategy, net.time_service(),block_template.parent_hash, storage)?;
-                let epoch = ConsensusStrategy::epoch(&block_chain)?;
+                let block_chain = BlockChain::new( net.time_service(),block_template.parent_hash, storage)?;
+                let epoch =  block_chain.epoch_info()?;
                 let difficulty =
-                    strategy.calculate_next_difficulty(&block_chain, &epoch)?;
+                    net.consensus().calculate_next_difficulty(&block_chain, &epoch)?;
                 miner.set_mint(block_template, difficulty).await?;
                 Ok(())
             }
