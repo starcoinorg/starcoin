@@ -17,7 +17,6 @@ use crypto::hash::HashValue;
 use futures_channel::mpsc;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
-use starcoin_consensus::Consensus;
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use std::sync::Arc;
 use storage::Store;

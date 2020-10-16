@@ -3,7 +3,6 @@
 
 use anyhow::{format_err, Result};
 use chain::BlockChain;
-use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
 use logger::prelude::*;

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::time::{RealTimeService, TimeService};
 use crate::{difficult_to_target, difficulty, set_header_nonce, target_to_difficulty};
 use anyhow::Result;
 use argon2::{self, Config};

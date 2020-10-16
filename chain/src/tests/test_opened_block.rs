@@ -1,5 +1,4 @@
 use anyhow::Result;
-use consensus::Consensus;
 use crypto::keygen::KeyGen;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;

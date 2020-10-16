@@ -8,7 +8,7 @@ use crate::gas_schedule::{
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
-use crate::time::{MockTimeService, RealTimeService, TimeService};
+use crate::time::{MockTimeService, RealTimeService, TimeService, TimeServiceType};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -65,7 +65,7 @@ impl Default for StdlibVersion {
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
     Dummy = 0,
-    Dev = 1,
+    //TODO add new consensus
     Argon = 2,
     Keccak = 3,
 }
@@ -86,7 +86,6 @@ impl fmt::Display for ConsensusStrategy {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConsensusStrategy::Dummy => write!(f, "dummy"),
-            ConsensusStrategy::Dev => write!(f, "dev"),
             ConsensusStrategy::Argon => write!(f, "argon"),
             ConsensusStrategy::Keccak => write!(f, "keccak"),
         }
@@ -99,7 +98,6 @@ impl FromStr for ConsensusStrategy {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "dummy" => Ok(ConsensusStrategy::Dummy),
-            "dev" => Ok(ConsensusStrategy::Dev),
             "argon" => Ok(ConsensusStrategy::Argon),
             "keccak" => Ok(ConsensusStrategy::Keccak),
             s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
@@ -524,7 +522,7 @@ impl ChainNetwork {
     }
 
     pub fn time_service(&self) -> Arc<dyn TimeService> {
-        self.genesis_config().time_service.clone()
+        self.genesis_config().time_service()
     }
 
     pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
@@ -667,7 +665,7 @@ pub struct GenesisConfig {
     /// consensus strategy for chain
     pub consensus_strategy: ConsensusStrategy,
     /// TimeService
-    pub time_service: Arc<dyn TimeService>,
+    pub time_service_type: TimeServiceType,
     pub stdlib_version: StdlibVersion,
     pub dao_config: DaoConfig,
 }
@@ -708,6 +706,14 @@ impl GenesisConfig {
         file.write_all(buf.as_slice())?;
         Ok(())
     }
+
+    pub fn time_service(&self) -> Arc<dyn TimeService> {
+        match self.time_service_type {
+            TimeServiceType::RealTimeService => (*REAL_TIME_SERVICE).clone(),
+            TimeServiceType::MockTimeService => (*MOKE_TIME_SERVICE).clone(),
+            // _ => (*MOKE_TIME_SERVICE).clone(),
+        }
+    }
 }
 
 static UNCLE_RATE_TARGET: u64 = 80;
@@ -729,6 +735,12 @@ static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(64));
+//time service
+pub static REAL_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
+    Lazy::new(|| Arc::new(RealTimeService::new()));
+
+pub static MOKE_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
+    Lazy::new(|| Arc::new(MockTimeService::new_with_value(1)));
 
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000;
 
@@ -795,7 +807,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
         consensus_strategy: ConsensusStrategy::Dummy,
-        time_service: Arc::new(MockTimeService::new_with_value(1)),
+        time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -844,8 +856,8 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
-        consensus_strategy: ConsensusStrategy::Dev,
-        time_service: Arc::new(RealTimeService::new()),
+        consensus_strategy: ConsensusStrategy::Dummy,
+        time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -904,7 +916,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         consensus_strategy: ConsensusStrategy::Keccak,
-        time_service: Arc::new(RealTimeService::new()),
+        time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -961,7 +973,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    time_service: Arc::new(RealTimeService::new()),
+    time_service_type: TimeServiceType::RealTimeService,
     stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
@@ -1010,7 +1022,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     ),
     genesis_key_pair: None,
     consensus_strategy: ConsensusStrategy::Keccak,
-    time_service: Arc::new(RealTimeService::new()),
+    time_service_type: TimeServiceType::RealTimeService,
     stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h

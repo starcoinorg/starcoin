@@ -3,9 +3,8 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
-use crate::time::MockTimeService;
-use crate::{difficult_to_target, set_header_nonce, target_to_difficulty, TimeService};
-use crate::{duration_since_epoch, ARGON};
+use crate::ARGON;
+use crate::{difficult_to_target, set_header_nonce, target_to_difficulty};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;

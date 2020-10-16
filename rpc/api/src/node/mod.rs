@@ -7,7 +7,6 @@ use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::Consensus;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;

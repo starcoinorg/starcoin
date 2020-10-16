@@ -1,7 +1,6 @@
 use crate::execute_readonly_function;
 use crate::test_helper::*;
 use anyhow::Result;
-use starcoin_consensus::Consensus;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_functional_tests::account::Account;

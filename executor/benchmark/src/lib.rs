@@ -9,7 +9,6 @@ use executor::{encode_create_account_script, encode_transfer_script};
 use logger::prelude::*;
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
 use starcoin_vm_types::token::stc;

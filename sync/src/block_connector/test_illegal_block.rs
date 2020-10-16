@@ -7,7 +7,6 @@ use crate::block_connector::{
 use anyhow::Result;
 use chain::BlockChain;
 use config::NodeConfig;
-use consensus::duration_since_epoch;
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
@@ -51,7 +50,8 @@ async fn new_block_and_master() -> (Block, BlockChain) {
         .get_master()
         .current_header()
         .id();
-    let master = BlockChain::new(node_config.net().consensus(), head_id, storage).unwrap();
+    let net = node_config.net();
+    let master = BlockChain::new(net.consensus(), net.time_service(), head_id, storage).unwrap();
     (new_block, master)
 }
 
@@ -81,8 +81,14 @@ async fn uncle_block_and_writeable_block_chain(
         .unwrap()
         .unwrap()
         .id();
-    let new_branch =
-        BlockChain::new(node_config.net().consensus(), tmp_head, storage.clone()).unwrap();
+    let net = node_config.net();
+    let new_branch = BlockChain::new(
+        net.consensus(),
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+    )
+    .unwrap();
     let (block_template, _) = new_branch
         .create_block_template(
             *miner_account.address(),
@@ -338,8 +344,14 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         .unwrap()
         .unwrap()
         .id();
-    let mut new_branch =
-        BlockChain::new(node_config.net().consensus(), tmp_head, storage.clone()).unwrap();
+    let net = node_config.net();
+    let mut new_branch = BlockChain::new(
+        net.consensus(),
+        net.time_service(),
+        tmp_head,
+        storage.clone(),
+    )
+    .unwrap();
 
     for _i in 0..2 {
         let (block_template, _) = new_branch

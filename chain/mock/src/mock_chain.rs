@@ -60,7 +60,7 @@ impl MockChain {
         assert!(self.head.exist_block(block_id));
         BlockChain::new(
             self.head.consensus(),
-            net.time_service(),
+            self.head.time_service(),
             block_id,
             self.head.get_storage(),
         )

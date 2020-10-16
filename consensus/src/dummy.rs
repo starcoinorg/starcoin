@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::time::{MockTimeService, TimeService};
 use anyhow::Result;
 use logger::prelude::*;
 use rand::Rng;
@@ -12,19 +11,15 @@ use starcoin_statedb::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::MOKE_TIME_SERVICE;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct DummyConsensus {
-    // time_service: MockTimeService,
-}
+pub struct DummyConsensus {}
 
 impl DummyConsensus {
     pub fn new() -> Self {
-        Self {
-            // 0 is genesis time, so default init with 1.
-            // time_service: MockTimeService::new_with_value(1),
-        }
+        Self {}
     }
 }
 
@@ -38,7 +33,7 @@ impl Consensus for DummyConsensus {
                 init_milliseconds
             );
             //add 1 seconds to on chain seconds, for avoid time conflict
-            self.time_service.set(init_milliseconds + 1);
+            (*MOKE_TIME_SERVICE).init(init_milliseconds + 1);
         }
         Ok(())
     }
@@ -59,7 +54,7 @@ impl Consensus for DummyConsensus {
             time,
             difficulty.as_u64()
         );
-        self.time_service.sleep(time);
+        (*MOKE_TIME_SERVICE).sleep(time);
         time
     }
 

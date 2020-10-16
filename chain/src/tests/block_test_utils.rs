@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use consensus::Consensus;
 use crypto::HashValue;
 use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;

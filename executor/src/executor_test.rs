@@ -13,7 +13,6 @@ use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::Consensus;
 
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,

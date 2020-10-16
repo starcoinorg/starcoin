@@ -1,5 +1,4 @@
 use config::NodeConfig;
-use consensus::Consensus;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_service_registry::RegistryAsyncService;

@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::time::TimeService;
 use crate::{difficult_to_target, ChainReader};
 use anyhow::{anyhow, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
