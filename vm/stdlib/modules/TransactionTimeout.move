@@ -6,6 +6,7 @@ module TransactionTimeout {
   use 0x1::Errors;
   use 0x1::Block;
   use 0x1::TransactionTimeoutConfig;
+  use 0x1::Signer;
 
   spec module {
       pragma verify;
@@ -44,7 +45,6 @@ module TransactionTimeout {
     ensures global<TTL>(CoreAddresses::SPEC_GENESIS_ADDRESS()).duration_seconds == new_duration;
   }
 
-  public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool acquires TTL {
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool {
     let current_block_time = Timestamp::now_seconds();
     let block_number = Block::get_current_block_number();
