@@ -32,7 +32,7 @@ const REQUIRES_ADDRESS: u8 = 2;
 const INVALID_ARGUMENT: u8 = 7;
 const LIMIT_EXCEEDED: u8 = 8;
 
-fn error_split(code: u64) -> (u8, u64) {
+pub fn error_split(code: u64) -> (u8, u64) {
     let category = code as u8;
     let reason = code >> 8;
     (category, reason)

@@ -3,7 +3,9 @@
 
 use crate::access_path_cache::AccessPathCache;
 use crate::data_cache::{RemoteStorage, StateViewCache};
-use crate::errors::{convert_normal_success_epilogue_error, convert_prologue_runtime_error};
+use crate::errors::{
+    convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
+};
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::{format_err, Error, Result};
 use move_vm_runtime::data_cache::TransactionEffects;
@@ -596,7 +598,7 @@ impl StarcoinVM {
                 match result {
                     Ok(status_and_output) => status_and_output,
                     Err(err) => {
-                        info!("move vm execution status {:?}", err);
+                        print_vm_status(err.clone());
                         let txn_status = TransactionStatus::from(err.clone());
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
@@ -956,4 +958,20 @@ pub fn txn_effects_to_writeset_and_events(
 pub enum VerifiedTransactionPayload {
     Script(Vec<u8>, Vec<TypeTag>, Vec<Value>),
     Package(Package),
+}
+
+pub fn print_vm_status(status: VMStatus) {
+    match status {
+        VMStatus::Executed => {}
+        VMStatus::MoveAbort(_location, code) => {
+            let (category, reason) = error_split(code);
+            info!(
+                "move vm execution status: {:?} (Category: {:?} Reason: {:?})",
+                code, category, reason
+            );
+        }
+        status => {
+            info!("move vm execution status: {:?}", status);
+        }
+    }
 }
