@@ -61,7 +61,7 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_initialize">initialize</a>(account: &signer) {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="Version.md#0x1_Version_Version">Self::Version</a>&gt;(account, <a href="Version.md#0x1_Version">Version</a> { major: 1 });
 }
@@ -138,10 +138,10 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_set">set</a>(account: &signer, major: u64) {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <b>let</b> old_config = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="Version.md#0x1_Version_Version">Self::Version</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-    <b>assert</b>(old_config.major &lt; major, 25);
+    <b>assert</b>(old_config.major &lt; major, 25);  //todo
     <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="Version.md#0x1_Version_Version">Self::Version</a>&gt;(account, <a href="Version.md#0x1_Version">Version</a> { major });
 }
 </code></pre>

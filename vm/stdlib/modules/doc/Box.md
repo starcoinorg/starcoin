@@ -59,7 +59,7 @@
 
 
 <pre><code><b>fun</b> <a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>(): u64{
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1
+    <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1
 }
 </code></pre>
 
@@ -197,7 +197,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take">take</a>&lt;T&gt;(account: &signer): T <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>());
+    <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>()));
     <b>let</b> box = borrow_global_mut&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
     <b>let</b> thing = <a href="Vector.md#0x1_Vector_pop_back">Vector::pop_back</a>(&<b>mut</b> box.thing);
     <b>if</b> (<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&box.thing)){
@@ -228,7 +228,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Box.md#0x1_Box_take_all">take_all</a>&lt;T&gt;(account: &signer): vector&lt;T&gt; <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-    <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>());
+    <b>assert</b>(<a href="Box.md#0x1_Box_exists_at">exists_at</a>&lt;T&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a>()));
     <b>let</b> <a href="Box.md#0x1_Box">Box</a>{ thing } = move_from&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
     thing
 }

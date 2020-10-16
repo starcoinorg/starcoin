@@ -9,6 +9,10 @@
 -  [Const <code><a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a></code>](#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH)
 -  [Const <code><a href="Authenticator.md#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_ED25519_SCHEME_ID)
 -  [Const <code><a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
+-  [Const <code><a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a></code>](#0x1_Authenticator_MAX_MULTI_ED25519_KEYS)
+-  [Const <code><a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a></code>](#0x1_Authenticator_EZERO_THRESHOLD)
+-  [Const <code><a href="Authenticator.md#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD">ENOT_ENOUGH_KEYS_FOR_THRESHOLD</a></code>](#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD)
+-  [Const <code><a href="Authenticator.md#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD">ENUM_KEYS_ABOVE_MAX_THRESHOLD</a></code>](#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD)
 -  [Function <code>EWRONG_AUTHENTICATION_KEY_LENGTH</code>](#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH)
 -  [Function <code>create_multi_ed25519</code>](#0x1_Authenticator_create_multi_ed25519)
 -  [Function <code>ed25519_authentication_key</code>](#0x1_Authenticator_ed25519_authentication_key)
@@ -91,6 +95,54 @@
 
 
 
+<a name="0x1_Authenticator_MAX_MULTI_ED25519_KEYS"></a>
+
+## Const `MAX_MULTI_ED25519_KEYS`
+
+Maximum number of keys allowed in a MultiEd25519 public/private key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_EZERO_THRESHOLD"></a>
+
+## Const `EZERO_THRESHOLD`
+
+Threshold provided was 0 which can't be used to create a <code>MultiEd25519</code> key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a>: u64 = 0;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD"></a>
+
+## Const `ENOT_ENOUGH_KEYS_FOR_THRESHOLD`
+
+Not enough keys were provided for the specified threshold when creating an <code>MultiEd25519</code> key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD">ENOT_ENOUGH_KEYS_FOR_THRESHOLD</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD"></a>
+
+## Const `ENUM_KEYS_ABOVE_MAX_THRESHOLD`
+
+Too many keys were provided for the specified threshold when creating an <code>MultiEd25519</code> key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD">ENUM_KEYS_ABOVE_MAX_THRESHOLD</a>: u64 = 2;
+</code></pre>
+
+
+
 <a name="0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH"></a>
 
 ## Function `EWRONG_AUTHENTICATION_KEY_LENGTH`
@@ -106,7 +158,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
+<pre><code><b>fun</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>(): u64 { <a href="Errors.md#0x1_Errors_ECODE_BASE">Errors::ECODE_BASE</a>() + 1}
 </code></pre>
 
 
@@ -117,6 +169,11 @@
 
 ## Function `create_multi_ed25519`
 
+Create a a multisig policy from a vector of ed25519 public keys and a threshold.
+Note: this does *not* check uniqueness of keys. Repeated keys are convenient to
+encode weighted multisig policies. For example Alice AND 1 of Bob or Carol is
+public_key: {alice_key, alice_key, bob_key, carol_key}, threshold: 3
+Aborts if threshold is zero or bigger than the length of <code>public_keys</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_create_multi_ed25519">create_multi_ed25519</a>(public_keys: vector&lt;vector&lt;u8&gt;&gt;, threshold: u8): <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">Authenticator::MultiEd25519PublicKey</a>
@@ -132,13 +189,18 @@
     public_keys: vector&lt;vector&lt;u8&gt;&gt;,
     threshold: u8
 ): <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a> {
-    // check theshold requirements
+    // check threshold requirements
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&public_keys);
-    <b>assert</b>(threshold != 0, 7001);
-    <b>assert</b>((threshold <b>as</b> u64) &lt;= len, 7002);
-    // TODO: add constant MULTI_ED25519_MAX_KEYS
+    <b>assert</b>(threshold != 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a>));
+    <b>assert</b>(
+        (threshold <b>as</b> u64) &lt;= len,
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Authenticator.md#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD">ENOT_ENOUGH_KEYS_FOR_THRESHOLD</a>)
+    );
     // the multied25519 signature scheme allows at most 32 keys
-    <b>assert</b>(len &lt;= 32, 7003);
+    <b>assert</b>(
+        len &lt;= <a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a>,
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Authenticator.md#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD">ENUM_KEYS_ABOVE_MAX_THRESHOLD</a>)
+    );
 
     <a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a> { public_keys, threshold }
 }
@@ -190,7 +252,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Authenticator.md#0x1_Authenticator_derived_address">derived_address</a>(authentication_key: vector&lt;u8&gt;): address {
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == <a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>, <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>());
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == <a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a>, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>()));
     <b>let</b> address_bytes = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>&lt;u8&gt;();
 
     <b>let</b> i = 16;
