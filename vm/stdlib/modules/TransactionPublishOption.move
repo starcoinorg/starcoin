@@ -41,8 +41,19 @@ module TransactionPublishOption {
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
             Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
         );
-        let script_allow_list = Vector::empty<vector<u8>>();
-        let len = Vector::length(&merged_script_allow_list) / SCRIPT_HASH_LENGTH;
+        let transaction_publish_option = Self::new_transaction_publish_option(merged_script_allow_list, module_publishing_allowed);
+        Config::publish_new_config(
+            account,
+            transaction_publish_option,
+        );
+    }
+
+    public fun new_transaction_publish_option(
+        script_allow_list: vector<u8>,
+        module_publishing_allowed: bool,
+    ): TransactionPublishOption {
+        let list = Vector::empty<vector<u8>>();
+        let len = Vector::length(&script_allow_list) / SCRIPT_HASH_LENGTH;
         let i = 0;
         while (i < len){
             let script_hash = Vector::empty<u8>();
@@ -51,24 +62,14 @@ module TransactionPublishOption {
                 let index = SCRIPT_HASH_LENGTH * i + j;
                 Vector::push_back(
                     &mut script_hash,
-                    *Vector::borrow(&merged_script_allow_list, index),
+                    *Vector::borrow(&script_allow_list, index),
                 );
                 j = j + 1;
             };
-            Vector::push_back<vector<u8>>(&mut script_allow_list, script_hash);
+            Vector::push_back<vector<u8>>(&mut list, script_hash);
             i = i + 1;
         };
-        Config::publish_new_config(
-            account,
-            TransactionPublishOption { script_allow_list, module_publishing_allowed },
-        );
-    }
-
-    public fun new_transaction_publish_option(
-        script_allow_list: vector<vector<u8>>,
-        module_publishing_allowed: bool,
-    ): TransactionPublishOption {
-        TransactionPublishOption { script_allow_list, module_publishing_allowed }
+        TransactionPublishOption { script_allow_list: list, module_publishing_allowed }
     }
 
     // Check if sender can execute script with `hash`

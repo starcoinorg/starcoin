@@ -12,6 +12,7 @@
 -  [Function <code>set</code>](#0x1_Version_set)
 -  [Specification](#@Specification_0)
     -  [Function <code>initialize</code>](#@Specification_0_initialize)
+    -  [Function <code>new_version</code>](#@Specification_0_new_version)
     -  [Function <code>get</code>](#@Specification_0_get)
     -  [Function <code>set</code>](#@Specification_0_set)
 
@@ -87,6 +88,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_new_version">new_version</a>(major: u64): <a href="Version.md#0x1_Version">Version</a> {
+    <b>assert</b>(<a href="Version.md#0x1_Version_get">Self::get</a>() &lt; major, 25);
     <a href="Version.md#0x1_Version">Version</a> { major }
 }
 </code></pre>
@@ -180,6 +182,23 @@ pragma aborts_if_is_strict;
 <b>ensures</b>
     <b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="Version.md#0x1_Version">Version</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Version.md#0x1_Version">Version</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="@Specification_0_new_version"></a>
+
+### Function `new_version`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_new_version">new_version</a>(major: u64): <a href="Version.md#0x1_Version_Version">Version::Version</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Version.md#0x1_Version">Version</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <a href="Version.md#0x1_Version_get">Self::get</a>() &gt;= major;
 </code></pre>
 
 

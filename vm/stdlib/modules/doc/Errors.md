@@ -885,6 +885,7 @@ pragma aborts_if_is_strict;
 
 
 <pre><code>pragma opaque = <b>true</b>;
+pragma verify = <b>false</b>;
 <b>aborts_if</b> [abstract] <b>false</b>;
 <b>ensures</b> [abstract] result == category;
 </code></pre>

@@ -33,7 +33,13 @@ module Version {
     }
 
     public fun new_version(major: u64): Version {
+        assert(Self::get() < major, 25);
         Version { major }
+    }
+
+    spec fun new_version {
+        aborts_if !exists<Config::Config<Version>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Self::get() >= major;
     }
 
     public fun get(): u64 {
