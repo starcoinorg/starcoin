@@ -1,13 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::time::TimeService;
-use crate::{difficult_to_target, ChainReader};
+use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::{anyhow, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::AccountStateReader;
-use starcoin_statedb::ChainStateReader;
 use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
@@ -16,16 +13,6 @@ use starcoin_types::{
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 pub trait Consensus {
-    fn epoch(chain: &dyn ChainReader) -> Result<EpochInfo> {
-        let account_reader = AccountStateReader::new(chain.chain_state_reader());
-        account_reader.get_epoch_info()
-    }
-
-    /// Init consensus with on chain state
-    fn init(&self, _reader: &dyn ChainStateReader) -> Result<()> {
-        Ok(())
-    }
-
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,
@@ -33,7 +20,22 @@ pub trait Consensus {
     ) -> Result<U256>;
 
     /// Calculate new block consensus header
-    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64;
+    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
+        let mut nonce = generate_nonce();
+        loop {
+            let pow_hash: U256 = self
+                .calculate_pow_hash(mining_hash, nonce)
+                .expect("calculate hash should work")
+                .into();
+            let target = difficult_to_target(difficulty);
+            if pow_hash > target {
+                nonce += 1;
+                continue;
+            }
+            break;
+        }
+        nonce
+    }
 
     fn verify(
         &self,
@@ -51,7 +53,7 @@ pub trait Consensus {
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
     ) -> Result<Block> {
-        let epoch = Self::epoch(reader)?;
+        let epoch = reader.epoch_info()?;
         let difficulty = self.calculate_next_difficulty(reader, &epoch)?;
         let mining_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
         let consensus_nonce = self.solve_consensus_nonce(mining_hash, difficulty);
@@ -76,15 +78,5 @@ pub trait Consensus {
             anyhow::bail!("Invalid header:{:?}", header);
         }
         Ok(())
-    }
-
-    fn time(&self) -> &dyn TimeService;
-
-    fn now_millis(&self) -> u64 {
-        self.time().now_millis()
-    }
-
-    fn now_secs(&self) -> u64 {
-        self.time().now_secs()
     }
 }

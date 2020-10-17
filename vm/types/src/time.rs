@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
-
+use serde::{Deserialize, Serialize};
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -21,15 +21,22 @@ pub fn duration_since_epoch() -> Duration {
 
 /// A generic service for providing time related operations (e.g., returning the current time and
 /// sleeping).
-pub trait TimeService {
+pub trait TimeService: Send + Sync {
+    ///init current time service for fixed reference value
+    fn init(&self, value: u64);
     /// Returns the current time since the UNIX_EPOCH in seconds as a u64.
     fn now_secs(&self) -> u64;
-
     /// Returns the current time since the UNIX_EPOCH in milliseconds as a u64.
     fn now_millis(&self) -> u64;
     /// Sleeps the calling thread for (at least) the specified number of milliseconds. This call may
     /// sleep longer than specified, never less.
     fn sleep(&self, millis: u64);
+}
+
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub enum TimeServiceType {
+    RealTimeService,
+    MockTimeService,
 }
 
 /// A real-time TimeService
@@ -43,6 +50,10 @@ impl RealTimeService {
 }
 
 impl TimeService for RealTimeService {
+    fn init(&self, _value: u64) {
+        unimplemented!()
+    }
+
     fn now_secs(&self) -> u64 {
         duration_since_epoch().as_secs() as u64
     }
@@ -89,6 +100,10 @@ impl MockTimeService {
 }
 
 impl TimeService for MockTimeService {
+    fn init(&self, value: u64) {
+        self.set(value)
+    }
+
     fn now_secs(&self) -> u64 {
         self.now.load(Ordering::Relaxed)
     }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use consensus::duration_since_epoch;
 use consensus::Consensus;
 use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
@@ -32,7 +31,9 @@ use starcoin_types::{
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
+use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
+use std::convert::TryFrom;
 use std::iter::Extend;
 use std::{collections::HashSet, sync::Arc};
 use storage::Store;
@@ -40,19 +41,19 @@ use storage::Store;
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
 
 pub struct BlockChain {
-    consensus: ConsensusStrategy,
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
     chain_state: ChainStateDB,
     storage: Arc<dyn Store>,
+    time_service: Arc<dyn TimeService>,
     uncles: HashSet<HashValue>,
     epoch: Option<EpochResource>,
 }
 
 impl BlockChain {
     pub fn new(
-        consensus: ConsensusStrategy,
+        time_service: Arc<dyn TimeService>,
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
     ) -> Result<Self> {
@@ -67,7 +68,7 @@ impl BlockChain {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let mut chain = Self {
-            consensus,
+            time_service,
             txn_accumulator: info_2_accumulator(
                 txn_accumulator_info.clone(),
                 AccumulatorStoreType::Transaction,
@@ -88,7 +89,7 @@ impl BlockChain {
         Ok(chain)
     }
 
-    pub fn init_empty_chain(consensus: ConsensusStrategy, storage: Arc<dyn Store>) -> Self {
+    pub fn init_empty_chain(time_service: Arc<dyn TimeService>, storage: Arc<dyn Store>) -> Self {
         let txn_accumulator = MerkleAccumulator::new_empty(
             storage.get_accumulator_store(AccumulatorStoreType::Transaction),
         );
@@ -96,7 +97,7 @@ impl BlockChain {
             storage.get_accumulator_store(AccumulatorStoreType::Block),
         );
         Self {
-            consensus,
+            time_service,
             txn_accumulator,
             block_accumulator,
             head: None,
@@ -108,7 +109,11 @@ impl BlockChain {
     }
 
     pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        let mut chain = Self::new(self.consensus, head_block_hash, self.storage.clone())?;
+        let mut chain = Self::new(
+            self.time_service.clone(),
+            head_block_hash,
+            self.storage.clone(),
+        )?;
         chain.update_epoch_and_uncle_cache()?;
         Ok(chain)
     }
@@ -118,7 +123,11 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.consensus
+        ConsensusStrategy::try_from(self.epoch.as_ref().unwrap().strategy())
+            .expect("epoch consensus strategy must exist.")
+    }
+    pub fn time_service(&self) -> Arc<dyn TimeService> {
+        self.time_service.clone()
     }
 
     pub fn update_epoch_and_uncle_cache(&mut self) -> Result<()> {
@@ -223,7 +232,7 @@ impl BlockChain {
             final_block_gas_limit,
             author,
             author_public_key,
-            self.consensus.now_millis(),
+            self.time_service.now_millis(),
             uncles,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
@@ -651,7 +660,7 @@ impl BlockChain {
         if !header.is_genesis() {
             //block header time check in block prologue.
 
-            let now = duration_since_epoch().as_millis() as u64;
+            let now = self.time_service.now_millis();
             verify_block!(
                 VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
@@ -659,13 +668,14 @@ impl BlockChain {
             );
         }
 
+        let consensus = ConsensusStrategy::try_from(epoch.epoch().strategy())?;
         // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
             let uncle_branch =
-                BlockChain::new(self.consensus(), parent_hash, self.storage.clone())?;
-            self.consensus.verify(&uncle_branch, epoch, header)
+                BlockChain::new(self.time_service(), parent_hash, self.storage.clone())?;
+            consensus.verify(&uncle_branch, epoch, header)
         } else {
-            self.consensus.verify(self, epoch, header)
+            consensus.verify(self, epoch, header)
         } {
             return Err(
                 ConnectBlockError::VerifyBlockFailed(VerifyBlockField::Consensus, err).into(),

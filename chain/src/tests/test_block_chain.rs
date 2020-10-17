@@ -347,7 +347,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
             public_key.to_bytes().to_vec(),
             0,
             10000,
-            config.net().consensus().now_secs() + DEFAULT_EXPIRATION_TIME,
+            config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
             config.net(),
         );
         txn.as_signed_user_txn()?.clone()
@@ -396,15 +396,16 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 fn test_verify_txn() {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
-    let block = mock_chain.head().head_block();
+    let head = mock_chain.head();
+    let block = head.head_block();
     let master_read = BlockChain::new(
-        mock_chain.head().consensus(),
+        head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
     let mut master_write = BlockChain::new(
-        mock_chain.head().consensus(),
+        head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
@@ -416,9 +417,10 @@ fn test_verify_txn() {
 fn verify_txn_failed(txns: &[Transaction]) {
     let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
-    let header = mock_chain.head().current_header();
+    let head = mock_chain.head();
+    let header = head.current_header();
     let master = BlockChainNotMock::new(
-        mock_chain.head().consensus(),
+        head.time_service(),
         header.parent_hash(),
         mock_chain.head().get_storage(),
     )
@@ -458,8 +460,9 @@ fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>)
             .cloned()
             .map(Transaction::UserTransaction),
     );
+    let head = mock_chain.head();
     let mut master = BlockChainNotMock::new(
-        mock_chain.head().consensus(),
+        head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )

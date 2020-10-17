@@ -139,6 +139,7 @@ pub mod event;
 pub mod genesis_config;
 pub mod on_chain_config;
 pub mod on_chain_resource;
+pub mod time;
 pub mod token;
 
 #[cfg(test)]

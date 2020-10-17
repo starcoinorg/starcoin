@@ -3,16 +3,13 @@
 
 use crate::consensus::Consensus;
 use crate::difficulty::{get_next_target_helper, BlockDiffInfo};
-use crate::time::MockTimeService;
-use crate::{
-    difficult_to_target, set_header_nonce, target_to_difficulty, TimeService, CRYPTONIGHT,
-};
-use crate::{duration_since_epoch, ARGON};
+use crate::{difficult_to_target, set_header_nonce, target_to_difficulty, ARGON, CRYPTONIGHT};
 use proptest::{collection::vec, prelude::*};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::U256;
+use starcoin_vm_types::time::{duration_since_epoch, MockTimeService, TimeService};
 use std::collections::VecDeque;
 
 #[stest::test]

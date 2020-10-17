@@ -2,64 +2,53 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::time::{MockTimeService, TimeService};
 use anyhow::Result;
 use logger::prelude::*;
 use rand::Rng;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::AccountStateReader;
-use starcoin_statedb::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::MOKE_TIME_SERVICE;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct DummyConsensus {
-    time_service: MockTimeService,
-}
+pub struct DummyConsensus {}
 
 impl DummyConsensus {
     pub fn new() -> Self {
-        Self {
-            // 0 is genesis time, so default init with 1.
-            time_service: MockTimeService::new_with_value(1),
-        }
+        Self {}
     }
 }
 
 impl Consensus for DummyConsensus {
-    fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
-        let account_state_reader = AccountStateReader::new(reader);
-        let init_milliseconds = account_state_reader.get_timestamp()?.milliseconds;
-        if init_milliseconds > 0 {
-            info!(
-                "Adjust time service with on chain time: {}",
-                init_milliseconds
-            );
-            //add 1 seconds to on chain seconds, for avoid time conflict
-            self.time_service.set(init_milliseconds + 1);
-        }
-        Ok(())
-    }
-
     fn calculate_next_difficulty(
         &self,
-        _chain: &dyn ChainReader,
+        chain: &dyn ChainReader,
         epoch: &EpochInfo,
     ) -> Result<U256> {
-        Ok(epoch.block_time_target().into())
+        info!("epoch: {:?}", epoch);
+        let current_header = chain.current_header();
+        let now = MOKE_TIME_SERVICE.now_millis();
+        //in dev mode, if disable_empty_block = true,
+        //may escape a long time between block,
+        //so, just set the difficulty to 1 for sleep less time for this case.
+        let target =
+            (now as i64) - (current_header.timestamp as i64) - (epoch.block_time_target() as i64);
+        let target = if target >= 0 { 1 } else { target.abs() };
+
+        Ok(target.into())
     }
 
     fn solve_consensus_nonce(&self, _mining_hash: HashValue, difficulty: U256) -> u64 {
         let mut rng = rand::thread_rng();
         let time: u64 = rng.gen_range(1, difficulty.as_u64() * 2);
-        debug!(
+        info!(
             "DummyConsensus rand sleep time in millis second : {}, difficulty : {}",
             time,
             difficulty.as_u64()
         );
-        self.time_service.sleep(time);
+        MOKE_TIME_SERVICE.sleep(time);
         time
     }
 
@@ -74,9 +63,5 @@ impl Consensus for DummyConsensus {
 
     fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<HashValue> {
         unreachable!()
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        &self.time_service
     }
 }

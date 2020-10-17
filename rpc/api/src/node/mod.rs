@@ -7,7 +7,6 @@ use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
 use starcoin_config::ChainNetwork;
-use starcoin_consensus::Consensus;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::collections::HashMap;
@@ -25,7 +24,7 @@ pub struct NodeInfo {
 impl NodeInfo {
     pub fn new(peer_info: PeerInfo, self_address: String, net: ChainNetwork) -> Self {
         let consensus = net.consensus();
-        let now = consensus.now_secs();
+        let now = net.time_service().now_secs();
         Self {
             peer_info,
             self_address,
