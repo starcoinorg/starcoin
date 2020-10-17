@@ -87,6 +87,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Version.md#0x1_Version_new_version">new_version</a>(major: u64): <a href="Version.md#0x1_Version">Version</a> {
+    <b>assert</b>(<a href="Version.md#0x1_Version_get">Self::get</a>() &lt; major, 25);
     <a href="Version.md#0x1_Version">Version</a> { major }
 }
 </code></pre>

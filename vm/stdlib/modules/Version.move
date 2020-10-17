@@ -33,6 +33,7 @@ module Version {
     }
 
     public fun new_version(major: u64): Version {
+        assert(Self::get() < major, 25);
         Version { major }
     }
 
