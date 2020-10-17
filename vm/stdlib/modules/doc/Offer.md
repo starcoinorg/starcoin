@@ -5,13 +5,19 @@
 
 
 
--  [Resource <code><a href="Offer.md#0x1_Offer">Offer</a></code>](#0x1_Offer_Offer)
--  [Const <code><a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a></code>](#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT)
--  [Const <code><a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a></code>](#0x1_Offer_EOFFER_NOT_UNLOCKED)
--  [Function <code>create</code>](#0x1_Offer_create)
--  [Function <code>redeem</code>](#0x1_Offer_redeem)
--  [Function <code>exists_at</code>](#0x1_Offer_exists_at)
--  [Function <code>address_of</code>](#0x1_Offer_address_of)
+-  [Resource `Offer`](#0x1_Offer_Offer)
+-  [Constants](#@Constants_0)
+-  [Function `create`](#0x1_Offer_create)
+-  [Function `redeem`](#0x1_Offer_redeem)
+-  [Function `exists_at`](#0x1_Offer_exists_at)
+-  [Function `address_of`](#0x1_Offer_address_of)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_Offer_Offer"></a>
@@ -53,9 +59,12 @@
 
 </details>
 
-<a name="0x1_Offer_EOFFER_DNE_FOR_ACCOUNT"></a>
+<a name="@Constants_0"></a>
 
-## Const `EOFFER_DNE_FOR_ACCOUNT`
+## Constants
+
+
+<a name="0x1_Offer_EOFFER_DNE_FOR_ACCOUNT"></a>
 
 
 
@@ -65,8 +74,6 @@
 
 
 <a name="0x1_Offer_EOFFER_NOT_UNLOCKED"></a>
-
-## Const `EOFFER_NOT_UNLOCKED`
 
 
 
