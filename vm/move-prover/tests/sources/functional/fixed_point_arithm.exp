@@ -10,18 +10,18 @@ error: post-condition does not hold
      =         x = <redacted>,
      =         y = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:115:5: get_raw_value
      =         num = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:116:9: get_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:112:39: div_mul
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
      =         value = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:113:59: div_mul
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:114:53: div_mul
 
 error: post-condition does not hold
@@ -35,18 +35,18 @@ error: post-condition does not hold
      =         x = <redacted>,
      =         y = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:115:5: get_raw_value
      =         num = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:116:9: get_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:121:39: div_mul_incorrect
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
      =         value = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:122:59: div_mul_incorrect
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:123:53: div_mul_incorrect
 
 error: post-condition does not hold
@@ -60,18 +60,18 @@ error: post-condition does not hold
     =         x = <redacted>,
     =         y = <redacted>,
     =         result = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:115:5: get_raw_value
     =         num = <redacted>,
     =         result = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:116:9: get_raw_value
     =     at tests/sources/functional/fixed_point_arithm.move:90:39: mul_div
-    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
     =         value = <redacted>,
     =         result = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
     =     at tests/sources/functional/fixed_point_arithm.move:91:61: mul_div
-    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
-    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
     =     at tests/sources/functional/fixed_point_arithm.move:92:51: mul_div
 
 error: post-condition does not hold
@@ -85,18 +85,18 @@ error: post-condition does not hold
      =         x = <redacted>,
      =         y = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:102:5: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:115:5: get_raw_value
      =         num = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:103:9: get_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:116:9: get_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:99:39: mul_div_incorrect
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
      =         value = <redacted>,
      =         result = <redacted>
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:100:61: mul_div_incorrect
-     =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
-     =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
+     =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
      =     at tests/sources/functional/fixed_point_arithm.move:101:51: mul_div_incorrect
 
 error: abort not covered by any of the `aborts_if` clauses
@@ -173,14 +173,14 @@ error: abort not covered by any of the `aborts_if` clauses
     │ ╰─────^
     ·
  29 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
-    │                                                     --------------------- abort happened here with code `0x5`
+    │                                                     --------------------- abort happened here with code `0x2`
     │
     =     at tests/sources/functional/fixed_point_arithm.move:28:5: multiply_x_0
     =         x = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
     =         value = <redacted>,
     =         result = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
     =     at tests/sources/functional/fixed_point_arithm.move:29:53: multiply_x_0 (ABORTED)
 
 error: abort not covered by any of the `aborts_if` clauses
@@ -193,14 +193,14 @@ error: abort not covered by any of the `aborts_if` clauses
     │ ╰─────^
     ·
  37 │         FixedPoint32::multiply_u64(x, FixedPoint32::create_from_raw_value(0))
-    │                                                     --------------------- abort happened here with code `0x5`
+    │                                                     --------------------- abort happened here with code `0x2`
     │
     =     at tests/sources/functional/fixed_point_arithm.move:36:5: multiply_x_0_incorrect
     =         x = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:95:5: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:108:5: create_from_raw_value
     =         value = <redacted>,
     =         result = <redacted>
-    =     at ../stdlib/modules/FixedPoint32.move:96:9: create_from_raw_value
+    =     at ../stdlib/modules/FixedPoint32.move:109:9: create_from_raw_value
     =     at tests/sources/functional/fixed_point_arithm.move:37:53: multiply_x_0_incorrect (ABORTED)
 
 error: abort not covered by any of the `aborts_if` clauses
