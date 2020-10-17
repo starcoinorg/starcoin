@@ -37,6 +37,11 @@ module Version {
         Version { major }
     }
 
+    spec fun new_version {
+        aborts_if !exists<Config::Config<Version>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if Self::get() >= major;
+    }
+
     public fun get(): u64 {
         let version = Config::get_by_address<Self::Version>(CoreAddresses::GENESIS_ADDRESS());
         version.major
