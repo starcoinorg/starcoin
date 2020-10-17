@@ -10,7 +10,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_config_proposal.md#update_txn_publish_option">update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;vector&lt;u8&gt;&gt;, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_config_proposal.md#update_txn_publish_option">update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
@@ -20,7 +20,7 @@
 
 
 <pre><code><b>fun</b> <a href="update_txn_publish_option_config_proposal.md#update_txn_publish_option">update_txn_publish_option</a>(account: &signer,
-    script_allow_list: vector&lt;vector&lt;u8&gt;&gt;,
+    script_allow_list: vector&lt;u8&gt;,
     module_publishing_allowed: bool,
     exec_delay: u64) {
     <b>let</b> txn_publish_option = <a href="../../modules/doc/TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">TransactionPublishOption::new_transaction_publish_option</a>(script_allow_list, module_publishing_allowed);
@@ -42,7 +42,7 @@
 ### Function `update_txn_publish_option`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_config_proposal.md#update_txn_publish_option">update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;vector&lt;u8&gt;&gt;, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_config_proposal.md#update_txn_publish_option">update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
