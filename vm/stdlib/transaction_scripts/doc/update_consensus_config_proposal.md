@@ -1,16 +1,16 @@
 
-<a name="update_consensus_config"></a>
+<a name="update_consensus_config_proposal"></a>
 
-# Script `update_consensus_config`
+# Script `update_consensus_config_proposal`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_consensus_config_proposal.md#update_consensus_config">update_consensus_config</a></code>](#@Specification_0_update_consensus_config)
+    -  [Function <code><a href="update_consensus_config_proposal.md#update_consensus_config_proposal">update_consensus_config_proposal</a></code>](#@Specification_0_update_consensus_config_proposal)
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config">update_consensus_config</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config_proposal">update_consensus_config_proposal</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
 </code></pre>
 
 
@@ -19,7 +19,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config">update_consensus_config</a>(account: &signer,
+<pre><code><b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config_proposal">update_consensus_config_proposal</a>(account: &signer,
     uncle_rate_target: u64,
     base_block_time_target: u64,
     base_reward_per_block: u128,
@@ -56,12 +56,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_consensus_config"></a>
+<a name="@Specification_0_update_consensus_config_proposal"></a>
 
-### Function `update_consensus_config`
+### Function `update_consensus_config_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config">update_consensus_config</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_consensus_config_proposal.md#update_consensus_config_proposal">update_consensus_config_proposal</a>(account: &signer, uncle_rate_target: u64, base_block_time_target: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, epoch_block_count: u64, base_block_difficulty_window: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, exec_delay: u64)
 </code></pre>
 
 

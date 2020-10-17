@@ -1,16 +1,16 @@
 
-<a name="update_version"></a>
+<a name="update_version_proposal"></a>
 
-# Script `update_version`
+# Script `update_version_proposal`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_version_proposal.md#update_version">update_version</a></code>](#@Specification_0_update_version)
+    -  [Function <code><a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a></code>](#@Specification_0_update_version_proposal)
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version">update_version</a>(account: &signer, major: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer, major: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -19,7 +19,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_version_proposal.md#update_version">update_version</a>(account: &signer,
+<pre><code><b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer,
     major: u64,
     exec_delay: u64) {
     <b>let</b> version = <a href="../../modules/doc/Version.md#0x1_Version_new_version">Version::new_version</a>(major);
@@ -36,12 +36,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_version"></a>
+<a name="@Specification_0_update_version_proposal"></a>
 
-### Function `update_version`
+### Function `update_version_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version">update_version</a>(account: &signer, major: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer, major: u64, exec_delay: u64)
 </code></pre>
 
 

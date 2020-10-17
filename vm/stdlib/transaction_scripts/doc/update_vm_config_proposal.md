@@ -1,16 +1,16 @@
 
-<a name="update_vm_config"></a>
+<a name="update_vm_config_proposal"></a>
 
-# Script `update_vm_config`
+# Script `update_vm_config_proposal`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_vm_config_proposal.md#update_vm_config">update_vm_config</a></code>](#@Specification_0_update_vm_config)
+    -  [Function <code><a href="update_vm_config_proposal.md#update_vm_config_proposal">update_vm_config_proposal</a></code>](#@Specification_0_update_vm_config_proposal)
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config">update_vm_config</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config_proposal">update_vm_config_proposal</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -19,7 +19,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config">update_vm_config</a>(account: &signer,
+<pre><code><b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config_proposal">update_vm_config_proposal</a>(account: &signer,
     instruction_schedule: vector&lt;u8&gt;,
     native_schedule: vector&lt;u8&gt;,
     global_memory_per_byte_cost: u64,
@@ -60,12 +60,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_vm_config"></a>
+<a name="@Specification_0_update_vm_config_proposal"></a>
 
-### Function `update_vm_config`
+### Function `update_vm_config_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config">update_vm_config</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="update_vm_config_proposal.md#update_vm_config_proposal">update_vm_config_proposal</a>(account: &signer, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, exec_delay: u64)
 </code></pre>
 
 

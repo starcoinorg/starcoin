@@ -3,7 +3,7 @@ use 0x1::VMConfig;
 use 0x1::OnChainConfigDao;
 use 0x1::STC;
 
-fun update_vm_config(account: &signer,
+fun update_vm_config_proposal(account: &signer,
     instruction_schedule: vector<u8>,
     native_schedule: vector<u8>,
     global_memory_per_byte_cost: u64,
@@ -34,7 +34,7 @@ fun update_vm_config(account: &signer,
     OnChainConfigDao::propose_update<STC::STC, VMConfig::VMConfig>(account, vm_config, exec_delay);
 }
 
-spec fun update_vm_config {
+spec fun update_vm_config_proposal {
     pragma verify = false;
 }
 }

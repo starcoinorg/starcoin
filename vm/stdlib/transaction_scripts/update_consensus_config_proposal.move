@@ -3,7 +3,7 @@ use 0x1::ConsensusConfig;
 use 0x1::OnChainConfigDao;
 use 0x1::STC;
 
-fun update_consensus_config(account: &signer,
+fun update_consensus_config_proposal(account: &signer,
     uncle_rate_target: u64,
     base_block_time_target: u64,
     base_reward_per_block: u128,
@@ -30,7 +30,7 @@ fun update_consensus_config(account: &signer,
     OnChainConfigDao::propose_update<STC::STC, ConsensusConfig::ConsensusConfig>(account, consensus_config, exec_delay);
 }
 
-spec fun update_consensus_config {
+spec fun update_consensus_config_proposal {
     pragma verify = false;
 }
 }
