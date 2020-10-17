@@ -66,11 +66,11 @@
     // Can only be invoked by genesis account
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()),
     );
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
-    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">ErrorCode::PROLOGUE_BAD_CHAIN_ID</a>());
+    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_BAD_CHAIN_ID">Errors::PROLOGUE_BAD_CHAIN_ID</a>()));
     <a href="Account.md#0x1_Account_txn_prologue">Account::txn_prologue</a>&lt;TokenType&gt;(
         account,
         txn_sender,
@@ -81,12 +81,12 @@
     );
     <b>assert</b>(
         <a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time),
-        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">ErrorCode::PROLOGUE_TRANSACTION_EXPIRED</a>(),
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_TRANSACTION_EXPIRED">Errors::PROLOGUE_TRANSACTION_EXPIRED</a>()),
     );
     <b>if</b> (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>) {
         <b>assert</b>(
             <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">TransactionPublishOption::is_module_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
-            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">ErrorCode::PROLOGUE_MODULE_NOT_ALLOWED</a>(),
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_MODULE_NOT_ALLOWED">Errors::PROLOGUE_MODULE_NOT_ALLOWED</a>()),
         );
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(
             account,
@@ -100,7 +100,7 @@
                 <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
                 &txn_script_or_package_hash,
             ),
-            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">ErrorCode::PROLOGUE_SCRIPT_NOT_ALLOWED</a>(),
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SCRIPT_NOT_ALLOWED">Errors::PROLOGUE_SCRIPT_NOT_ALLOWED</a>()),
         );
     };
 }
@@ -140,7 +140,7 @@
 ) {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <a href="Account.md#0x1_Account_txn_epilogue">Account::txn_epilogue</a>&lt;TokenType&gt;(
         account,
@@ -194,12 +194,12 @@
     // Can only be invoked by genesis account
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <a href="Timestamp.md#0x1_Timestamp_update_global_time">Timestamp::update_global_time</a>(account, timestamp);
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
-    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">ErrorCode::PROLOGUE_BAD_CHAIN_ID</a>());
+    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_BAD_CHAIN_ID">Errors::PROLOGUE_BAD_CHAIN_ID</a>()));
     //get previous author for distribute txn_fee
     <b>let</b> previous_author = <a href="Block.md#0x1_Block_get_current_author">Block::get_current_author</a>();
     <b>let</b> txn_fee = <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">TransactionFee::distribute_transaction_fees</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);

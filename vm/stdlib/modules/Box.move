@@ -2,16 +2,14 @@ address 0x1 {
 // Provider a account based vector for save resource.
 module Box {
     use 0x1::Signer;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
     use 0x1::Vector;
 
     resource struct Box<T>{
         thing:vector<T>,
     }
 
-    fun EBOX_NOT_EXIST(): u64{
-        ErrorCode::ECODE_BASE() + 1
-    }
+    const EBOX_NOT_EXIST: u64 = 101;
 
     public fun exists_at<T>(addr: address): bool{
         exists<Box<T>>(addr)
@@ -50,7 +48,7 @@ module Box {
     // Take last thing from account's box
     public fun take<T>(account: &signer): T acquires Box{
         let addr = Signer::address_of(account);
-        assert(exists_at<T>(addr), EBOX_NOT_EXIST());
+        assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
         let box = borrow_global_mut<Box<T>>(addr);
         let thing = Vector::pop_back(&mut box.thing);
         if (Vector::is_empty(&box.thing)){
@@ -61,7 +59,7 @@ module Box {
 
     public fun take_all<T>(account: &signer): vector<T> acquires Box{
         let addr = Signer::address_of(account);
-        assert(exists_at<T>(addr), EBOX_NOT_EXIST());
+        assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
         let Box{ thing } = move_from<Box<T>>(addr);
         thing
     }

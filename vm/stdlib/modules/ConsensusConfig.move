@@ -4,7 +4,7 @@ module ConsensusConfig {
     use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::Event;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
     use 0x1::Timestamp;
     use 0x1::Math;
     use 0x1::Option;
@@ -63,13 +63,9 @@ module ConsensusConfig {
         total_gas: u128,
     }
 
-    fun MAX_UNCLES_PER_BLOCK_IS_WRONG(): u64 {
-        ErrorCode::ECODE_BASE() + 1
-    }
+    const MAX_UNCLES_PER_BLOCK_IS_WRONG: u64 = 101;
 
-    fun UNCLES_IS_NOT_ZERO(): u64 {
-        ErrorCode::ECODE_BASE() + 2
-    }
+    const UNCLES_IS_NOT_ZERO: u64 = 102;
 
     public fun initialize(
         account: &signer,
@@ -85,10 +81,10 @@ module ConsensusConfig {
         base_block_gas_limit: u64,
         strategy: u8,
     ) {
-        assert(Timestamp::is_genesis(), ErrorCode::ENOT_GENESIS());
+        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            ErrorCode::ENOT_GENESIS_ACCOUNT(),
+            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
         );
 
         Config::publish_new_config<Self::ConsensusConfig>(
@@ -157,17 +153,17 @@ module ConsensusConfig {
                                     base_max_uncles_per_block: u64,
                                     base_block_gas_limit: u64,
                                     strategy: u8,): ConsensusConfig {
-        assert(uncle_rate_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_reward_per_block > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(epoch_block_count > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_difficulty_window > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_reward_per_uncle_percent > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(min_block_time_target > 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(max_block_time_target >= min_block_time_target, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_max_uncles_per_block >= 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(base_block_gas_limit >= 0, ErrorCode::EINVALID_ARGUMENT());
-        assert(strategy >= 0, ErrorCode::EINVALID_ARGUMENT());
+        assert(uncle_rate_target > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_block_time_target > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_reward_per_block > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(epoch_block_count > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_block_difficulty_window > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_reward_per_uncle_percent > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(min_block_time_target > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(max_block_time_target >= min_block_time_target, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_max_uncles_per_block >= 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(base_block_gas_limit >= 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(strategy >= 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
 
         ConsensusConfig {
             uncle_rate_target,
@@ -279,18 +275,18 @@ module ConsensusConfig {
     acquires Epoch, EpochData {
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            ErrorCode::ENOT_GENESIS_ACCOUNT(),
+            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
         );
 
         let epoch_ref = borrow_global_mut<Epoch>(CoreAddresses::GENESIS_ADDRESS());
-        assert(epoch_ref.max_uncles_per_block >= uncles, MAX_UNCLES_PER_BLOCK_IS_WRONG());
+        assert(epoch_ref.max_uncles_per_block >= uncles, Errors::invalid_argument(MAX_UNCLES_PER_BLOCK_IS_WRONG));
 
         let epoch_data = borrow_global_mut<EpochData>(CoreAddresses::GENESIS_ADDRESS());
         let (new_epoch, reward_per_block) = if (block_number < epoch_ref.end_number) {
             (false, epoch_ref.reward_per_block)
         } else if (block_number == epoch_ref.end_number) {
             //start a new epoch
-            assert(uncles == 0, UNCLES_IS_NOT_ZERO());
+            assert(uncles == 0, Errors::invalid_argument(UNCLES_IS_NOT_ZERO));
             let config = get_config();
             let last_epoch_time_target = epoch_ref.block_time_target;
             let total_time = now - epoch_ref.epoch_start_time;
@@ -328,7 +324,7 @@ module ConsensusConfig {
             (true, new_reward_per_block)
         } else {
             //This should never happened.
-            abort ErrorCode::EUNREACHABLE()
+            abort Errors::EUNREACHABLE()
         };
         let reward = reward_per_block +
             reward_per_block * (epoch_ref.reward_per_uncle_percent as u128) * (uncles as u128) / (HUNDRED as u128);

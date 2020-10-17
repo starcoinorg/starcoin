@@ -2,20 +2,16 @@ address 0x1 {
 module Offer {
     use 0x1::Timestamp;
     use 0x1::Signer;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
 
     // A wrapper around value `offered` that can be claimed by the address stored in `for` when after lock time.
     resource struct Offer<Offered> { offered: Offered, for: address, time_lock: u64 }
 
     // An offer of the specified type for the account does not match
-    fun EOFFER_DNE_FOR_ACCOUNT(): u64 {
-        ErrorCode::ECODE_BASE() + 1
-    }
+    const EOFFER_DNE_FOR_ACCOUNT: u64 = 101;
 
     // Offer is not unlocked yet.
-    fun EOFFER_NOT_UNLOCKED(): u64 {
-        ErrorCode::ECODE_BASE() + 2
-    }
+    const EOFFER_NOT_UNLOCKED: u64 = 102;
 
     // Publish a value of type `Offered` under the sender's account. The value can be claimed by
     // either the `for` address or the transaction sender.
@@ -33,8 +29,8 @@ module Offer {
         let Offer<Offered> { offered, for, time_lock } = move_from<Offer<Offered>>(offer_address);
         let sender = Signer::address_of(account);
         let now = Timestamp::now_seconds();
-        assert(sender == for || sender == offer_address, EOFFER_DNE_FOR_ACCOUNT());
-        assert(now >= time_lock, EOFFER_NOT_UNLOCKED());
+        assert(sender == for || sender == offer_address, Errors::invalid_argument(EOFFER_DNE_FOR_ACCOUNT));
+        assert(now >= time_lock, Errors::not_published(EOFFER_NOT_UNLOCKED));
         offered
     }
 

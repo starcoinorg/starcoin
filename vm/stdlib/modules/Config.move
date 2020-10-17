@@ -3,7 +3,7 @@ module Config {
     use 0x1::Event;
     use 0x1::Signer;
     use 0x1::Option::{Self, Option};
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -30,6 +30,8 @@ module Config {
         value: ConfigValue,
     }
 
+    const ECAPABILITY_HOLDER_NOT_EXISTS: u64 = 101;
+
 
     spec module {
         define spec_get<ConfigValue>(addr: address): ConfigValue {
@@ -39,7 +41,7 @@ module Config {
 
     // Get a copy of `ConfigValue` value stored under `addr`.
     public fun get_by_address<ConfigValue: copyable>(addr: address): ConfigValue acquires Config {
-        assert(exists<Config<ConfigValue>>(addr), ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST());
+        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(Errors::ECONFIG_VALUE_DOES_NOT_EXIST()));
         *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
@@ -52,9 +54,9 @@ module Config {
     public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config,ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);
         //TODO define no capability error code.
-        assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), 24);
+        assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
-        assert(Option::is_some(&cap_holder.cap), 24);
+        assert(Option::is_some(&cap_holder.cap), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
         set_with_capability(Option::borrow_mut(&mut cap_holder.cap), payload)
     }
 
@@ -77,7 +79,7 @@ module Config {
     // Set a config item to a new value with cap.
     public fun set_with_capability<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, payload: ConfigValue) acquires Config{
         let addr = cap.account_address;
-        assert(exists<Config<ConfigValue>>(addr), ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST());
+        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(Errors::ECONFIG_VALUE_DOES_NOT_EXIST()));
         let config = borrow_global_mut<Config<ConfigValue>>(addr);
         config.payload = copy payload;
         emit_config_change_event(cap, payload);

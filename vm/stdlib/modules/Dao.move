@@ -6,6 +6,7 @@ module Dao {
     use 0x1::Option;
     use 0x1::Config;
     use 0x1::Event;
+    use 0x1::Errors;
 
     /// default voting_delay: 1hour
     const DEFAULT_VOTING_DELAY: u64 = 60 * 60;
@@ -121,7 +122,7 @@ module Dao {
         // TODO: we can add a token manage cap in Token module.
         // and only token manager can register this.
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         // let proposal_id = ProposalId {next: 0};
         let gov_info = DaoGlobalInfo<TokenT> {
             next_proposal_id: 0,
@@ -145,10 +146,10 @@ module Dao {
         voting_quorum_rate: u8,
         min_action_delay: u64,
     ): DaoConfig<TokenT> {
-        assert(voting_delay > 0, ERR_CONFIG_PARAM_INVALID);
-        assert(voting_period > 0, ERR_CONFIG_PARAM_INVALID);
-        assert(voting_quorum_rate > 0 && voting_quorum_rate <= 100, ERR_CONFIG_PARAM_INVALID);
-        assert(min_action_delay > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(voting_delay > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
+        assert(voting_period > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
+        assert(voting_quorum_rate > 0 && voting_quorum_rate <= 100, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
+        assert(min_action_delay > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         DaoConfig { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
     }
 
@@ -163,7 +164,7 @@ module Dao {
         if (action_delay == 0) {
             action_delay = min_action_delay<TokenT>();
         } else {
-            assert(action_delay >= min_action_delay<TokenT>(), ERR_ACTION_DELAY_TOO_SMALL);
+            assert(action_delay >= min_action_delay<TokenT>(), Errors::invalid_argument(ERR_ACTION_DELAY_TOO_SMALL));
         };
         let proposal_id = generate_next_proposal_id<TokenT>();
         let proposer = Signer::address_of(signer);
@@ -202,15 +203,15 @@ module Dao {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can cast vote.
-            assert(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+            assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let stake_value = Token::value(&stake);
         let total_voted = if (exists<Vote<TokenT>>(Signer::address_of(signer))) {
             let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
-            assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
-            assert(my_vote.agree == agree, ERR_VOTE_STATE_MISMATCH);
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+            assert(my_vote.agree == agree, Errors::invalid_state(ERR_VOTE_STATE_MISMATCH));
             Token::deposit(&mut my_vote.stake, stake);
             Token::value(&my_vote.stake)
         } else {
@@ -252,12 +253,12 @@ module Dao {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can change vote.
-            assert(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+            assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
-        assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         // flip the vote
         if (my_vote.agree != agree) {
             my_vote.agree = agree;
@@ -294,13 +295,13 @@ module Dao {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // only when proposal is active, use can revoke vote.
-            assert(state == ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+            assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
-        assert(my_vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-        assert(my_vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
+        assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let reverted_stake = Token::withdraw(&mut my_vote.stake, voting_power);
         if (my_vote.agree) {
             proposal.for_votes = proposal.for_votes - voting_power;
@@ -346,14 +347,14 @@ module Dao {
         if (proposal_exists<TokenT, ActionT>(proposer_address, proposal_id)) {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
             // Only after vote period end, user can unstake his votes.
-            assert(state > ACTIVE, ERR_PROPOSAL_STATE_INVALID);
+            assert(state > ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         let Vote { proposer, id, stake, agree: _ } = move_from<Vote<TokenT>>(
             Signer::address_of(signer),
         );
         // these checks are still required.
-        assert(proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-        assert(id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposer == proposer_address, Errors::requires_address(ERR_PROPOSER_MISMATCH));
+        assert(id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         stake
     }
 
@@ -363,7 +364,7 @@ module Dao {
         proposal_id: u64,
     ) acquires Proposal {
         // Only agreed proposal can be submitted.
-        assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED, 601);
+        assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED, 601); //todo
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         proposal.eta = Timestamp::now_seconds() + proposal.action_delay;
     }
@@ -376,7 +377,7 @@ module Dao {
         // Only executable proposal's action can be extracted.
         assert(
             proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == EXECUTABLE,
-            ERR_PROPOSAL_STATE_INVALID,
+            Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID),
         );
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         let action: ActionT = Option::extract(&mut proposal.action);
@@ -391,7 +392,7 @@ module Dao {
         let proposal_state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
         assert(
             proposal_state == DEFEATED || proposal_state == EXTRACTED,
-            ERR_PROPOSAL_STATE_INVALID,
+            Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID),
         );
         let Proposal {
             id: _,
@@ -412,7 +413,7 @@ module Dao {
         proposal_id: u64,
     ): u8 acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let current_time = Timestamp::now_seconds();
         if (current_time < proposal.start_time) {
             // Pending
@@ -444,7 +445,7 @@ module Dao {
         proposal_id: u64,
     ): (u64, u64, u128, u128) acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
     }
 
@@ -455,8 +456,8 @@ module Dao {
         proposal_id: u64,
     ): (bool, u128) acquires Vote {
         let vote = borrow_global<Vote<TokenT>>(voter);
-        assert(vote.proposer == proposer_address, ERR_PROPOSER_MISMATCH);
-        assert(vote.id == proposal_id, ERR_PROPOSAL_ID_MISMATCH);
+        assert(vote.proposer == proposer_address, Errors::requires_address(ERR_PROPOSER_MISMATCH));
+        assert(vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         (vote.agree, Token::value(&vote.stake))
     }
 
@@ -514,7 +515,7 @@ module Dao {
             config.voting_delay = voting_delay;
         };
         if (voting_quorum_rate > 0) {
-            assert(voting_quorum_rate <= 100, ERR_QUROM_RATE_INVALID);
+            assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
             config.voting_quorum_rate = voting_quorum_rate;
         };
         if (min_action_delay > 0) {
@@ -527,7 +528,7 @@ module Dao {
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
-        assert(value > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(value > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         let config = get_config<TokenT>();
         config.voting_delay = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
@@ -537,7 +538,7 @@ module Dao {
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
-        assert(value > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(value > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         let config = get_config<TokenT>();
         config.voting_period = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
@@ -547,7 +548,7 @@ module Dao {
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u8,
     ) {
-        assert(value <= 100 && value > 0, ERR_QUROM_RATE_INVALID);
+        assert(value <= 100 && value > 0, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
         let config = get_config<TokenT>();
         config.voting_quorum_rate = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);
@@ -557,7 +558,7 @@ module Dao {
         cap: &mut Config::ModifyConfigCapability<DaoConfig<TokenT>>,
         value: u64,
     ) {
-        assert(value > 0, ERR_CONFIG_PARAM_INVALID);
+        assert(value > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         let config = get_config<TokenT>();
         config.min_action_delay = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);

@@ -130,7 +130,7 @@ fun main(account: &signer) {
 }
 
 // check: ABORTED
-// check: 24
+// check: 25860
 
 
 // Any one can update config by MyConfig module.

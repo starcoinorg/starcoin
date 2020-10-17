@@ -3,7 +3,7 @@ address 0x1 {
 module Timestamp {
     use 0x1::CoreAddresses;
     use 0x1::Signer;
-    use 0x1::ErrorCode;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -16,17 +16,18 @@ module Timestamp {
         milliseconds: u64,
     }
 
-    /// Conversion factor between seconds and milliseconds
-    const MILLI_CONVERSION_FACTOR: u64 = 1000;
-
     /// A singleton resource used to determine whether time has started. This
     /// is called at the end of genesis.
     resource struct TimeHasStarted {}
 
+    /// Conversion factor between seconds and milliseconds
+    const MILLI_CONVERSION_FACTOR: u64 = 1000;
+
+    const ENOT_INITIALIZED: u64 = 101;
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer, genesis_timestamp: u64) {
         // Only callable by the Genesis address
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
         let milli_timer = CurrentTimeMilliseconds {milliseconds: genesis_timestamp};
         move_to<CurrentTimeMilliseconds>(account, milli_timer);
     }
@@ -38,10 +39,10 @@ module Timestamp {
 
     // Update the wall clock time by consensus. Requires VM privilege and will be invoked during block prologue.
     public fun update_global_time(account: &signer, timestamp: u64) acquires CurrentTimeMilliseconds {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
         //Do not update time before time start.
         let global_milli_timer = borrow_global_mut<CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
-        assert(timestamp > global_milli_timer.milliseconds, ErrorCode::EINVALID_TIMESTAMP());
+        assert(timestamp > global_milli_timer.milliseconds, Errors::invalid_argument(Errors::EINVALID_TIMESTAMP()));
         global_milli_timer.milliseconds = timestamp;
     }
     spec fun update_global_time {
@@ -75,12 +76,12 @@ module Timestamp {
 
     /// Marks that time has started and genesis has finished. This can only be called from genesis.
     public fun set_time_has_started(account: &signer) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), ErrorCode::ENOT_GENESIS_ACCOUNT());
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
 
         // Current time must have been initialized.
         assert(
             exists<CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS()),
-            1
+            Errors::invalid_state(ENOT_INITIALIZED)
         );
         move_to(account, TimeHasStarted{});
     }
