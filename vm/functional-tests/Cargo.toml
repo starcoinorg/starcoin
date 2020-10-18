@@ -18,7 +18,7 @@ aho-corasick = "0.7.14"
 termcolor = "1.0.5"
 mirai-annotations = "1.10.1"
 starcoin-types = { path = "../../types"}
-starcoin-vm-types = { path = "../types" }
+starcoin-vm-types = { path = "../types" ,default-features = false, features = ["fuzzing"]}
 starcoin-vm-runtime = { path = "../vm-runtime", features = ["debug_module"] }
 starcoin-config = { path = "../../config" }
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"]}
@@ -30,6 +30,9 @@ executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-consensus = { path = "../../consensus" }
 
+[dev-dependencies]
+starcoin-vm-types = { path = "../types"}
+
 [[test]]
 name = "testsuite"
 harness = false
@@ -37,3 +40,7 @@ harness = false
 [[test]]
 name = "stdlib_sanity_check"
 harness = false
+
+[features]
+default = []
+fuzzing = ["starcoin-vm-types/fuzzing"]

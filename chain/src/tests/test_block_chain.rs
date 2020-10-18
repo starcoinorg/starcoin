@@ -323,12 +323,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
-    let global = block_chain
-        .get_global_time_by_number(header.number)
-        .unwrap();
-    MOCK_TIME_SERVICE.init(global.milliseconds + 1);
     let miner_account = AccountInfo::random();
-
     let (template_b1, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
@@ -338,8 +333,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
 
-    let block_b1 = config
-        .net()
+    let block_b1 = block_chain
         .consensus()
         .create_block(&block_chain, template_b1)?;
     block_chain.apply(block_b1.clone())?;
@@ -371,8 +365,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b2 = config
-        .net()
+    let block_b2 = block_chain
         .consensus()
         .create_block(&block_chain, template_b2)?;
 
@@ -386,8 +379,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b3 = config
-        .net()
+    let block_b3 = block_chain2
         .consensus()
         .create_block(&block_chain2, template_b3)?;
     block_chain2.apply(block_b3)?;
