@@ -353,7 +353,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let tnx_hash = signed_txn_t2.crypto_hash();
-    let (template_b2, _) = block_chain.create_block_template(
+    let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
         Some(block_b1.id()),
@@ -361,13 +361,14 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         None,
     )?;
+    assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b2 = config
         .net()
         .consensus()
         .create_block(&block_chain, template_b2)?;
 
     block_chain.apply(block_b2)?;
-    let (template_b3, _) = block_chain2.create_block_template(
+    let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
         Some(block_b1.id()),
@@ -375,6 +376,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         None,
     )?;
+    assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
     let block_b3 = config
         .net()
         .consensus()

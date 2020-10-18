@@ -33,8 +33,9 @@ impl Consensus for DummyConsensus {
         //in dev mode, if disable_empty_block = true,
         //may escape a long time between block,
         //so, just set the difficulty to 1 for sleep less time for this case.
-        let target =
-            (now as i64) - (current_header.timestamp as i64) - (epoch.block_time_target() as i64);
+        let target = (now as i64)
+            - (current_header.timestamp as i64)
+            - ((epoch.block_time_target() * 1000) as i64);
         let target = if target >= 0 { 1 } else { target.abs() };
 
         Ok(target.into())
