@@ -1,16 +1,16 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use libra_types::transaction::ScriptABI;
 use serde_generate as serdegen;
 use serde_generate::SourceInstaller as _;
 use serde_reflection::Registry;
+use starcoin_vm_types::transaction::ScriptABI;
 use std::{io::Write, process::Command};
 use tempfile::tempdir;
 use transaction_builder_generator as buildgen;
 use transaction_builder_generator::SourceInstaller as _;
 
-fn get_libra_registry() -> Registry {
+fn get_starcoin_registry() -> Registry {
     let path = "../../testsuite/generate-format/tests/staged/starcoin.yaml";
     let content = std::fs::read_to_string(path).unwrap();
     serde_yaml::from_str::<Registry>(content.as_str()).unwrap()
@@ -28,7 +28,7 @@ const OUTPUT : &str = "181 1 161 28 235 11 1 0 0 0 6 1 0 2 3 2 17 4 19 4 5 23 28
 #[test]
 #[ignore]
 fn test_that_python_code_parses_and_passes_pyre_check() {
-    let registry = get_libra_registry();
+    let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
     let dir = tempdir().unwrap();
 
@@ -107,7 +107,7 @@ fn test_that_python_code_parses_and_passes_pyre_check() {
 
 #[test]
 fn test_that_rust_code_compiles() {
-    let registry = get_libra_registry();
+    let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
     let dir = tempdir().unwrap();
 
@@ -120,20 +120,20 @@ fn test_that_rust_code_compiles() {
     //     .install_module("starcoin-types", &registry)
     //     .unwrap();
 
-    let stdlib_dir_path = dir.path().join("libra-stdlib");
+    let stdlib_dir_path = dir.path().join("starcoin-stdlib");
     std::fs::create_dir_all(stdlib_dir_path.clone()).unwrap();
 
     let mut cargo = std::fs::File::create(&stdlib_dir_path.join("Cargo.toml")).unwrap();
     write!(
         cargo,
         r#"[package]
-name = "libra-stdlib"
+name = "starcoin-stdlib"
 version = "0.1.0"
 edition = "2018"
 
 [dependencies]
 serde_bytes = "0.11"
-lcs = {{ package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="b06823507157123e8a12b67679c986a45f6ce86e"}}
+scs = {{ package="starcoin-canonical-serialization", git = "https://github.com/starcoinorg/starcoin"}}
 starcoin-types = {{ path = "../starcoin-types", version = "0.1.0" }}
 
 
@@ -158,7 +158,7 @@ test = false
     // Use a stable `target` dir to avoid downloading and recompiling crates everytime.
     let target_dir = std::env::current_dir().unwrap().join("../../target");
     let status = Command::new("cargo")
-        .current_dir(dir.path().join("libra-stdlib"))
+        .current_dir(dir.path().join("starcoin-stdlib"))
         .arg("build")
         .arg("--target-dir")
         .arg(target_dir.clone())
@@ -176,7 +176,7 @@ test = false
 #[test]
 #[ignore]
 fn test_that_cpp_code_compiles_and_demo_runs() {
-    let registry = get_libra_registry();
+    let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
     let dir = tempdir().unwrap();
 
@@ -223,7 +223,7 @@ fn test_that_cpp_code_compiles_and_demo_runs() {
 #[test]
 #[ignore]
 fn test_that_java_code_compiles_and_demo_runs() {
-    let registry = get_libra_registry();
+    let registry = get_starcoin_registry();
     let abis = get_stdlib_script_abis();
     let dir = tempdir().unwrap();
 
