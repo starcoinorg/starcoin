@@ -726,7 +726,7 @@ impl GenesisConfig {
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         match self.time_service_type {
             TimeServiceType::RealTimeService => (*REAL_TIME_SERVICE).clone(),
-            TimeServiceType::MockTimeService => (*MOKE_TIME_SERVICE).clone(),
+            TimeServiceType::MockTimeService => (*MOCK_TIME_SERVICE).clone(),
         }
     }
 }
@@ -754,7 +754,7 @@ static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
 pub static REAL_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
     Lazy::new(|| Arc::new(RealTimeService::new()));
 
-pub static MOKE_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
+pub static MOCK_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
     Lazy::new(|| Arc::new(MockTimeService::new_with_value(1)));
 
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000;
@@ -848,7 +848,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 .expect("invalid hex")
                 .as_slice(),
         ),
-        timestamp: 1603006373457,
+        timestamp: 0,
         reward_delay: 1,
         difficulty: 1.into(),
         nonce: 0,

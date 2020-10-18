@@ -18,7 +18,7 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::{ChainNetwork, MOKE_TIME_SERVICE};
+use starcoin_vm_types::genesis_config::{ChainNetwork, MOCK_TIME_SERVICE};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
@@ -130,8 +130,7 @@ fn test_dev_consensus() {
         .head()
         .get_global_time_by_number(mock_chain.head().current_header().number)
         .unwrap();
-    dbg!(global.clone());
-    MOKE_TIME_SERVICE.init(global.milliseconds + 1);
+    MOCK_TIME_SERVICE.init(global.milliseconds + 1);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
@@ -324,6 +323,10 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
+    let global = block_chain
+        .get_global_time_by_number(header.number)
+        .unwrap();
+    MOCK_TIME_SERVICE.init(global.milliseconds + 1);
     let miner_account = AccountInfo::random();
 
     let (template_b1, _) = block_chain.create_block_template(
