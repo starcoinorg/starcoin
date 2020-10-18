@@ -7,6 +7,13 @@ module Dao {
     use 0x1::Config;
     use 0x1::Event;
     use 0x1::Errors;
+    // use 0x1::Math;
+
+    spec module {
+        pragma verify;
+        pragma aborts_if_is_partial;
+        pragma aborts_if_is_strict = false;
+    }
 
     /// default voting_delay: 1hour
     const DEFAULT_VOTING_DELAY: u64 = 60 * 60;
@@ -21,17 +28,29 @@ module Dao {
     public fun default_min_action_delay(): u64 {
         DEFAULT_MIN_ACTION_DELAY
     }
+    spec fun default_min_action_delay {
+        aborts_if false;
+    }
 
     public fun default_voting_delay(): u64 {
         DEFAULT_VOTING_DELAY
+    }
+    spec fun default_voting_delay {
+        aborts_if false;
     }
 
     public fun default_voting_period(): u64 {
         DEFAULT_VOTING_PERIOD
     }
+    spec fun default_voting_period {
+        aborts_if false;
+    }
 
     public fun default_voting_quorum_rate(): u8 {
         DEFAULT_VOTEING_QUORUM_RATE
+    }
+    spec fun default_voting_quorum_rate {
+        aborts_if false;
     }
 
     /// Proposal state
@@ -49,6 +68,11 @@ module Dao {
         vote_changed_event: Event::EventHandle<VoteChangedEvent>,
     }
 
+    spec struct DaoGlobalInfo {
+        // fix me
+        // invariant next_proposal_id <= max_u64();
+    }
+
     struct DaoConfig<TokenT: copyable> {
         /// after proposal created, how long use should wait before he can vote.
         voting_delay: u64,
@@ -60,6 +84,13 @@ module Dao {
         voting_quorum_rate: u8,
         /// how long the proposal should wait before it can be executed.
         min_action_delay: u64,
+    }
+
+    spec struct DaoConfig {
+        invariant voting_quorum_rate > 0 && voting_quorum_rate <= 100;
+        invariant voting_delay > 0;
+        invariant voting_period > 0;
+        invariant min_action_delay > 0;
     }
 
     /// emitted when proposal created.
@@ -91,6 +122,11 @@ module Dao {
         action_delay: u64,
         action: Option::Option<Action>,
     }
+    spec struct Proposal {
+        // fix me
+        // invariant start_time < end_time;
+        // invariant action_delay > 0;
+    }
 
     // TODO: allow user do multi votes.
     resource struct Vote<TokenT> {
@@ -98,6 +134,10 @@ module Dao {
         id: u64,
         stake: Token::Token<TokenT>,
         agree: bool,
+    }
+    spec struct Vote {
+        // fixme
+        // invariant stake.value > 0;
     }
 
     const ERR_NOT_AUTHORIZED: u64 = 1401;
@@ -139,6 +179,58 @@ module Dao {
         Config::publish_new_config(signer, config);
     }
 
+    spec fun plugin {
+        aborts_if voting_delay == 0;
+        aborts_if voting_period == 0;
+        aborts_if voting_quorum_rate == 0 || voting_quorum_rate > 100;
+        aborts_if min_action_delay == 0;
+
+        let sender = Signer::spec_address_of(signer);
+        aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
+        aborts_if exists<DaoGlobalInfo<TokenT>>(sender);
+        aborts_if exists<Config::Config<DaoConfig<TokenT>>>(sender);
+        aborts_if exists<Config::ModifyConfigCapabilityHolder<DaoConfig<TokenT>>>(sender);
+    }
+
+    spec schema RequirePluginDao<TokenT: copyable> {
+        let token_addr = Token::SPEC_TOKEN_TEST_ADDRESS();
+        aborts_if !exists<DaoGlobalInfo<TokenT>>(token_addr);
+        aborts_if !exists<Config::Config<DaoConfig<TokenT>>>(token_addr);
+    }
+    spec schema AbortIfDaoInfoNotExist<TokenT> {
+        let token_addr = Token::SPEC_TOKEN_TEST_ADDRESS();
+        aborts_if !exists<DaoGlobalInfo<TokenT>>(token_addr);
+    }
+    spec schema AbortIfDaoConfigNotExist<TokenT> {
+        let token_addr = Token::SPEC_TOKEN_TEST_ADDRESS();
+        aborts_if !exists<Config::Config<DaoConfig<TokenT>>>(token_addr);
+    }
+    spec schema AbortIfTimestampNotExist {
+        use 0x1::CoreAddresses;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
+
+    spec module {
+        apply
+            AbortIfDaoInfoNotExist<TokenT>
+        to
+            generate_next_proposal_id<TokenT>;
+
+        apply
+            AbortIfDaoConfigNotExist<TokenT>
+        to
+            get_config<TokenT>,
+            voting_delay<TokenT>,
+            voting_period<TokenT>,
+            voting_quorum_rate<TokenT>,
+            min_action_delay<TokenT>,
+            quorum_votes<TokenT>,
+
+            modify_dao_config<TokenT>,
+            set_*<TokenT>;
+
+    }
+
     /// create a dao config
     public fun new_dao_config<TokenT: copyable>(
         voting_delay: u64,
@@ -151,6 +243,13 @@ module Dao {
         assert(voting_quorum_rate > 0 && voting_quorum_rate <= 100, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         assert(min_action_delay > 0, Errors::invalid_argument(ERR_CONFIG_PARAM_INVALID));
         DaoConfig { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
+    }
+
+    spec fun new_dao_config {
+        aborts_if voting_delay == 0;
+        aborts_if voting_period == 0;
+        aborts_if voting_quorum_rate == 0 || voting_quorum_rate > 100;
+        aborts_if min_action_delay == 0;
     }
 
     /// propose a proposal.
@@ -189,6 +288,27 @@ module Dao {
         );
     }
 
+    spec fun propose {
+        use 0x1::CoreAddresses;
+        pragma addition_overflow_unchecked;
+        include AbortIfDaoConfigNotExist<TokenT>;
+        include AbortIfDaoInfoNotExist<TokenT>;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+
+        aborts_if action_delay > 0 && action_delay < spec_dao_config<TokenT>().min_action_delay;
+
+        let sender = Signer::spec_address_of(signer);
+        aborts_if exists<Proposal<TokenT, ActionT>>(sender);
+        modifies global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
+
+        ensures exists<Proposal<TokenT, ActionT>>(sender);
+
+        // TODO: figure out the ensures
+        // let proposal = global<Proposal<TokenT, ActionT>>(sender);
+        // ensures proposal.action_delay > 0;
+        // ensures proposal.end_time > proposal.start_time;
+    }
+
     /// votes for a proposal.
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
@@ -207,28 +327,27 @@ module Dao {
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
-        let stake_value = Token::value(&stake);
-        let total_voted = if (exists<Vote<TokenT>>(Signer::address_of(signer))) {
-            let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
+        let sender = Signer::address_of(signer);
+        let total_voted = if (exists<Vote<TokenT>>(sender)) {
+            let my_vote = borrow_global_mut<Vote<TokenT>>(sender);
             assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
             assert(my_vote.agree == agree, Errors::invalid_state(ERR_VOTE_STATE_MISMATCH));
-            Token::deposit(&mut my_vote.stake, stake);
+
+            _cast_vote(proposal, my_vote, stake);
             Token::value(&my_vote.stake)
         } else {
             let my_vote = Vote<TokenT> {
                 proposer: proposer_address,
                 id: proposal_id,
-                stake,
+                stake: Token::zero(),
                 agree,
             };
+            _cast_vote(proposal, &mut my_vote, stake);
+            let total_voted = Token::value(&my_vote.stake);
             move_to(signer, my_vote);
-            stake_value
+            total_voted
         };
-        if (agree) {
-            proposal.for_votes = proposal.for_votes + stake_value;
-        } else {
-            proposal.against_votes = proposal.against_votes + stake_value;
-        };
+
         // emit event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         Event::emit_event(
@@ -236,12 +355,60 @@ module Dao {
             VoteChangedEvent {
                 proposal_id,
                 proposer: proposer_address,
-                voter: Signer::address_of(signer),
+                voter: sender,
                 agree,
                 vote: total_voted,
             },
         );
     }
+
+    spec schema CheckVoteOnCast<TokenT, ActionT> {
+
+        proposal_id: u64;
+        agree: bool;
+        voter: address;
+        let vote = global<Vote<TokenT>>(voter);
+        aborts_if vote.id != proposal_id;
+        aborts_if vote.agree != agree;
+    }
+
+    spec fun cast_vote {
+        include AbortIfDaoConfigNotExist<TokenT>;
+        include AbortIfDaoInfoNotExist<TokenT>;
+        let expected_states = singleton_vector(ACTIVE);
+        include CheckProposalStates<TokenT, ActionT> {expected_states};
+        let sender = Signer::spec_address_of(signer);
+        let vote_exists = exists<Vote<TokenT>>(sender);
+        include vote_exists ==> CheckVoteOnCast<TokenT, ActionT> {
+            voter: sender,
+            proposal_id: proposal_id,
+            agree: agree
+        };
+        modifies global<Proposal<TokenT, ActionT>>(proposer_address);
+        // TODO: figure out why it cannot work.
+        // ensures vote_exists ==>
+        //     global<Vote<TokenT>>(sender).stake.value == old(global<Vote<TokenT>>(sender)).stake.value + stake.value;
+        ensures !vote_exists ==> global<Vote<TokenT>>(sender).stake.value == stake.value;
+    }
+
+    fun _cast_vote<TokenT: copyable, ActionT>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
+        let stake_value = Token::value(&stake);
+        Token::deposit(&mut vote.stake, stake);
+        if (vote.agree) {
+            proposal.for_votes = proposal.for_votes + stake_value;
+        } else {
+            proposal.against_votes = proposal.against_votes + stake_value;
+        };
+    }
+
+    spec fun _cast_vote {
+        ensures vote.stake.value == old(vote).stake.value + stake.value;
+        ensures vote.agree ==> old(proposal).for_votes + stake.value == proposal.for_votes;
+        ensures vote.agree ==> old(proposal).against_votes == proposal.against_votes;
+        ensures !vote.agree ==> old(proposal).against_votes + stake.value == proposal.against_votes;
+        ensures !vote.agree ==> old(proposal).for_votes == proposal.for_votes;
+    }
+
 
     /// Let user change their vote during the voting time.
     public fun change_vote<TokenT: copyable, ActionT>(
@@ -258,18 +425,14 @@ module Dao {
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
-        assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+        {
+            assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+        };
+
         // flip the vote
         if (my_vote.agree != agree) {
-            my_vote.agree = agree;
-            let total_voted = Token::value(&my_vote.stake);
-            if (agree) {
-                proposal.for_votes = proposal.for_votes + total_voted;
-                proposal.against_votes = proposal.against_votes - total_voted;
-            } else {
-                proposal.for_votes = proposal.for_votes - total_voted;
-                proposal.against_votes = proposal.against_votes + total_voted;
-            };
+            let total_voted = _flip_vote(my_vote, proposal);
             // emit event
             let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
             Event::emit_event(
@@ -284,6 +447,53 @@ module Dao {
             );
         };
     }
+    spec schema CheckVoteOnProposal<TokenT> {
+        vote: Vote<TokenT>;
+        proposer_address: address;
+        proposal_id: u64;
+
+        aborts_if vote.id != proposal_id;
+        aborts_if vote.proposer != proposer_address;
+    }
+
+    spec fun change_vote {
+        pragma aborts_if_is_partial = true;
+
+        // include AbortIfDaoConfigNotExist<TokenT>;
+        let expected_states = singleton_vector(ACTIVE);
+        include CheckProposalStates<TokenT, ActionT>{expected_states};
+
+        let sender = Signer::spec_address_of(signer);
+
+        aborts_if !exists<Vote<TokenT>>(sender);
+        let vote = global<Vote<TokenT>>(sender);
+        include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
+
+        include vote.agree != agree ==> AbortIfDaoInfoNotExist<TokenT>;
+        ensures vote.agree != agree ==> vote.agree == agree;
+    }
+
+    fun _flip_vote<TokenT: copyable, ActionT>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
+        my_vote.agree = !my_vote.agree;
+        let total_voted = Token::value(&my_vote.stake);
+        if (my_vote.agree) {
+            proposal.for_votes = proposal.for_votes + total_voted;
+            proposal.against_votes = proposal.against_votes - total_voted;
+        } else {
+            proposal.for_votes = proposal.for_votes - total_voted;
+            proposal.against_votes = proposal.against_votes + total_voted;
+        };
+        total_voted
+    }
+
+    spec fun _flip_vote {
+        pragma aborts_if_is_partial = false;
+        aborts_if my_vote.agree && proposal.for_votes < my_vote.stake.value;
+        aborts_if my_vote.agree && proposal.against_votes + my_vote.stake.value > MAX_U128;
+        aborts_if !my_vote.agree && proposal.against_votes < my_vote.stake.value;
+        aborts_if !my_vote.agree && proposal.for_votes + my_vote.stake.value > MAX_U128;
+        ensures my_vote.agree == !old(my_vote).agree;
+    }
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.
     public fun revoke_vote<TokenT: copyable, ActionT>(
@@ -297,17 +507,17 @@ module Dao {
             // only when proposal is active, use can revoke vote.
             assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
+        // get proposal
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+
+        // get vote
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
-        assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
-        assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
-        let reverted_stake = Token::withdraw(&mut my_vote.stake, voting_power);
-        if (my_vote.agree) {
-            proposal.for_votes = proposal.for_votes - voting_power;
-        } else {
-            proposal.against_votes = proposal.against_votes - voting_power;
+        {
+            assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         };
+        // revoke vote on proposal
+        let reverted_stake =_revoke_vote(proposal, my_vote, voting_power);
         // emit vote changed event
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         Event::emit_event(
@@ -323,17 +533,46 @@ module Dao {
         reverted_stake
     }
 
-    public fun proposal_exists<TokenT: copyable, ActionT>(
-        proposer_address: address,
-        proposal_id: u64,
-    ): bool acquires Proposal {
-        if (exists<Proposal<TokenT, ActionT>>(proposer_address)) {
-            let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
-            if (proposal.id == proposal_id) {
-                return true
-            };
+    spec fun revoke_vote {
+        include AbortIfDaoConfigNotExist<TokenT>;
+        include AbortIfDaoInfoNotExist<TokenT>;
+        let expected_states = singleton_vector(ACTIVE);
+        include CheckProposalStates<TokenT, ActionT> {expected_states};
+        let sender = Signer::spec_address_of(signer);
+
+        aborts_if !exists<Vote<TokenT>>(sender);
+        let vote = global<Vote<TokenT>>(sender);
+        include CheckVoteOnProposal<TokenT> {vote, proposer_address, proposal_id};
+
+        modifies global<Vote<TokenT>>(sender);
+        modifies global<Proposal<TokenT, ActionT>>(proposer_address);
+        modifies global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
+
+        ensures global<Vote<TokenT>>(sender).stake.value + result.value == old(global<Vote<TokenT>>(sender)).stake.value;
+        ensures result.value == voting_power;
+    }
+
+    fun _revoke_vote<TokenT: copyable, ActionT>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
+        let reverted_stake = Token::withdraw(&mut vote.stake, to_revoke);
+        if (vote.agree) {
+            proposal.for_votes = proposal.for_votes - to_revoke;
+        } else {
+            proposal.against_votes = proposal.against_votes - to_revoke;
         };
-        false
+        spec {
+            assert Token::value(reverted_stake) == to_revoke;
+        };
+        reverted_stake
+    }
+
+    spec fun _revoke_vote {
+        pragma aborts_if_is_partial = false;
+        aborts_if vote.stake.value < to_revoke;
+        aborts_if vote.agree && proposal.for_votes < to_revoke;
+        aborts_if !vote.agree && proposal.against_votes < to_revoke;
+        ensures vote.agree ==> old(proposal).for_votes == proposal.for_votes + to_revoke;
+        ensures !vote.agree ==> old(proposal).against_votes == proposal.against_votes + to_revoke;
+        ensures result.value == to_revoke;
     }
 
     /// Retrieve back my staked token voted for a proposal.
@@ -358,15 +597,48 @@ module Dao {
         stake
     }
 
+    spec fun unstake_votes {
+        let expected_states = singleton_vector(DEFEATED);
+        let expected_states1 = concat_vector(expected_states,singleton_vector(AGREED));
+        let expected_states2 = concat_vector(expected_states1,singleton_vector(QUEUED));
+        let expected_states3 = concat_vector(expected_states2,singleton_vector(EXECUTABLE));
+        let expected_states4 = concat_vector(expected_states3,singleton_vector(EXTRACTED));
+        aborts_if expected_states4[0] != DEFEATED;
+        aborts_if expected_states4[1] != AGREED;
+        aborts_if expected_states4[2] != QUEUED;
+        aborts_if expected_states4[3] != EXECUTABLE;
+        aborts_if expected_states4[4] != EXTRACTED;
+        include spec_proposal_exists<TokenT, ActionT>(proposer_address, proposal_id) ==>
+                    CheckProposalStates<TokenT, ActionT>{expected_states: expected_states4};
+        let sender = Signer::address_of(signer);
+        aborts_if !exists<Vote<TokenT>>(sender);
+        let vote = global<Vote<TokenT>>(sender);
+        include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
+        ensures !exists<Vote<TokenT>>(sender);
+        ensures result.value == old(vote).stake.value;
+    }
+
+
     /// queue agreed proposal to execute.
     public fun queue_proposal_action<TokenT: copyable, ActionT>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
         // Only agreed proposal can be submitted.
-        assert(proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED, 601); //todo
+        assert(
+            proposal_state<TokenT, ActionT>(proposer_address, proposal_id) == AGREED,
+            Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID)
+        );
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
         proposal.eta = Timestamp::now_seconds() + proposal.action_delay;
+    }
+    spec fun queue_proposal_action {
+        let expected_states = singleton_vector(AGREED);
+        include CheckProposalStates<TokenT, ActionT>{expected_states};
+
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if Timestamp::spec_now_seconds() + proposal.action_delay > MAX_U64;
+        ensures proposal.eta >= Timestamp::spec_now_seconds();
     }
 
     /// extract proposal action to execute.
@@ -383,6 +655,13 @@ module Dao {
         let action: ActionT = Option::extract(&mut proposal.action);
         action
     }
+    spec fun extract_proposal_action {
+        let expected_states = singleton_vector(EXECUTABLE);
+        include CheckProposalStates<TokenT, ActionT>{expected_states};
+        modifies global<Proposal<TokenT, ActionT>>(proposer_address);
+        ensures Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+    }
+
 
     /// remove terminated proposal from proposer
     public fun destroy_terminated_proposal<TokenT: copyable, ActionT>(
@@ -408,6 +687,46 @@ module Dao {
         Option::destroy_none(action);
     }
 
+    spec fun destroy_terminated_proposal {
+        let expected_states = concat_vector(singleton_vector(DEFEATED), singleton_vector(EXTRACTED));
+        aborts_if len(expected_states) != 2;
+        aborts_if expected_states[0] != DEFEATED;
+        aborts_if expected_states[1] != EXTRACTED;
+        include CheckProposalStates<TokenT, ActionT>{expected_states};
+        aborts_if Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        ensures !exists<Proposal<TokenT, ActionT>>(proposer_address);
+    }
+
+    /// check whether a proposal exists in `proposer_address` with id `proposal_id`.
+    public fun proposal_exists<TokenT: copyable, ActionT>(
+        proposer_address: address,
+        proposal_id: u64,
+    ): bool acquires Proposal {
+        if (exists<Proposal<TokenT, ActionT>>(proposer_address)) {
+            let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
+            return proposal.id == proposal_id
+        };
+        false
+    }
+    spec fun proposal_exists {
+        pragma aborts_if_is_partial = false;
+        ensures exists<Proposal<TokenT, ActionT>>(proposer_address) &&
+                    borrow_global<Proposal<TokenT, ActionT>>(proposer_address).id == proposal_id ==>
+                    result;
+    }
+
+    spec define spec_proposal_exists<TokenT: copyable, ActionT>(
+        proposer_address: address,
+        proposal_id: u64,
+    ): bool {
+        if (exists<Proposal<TokenT, ActionT>>(proposer_address)) {
+            let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+            proposal.id == proposal_id
+        } else {
+            false
+        }
+    }
+
     public fun proposal_state<TokenT: copyable, ActionT>(
         proposer_address: address,
         proposal_id: u64,
@@ -415,6 +734,47 @@ module Dao {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let current_time = Timestamp::now_seconds();
+        let quorum_votes = quorum_votes<TokenT>();
+        _proposal_state(proposal, current_time, quorum_votes)
+    }
+
+    spec schema CheckProposalStates<TokenT, ActionT> {
+        proposer_address: address;
+        proposal_id: u64;
+        expected_states: vector<u8>;
+        aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
+
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if proposal.id != proposal_id;
+
+        include AbortIfDaoConfigNotExist<TokenT>;
+        include AbortIfTimestampNotExist;
+
+        let quorum_votes = spec_quorum_votes<TokenT>();
+        let current_time = Timestamp::spec_now_seconds();
+        let state = _proposal_state(proposal, current_time, quorum_votes);
+        aborts_if (forall s in expected_states : s != state);
+    }
+
+    spec fun proposal_state {
+        use 0x1::CoreAddresses;
+        include AbortIfDaoConfigNotExist<TokenT>;
+        include AbortIfTimestampNotExist;
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
+
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if proposal.id != proposal_id;
+        // TODO: check result
+    }
+
+    fun _proposal_state<TokenT: copyable, ActionT>(
+        proposal: &Proposal<TokenT, ActionT>,
+        current_time: u64,
+        quorum_votes: u128,
+    ): u8 {
+        // let current_time = Timestamp::now_seconds();
+        // let quorum_votes = quorum_votes<TokenT>();
         if (current_time < proposal.start_time) {
             // Pending
             PENDING
@@ -422,7 +782,7 @@ module Dao {
             // Active
             ACTIVE
         } else if (proposal.for_votes <= proposal.against_votes ||
-            proposal.for_votes < quorum_votes<TokenT>()) {
+            proposal.for_votes < quorum_votes) {
             // Defeated
             DEFEATED
         } else if (proposal.eta == 0) {
@@ -438,6 +798,7 @@ module Dao {
         }
     }
 
+
     /// get proposal's information.
     /// return: (start_time, end_time, for_votes, against_votes).
     public fun proposal_info<TokenT: copyable, ActionT>(
@@ -447,6 +808,12 @@ module Dao {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
+    }
+
+    spec fun proposal_info {
+        aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if proposal.id != proposal_id;
     }
 
     /// Get voter's vote info on proposal with `proposal_id` of `proposer_address`.
@@ -461,17 +828,26 @@ module Dao {
         (vote.agree, Token::value(&vote.stake))
     }
 
-    /// Quorum votes to make proposal pass.
-    public fun quorum_votes<TokenT: copyable>(): u128 {
-        let supply = Token::market_cap<TokenT>();
-        supply / 100 * (voting_quorum_rate<TokenT>() as u128)
+    spec fun vote_of {
+        aborts_if !exists<Vote<TokenT>>(voter);
+        let vote = global<Vote<TokenT>>(voter);
+        include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
     }
+
 
     fun generate_next_proposal_id<TokenT>(): u64 acquires DaoGlobalInfo {
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
         let proposal_id = gov_info.next_proposal_id;
         gov_info.next_proposal_id = proposal_id + 1;
         proposal_id
+    }
+    spec fun generate_next_proposal_id  {
+        pragma addition_overflow_unchecked;
+        modifies global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS());
+        ensures
+            global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS()).next_proposal_id ==
+            old(global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS()).next_proposal_id) + 1;
+        ensures result == old(global<DaoGlobalInfo<TokenT>>(Token::SPEC_TOKEN_TEST_ADDRESS()).next_proposal_id);
     }
 
     //// Helper functions
@@ -481,21 +857,69 @@ module Dao {
         get_config<TokenT>().voting_delay
     }
 
+    spec fun voting_delay {
+        aborts_if false;
+    }
+
     public fun voting_period<TokenT: copyable>(): u64 {
         get_config<TokenT>().voting_period
+    }
+
+    spec fun voting_period {
+        aborts_if false;
+    }
+
+    /// Quorum votes to make proposal pass.
+    public fun quorum_votes<TokenT: copyable>(): u128 {
+        let supply = Token::market_cap<TokenT>();
+        let rate = voting_quorum_rate<TokenT>();
+        // let rate1 = (rate as u64);
+        let rate2 = (rate as u128);
+        supply * rate2 / 100u128
+        // Math::mul_div(supply, (voting_quorum_rate<TokenT>() as u128), 100)
+    }
+    spec fun quorum_votes {
+        // TODO: why
+        pragma verify = false;
+        // pragma addition_overflow_unchecked;
+    }
+
+    spec define spec_quorum_votes<TokenT: copyable>(): u128 {
+        let supply = Token::spec_abstract_total_value<TokenT>();
+        supply * spec_dao_config<TokenT>().voting_quorum_rate / 100
     }
 
     public fun voting_quorum_rate<TokenT: copyable>(): u8 {
         get_config<TokenT>().voting_quorum_rate
     }
 
+    spec fun voting_quorum_rate {
+        aborts_if false;
+        ensures result == global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload.voting_quorum_rate;
+    }
+
     public fun min_action_delay<TokenT: copyable>(): u64 {
         get_config<TokenT>().min_action_delay
+    }
+
+    spec fun min_action_delay {
+        aborts_if false;
+        ensures result == spec_dao_config<TokenT>().min_action_delay;
     }
 
     fun get_config<TokenT: copyable>(): DaoConfig<TokenT> {
         let token_issuer = Token::token_address<TokenT>();
         Config::get_by_address<DaoConfig<TokenT>>(token_issuer)
+    }
+
+    spec fun get_config {
+        ensures result == global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload;
+    }
+
+    spec module {
+        define spec_dao_config<TokenT: copyable>(): DaoConfig<TokenT> {
+            global<Config::Config<DaoConfig<TokenT>>>((Token::SPEC_TOKEN_TEST_ADDRESS())).payload
+        }
     }
 
     /// update function
