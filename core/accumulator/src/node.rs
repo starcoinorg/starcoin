@@ -71,7 +71,7 @@ impl AccumulatorNode {
 }
 
 /// An internal node.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct InternalNode {
     index: NodeIndex,
     left: HashValue,
@@ -79,8 +79,6 @@ pub struct InternalNode {
     is_frozen: bool,
 }
 
-//FIXME
-#[allow(clippy::all)]
 impl InternalNode {
     pub fn new(index: NodeIndex, left: HashValue, right: HashValue) -> Self {
         InternalNode {
