@@ -24,7 +24,7 @@ pub fn start_worker(
     mp: Option<&MultiProgress>,
 ) -> WorkerController {
     match consensus_strategy {
-        ConsensusStrategy::Argon | ConsensusStrategy::Keccak => {
+        ConsensusStrategy::Argon | ConsensusStrategy::Keccak | ConsensusStrategy::CryptoNight => {
             let thread_num = config.thread_num;
             let worker_txs = (0..thread_num)
                 .map(|i| {

@@ -77,7 +77,6 @@ impl Default for StdlibVersion {
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
     Dummy = 0,
-    //TODO add new consensus
     Argon = 2,
     Keccak = 3,
     CryptoNight = 4,
@@ -728,7 +727,6 @@ impl GenesisConfig {
         match self.time_service_type {
             TimeServiceType::RealTimeService => (*REAL_TIME_SERVICE).clone(),
             TimeServiceType::MockTimeService => (*MOKE_TIME_SERVICE).clone(),
-            // _ => (*MOKE_TIME_SERVICE).clone(),
         }
     }
 }
@@ -850,7 +848,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 .expect("invalid hex")
                 .as_slice(),
         ),
-        timestamp: 1596791843,
+        timestamp: 1603006373457,
         reward_delay: 1,
         difficulty: 1.into(),
         nonce: 0,
@@ -877,7 +875,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         association_key_pair: (Some(association_private_key), association_public_key),
         genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
-        time_service_type: TimeServiceType::RealTimeService,
+        time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
@@ -904,7 +902,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
                 .expect("invalid hex")
                 .as_slice(),
         ),
-        timestamp: 1596791843,
+        timestamp: 1603006373457,
         reward_delay: 3,
         difficulty: 100000.into(),
         nonce: 0,
@@ -962,7 +960,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
             .expect("invalid hex")
             .as_slice(),
     ),
-    timestamp: 1596791843,
+    timestamp: 1603006373457,
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,

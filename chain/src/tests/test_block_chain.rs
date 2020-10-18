@@ -18,7 +18,7 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::{ChainNetwork, MOKE_TIME_SERVICE};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
@@ -126,6 +126,12 @@ fn test_halley_consensus() {
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
     let mut mock_chain = MockChain::new(&ChainNetwork::DEV).unwrap();
+    let global = mock_chain
+        .head()
+        .get_global_time_by_number(mock_chain.head().current_header().number)
+        .unwrap();
+    dbg!(global.clone());
+    MOKE_TIME_SERVICE.init(global.milliseconds + 1);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
