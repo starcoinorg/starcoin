@@ -17,7 +17,6 @@ use starcoin_types::{
     },
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
-use starcoin_vm_runtime::starcoin_vm::DEFAULT_CURRENCY_TY;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
 use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork};
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -713,7 +712,7 @@ pub fn create_account_txn_sent_as_association(
         TransactionPayload::Script(Script::new(
             compiled_transaction_script(net.stdlib_version(), StdlibScript::CreateAccount)
                 .into_vec(),
-            vec![DEFAULT_CURRENCY_TY.clone()],
+            vec![stc_type_tag()],
             args,
         )),
         seq_num,

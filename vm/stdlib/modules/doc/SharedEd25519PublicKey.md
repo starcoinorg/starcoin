@@ -5,19 +5,28 @@
 
 
 
--  [Resource <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">SharedEd25519PublicKey</a></code>](#0x1_SharedEd25519PublicKey_SharedEd25519PublicKey)
--  [Const <code><a href="SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY">EMALFORMED_PUBLIC_KEY</a></code>](#0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY)
--  [Function <code>publish</code>](#0x1_SharedEd25519PublicKey_publish)
--  [Function <code>rotate_key_</code>](#0x1_SharedEd25519PublicKey_rotate_key_)
--  [Function <code>rotate_key</code>](#0x1_SharedEd25519PublicKey_rotate_key)
--  [Function <code>key</code>](#0x1_SharedEd25519PublicKey_key)
--  [Function <code>exists_at</code>](#0x1_SharedEd25519PublicKey_exists_at)
--  [Specification](#@Specification_0)
-    -  [Function <code>publish</code>](#@Specification_0_publish)
-    -  [Function <code>rotate_key_</code>](#@Specification_0_rotate_key_)
-    -  [Function <code>rotate_key</code>](#@Specification_0_rotate_key)
-    -  [Function <code>key</code>](#@Specification_0_key)
-    -  [Function <code>exists_at</code>](#@Specification_0_exists_at)
+-  [Resource `SharedEd25519PublicKey`](#0x1_SharedEd25519PublicKey_SharedEd25519PublicKey)
+-  [Constants](#@Constants_0)
+-  [Function `publish`](#0x1_SharedEd25519PublicKey_publish)
+-  [Function `rotate_key_`](#0x1_SharedEd25519PublicKey_rotate_key_)
+-  [Function `rotate_key`](#0x1_SharedEd25519PublicKey_rotate_key)
+-  [Function `key`](#0x1_SharedEd25519PublicKey_key)
+-  [Function `exists_at`](#0x1_SharedEd25519PublicKey_exists_at)
+-  [Specification](#@Specification_1)
+    -  [Function `publish`](#@Specification_1_publish)
+    -  [Function `rotate_key_`](#@Specification_1_rotate_key_)
+    -  [Function `rotate_key`](#@Specification_1_rotate_key)
+    -  [Function `key`](#@Specification_1_key)
+    -  [Function `exists_at`](#@Specification_1_exists_at)
+
+
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="Authenticator.md#0x1_Authenticator">0x1::Authenticator</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signature.md#0x1_Signature">0x1::Signature</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_SharedEd25519PublicKey_SharedEd25519PublicKey"></a>
@@ -53,9 +62,12 @@
 
 </details>
 
-<a name="0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY"></a>
+<a name="@Constants_0"></a>
 
-## Const `EMALFORMED_PUBLIC_KEY`
+## Constants
+
+
+<a name="0x1_SharedEd25519PublicKey_EMALFORMED_PUBLIC_KEY"></a>
 
 
 
@@ -198,19 +210,19 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_publish"></a>
+<a name="@Specification_1_publish"></a>
 
 ### Function `publish`
 
@@ -235,7 +247,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_rotate_key_"></a>
+<a name="@Specification_1_rotate_key_"></a>
 
 ### Function `rotate_key_`
 
@@ -253,7 +265,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_rotate_key"></a>
+<a name="@Specification_1_rotate_key"></a>
 
 ### Function `rotate_key`
 
@@ -272,7 +284,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_key"></a>
+<a name="@Specification_1_key"></a>
 
 ### Function `key`
 
@@ -288,7 +300,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_exists_at"></a>
+<a name="@Specification_1_exists_at"></a>
 
 ### Function `exists_at`
 

@@ -5,22 +5,22 @@
 
 
 
--  [Struct <code><a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a></code>](#0x1_FixedPoint32_FixedPoint32)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_MAX_U64">MAX_U64</a></code>](#0x1_FixedPoint32_MAX_U64)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_EDENOMINATOR">EDENOMINATOR</a></code>](#0x1_FixedPoint32_EDENOMINATOR)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION">EDIVISION</a></code>](#0x1_FixedPoint32_EDIVISION)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_EMULTIPLICATION">EMULTIPLICATION</a></code>](#0x1_FixedPoint32_EMULTIPLICATION)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_EDIVISION_BY_ZERO">EDIVISION_BY_ZERO</a></code>](#0x1_FixedPoint32_EDIVISION_BY_ZERO)
--  [Const <code><a href="FixedPoint32.md#0x1_FixedPoint32_ERATIO_OUT_OF_RANGE">ERATIO_OUT_OF_RANGE</a></code>](#0x1_FixedPoint32_ERATIO_OUT_OF_RANGE)
--  [Function <code>multiply_u64</code>](#0x1_FixedPoint32_multiply_u64)
--  [Function <code>divide_u64</code>](#0x1_FixedPoint32_divide_u64)
--  [Function <code>create_from_rational</code>](#0x1_FixedPoint32_create_from_rational)
--  [Function <code>create_from_raw_value</code>](#0x1_FixedPoint32_create_from_raw_value)
--  [Function <code>get_raw_value</code>](#0x1_FixedPoint32_get_raw_value)
--  [Specification](#@Specification_0)
-    -  [Function <code>multiply_u64</code>](#@Specification_0_multiply_u64)
-    -  [Function <code>divide_u64</code>](#@Specification_0_divide_u64)
-    -  [Function <code>create_from_rational</code>](#@Specification_0_create_from_rational)
+-  [Struct `FixedPoint32`](#0x1_FixedPoint32_FixedPoint32)
+-  [Constants](#@Constants_0)
+-  [Function `multiply_u64`](#0x1_FixedPoint32_multiply_u64)
+-  [Function `divide_u64`](#0x1_FixedPoint32_divide_u64)
+-  [Function `create_from_rational`](#0x1_FixedPoint32_create_from_rational)
+-  [Function `create_from_raw_value`](#0x1_FixedPoint32_create_from_raw_value)
+-  [Function `get_raw_value`](#0x1_FixedPoint32_get_raw_value)
+-  [Specification](#@Specification_1)
+    -  [Function `multiply_u64`](#@Specification_1_multiply_u64)
+    -  [Function `divide_u64`](#@Specification_1_divide_u64)
+    -  [Function `create_from_rational`](#@Specification_1_create_from_rational)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+</code></pre>
+
 
 
 <a name="0x1_FixedPoint32_FixedPoint32"></a>
@@ -50,9 +50,12 @@
 
 </details>
 
-<a name="0x1_FixedPoint32_MAX_U64"></a>
+<a name="@Constants_0"></a>
 
-## Const `MAX_U64`
+## Constants
+
+
+<a name="0x1_FixedPoint32_MAX_U64"></a>
 
 
 
@@ -62,8 +65,6 @@
 
 
 <a name="0x1_FixedPoint32_EDENOMINATOR"></a>
-
-## Const `EDENOMINATOR`
 
 The denominator provided was zero
 
@@ -75,8 +76,6 @@ The denominator provided was zero
 
 <a name="0x1_FixedPoint32_EDIVISION"></a>
 
-## Const `EDIVISION`
-
 The quotient value would be too large to be held in a <code>u64</code>
 
 
@@ -85,21 +84,7 @@ The quotient value would be too large to be held in a <code>u64</code>
 
 
 
-<a name="0x1_FixedPoint32_EMULTIPLICATION"></a>
-
-## Const `EMULTIPLICATION`
-
-The multiplied value would be too large to be held in a <code>u64</code>
-
-
-<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EMULTIPLICATION">EMULTIPLICATION</a>: u64 = 103;
-</code></pre>
-
-
-
 <a name="0x1_FixedPoint32_EDIVISION_BY_ZERO"></a>
-
-## Const `EDIVISION_BY_ZERO`
 
 A division by zero was encountered
 
@@ -109,9 +94,17 @@ A division by zero was encountered
 
 
 
-<a name="0x1_FixedPoint32_ERATIO_OUT_OF_RANGE"></a>
+<a name="0x1_FixedPoint32_EMULTIPLICATION"></a>
 
-## Const `ERATIO_OUT_OF_RANGE`
+The multiplied value would be too large to be held in a <code>u64</code>
+
+
+<pre><code><b>const</b> <a href="FixedPoint32.md#0x1_FixedPoint32_EMULTIPLICATION">EMULTIPLICATION</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_FixedPoint32_ERATIO_OUT_OF_RANGE"></a>
 
 The computed ratio when converting to a <code><a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32</a></code> would be unrepresentable
 
@@ -275,14 +268,14 @@ overflows.
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -318,7 +311,7 @@ Uninterpreted function for <code><a href="FixedPoint32.md#0x1_FixedPoint32_creat
 
 
 
-<a name="@Specification_0_multiply_u64"></a>
+<a name="@Specification_1_multiply_u64"></a>
 
 ### Function `multiply_u64`
 
@@ -337,14 +330,14 @@ conversion (where <code><a href="FixedPoint32.md#0x1_FixedPoint32">FixedPoint32<
 control flow, so we can assume some arbitrary (but fixed) behavior here.
 
 
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
 <b>ensures</b> result == <a href="FixedPoint32.md#0x1_FixedPoint32_spec_multiply_u64">spec_multiply_u64</a>(val, multiplier);
 </code></pre>
 
 
 
-<a name="@Specification_0_divide_u64"></a>
+<a name="@Specification_1_divide_u64"></a>
 
 ### Function `divide_u64`
 
@@ -357,14 +350,14 @@ pragma verify = <b>false</b>;
 See comment at <code>Self::multiply_64</code>.
 
 
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
 <b>ensures</b> result == <a href="FixedPoint32.md#0x1_FixedPoint32_spec_divide_u64">spec_divide_u64</a>(val, divisor);
 </code></pre>
 
 
 
-<a name="@Specification_0_create_from_rational"></a>
+<a name="@Specification_1_create_from_rational"></a>
 
 ### Function `create_from_rational`
 
@@ -377,7 +370,7 @@ pragma verify = <b>false</b>;
 See comment at <code>Self::multiply_64</code>.
 
 
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
 <b>ensures</b> result == <a href="FixedPoint32.md#0x1_FixedPoint32_spec_create_from_rational">spec_create_from_rational</a>(numerator, denominator);
 </code></pre>

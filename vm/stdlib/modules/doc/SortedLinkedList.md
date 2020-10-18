@@ -5,23 +5,31 @@
 
 
 
--  [Struct <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_EntryHandle">EntryHandle</a></code>](#0x1_SortedLinkedList_EntryHandle)
--  [Resource <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_Node">Node</a></code>](#0x1_SortedLinkedList_Node)
--  [Resource <code><a href="SortedLinkedList.md#0x1_SortedLinkedList_NodeVector">NodeVector</a></code>](#0x1_SortedLinkedList_NodeVector)
--  [Function <code>entry_handle</code>](#0x1_SortedLinkedList_entry_handle)
--  [Function <code>get_addr</code>](#0x1_SortedLinkedList_get_addr)
--  [Function <code>get_index</code>](#0x1_SortedLinkedList_get_index)
--  [Function <code>node_exists</code>](#0x1_SortedLinkedList_node_exists)
--  [Function <code>get_data</code>](#0x1_SortedLinkedList_get_data)
--  [Function <code>get_prev_node_addr</code>](#0x1_SortedLinkedList_get_prev_node_addr)
--  [Function <code>is_head_node</code>](#0x1_SortedLinkedList_is_head_node)
--  [Function <code>create_new_list</code>](#0x1_SortedLinkedList_create_new_list)
--  [Function <code>insert_node</code>](#0x1_SortedLinkedList_insert_node)
--  [Function <code>remove_node</code>](#0x1_SortedLinkedList_remove_node)
--  [Function <code>remove_node_by_list_owner</code>](#0x1_SortedLinkedList_remove_node_by_list_owner)
--  [Function <code>remove_node_by_node_owner</code>](#0x1_SortedLinkedList_remove_node_by_node_owner)
--  [Function <code>remove_list</code>](#0x1_SortedLinkedList_remove_list)
--  [Function <code>find_position_and_insert</code>](#0x1_SortedLinkedList_find_position_and_insert)
+-  [Struct `EntryHandle`](#0x1_SortedLinkedList_EntryHandle)
+-  [Resource `Node`](#0x1_SortedLinkedList_Node)
+-  [Resource `NodeVector`](#0x1_SortedLinkedList_NodeVector)
+-  [Function `entry_handle`](#0x1_SortedLinkedList_entry_handle)
+-  [Function `get_addr`](#0x1_SortedLinkedList_get_addr)
+-  [Function `get_index`](#0x1_SortedLinkedList_get_index)
+-  [Function `node_exists`](#0x1_SortedLinkedList_node_exists)
+-  [Function `get_data`](#0x1_SortedLinkedList_get_data)
+-  [Function `get_prev_node_addr`](#0x1_SortedLinkedList_get_prev_node_addr)
+-  [Function `is_head_node`](#0x1_SortedLinkedList_is_head_node)
+-  [Function `create_new_list`](#0x1_SortedLinkedList_create_new_list)
+-  [Function `insert_node`](#0x1_SortedLinkedList_insert_node)
+-  [Function `remove_node`](#0x1_SortedLinkedList_remove_node)
+-  [Function `remove_node_by_list_owner`](#0x1_SortedLinkedList_remove_node_by_list_owner)
+-  [Function `remove_node_by_node_owner`](#0x1_SortedLinkedList_remove_node_by_node_owner)
+-  [Function `remove_list`](#0x1_SortedLinkedList_remove_list)
+-  [Function `find_position_and_insert`](#0x1_SortedLinkedList_find_position_and_insert)
+
+
+<pre><code><b>use</b> <a href="Compare.md#0x1_Compare">0x1::Compare</a>;
+<b>use</b> <a href="LCS.md#0x1_LCS">0x1::LCS</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_SortedLinkedList_EntryHandle"></a>

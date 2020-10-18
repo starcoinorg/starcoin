@@ -17,13 +17,13 @@ chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 
 proptest = "0.10.1"
 proptest-derive = { version = "0.2.0"}
-move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
-move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
-libra_types = { package="libra-types", features = ["fuzzing"], git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
-vm = { git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6", optional = true }
-libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
-move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "c2c69f2046031dabb39d890da348c53d89cc24b6" }
+move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+libra_types = { package="libra-types", features = ["fuzzing"], git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+vm = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f", optional = true }
+libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -33,7 +33,7 @@ libp2p = "0.22.0"
 
 [dev-dependencies]
 serde_json = { version="1.0", features = ["arbitrary_precision"] }
-vm = { git = "https://github.com/starcoinorg/libra", rev="c2c69f2046031dabb39d890da348c53d89cc24b6", features = ["fuzzing"] }
+vm = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f", features = ["fuzzing"] }
 
 [features]
 default = ["vm/fuzzing"]

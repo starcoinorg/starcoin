@@ -5,9 +5,13 @@
 
 
 
--  [Function <code>print</code>](#0x1_Debug_print)
--  [Function <code>print_stack_trace</code>](#0x1_Debug_print_stack_trace)
+-  [Function `print`](#0x1_Debug_print)
+-  [Function `print_stack_trace`](#0x1_Debug_print_stack_trace)
 -  [Specification](#@Specification_0)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_Debug_print"></a>
@@ -60,6 +64,6 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>

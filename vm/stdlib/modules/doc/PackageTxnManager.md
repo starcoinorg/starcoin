@@ -5,56 +5,57 @@
 
 
 
--  [Struct <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a></code>](#0x1_PackageTxnManager_UpgradePlan)
--  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a></code>](#0x1_PackageTxnManager_UpgradePlanCapability)
--  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a></code>](#0x1_PackageTxnManager_ModuleUpgradeStrategy)
--  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a></code>](#0x1_PackageTxnManager_ModuleMaintainer)
--  [Resource <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a></code>](#0x1_PackageTxnManager_TwoPhaseUpgrade)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a></code>](#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a></code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a></code>](#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a></code>](#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_FREEZED">ESTRATEGY_FREEZED</a></code>](#0x1_PackageTxnManager_ESTRATEGY_FREEZED)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a></code>](#0x1_PackageTxnManager_ESTRATEGY_INCORRECT)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a></code>](#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a></code>](#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE)
--  [Const <code><a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a></code>](#0x1_PackageTxnManager_EUNKNOWN_STRATEGY)
--  [Function <code>STRATEGY_ARBITRARY</code>](#0x1_PackageTxnManager_STRATEGY_ARBITRARY)
--  [Function <code>STRATEGY_TWO_PHASE</code>](#0x1_PackageTxnManager_STRATEGY_TWO_PHASE)
--  [Function <code>STRATEGY_NEW_MODULE</code>](#0x1_PackageTxnManager_STRATEGY_NEW_MODULE)
--  [Function <code>STRATEGY_FREEZE</code>](#0x1_PackageTxnManager_STRATEGY_FREEZE)
--  [Function <code>grant_maintainer</code>](#0x1_PackageTxnManager_grant_maintainer)
--  [Function <code>update_module_upgrade_strategy</code>](#0x1_PackageTxnManager_update_module_upgrade_strategy)
--  [Function <code>account_address</code>](#0x1_PackageTxnManager_account_address)
--  [Function <code>destroy_upgrade_plan_cap</code>](#0x1_PackageTxnManager_destroy_upgrade_plan_cap)
--  [Function <code>extract_submit_upgrade_plan_cap</code>](#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap)
--  [Function <code>submit_upgrade_plan</code>](#0x1_PackageTxnManager_submit_upgrade_plan)
--  [Function <code>submit_upgrade_plan_with_cap</code>](#0x1_PackageTxnManager_submit_upgrade_plan_with_cap)
--  [Function <code>cancel_upgrade_plan</code>](#0x1_PackageTxnManager_cancel_upgrade_plan)
--  [Function <code>cancel_upgrade_plan_with_cap</code>](#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap)
--  [Function <code>get_module_maintainer</code>](#0x1_PackageTxnManager_get_module_maintainer)
--  [Function <code>get_module_upgrade_strategy</code>](#0x1_PackageTxnManager_get_module_upgrade_strategy)
--  [Function <code>get_upgrade_plan</code>](#0x1_PackageTxnManager_get_upgrade_plan)
--  [Function <code>check_package_txn</code>](#0x1_PackageTxnManager_check_package_txn)
--  [Function <code>finish_upgrade_plan</code>](#0x1_PackageTxnManager_finish_upgrade_plan)
--  [Function <code>package_txn_prologue</code>](#0x1_PackageTxnManager_package_txn_prologue)
--  [Function <code>package_txn_epilogue</code>](#0x1_PackageTxnManager_package_txn_epilogue)
--  [Specification](#@Specification_0)
-    -  [Function <code>grant_maintainer</code>](#@Specification_0_grant_maintainer)
-    -  [Function <code>update_module_upgrade_strategy</code>](#@Specification_0_update_module_upgrade_strategy)
-    -  [Function <code>destroy_upgrade_plan_cap</code>](#@Specification_0_destroy_upgrade_plan_cap)
-    -  [Function <code>extract_submit_upgrade_plan_cap</code>](#@Specification_0_extract_submit_upgrade_plan_cap)
-    -  [Function <code>submit_upgrade_plan</code>](#@Specification_0_submit_upgrade_plan)
-    -  [Function <code>submit_upgrade_plan_with_cap</code>](#@Specification_0_submit_upgrade_plan_with_cap)
-    -  [Function <code>cancel_upgrade_plan</code>](#@Specification_0_cancel_upgrade_plan)
-    -  [Function <code>cancel_upgrade_plan_with_cap</code>](#@Specification_0_cancel_upgrade_plan_with_cap)
-    -  [Function <code>get_module_maintainer</code>](#@Specification_0_get_module_maintainer)
-    -  [Function <code>get_module_upgrade_strategy</code>](#@Specification_0_get_module_upgrade_strategy)
-    -  [Function <code>get_upgrade_plan</code>](#@Specification_0_get_upgrade_plan)
-    -  [Function <code>check_package_txn</code>](#@Specification_0_check_package_txn)
-    -  [Function <code>finish_upgrade_plan</code>](#@Specification_0_finish_upgrade_plan)
-    -  [Function <code>package_txn_prologue</code>](#@Specification_0_package_txn_prologue)
-    -  [Function <code>package_txn_epilogue</code>](#@Specification_0_package_txn_epilogue)
+-  [Struct `UpgradePlan`](#0x1_PackageTxnManager_UpgradePlan)
+-  [Resource `UpgradePlanCapability`](#0x1_PackageTxnManager_UpgradePlanCapability)
+-  [Resource `ModuleUpgradeStrategy`](#0x1_PackageTxnManager_ModuleUpgradeStrategy)
+-  [Resource `ModuleMaintainer`](#0x1_PackageTxnManager_ModuleMaintainer)
+-  [Resource `TwoPhaseUpgrade`](#0x1_PackageTxnManager_TwoPhaseUpgrade)
+-  [Constants](#@Constants_0)
+-  [Function `STRATEGY_ARBITRARY`](#0x1_PackageTxnManager_STRATEGY_ARBITRARY)
+-  [Function `STRATEGY_TWO_PHASE`](#0x1_PackageTxnManager_STRATEGY_TWO_PHASE)
+-  [Function `STRATEGY_NEW_MODULE`](#0x1_PackageTxnManager_STRATEGY_NEW_MODULE)
+-  [Function `STRATEGY_FREEZE`](#0x1_PackageTxnManager_STRATEGY_FREEZE)
+-  [Function `grant_maintainer`](#0x1_PackageTxnManager_grant_maintainer)
+-  [Function `update_module_upgrade_strategy`](#0x1_PackageTxnManager_update_module_upgrade_strategy)
+-  [Function `account_address`](#0x1_PackageTxnManager_account_address)
+-  [Function `destroy_upgrade_plan_cap`](#0x1_PackageTxnManager_destroy_upgrade_plan_cap)
+-  [Function `extract_submit_upgrade_plan_cap`](#0x1_PackageTxnManager_extract_submit_upgrade_plan_cap)
+-  [Function `submit_upgrade_plan`](#0x1_PackageTxnManager_submit_upgrade_plan)
+-  [Function `submit_upgrade_plan_with_cap`](#0x1_PackageTxnManager_submit_upgrade_plan_with_cap)
+-  [Function `cancel_upgrade_plan`](#0x1_PackageTxnManager_cancel_upgrade_plan)
+-  [Function `cancel_upgrade_plan_with_cap`](#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap)
+-  [Function `get_module_maintainer`](#0x1_PackageTxnManager_get_module_maintainer)
+-  [Function `get_module_upgrade_strategy`](#0x1_PackageTxnManager_get_module_upgrade_strategy)
+-  [Function `get_upgrade_plan`](#0x1_PackageTxnManager_get_upgrade_plan)
+-  [Function `check_package_txn`](#0x1_PackageTxnManager_check_package_txn)
+-  [Function `finish_upgrade_plan`](#0x1_PackageTxnManager_finish_upgrade_plan)
+-  [Function `package_txn_prologue`](#0x1_PackageTxnManager_package_txn_prologue)
+-  [Function `package_txn_epilogue`](#0x1_PackageTxnManager_package_txn_epilogue)
+-  [Specification](#@Specification_1)
+    -  [Function `grant_maintainer`](#@Specification_1_grant_maintainer)
+    -  [Function `update_module_upgrade_strategy`](#@Specification_1_update_module_upgrade_strategy)
+    -  [Function `destroy_upgrade_plan_cap`](#@Specification_1_destroy_upgrade_plan_cap)
+    -  [Function `extract_submit_upgrade_plan_cap`](#@Specification_1_extract_submit_upgrade_plan_cap)
+    -  [Function `submit_upgrade_plan`](#@Specification_1_submit_upgrade_plan)
+    -  [Function `submit_upgrade_plan_with_cap`](#@Specification_1_submit_upgrade_plan_with_cap)
+    -  [Function `cancel_upgrade_plan`](#@Specification_1_cancel_upgrade_plan)
+    -  [Function `cancel_upgrade_plan_with_cap`](#@Specification_1_cancel_upgrade_plan_with_cap)
+    -  [Function `get_module_maintainer`](#@Specification_1_get_module_maintainer)
+    -  [Function `get_module_upgrade_strategy`](#@Specification_1_get_module_upgrade_strategy)
+    -  [Function `get_upgrade_plan`](#@Specification_1_get_upgrade_plan)
+    -  [Function `check_package_txn`](#@Specification_1_check_package_txn)
+    -  [Function `finish_upgrade_plan`](#@Specification_1_finish_upgrade_plan)
+    -  [Function `package_txn_prologue`](#@Specification_1_package_txn_prologue)
+    -  [Function `package_txn_epilogue`](#@Specification_1_package_txn_epilogue)
+
+
+<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_PackageTxnManager_UpgradePlan"></a>
@@ -198,42 +199,12 @@
 
 </details>
 
-<a name="0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER"></a>
+<a name="@Constants_0"></a>
 
-## Const `ESENDER_IS_NOT_MAINTAINER`
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>: u64 = 101;
-</code></pre>
-
-
-
-<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE"></a>
-
-## Const `EUPGRADE_PLAN_IS_NONE`
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>: u64 = 102;
-</code></pre>
-
-
-
-<a name="0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT"></a>
-
-## Const `EPACKAGE_HASH_INCORRECT`
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>: u64 = 103;
-</code></pre>
-
+## Constants
 
 
 <a name="0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT"></a>
-
-## Const `EACTIVE_TIME_INCORRECT`
 
 
 
@@ -242,9 +213,25 @@
 
 
 
-<a name="0x1_PackageTxnManager_ESTRATEGY_FREEZED"></a>
+<a name="0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT"></a>
 
-## Const `ESTRATEGY_FREEZED`
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER"></a>
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_ESTRATEGY_FREEZED"></a>
 
 
 
@@ -255,8 +242,6 @@
 
 <a name="0x1_PackageTxnManager_ESTRATEGY_INCORRECT"></a>
 
-## Const `ESTRATEGY_INCORRECT`
-
 
 
 <pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_INCORRECT">ESTRATEGY_INCORRECT</a>: u64 = 106;
@@ -266,8 +251,6 @@
 
 <a name="0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE"></a>
 
-## Const `ESTRATEGY_NOT_TWO_PHASE`
-
 
 
 <pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>: u64 = 107;
@@ -275,24 +258,29 @@
 
 
 
-<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE"></a>
-
-## Const `EUPGRADE_PLAN_IS_NOT_NONE`
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>: u64 = 108;
-</code></pre>
-
-
-
 <a name="0x1_PackageTxnManager_EUNKNOWN_STRATEGY"></a>
-
-## Const `EUNKNOWN_STRATEGY`
 
 
 
 <pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUNKNOWN_STRATEGY">EUNKNOWN_STRATEGY</a>: u64 = 109;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE"></a>
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE"></a>
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NOT_NONE">EUPGRADE_PLAN_IS_NOT_NONE</a>: u64 = 108;
 </code></pre>
 
 
@@ -852,19 +840,19 @@ Package txn finished, and clean UpgradePlan
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify = <b>true</b>;
-pragma aborts_if_is_strict = <b>true</b>;
+<pre><code><b>pragma</b> verify = <b>true</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_grant_maintainer"></a>
+<a name="@Specification_1_grant_maintainer"></a>
 
 ### Function `grant_maintainer`
 
@@ -880,7 +868,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_update_module_upgrade_strategy"></a>
+<a name="@Specification_1_update_module_upgrade_strategy"></a>
 
 ### Function `update_module_upgrade_strategy`
 
@@ -891,7 +879,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> strategy &lt; 0 || strategy &gt; 3;
 <b>aborts_if</b> strategy &lt;= <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy;
 <b>aborts_if</b> <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).strategy == 1
@@ -900,7 +888,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_destroy_upgrade_plan_cap"></a>
+<a name="@Specification_1_destroy_upgrade_plan_cap"></a>
 
 ### Function `destroy_upgrade_plan_cap`
 
@@ -916,7 +904,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_extract_submit_upgrade_plan_cap"></a>
+<a name="@Specification_1_extract_submit_upgrade_plan_cap"></a>
 
 ### Function `extract_submit_upgrade_plan_cap`
 
@@ -934,7 +922,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_submit_upgrade_plan"></a>
+<a name="@Specification_1_submit_upgrade_plan"></a>
 
 ### Function `submit_upgrade_plan`
 
@@ -945,12 +933,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_submit_upgrade_plan_with_cap"></a>
+<a name="@Specification_1_submit_upgrade_plan_with_cap"></a>
 
 ### Function `submit_upgrade_plan_with_cap`
 
@@ -961,12 +949,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_cancel_upgrade_plan"></a>
+<a name="@Specification_1_cancel_upgrade_plan"></a>
 
 ### Function `cancel_upgrade_plan`
 
@@ -977,12 +965,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_cancel_upgrade_plan_with_cap"></a>
+<a name="@Specification_1_cancel_upgrade_plan_with_cap"></a>
 
 ### Function `cancel_upgrade_plan_with_cap`
 
@@ -993,12 +981,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_get_module_maintainer"></a>
+<a name="@Specification_1_get_module_maintainer"></a>
 
 ### Function `get_module_maintainer`
 
@@ -1009,12 +997,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_get_module_upgrade_strategy"></a>
+<a name="@Specification_1_get_module_upgrade_strategy"></a>
 
 ### Function `get_module_upgrade_strategy`
 
@@ -1030,7 +1018,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_get_upgrade_plan"></a>
+<a name="@Specification_1_get_upgrade_plan"></a>
 
 ### Function `get_upgrade_plan`
 
@@ -1041,12 +1029,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_check_package_txn"></a>
+<a name="@Specification_1_check_package_txn"></a>
 
 ### Function `check_package_txn`
 
@@ -1057,12 +1045,12 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_finish_upgrade_plan"></a>
+<a name="@Specification_1_finish_upgrade_plan"></a>
 
 ### Function `finish_upgrade_plan`
 
@@ -1078,7 +1066,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_package_txn_prologue"></a>
+<a name="@Specification_1_package_txn_prologue"></a>
 
 ### Function `package_txn_prologue`
 
@@ -1089,13 +1077,13 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 </code></pre>
 
 
 
-<a name="@Specification_0_package_txn_epilogue"></a>
+<a name="@Specification_1_package_txn_epilogue"></a>
 
 ### Function `package_txn_epilogue`
 
@@ -1106,7 +1094,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b>  <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(package_address).strategy == 1
            && success && !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);

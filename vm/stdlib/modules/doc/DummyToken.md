@@ -5,15 +5,20 @@
 
 
 
--  [Struct <code><a href="DummyToken.md#0x1_DummyToken">DummyToken</a></code>](#0x1_DummyToken_DummyToken)
--  [Resource <code><a href="DummyToken.md#0x1_DummyToken_SharedBurnCapability">SharedBurnCapability</a></code>](#0x1_DummyToken_SharedBurnCapability)
--  [Resource <code><a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a></code>](#0x1_DummyToken_SharedMintCapability)
--  [Const <code><a href="DummyToken.md#0x1_DummyToken_PRECISION">PRECISION</a></code>](#0x1_DummyToken_PRECISION)
--  [Function <code>initialize</code>](#0x1_DummyToken_initialize)
--  [Function <code>is_dummy_token</code>](#0x1_DummyToken_is_dummy_token)
--  [Function <code>burn</code>](#0x1_DummyToken_burn)
--  [Function <code>mint</code>](#0x1_DummyToken_mint)
--  [Function <code>token_address</code>](#0x1_DummyToken_token_address)
+-  [Struct `DummyToken`](#0x1_DummyToken_DummyToken)
+-  [Resource `SharedBurnCapability`](#0x1_DummyToken_SharedBurnCapability)
+-  [Resource `SharedMintCapability`](#0x1_DummyToken_SharedMintCapability)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_DummyToken_initialize)
+-  [Function `is_dummy_token`](#0x1_DummyToken_is_dummy_token)
+-  [Function `burn`](#0x1_DummyToken_burn)
+-  [Function `mint`](#0x1_DummyToken_mint)
+-  [Function `token_address`](#0x1_DummyToken_token_address)
+
+
+<pre><code><b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+</code></pre>
+
 
 
 <a name="0x1_DummyToken_DummyToken"></a>
@@ -97,9 +102,12 @@
 
 </details>
 
-<a name="0x1_DummyToken_PRECISION"></a>
+<a name="@Constants_0"></a>
 
-## Const `PRECISION`
+## Constants
+
+
+<a name="0x1_DummyToken_PRECISION"></a>
 
 
 

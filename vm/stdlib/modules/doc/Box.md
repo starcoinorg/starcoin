@@ -5,15 +5,22 @@
 
 
 
--  [Resource <code><a href="Box.md#0x1_Box">Box</a></code>](#0x1_Box_Box)
--  [Const <code><a href="Box.md#0x1_Box_EBOX_NOT_EXIST">EBOX_NOT_EXIST</a></code>](#0x1_Box_EBOX_NOT_EXIST)
--  [Function <code>exists_at</code>](#0x1_Box_exists_at)
--  [Function <code>length</code>](#0x1_Box_length)
--  [Function <code>put</code>](#0x1_Box_put)
--  [Function <code>put_all</code>](#0x1_Box_put_all)
--  [Function <code>take</code>](#0x1_Box_take)
--  [Function <code>take_all</code>](#0x1_Box_take_all)
--  [Function <code>destory_empty</code>](#0x1_Box_destory_empty)
+-  [Resource `Box`](#0x1_Box_Box)
+-  [Constants](#@Constants_0)
+-  [Function `exists_at`](#0x1_Box_exists_at)
+-  [Function `length`](#0x1_Box_length)
+-  [Function `put`](#0x1_Box_put)
+-  [Function `put_all`](#0x1_Box_put_all)
+-  [Function `take`](#0x1_Box_take)
+-  [Function `take_all`](#0x1_Box_take_all)
+-  [Function `destory_empty`](#0x1_Box_destory_empty)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Box_Box"></a>
@@ -43,9 +50,12 @@
 
 </details>
 
-<a name="0x1_Box_EBOX_NOT_EXIST"></a>
+<a name="@Constants_0"></a>
 
-## Const `EBOX_NOT_EXIST`
+## Constants
+
+
+<a name="0x1_Box_EBOX_NOT_EXIST"></a>
 
 
 

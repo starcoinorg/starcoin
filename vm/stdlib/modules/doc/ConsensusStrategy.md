@@ -5,12 +5,21 @@
 
 
 
--  [Struct <code><a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a></code>](#0x1_ConsensusStrategy_ConsensusStrategy)
--  [Function <code>initialize</code>](#0x1_ConsensusStrategy_initialize)
--  [Function <code>get</code>](#0x1_ConsensusStrategy_get)
+-  [Struct `ConsensusStrategy`](#0x1_ConsensusStrategy_ConsensusStrategy)
+-  [Function `initialize`](#0x1_ConsensusStrategy_initialize)
+-  [Function `get`](#0x1_ConsensusStrategy_get)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>get</code>](#@Specification_0_get)
+    -  [Function `initialize`](#@Specification_0_initialize)
+    -  [Function `get`](#@Specification_0_get)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_ConsensusStrategy_ConsensusStrategy"></a>
@@ -106,8 +115,8 @@ Return the consensus strategy type of this chain
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict = <b>true</b>;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 

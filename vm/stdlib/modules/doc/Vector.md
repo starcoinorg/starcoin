@@ -5,36 +5,40 @@
 
 
 
--  [Function <code>empty</code>](#0x1_Vector_empty)
--  [Function <code>length</code>](#0x1_Vector_length)
--  [Function <code>borrow</code>](#0x1_Vector_borrow)
--  [Function <code>push_back</code>](#0x1_Vector_push_back)
--  [Function <code>borrow_mut</code>](#0x1_Vector_borrow_mut)
--  [Function <code>pop_back</code>](#0x1_Vector_pop_back)
--  [Function <code>destroy_empty</code>](#0x1_Vector_destroy_empty)
--  [Function <code>swap</code>](#0x1_Vector_swap)
--  [Function <code>singleton</code>](#0x1_Vector_singleton)
--  [Function <code>reverse</code>](#0x1_Vector_reverse)
--  [Function <code>append</code>](#0x1_Vector_append)
--  [Function <code>is_empty</code>](#0x1_Vector_is_empty)
--  [Function <code>contains</code>](#0x1_Vector_contains)
--  [Function <code>index_of</code>](#0x1_Vector_index_of)
--  [Function <code>remove</code>](#0x1_Vector_remove)
--  [Function <code>swap_remove</code>](#0x1_Vector_swap_remove)
--  [Function <code>split</code>](#0x1_Vector_split)
+-  [Function `empty`](#0x1_Vector_empty)
+-  [Function `length`](#0x1_Vector_length)
+-  [Function `borrow`](#0x1_Vector_borrow)
+-  [Function `push_back`](#0x1_Vector_push_back)
+-  [Function `borrow_mut`](#0x1_Vector_borrow_mut)
+-  [Function `pop_back`](#0x1_Vector_pop_back)
+-  [Function `destroy_empty`](#0x1_Vector_destroy_empty)
+-  [Function `swap`](#0x1_Vector_swap)
+-  [Function `singleton`](#0x1_Vector_singleton)
+-  [Function `reverse`](#0x1_Vector_reverse)
+-  [Function `append`](#0x1_Vector_append)
+-  [Function `is_empty`](#0x1_Vector_is_empty)
+-  [Function `contains`](#0x1_Vector_contains)
+-  [Function `index_of`](#0x1_Vector_index_of)
+-  [Function `remove`](#0x1_Vector_remove)
+-  [Function `swap_remove`](#0x1_Vector_swap_remove)
+-  [Function `split`](#0x1_Vector_split)
 -  [Specification](#@Specification_0)
-    -  [Function <code>length</code>](#@Specification_0_length)
-    -  [Function <code>borrow</code>](#@Specification_0_borrow)
-    -  [Function <code>singleton</code>](#@Specification_0_singleton)
-    -  [Function <code>reverse</code>](#@Specification_0_reverse)
-    -  [Function <code>append</code>](#@Specification_0_append)
-    -  [Function <code>is_empty</code>](#@Specification_0_is_empty)
-    -  [Function <code>contains</code>](#@Specification_0_contains)
-    -  [Function <code>index_of</code>](#@Specification_0_index_of)
-    -  [Function <code>remove</code>](#@Specification_0_remove)
-    -  [Function <code>swap_remove</code>](#@Specification_0_swap_remove)
-    -  [Function <code>split</code>](#@Specification_0_split)
+    -  [Function `length`](#@Specification_0_length)
+    -  [Function `borrow`](#@Specification_0_borrow)
+    -  [Function `singleton`](#@Specification_0_singleton)
+    -  [Function `reverse`](#@Specification_0_reverse)
+    -  [Function `append`](#@Specification_0_append)
+    -  [Function `is_empty`](#@Specification_0_is_empty)
+    -  [Function `contains`](#@Specification_0_contains)
+    -  [Function `index_of`](#@Specification_0_index_of)
+    -  [Function `remove`](#@Specification_0_remove)
+    -  [Function `swap_remove`](#@Specification_0_swap_remove)
+    -  [Function `split`](#@Specification_0_split)
     -  [Module specifications](#@Module_specifications_1)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_Vector_empty"></a>
@@ -498,8 +502,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -515,7 +519,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -531,7 +535,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -575,7 +579,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -591,7 +595,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -607,7 +611,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -623,7 +627,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -639,7 +643,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -655,7 +659,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -671,7 +675,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>
 
 
@@ -687,7 +691,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> sub_len == 0;
 </code></pre>
 

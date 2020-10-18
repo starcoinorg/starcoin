@@ -5,16 +5,24 @@
 
 
 
--  [Struct <code><a href="Version.md#0x1_Version">Version</a></code>](#0x1_Version_Version)
--  [Function <code>initialize</code>](#0x1_Version_initialize)
--  [Function <code>new_version</code>](#0x1_Version_new_version)
--  [Function <code>get</code>](#0x1_Version_get)
--  [Function <code>set</code>](#0x1_Version_set)
+-  [Struct `Version`](#0x1_Version_Version)
+-  [Function `initialize`](#0x1_Version_initialize)
+-  [Function `new_version`](#0x1_Version_new_version)
+-  [Function `get`](#0x1_Version_get)
+-  [Function `set`](#0x1_Version_set)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>new_version</code>](#@Specification_0_new_version)
-    -  [Function <code>get</code>](#@Specification_0_get)
-    -  [Function <code>set</code>](#@Specification_0_set)
+    -  [Function `initialize`](#@Specification_0_initialize)
+    -  [Function `new_version`](#@Specification_0_new_version)
+    -  [Function `get`](#@Specification_0_get)
+    -  [Function `set`](#@Specification_0_set)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_Version_Version"></a>
@@ -158,8 +166,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -230,7 +238,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> <a href="Config.md#0x1_Config_spec_get">Config::spec_get</a>&lt;<a href="Version.md#0x1_Version">Version</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).major &gt;= major;
 </code></pre>

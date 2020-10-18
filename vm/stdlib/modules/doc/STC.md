@@ -5,18 +5,34 @@
 
 
 
--  [Struct <code><a href="STC.md#0x1_STC">STC</a></code>](#0x1_STC_STC)
--  [Resource <code><a href="STC.md#0x1_STC_SharedBurnCapability">SharedBurnCapability</a></code>](#0x1_STC_SharedBurnCapability)
--  [Const <code><a href="STC.md#0x1_STC_PRECISION">PRECISION</a></code>](#0x1_STC_PRECISION)
--  [Function <code>initialize</code>](#0x1_STC_initialize)
--  [Function <code>is_stc</code>](#0x1_STC_is_stc)
--  [Function <code>burn</code>](#0x1_STC_burn)
--  [Function <code>token_address</code>](#0x1_STC_token_address)
--  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>is_stc</code>](#@Specification_0_is_stc)
-    -  [Function <code>burn</code>](#@Specification_0_burn)
-    -  [Function <code>token_address</code>](#@Specification_0_token_address)
+-  [Struct `STC`](#0x1_STC_STC)
+-  [Resource `SharedBurnCapability`](#0x1_STC_SharedBurnCapability)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_STC_initialize)
+-  [Function `is_stc`](#0x1_STC_is_stc)
+-  [Function `burn`](#0x1_STC_burn)
+-  [Function `token_address`](#0x1_STC_token_address)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `is_stc`](#@Specification_1_is_stc)
+    -  [Function `burn`](#@Specification_1_burn)
+    -  [Function `token_address`](#@Specification_1_token_address)
+
+
+<pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
+<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<b>use</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal">0x1::ModifyDaoConfigProposal</a>;
+<b>use</b> <a href="OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
+<b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
+<b>use</b> <a href="RewardConfig.md#0x1_RewardConfig">0x1::RewardConfig</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
+<b>use</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">0x1::TransactionTimeoutConfig</a>;
+<b>use</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal">0x1::UpgradeModuleDaoProposal</a>;
+<b>use</b> <a href="VMConfig.md#0x1_VMConfig">0x1::VMConfig</a>;
+<b>use</b> <a href="Version.md#0x1_Version">0x1::Version</a>;
+</code></pre>
+
 
 
 <a name="0x1_STC_STC"></a>
@@ -73,9 +89,12 @@
 
 </details>
 
-<a name="0x1_STC_PRECISION"></a>
+<a name="@Constants_0"></a>
 
-## Const `PRECISION`
+## Constants
+
+
+<a name="0x1_STC_PRECISION"></a>
 
 precision of STC token.
 
@@ -212,19 +231,19 @@ Returns true if <code>TokenType</code> is <code><a href="STC.md#0x1_STC_STC">STC
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -235,12 +254,12 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_is_stc"></a>
+<a name="@Specification_1_is_stc"></a>
 
 ### Function `is_stc`
 
@@ -251,7 +270,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_burn"></a>
+<a name="@Specification_1_burn"></a>
 
 ### Function `burn`
 
@@ -268,7 +287,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_token_address"></a>
+<a name="@Specification_1_token_address"></a>
 
 ### Function `token_address`
 

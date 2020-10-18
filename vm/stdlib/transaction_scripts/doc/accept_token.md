@@ -7,6 +7,11 @@
 
 
 
+<pre><code><b>use</b> <a href="../../modules/doc/Account.md#0x1_Account">0x1::Account</a>;
+</code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="accept_token.md#accept_token">accept_token</a>&lt;TokenType&gt;(account: &signer)
 </code></pre>
