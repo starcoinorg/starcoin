@@ -78,7 +78,7 @@ zero or one because Move bytecode does not have ADTs.
 
 
 
-<pre><code><b>const</b> <a href="Option.md#0x1_Option_EOPTION_ALREADY_FILLED">EOPTION_ALREADY_FILLED</a>: u64 = 0;
+<pre><code><b>const</b> <a href="Option.md#0x1_Option_EOPTION_ALREADY_FILLED">EOPTION_ALREADY_FILLED</a>: u64 = 101;
 </code></pre>
 
 

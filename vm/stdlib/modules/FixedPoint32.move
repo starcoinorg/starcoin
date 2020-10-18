@@ -2,6 +2,8 @@ address 0x1 {
 
 module FixedPoint32 {
 
+    use 0x1::Errors;
+
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
@@ -12,20 +14,32 @@ module FixedPoint32 {
     // make a unique type.
     struct FixedPoint32 { value: u64 }
 
-    // Multiply a u64 integer by a fixed-point number, truncating any
-    // fractional part of the product. This will abort if the product
-    // overflows.
-    public fun multiply_u64(num: u64, multiplier: FixedPoint32): u64 {
+    const MAX_U64: u128 = 18446744073709551615;
+
+    /// The denominator provided was zero
+    const EDENOMINATOR: u64 = 101;
+    /// The quotient value would be too large to be held in a `u64`
+    const EDIVISION: u64 = 102;
+    /// The multiplied value would be too large to be held in a `u64`
+    const EMULTIPLICATION: u64 = 103;
+    /// A division by zero was encountered
+    const EDIVISION_BY_ZERO: u64 = 104;
+    /// The computed ratio when converting to a `FixedPoint32` would be unrepresentable
+    const ERATIO_OUT_OF_RANGE: u64 = 105;
+
+    /// Multiply a u64 integer by a fixed-point number, truncating any
+    /// fractional part of the product. This will abort if the product
+    /// overflows.
+    public fun multiply_u64(val: u64, multiplier: FixedPoint32): u64 {
         // The product of two 64 bit values has 128 bits, so perform the
         // multiplication with u128 types and keep the full 128 bit product
         // to avoid losing accuracy.
-        let unscaled_product = (num as u128) * (multiplier.value as u128);
+        let unscaled_product = (val as u128) * (multiplier.value as u128);
         // The unscaled product has 32 fractional bits (from the multiplier)
         // so rescale it by shifting away the low bits.
         let product = unscaled_product >> 32;
-        // Convert back to u64. If the multiplier is larger than 1.0,
-        // the value may be too large, which will cause the cast to fail
-        // with an arithmetic error.
+        // Check whether the value is too large.
+        assert(product <= MAX_U64, Errors::limit_exceeded(EMULTIPLICATION));
         (product as u64)
     }
     spec fun multiply_u64 {
@@ -38,20 +52,21 @@ module FixedPoint32 {
         /// control flow, so we can assume some arbitrary (but fixed) behavior here.
         pragma opaque = true;
         pragma verify = false;
-        ensures result == spec_multiply_u64(num, multiplier);
+        ensures result == spec_multiply_u64(val, multiplier);
     }
 
     // Divide a u64 integer by a fixed-point number, truncating any
     // fractional part of the quotient. This will abort if the divisor
     // is zero or if the quotient overflows.
-    public fun divide_u64(num: u64, divisor: FixedPoint32): u64 {
+    public fun divide_u64(val: u64, divisor: FixedPoint32): u64 {
+        // Check for division by zero.
+        assert(divisor.value != 0, Errors::invalid_argument(EDIVISION_BY_ZERO));
         // First convert to 128 bits and then shift left to
         // add 32 fractional zero bits to the dividend.
-        let scaled_value = (num as u128) << 32;
-        // Divide and convert the quotient to 64 bits. If the divisor is zero,
-        // this will fail with a divide-by-zero error.
+        let scaled_value = (val as u128) << 32;
         let quotient = scaled_value / (divisor.value as u128);
-        // Convert back to u64. If the divisor is less than 1.0,
+        // Check whether the value is too large.
+        assert(quotient <= MAX_U64, Errors::limit_exceeded(EDIVISION));
         // the value may be too large, which will cause the cast to fail
         // with an arithmetic error.
         (quotient as u64)
@@ -60,7 +75,7 @@ module FixedPoint32 {
         /// See comment at `Self::multiply_64`.
         pragma opaque = true;
         pragma verify = false;
-        ensures result == spec_divide_u64(num, divisor);
+        ensures result == spec_divide_u64(val, divisor);
     }
 
     // Create a fixed-point value from a rational number specified by its
@@ -69,20 +84,18 @@ module FixedPoint32 {
     // raw value. This will abort if the denominator is zero or if the ratio is
     // not in the range 2^-32 .. 2^32-1.
     public fun create_from_rational(numerator: u64, denominator: u64): FixedPoint32 {
+        // If the denominator is zero, this will abort.
         // Scale the numerator to have 64 fractional bits and the denominator
         // to have 32 fractional bits, so that the quotient will have 32
         // fractional bits.
         let scaled_numerator = (numerator as u128) << 64;
         let scaled_denominator = (denominator as u128) << 32;
-        // If the denominator is zero, this will fail with a divide-by-zero
-        // error.
+        assert(scaled_denominator != 0, Errors::invalid_argument(EDENOMINATOR));
         let quotient = scaled_numerator / scaled_denominator;
-        // Check for underflow. Truncating to zero might be the desired result,
-        // but if you really want a ratio of zero, it is easy to create that
-        // from a raw value.
-        assert(quotient != 0 || numerator == 0, 16);
-        // Return the quotient as a fixed-point number. The cast will fail
-        // with an arithmetic error if the number is too large.
+        assert(quotient != 0 || numerator == 0, Errors::invalid_argument(ERATIO_OUT_OF_RANGE));
+        // Return the quotient as a fixed-point number. We first need to check whether the cast
+        // can succeed.
+        assert(quotient <= MAX_U64, Errors::limit_exceeded(ERATIO_OUT_OF_RANGE));
         FixedPoint32 { value: (quotient as u64) }
     }
     spec fun create_from_rational {

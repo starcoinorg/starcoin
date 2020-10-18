@@ -6,18 +6,15 @@ pub mod cn;
 mod consensus;
 #[cfg(test)]
 mod consensus_test;
-pub mod dev;
 pub mod difficulty;
 pub mod dummy;
 pub mod keccak;
-mod time;
 
 pub use consensus::Consensus;
-pub use time::{duration_since_epoch, TimeService};
+pub use starcoin_vm_types::time::duration_since_epoch;
 
 use crate::argon::ArgonConsensus;
 use crate::cn::CryptoNightConsensus;
-use crate::dev::DevConsensus;
 use crate::dummy::DummyConsensus;
 use crate::keccak::KeccakConsensus;
 use anyhow::Result;
@@ -25,7 +22,6 @@ use byteorder::{LittleEndian, WriteBytesExt};
 use once_cell::sync::Lazy;
 use rand::Rng;
 use starcoin_crypto::HashValue;
-use starcoin_state_api::ChainStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
@@ -57,22 +53,11 @@ pub(crate) fn set_header_nonce(header: &[u8], nonce: u64) -> Vec<u8> {
 }
 
 static DUMMY: Lazy<DummyConsensus> = Lazy::new(DummyConsensus::new);
-static DEV: Lazy<DevConsensus> = Lazy::new(DevConsensus::new);
 static ARGON: Lazy<ArgonConsensus> = Lazy::new(ArgonConsensus::new);
 static KECCAK: Lazy<KeccakConsensus> = Lazy::new(KeccakConsensus::new);
 static CRYPTONIGHT: Lazy<CryptoNightConsensus> = Lazy::new(CryptoNightConsensus::new);
 
 impl Consensus for ConsensusStrategy {
-    fn init(&self, reader: &dyn ChainStateReader) -> Result<()> {
-        match self {
-            ConsensusStrategy::Dummy => DUMMY.init(reader),
-            ConsensusStrategy::Dev => DEV.init(reader),
-            ConsensusStrategy::Argon => ARGON.init(reader),
-            ConsensusStrategy::Keccak => KECCAK.init(reader),
-            ConsensusStrategy::CryptoNight => CRYPTONIGHT.init(reader),
-        }
-    }
-
     fn calculate_next_difficulty(
         &self,
         reader: &dyn ChainReader,
@@ -80,7 +65,6 @@ impl Consensus for ConsensusStrategy {
     ) -> Result<U256> {
         match self {
             ConsensusStrategy::Dummy => DUMMY.calculate_next_difficulty(reader, epoch),
-            ConsensusStrategy::Dev => DEV.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Argon => ARGON.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::Keccak => KECCAK.calculate_next_difficulty(reader, epoch),
             ConsensusStrategy::CryptoNight => CRYPTONIGHT.calculate_next_difficulty(reader, epoch),
@@ -90,7 +74,6 @@ impl Consensus for ConsensusStrategy {
     fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
         match self {
             ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(mining_hash, difficulty),
-            ConsensusStrategy::Dev => DEV.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::Keccak => KECCAK.solve_consensus_nonce(mining_hash, difficulty),
             ConsensusStrategy::CryptoNight => {
@@ -107,7 +90,6 @@ impl Consensus for ConsensusStrategy {
     ) -> Result<()> {
         match self {
             ConsensusStrategy::Dummy => DUMMY.verify(reader, epoch, header),
-            ConsensusStrategy::Dev => DEV.verify(reader, epoch, header),
             ConsensusStrategy::Argon => ARGON.verify(reader, epoch, header),
             ConsensusStrategy::Keccak => KECCAK.verify(reader, epoch, header),
             ConsensusStrategy::CryptoNight => CRYPTONIGHT.verify(reader, epoch, header),
@@ -117,20 +99,9 @@ impl Consensus for ConsensusStrategy {
     fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
         match self {
             ConsensusStrategy::Dummy => DUMMY.calculate_pow_hash(mining_hash, nonce),
-            ConsensusStrategy::Dev => DEV.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Argon => ARGON.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::Keccak => KECCAK.calculate_pow_hash(mining_hash, nonce),
             ConsensusStrategy::CryptoNight => CRYPTONIGHT.calculate_pow_hash(mining_hash, nonce),
-        }
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        match self {
-            ConsensusStrategy::Dummy => DUMMY.time(),
-            ConsensusStrategy::Dev => DEV.time(),
-            ConsensusStrategy::Argon => ARGON.time(),
-            ConsensusStrategy::Keccak => KECCAK.time(),
-            ConsensusStrategy::CryptoNight => CRYPTONIGHT.time(),
         }
     }
 }

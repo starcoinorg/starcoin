@@ -2,10 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::consensus::Consensus;
-use crate::time::{RealTimeService, TimeService};
-use crate::{
-    difficult_to_target, difficulty, generate_nonce, set_header_nonce, target_to_difficulty,
-};
+use crate::{difficulty, set_header_nonce, target_to_difficulty};
 use anyhow::Result;
 use argon2::{self, Config};
 use starcoin_crypto::HashValue;
@@ -15,15 +12,11 @@ use starcoin_types::U256;
 use starcoin_vm_types::on_chain_config::EpochInfo;
 
 #[derive(Default)]
-pub struct ArgonConsensus {
-    time_service: RealTimeService,
-}
+pub struct ArgonConsensus {}
 
 impl ArgonConsensus {
     pub fn new() -> Self {
-        Self {
-            time_service: RealTimeService::new(),
-        }
+        Self {}
     }
 }
 
@@ -35,23 +28,6 @@ impl Consensus for ArgonConsensus {
     ) -> Result<U256> {
         let target = difficulty::get_next_work_required(reader, epoch)?;
         Ok(target_to_difficulty(target))
-    }
-    /// Only for unit testing
-    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
-        let mut nonce = generate_nonce();
-        loop {
-            let pow_hash: U256 = self
-                .calculate_pow_hash(mining_hash, nonce)
-                .expect("calculate hash should work")
-                .into();
-            let target = difficult_to_target(difficulty);
-            if pow_hash > target {
-                nonce += 1;
-                continue;
-            }
-            break;
-        }
-        nonce
     }
 
     fn verify(
@@ -70,9 +46,5 @@ impl Consensus for ArgonConsensus {
         config.mem_cost = 1024;
         let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;
         HashValue::from_slice(output.as_slice())
-    }
-
-    fn time(&self) -> &dyn TimeService {
-        &self.time_service
     }
 }

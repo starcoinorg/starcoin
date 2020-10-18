@@ -55,8 +55,8 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_initialize">initialize</a>(account: &signer, reward_delay: u64) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">Self::RewardConfig</a>&gt;(
         account,
@@ -85,6 +85,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_new_reward_config">new_reward_config</a>(reward_delay: u64) : <a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a> {
+    <b>assert</b>(reward_delay &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
     <a href="RewardConfig.md#0x1_RewardConfig">RewardConfig</a> {reward_delay: reward_delay}
 }
 </code></pre>

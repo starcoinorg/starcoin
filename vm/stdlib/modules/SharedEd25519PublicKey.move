@@ -8,6 +8,7 @@ module SharedEd25519PublicKey {
     use 0x1::Account;
     use 0x1::Signature;
     use 0x1::Signer;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -23,7 +24,7 @@ module SharedEd25519PublicKey {
         rotation_cap: Account::KeyRotationCapability,
     }
 
-    const EMALFORMED_PUBLIC_KEY: u64 = 100;
+    const EMALFORMED_PUBLIC_KEY: u64 = 101;
 
     // (1) Rotate the authentication key of the sender to `key`
     // (2) Publish a resource containing a 32-byte ed25519 public key and the rotation capability
@@ -56,7 +57,7 @@ module SharedEd25519PublicKey {
         // Cryptographic check of public key validity
         assert(
             Signature::ed25519_validate_pubkey(copy new_public_key),
-            EMALFORMED_PUBLIC_KEY
+            Errors::invalid_argument(EMALFORMED_PUBLIC_KEY)
         );
         Account::rotate_authentication_key(
             &shared_key.rotation_cap,

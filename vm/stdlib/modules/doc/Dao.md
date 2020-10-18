@@ -694,7 +694,7 @@ can optin this moudle by call this <code>register function</code>.
     // TODO: we can add a token manage cap in <a href="Token.md#0x1_Token">Token</a> <b>module</b>.
     // and only token manager can register this.
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     // <b>let</b> proposal_id = ProposalId {next: 0};
     <b>let</b> gov_info = <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt; {
         next_proposal_id: 0,
@@ -738,10 +738,10 @@ create a dao config
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ): <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
-    <b>assert</b>(voting_delay &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
-    <b>assert</b>(voting_period &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
-    <b>assert</b>(voting_quorum_rate &gt; 0 && <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
-    <b>assert</b>(min_action_delay &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(voting_delay &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
+    <b>assert</b>(voting_period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
+    <b>assert</b>(voting_quorum_rate &gt; 0 && <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
+    <b>assert</b>(min_action_delay &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a> { voting_delay, voting_period, voting_quorum_rate, min_action_delay }
 }
 </code></pre>
@@ -776,7 +776,7 @@ propose a proposal.
     <b>if</b> (action_delay == 0) {
         action_delay = <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;();
     } <b>else</b> {
-        <b>assert</b>(action_delay &gt;= <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;(), <a href="Dao.md#0x1_Dao_ERR_ACTION_DELAY_TOO_SMALL">ERR_ACTION_DELAY_TOO_SMALL</a>);
+        <b>assert</b>(action_delay &gt;= <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_ACTION_DELAY_TOO_SMALL">ERR_ACTION_DELAY_TOO_SMALL</a>));
     };
     <b>let</b> proposal_id = <a href="Dao.md#0x1_Dao_generate_next_proposal_id">generate_next_proposal_id</a>&lt;TokenT&gt;();
     <b>let</b> proposer = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
@@ -835,15 +835,15 @@ So think twice before casting vote.
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can cast vote.
-        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
+        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> stake_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&stake);
     <b>let</b> total_voted = <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))) {
         <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-        <b>assert</b>(my_vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
-        <b>assert</b>(my_vote.agree == agree, <a href="Dao.md#0x1_Dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>);
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+        <b>assert</b>(my_vote.agree == agree, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>));
         <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> my_vote.stake, stake);
         <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake)
     } <b>else</b> {
@@ -905,12 +905,12 @@ Let user change their vote during the voting time.
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can change vote.
-        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
+        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <b>assert</b>(my_vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     // flip the vote
     <b>if</b> (my_vote.agree != agree) {
         my_vote.agree = agree;
@@ -967,13 +967,13 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // only when proposal is active, <b>use</b> can revoke vote.
-        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
+        <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <b>assert</b>(my_vote.proposer == proposer_address, <a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
-    <b>assert</b>(my_vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
+    <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> my_vote.stake, voting_power);
     <b>if</b> (my_vote.agree) {
         proposal.for_votes = proposal.for_votes - voting_power;
@@ -1059,14 +1059,14 @@ Retrieve back my staked token voted for a proposal.
     <b>if</b> (<a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id)) {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
         // Only after vote period end, user can unstake his votes.
-        <b>assert</b>(state &gt; <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>);
+        <b>assert</b>(state &gt; <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     <b>let</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a> { proposer, id, stake, agree: _ } = move_from&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
     );
     // these checks are still required.
-    <b>assert</b>(proposer == proposer_address, <a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
-    <b>assert</b>(id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposer == proposer_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
+    <b>assert</b>(id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     stake
 }
 </code></pre>
@@ -1096,7 +1096,7 @@ queue agreed proposal to execute.
     proposal_id: u64,
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
     // Only agreed proposal can be submitted.
-    <b>assert</b>(<a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>, 601);
+    <b>assert</b>(<a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>, 601); //todo
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     proposal.eta = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + proposal.action_delay;
 }
@@ -1129,7 +1129,7 @@ extract proposal action to execute.
     // Only executable proposal's action can be extracted.
     <b>assert</b>(
         <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>,
-        <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>,
+        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>),
     );
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>let</b> action: ActionT = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> proposal.action);
@@ -1164,7 +1164,7 @@ remove terminated proposal from proposer
     <b>let</b> proposal_state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
     <b>assert</b>(
         proposal_state == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a> || proposal_state == <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>,
-        <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>,
+        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>),
     );
     <b>let</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
         id: _,
@@ -1205,7 +1205,7 @@ remove terminated proposal from proposer
     proposal_id: u64,
 ): u8 <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>if</b> (current_time &lt; proposal.start_time) {
         // Pending
@@ -1257,7 +1257,7 @@ return: (start_time, end_time, for_votes, against_votes).
     proposal_id: u64,
 ): (u64, u64, u128, u128) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
 }
 </code></pre>
@@ -1288,8 +1288,8 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
     proposal_id: u64,
 ): (bool, u128) <b>acquires</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a> {
     <b>let</b> vote = borrow_global&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-    <b>assert</b>(vote.proposer == proposer_address, <a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>);
-    <b>assert</b>(vote.id == proposal_id, <a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>);
+    <b>assert</b>(vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
+    <b>assert</b>(vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     (vote.agree, <a href="Token.md#0x1_Token_value">Token::value</a>(&vote.stake))
 }
 </code></pre>
@@ -1504,7 +1504,7 @@ TODO: cap should not be mut to set data.
         config.voting_delay = voting_delay;
     };
     <b>if</b> (voting_quorum_rate &gt; 0) {
-        <b>assert</b>(<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
+        <b>assert</b>(<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
         config.voting_quorum_rate = voting_quorum_rate;
     };
     <b>if</b> (min_action_delay &gt; 0) {
@@ -1537,7 +1537,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_delay = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1567,7 +1567,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_period = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1597,7 +1597,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u8,
 ) {
-    <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
+    <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_quorum_rate = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
@@ -1627,7 +1627,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
-    <b>assert</b>(value &gt; 0, <a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>);
+    <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.min_action_delay = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);

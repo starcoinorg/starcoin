@@ -9,6 +9,7 @@
 -  [Resource <code><a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a></code>](#0x1_Config_ModifyConfigCapability)
 -  [Resource <code><a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a></code>](#0x1_Config_ModifyConfigCapabilityHolder)
 -  [Struct <code><a href="Config.md#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a></code>](#0x1_Config_ConfigChangeEvent)
+-  [Const <code><a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a></code>](#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS)
 -  [Function <code>get_by_address</code>](#0x1_Config_get_by_address)
 -  [Function <code>set</code>](#0x1_Config_set)
 -  [Function <code>set_with_capability</code>](#0x1_Config_set_with_capability)
@@ -150,6 +151,17 @@
 
 </details>
 
+<a name="0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS"></a>
+
+## Const `ECAPABILITY_HOLDER_NOT_EXISTS`
+
+
+
+<pre><code><b>const</b> <a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>: u64 = 101;
+</code></pre>
+
+
+
 <a name="0x1_Config_get_by_address"></a>
 
 ## Function `get_by_address`
@@ -166,7 +178,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue <b>acquires</b> <a href="Config.md#0x1_Config">Config</a> {
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST">Errors::ECONFIG_VALUE_DOES_NOT_EXIST</a>()));
     *&borrow_global&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
 }
 </code></pre>
@@ -193,9 +205,9 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set">set</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>,<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> signer_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     //TODO <b>define</b> no capability error code.
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), 24);
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address);
-    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&cap_holder.cap), 24);
+    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&cap_holder.cap), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>(<a href="Option.md#0x1_Option_borrow_mut">Option::borrow_mut</a>(&<b>mut</b> cap_holder.cap), payload)
 }
 </code></pre>
@@ -221,7 +233,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>{
     <b>let</b> addr = cap.account_address;
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST">Errors::ECONFIG_VALUE_DOES_NOT_EXIST</a>()));
     <b>let</b> config = borrow_global_mut&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
     config.payload = <b>copy</b> payload;
     <a href="Config.md#0x1_Config_emit_config_change_event">emit_config_change_event</a>(cap, payload);

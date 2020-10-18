@@ -101,7 +101,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="MintDaoProposal.md#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="MintDaoProposal.md#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> mint_cap = <a href="Token.md#0x1_Token_remove_mint_capability">Token::remove_mint_capability</a>&lt;TokenT&gt;(signer);
     move_to(signer, <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a> { cap: mint_cap });
 }

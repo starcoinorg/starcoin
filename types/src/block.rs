@@ -21,7 +21,7 @@ use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 pub type BlockNumber = u64;
 
 /// block timestamp allowed future times
-pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15; // 15 Second;
+pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15000; // 15 millisecond;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockHeader {
