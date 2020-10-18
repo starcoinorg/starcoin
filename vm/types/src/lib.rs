@@ -1,5 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
+//TODO FIXME for fuzzing Arbitrary;
+#![allow(clippy::unit_arg)]
 
 pub mod account_address {
     pub use move_core_types::account_address::AccountAddress;

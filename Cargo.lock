@@ -3797,17 +3797,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libra-state-view"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f#6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"
-dependencies = [
- "anyhow",
- "libra-crypto",
- "libra-types",
- "libra-workspace-hack",
-]
-
-[[package]]
 name = "libra-temppath"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f#6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"
@@ -8128,7 +8117,6 @@ dependencies = [
  "chrono",
  "hex",
  "libp2p",
- "libra-state-view",
  "mirai-annotations",
  "move-core-types",
  "move-ir-types",

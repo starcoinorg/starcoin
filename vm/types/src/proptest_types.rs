@@ -105,7 +105,7 @@ impl AccountInfoUniverse {
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
-                private_key.clone(),
+                private_key.as_ref().clone(),
                 public_key.clone(),
             );
             Ok(Self {

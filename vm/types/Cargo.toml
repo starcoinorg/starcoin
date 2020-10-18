@@ -18,13 +18,12 @@ hex = "0.4.2"
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 mirai-annotations = "1.10.1"
 
-proptest = "0.10.1"
-proptest-derive = { version = "0.2.0"}
+proptest = { version = "0.10.1", default-features = false, optional = true }
+proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 vm = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"}
-libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
@@ -35,7 +34,12 @@ starcoin-accumulator = { path = "../../core/accumulator"}
 libp2p = "0.22.0"
 
 [dev-dependencies]
+proptest = "0.10.1"
+proptest-derive = "0.2.0"
+vm = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f", features = ["fuzzing"]}
+starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
+starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
 [features]
 default = []
-fuzzing = ["vm/fuzzing", "starcoin-crypto/fuzzing"]
+fuzzing = ["proptest", "proptest-derive", "starcoin-proptest-helpers", "vm/fuzzing", "starcoin-crypto/fuzzing", "move-core-types/fuzzing"]
