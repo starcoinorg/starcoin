@@ -40,7 +40,6 @@ pub mod event {
 
 pub mod filter;
 pub mod peer_info;
-pub mod proof;
 
 #[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;

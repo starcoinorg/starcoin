@@ -675,9 +675,9 @@ pub struct GenesisConfig {
     pub gas_constants: GasConstants,
     pub consensus_config: ConsensusConfig,
     /// association account's key pair
-    pub association_key_pair: (Option<Ed25519PrivateKey>, Ed25519PublicKey),
+    pub association_key_pair: (Option<Arc<Ed25519PrivateKey>>, Ed25519PublicKey),
     /// genesis account's key pair
-    pub genesis_key_pair: Option<(Ed25519PrivateKey, Ed25519PublicKey)>,
+    pub genesis_key_pair: Option<(Arc<Ed25519PrivateKey>, Ed25519PublicKey)>,
 
     pub stdlib_version: StdlibVersion,
     pub dao_config: DaoConfig,
@@ -824,8 +824,11 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::Dummy.value(),
         },
-        association_key_pair: (Some(association_private_key), association_public_key),
-        genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
+        association_key_pair: (
+            Some(Arc::new(association_private_key)),
+            association_public_key,
+        ),
+        genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
         time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
@@ -875,8 +878,11 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
             strategy: ConsensusStrategy::Dummy.value(),
         },
-        association_key_pair: (Some(association_private_key), association_public_key),
-        genesis_key_pair: Some((genesis_private_key, genesis_public_key)),
+        association_key_pair: (
+            Some(Arc::new(association_private_key)),
+            association_public_key,
+        ),
+        genesis_key_pair: Some((Arc::new(genesis_private_key), genesis_public_key)),
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {

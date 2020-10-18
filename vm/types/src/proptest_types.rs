@@ -9,8 +9,10 @@ use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
 };
+use crate::transaction_argument::TransactionArgument;
 use crate::{account_address, account_config};
 use anyhow::{bail, Result};
+use move_core_types::language_storage::TypeTag;
 use proptest::collection::SizeRange;
 use proptest::sample::Index as PropIndex;
 use proptest::{collection::vec, prelude::*};
@@ -103,7 +105,7 @@ impl AccountInfoUniverse {
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
-                private_key.clone(),
+                private_key.as_ref().clone(),
                 public_key.clone(),
             );
             Ok(Self {
@@ -350,6 +352,34 @@ impl Arbitrary for TransactionPayload {
     }
 
     type Strategy = BoxedStrategy<Self>;
+}
+
+impl Arbitrary for Script {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        // XXX This should eventually be an actually valid program, maybe?
+        // The vector sizes are picked out of thin air.
+        (
+            vec(any::<u8>(), 0..100),
+            vec(any::<TypeTag>(), 0..4),
+            vec(any::<TransactionArgument>(), 0..10),
+        )
+            .prop_map(|(code, ty_args, args)| Script::new(code, ty_args, args))
+            .boxed()
+    }
+}
+
+impl Arbitrary for Module {
+    type Parameters = ();
+    type Strategy = BoxedStrategy<Self>;
+
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        // XXX How should we generate random modules?
+        // The vector sizes are picked out of thin air.
+        vec(any::<u8>(), 0..100).prop_map(Module::new).boxed()
+    }
 }
 
 impl Package {

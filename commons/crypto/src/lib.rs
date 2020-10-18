@@ -42,3 +42,7 @@ pub use crate::traits::*;
 pub use once_cell as _once_cell;
 #[doc(hidden)]
 pub use serde_name as _serde_name;
+
+pub mod derive {
+    pub use libra_crypto_derive::{DeserializeKey, SerializeKey};
+}

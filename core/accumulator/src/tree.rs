@@ -15,8 +15,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct AccumulatorTree {
-    /// Accumulator id
-    id: HashValue,
     /// forzen subtree roots hashes.
     frozen_subtree_roots: Vec<HashValue>,
     /// The total number of leaves in this accumulator.
@@ -41,10 +39,7 @@ impl AccumulatorTree {
         root_hash: HashValue,
         store: Arc<dyn AccumulatorTreeStore>,
     ) -> Self {
-        let id = HashValue::random();
-        trace!("accumulator cache new: {:?}", id.short_str());
-        Self {
-            id,
+        let s = Self {
             frozen_subtree_roots,
             index_cache: LruCache::new(MAC_CACHE_SIZE),
             num_leaves,
@@ -52,11 +47,17 @@ impl AccumulatorTree {
             root_hash,
             store,
             update_nodes: HashMap::new(),
-        }
+        };
+        trace!("new accumulator tree: {:p}", &s);
+        s
+    }
+
+    pub fn new_empty(store: Arc<dyn AccumulatorTreeStore>) -> Self {
+        Self::new(vec![], 0, 0, *ACCUMULATOR_PLACEHOLDER_HASH, store)
     }
 
     ///append from multiple leaves
-    pub(crate) fn append_leaves(&mut self, new_leaves: &[HashValue]) -> Result<HashValue> {
+    pub fn append(&mut self, new_leaves: &[HashValue]) -> Result<HashValue> {
         // Deal with the case where new_leaves is empty
         if new_leaves.is_empty() {
             return if self.num_leaves == 0 {
@@ -169,12 +170,12 @@ impl AccumulatorTree {
         self.num_leaves = last_new_leaf_count;
         self.frozen_subtree_roots = self.scan_frozen_subtree_roots()?;
         self.num_nodes = new_num_nodes;
-        trace!("acc {} append_leaves ok: {:?}", self.id, new_leaves);
+        trace!("acc append_leaves ok: {:?}", new_leaves);
         Ok(hash)
     }
 
     /// Get node for self package.
-    pub(crate) fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
+    pub fn get_node(&self, hash: HashValue) -> Result<Option<AccumulatorNode>> {
         let updates = &self.update_nodes;
         if !updates.is_empty() {
             if let Some(node) = updates.get(&hash) {
@@ -185,7 +186,7 @@ impl AccumulatorTree {
     }
 
     /// Flush node to storage
-    pub(crate) fn flush(&mut self) -> Result<()> {
+    pub fn flush(&mut self) -> Result<()> {
         let nodes = &mut self.update_nodes;
         if !nodes.is_empty() {
             let nodes_vec = nodes
@@ -195,7 +196,7 @@ impl AccumulatorTree {
             let nodes_len = nodes_vec.len();
             self.store.save_nodes(nodes_vec)?;
             nodes.clear();
-            debug!("flush {} acc node to storage.", nodes_len);
+            trace!("flush {} acc node to storage.", nodes_len);
         }
         Ok(())
     }
@@ -264,7 +265,7 @@ impl AccumulatorTree {
     fn get_node_hash_always(&mut self, index: NodeIndex) -> Result<HashValue> {
         // get hash from cache
         let mut temp_index = index;
-        let mut index_key = NodeCacheKey::new(self.id, temp_index);
+        let mut index_key = temp_index;
         if let Some(node_hash) = self.get_node_index(index_key) {
             return Ok(node_hash);
         }
@@ -273,7 +274,7 @@ impl AccumulatorTree {
         let level = root_index.level() + 1;
         let mut parent_hash = None;
         for _i in 0..level {
-            index_key = NodeCacheKey::new(self.id, temp_index.parent());
+            index_key = temp_index.parent();
             if let Some(internal_parent_hash) = self.get_node_index(index_key) {
                 parent_hash = Some(internal_parent_hash);
                 break;
@@ -331,15 +332,11 @@ impl AccumulatorTree {
     }
 
     fn save_node_indexes(&mut self, nodes: Vec<AccumulatorNode>) -> Result<()> {
+        let id = format!("{:p}", self);
         let cache = &mut self.index_cache;
         for node in nodes {
-            if let Some(old) = cache.put(NodeCacheKey::new(self.id, node.index()), node.hash()) {
-                debug!(
-                    "cache exist node hash: {:?}-{:?}-{:?}",
-                    self.id.short_str(),
-                    node.index(),
-                    old
-                );
+            if let Some(old) = cache.put(node.index(), node.hash()) {
+                trace!("cache exist node hash: {}-{:?}-{:?}", id, node.index(), old);
             }
         }
         Ok(())

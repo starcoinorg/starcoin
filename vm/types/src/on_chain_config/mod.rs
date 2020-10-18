@@ -1,6 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::genesis_address;
 use crate::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -24,7 +25,6 @@ pub use self::{
     version::Version,
     vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
 };
-
 pub use crate::on_chain_resource::GlobalTimeOnChain;
 
 /// To register an on-chain config in Rust:
@@ -77,13 +77,14 @@ impl OnChainConfigPayload {
     }
 }
 
-use crate::account_config::genesis_address;
-pub use libra_types::on_chain_config::ConfigStorage;
+/// Trait to be implemented by a storage type from which to read on-chain configs
+pub trait ConfigStorage {
+    fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>>;
+}
 
 /// Trait to be implemented by a Rust struct representation of an on-chain config
 /// that is stored in storage as a serialized byte array
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
-    // association_address
     const ADDRESS: &'static str = "0x1";
     const IDENTIFIER: &'static str;
     const CONFIG_ID: ConfigID = ConfigID(Self::ADDRESS, Self::IDENTIFIER);

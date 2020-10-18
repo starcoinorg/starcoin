@@ -3770,8 +3770,6 @@ dependencies = [
  "libra-crypto",
  "libra-workspace-hack",
  "move-core-types",
- "proptest",
- "proptest-derive",
  "serde",
  "serde_bytes",
  "static_assertions",
@@ -3799,17 +3797,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libra-state-view"
-version = "0.1.0"
-source = "git+https://github.com/starcoinorg/libra?rev=6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f#6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"
-dependencies = [
- "anyhow",
- "libra-crypto",
- "libra-types",
- "libra-workspace-hack",
-]
-
-[[package]]
 name = "libra-temppath"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f#6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"
@@ -3834,13 +3821,10 @@ dependencies = [
  "libra-crypto-derive",
  "libra-infallible",
  "libra-network-address",
- "libra-proptest-helpers",
  "libra-workspace-hack",
  "mirai-annotations",
  "move-core-types",
  "once_cell",
- "proptest",
- "proptest-derive",
  "radix_trie",
  "rand 0.7.3",
  "serde",
@@ -4275,7 +4259,6 @@ dependencies = [
  "handlebars",
  "itertools 0.9.0",
  "libra-temppath",
- "libra-types",
  "libra-workspace-hack",
  "log 0.4.11",
  "move-ir-types",
@@ -6981,6 +6964,7 @@ name = "starcoin-crypto"
 version = "0.5.1"
 dependencies = [
  "libra-crypto",
+ "libra-crypto-derive",
  "once_cell",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -8068,7 +8052,6 @@ dependencies = [
  "hex",
  "itertools 0.9.0",
  "libp2p",
- "libra-types",
  "mirai-annotations",
  "num_enum",
  "once_cell",
@@ -8134,8 +8117,7 @@ dependencies = [
  "chrono",
  "hex",
  "libp2p",
- "libra-state-view",
- "libra-types",
+ "mirai-annotations",
  "move-core-types",
  "move-ir-types",
  "move-vm-types",
@@ -8143,8 +8125,11 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
+ "rand 0.7.3",
  "serde",
+ "serde_bytes",
  "serde_json",
+ "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-proptest-helpers",
@@ -9093,12 +9078,12 @@ version = "0.5.1"
 dependencies = [
  "anyhow",
  "libra-canonical-serialization",
- "libra-types",
  "libra-workspace-hack",
  "move-core-types",
  "serde-generate",
  "serde-reflection",
  "serde_yaml",
+ "starcoin-vm-types",
  "structopt 0.3.20",
  "tempfile",
  "textwrap 0.12.1",
