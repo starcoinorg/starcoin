@@ -5,10 +5,14 @@
 
 
 
--  [Function <code>borrow_address</code>](#0x1_Signer_borrow_address)
--  [Function <code>address_of</code>](#0x1_Signer_address_of)
+-  [Function `borrow_address`](#0x1_Signer_borrow_address)
+-  [Function `address_of`](#0x1_Signer_address_of)
 -  [Specification](#@Specification_0)
-    -  [Function <code>address_of</code>](#@Specification_0_address_of)
+    -  [Function `address_of`](#@Specification_0_address_of)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_Signer_borrow_address"></a>
@@ -63,8 +67,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -80,7 +84,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Signer.md#0x1_Signer_spec_address_of">spec_address_of</a>(s);
 </code></pre>

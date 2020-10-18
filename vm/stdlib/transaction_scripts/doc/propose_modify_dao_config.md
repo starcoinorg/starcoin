@@ -7,6 +7,11 @@
 
 
 
+<pre><code><b>use</b> <a href="../../modules/doc/ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal">0x1::ModifyDaoConfigProposal</a>;
+</code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="propose_modify_dao_config.md#propose_modify_dao_config">propose_modify_dao_config</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
 </code></pre>

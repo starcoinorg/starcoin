@@ -7,6 +7,10 @@
 
 
 
+<pre><code></code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="empty_script.md#empty_script">empty_script</a>()
 </code></pre>

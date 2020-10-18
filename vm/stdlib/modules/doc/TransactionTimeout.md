@@ -5,9 +5,16 @@
 
 
 
--  [Function <code>is_valid_transaction_timestamp</code>](#0x1_TransactionTimeout_is_valid_transaction_timestamp)
+-  [Function `is_valid_transaction_timestamp`](#0x1_TransactionTimeout_is_valid_transaction_timestamp)
 -  [Specification](#@Specification_0)
-    -  [Function <code>is_valid_transaction_timestamp</code>](#@Specification_0_is_valid_transaction_timestamp)
+    -  [Function `is_valid_transaction_timestamp`](#@Specification_0_is_valid_transaction_timestamp)
+
+
+<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">0x1::TransactionTimeoutConfig</a>;
+</code></pre>
+
 
 
 <a name="0x1_TransactionTimeout_is_valid_transaction_timestamp"></a>
@@ -48,8 +55,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -65,7 +72,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 </code></pre>

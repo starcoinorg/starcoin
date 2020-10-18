@@ -7,40 +7,45 @@
 This module defines the Option type and its methods to represent and handle an optional value.
 
 
--  [Struct <code><a href="Option.md#0x1_Option">Option</a></code>](#0x1_Option_Option)
--  [Const <code><a href="Option.md#0x1_Option_EOPTION_ALREADY_FILLED">EOPTION_ALREADY_FILLED</a></code>](#0x1_Option_EOPTION_ALREADY_FILLED)
--  [Function <code>none</code>](#0x1_Option_none)
--  [Function <code>some</code>](#0x1_Option_some)
--  [Function <code>is_none</code>](#0x1_Option_is_none)
--  [Function <code>is_some</code>](#0x1_Option_is_some)
--  [Function <code>contains</code>](#0x1_Option_contains)
--  [Function <code>borrow</code>](#0x1_Option_borrow)
--  [Function <code>borrow_with_default</code>](#0x1_Option_borrow_with_default)
--  [Function <code>get_with_default</code>](#0x1_Option_get_with_default)
--  [Function <code>fill</code>](#0x1_Option_fill)
--  [Function <code>extract</code>](#0x1_Option_extract)
--  [Function <code>borrow_mut</code>](#0x1_Option_borrow_mut)
--  [Function <code>swap</code>](#0x1_Option_swap)
--  [Function <code>destroy_with_default</code>](#0x1_Option_destroy_with_default)
--  [Function <code>destroy_some</code>](#0x1_Option_destroy_some)
--  [Function <code>destroy_none</code>](#0x1_Option_destroy_none)
--  [Specification](#@Specification_0)
-    -  [Struct <code><a href="Option.md#0x1_Option">Option</a></code>](#@Specification_0_Option)
-    -  [Function <code>none</code>](#@Specification_0_none)
-    -  [Function <code>some</code>](#@Specification_0_some)
-    -  [Function <code>is_none</code>](#@Specification_0_is_none)
-    -  [Function <code>is_some</code>](#@Specification_0_is_some)
-    -  [Function <code>contains</code>](#@Specification_0_contains)
-    -  [Function <code>borrow</code>](#@Specification_0_borrow)
-    -  [Function <code>borrow_with_default</code>](#@Specification_0_borrow_with_default)
-    -  [Function <code>get_with_default</code>](#@Specification_0_get_with_default)
-    -  [Function <code>fill</code>](#@Specification_0_fill)
-    -  [Function <code>extract</code>](#@Specification_0_extract)
-    -  [Function <code>borrow_mut</code>](#@Specification_0_borrow_mut)
-    -  [Function <code>swap</code>](#@Specification_0_swap)
-    -  [Function <code>destroy_with_default</code>](#@Specification_0_destroy_with_default)
-    -  [Function <code>destroy_some</code>](#@Specification_0_destroy_some)
-    -  [Function <code>destroy_none</code>](#@Specification_0_destroy_none)
+-  [Struct `Option`](#0x1_Option_Option)
+-  [Constants](#@Constants_0)
+-  [Function `none`](#0x1_Option_none)
+-  [Function `some`](#0x1_Option_some)
+-  [Function `is_none`](#0x1_Option_is_none)
+-  [Function `is_some`](#0x1_Option_is_some)
+-  [Function `contains`](#0x1_Option_contains)
+-  [Function `borrow`](#0x1_Option_borrow)
+-  [Function `borrow_with_default`](#0x1_Option_borrow_with_default)
+-  [Function `get_with_default`](#0x1_Option_get_with_default)
+-  [Function `fill`](#0x1_Option_fill)
+-  [Function `extract`](#0x1_Option_extract)
+-  [Function `borrow_mut`](#0x1_Option_borrow_mut)
+-  [Function `swap`](#0x1_Option_swap)
+-  [Function `destroy_with_default`](#0x1_Option_destroy_with_default)
+-  [Function `destroy_some`](#0x1_Option_destroy_some)
+-  [Function `destroy_none`](#0x1_Option_destroy_none)
+-  [Specification](#@Specification_1)
+    -  [Struct `Option`](#@Specification_1_Option)
+    -  [Function `none`](#@Specification_1_none)
+    -  [Function `some`](#@Specification_1_some)
+    -  [Function `is_none`](#@Specification_1_is_none)
+    -  [Function `is_some`](#@Specification_1_is_some)
+    -  [Function `contains`](#@Specification_1_contains)
+    -  [Function `borrow`](#@Specification_1_borrow)
+    -  [Function `borrow_with_default`](#@Specification_1_borrow_with_default)
+    -  [Function `get_with_default`](#@Specification_1_get_with_default)
+    -  [Function `fill`](#@Specification_1_fill)
+    -  [Function `extract`](#@Specification_1_extract)
+    -  [Function `borrow_mut`](#@Specification_1_borrow_mut)
+    -  [Function `swap`](#@Specification_1_swap)
+    -  [Function `destroy_with_default`](#@Specification_1_destroy_with_default)
+    -  [Function `destroy_some`](#@Specification_1_destroy_some)
+    -  [Function `destroy_none`](#@Specification_1_destroy_none)
+
+
+<pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Option_Option"></a>
@@ -72,9 +77,12 @@ zero or one because Move bytecode does not have ADTs.
 
 </details>
 
-<a name="0x1_Option_EOPTION_ALREADY_FILLED"></a>
+<a name="@Constants_0"></a>
 
-## Const `EOPTION_ALREADY_FILLED`
+## Constants
+
+
+<a name="0x1_Option_EOPTION_ALREADY_FILLED"></a>
 
 
 
@@ -483,19 +491,19 @@ Aborts if <code>t</code> holds a value
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_Option"></a>
+<a name="@Specification_1_Option"></a>
 
 ### Struct `Option`
 
@@ -524,7 +532,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_none"></a>
+<a name="@Specification_1_none"></a>
 
 ### Function `none`
 
@@ -535,7 +543,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_none">spec_none</a>&lt;Element&gt;();
 </code></pre>
@@ -553,7 +561,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_some"></a>
+<a name="@Specification_1_some"></a>
 
 ### Function `some`
 
@@ -581,7 +589,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_is_none"></a>
+<a name="@Specification_1_is_none"></a>
 
 ### Function `is_none`
 
@@ -592,7 +600,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 </code></pre>
@@ -610,7 +618,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_is_some"></a>
+<a name="@Specification_1_is_some"></a>
 
 ### Function `is_some`
 
@@ -621,7 +629,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t);
 </code></pre>
@@ -639,7 +647,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_contains"></a>
+<a name="@Specification_1_contains"></a>
 
 ### Function `contains`
 
@@ -650,7 +658,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == (<a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t) && <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t) == e_ref);
 </code></pre>
@@ -668,7 +676,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_borrow"></a>
+<a name="@Specification_1_borrow"></a>
 
 ### Function `borrow`
 
@@ -679,7 +687,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t);
 </code></pre>
@@ -697,7 +705,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_borrow_with_default"></a>
+<a name="@Specification_1_borrow_with_default"></a>
 
 ### Function `borrow_with_default`
 
@@ -708,7 +716,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t) ==&gt; result == default_ref;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t) ==&gt; result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t);
@@ -716,7 +724,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_get_with_default"></a>
+<a name="@Specification_1_get_with_default"></a>
 
 ### Function `get_with_default`
 
@@ -727,7 +735,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t) ==&gt; result == default;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t) ==&gt; result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t);
@@ -735,7 +743,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_fill"></a>
+<a name="@Specification_1_fill"></a>
 
 ### Function `fill`
 
@@ -746,7 +754,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t);
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t);
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t) == e;
@@ -754,7 +762,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_extract"></a>
+<a name="@Specification_1_extract"></a>
 
 ### Function `extract`
 
@@ -765,7 +773,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(<b>old</b>(t));
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
@@ -773,7 +781,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_borrow_mut"></a>
+<a name="@Specification_1_borrow_mut"></a>
 
 ### Function `borrow_mut`
 
@@ -784,14 +792,14 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(t);
 </code></pre>
 
 
 
-<a name="@Specification_0_swap"></a>
+<a name="@Specification_1_swap"></a>
 
 ### Function `swap`
 
@@ -802,7 +810,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(<b>old</b>(t));
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t);
@@ -811,7 +819,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_destroy_with_default"></a>
+<a name="@Specification_1_destroy_with_default"></a>
 
 ### Function `destroy_with_default`
 
@@ -822,7 +830,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(<b>old</b>(t)) ==&gt; result == default;
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(<b>old</b>(t)) ==&gt; result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(<b>old</b>(t));
@@ -830,7 +838,7 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<a name="@Specification_0_destroy_some"></a>
+<a name="@Specification_1_destroy_some"></a>
 
 ### Function `destroy_some`
 
@@ -841,14 +849,14 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">spec_is_none</a>(t);
 <b>ensures</b> result == <a href="Option.md#0x1_Option_spec_get">spec_get</a>(<b>old</b>(t));
 </code></pre>
 
 
 
-<a name="@Specification_0_destroy_none"></a>
+<a name="@Specification_1_destroy_none"></a>
 
 ### Function `destroy_none`
 
@@ -859,6 +867,6 @@ because it's 0 for "none" or 1 for "some".
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">spec_is_some</a>(t);
 </code></pre>

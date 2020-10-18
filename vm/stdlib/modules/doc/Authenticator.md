@@ -5,28 +5,29 @@
 
 
 
--  [Struct <code><a href="Authenticator.md#0x1_Authenticator_MultiEd25519PublicKey">MultiEd25519PublicKey</a></code>](#0x1_Authenticator_MultiEd25519PublicKey)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH">AUTHENTICATION_KEY_LENGTH</a></code>](#0x1_Authenticator_AUTHENTICATION_KEY_LENGTH)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_ED25519_SCHEME_ID)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a></code>](#0x1_Authenticator_MULTI_ED25519_SCHEME_ID)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a></code>](#0x1_Authenticator_MAX_MULTI_ED25519_KEYS)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a></code>](#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a></code>](#0x1_Authenticator_EZERO_THRESHOLD)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD">ENOT_ENOUGH_KEYS_FOR_THRESHOLD</a></code>](#0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD)
--  [Const <code><a href="Authenticator.md#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD">ENUM_KEYS_ABOVE_MAX_THRESHOLD</a></code>](#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD)
--  [Function <code>create_multi_ed25519</code>](#0x1_Authenticator_create_multi_ed25519)
--  [Function <code>ed25519_authentication_key</code>](#0x1_Authenticator_ed25519_authentication_key)
--  [Function <code>derived_address</code>](#0x1_Authenticator_derived_address)
--  [Function <code>multi_ed25519_authentication_key</code>](#0x1_Authenticator_multi_ed25519_authentication_key)
--  [Function <code>public_keys</code>](#0x1_Authenticator_public_keys)
--  [Function <code>threshold</code>](#0x1_Authenticator_threshold)
--  [Specification](#@Specification_0)
-    -  [Function <code>create_multi_ed25519</code>](#@Specification_0_create_multi_ed25519)
-    -  [Function <code>ed25519_authentication_key</code>](#@Specification_0_ed25519_authentication_key)
-    -  [Function <code>derived_address</code>](#@Specification_0_derived_address)
-    -  [Function <code>multi_ed25519_authentication_key</code>](#@Specification_0_multi_ed25519_authentication_key)
-    -  [Function <code>public_keys</code>](#@Specification_0_public_keys)
-    -  [Function <code>threshold</code>](#@Specification_0_threshold)
+-  [Struct `MultiEd25519PublicKey`](#0x1_Authenticator_MultiEd25519PublicKey)
+-  [Constants](#@Constants_0)
+-  [Function `create_multi_ed25519`](#0x1_Authenticator_create_multi_ed25519)
+-  [Function `ed25519_authentication_key`](#0x1_Authenticator_ed25519_authentication_key)
+-  [Function `derived_address`](#0x1_Authenticator_derived_address)
+-  [Function `multi_ed25519_authentication_key`](#0x1_Authenticator_multi_ed25519_authentication_key)
+-  [Function `public_keys`](#0x1_Authenticator_public_keys)
+-  [Function `threshold`](#0x1_Authenticator_threshold)
+-  [Specification](#@Specification_1)
+    -  [Function `create_multi_ed25519`](#@Specification_1_create_multi_ed25519)
+    -  [Function `ed25519_authentication_key`](#@Specification_1_ed25519_authentication_key)
+    -  [Function `derived_address`](#@Specification_1_derived_address)
+    -  [Function `multi_ed25519_authentication_key`](#@Specification_1_multi_ed25519_authentication_key)
+    -  [Function `public_keys`](#@Specification_1_public_keys)
+    -  [Function `threshold`](#@Specification_1_threshold)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Hash.md#0x1_Hash">0x1::Hash</a>;
+<b>use</b> <a href="LCS.md#0x1_LCS">0x1::LCS</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Authenticator_MultiEd25519PublicKey"></a>
@@ -62,9 +63,12 @@
 
 </details>
 
-<a name="0x1_Authenticator_AUTHENTICATION_KEY_LENGTH"></a>
+<a name="@Constants_0"></a>
 
-## Const `AUTHENTICATION_KEY_LENGTH`
+## Constants
+
+
+<a name="0x1_Authenticator_AUTHENTICATION_KEY_LENGTH"></a>
 
 
 
@@ -75,8 +79,6 @@
 
 <a name="0x1_Authenticator_ED25519_SCHEME_ID"></a>
 
-## Const `ED25519_SCHEME_ID`
-
 
 
 <pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_ED25519_SCHEME_ID">ED25519_SCHEME_ID</a>: u8 = 0;
@@ -84,55 +86,7 @@
 
 
 
-<a name="0x1_Authenticator_MULTI_ED25519_SCHEME_ID"></a>
-
-## Const `MULTI_ED25519_SCHEME_ID`
-
-
-
-<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a>: u8 = 1;
-</code></pre>
-
-
-
-<a name="0x1_Authenticator_MAX_MULTI_ED25519_KEYS"></a>
-
-## Const `MAX_MULTI_ED25519_KEYS`
-
-Maximum number of keys allowed in a MultiEd25519 public/private key
-
-
-<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a>: u64 = 32;
-</code></pre>
-
-
-
-<a name="0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH"></a>
-
-## Const `EWRONG_AUTHENTICATION_KEY_LENGTH`
-
-
-
-<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>: u64 = 101;
-</code></pre>
-
-
-
-<a name="0x1_Authenticator_EZERO_THRESHOLD"></a>
-
-## Const `EZERO_THRESHOLD`
-
-Threshold provided was 0 which can't be used to create a <code>MultiEd25519</code> key
-
-
-<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a>: u64 = 102;
-</code></pre>
-
-
-
 <a name="0x1_Authenticator_ENOT_ENOUGH_KEYS_FOR_THRESHOLD"></a>
-
-## Const `ENOT_ENOUGH_KEYS_FOR_THRESHOLD`
 
 Not enough keys were provided for the specified threshold when creating an <code>MultiEd25519</code> key
 
@@ -144,12 +98,48 @@ Not enough keys were provided for the specified threshold when creating an <code
 
 <a name="0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD"></a>
 
-## Const `ENUM_KEYS_ABOVE_MAX_THRESHOLD`
-
 Too many keys were provided for the specified threshold when creating an <code>MultiEd25519</code> key
 
 
 <pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_ENUM_KEYS_ABOVE_MAX_THRESHOLD">ENUM_KEYS_ABOVE_MAX_THRESHOLD</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH"></a>
+
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_EWRONG_AUTHENTICATION_KEY_LENGTH">EWRONG_AUTHENTICATION_KEY_LENGTH</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_EZERO_THRESHOLD"></a>
+
+Threshold provided was 0 which can't be used to create a <code>MultiEd25519</code> key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_EZERO_THRESHOLD">EZERO_THRESHOLD</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_MAX_MULTI_ED25519_KEYS"></a>
+
+Maximum number of keys allowed in a MultiEd25519 public/private key
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_MAX_MULTI_ED25519_KEYS">MAX_MULTI_ED25519_KEYS</a>: u64 = 32;
+</code></pre>
+
+
+
+<a name="0x1_Authenticator_MULTI_ED25519_SCHEME_ID"></a>
+
+
+
+<pre><code><b>const</b> <a href="Authenticator.md#0x1_Authenticator_MULTI_ED25519_SCHEME_ID">MULTI_ED25519_SCHEME_ID</a>: u8 = 1;
 </code></pre>
 
 
@@ -346,41 +336,19 @@ Aborts if threshold is zero or bigger than the length of <code>public_keys</code
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
-</code></pre>
-
-
-We use an uninterpreted function to represent the result of key construction. The actual value
-does not matter for the verification of callers.
-
-
-<a name="0x1_Authenticator_spec_ed25519_authentication_key"></a>
-
-
-<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;;
-</code></pre>
-
-
-We use an uninterpreted function to represent the result of derived address. The actual value
-does not matter for the verification of callers.
-
-
-<a name="0x1_Authenticator_spec_derived_address"></a>
-
-
-<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key: vector&lt;u8&gt;): address;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_create_multi_ed25519"></a>
+<a name="@Specification_1_create_multi_ed25519"></a>
 
 ### Function `create_multi_ed25519`
 
@@ -398,7 +366,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_ed25519_authentication_key"></a>
+<a name="@Specification_1_ed25519_authentication_key"></a>
 
 ### Function `ed25519_authentication_key`
 
@@ -409,14 +377,25 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> [abstract] result == <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key);
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of key construction. The actual value
+does not matter for the verification of callers.
 
-<a name="@Specification_0_derived_address"></a>
+
+<a name="0x1_Authenticator_spec_ed25519_authentication_key"></a>
+
+
+<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">spec_ed25519_authentication_key</a>(public_key: vector&lt;u8&gt;): vector&lt;u8&gt;;
+</code></pre>
+
+
+
+<a name="@Specification_1_derived_address"></a>
 
 ### Function `derived_address`
 
@@ -427,14 +406,25 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> len(authentication_key) != 32;
 <b>ensures</b> [abstract] result == <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key);
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of derived address. The actual value
+does not matter for the verification of callers.
 
-<a name="@Specification_0_multi_ed25519_authentication_key"></a>
+
+<a name="0x1_Authenticator_spec_derived_address"></a>
+
+
+<pre><code><b>define</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">spec_derived_address</a>(authentication_key: vector&lt;u8&gt;): address;
+</code></pre>
+
+
+
+<a name="@Specification_1_multi_ed25519_authentication_key"></a>
 
 ### Function `multi_ed25519_authentication_key`
 
@@ -450,7 +440,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_public_keys"></a>
+<a name="@Specification_1_public_keys"></a>
 
 ### Function `public_keys`
 
@@ -466,7 +456,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_threshold"></a>
+<a name="@Specification_1_threshold"></a>
 
 ### Function `threshold`
 

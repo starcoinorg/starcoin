@@ -6,3 +6,7 @@ xfmt = "run --package starcoin-x --bin starcoin-x -- fmt"
 xfix = "run --package starcoin-x --bin starcoin-x -- fix"
 xtest = "run --package starcoin-x --bin starcoin-x -- test"
 xlint = "run --package starcoin-x --bin starcoin-x -- lint"
+
+[net]
+retry = 2
+git-fetch-with-cli = true

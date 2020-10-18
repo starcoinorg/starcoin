@@ -5,14 +5,24 @@
 
 
 
--  [Resource <code><a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a></code>](#0x1_BlockReward_RewardQueue)
--  [Struct <code><a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a></code>](#0x1_BlockReward_RewardInfo)
--  [Const <code><a href="BlockReward.md#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a></code>](#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY)
--  [Const <code><a href="BlockReward.md#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a></code>](#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG)
--  [Const <code><a href="BlockReward.md#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG">EREWARD_NUMBER_IS_WRONG</a></code>](#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG)
--  [Const <code><a href="BlockReward.md#0x1_BlockReward_EMINER_EXIST">EMINER_EXIST</a></code>](#0x1_BlockReward_EMINER_EXIST)
--  [Function <code>initialize</code>](#0x1_BlockReward_initialize)
--  [Function <code>process_block_reward</code>](#0x1_BlockReward_process_block_reward)
+-  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
+-  [Struct `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_BlockReward_initialize)
+-  [Function `process_block_reward`](#0x1_BlockReward_process_block_reward)
+
+
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="RewardConfig.md#0x1_RewardConfig">0x1::RewardConfig</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_BlockReward_RewardQueue"></a>
@@ -87,9 +97,12 @@
 
 </details>
 
-<a name="0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
+<a name="@Constants_0"></a>
 
-## Const `EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY`
+## Constants
+
+
+<a name="0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
 
 
 
@@ -100,8 +113,6 @@
 
 <a name="0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG"></a>
 
-## Const `ECURRENT_NUMBER_IS_WRONG`
-
 
 
 <pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>: u64 = 102;
@@ -109,24 +120,20 @@
 
 
 
-<a name="0x1_BlockReward_EREWARD_NUMBER_IS_WRONG"></a>
-
-## Const `EREWARD_NUMBER_IS_WRONG`
-
-
-
-<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG">EREWARD_NUMBER_IS_WRONG</a>: u64 = 103;
-</code></pre>
-
-
-
 <a name="0x1_BlockReward_EMINER_EXIST"></a>
-
-## Const `EMINER_EXIST`
 
 
 
 <pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EMINER_EXIST">EMINER_EXIST</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_BlockReward_EREWARD_NUMBER_IS_WRONG"></a>
+
+
+
+<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG">EREWARD_NUMBER_IS_WRONG</a>: u64 = 103;
 </code></pre>
 
 

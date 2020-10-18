@@ -5,21 +5,30 @@
 
 
 
--  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_TokenPool">TokenPool</a></code>](#0x1_TokenLockPool_TokenPool)
--  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_FixedTimeLockKey">FixedTimeLockKey</a></code>](#0x1_TokenLockPool_FixedTimeLockKey)
--  [Resource <code><a href="TokenLockPool.md#0x1_TokenLockPool_LinearTimeLockKey">LinearTimeLockKey</a></code>](#0x1_TokenLockPool_LinearTimeLockKey)
--  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a></code>](#0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY)
--  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a></code>](#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED)
--  [Const <code><a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a></code>](#0x1_TokenLockPool_EAMOUNT_TOO_BIG)
--  [Function <code>initialize</code>](#0x1_TokenLockPool_initialize)
--  [Function <code>create_linear_lock</code>](#0x1_TokenLockPool_create_linear_lock)
--  [Function <code>create_fixed_lock</code>](#0x1_TokenLockPool_create_fixed_lock)
--  [Function <code>unlock_with_linear_key</code>](#0x1_TokenLockPool_unlock_with_linear_key)
--  [Function <code>unlock_with_fixed_key</code>](#0x1_TokenLockPool_unlock_with_fixed_key)
--  [Function <code>unlocked_amount_of_linear_key</code>](#0x1_TokenLockPool_unlocked_amount_of_linear_key)
--  [Function <code>unlocked_amount_of_fixed_key</code>](#0x1_TokenLockPool_unlocked_amount_of_fixed_key)
--  [Function <code>end_time_of</code>](#0x1_TokenLockPool_end_time_of)
--  [Function <code>destroy_empty</code>](#0x1_TokenLockPool_destroy_empty)
+-  [Resource `TokenPool`](#0x1_TokenLockPool_TokenPool)
+-  [Resource `FixedTimeLockKey`](#0x1_TokenLockPool_FixedTimeLockKey)
+-  [Resource `LinearTimeLockKey`](#0x1_TokenLockPool_LinearTimeLockKey)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_TokenLockPool_initialize)
+-  [Function `create_linear_lock`](#0x1_TokenLockPool_create_linear_lock)
+-  [Function `create_fixed_lock`](#0x1_TokenLockPool_create_fixed_lock)
+-  [Function `unlock_with_linear_key`](#0x1_TokenLockPool_unlock_with_linear_key)
+-  [Function `unlock_with_fixed_key`](#0x1_TokenLockPool_unlock_with_fixed_key)
+-  [Function `unlocked_amount_of_linear_key`](#0x1_TokenLockPool_unlocked_amount_of_linear_key)
+-  [Function `unlocked_amount_of_fixed_key`](#0x1_TokenLockPool_unlocked_amount_of_fixed_key)
+-  [Function `end_time_of`](#0x1_TokenLockPool_end_time_of)
+-  [Function `destroy_empty`](#0x1_TokenLockPool_destroy_empty)
+
+
+<pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+</code></pre>
+
 
 
 <a name="0x1_TokenLockPool_TokenPool"></a>
@@ -127,9 +136,12 @@
 
 </details>
 
-<a name="0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY"></a>
+<a name="@Constants_0"></a>
 
-## Const `EDESTROY_KEY_NOT_EMPTY`
+## Constants
+
+
+<a name="0x1_TokenLockPool_EDESTROY_KEY_NOT_EMPTY"></a>
 
 
 
@@ -138,24 +150,20 @@
 
 
 
-<a name="0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED"></a>
-
-## Const `ETIMELOCK_NOT_UNLOCKED`
-
-
-
-<pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>: u64 = 102;
-</code></pre>
-
-
-
 <a name="0x1_TokenLockPool_EAMOUNT_TOO_BIG"></a>
-
-## Const `EAMOUNT_TOO_BIG`
 
 
 
 <pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_EAMOUNT_TOO_BIG">EAMOUNT_TOO_BIG</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED"></a>
+
+
+
+<pre><code><b>const</b> <a href="TokenLockPool.md#0x1_TokenLockPool_ETIMELOCK_NOT_UNLOCKED">ETIMELOCK_NOT_UNLOCKED</a>: u64 = 102;
 </code></pre>
 
 

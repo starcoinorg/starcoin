@@ -8,10 +8,9 @@ use crate::errors::{
 };
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::{format_err, Error, Result};
+use move_vm_runtime::data_cache::RemoteCache;
 use move_vm_runtime::data_cache::TransactionEffects;
-use move_vm_runtime::session::Session;
-use move_vm_runtime::{data_cache::RemoteCache, move_vm::MoveVM};
-use once_cell::sync::Lazy;
+use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
 use starcoin_types::{
@@ -25,9 +24,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{
-    genesis_address, stc_type_tag, EPILOGUE_NAME, PROLOGUE_NAME,
-};
+use starcoin_vm_types::account_config::{genesis_address, EPILOGUE_NAME, PROLOGUE_NAME};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
@@ -52,24 +49,23 @@ use starcoin_vm_types::{
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-//// The value should be tuned carefully
-pub static MAXIMUM_GAS_UNITS_FOR_READONLY_CALL: Lazy<GasUnits<GasCarrier>> =
-    Lazy::new(|| GasUnits::new(100_000_000));
-
-#[derive(Clone, Default)]
+#[derive(Clone)]
 /// Wrapper of MoveVM
 pub struct StarcoinVM {
-    move_vm: Arc<MoveVM>,
+    move_vm: Arc<MoveVMAdapter>,
     vm_config: Option<VMConfig>,
     version: Option<Version>,
 }
 
-//TODO define as argument.
-pub static DEFAULT_CURRENCY_TY: Lazy<TypeTag> = Lazy::new(stc_type_tag);
+impl Default for StarcoinVM {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl StarcoinVM {
     pub fn new() -> Self {
-        let inner = MoveVM::new();
+        let inner = MoveVMAdapter::new();
         Self {
             move_vm: Arc::new(inner),
             vm_config: None,
@@ -237,7 +233,7 @@ impl StarcoinVM {
 
     fn check_compatibility_if_exist<R: RemoteCache>(
         &self,
-        session: &Session<R>,
+        session: &SessionAdapter<R>,
         module: &Module,
     ) -> Result<(), VMStatus> {
         let compiled_module = match CompiledModule::deserialize(module.code()) {
@@ -406,7 +402,7 @@ impl StarcoinVM {
     /// in the `ACCOUNT_MODULE` on chain.
     fn run_prologue<R: RemoteCache>(
         &self,
-        session: &mut Session<R>,
+        session: &mut SessionAdapter<R>,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
     ) -> Result<(), VMStatus> {
@@ -456,7 +452,7 @@ impl StarcoinVM {
     /// in the `ACCOUNT_MODULE` on chain.
     fn run_epilogue<R: RemoteCache>(
         &self,
-        session: &mut Session<R>,
+        session: &mut SessionAdapter<R>,
         cost_strategy: &mut CostStrategy,
         txn_data: &TransactionMetadata,
         success: bool,
@@ -710,8 +706,7 @@ impl StarcoinVM {
         }
 
         let cost_table = zero_cost_schedule();
-        let mut cost_strategy =
-            CostStrategy::system(&cost_table, *MAXIMUM_GAS_UNITS_FOR_READONLY_CALL);
+        let mut cost_strategy = CostStrategy::system(&cost_table, GasUnits::new(0));
         let mut session = self.move_vm.new_session(&data_cache);
         let result = session
             .execute_readonly_function(module, function_name, type_params, args, &mut cost_strategy)
@@ -731,7 +726,7 @@ impl StarcoinVM {
 
     fn success_transaction_cleanup<R: RemoteCache>(
         &self,
-        mut session: Session<R>,
+        mut session: SessionAdapter<R>,
         gas_schedule: &CostTable,
         gas_left: GasUnits<GasCarrier>,
         txn_data: &TransactionMetadata,
@@ -821,7 +816,7 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
 
 pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
     cost_strategy: &mut CostStrategy,
-    session: &Session<R>,
+    session: &SessionAdapter<R>,
 ) -> Result<(), VMStatus> {
     let total_cost = session.num_mutated_accounts()
         * cost_strategy
@@ -928,7 +923,7 @@ pub fn txn_effects_to_writeset_and_events_cached<C: AccessPathCache>(
 
 pub(crate) fn get_transaction_output<A: AccessPathCache, R: RemoteCache>(
     ap_cache: &mut A,
-    session: Session<R>,
+    session: SessionAdapter<R>,
     cost_strategy: &CostStrategy,
     max_gas_amount: GasUnits<GasCarrier>,
     status: KeptVMStatus,

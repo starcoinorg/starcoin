@@ -5,13 +5,21 @@
 
 
 
--  [Struct <code><a href="VMConfig.md#0x1_VMConfig">VMConfig</a></code>](#0x1_VMConfig_VMConfig)
--  [Struct <code><a href="VMConfig.md#0x1_VMConfig_GasSchedule">GasSchedule</a></code>](#0x1_VMConfig_GasSchedule)
--  [Struct <code><a href="VMConfig.md#0x1_VMConfig_GasConstants">GasConstants</a></code>](#0x1_VMConfig_GasConstants)
--  [Function <code>new_vm_config</code>](#0x1_VMConfig_new_vm_config)
--  [Function <code>initialize</code>](#0x1_VMConfig_initialize)
+-  [Struct `VMConfig`](#0x1_VMConfig_VMConfig)
+-  [Struct `GasSchedule`](#0x1_VMConfig_GasSchedule)
+-  [Struct `GasConstants`](#0x1_VMConfig_GasConstants)
+-  [Function `new_vm_config`](#0x1_VMConfig_new_vm_config)
+-  [Function `initialize`](#0x1_VMConfig_initialize)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
+    -  [Function `initialize`](#@Specification_0_initialize)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_VMConfig_VMConfig"></a>
@@ -286,8 +294,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 

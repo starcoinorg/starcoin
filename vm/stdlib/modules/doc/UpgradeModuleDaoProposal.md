@@ -5,17 +5,28 @@
 
 
 
--  [Resource <code><a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a></code>](#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities)
--  [Resource <code><a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_WrappedUpgradePlanCapability">WrappedUpgradePlanCapability</a></code>](#0x1_UpgradeModuleDaoProposal_WrappedUpgradePlanCapability)
--  [Struct <code><a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a></code>](#0x1_UpgradeModuleDaoProposal_UpgradeModule)
--  [Const <code><a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a></code>](#0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED)
--  [Const <code><a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE">ERR_UNABLE_TO_UPGRADE</a></code>](#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE)
--  [Function <code>plugin</code>](#0x1_UpgradeModuleDaoProposal_plugin)
--  [Function <code>delegate_module_upgrade_capability</code>](#0x1_UpgradeModuleDaoProposal_delegate_module_upgrade_capability)
--  [Function <code>able_to_upgrade</code>](#0x1_UpgradeModuleDaoProposal_able_to_upgrade)
--  [Function <code>propose_module_upgrade</code>](#0x1_UpgradeModuleDaoProposal_propose_module_upgrade)
--  [Function <code>submit_module_upgrade_plan</code>](#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan)
--  [Function <code>find_module_upgrade_cap</code>](#0x1_UpgradeModuleDaoProposal_find_module_upgrade_cap)
+-  [Resource `UpgradeModuleCapabilities`](#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities)
+-  [Resource `WrappedUpgradePlanCapability`](#0x1_UpgradeModuleDaoProposal_WrappedUpgradePlanCapability)
+-  [Struct `UpgradeModule`](#0x1_UpgradeModuleDaoProposal_UpgradeModule)
+-  [Constants](#@Constants_0)
+-  [Function `plugin`](#0x1_UpgradeModuleDaoProposal_plugin)
+-  [Function `delegate_module_upgrade_capability`](#0x1_UpgradeModuleDaoProposal_delegate_module_upgrade_capability)
+-  [Function `able_to_upgrade`](#0x1_UpgradeModuleDaoProposal_able_to_upgrade)
+-  [Function `propose_module_upgrade`](#0x1_UpgradeModuleDaoProposal_propose_module_upgrade)
+-  [Function `submit_module_upgrade_plan`](#0x1_UpgradeModuleDaoProposal_submit_module_upgrade_plan)
+-  [Function `find_module_upgrade_cap`](#0x1_UpgradeModuleDaoProposal_find_module_upgrade_cap)
+
+
+<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
+<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
+<b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities"></a>
@@ -105,9 +116,12 @@
 
 </details>
 
-<a name="0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED"></a>
+<a name="@Constants_0"></a>
 
-## Const `ERR_NOT_AUTHORIZED`
+## Constants
+
+
+<a name="0x1_UpgradeModuleDaoProposal_ERR_NOT_AUTHORIZED"></a>
 
 
 
@@ -117,8 +131,6 @@
 
 
 <a name="0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE"></a>
-
-## Const `ERR_UNABLE_TO_UPGRADE`
 
 
 

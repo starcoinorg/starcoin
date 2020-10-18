@@ -9,6 +9,12 @@ fn assert_that_version_control_has_no_unstaged_changes() {
         .arg("--porcelain")
         .output()
         .unwrap();
+    if !output.stdout.is_empty() {
+        println!(
+            "git status output:\n {}",
+            String::from_utf8(output.stdout.clone()).unwrap()
+        )
+    }
     assert!(
         output.stdout.is_empty(),
         "Git repository should be in a clean state"

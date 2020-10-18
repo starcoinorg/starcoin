@@ -7,6 +7,11 @@
 
 
 
+<pre><code><b>use</b> <a href="../../modules/doc/SharedEd25519PublicKey.md#0x1_SharedEd25519PublicKey">0x1::SharedEd25519PublicKey</a>;
+</code></pre>
+
+
+
 
 <pre><code><b>public</b> <b>fun</b> <a href="publish_shared_ed25519_public_key.md#publish_shared_ed25519_public_key">publish_shared_ed25519_public_key</a>(account: &signer, public_key: vector&lt;u8&gt;)
 </code></pre>

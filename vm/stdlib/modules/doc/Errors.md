@@ -17,126 +17,61 @@ the error at hand. It is mostly used for diagnosis purposes. Error reasons may c
 framework evolves.
 
 
--  [Const <code><a href="Errors.md#0x1_Errors_INVALID_STATE">INVALID_STATE</a></code>](#0x1_Errors_INVALID_STATE)
--  [Const <code><a href="Errors.md#0x1_Errors_REQUIRES_ADDRESS">REQUIRES_ADDRESS</a></code>](#0x1_Errors_REQUIRES_ADDRESS)
--  [Const <code><a href="Errors.md#0x1_Errors_REQUIRES_ROLE">REQUIRES_ROLE</a></code>](#0x1_Errors_REQUIRES_ROLE)
--  [Const <code><a href="Errors.md#0x1_Errors_REQUIRES_CAPABILITY">REQUIRES_CAPABILITY</a></code>](#0x1_Errors_REQUIRES_CAPABILITY)
--  [Const <code><a href="Errors.md#0x1_Errors_NOT_PUBLISHED">NOT_PUBLISHED</a></code>](#0x1_Errors_NOT_PUBLISHED)
--  [Const <code><a href="Errors.md#0x1_Errors_ALREADY_PUBLISHED">ALREADY_PUBLISHED</a></code>](#0x1_Errors_ALREADY_PUBLISHED)
--  [Const <code><a href="Errors.md#0x1_Errors_INVALID_ARGUMENT">INVALID_ARGUMENT</a></code>](#0x1_Errors_INVALID_ARGUMENT)
--  [Const <code><a href="Errors.md#0x1_Errors_LIMIT_EXCEEDED">LIMIT_EXCEEDED</a></code>](#0x1_Errors_LIMIT_EXCEEDED)
--  [Const <code><a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a></code>](#0x1_Errors_INTERNAL)
--  [Const <code><a href="Errors.md#0x1_Errors_CUSTOM">CUSTOM</a></code>](#0x1_Errors_CUSTOM)
--  [Function <code>PROLOGUE_ACCOUNT_DOES_NOT_EXIST</code>](#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST)
--  [Function <code>PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</code>](#0x1_Errors_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
--  [Function <code>PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</code>](#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD)
--  [Function <code>PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</code>](#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW)
--  [Function <code>PROLOGUE_CANT_PAY_GAS_DEPOSIT</code>](#0x1_Errors_PROLOGUE_CANT_PAY_GAS_DEPOSIT)
--  [Function <code>PROLOGUE_TRANSACTION_EXPIRED</code>](#0x1_Errors_PROLOGUE_TRANSACTION_EXPIRED)
--  [Function <code>PROLOGUE_BAD_CHAIN_ID</code>](#0x1_Errors_PROLOGUE_BAD_CHAIN_ID)
--  [Function <code>PROLOGUE_MODULE_NOT_ALLOWED</code>](#0x1_Errors_PROLOGUE_MODULE_NOT_ALLOWED)
--  [Function <code>PROLOGUE_SCRIPT_NOT_ALLOWED</code>](#0x1_Errors_PROLOGUE_SCRIPT_NOT_ALLOWED)
--  [Function <code>EINSUFFICIENT_BALANCE</code>](#0x1_Errors_EINSUFFICIENT_BALANCE)
--  [Function <code>ENOT_GENESIS_ACCOUNT</code>](#0x1_Errors_ENOT_GENESIS_ACCOUNT)
--  [Function <code>ENOT_GENESIS</code>](#0x1_Errors_ENOT_GENESIS)
--  [Function <code>ECONFIG_VALUE_DOES_NOT_EXIST</code>](#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST)
--  [Function <code>EINVALID_TIMESTAMP</code>](#0x1_Errors_EINVALID_TIMESTAMP)
--  [Function <code>ECOIN_DEPOSIT_IS_ZERO</code>](#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO)
--  [Function <code>EDESTORY_TOKEN_NON_ZERO</code>](#0x1_Errors_EDESTORY_TOKEN_NON_ZERO)
--  [Function <code>EBLOCK_NUMBER_MISMATCH</code>](#0x1_Errors_EBLOCK_NUMBER_MISMATCH)
--  [Function <code>EINVALID_ARGUMENT</code>](#0x1_Errors_EINVALID_ARGUMENT)
--  [Function <code>EUNREACHABLE</code>](#0x1_Errors_EUNREACHABLE)
--  [Function <code>make</code>](#0x1_Errors_make)
--  [Function <code>invalid_state</code>](#0x1_Errors_invalid_state)
--  [Function <code>requires_address</code>](#0x1_Errors_requires_address)
--  [Function <code>requires_role</code>](#0x1_Errors_requires_role)
--  [Function <code>requires_capability</code>](#0x1_Errors_requires_capability)
--  [Function <code>not_published</code>](#0x1_Errors_not_published)
--  [Function <code>already_published</code>](#0x1_Errors_already_published)
--  [Function <code>invalid_argument</code>](#0x1_Errors_invalid_argument)
--  [Function <code>limit_exceeded</code>](#0x1_Errors_limit_exceeded)
--  [Function <code>internal</code>](#0x1_Errors_internal)
--  [Function <code>custom</code>](#0x1_Errors_custom)
--  [Specification](#@Specification_0)
-    -  [Function <code>make</code>](#@Specification_0_make)
-    -  [Function <code>invalid_state</code>](#@Specification_0_invalid_state)
-    -  [Function <code>requires_address</code>](#@Specification_0_requires_address)
-    -  [Function <code>requires_role</code>](#@Specification_0_requires_role)
-    -  [Function <code>requires_capability</code>](#@Specification_0_requires_capability)
-    -  [Function <code>not_published</code>](#@Specification_0_not_published)
-    -  [Function <code>already_published</code>](#@Specification_0_already_published)
-    -  [Function <code>invalid_argument</code>](#@Specification_0_invalid_argument)
-    -  [Function <code>limit_exceeded</code>](#@Specification_0_limit_exceeded)
-    -  [Function <code>internal</code>](#@Specification_0_internal)
-    -  [Function <code>custom</code>](#@Specification_0_custom)
+-  [Constants](#@Constants_0)
+-  [Function `PROLOGUE_ACCOUNT_DOES_NOT_EXIST`](#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST)
+-  [Function `PROLOGUE_INVALID_ACCOUNT_AUTH_KEY`](#0x1_Errors_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
+-  [Function `PROLOGUE_SEQUENCE_NUMBER_TOO_OLD`](#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD)
+-  [Function `PROLOGUE_SEQUENCE_NUMBER_TOO_NEW`](#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW)
+-  [Function `PROLOGUE_CANT_PAY_GAS_DEPOSIT`](#0x1_Errors_PROLOGUE_CANT_PAY_GAS_DEPOSIT)
+-  [Function `PROLOGUE_TRANSACTION_EXPIRED`](#0x1_Errors_PROLOGUE_TRANSACTION_EXPIRED)
+-  [Function `PROLOGUE_BAD_CHAIN_ID`](#0x1_Errors_PROLOGUE_BAD_CHAIN_ID)
+-  [Function `PROLOGUE_MODULE_NOT_ALLOWED`](#0x1_Errors_PROLOGUE_MODULE_NOT_ALLOWED)
+-  [Function `PROLOGUE_SCRIPT_NOT_ALLOWED`](#0x1_Errors_PROLOGUE_SCRIPT_NOT_ALLOWED)
+-  [Function `EINSUFFICIENT_BALANCE`](#0x1_Errors_EINSUFFICIENT_BALANCE)
+-  [Function `ENOT_GENESIS_ACCOUNT`](#0x1_Errors_ENOT_GENESIS_ACCOUNT)
+-  [Function `ENOT_GENESIS`](#0x1_Errors_ENOT_GENESIS)
+-  [Function `ECONFIG_VALUE_DOES_NOT_EXIST`](#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST)
+-  [Function `EINVALID_TIMESTAMP`](#0x1_Errors_EINVALID_TIMESTAMP)
+-  [Function `ECOIN_DEPOSIT_IS_ZERO`](#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO)
+-  [Function `EDESTORY_TOKEN_NON_ZERO`](#0x1_Errors_EDESTORY_TOKEN_NON_ZERO)
+-  [Function `EBLOCK_NUMBER_MISMATCH`](#0x1_Errors_EBLOCK_NUMBER_MISMATCH)
+-  [Function `EINVALID_ARGUMENT`](#0x1_Errors_EINVALID_ARGUMENT)
+-  [Function `EUNREACHABLE`](#0x1_Errors_EUNREACHABLE)
+-  [Function `make`](#0x1_Errors_make)
+-  [Function `invalid_state`](#0x1_Errors_invalid_state)
+-  [Function `requires_address`](#0x1_Errors_requires_address)
+-  [Function `requires_role`](#0x1_Errors_requires_role)
+-  [Function `requires_capability`](#0x1_Errors_requires_capability)
+-  [Function `not_published`](#0x1_Errors_not_published)
+-  [Function `already_published`](#0x1_Errors_already_published)
+-  [Function `invalid_argument`](#0x1_Errors_invalid_argument)
+-  [Function `limit_exceeded`](#0x1_Errors_limit_exceeded)
+-  [Function `internal`](#0x1_Errors_internal)
+-  [Function `custom`](#0x1_Errors_custom)
+-  [Specification](#@Specification_1)
+    -  [Function `make`](#@Specification_1_make)
+    -  [Function `invalid_state`](#@Specification_1_invalid_state)
+    -  [Function `requires_address`](#@Specification_1_requires_address)
+    -  [Function `requires_role`](#@Specification_1_requires_role)
+    -  [Function `requires_capability`](#@Specification_1_requires_capability)
+    -  [Function `not_published`](#@Specification_1_not_published)
+    -  [Function `already_published`](#@Specification_1_already_published)
+    -  [Function `invalid_argument`](#@Specification_1_invalid_argument)
+    -  [Function `limit_exceeded`](#@Specification_1_limit_exceeded)
+    -  [Function `internal`](#@Specification_1_internal)
+    -  [Function `custom`](#@Specification_1_custom)
 
 
-<a name="0x1_Errors_INVALID_STATE"></a>
-
-## Const `INVALID_STATE`
-
-The system is in a state where the performed operation is not allowed. Example: call to a function only allowed
-in genesis.
-
-
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_INVALID_STATE">INVALID_STATE</a>: u8 = 1;
-</code></pre>
+<pre><code></code></pre>
 
 
 
-<a name="0x1_Errors_REQUIRES_ADDRESS"></a>
+<a name="@Constants_0"></a>
 
-## Const `REQUIRES_ADDRESS`
-
-The signer of a transaction does not have the expected address for this operation. Example: a call to a function
-which publishes a resource under a particular address.
-
-
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_ADDRESS">REQUIRES_ADDRESS</a>: u8 = 2;
-</code></pre>
-
-
-
-<a name="0x1_Errors_REQUIRES_ROLE"></a>
-
-## Const `REQUIRES_ROLE`
-
-The signer of a transaction does not have the expected  role for this operation. Example: a call to a function
-which requires the signer to have the role of treasury compliance.
-
-
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_ROLE">REQUIRES_ROLE</a>: u8 = 3;
-</code></pre>
-
-
-
-<a name="0x1_Errors_REQUIRES_CAPABILITY"></a>
-
-## Const `REQUIRES_CAPABILITY`
-
-The signer of a transaction does not have a required capability.
-
-
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_CAPABILITY">REQUIRES_CAPABILITY</a>: u8 = 4;
-</code></pre>
-
-
-
-<a name="0x1_Errors_NOT_PUBLISHED"></a>
-
-## Const `NOT_PUBLISHED`
-
-A resource is required but not published. Example: access to non-existing AccountLimits resource.
-
-
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_NOT_PUBLISHED">NOT_PUBLISHED</a>: u8 = 5;
-</code></pre>
-
+## Constants
 
 
 <a name="0x1_Errors_ALREADY_PUBLISHED"></a>
-
-## Const `ALREADY_PUBLISHED`
 
 Attempting to publish a resource that is already published. Example: calling an initialization function
 twice.
@@ -147,9 +82,27 @@ twice.
 
 
 
-<a name="0x1_Errors_INVALID_ARGUMENT"></a>
+<a name="0x1_Errors_CUSTOM"></a>
 
-## Const `INVALID_ARGUMENT`
+A custom error category for extension points.
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_CUSTOM">CUSTOM</a>: u8 = 255;
+</code></pre>
+
+
+
+<a name="0x1_Errors_INTERNAL"></a>
+
+An internal error (bug) has occurred.
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a>: u8 = 10;
+</code></pre>
+
+
+
+<a name="0x1_Errors_INVALID_ARGUMENT"></a>
 
 An argument provided to an operation is invalid. Example: a signing key has the wrong format.
 
@@ -159,9 +112,18 @@ An argument provided to an operation is invalid. Example: a signing key has the 
 
 
 
-<a name="0x1_Errors_LIMIT_EXCEEDED"></a>
+<a name="0x1_Errors_INVALID_STATE"></a>
 
-## Const `LIMIT_EXCEEDED`
+The system is in a state where the performed operation is not allowed. Example: call to a function only allowed
+in genesis.
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_INVALID_STATE">INVALID_STATE</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x1_Errors_LIMIT_EXCEEDED"></a>
 
 A limit on an amount, e.g. a currency, is exceeded. Example: withdrawal of money after account limits window
 is exhausted.
@@ -172,26 +134,44 @@ is exhausted.
 
 
 
-<a name="0x1_Errors_INTERNAL"></a>
+<a name="0x1_Errors_NOT_PUBLISHED"></a>
 
-## Const `INTERNAL`
-
-An internal error (bug) has occurred.
+A resource is required but not published. Example: access to non-existing AccountLimits resource.
 
 
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a>: u8 = 10;
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_NOT_PUBLISHED">NOT_PUBLISHED</a>: u8 = 5;
 </code></pre>
 
 
 
-<a name="0x1_Errors_CUSTOM"></a>
+<a name="0x1_Errors_REQUIRES_ADDRESS"></a>
 
-## Const `CUSTOM`
+The signer of a transaction does not have the expected address for this operation. Example: a call to a function
+which publishes a resource under a particular address.
 
-A custom error category for extension points.
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_ADDRESS">REQUIRES_ADDRESS</a>: u8 = 2;
+</code></pre>
 
 
-<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_CUSTOM">CUSTOM</a>: u8 = 255;
+
+<a name="0x1_Errors_REQUIRES_CAPABILITY"></a>
+
+The signer of a transaction does not have a required capability.
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_CAPABILITY">REQUIRES_CAPABILITY</a>: u8 = 4;
+</code></pre>
+
+
+
+<a name="0x1_Errors_REQUIRES_ROLE"></a>
+
+The signer of a transaction does not have the expected  role for this operation. Example: a call to a function
+which requires the signer to have the role of treasury compliance.
+
+
+<pre><code><b>const</b> <a href="Errors.md#0x1_Errors_REQUIRES_ROLE">REQUIRES_ROLE</a>: u8 = 3;
 </code></pre>
 
 
@@ -861,19 +841,19 @@ A function to create an error from from a category and a reason.
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_make"></a>
+<a name="@Specification_1_make"></a>
 
 ### Function `make`
 
@@ -884,15 +864,15 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
-pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> [abstract] <b>false</b>;
 <b>ensures</b> [abstract] result == category;
 </code></pre>
 
 
 
-<a name="@Specification_0_invalid_state"></a>
+<a name="@Specification_1_invalid_state"></a>
 
 ### Function `invalid_state`
 
@@ -903,14 +883,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_INVALID_STATE">INVALID_STATE</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_requires_address"></a>
+<a name="@Specification_1_requires_address"></a>
 
 ### Function `requires_address`
 
@@ -921,14 +901,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_REQUIRES_ADDRESS">REQUIRES_ADDRESS</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_requires_role"></a>
+<a name="@Specification_1_requires_role"></a>
 
 ### Function `requires_role`
 
@@ -939,14 +919,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_REQUIRES_ROLE">REQUIRES_ROLE</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_requires_capability"></a>
+<a name="@Specification_1_requires_capability"></a>
 
 ### Function `requires_capability`
 
@@ -957,14 +937,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_REQUIRES_CAPABILITY">REQUIRES_CAPABILITY</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_not_published"></a>
+<a name="@Specification_1_not_published"></a>
 
 ### Function `not_published`
 
@@ -975,14 +955,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_NOT_PUBLISHED">NOT_PUBLISHED</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_already_published"></a>
+<a name="@Specification_1_already_published"></a>
 
 ### Function `already_published`
 
@@ -993,14 +973,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_ALREADY_PUBLISHED">ALREADY_PUBLISHED</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_invalid_argument"></a>
+<a name="@Specification_1_invalid_argument"></a>
 
 ### Function `invalid_argument`
 
@@ -1011,14 +991,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_INVALID_ARGUMENT">INVALID_ARGUMENT</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_limit_exceeded"></a>
+<a name="@Specification_1_limit_exceeded"></a>
 
 ### Function `limit_exceeded`
 
@@ -1029,14 +1009,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_LIMIT_EXCEEDED">LIMIT_EXCEEDED</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_internal"></a>
+<a name="@Specification_1_internal"></a>
 
 ### Function `internal`
 
@@ -1047,14 +1027,14 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_INTERNAL">INTERNAL</a>;
 </code></pre>
 
 
 
-<a name="@Specification_0_custom"></a>
+<a name="@Specification_1_custom"></a>
 
 ### Function `custom`
 
@@ -1065,7 +1045,7 @@ pragma verify = <b>false</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == <a href="Errors.md#0x1_Errors_CUSTOM">CUSTOM</a>;
 </code></pre>

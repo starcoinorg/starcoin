@@ -6,7 +6,14 @@
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="execute_proposal.md#execute_proposal">execute_proposal</a></code>](#@Specification_0_execute_proposal)
+    -  [Function `execute_proposal`](#@Specification_0_execute_proposal)
+
+
+<pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
+<b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="../../modules/doc/Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 
@@ -44,5 +51,5 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

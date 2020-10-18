@@ -5,10 +5,14 @@
 
 
 
--  [Function <code>GENESIS_ADDRESS</code>](#0x1_CoreAddresses_GENESIS_ADDRESS)
--  [Function <code>ASSOCIATION_ROOT_ADDRESS</code>](#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS)
--  [Function <code>VM_RESERVED_ADDRESS</code>](#0x1_CoreAddresses_VM_RESERVED_ADDRESS)
+-  [Function `GENESIS_ADDRESS`](#0x1_CoreAddresses_GENESIS_ADDRESS)
+-  [Function `ASSOCIATION_ROOT_ADDRESS`](#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS)
+-  [Function `VM_RESERVED_ADDRESS`](#0x1_CoreAddresses_VM_RESERVED_ADDRESS)
 -  [Specification](#@Specification_0)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_CoreAddresses_GENESIS_ADDRESS"></a>
@@ -98,8 +102,8 @@ is no signer for the transaction.
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 

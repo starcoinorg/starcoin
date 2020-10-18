@@ -5,11 +5,20 @@
 
 
 
--  [Struct <code><a href="TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">TransactionTimeoutConfig</a></code>](#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig)
--  [Function <code>initialize</code>](#0x1_TransactionTimeoutConfig_initialize)
--  [Function <code>new_transaction_timeout_config</code>](#0x1_TransactionTimeoutConfig_new_transaction_timeout_config)
--  [Function <code>get_transaction_timeout_config</code>](#0x1_TransactionTimeoutConfig_get_transaction_timeout_config)
--  [Function <code>duration_seconds</code>](#0x1_TransactionTimeoutConfig_duration_seconds)
+-  [Struct `TransactionTimeoutConfig`](#0x1_TransactionTimeoutConfig_TransactionTimeoutConfig)
+-  [Function `initialize`](#0x1_TransactionTimeoutConfig_initialize)
+-  [Function `new_transaction_timeout_config`](#0x1_TransactionTimeoutConfig_new_transaction_timeout_config)
+-  [Function `get_transaction_timeout_config`](#0x1_TransactionTimeoutConfig_get_transaction_timeout_config)
+-  [Function `duration_seconds`](#0x1_TransactionTimeoutConfig_duration_seconds)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_TransactionTimeoutConfig_TransactionTimeoutConfig"></a>
