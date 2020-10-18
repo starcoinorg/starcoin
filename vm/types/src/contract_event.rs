@@ -171,4 +171,5 @@ impl std::fmt::Display for ContractEvent {
     }
 }
 
-//TODO EventWithProof
+//TODO implement EventWithProof
+pub struct EventWithProof {}

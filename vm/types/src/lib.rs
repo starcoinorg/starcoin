@@ -105,9 +105,7 @@ pub mod errors {
 
 pub mod write_set;
 
-pub mod state_view {
-    pub use libra_state_view::StateView;
-}
+pub mod state_view;
 
 pub mod transaction;
 

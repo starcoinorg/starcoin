@@ -23,7 +23,7 @@ proptest-derive = { version = "0.2.0"}
 move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-vm = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f", optional = true }
+vm = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f"}
 libra-state-view = { package="libra-state-view", git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 
@@ -35,8 +35,6 @@ starcoin-accumulator = { path = "../../core/accumulator"}
 libp2p = "0.22.0"
 
 [dev-dependencies]
-serde_json = { version="1.0", features = ["arbitrary_precision"] }
-vm = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f", features = ["fuzzing"] }
 
 [features]
 default = []
