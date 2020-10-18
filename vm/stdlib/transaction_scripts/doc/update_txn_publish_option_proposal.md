@@ -6,7 +6,14 @@
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_txn_publish_option_proposal.md#update_txn_publish_option_proposal">update_txn_publish_option_proposal</a></code>](#@Specification_0_update_txn_publish_option_proposal)
+    -  [Function `update_txn_publish_option_proposal`](#@Specification_0_update_txn_publish_option_proposal)
+
+
+<pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
+<b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="../../modules/doc/TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
+</code></pre>
+
 
 
 
@@ -48,5 +55,5 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

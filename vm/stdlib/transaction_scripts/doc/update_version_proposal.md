@@ -6,7 +6,14 @@
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a></code>](#@Specification_0_update_version_proposal)
+    -  [Function `update_version_proposal`](#@Specification_0_update_version_proposal)
+
+
+<pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
+<b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="../../modules/doc/Version.md#0x1_Version">0x1::Version</a>;
+</code></pre>
+
 
 
 
@@ -47,5 +54,5 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>

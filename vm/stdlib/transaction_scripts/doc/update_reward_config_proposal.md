@@ -6,7 +6,14 @@
 
 
 -  [Specification](#@Specification_0)
-    -  [Function <code><a href="update_reward_config_proposal.md#update_reward_config_proposal">update_reward_config_proposal</a></code>](#@Specification_0_update_reward_config_proposal)
+    -  [Function `update_reward_config_proposal`](#@Specification_0_update_reward_config_proposal)
+
+
+<pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
+<b>use</b> <a href="../../modules/doc/RewardConfig.md#0x1_RewardConfig">0x1::RewardConfig</a>;
+<b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
+</code></pre>
+
 
 
 
@@ -47,5 +54,5 @@
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
