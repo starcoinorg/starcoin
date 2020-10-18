@@ -8,7 +8,6 @@ use crate::tree::AccumulatorTree;
 use anyhow::{ensure, format_err, Result};
 pub use node::AccumulatorNode;
 use parking_lot::Mutex;
-use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_crypto::HashValue;
 use std::sync::Arc;
 pub use tree_store::AccumulatorTreeStore;
@@ -16,6 +15,7 @@ pub use tree_store::AccumulatorTreeStore;
 pub mod accumulator_info;
 #[cfg(test)]
 mod accumulator_test;
+pub mod inmemory;
 pub mod node;
 pub mod node_index;
 mod proof;
@@ -103,13 +103,7 @@ impl MerkleAccumulator {
 
     pub fn new_empty(node_store: Arc<dyn AccumulatorTreeStore>) -> Self {
         Self {
-            tree: Mutex::new(AccumulatorTree::new(
-                vec![],
-                0,
-                0,
-                *ACCUMULATOR_PLACEHOLDER_HASH,
-                node_store,
-            )),
+            tree: Mutex::new(AccumulatorTree::new_empty(node_store)),
         }
     }
 }
@@ -118,7 +112,7 @@ impl Accumulator for MerkleAccumulator {
     fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64)> {
         let mut tree_guard = self.tree.lock();
         let first_index_leaf = tree_guard.num_leaves;
-        let root_hash = tree_guard.append_leaves(new_leaves)?;
+        let root_hash = tree_guard.append(new_leaves)?;
         Ok((root_hash, first_index_leaf))
     }
 

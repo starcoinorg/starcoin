@@ -3,15 +3,8 @@
 
 pub mod account;
 pub mod addresses;
-
-pub mod event {
-    pub use libra_types::account_config::constants::event::{
-        event_handle_generator_struct_name, event_handle_generator_struct_tag,
-        event_handle_struct_name, event_module_name, EVENT_MODULE,
-    };
-}
-
 pub mod chain;
+pub mod event;
 
 pub use crate::token::stc::*;
 pub use crate::token::*;
