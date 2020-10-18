@@ -8064,7 +8064,6 @@ dependencies = [
  "hex",
  "itertools 0.9.0",
  "libp2p",
- "libra-types",
  "mirai-annotations",
  "num_enum",
  "once_cell",
