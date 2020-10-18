@@ -61,6 +61,7 @@ pub mod parser {
     }
 }
 
+#[cfg(any(test, feature = "fuzzing"))]
 pub mod proptest_types;
 
 pub mod transaction_metadata;
@@ -102,9 +103,7 @@ pub mod errors {
     pub use vm::IndexKind;
 }
 
-pub mod write_set {
-    pub use libra_types::write_set::{WriteOp, WriteSet, WriteSetMut};
-}
+pub mod write_set;
 
 pub mod state_view {
     pub use libra_state_view::StateView;
@@ -112,11 +111,7 @@ pub mod state_view {
 
 pub mod transaction;
 
-pub mod contract_event {
-    pub use libra_types::contract_event::{
-        ContractEvent, ContractEventHasher, ContractEventV0, EventWithProof,
-    };
-}
+pub mod contract_event;
 
 pub mod vm_status {
     pub use move_core_types::vm_status::*;
