@@ -8,10 +8,7 @@
 #define DISABLE_GCC_WARNING(w)
 #define DISABLE_CLANG_WARNING(w)
 #define DISABLE_GCC_AND_CLANG_WARNING(w)
-
 #else
-
-#include <boost/preprocessor/stringize.hpp>
 
 #define PUSH_WARNINGS _Pragma("GCC diagnostic push")
 #define POP_WARNINGS _Pragma("GCC diagnostic pop")
