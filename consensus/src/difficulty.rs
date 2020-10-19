@@ -30,7 +30,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
         .filter_map(|x| x)
         .map(|b| b.into())
         .collect();
-    get_next_target_helper(blocks, epoch.block_time_target())
+    get_next_target_helper(blocks, epoch.block_time_target() * 1000)
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {

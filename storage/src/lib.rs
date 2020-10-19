@@ -138,6 +138,8 @@ pub trait BlockStore {
 pub trait TransactionInfoStore {
     fn get_transaction_info(&self, id: HashValue) -> Result<Option<TransactionInfo>>;
     fn get_transaction_info_by_hash(&self, txn_hash: HashValue) -> Result<Vec<TransactionInfo>>;
+    /// Get transaction info ids by transaction hash, one transaction may be in different chain branch, so produce multiply transaction info.
+    /// if not transaction info match with the `txn_hash`, return empty Vec.
     fn get_transaction_info_ids_by_hash(&self, txn_hash: HashValue) -> Result<Vec<HashValue>>;
     fn save_transaction_info(&self, txn_info: TransactionInfo) -> Result<()> {
         self.save_transaction_infos(vec![txn_info])

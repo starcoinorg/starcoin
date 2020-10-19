@@ -18,7 +18,7 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::{ChainNetwork, MOCK_TIME_SERVICE};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
@@ -126,6 +126,11 @@ fn test_halley_consensus() {
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
     let mut mock_chain = MockChain::new(&ChainNetwork::DEV).unwrap();
+    let global = mock_chain
+        .head()
+        .get_global_time_by_number(mock_chain.head().current_header().number)
+        .unwrap();
+    MOCK_TIME_SERVICE.init(global.milliseconds + 1);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
@@ -319,7 +324,6 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let mut block_chain = test_helper::gen_blockchain_for_test(config.net())?;
     let header = block_chain.current_header();
     let miner_account = AccountInfo::random();
-
     let (template_b1, _) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
@@ -329,8 +333,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
 
-    let block_b1 = config
-        .net()
+    let block_b1 = block_chain
         .consensus()
         .create_block(&block_chain, template_b1)?;
     block_chain.apply(block_b1.clone())?;
@@ -353,7 +356,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         txn.as_signed_user_txn()?.clone()
     };
     let tnx_hash = signed_txn_t2.crypto_hash();
-    let (template_b2, _) = block_chain.create_block_template(
+    let (template_b2, excluded) = block_chain.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
         Some(block_b1.id()),
@@ -361,13 +364,13 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         None,
     )?;
-    let block_b2 = config
-        .net()
+    assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
+    let block_b2 = block_chain
         .consensus()
         .create_block(&block_chain, template_b2)?;
 
     block_chain.apply(block_b2)?;
-    let (template_b3, _) = block_chain2.create_block_template(
+    let (template_b3, excluded) = block_chain2.create_block_template(
         *miner_account.address(),
         Some(miner_account.public_key.clone()),
         Some(block_b1.id()),
@@ -375,8 +378,8 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         vec![],
         None,
     )?;
-    let block_b3 = config
-        .net()
+    assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
+    let block_b3 = block_chain2
         .consensus()
         .create_block(&block_chain2, template_b3)?;
     block_chain2.apply(block_b3)?;

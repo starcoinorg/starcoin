@@ -10,6 +10,7 @@ use starcoin_node::crash_handler;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
+use tokio::time::Duration;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -68,7 +69,13 @@ fn run() -> Result<()> {
             };
 
             let node_info = client.node_info()?;
-            let state = CliState::new(node_info.net, Arc::new(client), node_handle, Some(rt));
+            let state = CliState::new(
+                node_info.net,
+                Arc::new(client),
+                opt.watch_timeout.map(Duration::from_secs),
+                node_handle,
+                Some(rt),
+            );
             Ok(state)
         },
         |_, _, state| {

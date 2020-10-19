@@ -11,6 +11,7 @@ use serde_json::Value;
 use starcoin_cmd::add_command;
 use starcoin_cmd::{CliState, StarcoinOpt};
 use starcoin_logger::prelude::*;
+use static_assertions::_core::time::Duration;
 use std::collections::{HashMap, HashSet};
 
 lazy_static! {
@@ -30,7 +31,13 @@ pub fn steps() -> Steps<MyWorld> {
             let client = world.default_rpc_client.as_ref().take().unwrap();
 
             let node_info = client.clone().node_info().unwrap();
-            let state = CliState::new(node_info.net, client.clone(), None, None);
+            let state = CliState::new(
+                node_info.net,
+                client.clone(),
+                Some(Duration::from_secs(5)),
+                None,
+                None,
+            );
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // get last cmd result as current parameter
             let mut vec = vec!["starcoin"];

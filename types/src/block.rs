@@ -12,6 +12,7 @@ use starcoin_crypto::{
 use crate::genesis_config::ChainId;
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
@@ -398,6 +399,24 @@ impl Block {
             self.header.chain_id,
             parent_gas_used,
         )
+    }
+}
+
+impl std::fmt::Display for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Block{{id:\"{}\",", self.id())?;
+        if let Some(uncles) = &self.body.uncles {
+            write!(f, "uncles:[")?;
+            for uncle in uncles {
+                write!(f, "\"{}\",", uncle.id())?;
+            }
+            write!(f, "],")?;
+        }
+        write!(f, "transactions:[")?;
+        for txn in &self.body.transactions {
+            write!(f, "\"{}\",", txn.id())?;
+        }
+        write!(f, "]}}")
     }
 }
 

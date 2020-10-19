@@ -95,8 +95,7 @@ fn test_switch_master() {
 
         let block_template = tmp_inner.create_block_template().unwrap();
 
-        let block = node_config
-            .net()
+        let block = master
             .consensus()
             .create_block(&master, block_template)
             .unwrap();
@@ -139,8 +138,7 @@ fn test_switch_master() {
                 .unwrap()
         };
 
-        let block = node_config
-            .net()
+        let block = new_master
             .consensus()
             .create_block(&new_master, block_template)
             .unwrap();
@@ -199,8 +197,7 @@ fn test_do_uncles() {
 
         let block_template = tmp_inner.create_block_template().unwrap();
 
-        let block = node_config
-            .net()
+        let block = master
             .consensus()
             .create_block(&master, block_template)
             .unwrap();
@@ -224,8 +221,7 @@ fn test_do_uncles() {
         .unwrap();
 
         let block_template = inner.create_block_template().unwrap();
-        let uncle_block = node_config
-            .net()
+        let uncle_block = branch
             .consensus()
             .create_block(&branch, block_template)
             .unwrap();
@@ -247,8 +243,7 @@ fn test_do_uncles() {
             .unwrap()
             .create_block_template()
             .unwrap();
-        let block = node_config
-            .net()
+        let block = master
             .consensus()
             .create_block(&master, block_template)
             .unwrap();
@@ -290,8 +285,8 @@ fn test_new_head() {
 
     for i in 0..times {
         let block_template = master_inner.create_block_template().unwrap();
-        let block = node_config
-            .net()
+        let block = master_inner
+            .chain
             .consensus()
             .create_block(&master_inner.chain, block_template)
             .unwrap();
@@ -331,8 +326,8 @@ fn test_new_branch() {
     .unwrap();
     for _i in 0..times {
         let block_template = master_inner.create_block_template().unwrap();
-        let block = node_config
-            .net()
+        let block = master_inner
+            .chain
             .consensus()
             .create_block(&master_inner.chain, block_template)
             .unwrap();
@@ -354,8 +349,7 @@ fn test_new_branch() {
         )
         .unwrap();
         let block_template = inner.create_block_template().unwrap();
-        let new_block = node_config
-            .net()
+        let new_block = branch
             .consensus()
             .create_block(&branch, block_template)
             .unwrap();

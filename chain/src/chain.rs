@@ -33,7 +33,6 @@ use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
-use std::convert::TryFrom;
 use std::iter::Extend;
 use std::{collections::HashSet, sync::Arc};
 use storage::Store;
@@ -123,8 +122,7 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        ConsensusStrategy::try_from(self.epoch.as_ref().unwrap().strategy())
-            .expect("epoch consensus strategy must exist.")
+        self.epoch.as_ref().unwrap().strategy()
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
@@ -668,7 +666,7 @@ impl BlockChain {
             );
         }
 
-        let consensus = ConsensusStrategy::try_from(epoch.epoch().strategy())?;
+        let consensus = epoch.epoch().strategy();
         // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
             let uncle_branch =
