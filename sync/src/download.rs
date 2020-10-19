@@ -319,12 +319,7 @@ impl DownloadService {
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
-            let master_header = downloader
-                .chain_reader
-                .clone()
-                .master_head_header()
-                .await?
-                .ok_or_else(|| format_err!("Master head is none."))?;
+            let master_header = downloader.chain_reader.clone().master_head_header().await?;
             let begin_number = master_header.number();
             let total_difficulty = downloader
                 .chain_reader
@@ -470,56 +465,51 @@ impl DownloadService {
         download_address: ServiceRef<DownloadService>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
-            if let Some(header) = downloader.chain_reader.clone().master_head_header().await? {
-                let end_number = best_peer.get_block_number();
-                let total_difficulty = downloader
-                    .chain_reader
-                    .clone()
-                    .get_block_info_by_hash(&header.id())
-                    .await?
-                    .ok_or_else(|| format_err!("Master head block info is none."))?
-                    .total_difficulty;
-                match downloader
-                    .find_ancestor_header(
-                        best_peer,
-                        &rpc_client,
-                        header.number(),
-                        total_difficulty,
-                        true,
-                    )
-                    .await
-                {
-                    Ok(ancestor) => {
-                        if let Some(ancestor_header) = ancestor {
-                            if ancestor_header.number() >= end_number {
-                                return Ok(true);
-                            }
-                            let peer_selector = network
-                                .peer_selector()
-                                .await?
-                                .filter_by_block_number(end_number);
-                            let verified_rpc_client = VerifiedRpcClient::new_with_client(
-                                peer_selector,
-                                rpc_client.clone(),
-                            );
-                            let block_sync_task = BlockSyncTaskActor::launch(
-                                &ancestor_header,
-                                end_number,
-                                downloader.clone(),
-                                true,
-                                download_address,
-                                verified_rpc_client,
-                            );
-                            sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task));
-                            Ok(false)
-                        } else {
-                            Ok(true)
+            let header = downloader.chain_reader.clone().master_head_header().await?;
+            let end_number = best_peer.get_block_number();
+            let total_difficulty = downloader
+                .chain_reader
+                .clone()
+                .get_block_info_by_hash(&header.id())
+                .await?
+                .ok_or_else(|| format_err!("Master head block info is none."))?
+                .total_difficulty;
+            match downloader
+                .find_ancestor_header(
+                    best_peer,
+                    &rpc_client,
+                    header.number(),
+                    total_difficulty,
+                    true,
+                )
+                .await
+            {
+                Ok(ancestor) => {
+                    if let Some(ancestor_header) = ancestor {
+                        if ancestor_header.number() >= end_number {
+                            return Ok(true);
                         }
+                        let peer_selector = network
+                            .peer_selector()
+                            .await?
+                            .filter_by_block_number(end_number);
+                        let verified_rpc_client =
+                            VerifiedRpcClient::new_with_client(peer_selector, rpc_client.clone());
+                        let block_sync_task = BlockSyncTaskActor::launch(
+                            &ancestor_header,
+                            end_number,
+                            downloader.clone(),
+                            true,
+                            download_address,
+                            verified_rpc_client,
+                        );
+                        sync_task.push_task(SyncTaskType::BLOCK, Box::new(block_sync_task));
+                        Ok(false)
+                    } else {
+                        Ok(true)
                     }
-                    Err(e) => Err(e),
                 }
-            } else {
-                Err(format_err!("block header is none when create sync task."))
+                Err(e) => Err(e),
             }
         } else {
             // Err(format_err!(

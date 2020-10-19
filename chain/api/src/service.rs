@@ -93,8 +93,8 @@ pub trait ChainAsyncService:
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
     /// for master
-    async fn master_head_header(&self) -> Result<Option<BlockHeader>>;
-    async fn master_head_block(&self) -> Result<Option<Block>>;
+    async fn master_head_header(&self) -> Result<BlockHeader>;
+    async fn master_head_block(&self) -> Result<Block>;
     async fn master_block_by_number(&self, number: BlockNumber) -> Result<Block>;
     async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
     async fn master_blocks_by_number(
@@ -123,7 +123,7 @@ where
     S: ActorService + ServiceHandler<S, ChainRequest>,
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>> {
-        if let ChainResponse::BlockHeader(header) =
+        if let ChainResponse::BlockHeaderOption(header) =
             self.send(ChainRequest::GetHeaderByHash(*hash)).await??
         {
             if let Some(h) = *header {
@@ -134,7 +134,7 @@ where
     }
 
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block> {
-        if let ChainResponse::OptionBlock(block) =
+        if let ChainResponse::BlockOption(block) =
             self.send(ChainRequest::GetBlockByHash(hash)).await??
         {
             match block {
@@ -168,7 +168,7 @@ where
     }
 
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>> {
-        if let ChainResponse::OptionBlockInfo(block_info) =
+        if let ChainResponse::BlockInfoOption(block_info) =
             self.send(ChainRequest::GetBlockInfoByHash(*hash)).await??
         {
             return Ok(*block_info);
@@ -238,20 +238,21 @@ where
         }
     }
 
-    async fn master_head_header(&self) -> Result<Option<BlockHeader>> {
-        if let Ok(ChainResponse::BlockHeader(header)) =
-            self.send(ChainRequest::CurrentHeader()).await?
+    async fn master_head_header(&self) -> Result<BlockHeader> {
+        if let ChainResponse::BlockHeader(header) =
+            self.send(ChainRequest::CurrentHeader()).await??
         {
-            return Ok(*header);
+            Ok(*header)
+        } else {
+            bail!("Get master head header response error.")
         }
-        Ok(None)
     }
 
-    async fn master_head_block(&self) -> Result<Option<Block>> {
+    async fn master_head_block(&self) -> Result<Block> {
         if let ChainResponse::Block(block) = self.send(ChainRequest::HeadBlock()).await?? {
-            Ok(Some(*block))
+            Ok(*block)
         } else {
-            Ok(None)
+            bail!("Get master head block response error.")
         }
     }
 
@@ -266,7 +267,7 @@ where
     }
 
     async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        if let ChainResponse::OptionBlock(block) =
+        if let ChainResponse::BlockOption(block) =
             self.send(ChainRequest::GetBlockByUncle(uncle_id)).await??
         {
             match block {
@@ -294,7 +295,7 @@ where
     }
 
     async fn master_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader> {
-        if let ChainResponse::BlockHeader(header) = self
+        if let ChainResponse::BlockHeaderOption(header) = self
             .send(ChainRequest::GetBlockHeaderByNumber(number))
             .await??
         {

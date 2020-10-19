@@ -85,10 +85,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
         _ctx: &mut ServiceContext<ChainReaderService>,
     ) -> Result<ChainResponse> {
         match msg {
-            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(Some(
+            ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
                 self.inner.master_head_header(),
-            )))),
-            ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeader(Box::new(
+            ))),
+            ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeaderOption(Box::new(
                 self.inner.get_header_by_hash(hash)?,
             ))),
             ChainRequest::HeadBlock() => Ok(ChainResponse::Block(Box::new(
@@ -100,7 +100,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 })?,
             ))),
             ChainRequest::GetBlockHeaderByNumber(number) => {
-                Ok(ChainResponse::BlockHeader(Box::new(Some(
+                Ok(ChainResponse::BlockHeaderOption(Box::new(Some(
                     self.inner
                         .master_block_header_by_number(number)?
                         .ok_or_else(|| {
@@ -111,14 +111,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                         })?,
                 ))))
             }
-            ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::OptionBlock(
+            ChainRequest::GetBlockByHash(hash) => Ok(ChainResponse::BlockOption(
                 if let Some(block) = self.inner.get_block_by_hash(hash)? {
                     Some(Box::new(block))
                 } else {
                     None
                 },
             )),
-            ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::OptionBlock(
+            ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::BlockOption(
                 if let Some(block) = self.inner.master_block_by_uncle(uncle_id)? {
                     Some(Box::new(block))
                 } else {
@@ -132,7 +132,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     None
                 },
             )),
-            ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::OptionBlockInfo(Box::new(
+            ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
             ))),
             ChainRequest::GetStartupInfo() => {

@@ -99,14 +99,17 @@ where
     pub async fn remove_future(&self, id: K) -> bool {
         let mut tx_map = self.tx_map.lock().await;
         if let Some((tx, peer_id)) = tx_map.get(&id) {
-            tx.clone()
+            if let Err(e) = tx
+                .clone()
                 .send(Err(anyhow!(
                     "request {:?} send to peer {:?} future time out",
                     id,
                     peer_id
                 )))
                 .await
-                .unwrap();
+            {
+                warn!("Send timeout error fail {:?}.", e)
+            }
             tx_map.remove(&id);
             // if find tx ,means timeout
             return true;

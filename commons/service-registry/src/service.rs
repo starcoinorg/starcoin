@@ -174,6 +174,16 @@ where
         }
     }
 
+    pub fn run_later<F>(&mut self, dur: Duration, mut f: F)
+    where
+        F: FnMut(&mut ServiceContext<S>) + 'static,
+    {
+        self.ctx.run_later(dur, move |this, ctx| {
+            let mut service_ctx = ServiceContext::new(&mut this.cache, ctx);
+            f(&mut service_ctx)
+        });
+    }
+
     pub fn run_interval<F>(&mut self, dur: Duration, mut f: F)
     where
         F: FnMut(&mut ServiceContext<S>) + 'static,

@@ -1,11 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use chain::BlockChain;
 use consensus::Consensus;
-use futures::FutureExt;
-use futures_timer::Delay;
+use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
@@ -19,18 +18,21 @@ mod create_block_template;
 pub mod headblock_pacemaker;
 pub mod job_bus_client;
 mod metrics;
-pub mod miner;
 pub mod ondemand_pacemaker;
+pub mod task;
 
+use crate::metrics::MINER_METRICS;
+use crate::task::MintTask;
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
+use futures::executor::block_on;
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 use traits::ChainReader;
-pub use types::system_events::{GenerateBlockEvent, MintBlockEvent, SubmitSealEvent};
+pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
-    miner: miner::Miner,
+    current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
 }
 
@@ -38,14 +40,12 @@ impl ServiceFactory<MinerService> for MinerService {
     fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let bus = ctx.bus_ref().clone();
-        let miner = miner::Miner::new(bus, config.clone());
         let create_block_template_service =
             ctx.service_ref::<CreateBlockTemplateService>()?.clone();
         Ok(MinerService {
             config,
             storage,
-            miner,
+            current_task: None,
             create_block_template_service,
         })
     }
@@ -67,56 +67,95 @@ impl ActorService for MinerService {
 
 impl EventHandler<Self, SubmitSealEvent> for MinerService {
     fn handle_event(&mut self, event: SubmitSealEvent, ctx: &mut ServiceContext<MinerService>) {
-        let miner = self.miner.clone();
-        let fut = async move {
-            if let Err(e) = miner.submit(event.nonce, event.header_hash).await {
-                warn!("Failed to submit seal: {}", e);
+        if let Err(e) = self.finish_task(event.nonce, event.header_hash, ctx) {
+            error!("Process SubmitSealEvent {:?} fail: {:?}", event, e);
+        }
+    }
+}
+
+impl MinerService {
+    pub fn dispatch_task(&mut self, ctx: &mut ServiceContext<MinerService>) -> Result<()> {
+        //create block template should block_on for avoid mint same block template.
+        let block_template = block_on(async {
+            self.create_block_template_service
+                .send(CreateBlockTemplateRequest)
+                .await?
+        })?;
+        if block_template.body.transactions.is_empty() && !self.config.miner.enable_mint_empty_block
+        {
+            debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
+            Ok(())
+        } else {
+            debug!("Mint block template: {:?}", block_template);
+            let block_chain = BlockChain::new(
+                self.config.net().time_service(),
+                block_template.parent_hash,
+                self.storage.clone(),
+            )?;
+            let epoch = block_chain.epoch_info()?;
+            let difficulty = epoch
+                .epoch()
+                .strategy()
+                .calculate_next_difficulty(&block_chain, &epoch)?;
+            let task = MintTask::new(block_template, difficulty);
+            let mining_hash = task.mining_hash;
+            if self.is_minting() {
+                warn!("force set mint task, since mint task is not empty");
             }
-        };
-        ctx.wait(fut);
+            self.current_task = Some(task);
+            ctx.broadcast(MintBlockEvent::new(mining_hash, difficulty));
+            Ok(())
+        }
+    }
+
+    pub fn finish_task(
+        &mut self,
+        nonce: u64,
+        header_hash: HashValue,
+        ctx: &mut ServiceContext<MinerService>,
+    ) -> Result<()> {
+        let task = self.current_task.take().ok_or_else(|| {
+            format_err!(
+                "MintTask is none, but got nonce: {} for header_hash: {:?}",
+                nonce,
+                header_hash
+            )
+        })?;
+        if task.mining_hash != header_hash {
+            warn!(
+                "Header hash mismatch expect: {:?}, got: {:?}, probably received old job result.",
+                task.mining_hash, header_hash
+            );
+            self.current_task = Some(task);
+            return Ok(());
+        }
+        let block = task.finish(nonce);
+        info!("Mint new block: {}", block);
+        ctx.broadcast(MinedBlock(Arc::new(block)));
+        MINER_METRICS.block_mint_count.inc();
+        Ok(())
+    }
+
+    pub fn is_minting(&self) -> bool {
+        self.current_task.is_some()
     }
 }
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
         info!("Handle GenerateBlockEvent:{:?}", event);
-        if !event.force && self.miner.is_minting() {
+        if !event.force && self.is_minting() {
             info!("Miner has mint job so just ignore this event.");
             return;
         }
-        let storage = self.storage.clone();
-        let config = self.config.clone();
-        let miner = self.miner.clone();
-
-        let enable_mint_empty_block = self.config.miner.enable_mint_empty_block;
-        let create_block_template_service = self.create_block_template_service.clone();
-        let self_ref = ctx.self_ref();
-        let f = async move {
-            let block_template = create_block_template_service.send(
-                CreateBlockTemplateRequest)
-                .await??;
-
-            if block_template.body.transactions.is_empty() && !enable_mint_empty_block {
-                debug!("The flag enable_mint_empty_block is false and no txn in pool, so skip mint empty block.");
-                Ok(())
-            } else {
-                debug!("Mint block template: {:?}", block_template);
-                let block_chain = BlockChain::new( config.net().time_service(),block_template.parent_hash, storage)?;
-                let epoch =  block_chain.epoch_info()?;
-                let difficulty =
-                    epoch.epoch().strategy().calculate_next_difficulty(&block_chain, &epoch)?;
-                miner.set_mint(block_template, difficulty).await?;
-                Ok(())
-            }
-        }.then(|result: Result<()>| async move {
-            if let Err(err) = result {
-                error!("Failed to process generate block event:{:?}, delay to trigger a new event.", err);
-                Delay::new(Duration::from_millis(1000)).await;
-                if let Err(err) = self_ref.notify(GenerateBlockEvent::new(false)) {
-                    error!("Send self generate block event notify failed:{:?}.", err);
-                }
-            }
-        });
-        ctx.spawn(f);
+        if let Err(err) = self.dispatch_task(ctx) {
+            error!(
+                "Failed to process generate block event:{:?}, delay to trigger a new event.",
+                err
+            );
+            ctx.run_later(Duration::from_secs(2), |ctx| {
+                ctx.notify(GenerateBlockEvent::new(false));
+            });
+        }
     }
 }
