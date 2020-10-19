@@ -48,7 +48,7 @@ script {
         let key = Box::take<LinearTimeLockKey<STC>>(account);
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         Box::put(account, key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 
@@ -73,7 +73,7 @@ script {
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::value(&token) == 1, 1002);
         Box::put(account, key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 
@@ -98,6 +98,6 @@ script {
         let token = TokenLockPool::unlock_with_linear_key(&mut key);
         assert(Token::value(&token) == 99, 1003);
         TokenLockPool::destroy_empty(key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }

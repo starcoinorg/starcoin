@@ -20,15 +20,19 @@
 -  [Function `create_signer`](#0x1_Account_create_signer)
 -  [Function `destroy_signer`](#0x1_Account_destroy_signer)
 -  [Function `deposit_to`](#0x1_Account_deposit_to)
--  [Function `deposit`](#0x1_Account_deposit)
+-  [Function `deposit_to_self`](#0x1_Account_deposit_to_self)
 -  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
 -  [Function `deposit_with_payer_and_metadata`](#0x1_Account_deposit_with_payer_and_metadata)
+-  [Function `deposit`](#0x1_Account_deposit)
 -  [Function `withdraw_from_balance`](#0x1_Account_withdraw_from_balance)
 -  [Function `withdraw`](#0x1_Account_withdraw)
 -  [Function `withdraw_with_capability`](#0x1_Account_withdraw_with_capability)
 -  [Function `extract_withdraw_capability`](#0x1_Account_extract_withdraw_capability)
 -  [Function `restore_withdraw_capability`](#0x1_Account_restore_withdraw_capability)
 -  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
+-  [Function `emit_payment_events`](#0x1_Account_emit_payment_events)
+-  [Function `emit_send_payment_events`](#0x1_Account_emit_send_payment_events)
+-  [Function `emit_receive_payment_events`](#0x1_Account_emit_receive_payment_events)
 -  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
 -  [Function `pay_from`](#0x1_Account_pay_from)
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
@@ -54,15 +58,19 @@
     -  [Function `create_account`](#@Specification_1_create_account)
     -  [Function `make_account`](#@Specification_1_make_account)
     -  [Function `deposit_to`](#@Specification_1_deposit_to)
-    -  [Function `deposit`](#@Specification_1_deposit)
+    -  [Function `deposit_to_self`](#@Specification_1_deposit_to_self)
     -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
     -  [Function `deposit_with_payer_and_metadata`](#@Specification_1_deposit_with_payer_and_metadata)
+    -  [Function `deposit`](#@Specification_1_deposit)
     -  [Function `withdraw_from_balance`](#@Specification_1_withdraw_from_balance)
     -  [Function `withdraw`](#@Specification_1_withdraw)
     -  [Function `withdraw_with_capability`](#@Specification_1_withdraw_with_capability)
     -  [Function `extract_withdraw_capability`](#@Specification_1_extract_withdraw_capability)
     -  [Function `restore_withdraw_capability`](#@Specification_1_restore_withdraw_capability)
     -  [Function `pay_from_capability`](#@Specification_1_pay_from_capability)
+    -  [Function `emit_payment_events`](#@Specification_1_emit_payment_events)
+    -  [Function `emit_send_payment_events`](#@Specification_1_emit_send_payment_events)
+    -  [Function `emit_receive_payment_events`](#@Specification_1_emit_receive_payment_events)
     -  [Function `pay_from_with_metadata`](#@Specification_1_pay_from_with_metadata)
     -  [Function `pay_from`](#@Specification_1_pay_from)
     -  [Function `rotate_authentication_key`](#@Specification_1_rotate_authentication_key)
@@ -612,13 +620,13 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_deposit"></a>
+<a name="0x1_Account_deposit_to_self"></a>
 
-## Function `deposit`
+## Function `deposit_to_self`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -627,13 +635,13 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>if</b> (!<a href="Account.md#0x1_Account_is_accepts_token">is_accepts_token</a>&lt;TokenType&gt;(account_address)){
         <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(account);
     };
-    <a href="Account.md#0x1_Account_deposit_to">deposit_to</a>(account, account_address, to_deposit)
+    <a href="Account.md#0x1_Account_deposit">deposit</a>(account_address, to_deposit);
 }
 </code></pre>
 
@@ -656,7 +664,8 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer,
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
+    account: &signer,
     payee: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
     metadata: vector&lt;u8&gt;,
@@ -698,37 +707,44 @@ Message for accept token events
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
     <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <a href="Account.md#0x1_Account_deposit">deposit</a>(payee, to_deposit);
+    <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer, payee, deposit_value, metadata);
+}
+</code></pre>
 
-    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
 
-    // Load the payer's account
-    <b>let</b> payer_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
-    // Log a sent event
-    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(
-        &<b>mut</b> payer_account_ref.sent_events,
-        <a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a> {
-            amount: deposit_value,
-            token_code: (<b>copy</b> token_code),
-            payee: payee,
-            metadata: *&metadata
-        },
-    );
 
-    // Load the payee's account
-    <b>let</b> payee_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
-    <b>let</b> payee_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee);
+</details>
+
+<a name="0x1_Account_deposit"></a>
+
+## Function `deposit`
+
+Deposits the <code>to_deposit</code> token into the <code>payee</code>'s account balance.
+It's a reverse operation of <code>withdraw</code>.
+It doesn't emit sendpayment/receivepayment events, as it's not a transfer action.
+Similar with <code>withdraw</code>, the function is mostly used when interacting with contract code.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(
+    account: address,
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
+) <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    // Check that the `to_deposit` token is non-zero
+    <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
+    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>let</b> payee_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account);
     // Deposit the `to_deposit` token
     <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> payee_balance.token, to_deposit);
-    // Log a received event
-    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(
-        &<b>mut</b> payee_account_ref.received_events,
-        <a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a> {
-            amount: deposit_value,
-            token_code: token_code,
-            payer: payer,
-            metadata: metadata
-        }
-    );
 }
 </code></pre>
 
@@ -742,7 +758,7 @@ Message for accept token events
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(_addr: address, balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -751,7 +767,7 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(_addr: address, balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;{
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;{
     <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> balance.token, amount)
 }
 </code></pre>
@@ -782,7 +798,7 @@ Message for accept token events
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
     <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
     // The sender_addr has retained her withdrawal privileges--proceed.
-    <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_addr, sender_balance, amount)
+    <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_balance, amount)
 }
 </code></pre>
 
@@ -809,7 +825,7 @@ Message for accept token events
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <b>let</b> balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
-    <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(cap.account_address, balance , amount)
+    <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance , amount)
 }
 </code></pre>
 
@@ -899,6 +915,109 @@ Message for accept token events
         payee,
         <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>(cap, amount),
         metadata,
+    );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_emit_payment_events"></a>
+
+## Function `emit_payment_events`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer, payee, payment_value, *&metadata);
+    <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer, payee, payment_value, metadata);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_emit_send_payment_events"></a>
+
+## Function `emit_send_payment_events`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>  {
+    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+
+    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
+    // Load the payer's account
+    <b>let</b> payer_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
+    // Log a sent event
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(
+        &<b>mut</b> payer_account_ref.sent_events,
+        <a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a> {
+            amount: payment_value,
+            token_code: (<b>copy</b> token_code),
+            payee: payee,
+            metadata: metadata
+        },
+    );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_emit_receive_payment_events"></a>
+
+## Function `emit_receive_payment_events`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
+    // Load the payer's account
+    <b>let</b> payee_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
+    // Log a received event
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(
+        &<b>mut</b> payee_account_ref.received_events,
+        <a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a> {
+            amount: payment_value,
+            token_code: token_code,
+            payer: payer,
+            metadata: metadata
+        }
     );
 }
 </code></pre>
@@ -1448,7 +1567,6 @@ Message for accept token events
 
     <b>if</b> (transaction_fee_amount &gt; 0) {
         <b>let</b> transaction_fee = <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>(
-                <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
                 sender_balance,
                 transaction_fee_amount
         );
@@ -1563,20 +1681,28 @@ Message for accept token events
 
 
 
-<a name="@Specification_1_deposit"></a>
 
-### Function `deposit`
+<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
+</code></pre>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+
+<a name="@Specification_1_deposit_to_self"></a>
+
+### Function `deposit_to_self`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to_self">deposit_to_self</a>&lt;TokenType&gt;(account: &signer, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> to_deposit.value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)) && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
+<a name="0x1_Account_is_accepts_token$41"></a>
+<b>let</b> is_accepts_token = <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> is_accepts_token && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
+<b>aborts_if</b> !is_accepts_token && !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 </code></pre>
 
@@ -1632,12 +1758,31 @@ Message for accept token events
 
 
 
+<a name="@Specification_1_deposit"></a>
+
+### Function `deposit`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> to_deposit.value == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account);
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account).token.value + to_deposit.value &gt; max_u128();
+<b>ensures</b> <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account)).token.value + to_deposit.value == <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account).token.value;
+</code></pre>
+
+
+
 <a name="@Specification_1_withdraw_from_balance"></a>
 
 ### Function `withdraw_from_balance`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(_addr: address, balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1751,6 +1896,58 @@ Message for accept token events
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value + amount &gt; max_u128();
 <b>ensures</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value == <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value) + amount;
+</code></pre>
+
+
+
+<a name="@Specification_1_emit_payment_events"></a>
+
+### Function `emit_payment_events`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> payment_value == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
+</code></pre>
+
+
+
+<a name="@Specification_1_emit_send_payment_events"></a>
+
+### Function `emit_send_payment_events`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> payment_value == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
+</code></pre>
+
+
+
+<a name="@Specification_1_emit_receive_payment_events"></a>
+
+### Function `emit_receive_payment_events`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> payment_value == 0;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
 </code></pre>
 
 

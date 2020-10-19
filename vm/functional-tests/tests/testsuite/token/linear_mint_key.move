@@ -49,7 +49,7 @@ script {
         // mint 10000/5
         assert(Token::value(&token) == 2000, 1001);
         Box::put(account, key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 
@@ -75,7 +75,7 @@ script {
         // mint 10000/5 again
         assert(Token::value(&token) == 2000, 1002);
         Box::put(account, key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 
@@ -98,6 +98,6 @@ script {
         let token = Token::mint_with_linear_key(&mut key);
         assert(Token::value(&token) == 6000, 1003);
         Token::destroy_empty_key(key);
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }

@@ -77,7 +77,7 @@ script {
         assert(state == 2, (state as u64));
         let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
         let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, pow / 2);
-        Account::deposit(signer, token);
+        Account::deposit_to_self(signer, token);
     }
 }
 // check: EXECUTED
@@ -141,7 +141,7 @@ script {
         assert(state == 4, (state as u64));
         let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
         let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, pow / 2);
-        Account::deposit(signer, token);
+        Account::deposit_to_self(signer, token);
     }
 }
 // check: 359169
@@ -160,7 +160,7 @@ script {
         assert(state == 4, (state as u64));
         {
             let token = Dao::unstake_votes<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0);
-            Account::deposit(signer, token);
+            Account::deposit_to_self(signer, token);
         };
         Dao::queue_proposal_action<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         // ModifyDaoConfigProposal::execute<STC>({{alice}}, 0);
