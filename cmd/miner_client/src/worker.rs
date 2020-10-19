@@ -161,6 +161,19 @@ impl Worker {
             if self.start {
                 if let Some(minting_hash) = self.minting_hash {
                     hash_counter += 1;
+                    if solver(
+                        strategy,
+                        minting_hash,
+                        rng(),
+                        self.diff,
+                        self.nonce_tx.clone(),
+                    ) {
+                        self.start = false;
+                        self.num_seal_found += 1;
+                        if let Some(pb) = pb {
+                            pb.reset_elapsed()
+                        }
+                    }
                     let elapsed = start.elapsed();
                     if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
                         let elapsed_sec: f64 = elapsed.as_nanos() as f64 / 1_000_000_000.0;
@@ -173,19 +186,6 @@ impl Worker {
                         }
                         start = Instant::now();
                         hash_counter = 0;
-                        if solver(
-                            strategy,
-                            minting_hash,
-                            rng(),
-                            self.diff,
-                            self.nonce_tx.clone(),
-                        ) {
-                            self.start = false;
-                            self.num_seal_found += 1;
-                            if let Some(pb) = pb {
-                                pb.reset_elapsed()
-                            }
-                        }
                     }
                 }
             } else {
