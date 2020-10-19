@@ -2,7 +2,6 @@ address 0x1 {
 module TokenLockPool {
     use 0x1::Token::{Self, Token};
     use 0x1::Timestamp;
-    use 0x1::Signer;
     use 0x1::CoreAddresses;
     use 0x1::STC::STC;
     use 0x1::Errors;
@@ -17,6 +16,7 @@ module TokenLockPool {
     // A linear time lock key which can withdraw locked token in a peroid by time-based linear release.
     resource struct LinearTimeLockKey<TokenType> { total: u128, taked: u128, start_time: u64, peroid: u64 }
 
+    const EINVALID_ARGUMENT: u64 = 18; // do not change
     // The key which to destory is not empty.
     const EDESTROY_KEY_NOT_EMPTY: u64 = 101;
 
@@ -27,8 +27,8 @@ module TokenLockPool {
     const EAMOUNT_TOO_BIG: u64 = 103;
 
     public fun initialize(account: &signer) {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        Timestamp::assert_genesis();
+        CoreAddresses::assert_genesis_address(account);
         let token_pool = TokenPool<STC> { token: Token::zero() };
         move_to(account, token_pool);
         //TODO how to init other token's pool.
@@ -36,7 +36,7 @@ module TokenLockPool {
 
     // Create a LinearTimeLock by token and peroid in seconds.
     public fun create_linear_lock<TokenType>(token: Token<TokenType>, peroid: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
-        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let start_time = Timestamp::now_seconds();
         let total = Token::value(&token);
         let token_pool = borrow_global_mut<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
@@ -51,7 +51,7 @@ module TokenLockPool {
 
     // Create a FixedTimeLock by token and peroid in seconds.
     public fun create_fixed_lock<TokenType>(token: Token<TokenType>, peroid: u64): FixedTimeLockKey<TokenType> acquires TokenPool {
-        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let now = Timestamp::now_seconds();
         let total = Token::value(&token);
         let end_time = now + peroid;

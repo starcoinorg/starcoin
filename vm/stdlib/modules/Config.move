@@ -30,6 +30,7 @@ module Config {
         value: ConfigValue,
     }
 
+    const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13; // do not change
     const ECAPABILITY_HOLDER_NOT_EXISTS: u64 = 101;
 
 
@@ -41,7 +42,7 @@ module Config {
 
     // Get a copy of `ConfigValue` value stored under `addr`.
     public fun get_by_address<ConfigValue: copyable>(addr: address): ConfigValue acquires Config {
-        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(Errors::ECONFIG_VALUE_DOES_NOT_EXIST()));
+        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(ECONFIG_VALUE_DOES_NOT_EXIST));
         *&borrow_global<Config<ConfigValue>>(addr).payload
     }
 
@@ -79,7 +80,7 @@ module Config {
     // Set a config item to a new value with cap.
     public fun set_with_capability<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, payload: ConfigValue) acquires Config{
         let addr = cap.account_address;
-        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(Errors::ECONFIG_VALUE_DOES_NOT_EXIST()));
+        assert(exists<Config<ConfigValue>>(addr), Errors::invalid_state(ECONFIG_VALUE_DOES_NOT_EXIST));
         let config = borrow_global_mut<Config<ConfigValue>>(addr);
         config.payload = copy payload;
         emit_config_change_event(cap, payload);

@@ -1,0 +1,21 @@
+[package]
+name = "move-explain"
+version = "0.1.0"
+authors = ["Libra Association <opensource@libra.org>"]
+description = "Libra Move abort code explanations"
+repository = "https://github.com/libra/libra"
+homepage = "https://libra.org"
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+structopt = "0.3.18"
+stdlib = { package="stdlib", path = "../stdlib"}
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+
+[features]
+default = []

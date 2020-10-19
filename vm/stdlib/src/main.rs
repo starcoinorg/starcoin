@@ -14,10 +14,11 @@ use std::{
     path::{Path, PathBuf},
 };
 use stdlib::{
-    build_stdlib, build_stdlib_doc, build_transaction_script_abi, build_transaction_script_doc,
-    compile_script, filter_move_files, save_binary, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
-    COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
-    STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
+    build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, build_transaction_script_abi,
+    build_transaction_script_doc, compile_script, filter_move_files, save_binary,
+    COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS,
+    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS,
+    TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
 fn compile_scripts(script_dir: &Path) {
@@ -149,6 +150,8 @@ fn main() {
         std::fs::remove_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap_or(());
         std::fs::create_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap();
         build_transaction_script_doc();
+
+        build_stdlib_error_code_map();
 
         if generate_new_version {
             let options = fs_extra::dir::CopyOptions::new();

@@ -13,6 +13,9 @@ module TransactionPublishOption {
     }
 
     const SCRIPT_HASH_LENGTH: u64 = 32;
+
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0; // do not change
+    const EINVALID_ARGUMENT: u64 = 18; // do not change
     /// The script hash has an invalid length
     const EINVALID_SCRIPT_HASH: u64 = 1001;
     /// The script hash already exists in the allowlist
@@ -36,10 +39,10 @@ module TransactionPublishOption {
         merged_script_allow_list: vector<u8>,
         module_publishing_allowed: bool,
     ) {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
+        Timestamp::assert_genesis();
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
+            Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
         let transaction_publish_option = Self::new_transaction_publish_option(merged_script_allow_list, module_publishing_allowed);
         Config::publish_new_config(
@@ -89,9 +92,9 @@ module TransactionPublishOption {
     public fun add_to_script_allow_list(account: &signer, new_hash: vector<u8>) {
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
+            Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
-        assert(Vector::length(&new_hash) == SCRIPT_HASH_LENGTH, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(Vector::length(&new_hash) == SCRIPT_HASH_LENGTH, Errors::invalid_argument(EINVALID_ARGUMENT));
         let publish_option = Config::get_by_address<TransactionPublishOption>(
             Signer::address_of(account),
         );
@@ -106,7 +109,7 @@ module TransactionPublishOption {
     public fun set_open_script(account: &signer) {
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
+            Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
         let publish_option = Config::get_by_address<TransactionPublishOption>(
             Signer::address_of(account),
@@ -119,7 +122,7 @@ module TransactionPublishOption {
     public fun set_open_module(account: &signer, open_module: bool) {
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
+            Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
         let publish_option = Config::get_by_address<TransactionPublishOption>(
             Signer::address_of(account),

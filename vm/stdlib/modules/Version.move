@@ -3,7 +3,6 @@ module Version {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
-    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -15,10 +14,7 @@ module Version {
     }
 
     public fun initialize(account: &signer) {
-        assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
-        );
+        CoreAddresses::assert_genesis_address(account);
         Config::publish_new_config<Self::Version>(account, Version { major: 1 });
     }
 
@@ -52,10 +48,7 @@ module Version {
     }
 
     public fun set(account: &signer, major: u64) {
-        assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
-        );
+        CoreAddresses::assert_genesis_address(account);
         let old_config = Config::get_by_address<Self::Version>(Signer::address_of(account));
         assert(old_config.major < major, 25);  //todo
         Config::set<Self::Version>(account, Version { major });

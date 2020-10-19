@@ -6,8 +6,8 @@ module BlockReward {
     use 0x1::STC::{STC};
     use 0x1::Vector;
     use 0x1::Account;
-    use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::Signer;
     use 0x1::Errors;
     use 0x1::RewardConfig;
     use 0x1::Config;
@@ -35,8 +35,8 @@ module BlockReward {
     const EMINER_EXIST: u64 = 104;
 
     public fun initialize(account: &signer, reward_delay: u64) {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        Timestamp::assert_genesis();
+        CoreAddresses::assert_genesis_address(account);
 
         RewardConfig::initialize(account, reward_delay);
         move_to<RewardQueue>(account, RewardQueue {
@@ -56,7 +56,7 @@ module BlockReward {
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
                                     current_author: address, public_key_vec: vector<u8>) acquires RewardQueue {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        CoreAddresses::assert_genesis_address(account);
 
         if (current_number > 0) {
             let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
