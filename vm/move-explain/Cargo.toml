@@ -1,5 +1,5 @@
 [package]
-name = "move-explain"
+name = "starcoin-move-explain"
 version = "0.1.0"
 authors = ["Libra Association <opensource@libra.org>"]
 description = "Libra Move abort code explanations"

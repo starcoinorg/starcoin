@@ -36,7 +36,7 @@ fn main() {
         Identifier::new(module_name).expect("Invalid module name encountered"),
     );
 
-    match move_explain::get_explanation(&module_id, args.abort_code) {
+    match starcoin_move_explain::get_explanation(&module_id, args.abort_code) {
         None => println!(
             "Unable to find a description for {}::{}",
             args.location, args.abort_code

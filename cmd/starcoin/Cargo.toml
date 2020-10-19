@@ -42,6 +42,9 @@ starcoin-txpool-api = { path = "../../txpool/api" }
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-move-explain = { path = "../../vm/move-explain" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+
 [[bin]]
 name = "starcoin"
 path = "src/main.rs"
