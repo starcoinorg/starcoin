@@ -35,7 +35,6 @@ module RewardConfig {
     }
 
     public fun new_reward_config(reward_delay: u64) : RewardConfig {
-        assert(reward_delay > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
         RewardConfig {reward_delay: reward_delay}
     }
 

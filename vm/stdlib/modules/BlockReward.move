@@ -66,7 +66,7 @@ module BlockReward {
             let reward_delay = RewardConfig::reward_delay();
             if (len >= reward_delay) {//pay and remove
                 let i = len;
-                while (i >= reward_delay) {
+                while (i > 0 && i >= reward_delay) {
                     let reward_number = rewards.reward_number + 1;
                     let first_info = *Vector::borrow(&rewards.infos, 0);
                     assert((reward_number == first_info.number), Errors::invalid_argument(EREWARD_NUMBER_IS_WRONG));

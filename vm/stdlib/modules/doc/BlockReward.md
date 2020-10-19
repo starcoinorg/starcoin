@@ -199,7 +199,7 @@
         <b>let</b> reward_delay = <a href="RewardConfig.md#0x1_RewardConfig_reward_delay">RewardConfig::reward_delay</a>();
         <b>if</b> (len &gt;= reward_delay) {//pay and remove
             <b>let</b> i = len;
-            <b>while</b> (i &gt;= reward_delay) {
+            <b>while</b> (i &gt; 0 && i &gt;= reward_delay) {
                 <b>let</b> reward_number = rewards.reward_number + 1;
                 <b>let</b> first_info = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&rewards.infos, 0);
                 <b>assert</b>((reward_number == first_info.number), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG">EREWARD_NUMBER_IS_WRONG</a>));
