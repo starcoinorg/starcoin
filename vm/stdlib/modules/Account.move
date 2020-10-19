@@ -224,11 +224,6 @@ module Account {
         ensures exists<Balance<TokenType>>(Signer::address_of(account));
     }
 
-    spec fun deposit_to {
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>{payer: Signer::spec_address_of(account)};
-    }
-
-
 
     // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata`
     public fun deposit_with_metadata<TokenType>(

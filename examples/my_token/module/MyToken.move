@@ -11,6 +11,6 @@ module MyToken {
 
      public fun mint(account: &signer, amount: u128) {
         let token = Token::mint<MyToken>(account, amount);
-        Account::deposit<MyToken>(account, token)
+        Account::deposit_to_self<MyToken>(account, token)
      }
 }

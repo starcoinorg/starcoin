@@ -1681,12 +1681,6 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 
-
-<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
-</code></pre>
-
-
-
 <a name="@Specification_1_deposit_to_self"></a>
 
 ### Function `deposit_to_self`
