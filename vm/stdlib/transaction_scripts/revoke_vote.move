@@ -7,8 +7,9 @@ script {
         proposer_address: address,
         proposal_id: u64,
     ) {
-        let (_, power) = Dao::vote_of<Token>(Signer::address_of(signer), proposer_address, proposal_id);
+        let sender = Signer::address_of(signer);
+        let (_, power) = Dao::vote_of<Token>(sender, proposer_address, proposal_id);
         let my_token = Dao::revoke_vote<Token, Action>(signer, proposer_address, proposal_id, power);
-        Account::deposit(signer, my_token);
+        Account::deposit(sender, my_token);
     }
 }

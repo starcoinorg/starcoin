@@ -31,7 +31,7 @@ script {
 
     fun redeem_offer(account: &signer) {
         let token = Offer::redeem<Token<STC>>(account, {{alice}});
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 
@@ -52,7 +52,7 @@ script {
 
     fun redeem_offer(account: &signer) {
         let token = Offer::redeem<Token<STC>>(account, {{alice}});
-        Account::deposit(account, token);
+        Account::deposit_to_self(account, token);
     }
 }
 

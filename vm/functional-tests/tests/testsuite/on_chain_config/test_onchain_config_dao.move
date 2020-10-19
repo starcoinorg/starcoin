@@ -87,7 +87,7 @@ script {
         assert(state == 4, (state as u64));
         {
             let token = Dao::unstake_votes<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(signer, {{alice}}, 0);
-            Account::deposit(signer, token);
+            Account::deposit_to_self(signer, token);
         };
         Dao::queue_proposal_action<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>({{alice}}, 0);
         // ModifyDaoConfigProposal::execute<STC>({{alice}}, 0);

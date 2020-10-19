@@ -15,7 +15,7 @@ fun main(account: &signer) {
     let coin = DummyToken::mint(account, amount);
     assert(Token::value<DummyToken>(&coin) == amount, 1);
     assert(Token::market_cap<DummyToken>() == old_market_cap + amount, 2);
-    Account::deposit(account, coin);
+    Account::deposit_to_self(account, coin);
     assert(Account::balance<DummyToken>(account_address) == amount, 3);
 }
 }

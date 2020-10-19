@@ -30,7 +30,7 @@ use 0x1::Token;
 use 0x1::Account;
 fun main(account: &signer) {
     let coin = Token::mint<STC>(account, 100);
-    Account::deposit<STC>(account, coin)
+    Account::deposit_to_self<STC>(account, coin)
 }
 }
 

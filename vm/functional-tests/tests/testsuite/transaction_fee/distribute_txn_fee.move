@@ -27,7 +27,7 @@ fun distribute_fees(account: &signer) {
     let coin = TransactionFee::distribute_transaction_fees<STC>(account);
     let value = Token::value<STC>(&coin);
     assert( value == 200, 10000);
-    Account::deposit(account, coin);
+    Account::deposit_to_self(account, coin);
 }
 }
 // check: EXECUTED
@@ -42,7 +42,7 @@ use 0x1::TransactionFee;
 
 fun main(account: &signer) {
    let coin = TransactionFee::distribute_transaction_fees<STC>(account);
-   Account::deposit(account, coin);
+   Account::deposit_to_self(account, coin);
 }
 }
 
