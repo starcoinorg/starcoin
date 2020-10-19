@@ -910,7 +910,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         timestamp: 1603006373457,
         reward_delay: 3,
-        difficulty: 100000.into(),
+        difficulty: 10.into(),
         nonce: 0,
         pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
         time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
@@ -931,7 +931,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
             max_block_time_target: MAX_BLOCK_TIME_TARGET,
             base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
             base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
-            strategy: ConsensusStrategy::Keccak.value(),
+            strategy: ConsensusStrategy::CryptoNight.value(),
         },
         association_key_pair: (
             None,
@@ -989,7 +989,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
         base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
         base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
-        strategy: ConsensusStrategy::Keccak.value(),
+        strategy: ConsensusStrategy::CryptoNight.value(),
     },
     association_key_pair: (
         None,
@@ -1039,7 +1039,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         max_block_time_target: MAX_BLOCK_TIME_TARGET,
         base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
         base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
-        strategy: ConsensusStrategy::Keccak.value(),
+        strategy: ConsensusStrategy::CryptoNight.value(),
     },
     association_key_pair: (
         None,
