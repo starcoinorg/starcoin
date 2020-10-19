@@ -40,9 +40,7 @@ use starcoin_sync::download::DownloadService;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_sync::SyncService;
 use starcoin_sync_api::StartSyncTxnEvent;
-use starcoin_traits::ChainAsyncService;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
-use starcoin_types::genesis_config::MOCK_TIME_SERVICE;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -211,17 +209,18 @@ impl NodeService {
         // TxPoolActorService auto put shared TxPoolService,
         registry.get_shared::<TxPoolService>().await?;
         registry.register::<ChainStateService>().await?;
-        let starcoin_chain_service = registry.register::<ChainReaderService>().await?;
+        let _starcoin_chain_service = registry.register::<ChainReaderService>().await?;
         //test net or dev_net must init mock_time_service
-        let net = config.net();
-        if net.is_dev() || net.is_test() {
-            if let Ok(block_header) = starcoin_chain_service.master_head_header().await {
-                let global_time = starcoin_chain_service
-                    .get_global_time_by_number(block_header.number())
-                    .await?;
-                MOCK_TIME_SERVICE.init(global_time.milliseconds + 1);
-            }
-        }
+        //TODO init mock time service after refactor TimeService & ChainNetwork
+        // let net = config.net();
+        // if net.is_dev() || net.is_test() {
+        //     if let Ok(block_header) = starcoin_chain_service.master_head_header().await {
+        //         let global_time = starcoin_chain_service
+        //             .get_global_time_by_number(block_header.number())
+        //             .await?;
+        //         MOCK_TIME_SERVICE.init(global_time.milliseconds + 1);
+        //     }
+        // }
 
         registry.register::<ChainNotifyHandlerService>().await?;
 

@@ -152,18 +152,18 @@ where
         {
             Ok(blocks)
         } else {
-            bail!("get blocks error.")
+            bail!("get_blocks response type error.")
         }
     }
 
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>> {
-        if let ChainResponse::BlockState(Some(block_state)) = self
+        if let ChainResponse::BlockState(block_state) = self
             .send(ChainRequest::GetBlockStateByHash(*hash))
             .await??
         {
-            Ok(Some(*block_state))
+            Ok(block_state.map(|block| *block))
         } else {
-            bail!("get block state by hash error.")
+            bail!("get_block_state_by_hash response type error")
         }
     }
 
