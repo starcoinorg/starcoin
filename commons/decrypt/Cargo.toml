@@ -9,7 +9,7 @@ edition = "2018"
 pbkdf2="0.3"
 hmac = "0.7"
 sha2 = "0.8"
-aes-gcm = "0.5"
+aes-gcm = "0.7"
 rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 byteorder="1.3"
