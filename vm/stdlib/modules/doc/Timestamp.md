@@ -5,22 +5,29 @@
 
 
 
--  [Resource <code><a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a></code>](#0x1_Timestamp_CurrentTimeMilliseconds)
--  [Resource <code><a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a></code>](#0x1_Timestamp_TimeHasStarted)
--  [Const <code><a href="Timestamp.md#0x1_Timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a></code>](#0x1_Timestamp_MILLI_CONVERSION_FACTOR)
--  [Function <code>initialize</code>](#0x1_Timestamp_initialize)
--  [Function <code>update_global_time</code>](#0x1_Timestamp_update_global_time)
--  [Function <code>now_seconds</code>](#0x1_Timestamp_now_seconds)
--  [Function <code>now_milliseconds</code>](#0x1_Timestamp_now_milliseconds)
--  [Function <code>set_time_has_started</code>](#0x1_Timestamp_set_time_has_started)
--  [Function <code>is_genesis</code>](#0x1_Timestamp_is_genesis)
--  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>update_global_time</code>](#@Specification_0_update_global_time)
-    -  [Function <code>now_seconds</code>](#@Specification_0_now_seconds)
-    -  [Function <code>now_milliseconds</code>](#@Specification_0_now_milliseconds)
-    -  [Function <code>set_time_has_started</code>](#@Specification_0_set_time_has_started)
-    -  [Function <code>is_genesis</code>](#@Specification_0_is_genesis)
+-  [Resource `CurrentTimeMilliseconds`](#0x1_Timestamp_CurrentTimeMilliseconds)
+-  [Resource `TimeHasStarted`](#0x1_Timestamp_TimeHasStarted)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_Timestamp_initialize)
+-  [Function `update_global_time`](#0x1_Timestamp_update_global_time)
+-  [Function `now_seconds`](#0x1_Timestamp_now_seconds)
+-  [Function `now_milliseconds`](#0x1_Timestamp_now_milliseconds)
+-  [Function `set_time_has_started`](#0x1_Timestamp_set_time_has_started)
+-  [Function `is_genesis`](#0x1_Timestamp_is_genesis)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `update_global_time`](#@Specification_1_update_global_time)
+    -  [Function `now_seconds`](#@Specification_1_now_seconds)
+    -  [Function `now_milliseconds`](#@Specification_1_now_milliseconds)
+    -  [Function `set_time_has_started`](#@Specification_1_set_time_has_started)
+    -  [Function `is_genesis`](#@Specification_1_is_genesis)
+
+
+<pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_Timestamp_CurrentTimeMilliseconds"></a>
@@ -79,9 +86,21 @@ is called at the end of genesis.
 
 </details>
 
-<a name="0x1_Timestamp_MILLI_CONVERSION_FACTOR"></a>
+<a name="@Constants_0"></a>
 
-## Const `MILLI_CONVERSION_FACTOR`
+## Constants
+
+
+<a name="0x1_Timestamp_ENOT_INITIALIZED"></a>
+
+
+
+<pre><code><b>const</b> <a href="Timestamp.md#0x1_Timestamp_ENOT_INITIALIZED">ENOT_INITIALIZED</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_Timestamp_MILLI_CONVERSION_FACTOR"></a>
 
 Conversion factor between seconds and milliseconds
 
@@ -108,7 +127,7 @@ Conversion factor between seconds and milliseconds
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_initialize">initialize</a>(account: &signer, genesis_timestamp: u64) {
     // Only callable by the Genesis address
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
     <b>let</b> milli_timer = <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> {milliseconds: genesis_timestamp};
     move_to&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(account, milli_timer);
 }
@@ -134,10 +153,10 @@ Conversion factor between seconds and milliseconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_update_global_time">update_global_time</a>(account: &signer, timestamp: u64) <b>acquires</b> <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
     //Do not <b>update</b> time before time start.
     <b>let</b> global_milli_timer = borrow_global_mut&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(timestamp &gt; global_milli_timer.milliseconds, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_TIMESTAMP">ErrorCode::EINVALID_TIMESTAMP</a>());
+    <b>assert</b>(timestamp &gt; global_milli_timer.milliseconds, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_TIMESTAMP">Errors::EINVALID_TIMESTAMP</a>()));
     global_milli_timer.milliseconds = timestamp;
 }
 </code></pre>
@@ -211,12 +230,12 @@ Marks that time has started and genesis has finished. This can only be called fr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_set_time_has_started">set_time_has_started</a>(account: &signer) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
 
     // Current time must have been initialized.
     <b>assert</b>(
         <b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()),
-        1
+        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Timestamp.md#0x1_Timestamp_ENOT_INITIALIZED">ENOT_INITIALIZED</a>)
     );
     move_to(account, <a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>{});
 }
@@ -251,19 +270,19 @@ Helper function to determine if the blockchain is in genesis state.
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -281,7 +300,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_update_global_time"></a>
+<a name="@Specification_1_update_global_time"></a>
 
 ### Function `update_global_time`
 
@@ -300,7 +319,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_now_seconds"></a>
+<a name="@Specification_1_now_seconds"></a>
 
 ### Function `now_seconds`
 
@@ -322,13 +341,13 @@ pragma aborts_if_is_strict;
 
 
 <pre><code><b>define</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">spec_now_seconds</a>(): u64 {
-<b>global</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).milliseconds / <a href="Timestamp.md#0x1_Timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
+   <b>global</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).milliseconds / <a href="Timestamp.md#0x1_Timestamp_MILLI_CONVERSION_FACTOR">MILLI_CONVERSION_FACTOR</a>
 }
 </code></pre>
 
 
 
-<a name="@Specification_0_now_milliseconds"></a>
+<a name="@Specification_1_now_milliseconds"></a>
 
 ### Function `now_milliseconds`
 
@@ -345,7 +364,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_set_time_has_started"></a>
+<a name="@Specification_1_set_time_has_started"></a>
 
 ### Function `set_time_has_started`
 
@@ -364,7 +383,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_is_genesis"></a>
+<a name="@Specification_1_is_genesis"></a>
 
 ### Function `is_genesis`
 

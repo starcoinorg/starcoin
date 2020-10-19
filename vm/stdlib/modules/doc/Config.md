@@ -5,29 +5,38 @@
 
 
 
--  [Resource <code><a href="Config.md#0x1_Config">Config</a></code>](#0x1_Config_Config)
--  [Resource <code><a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a></code>](#0x1_Config_ModifyConfigCapability)
--  [Resource <code><a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a></code>](#0x1_Config_ModifyConfigCapabilityHolder)
--  [Struct <code><a href="Config.md#0x1_Config_ConfigChangeEvent">ConfigChangeEvent</a></code>](#0x1_Config_ConfigChangeEvent)
--  [Function <code>get_by_address</code>](#0x1_Config_get_by_address)
--  [Function <code>set</code>](#0x1_Config_set)
--  [Function <code>set_with_capability</code>](#0x1_Config_set_with_capability)
--  [Function <code>publish_new_config_with_capability</code>](#0x1_Config_publish_new_config_with_capability)
--  [Function <code>publish_new_config</code>](#0x1_Config_publish_new_config)
--  [Function <code>extract_modify_config_capability</code>](#0x1_Config_extract_modify_config_capability)
--  [Function <code>restore_modify_config_capability</code>](#0x1_Config_restore_modify_config_capability)
--  [Function <code>destory_modify_config_capability</code>](#0x1_Config_destory_modify_config_capability)
--  [Function <code>emit_config_change_event</code>](#0x1_Config_emit_config_change_event)
--  [Specification](#@Specification_0)
-    -  [Function <code>get_by_address</code>](#@Specification_0_get_by_address)
-    -  [Function <code>set</code>](#@Specification_0_set)
-    -  [Function <code>set_with_capability</code>](#@Specification_0_set_with_capability)
-    -  [Function <code>publish_new_config_with_capability</code>](#@Specification_0_publish_new_config_with_capability)
-    -  [Function <code>publish_new_config</code>](#@Specification_0_publish_new_config)
-    -  [Function <code>extract_modify_config_capability</code>](#@Specification_0_extract_modify_config_capability)
-    -  [Function <code>restore_modify_config_capability</code>](#@Specification_0_restore_modify_config_capability)
-    -  [Function <code>destory_modify_config_capability</code>](#@Specification_0_destory_modify_config_capability)
-    -  [Function <code>emit_config_change_event</code>](#@Specification_0_emit_config_change_event)
+-  [Resource `Config`](#0x1_Config_Config)
+-  [Resource `ModifyConfigCapability`](#0x1_Config_ModifyConfigCapability)
+-  [Resource `ModifyConfigCapabilityHolder`](#0x1_Config_ModifyConfigCapabilityHolder)
+-  [Struct `ConfigChangeEvent`](#0x1_Config_ConfigChangeEvent)
+-  [Constants](#@Constants_0)
+-  [Function `get_by_address`](#0x1_Config_get_by_address)
+-  [Function `set`](#0x1_Config_set)
+-  [Function `set_with_capability`](#0x1_Config_set_with_capability)
+-  [Function `publish_new_config_with_capability`](#0x1_Config_publish_new_config_with_capability)
+-  [Function `publish_new_config`](#0x1_Config_publish_new_config)
+-  [Function `extract_modify_config_capability`](#0x1_Config_extract_modify_config_capability)
+-  [Function `restore_modify_config_capability`](#0x1_Config_restore_modify_config_capability)
+-  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
+-  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
+-  [Specification](#@Specification_1)
+    -  [Function `get_by_address`](#@Specification_1_get_by_address)
+    -  [Function `set`](#@Specification_1_set)
+    -  [Function `set_with_capability`](#@Specification_1_set_with_capability)
+    -  [Function `publish_new_config_with_capability`](#@Specification_1_publish_new_config_with_capability)
+    -  [Function `publish_new_config`](#@Specification_1_publish_new_config)
+    -  [Function `extract_modify_config_capability`](#@Specification_1_extract_modify_config_capability)
+    -  [Function `restore_modify_config_capability`](#@Specification_1_restore_modify_config_capability)
+    -  [Function `destory_modify_config_capability`](#@Specification_1_destory_modify_config_capability)
+    -  [Function `emit_config_change_event`](#@Specification_1_emit_config_change_event)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
+<b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+</code></pre>
+
 
 
 <a name="0x1_Config_Config"></a>
@@ -150,6 +159,20 @@
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS"></a>
+
+
+
+<pre><code><b>const</b> <a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>: u64 = 101;
+</code></pre>
+
+
+
 <a name="0x1_Config_get_by_address"></a>
 
 ## Function `get_by_address`
@@ -166,7 +189,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue <b>acquires</b> <a href="Config.md#0x1_Config">Config</a> {
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST">Errors::ECONFIG_VALUE_DOES_NOT_EXIST</a>()));
     *&borrow_global&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
 }
 </code></pre>
@@ -193,9 +216,9 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set">set</a>&lt;ConfigValue: <b>copyable</b>&gt;(account: &signer, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>,<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>{
     <b>let</b> signer_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     //TODO <b>define</b> no capability error code.
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), 24);
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <b>let</b> cap_holder = borrow_global_mut&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(signer_address);
-    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&cap_holder.cap), 24);
+    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&cap_holder.cap), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="Config.md#0x1_Config_ECAPABILITY_HOLDER_NOT_EXISTS">ECAPABILITY_HOLDER_NOT_EXISTS</a>));
     <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>(<a href="Option.md#0x1_Option_borrow_mut">Option::borrow_mut</a>(&<b>mut</b> cap_holder.cap), payload)
 }
 </code></pre>
@@ -221,7 +244,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_set_with_capability">set_with_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;, payload: ConfigValue) <b>acquires</b> <a href="Config.md#0x1_Config">Config</a>{
     <b>let</b> addr = cap.account_address;
-    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="ErrorCode.md#0x1_ErrorCode_ECONFIG_VALUE_DOES_NOT_EXIST">ErrorCode::ECONFIG_VALUE_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ECONFIG_VALUE_DOES_NOT_EXIST">Errors::ECONFIG_VALUE_DOES_NOT_EXIST</a>()));
     <b>let</b> config = borrow_global_mut&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
     config.payload = <b>copy</b> payload;
     <a href="Config.md#0x1_Config_emit_config_change_event">emit_config_change_event</a>(cap, payload);
@@ -392,14 +415,14 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
@@ -415,7 +438,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_get_by_address"></a>
+<a name="@Specification_1_get_by_address"></a>
 
 ### Function `get_by_address`
 
@@ -432,7 +455,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_set"></a>
+<a name="@Specification_1_set"></a>
 
 ### Function `set`
 
@@ -443,7 +466,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> !<a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<a href="Config.md#0x1_Config_spec_cap">spec_cap</a>&lt;ConfigValue&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)));
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(<a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;&gt;(<a href="Config.md#0x1_Config_spec_cap">spec_cap</a>&lt;ConfigValue&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account))).account_address);
@@ -463,7 +486,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_set_with_capability"></a>
+<a name="@Specification_1_set_with_capability"></a>
 
 ### Function `set_with_capability`
 
@@ -480,7 +503,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_publish_new_config_with_capability"></a>
+<a name="@Specification_1_publish_new_config_with_capability"></a>
 
 ### Function `publish_new_config_with_capability`
 
@@ -499,7 +522,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_publish_new_config"></a>
+<a name="@Specification_1_publish_new_config"></a>
 
 ### Function `publish_new_config`
 
@@ -544,7 +567,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_extract_modify_config_capability"></a>
+<a name="@Specification_1_extract_modify_config_capability"></a>
 
 ### Function `extract_modify_config_capability`
 
@@ -563,7 +586,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_restore_modify_config_capability"></a>
+<a name="@Specification_1_restore_modify_config_capability"></a>
 
 ### Function `restore_modify_config_capability`
 
@@ -582,7 +605,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_destory_modify_config_capability"></a>
+<a name="@Specification_1_destory_modify_config_capability"></a>
 
 ### Function `destory_modify_config_capability`
 
@@ -598,7 +621,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_emit_config_change_event"></a>
+<a name="@Specification_1_emit_config_change_event"></a>
 
 ### Function `emit_config_change_event`
 

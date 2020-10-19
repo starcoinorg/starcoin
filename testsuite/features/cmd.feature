@@ -1,6 +1,6 @@
 Feature: cmd integration test
   Background:
-    Given a test node config
+    Given a dev node config
     And node handle
     And ipc rpc client
 
@@ -69,7 +69,7 @@ Feature: cmd integration test
 
  #dev
   Scenario Outline: [cmd] dev test
-    Then cmd: "account unlock -d 30000 0000000000000000000000000a550c18"
+    Then cmd: "account unlock -d 30000 0000000000000000000000000A550C18"
     Then stop
 
     Examples:
@@ -79,7 +79,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
     Then cmd: "dev get_coin"
-    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000a550c18"
+    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000A550C18"
     Then cmd: "account show"
     Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"

@@ -5,12 +5,21 @@
 
 
 
--  [Resource <code><a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a></code>](#0x1_MintDaoProposal_WrappedMintCapability)
--  [Struct <code><a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a></code>](#0x1_MintDaoProposal_MintToken)
--  [Const <code><a href="MintDaoProposal.md#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a></code>](#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED)
--  [Function <code>plugin</code>](#0x1_MintDaoProposal_plugin)
--  [Function <code>propose_mint_to</code>](#0x1_MintDaoProposal_propose_mint_to)
--  [Function <code>execute_mint_proposal</code>](#0x1_MintDaoProposal_execute_mint_proposal)
+-  [Resource `WrappedMintCapability`](#0x1_MintDaoProposal_WrappedMintCapability)
+-  [Struct `MintToken`](#0x1_MintDaoProposal_MintToken)
+-  [Constants](#@Constants_0)
+-  [Function `plugin`](#0x1_MintDaoProposal_plugin)
+-  [Function `propose_mint_to`](#0x1_MintDaoProposal_propose_mint_to)
+-  [Function `execute_mint_proposal`](#0x1_MintDaoProposal_execute_mint_proposal)
+
+
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+</code></pre>
+
 
 
 <a name="0x1_MintDaoProposal_WrappedMintCapability"></a>
@@ -73,9 +82,12 @@
 
 </details>
 
-<a name="0x1_MintDaoProposal_ERR_NOT_AUTHORIZED"></a>
+<a name="@Constants_0"></a>
 
-## Const `ERR_NOT_AUTHORIZED`
+## Constants
+
+
+<a name="0x1_MintDaoProposal_ERR_NOT_AUTHORIZED"></a>
 
 
 
@@ -101,7 +113,7 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="MintDaoProposal.md#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="MintDaoProposal.md#0x1_MintDaoProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> mint_cap = <a href="Token.md#0x1_Token_remove_mint_capability">Token::remove_mint_capability</a>&lt;TokenT&gt;(signer);
     move_to(signer, <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a> { cap: mint_cap });
 }

@@ -4,6 +4,7 @@ module OnChainConfigDao {
     use 0x1::Signer;
     use 0x1::Config;
     use 0x1::Dao;
+    use 0x1::Errors;
 
     // use 0x1::CoreAddresses;
     resource struct WrappedConfigModifyCapability<TokenT, ConfigT: copyable> {
@@ -18,7 +19,7 @@ module OnChainConfigDao {
 
     public fun plugin<TokenT, ConfigT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let config_modify_cap = Config::extract_modify_config_capability<ConfigT>(signer);
         let cap = WrappedConfigModifyCapability<TokenT, ConfigT> { cap: config_modify_cap };
         move_to(signer, cap);

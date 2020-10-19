@@ -5,6 +5,7 @@ module ModifyDaoConfigProposal {
     use 0x1::Signer;
     use 0x1::Config;
     use 0x1::Dao;
+    use 0x1::Errors;
 
     resource struct DaoConfigModifyCapability<TokenT: copyable> {
         cap: Config::ModifyConfigCapability<Dao::DaoConfig<TokenT>>,
@@ -24,7 +25,7 @@ module ModifyDaoConfigProposal {
 
     public fun plugin<TokenT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let dao_config_moidify_cap = Config::extract_modify_config_capability<
             Dao::DaoConfig<TokenT>,
         >(signer);
@@ -41,7 +42,7 @@ module ModifyDaoConfigProposal {
         min_action_delay: u64,
         exec_delay: u64,
     ) {
-        assert(voting_quorum_rate <= 100, ERR_QUROM_RATE_INVALID);
+        assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
         let action = DaoConfigUpdate {
             voting_delay,
             voting_period,

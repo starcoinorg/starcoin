@@ -1,8 +1,8 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use lcs;
-use libra_stdlib::encode_peer_to_peer_with_metadata_script;
+use scs;
+use starcoin_stdlib::encode_peer_to_peer_with_metadata_script;
 use starcoin_types::{AccountAddress, Identifier, StructTag, TypeTag};
 
 fn main() {
@@ -30,7 +30,7 @@ fn main() {
         Vec::new(),
     );
 
-    let output = lcs::to_bytes(&script).unwrap();
+    let output = scs::to_bytes(&script).unwrap();
     for o in output {
         print!("{} ", o);
     }

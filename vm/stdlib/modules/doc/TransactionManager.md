@@ -5,32 +5,50 @@
 
 
 
--  [Const <code><a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a></code>](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT)
--  [Const <code><a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a></code>](#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE)
--  [Function <code>prologue</code>](#0x1_TransactionManager_prologue)
--  [Function <code>epilogue</code>](#0x1_TransactionManager_epilogue)
--  [Function <code>block_prologue</code>](#0x1_TransactionManager_block_prologue)
--  [Function <code>distribute</code>](#0x1_TransactionManager_distribute)
+-  [Constants](#@Constants_0)
+-  [Function `prologue`](#0x1_TransactionManager_prologue)
+-  [Function `epilogue`](#0x1_TransactionManager_epilogue)
+-  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
+-  [Function `distribute`](#0x1_TransactionManager_distribute)
 
 
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
-
-## Const `TXN_PAYLOAD_TYPE_SCRIPT`
-
-
-
-<pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>: u8 = 0;
+<pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
+<b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
+<b>use</b> <a href="BlockReward.md#0x1_BlockReward">0x1::BlockReward</a>;
+<b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="TransactionFee.md#0x1_TransactionFee">0x1::TransactionFee</a>;
+<b>use</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
+<b>use</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout">0x1::TransactionTimeout</a>;
 </code></pre>
 
 
 
-<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
+<a name="@Constants_0"></a>
 
-## Const `TXN_PAYLOAD_TYPE_PACKAGE`
+## Constants
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE"></a>
 
 
 
 <pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>: u8 = 1;
+</code></pre>
+
+
+
+<a name="0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT"></a>
+
+
+
+<pre><code><b>const</b> <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>: u8 = 0;
 </code></pre>
 
 
@@ -66,11 +84,11 @@
     // Can only be invoked by genesis account
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()),
     );
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
-    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">ErrorCode::PROLOGUE_BAD_CHAIN_ID</a>());
+    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_BAD_CHAIN_ID">Errors::PROLOGUE_BAD_CHAIN_ID</a>()));
     <a href="Account.md#0x1_Account_txn_prologue">Account::txn_prologue</a>&lt;TokenType&gt;(
         account,
         txn_sender,
@@ -81,12 +99,12 @@
     );
     <b>assert</b>(
         <a href="TransactionTimeout.md#0x1_TransactionTimeout_is_valid_transaction_timestamp">TransactionTimeout::is_valid_transaction_timestamp</a>(txn_expiration_time),
-        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_TRANSACTION_EXPIRED">ErrorCode::PROLOGUE_TRANSACTION_EXPIRED</a>(),
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_TRANSACTION_EXPIRED">Errors::PROLOGUE_TRANSACTION_EXPIRED</a>()),
     );
     <b>if</b> (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>) {
         <b>assert</b>(
             <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">TransactionPublishOption::is_module_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)),
-            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_MODULE_NOT_ALLOWED">ErrorCode::PROLOGUE_MODULE_NOT_ALLOWED</a>(),
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_MODULE_NOT_ALLOWED">Errors::PROLOGUE_MODULE_NOT_ALLOWED</a>()),
         );
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(
             account,
@@ -100,7 +118,7 @@
                 <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
                 &txn_script_or_package_hash,
             ),
-            <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SCRIPT_NOT_ALLOWED">ErrorCode::PROLOGUE_SCRIPT_NOT_ALLOWED</a>(),
+            <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SCRIPT_NOT_ALLOWED">Errors::PROLOGUE_SCRIPT_NOT_ALLOWED</a>()),
         );
     };
 }
@@ -140,7 +158,7 @@
 ) {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <a href="Account.md#0x1_Account_txn_epilogue">Account::txn_epilogue</a>&lt;TokenType&gt;(
         account,
@@ -194,12 +212,12 @@
     // Can only be invoked by genesis account
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
     <a href="Timestamp.md#0x1_Timestamp_update_global_time">Timestamp::update_global_time</a>(account, timestamp);
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
-    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_BAD_CHAIN_ID">ErrorCode::PROLOGUE_BAD_CHAIN_ID</a>());
+    <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_BAD_CHAIN_ID">Errors::PROLOGUE_BAD_CHAIN_ID</a>()));
     //get previous author for distribute txn_fee
     <b>let</b> previous_author = <a href="Block.md#0x1_Block_get_current_author">Block::get_current_author</a>();
     <b>let</b> txn_fee = <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">TransactionFee::distribute_transaction_fees</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);

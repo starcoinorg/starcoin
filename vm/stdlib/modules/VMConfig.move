@@ -3,6 +3,7 @@ module VMConfig {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -107,7 +108,7 @@ module VMConfig {
         gas_unit_scaling_factor: u64,
         default_account_size: u64,
     ) {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), 1);
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
         Config::publish_new_config<VMConfig>(
             account,
             new_vm_config(

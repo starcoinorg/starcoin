@@ -4,7 +4,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::contract_event::ContractEventHasher;
+use crate::account_config::STC_TOKEN_CODE_STR;
 use crate::genesis_config::ChainId;
 use crate::transaction::authenticator::TransactionAuthenticator;
 use crate::{
@@ -16,8 +16,8 @@ use crate::{
     write_set::WriteSet,
 };
 use anyhow::{format_err, Error, Result};
-use libra_types::proof::accumulator::InMemoryAccumulator;
 use serde::{Deserialize, Serialize};
+use starcoin_accumulator::inmemory::InMemoryAccumulator;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use starcoin_crypto::{
@@ -29,28 +29,23 @@ use starcoin_crypto::{
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
-pub mod authenticator {
-    pub use libra_types::transaction::authenticator::{
-        AuthenticationKey, AuthenticationKeyPreimage, Scheme, TransactionAuthenticator,
-    };
-}
-
-use crate::account_config::STC_TOKEN_CODE_STR;
 pub use error::CallError;
 pub use error::Error as TransactionError;
-pub use libra_types::transaction::{
-    ArgumentABI, Module, Script, ScriptABI, TypeArgumentABI, SCRIPT_HASH_LENGTH,
-};
+pub use module::Module;
 pub use package::Package;
 pub use pending_transaction::{Condition, PendingTransaction};
+pub use script::{ArgumentABI, Script, ScriptABI, TypeArgumentABI, SCRIPT_HASH_LENGTH};
 pub use transaction_argument::{
     parse_transaction_argument, parse_transaction_arguments, TransactionArgument,
 };
 
+pub mod authenticator;
 mod error;
 pub mod helpers;
+mod module;
 mod package;
 mod pending_transaction;
+mod script;
 mod transaction_argument;
 
 pub type Version = u64; // Height - also used for MVCC in StateDB
@@ -553,8 +548,7 @@ impl TransactionInfo {
     ) -> TransactionInfo {
         let event_hashes: Vec<_> = events.iter().map(|e| e.crypto_hash()).collect();
         let events_accumulator_hash =
-            InMemoryAccumulator::<ContractEventHasher>::from_leaves(event_hashes.as_slice())
-                .root_hash();
+            InMemoryAccumulator::from_leaves(event_hashes.as_slice()).root_hash();
         TransactionInfo {
             transaction_hash,
             state_root_hash,

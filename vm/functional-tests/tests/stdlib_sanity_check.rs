@@ -1,13 +1,13 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_config::temp_path;
+use starcoin_move_compiler::test_utils::error;
 use starcoin_move_compiler::{
     compiled_unit::verify_units, errors::report_errors_to_buffer, move_compile_no_report,
     shared::Address, test_utils::*,
 };
 use std::{fs, path::Path};
-
-use starcoin_move_compiler::test_utils::error;
 
 pub const STD_LIB_DIR: &str = "../stdlib/modules";
 pub const STD_LIB_COMPILED_DIR: &str = "../stdlib/compiled/latest/stdlib";
@@ -33,8 +33,19 @@ fn sanity_check_testsuite_impl(
     let sender = Some(Address::LIBRA_CORE);
 
     let out_path = path.with_extension(OUT_EXT);
-
-    let (files, units_or_errors) = move_compile_no_report(&targets, &deps, sender, None)?;
+    let temp_dir = temp_path();
+    let (files, units_or_errors) = move_compile_no_report(
+        &targets,
+        &deps,
+        sender,
+        Some(
+            temp_dir
+                .path()
+                .to_str()
+                .expect("path to string should success")
+                .to_string(),
+        ),
+    )?;
     let errors = match units_or_errors {
         Err(errors) => errors,
         Ok(units) => verify_units(units).1,

@@ -19,6 +19,7 @@ static HISTORY_FILE_NAME: &str = "history";
 pub struct CliState {
     net: ChainNetwork,
     client: Arc<RpcClient>,
+    watch_timeout: Duration,
     node_handle: Option<NodeHandle>,
     /// Cli data dir, different with Node data dir.
     data_dir: PathBuf,
@@ -31,6 +32,7 @@ impl CliState {
     pub fn new(
         net: ChainNetwork,
         client: Arc<RpcClient>,
+        watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
         rt: Option<Runtime>,
     ) -> CliState {
@@ -52,6 +54,7 @@ impl CliState {
         Self {
             net,
             client,
+            watch_timeout: watch_timeout.unwrap_or(Self::DEFAULT_WATCH_TIMEOUT),
             node_handle,
             data_dir,
             temp_dir,
@@ -108,9 +111,7 @@ impl CliState {
     }
 
     pub fn watch_txn(&self, txn_hash: HashValue) -> Result<ThinHeadBlock> {
-        let block = self
-            .client
-            .watch_txn(txn_hash, Some(Self::DEFAULT_WATCH_TIMEOUT))?;
+        let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
         println!(
             "txn mined in block height: {}, hash: {:#x}",
             block.header().number(),

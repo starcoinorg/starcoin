@@ -36,22 +36,14 @@ async fn new_block_and_master() -> (Block, BlockChain) {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
-    gen_blocks(
-        &node_config.net().consensus(),
-        times,
-        &mut writeable_block_chain_service,
-    );
-    let new_block = new_block(
-        None,
-        &node_config.net().consensus(),
-        &mut writeable_block_chain_service,
-    );
+    gen_blocks(times, &mut writeable_block_chain_service);
     let head_id = writeable_block_chain_service
         .get_master()
         .current_header()
         .id();
     let net = node_config.net();
     let master = BlockChain::new(net.time_service(), head_id, storage).unwrap();
+    let new_block = new_block(None, &mut writeable_block_chain_service);
     (new_block, master)
 }
 
@@ -67,11 +59,7 @@ async fn uncle_block_and_writeable_block_chain(
     // 1. chain
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
-    gen_blocks(
-        &node_config.net().consensus(),
-        count,
-        &mut writeable_block_chain_service,
-    );
+    gen_blocks(count, &mut writeable_block_chain_service);
 
     // 2. new branch and uncle block
     let miner_account = AccountInfo::random();
@@ -93,8 +81,8 @@ async fn uncle_block_and_writeable_block_chain(
             None,
         )
         .unwrap();
-    let new_block = node_config
-        .net()
+    let new_block = writeable_block_chain_service
+        .get_master()
         .consensus()
         .create_block(&new_branch, block_template)
         .unwrap();
@@ -293,11 +281,7 @@ async fn test_verify_can_not_be_uncle_is_member_failed() {
     let times = 5;
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
-    gen_blocks(
-        &node_config.net().consensus(),
-        times,
-        &mut writeable_block_chain_service,
-    );
+    gen_blocks(times, &mut writeable_block_chain_service);
 
     let uncle_header = writeable_block_chain_service
         .get_master()
@@ -324,11 +308,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
     let times = 7;
     let (mut writeable_block_chain_service, node_config, storage) =
         create_writeable_block_chain().await;
-    gen_blocks(
-        &node_config.net().consensus(),
-        times,
-        &mut writeable_block_chain_service,
-    );
+    gen_blocks(times, &mut writeable_block_chain_service);
 
     // 2. new branch
     let miner_account = AccountInfo::random();
@@ -352,8 +332,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
                 None,
             )
             .unwrap();
-        let new_block = node_config
-            .net()
+        let new_block = new_branch
             .consensus()
             .create_block(&new_branch, block_template)
             .unwrap();
@@ -452,7 +431,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
             None,
         )
         .unwrap();
-    let new_block = fork_block_chain
+    let new_block = master_block_chain
         .consensus()
         .create_block(&master_block_chain, block_template)
         .unwrap();
@@ -663,7 +642,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
     // create block loop
     loop {
         apply_legal_block(
-            node_config.net().consensus(),
+            writeable_block_chain_service.get_master().consensus(),
             Vec::new(),
             &mut writeable_block_chain_service,
         );
@@ -732,8 +711,8 @@ async fn test_verify_uncles_uncle_exist_failed() {
             None,
         )
         .unwrap();
-    let new_block = node_config
-        .net()
+    let new_block = writeable_block_chain_service
+        .get_master()
         .consensus()
         .create_block(writeable_block_chain_service.get_master(), block_template)
         .unwrap();
@@ -805,8 +784,8 @@ async fn test_verify_uncle_and_parent_number_failed() {
             None,
         )
         .unwrap();
-    let new_block = node_config
-        .net()
+    let new_block = writeable_block_chain_service
+        .get_master()
         .consensus()
         .create_block(writeable_block_chain_service.get_master(), block_template)
         .unwrap();

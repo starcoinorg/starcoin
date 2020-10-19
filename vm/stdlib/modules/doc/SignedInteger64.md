@@ -5,22 +5,26 @@
 
 
 
--  [Struct <code><a href="SignedInteger64.md#0x1_SignedInteger64">SignedInteger64</a></code>](#0x1_SignedInteger64_SignedInteger64)
--  [Function <code>multiply_u64</code>](#0x1_SignedInteger64_multiply_u64)
--  [Function <code>divide_u64</code>](#0x1_SignedInteger64_divide_u64)
--  [Function <code>sub_u64</code>](#0x1_SignedInteger64_sub_u64)
--  [Function <code>add_u64</code>](#0x1_SignedInteger64_add_u64)
--  [Function <code>create_from_raw_value</code>](#0x1_SignedInteger64_create_from_raw_value)
--  [Function <code>get_value</code>](#0x1_SignedInteger64_get_value)
--  [Function <code>is_negative</code>](#0x1_SignedInteger64_is_negative)
+-  [Struct `SignedInteger64`](#0x1_SignedInteger64_SignedInteger64)
+-  [Function `multiply_u64`](#0x1_SignedInteger64_multiply_u64)
+-  [Function `divide_u64`](#0x1_SignedInteger64_divide_u64)
+-  [Function `sub_u64`](#0x1_SignedInteger64_sub_u64)
+-  [Function `add_u64`](#0x1_SignedInteger64_add_u64)
+-  [Function `create_from_raw_value`](#0x1_SignedInteger64_create_from_raw_value)
+-  [Function `get_value`](#0x1_SignedInteger64_get_value)
+-  [Function `is_negative`](#0x1_SignedInteger64_is_negative)
 -  [Specification](#@Specification_0)
-    -  [Function <code>multiply_u64</code>](#@Specification_0_multiply_u64)
-    -  [Function <code>divide_u64</code>](#@Specification_0_divide_u64)
-    -  [Function <code>sub_u64</code>](#@Specification_0_sub_u64)
-    -  [Function <code>add_u64</code>](#@Specification_0_add_u64)
-    -  [Function <code>create_from_raw_value</code>](#@Specification_0_create_from_raw_value)
-    -  [Function <code>get_value</code>](#@Specification_0_get_value)
-    -  [Function <code>is_negative</code>](#@Specification_0_is_negative)
+    -  [Function `multiply_u64`](#@Specification_0_multiply_u64)
+    -  [Function `divide_u64`](#@Specification_0_divide_u64)
+    -  [Function `sub_u64`](#@Specification_0_sub_u64)
+    -  [Function `add_u64`](#@Specification_0_add_u64)
+    -  [Function `create_from_raw_value`](#@Specification_0_create_from_raw_value)
+    -  [Function `get_value`](#@Specification_0_get_value)
+    -  [Function `is_negative`](#@Specification_0_is_negative)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_SignedInteger64_SignedInteger64"></a>
@@ -254,8 +258,8 @@
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 

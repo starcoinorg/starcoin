@@ -5,13 +5,21 @@
 
 
 
--  [Resource <code><a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a></code>](#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability)
--  [Struct <code><a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a></code>](#0x1_ModifyDaoConfigProposal_DaoConfigUpdate)
--  [Const <code><a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a></code>](#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED)
--  [Const <code><a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a></code>](#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID)
--  [Function <code>plugin</code>](#0x1_ModifyDaoConfigProposal_plugin)
--  [Function <code>propose</code>](#0x1_ModifyDaoConfigProposal_propose)
--  [Function <code>execute</code>](#0x1_ModifyDaoConfigProposal_execute)
+-  [Resource `DaoConfigModifyCapability`](#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability)
+-  [Struct `DaoConfigUpdate`](#0x1_ModifyDaoConfigProposal_DaoConfigUpdate)
+-  [Constants](#@Constants_0)
+-  [Function `plugin`](#0x1_ModifyDaoConfigProposal_plugin)
+-  [Function `propose`](#0x1_ModifyDaoConfigProposal_propose)
+-  [Function `execute`](#0x1_ModifyDaoConfigProposal_execute)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+</code></pre>
+
 
 
 <a name="0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability"></a>
@@ -88,9 +96,12 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 </details>
 
-<a name="0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED"></a>
+<a name="@Constants_0"></a>
 
-## Const `ERR_NOT_AUTHORIZED`
+## Constants
+
+
+<a name="0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED"></a>
 
 
 
@@ -100,8 +111,6 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 
 <a name="0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID"></a>
-
-## Const `ERR_QUROM_RATE_INVALID`
 
 
 
@@ -127,7 +136,7 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 <pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>);
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> dao_config_moidify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
         <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;,
     &gt;(signer);
@@ -164,7 +173,7 @@ if any field is <code>0</code>, that means the proposal want to update.
     min_action_delay: u64,
     exec_delay: u64,
 ) {
-    <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>);
+    <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
     <b>let</b> action = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,

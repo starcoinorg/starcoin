@@ -5,65 +5,73 @@
 
 
 
--  [Struct <code><a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a></code>](#0x1_ConsensusConfig_ConsensusConfig)
--  [Resource <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a></code>](#0x1_ConsensusConfig_Epoch)
--  [Struct <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_NewEpochEvent">NewEpochEvent</a></code>](#0x1_ConsensusConfig_NewEpochEvent)
--  [Resource <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a></code>](#0x1_ConsensusConfig_EpochData)
--  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a></code>](#0x1_ConsensusConfig_THOUSAND)
--  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND_U128">THOUSAND_U128</a></code>](#0x1_ConsensusConfig_THOUSAND_U128)
--  [Const <code><a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a></code>](#0x1_ConsensusConfig_HUNDRED)
--  [Function <code>MAX_UNCLES_PER_BLOCK_IS_WRONG</code>](#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG)
--  [Function <code>UNCLES_IS_NOT_ZERO</code>](#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO)
--  [Function <code>initialize</code>](#0x1_ConsensusConfig_initialize)
--  [Function <code>new_consensus_config</code>](#0x1_ConsensusConfig_new_consensus_config)
--  [Function <code>get_config</code>](#0x1_ConsensusConfig_get_config)
--  [Function <code>uncle_rate_target</code>](#0x1_ConsensusConfig_uncle_rate_target)
--  [Function <code>base_block_time_target</code>](#0x1_ConsensusConfig_base_block_time_target)
--  [Function <code>base_reword_per_block</code>](#0x1_ConsensusConfig_base_reword_per_block)
--  [Function <code>epoch_block_count</code>](#0x1_ConsensusConfig_epoch_block_count)
--  [Function <code>base_block_difficulty_window</code>](#0x1_ConsensusConfig_base_block_difficulty_window)
--  [Function <code>base_reward_per_uncle_percent</code>](#0x1_ConsensusConfig_base_reward_per_uncle_percent)
--  [Function <code>min_block_time_target</code>](#0x1_ConsensusConfig_min_block_time_target)
--  [Function <code>max_block_time_target</code>](#0x1_ConsensusConfig_max_block_time_target)
--  [Function <code>base_max_uncles_per_block</code>](#0x1_ConsensusConfig_base_max_uncles_per_block)
--  [Function <code>base_block_gas_limit</code>](#0x1_ConsensusConfig_base_block_gas_limit)
--  [Function <code>strategy</code>](#0x1_ConsensusConfig_strategy)
--  [Function <code>compute_reward_per_block</code>](#0x1_ConsensusConfig_compute_reward_per_block)
--  [Function <code>do_compute_reward_per_block</code>](#0x1_ConsensusConfig_do_compute_reward_per_block)
--  [Function <code>adjust_epoch</code>](#0x1_ConsensusConfig_adjust_epoch)
--  [Function <code>adjust_gas_limit</code>](#0x1_ConsensusConfig_adjust_gas_limit)
--  [Function <code>compute_gas_limit</code>](#0x1_ConsensusConfig_compute_gas_limit)
--  [Function <code>in_or_decrease_gas_limit</code>](#0x1_ConsensusConfig_in_or_decrease_gas_limit)
--  [Function <code>update_epoch_data</code>](#0x1_ConsensusConfig_update_epoch_data)
--  [Function <code>emit_epoch_event</code>](#0x1_ConsensusConfig_emit_epoch_event)
--  [Function <code>epoch_start_time</code>](#0x1_ConsensusConfig_epoch_start_time)
--  [Function <code>uncles</code>](#0x1_ConsensusConfig_uncles)
--  [Function <code>epoch_total_gas</code>](#0x1_ConsensusConfig_epoch_total_gas)
--  [Function <code>epoch_block_gas_limit</code>](#0x1_ConsensusConfig_epoch_block_gas_limit)
--  [Function <code>epoch_start_block_number</code>](#0x1_ConsensusConfig_epoch_start_block_number)
--  [Function <code>epoch_end_block_number</code>](#0x1_ConsensusConfig_epoch_end_block_number)
--  [Function <code>epoch_number</code>](#0x1_ConsensusConfig_epoch_number)
--  [Function <code>block_time_target</code>](#0x1_ConsensusConfig_block_time_target)
--  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>new_consensus_config</code>](#@Specification_0_new_consensus_config)
-    -  [Function <code>get_config</code>](#@Specification_0_get_config)
-    -  [Function <code>compute_reward_per_block</code>](#@Specification_0_compute_reward_per_block)
-    -  [Function <code>do_compute_reward_per_block</code>](#@Specification_0_do_compute_reward_per_block)
-    -  [Function <code>adjust_epoch</code>](#@Specification_0_adjust_epoch)
-    -  [Function <code>adjust_gas_limit</code>](#@Specification_0_adjust_gas_limit)
-    -  [Function <code>compute_gas_limit</code>](#@Specification_0_compute_gas_limit)
-    -  [Function <code>in_or_decrease_gas_limit</code>](#@Specification_0_in_or_decrease_gas_limit)
-    -  [Function <code>update_epoch_data</code>](#@Specification_0_update_epoch_data)
-    -  [Function <code>emit_epoch_event</code>](#@Specification_0_emit_epoch_event)
-    -  [Function <code>epoch_start_time</code>](#@Specification_0_epoch_start_time)
-    -  [Function <code>uncles</code>](#@Specification_0_uncles)
-    -  [Function <code>epoch_total_gas</code>](#@Specification_0_epoch_total_gas)
-    -  [Function <code>epoch_block_gas_limit</code>](#@Specification_0_epoch_block_gas_limit)
-    -  [Function <code>epoch_start_block_number</code>](#@Specification_0_epoch_start_block_number)
-    -  [Function <code>epoch_end_block_number</code>](#@Specification_0_epoch_end_block_number)
-    -  [Function <code>epoch_number</code>](#@Specification_0_epoch_number)
-    -  [Function <code>block_time_target</code>](#@Specification_0_block_time_target)
+-  [Struct `ConsensusConfig`](#0x1_ConsensusConfig_ConsensusConfig)
+-  [Resource `Epoch`](#0x1_ConsensusConfig_Epoch)
+-  [Struct `NewEpochEvent`](#0x1_ConsensusConfig_NewEpochEvent)
+-  [Resource `EpochData`](#0x1_ConsensusConfig_EpochData)
+-  [Constants](#@Constants_0)
+-  [Function `initialize`](#0x1_ConsensusConfig_initialize)
+-  [Function `new_consensus_config`](#0x1_ConsensusConfig_new_consensus_config)
+-  [Function `get_config`](#0x1_ConsensusConfig_get_config)
+-  [Function `uncle_rate_target`](#0x1_ConsensusConfig_uncle_rate_target)
+-  [Function `base_block_time_target`](#0x1_ConsensusConfig_base_block_time_target)
+-  [Function `base_reword_per_block`](#0x1_ConsensusConfig_base_reword_per_block)
+-  [Function `epoch_block_count`](#0x1_ConsensusConfig_epoch_block_count)
+-  [Function `base_block_difficulty_window`](#0x1_ConsensusConfig_base_block_difficulty_window)
+-  [Function `base_reward_per_uncle_percent`](#0x1_ConsensusConfig_base_reward_per_uncle_percent)
+-  [Function `min_block_time_target`](#0x1_ConsensusConfig_min_block_time_target)
+-  [Function `max_block_time_target`](#0x1_ConsensusConfig_max_block_time_target)
+-  [Function `base_max_uncles_per_block`](#0x1_ConsensusConfig_base_max_uncles_per_block)
+-  [Function `base_block_gas_limit`](#0x1_ConsensusConfig_base_block_gas_limit)
+-  [Function `strategy`](#0x1_ConsensusConfig_strategy)
+-  [Function `compute_reward_per_block`](#0x1_ConsensusConfig_compute_reward_per_block)
+-  [Function `do_compute_reward_per_block`](#0x1_ConsensusConfig_do_compute_reward_per_block)
+-  [Function `adjust_epoch`](#0x1_ConsensusConfig_adjust_epoch)
+-  [Function `adjust_gas_limit`](#0x1_ConsensusConfig_adjust_gas_limit)
+-  [Function `compute_gas_limit`](#0x1_ConsensusConfig_compute_gas_limit)
+-  [Function `in_or_decrease_gas_limit`](#0x1_ConsensusConfig_in_or_decrease_gas_limit)
+-  [Function `update_epoch_data`](#0x1_ConsensusConfig_update_epoch_data)
+-  [Function `emit_epoch_event`](#0x1_ConsensusConfig_emit_epoch_event)
+-  [Function `epoch_start_time`](#0x1_ConsensusConfig_epoch_start_time)
+-  [Function `uncles`](#0x1_ConsensusConfig_uncles)
+-  [Function `epoch_total_gas`](#0x1_ConsensusConfig_epoch_total_gas)
+-  [Function `epoch_block_gas_limit`](#0x1_ConsensusConfig_epoch_block_gas_limit)
+-  [Function `epoch_start_block_number`](#0x1_ConsensusConfig_epoch_start_block_number)
+-  [Function `epoch_end_block_number`](#0x1_ConsensusConfig_epoch_end_block_number)
+-  [Function `epoch_number`](#0x1_ConsensusConfig_epoch_number)
+-  [Function `block_time_target`](#0x1_ConsensusConfig_block_time_target)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `new_consensus_config`](#@Specification_1_new_consensus_config)
+    -  [Function `get_config`](#@Specification_1_get_config)
+    -  [Function `compute_reward_per_block`](#@Specification_1_compute_reward_per_block)
+    -  [Function `do_compute_reward_per_block`](#@Specification_1_do_compute_reward_per_block)
+    -  [Function `adjust_epoch`](#@Specification_1_adjust_epoch)
+    -  [Function `adjust_gas_limit`](#@Specification_1_adjust_gas_limit)
+    -  [Function `compute_gas_limit`](#@Specification_1_compute_gas_limit)
+    -  [Function `in_or_decrease_gas_limit`](#@Specification_1_in_or_decrease_gas_limit)
+    -  [Function `update_epoch_data`](#@Specification_1_update_epoch_data)
+    -  [Function `emit_epoch_event`](#@Specification_1_emit_epoch_event)
+    -  [Function `epoch_start_time`](#@Specification_1_epoch_start_time)
+    -  [Function `uncles`](#@Specification_1_uncles)
+    -  [Function `epoch_total_gas`](#@Specification_1_epoch_total_gas)
+    -  [Function `epoch_block_gas_limit`](#@Specification_1_epoch_block_gas_limit)
+    -  [Function `epoch_start_block_number`](#@Specification_1_epoch_start_block_number)
+    -  [Function `epoch_end_block_number`](#@Specification_1_epoch_end_block_number)
+    -  [Function `epoch_number`](#@Specification_1_epoch_number)
+    -  [Function `block_time_target`](#@Specification_1_block_time_target)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
+<b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
+<b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_ConsensusConfig_ConsensusConfig"></a>
@@ -348,31 +356,12 @@
 
 </details>
 
-<a name="0x1_ConsensusConfig_THOUSAND"></a>
+<a name="@Constants_0"></a>
 
-## Const `THOUSAND`
-
-
-
-<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a>: u64 = 1000;
-</code></pre>
-
-
-
-<a name="0x1_ConsensusConfig_THOUSAND_U128"></a>
-
-## Const `THOUSAND_U128`
-
-
-
-<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND_U128">THOUSAND_U128</a>: u128 = 1000;
-</code></pre>
-
+## Constants
 
 
 <a name="0x1_ConsensusConfig_HUNDRED"></a>
-
-## Const `HUNDRED`
 
 
 
@@ -383,51 +372,39 @@
 
 <a name="0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
 
-## Function `MAX_UNCLES_PER_BLOCK_IS_WRONG`
 
 
-
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>: u64 = 101;
 </code></pre>
 
 
 
-<details>
-<summary>Implementation</summary>
+<a name="0x1_ConsensusConfig_THOUSAND"></a>
 
 
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1
-}
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND">THOUSAND</a>: u64 = 1000;
 </code></pre>
 
 
 
-</details>
+<a name="0x1_ConsensusConfig_THOUSAND_U128"></a>
+
+
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND_U128">THOUSAND_U128</a>: u128 = 1000;
+</code></pre>
+
+
 
 <a name="0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO"></a>
 
-## Function `UNCLES_IS_NOT_ZERO`
 
 
-
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>: u64 = 102;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_ConsensusConfig_initialize"></a>
 
@@ -458,10 +435,10 @@
     base_block_gas_limit: u64,
     strategy: u8,
 ) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">Self::ConsensusConfig</a>&gt;(
@@ -531,17 +508,17 @@
                                 base_max_uncles_per_block: u64,
                                 base_block_gas_limit: u64,
                                 strategy: u8,): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
-    <b>assert</b>(uncle_rate_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_block_time_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_reward_per_block &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(epoch_block_count &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_block_difficulty_window &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_reward_per_uncle_percent &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(min_block_time_target &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(strategy &gt;= 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(uncle_rate_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_reward_per_block &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(epoch_block_count &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_block_difficulty_window &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_reward_per_uncle_percent &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(min_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(strategy &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
 
     <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
         uncle_rate_target,
@@ -921,18 +898,18 @@
 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> {
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>(),
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
     );
 
     <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>());
+    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>));
 
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> (new_epoch, reward_per_block) = <b>if</b> (block_number &lt; epoch_ref.end_number) {
         (<b>false</b>, epoch_ref.reward_per_block)
     } <b>else</b> <b>if</b> (block_number == epoch_ref.end_number) {
         //start a new epoch
-        <b>assert</b>(uncles == 0, <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>());
+        <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>));
         <b>let</b> config = <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">get_config</a>();
         <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
         <b>let</b> total_time = now - epoch_ref.epoch_start_time;
@@ -970,7 +947,7 @@
         (<b>true</b>, new_reward_per_block)
     } <b>else</b> {
         //This should never happened.
-        <b>abort</b> <a href="ErrorCode.md#0x1_ErrorCode_EUNREACHABLE">ErrorCode::EUNREACHABLE</a>()
+        <b>abort</b> <a href="Errors.md#0x1_Errors_EUNREACHABLE">Errors::EUNREACHABLE</a>()
     };
     <b>let</b> reward = reward_per_block +
         reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128);
@@ -1344,19 +1321,19 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
 </code></pre>
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -1386,7 +1363,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_new_consensus_config"></a>
+<a name="@Specification_1_new_consensus_config"></a>
 
 ### Function `new_consensus_config`
 
@@ -1409,7 +1386,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_get_config"></a>
+<a name="@Specification_1_get_config"></a>
 
 ### Function `get_config`
 
@@ -1430,13 +1407,13 @@ pragma aborts_if_is_strict;
 
 
 <pre><code><b>define</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_spec_get_config">spec_get_config</a>(): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
-<b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).payload
+   <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).payload
 }
 </code></pre>
 
 
 
-<a name="@Specification_0_compute_reward_per_block"></a>
+<a name="@Specification_1_compute_reward_per_block"></a>
 
 ### Function `compute_reward_per_block`
 
@@ -1455,7 +1432,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_do_compute_reward_per_block"></a>
+<a name="@Specification_1_do_compute_reward_per_block"></a>
 
 ### Function `do_compute_reward_per_block`
 
@@ -1473,7 +1450,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_adjust_epoch"></a>
+<a name="@Specification_1_adjust_epoch"></a>
 
 ### Function `adjust_epoch`
 
@@ -1484,7 +1461,7 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>global</b>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).max_uncles_per_block &lt; uncles;
@@ -1494,7 +1471,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_adjust_gas_limit"></a>
+<a name="@Specification_1_adjust_gas_limit"></a>
 
 ### Function `adjust_gas_limit`
 
@@ -1505,12 +1482,12 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_compute_gas_limit"></a>
+<a name="@Specification_1_compute_gas_limit"></a>
 
 ### Function `compute_gas_limit`
 
@@ -1521,12 +1498,12 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_in_or_decrease_gas_limit"></a>
+<a name="@Specification_1_in_or_decrease_gas_limit"></a>
 
 ### Function `in_or_decrease_gas_limit`
 
@@ -1537,12 +1514,12 @@ pragma aborts_if_is_strict;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_update_epoch_data"></a>
+<a name="@Specification_1_update_epoch_data"></a>
 
 ### Function `update_epoch_data`
 
@@ -1560,7 +1537,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_emit_epoch_event"></a>
+<a name="@Specification_1_emit_epoch_event"></a>
 
 ### Function `emit_epoch_event`
 
@@ -1576,7 +1553,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_start_time"></a>
+<a name="@Specification_1_epoch_start_time"></a>
 
 ### Function `epoch_start_time`
 
@@ -1592,7 +1569,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_uncles"></a>
+<a name="@Specification_1_uncles"></a>
 
 ### Function `uncles`
 
@@ -1608,7 +1585,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_total_gas"></a>
+<a name="@Specification_1_epoch_total_gas"></a>
 
 ### Function `epoch_total_gas`
 
@@ -1624,7 +1601,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_block_gas_limit"></a>
+<a name="@Specification_1_epoch_block_gas_limit"></a>
 
 ### Function `epoch_block_gas_limit`
 
@@ -1640,7 +1617,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_start_block_number"></a>
+<a name="@Specification_1_epoch_start_block_number"></a>
 
 ### Function `epoch_start_block_number`
 
@@ -1656,7 +1633,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_end_block_number"></a>
+<a name="@Specification_1_epoch_end_block_number"></a>
 
 ### Function `epoch_end_block_number`
 
@@ -1672,7 +1649,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_epoch_number"></a>
+<a name="@Specification_1_epoch_number"></a>
 
 ### Function `epoch_number`
 
@@ -1688,7 +1665,7 @@ pragma aborts_if_is_strict;
 
 
 
-<a name="@Specification_0_block_time_target"></a>
+<a name="@Specification_1_block_time_target"></a>
 
 ### Function `block_time_target`
 

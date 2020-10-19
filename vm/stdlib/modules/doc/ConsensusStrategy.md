@@ -5,12 +5,21 @@
 
 
 
--  [Struct <code><a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a></code>](#0x1_ConsensusStrategy_ConsensusStrategy)
--  [Function <code>initialize</code>](#0x1_ConsensusStrategy_initialize)
--  [Function <code>get</code>](#0x1_ConsensusStrategy_get)
+-  [Struct `ConsensusStrategy`](#0x1_ConsensusStrategy_ConsensusStrategy)
+-  [Function `initialize`](#0x1_ConsensusStrategy_initialize)
+-  [Function `get`](#0x1_ConsensusStrategy_get)
 -  [Specification](#@Specification_0)
-    -  [Function <code>initialize</code>](#@Specification_0_initialize)
-    -  [Function <code>get</code>](#@Specification_0_get)
+    -  [Function `initialize`](#@Specification_0_initialize)
+    -  [Function `get`](#@Specification_0_get)
+
+
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_ConsensusStrategy_ConsensusStrategy"></a>
@@ -57,10 +66,10 @@ Publish the chain ID under the genesis account
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusStrategy.md#0x1_ConsensusStrategy_initialize">initialize</a>(account: &signer, consensus_strategy: u8) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
     <b>assert</b>(
         <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>()
+        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>())
     );
     <b>let</b> cap = <a href="Config.md#0x1_Config_publish_new_config_with_capability">Config::publish_new_config_with_capability</a>&lt;<a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a>&gt;(
         account,
@@ -106,8 +115,8 @@ Return the consensus strategy type of this chain
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict = <b>true</b>;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 

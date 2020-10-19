@@ -4,7 +4,6 @@
 use crate::node_index::NodeIndex;
 use crate::AccumulatorNode;
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use std::any::type_name;
 
@@ -28,17 +27,4 @@ pub trait AccumulatorTreeStore: std::marker::Send + std::marker::Sync {
     fn delete_nodes(&self, node_hash_vec: Vec<HashValue>) -> Result<()>;
 }
 
-/// Node index cache key.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct NodeCacheKey {
-    id: HashValue,
-    index: NodeIndex,
-}
-impl NodeCacheKey {
-    pub fn new(accumulator_id: HashValue, index: NodeIndex) -> Self {
-        Self {
-            id: accumulator_id,
-            index,
-        }
-    }
-}
+pub type NodeCacheKey = NodeIndex;

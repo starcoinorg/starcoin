@@ -5,86 +5,98 @@
 
 
 
--  [Resource <code><a href="Account.md#0x1_Account">Account</a></code>](#0x1_Account_Account)
--  [Resource <code><a href="Account.md#0x1_Account_Balance">Balance</a></code>](#0x1_Account_Balance)
--  [Resource <code><a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a></code>](#0x1_Account_WithdrawCapability)
--  [Resource <code><a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a></code>](#0x1_Account_KeyRotationCapability)
--  [Struct <code><a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a></code>](#0x1_Account_SentPaymentEvent)
--  [Struct <code><a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a></code>](#0x1_Account_ReceivedPaymentEvent)
--  [Struct <code><a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a></code>](#0x1_Account_AcceptTokenEvent)
--  [Const <code><a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a></code>](#0x1_Account_DUMMY_AUTH_KEY)
--  [Function <code>EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</code>](#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED)
--  [Function <code>EMALFORMED_AUTHENTICATION_KEY</code>](#0x1_Account_EMALFORMED_AUTHENTICATION_KEY)
--  [Function <code>EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</code>](#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED)
--  [Function <code>ADDRESS_PUBLIC_KEY_INCONSISTENT</code>](#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT)
--  [Function <code>create_genesis_account</code>](#0x1_Account_create_genesis_account)
--  [Function <code>release_genesis_signer</code>](#0x1_Account_release_genesis_signer)
--  [Function <code>create_account</code>](#0x1_Account_create_account)
--  [Function <code>make_account</code>](#0x1_Account_make_account)
--  [Function <code>create_signer</code>](#0x1_Account_create_signer)
--  [Function <code>destroy_signer</code>](#0x1_Account_destroy_signer)
--  [Function <code>deposit_to</code>](#0x1_Account_deposit_to)
--  [Function <code>deposit</code>](#0x1_Account_deposit)
--  [Function <code>deposit_with_metadata</code>](#0x1_Account_deposit_with_metadata)
--  [Function <code>deposit_with_payer_and_metadata</code>](#0x1_Account_deposit_with_payer_and_metadata)
--  [Function <code>withdraw_from_balance</code>](#0x1_Account_withdraw_from_balance)
--  [Function <code>withdraw</code>](#0x1_Account_withdraw)
--  [Function <code>withdraw_with_capability</code>](#0x1_Account_withdraw_with_capability)
--  [Function <code>extract_withdraw_capability</code>](#0x1_Account_extract_withdraw_capability)
--  [Function <code>restore_withdraw_capability</code>](#0x1_Account_restore_withdraw_capability)
--  [Function <code>pay_from_capability</code>](#0x1_Account_pay_from_capability)
--  [Function <code>pay_from_with_metadata</code>](#0x1_Account_pay_from_with_metadata)
--  [Function <code>pay_from</code>](#0x1_Account_pay_from)
--  [Function <code>rotate_authentication_key</code>](#0x1_Account_rotate_authentication_key)
--  [Function <code>extract_key_rotation_capability</code>](#0x1_Account_extract_key_rotation_capability)
--  [Function <code>restore_key_rotation_capability</code>](#0x1_Account_restore_key_rotation_capability)
--  [Function <code>balance_for</code>](#0x1_Account_balance_for)
--  [Function <code>balance</code>](#0x1_Account_balance)
--  [Function <code>accept_token</code>](#0x1_Account_accept_token)
--  [Function <code>is_accepts_token</code>](#0x1_Account_is_accepts_token)
--  [Function <code>sequence_number_for_account</code>](#0x1_Account_sequence_number_for_account)
--  [Function <code>sequence_number</code>](#0x1_Account_sequence_number)
--  [Function <code>authentication_key</code>](#0x1_Account_authentication_key)
--  [Function <code>delegated_key_rotation_capability</code>](#0x1_Account_delegated_key_rotation_capability)
--  [Function <code>delegated_withdraw_capability</code>](#0x1_Account_delegated_withdraw_capability)
--  [Function <code>withdraw_capability_address</code>](#0x1_Account_withdraw_capability_address)
--  [Function <code>key_rotation_capability_address</code>](#0x1_Account_key_rotation_capability_address)
--  [Function <code>exists_at</code>](#0x1_Account_exists_at)
--  [Function <code>txn_prologue</code>](#0x1_Account_txn_prologue)
--  [Function <code>txn_epilogue</code>](#0x1_Account_txn_epilogue)
--  [Specification](#@Specification_0)
-    -  [Function <code>create_genesis_account</code>](#@Specification_0_create_genesis_account)
-    -  [Function <code>release_genesis_signer</code>](#@Specification_0_release_genesis_signer)
-    -  [Function <code>create_account</code>](#@Specification_0_create_account)
-    -  [Function <code>make_account</code>](#@Specification_0_make_account)
-    -  [Function <code>deposit_to</code>](#@Specification_0_deposit_to)
-    -  [Function <code>deposit</code>](#@Specification_0_deposit)
-    -  [Function <code>deposit_with_metadata</code>](#@Specification_0_deposit_with_metadata)
-    -  [Function <code>deposit_with_payer_and_metadata</code>](#@Specification_0_deposit_with_payer_and_metadata)
-    -  [Function <code>withdraw_from_balance</code>](#@Specification_0_withdraw_from_balance)
-    -  [Function <code>withdraw</code>](#@Specification_0_withdraw)
-    -  [Function <code>withdraw_with_capability</code>](#@Specification_0_withdraw_with_capability)
-    -  [Function <code>extract_withdraw_capability</code>](#@Specification_0_extract_withdraw_capability)
-    -  [Function <code>restore_withdraw_capability</code>](#@Specification_0_restore_withdraw_capability)
-    -  [Function <code>pay_from_capability</code>](#@Specification_0_pay_from_capability)
-    -  [Function <code>pay_from_with_metadata</code>](#@Specification_0_pay_from_with_metadata)
-    -  [Function <code>pay_from</code>](#@Specification_0_pay_from)
-    -  [Function <code>rotate_authentication_key</code>](#@Specification_0_rotate_authentication_key)
-    -  [Function <code>extract_key_rotation_capability</code>](#@Specification_0_extract_key_rotation_capability)
-    -  [Function <code>restore_key_rotation_capability</code>](#@Specification_0_restore_key_rotation_capability)
-    -  [Function <code>balance_for</code>](#@Specification_0_balance_for)
-    -  [Function <code>balance</code>](#@Specification_0_balance)
-    -  [Function <code>accept_token</code>](#@Specification_0_accept_token)
-    -  [Function <code>is_accepts_token</code>](#@Specification_0_is_accepts_token)
-    -  [Function <code>sequence_number</code>](#@Specification_0_sequence_number)
-    -  [Function <code>authentication_key</code>](#@Specification_0_authentication_key)
-    -  [Function <code>delegated_key_rotation_capability</code>](#@Specification_0_delegated_key_rotation_capability)
-    -  [Function <code>delegated_withdraw_capability</code>](#@Specification_0_delegated_withdraw_capability)
-    -  [Function <code>withdraw_capability_address</code>](#@Specification_0_withdraw_capability_address)
-    -  [Function <code>key_rotation_capability_address</code>](#@Specification_0_key_rotation_capability_address)
-    -  [Function <code>exists_at</code>](#@Specification_0_exists_at)
-    -  [Function <code>txn_prologue</code>](#@Specification_0_txn_prologue)
-    -  [Function <code>txn_epilogue</code>](#@Specification_0_txn_epilogue)
+-  [Resource `Account`](#0x1_Account_Account)
+-  [Resource `Balance`](#0x1_Account_Balance)
+-  [Resource `WithdrawCapability`](#0x1_Account_WithdrawCapability)
+-  [Resource `KeyRotationCapability`](#0x1_Account_KeyRotationCapability)
+-  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
+-  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
+-  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
+-  [Constants](#@Constants_0)
+-  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
+-  [Function `release_genesis_signer`](#0x1_Account_release_genesis_signer)
+-  [Function `create_account`](#0x1_Account_create_account)
+-  [Function `make_account`](#0x1_Account_make_account)
+-  [Function `create_signer`](#0x1_Account_create_signer)
+-  [Function `destroy_signer`](#0x1_Account_destroy_signer)
+-  [Function `deposit_to`](#0x1_Account_deposit_to)
+-  [Function `deposit`](#0x1_Account_deposit)
+-  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
+-  [Function `deposit_with_payer_and_metadata`](#0x1_Account_deposit_with_payer_and_metadata)
+-  [Function `withdraw_from_balance`](#0x1_Account_withdraw_from_balance)
+-  [Function `withdraw`](#0x1_Account_withdraw)
+-  [Function `withdraw_with_capability`](#0x1_Account_withdraw_with_capability)
+-  [Function `extract_withdraw_capability`](#0x1_Account_extract_withdraw_capability)
+-  [Function `restore_withdraw_capability`](#0x1_Account_restore_withdraw_capability)
+-  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
+-  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
+-  [Function `pay_from`](#0x1_Account_pay_from)
+-  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
+-  [Function `extract_key_rotation_capability`](#0x1_Account_extract_key_rotation_capability)
+-  [Function `restore_key_rotation_capability`](#0x1_Account_restore_key_rotation_capability)
+-  [Function `balance_for`](#0x1_Account_balance_for)
+-  [Function `balance`](#0x1_Account_balance)
+-  [Function `accept_token`](#0x1_Account_accept_token)
+-  [Function `is_accepts_token`](#0x1_Account_is_accepts_token)
+-  [Function `sequence_number_for_account`](#0x1_Account_sequence_number_for_account)
+-  [Function `sequence_number`](#0x1_Account_sequence_number)
+-  [Function `authentication_key`](#0x1_Account_authentication_key)
+-  [Function `delegated_key_rotation_capability`](#0x1_Account_delegated_key_rotation_capability)
+-  [Function `delegated_withdraw_capability`](#0x1_Account_delegated_withdraw_capability)
+-  [Function `withdraw_capability_address`](#0x1_Account_withdraw_capability_address)
+-  [Function `key_rotation_capability_address`](#0x1_Account_key_rotation_capability_address)
+-  [Function `exists_at`](#0x1_Account_exists_at)
+-  [Function `txn_prologue`](#0x1_Account_txn_prologue)
+-  [Function `txn_epilogue`](#0x1_Account_txn_epilogue)
+-  [Specification](#@Specification_1)
+    -  [Function `create_genesis_account`](#@Specification_1_create_genesis_account)
+    -  [Function `release_genesis_signer`](#@Specification_1_release_genesis_signer)
+    -  [Function `create_account`](#@Specification_1_create_account)
+    -  [Function `make_account`](#@Specification_1_make_account)
+    -  [Function `deposit_to`](#@Specification_1_deposit_to)
+    -  [Function `deposit`](#@Specification_1_deposit)
+    -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
+    -  [Function `deposit_with_payer_and_metadata`](#@Specification_1_deposit_with_payer_and_metadata)
+    -  [Function `withdraw_from_balance`](#@Specification_1_withdraw_from_balance)
+    -  [Function `withdraw`](#@Specification_1_withdraw)
+    -  [Function `withdraw_with_capability`](#@Specification_1_withdraw_with_capability)
+    -  [Function `extract_withdraw_capability`](#@Specification_1_extract_withdraw_capability)
+    -  [Function `restore_withdraw_capability`](#@Specification_1_restore_withdraw_capability)
+    -  [Function `pay_from_capability`](#@Specification_1_pay_from_capability)
+    -  [Function `pay_from_with_metadata`](#@Specification_1_pay_from_with_metadata)
+    -  [Function `pay_from`](#@Specification_1_pay_from)
+    -  [Function `rotate_authentication_key`](#@Specification_1_rotate_authentication_key)
+    -  [Function `extract_key_rotation_capability`](#@Specification_1_extract_key_rotation_capability)
+    -  [Function `restore_key_rotation_capability`](#@Specification_1_restore_key_rotation_capability)
+    -  [Function `balance_for`](#@Specification_1_balance_for)
+    -  [Function `balance`](#@Specification_1_balance)
+    -  [Function `accept_token`](#@Specification_1_accept_token)
+    -  [Function `is_accepts_token`](#@Specification_1_is_accepts_token)
+    -  [Function `sequence_number`](#@Specification_1_sequence_number)
+    -  [Function `authentication_key`](#@Specification_1_authentication_key)
+    -  [Function `delegated_key_rotation_capability`](#@Specification_1_delegated_key_rotation_capability)
+    -  [Function `delegated_withdraw_capability`](#@Specification_1_delegated_withdraw_capability)
+    -  [Function `withdraw_capability_address`](#@Specification_1_withdraw_capability_address)
+    -  [Function `key_rotation_capability_address`](#@Specification_1_key_rotation_capability_address)
+    -  [Function `exists_at`](#@Specification_1_exists_at)
+    -  [Function `txn_prologue`](#@Specification_1_txn_prologue)
+    -  [Function `txn_epilogue`](#@Specification_1_txn_epilogue)
+
+
+<pre><code><b>use</b> <a href="Authenticator.md#0x1_Authenticator">0x1::Authenticator</a>;
+<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
+<b>use</b> <a href="Hash.md#0x1_Hash">0x1::Hash</a>;
+<b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
+<b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<b>use</b> <a href="TransactionFee.md#0x1_TransactionFee">0x1::TransactionFee</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Account_Account"></a>
@@ -349,9 +361,12 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_DUMMY_AUTH_KEY"></a>
+<a name="@Constants_0"></a>
 
-## Const `DUMMY_AUTH_KEY`
+## Constants
+
+
+<a name="0x1_Account_DUMMY_AUTH_KEY"></a>
 
 
 
@@ -360,93 +375,41 @@ Message for accept token events
 
 
 
-<a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
-
-## Function `EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED`
+<a name="0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT"></a>
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>: u64 = 104;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_EMALFORMED_AUTHENTICATION_KEY"></a>
-
-## Function `EMALFORMED_AUTHENTICATION_KEY`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED"></a>
 
-## Function `EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED`
 
 
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>: u64 = 103;
 </code></pre>
 
 
 
-<details>
-<summary>Implementation</summary>
+<a name="0x1_Account_EMALFORMED_AUTHENTICATION_KEY"></a>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3}
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>: u64 = 102;
 </code></pre>
 
 
 
-</details>
-
-<a name="0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT"></a>
-
-## Function `ADDRESS_PUBLIC_KEY_INCONSISTENT`
+<a name="0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED"></a>
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>: u64 = 101;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>(): u64 { <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Account_create_genesis_account"></a>
 
@@ -466,7 +429,7 @@ Message for accept token events
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_genesis_account">create_genesis_account</a>(
     new_account_address: address,
 ) :signer {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS">ErrorCode::ENOT_GENESIS</a>());
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_account_address);
     <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>);
     new_account
@@ -519,7 +482,7 @@ Message for accept token events
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
     <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
-    <b>assert</b>(new_address == fresh_address, <a href="Account.md#0x1_Account_ADDRESS_PUBLIC_KEY_INCONSISTENT">ADDRESS_PUBLIC_KEY_INCONSISTENT</a>());
+    <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
 
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_address);
     <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
@@ -555,7 +518,7 @@ Message for accept token events
     new_account: &signer,
     authentication_key: vector&lt;u8&gt;,
 ) {
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
     <b>let</b> new_account_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(new_account);
     <a href="Event.md#0x1_Event_publish_generator">Event::publish_generator</a>(new_account);
     move_to(new_account, <a href="Account.md#0x1_Account">Account</a> {
@@ -734,7 +697,7 @@ Message for accept token events
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_ECOIN_DEPOSIT_IS_ZERO">ErrorCode::ECOIN_DEPOSIT_IS_ZERO</a>());
+    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
 
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
 
@@ -817,7 +780,7 @@ Message for accept token events
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>());
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
     // The sender_addr has retained her withdrawal privileges--proceed.
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_addr, sender_balance, amount)
 }
@@ -874,7 +837,7 @@ Message for accept token events
 ): <a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a> <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(sender);
     // Abort <b>if</b> we already extracted the unique withdraw capability for this account.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>());
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(sender_addr);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.withdrawal_capability)
 }
@@ -1027,7 +990,7 @@ Message for accept token events
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>  {
     <b>let</b> sender_account_resource = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
     // Don't allow rotating <b>to</b> clearly invalid key
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>());
+    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_authentication_key) == 32, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>));
     sender_account_resource.authentication_key = new_authentication_key;
 }
 </code></pre>
@@ -1055,7 +1018,7 @@ Message for accept token events
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     // Abort <b>if</b> we already extracted the unique key rotation capability for this account.
-    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), <a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>());
+    <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_key_rotation_capability">delegated_key_rotation_capability</a>(account_address), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED">EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED</a>));
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account_address);
     <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> account.key_rotation_capability)
 }
@@ -1414,11 +1377,11 @@ Message for accept token events
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()));
 
     // FUTURE: Make these error codes sequential
     // Verify that the transaction sender's account <b>exists</b>
-    <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">ErrorCode::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>());
+    <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()));
 
     // Load the transaction sender's account
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
@@ -1426,17 +1389,17 @@ Message for accept token events
     // Check that the hash of the transaction's <b>public</b> key matches the account's auth key
     <b>assert</b>(
         <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) == *&sender_account.authentication_key,
-        <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">ErrorCode::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>()
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">Errors::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>())
     );
 
     // Check that the account has enough balance for all of the gas
     <b>let</b> max_transaction_fee = txn_gas_price * txn_max_gas_units;
     <b>let</b> balance_amount = <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);
-    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_CANT_PAY_GAS_DEPOSIT">ErrorCode::PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>());
+    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_CANT_PAY_GAS_DEPOSIT">Errors::PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>()));
 
     // Check that the transaction sequence number matches the sequence number of the account
-    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>());
-    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, <a href="ErrorCode.md#0x1_ErrorCode_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">ErrorCode::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>());
+    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>()));
+    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>()));
 }
 </code></pre>
 
@@ -1467,7 +1430,7 @@ Message for accept token events
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="ErrorCode.md#0x1_ErrorCode_ENOT_GENESIS_ACCOUNT">ErrorCode::ENOT_GENESIS_ACCOUNT</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
 
     // Load the transaction sender's account and balance resources
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
@@ -1477,7 +1440,7 @@ Message for accept token events
     <b>let</b> transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
     <b>assert</b>(
         <a href="Account.md#0x1_Account_balance_for">balance_for</a>(sender_balance) &gt;= transaction_fee_amount,
-        <a href="ErrorCode.md#0x1_ErrorCode_EINSUFFICIENT_BALANCE">ErrorCode::EINSUFFICIENT_BALANCE</a>()
+        <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="Errors.md#0x1_Errors_EINSUFFICIENT_BALANCE">Errors::EINSUFFICIENT_BALANCE</a>())
     );
 
     // Bump the sequence number
@@ -1498,19 +1461,19 @@ Message for accept token events
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify;
-pragma aborts_if_is_strict = <b>true</b>;
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_create_genesis_account"></a>
+<a name="@Specification_1_create_genesis_account"></a>
 
 ### Function `create_genesis_account`
 
@@ -1528,7 +1491,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_release_genesis_signer"></a>
+<a name="@Specification_1_release_genesis_signer"></a>
 
 ### Function `release_genesis_signer`
 
@@ -1544,7 +1507,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_create_account"></a>
+<a name="@Specification_1_create_account"></a>
 
 ### Function `create_account`
 
@@ -1566,7 +1529,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_make_account"></a>
+<a name="@Specification_1_make_account"></a>
 
 ### Function `make_account`
 
@@ -1584,7 +1547,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_deposit_to"></a>
+<a name="@Specification_1_deposit_to"></a>
 
 ### Function `deposit_to`
 
@@ -1600,7 +1563,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_deposit"></a>
+<a name="@Specification_1_deposit"></a>
 
 ### Function `deposit`
 
@@ -1619,7 +1582,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_deposit_with_metadata"></a>
+<a name="@Specification_1_deposit_with_metadata"></a>
 
 ### Function `deposit_with_metadata`
 
@@ -1635,7 +1598,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_deposit_with_payer_and_metadata"></a>
+<a name="@Specification_1_deposit_with_payer_and_metadata"></a>
 
 ### Function `deposit_with_payer_and_metadata`
 
@@ -1669,7 +1632,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_withdraw_from_balance"></a>
+<a name="@Specification_1_withdraw_from_balance"></a>
 
 ### Function `withdraw_from_balance`
 
@@ -1685,7 +1648,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_withdraw"></a>
+<a name="@Specification_1_withdraw"></a>
 
 ### Function `withdraw`
 
@@ -1696,7 +1659,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).token.value &lt; amount;
@@ -1711,13 +1674,13 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 <pre><code><b>define</b> <a href="Account.md#0x1_Account_spec_withdraw">spec_withdraw</a>&lt;TokenType&gt;(account: signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
-<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
+   <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
 }
 </code></pre>
 
 
 
-<a name="@Specification_0_withdraw_with_capability"></a>
+<a name="@Specification_1_withdraw_with_capability"></a>
 
 ### Function `withdraw_with_capability`
 
@@ -1734,7 +1697,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_extract_withdraw_capability"></a>
+<a name="@Specification_1_extract_withdraw_capability"></a>
 
 ### Function `extract_withdraw_capability`
 
@@ -1751,7 +1714,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_restore_withdraw_capability"></a>
+<a name="@Specification_1_restore_withdraw_capability"></a>
 
 ### Function `restore_withdraw_capability`
 
@@ -1768,7 +1731,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_pay_from_capability"></a>
+<a name="@Specification_1_pay_from_capability"></a>
 
 ### Function `pay_from_capability`
 
@@ -1779,7 +1742,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> amount == 0;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
@@ -1792,7 +1755,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_pay_from_with_metadata"></a>
+<a name="@Specification_1_pay_from_with_metadata"></a>
 
 ### Function `pay_from_with_metadata`
 
@@ -1803,7 +1766,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).token.value &lt; amount;
@@ -1817,7 +1780,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_pay_from"></a>
+<a name="@Specification_1_pay_from"></a>
 
 ### Function `pay_from`
 
@@ -1828,7 +1791,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).token.value &lt; amount;
@@ -1841,7 +1804,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_rotate_authentication_key"></a>
+<a name="@Specification_1_rotate_authentication_key"></a>
 
 ### Function `rotate_authentication_key`
 
@@ -1870,7 +1833,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_extract_key_rotation_capability"></a>
+<a name="@Specification_1_extract_key_rotation_capability"></a>
 
 ### Function `extract_key_rotation_capability`
 
@@ -1887,7 +1850,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_restore_key_rotation_capability"></a>
+<a name="@Specification_1_restore_key_rotation_capability"></a>
 
 ### Function `restore_key_rotation_capability`
 
@@ -1904,7 +1867,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_balance_for"></a>
+<a name="@Specification_1_balance_for"></a>
 
 ### Function `balance_for`
 
@@ -1920,7 +1883,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_balance"></a>
+<a name="@Specification_1_balance"></a>
 
 ### Function `balance`
 
@@ -1936,7 +1899,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_accept_token"></a>
+<a name="@Specification_1_accept_token"></a>
 
 ### Function `accept_token`
 
@@ -1953,7 +1916,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_is_accepts_token"></a>
+<a name="@Specification_1_is_accepts_token"></a>
 
 ### Function `is_accepts_token`
 
@@ -1975,7 +1938,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_sequence_number"></a>
+<a name="@Specification_1_sequence_number"></a>
 
 ### Function `sequence_number`
 
@@ -1991,7 +1954,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_authentication_key"></a>
+<a name="@Specification_1_authentication_key"></a>
 
 ### Function `authentication_key`
 
@@ -2007,7 +1970,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_delegated_key_rotation_capability"></a>
+<a name="@Specification_1_delegated_key_rotation_capability"></a>
 
 ### Function `delegated_key_rotation_capability`
 
@@ -2023,7 +1986,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_delegated_withdraw_capability"></a>
+<a name="@Specification_1_delegated_withdraw_capability"></a>
 
 ### Function `delegated_withdraw_capability`
 
@@ -2039,7 +2002,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_withdraw_capability_address"></a>
+<a name="@Specification_1_withdraw_capability_address"></a>
 
 ### Function `withdraw_capability_address`
 
@@ -2055,7 +2018,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_key_rotation_capability_address"></a>
+<a name="@Specification_1_key_rotation_capability_address"></a>
 
 ### Function `key_rotation_capability_address`
 
@@ -2071,7 +2034,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_exists_at"></a>
+<a name="@Specification_1_exists_at"></a>
 
 ### Function `exists_at`
 
@@ -2087,7 +2050,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_txn_prologue"></a>
+<a name="@Specification_1_txn_prologue"></a>
 
 ### Function `txn_prologue`
 
@@ -2110,7 +2073,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<a name="@Specification_0_txn_epilogue"></a>
+<a name="@Specification_1_txn_epilogue"></a>
 
 ### Function `txn_epilogue`
 
@@ -2121,7 +2084,7 @@ pragma aborts_if_is_strict = <b>true</b>;
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(txn_sender);

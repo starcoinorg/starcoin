@@ -5,7 +5,7 @@ use crate::storage::{CodecKVStore, CodecWriteBatch, ValueCodec};
 use crate::TRANSACTION_INFO_HASH_PREFIX_NAME;
 use crate::TRANSACTION_INFO_PREFIX_NAME;
 use crate::{define_storage, TransactionInfoStore};
-use anyhow::{bail, Error, Result};
+use anyhow::{Error, Result};
 use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::transaction::TransactionInfo;
@@ -50,10 +50,10 @@ impl TransactionInfoStore for TransactionInfoHashStorage {
         &self,
         txn_hash: HashValue,
     ) -> Result<Vec<HashValue>, Error> {
-        if let Ok(Some(txn_id_vec)) = self.get(txn_hash) {
+        if let Some(txn_id_vec) = self.get(txn_hash)? {
             Ok(txn_id_vec)
         } else {
-            bail!("get transaction_info ids error.")
+            Ok(vec![])
         }
     }
 

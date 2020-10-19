@@ -5,92 +5,98 @@
 
 
 
--  [Resource <code><a href="Token.md#0x1_Token">Token</a></code>](#0x1_Token_Token)
--  [Resource <code><a href="Token.md#0x1_Token_MintCapability">MintCapability</a></code>](#0x1_Token_MintCapability)
--  [Resource <code><a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a></code>](#0x1_Token_FixedTimeMintKey)
--  [Resource <code><a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a></code>](#0x1_Token_LinearTimeMintKey)
--  [Resource <code><a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a></code>](#0x1_Token_BurnCapability)
--  [Struct <code><a href="Token.md#0x1_Token_MintEvent">MintEvent</a></code>](#0x1_Token_MintEvent)
--  [Struct <code><a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a></code>](#0x1_Token_BurnEvent)
--  [Resource <code><a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a></code>](#0x1_Token_TokenInfo)
--  [Const <code><a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a></code>](#0x1_Token_MAX_PRECISION)
--  [Function <code>ETOKEN_REGISTER</code>](#0x1_Token_ETOKEN_REGISTER)
--  [Function <code>EAMOUNT_EXCEEDS_COIN_VALUE</code>](#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE)
--  [Function <code>EMINT_KEY_TIME_LIMIT</code>](#0x1_Token_EMINT_KEY_TIME_LIMIT)
--  [Function <code>EDESTROY_KEY_NOT_EMPTY</code>](#0x1_Token_EDESTROY_KEY_NOT_EMPTY)
--  [Function <code>EPRECISION_TOO_LARGE</code>](#0x1_Token_EPRECISION_TOO_LARGE)
--  [Function <code>register_token</code>](#0x1_Token_register_token)
--  [Function <code>remove_mint_capability</code>](#0x1_Token_remove_mint_capability)
--  [Function <code>add_mint_capability</code>](#0x1_Token_add_mint_capability)
--  [Function <code>destroy_mint_capability</code>](#0x1_Token_destroy_mint_capability)
--  [Function <code>remove_burn_capability</code>](#0x1_Token_remove_burn_capability)
--  [Function <code>add_burn_capability</code>](#0x1_Token_add_burn_capability)
--  [Function <code>destroy_burn_capability</code>](#0x1_Token_destroy_burn_capability)
--  [Function <code>mint</code>](#0x1_Token_mint)
--  [Function <code>mint_with_capability</code>](#0x1_Token_mint_with_capability)
--  [Function <code>do_mint</code>](#0x1_Token_do_mint)
--  [Function <code>issue_fixed_mint_key</code>](#0x1_Token_issue_fixed_mint_key)
--  [Function <code>issue_linear_mint_key</code>](#0x1_Token_issue_linear_mint_key)
--  [Function <code>mint_with_fixed_key</code>](#0x1_Token_mint_with_fixed_key)
--  [Function <code>mint_with_linear_key</code>](#0x1_Token_mint_with_linear_key)
--  [Function <code>mint_amount_of_linear_key</code>](#0x1_Token_mint_amount_of_linear_key)
--  [Function <code>mint_amount_of_fixed_key</code>](#0x1_Token_mint_amount_of_fixed_key)
--  [Function <code>end_time_of_key</code>](#0x1_Token_end_time_of_key)
--  [Function <code>destroy_empty_key</code>](#0x1_Token_destroy_empty_key)
--  [Function <code>burn</code>](#0x1_Token_burn)
--  [Function <code>burn_with_capability</code>](#0x1_Token_burn_with_capability)
--  [Function <code>zero</code>](#0x1_Token_zero)
--  [Function <code>value</code>](#0x1_Token_value)
--  [Function <code>split</code>](#0x1_Token_split)
--  [Function <code>withdraw</code>](#0x1_Token_withdraw)
--  [Function <code>join</code>](#0x1_Token_join)
--  [Function <code>deposit</code>](#0x1_Token_deposit)
--  [Function <code>destroy_zero</code>](#0x1_Token_destroy_zero)
--  [Function <code>scaling_factor</code>](#0x1_Token_scaling_factor)
--  [Function <code>market_cap</code>](#0x1_Token_market_cap)
--  [Function <code>is_registered_in</code>](#0x1_Token_is_registered_in)
--  [Function <code>is_same_token</code>](#0x1_Token_is_same_token)
--  [Function <code>token_address</code>](#0x1_Token_token_address)
--  [Function <code>token_code</code>](#0x1_Token_token_code)
--  [Function <code>code_to_bytes</code>](#0x1_Token_code_to_bytes)
--  [Function <code>name_of</code>](#0x1_Token_name_of)
--  [Function <code>name_of_token</code>](#0x1_Token_name_of_token)
--  [Specification](#@Specification_0)
-    -  [Function <code>register_token</code>](#@Specification_0_register_token)
-    -  [Function <code>remove_mint_capability</code>](#@Specification_0_remove_mint_capability)
-    -  [Function <code>add_mint_capability</code>](#@Specification_0_add_mint_capability)
-    -  [Function <code>destroy_mint_capability</code>](#@Specification_0_destroy_mint_capability)
-    -  [Function <code>remove_burn_capability</code>](#@Specification_0_remove_burn_capability)
-    -  [Function <code>add_burn_capability</code>](#@Specification_0_add_burn_capability)
-    -  [Function <code>destroy_burn_capability</code>](#@Specification_0_destroy_burn_capability)
-    -  [Function <code>mint</code>](#@Specification_0_mint)
-    -  [Function <code>mint_with_capability</code>](#@Specification_0_mint_with_capability)
-    -  [Function <code>do_mint</code>](#@Specification_0_do_mint)
-    -  [Function <code>issue_fixed_mint_key</code>](#@Specification_0_issue_fixed_mint_key)
-    -  [Function <code>issue_linear_mint_key</code>](#@Specification_0_issue_linear_mint_key)
-    -  [Function <code>mint_with_fixed_key</code>](#@Specification_0_mint_with_fixed_key)
-    -  [Function <code>mint_with_linear_key</code>](#@Specification_0_mint_with_linear_key)
-    -  [Function <code>mint_amount_of_linear_key</code>](#@Specification_0_mint_amount_of_linear_key)
-    -  [Function <code>mint_amount_of_fixed_key</code>](#@Specification_0_mint_amount_of_fixed_key)
-    -  [Function <code>destroy_empty_key</code>](#@Specification_0_destroy_empty_key)
-    -  [Function <code>burn</code>](#@Specification_0_burn)
-    -  [Function <code>burn_with_capability</code>](#@Specification_0_burn_with_capability)
-    -  [Function <code>zero</code>](#@Specification_0_zero)
-    -  [Function <code>value</code>](#@Specification_0_value)
-    -  [Function <code>split</code>](#@Specification_0_split)
-    -  [Function <code>withdraw</code>](#@Specification_0_withdraw)
-    -  [Function <code>join</code>](#@Specification_0_join)
-    -  [Function <code>deposit</code>](#@Specification_0_deposit)
-    -  [Function <code>destroy_zero</code>](#@Specification_0_destroy_zero)
-    -  [Function <code>scaling_factor</code>](#@Specification_0_scaling_factor)
-    -  [Function <code>market_cap</code>](#@Specification_0_market_cap)
-    -  [Function <code>is_registered_in</code>](#@Specification_0_is_registered_in)
-    -  [Function <code>is_same_token</code>](#@Specification_0_is_same_token)
-    -  [Function <code>token_address</code>](#@Specification_0_token_address)
-    -  [Function <code>token_code</code>](#@Specification_0_token_code)
-    -  [Function <code>code_to_bytes</code>](#@Specification_0_code_to_bytes)
-    -  [Function <code>name_of</code>](#@Specification_0_name_of)
-    -  [Function <code>name_of_token</code>](#@Specification_0_name_of_token)
+-  [Resource `Token`](#0x1_Token_Token)
+-  [Resource `MintCapability`](#0x1_Token_MintCapability)
+-  [Resource `FixedTimeMintKey`](#0x1_Token_FixedTimeMintKey)
+-  [Resource `LinearTimeMintKey`](#0x1_Token_LinearTimeMintKey)
+-  [Resource `BurnCapability`](#0x1_Token_BurnCapability)
+-  [Struct `MintEvent`](#0x1_Token_MintEvent)
+-  [Struct `BurnEvent`](#0x1_Token_BurnEvent)
+-  [Resource `TokenInfo`](#0x1_Token_TokenInfo)
+-  [Constants](#@Constants_0)
+-  [Function `register_token`](#0x1_Token_register_token)
+-  [Function `remove_mint_capability`](#0x1_Token_remove_mint_capability)
+-  [Function `add_mint_capability`](#0x1_Token_add_mint_capability)
+-  [Function `destroy_mint_capability`](#0x1_Token_destroy_mint_capability)
+-  [Function `remove_burn_capability`](#0x1_Token_remove_burn_capability)
+-  [Function `add_burn_capability`](#0x1_Token_add_burn_capability)
+-  [Function `destroy_burn_capability`](#0x1_Token_destroy_burn_capability)
+-  [Function `mint`](#0x1_Token_mint)
+-  [Function `mint_with_capability`](#0x1_Token_mint_with_capability)
+-  [Function `do_mint`](#0x1_Token_do_mint)
+-  [Function `issue_fixed_mint_key`](#0x1_Token_issue_fixed_mint_key)
+-  [Function `issue_linear_mint_key`](#0x1_Token_issue_linear_mint_key)
+-  [Function `mint_with_fixed_key`](#0x1_Token_mint_with_fixed_key)
+-  [Function `mint_with_linear_key`](#0x1_Token_mint_with_linear_key)
+-  [Function `mint_amount_of_linear_key`](#0x1_Token_mint_amount_of_linear_key)
+-  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
+-  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
+-  [Function `destroy_empty_key`](#0x1_Token_destroy_empty_key)
+-  [Function `burn`](#0x1_Token_burn)
+-  [Function `burn_with_capability`](#0x1_Token_burn_with_capability)
+-  [Function `zero`](#0x1_Token_zero)
+-  [Function `value`](#0x1_Token_value)
+-  [Function `split`](#0x1_Token_split)
+-  [Function `withdraw`](#0x1_Token_withdraw)
+-  [Function `join`](#0x1_Token_join)
+-  [Function `deposit`](#0x1_Token_deposit)
+-  [Function `destroy_zero`](#0x1_Token_destroy_zero)
+-  [Function `scaling_factor`](#0x1_Token_scaling_factor)
+-  [Function `market_cap`](#0x1_Token_market_cap)
+-  [Function `is_registered_in`](#0x1_Token_is_registered_in)
+-  [Function `is_same_token`](#0x1_Token_is_same_token)
+-  [Function `token_address`](#0x1_Token_token_address)
+-  [Function `token_code`](#0x1_Token_token_code)
+-  [Function `code_to_bytes`](#0x1_Token_code_to_bytes)
+-  [Function `name_of`](#0x1_Token_name_of)
+-  [Function `name_of_token`](#0x1_Token_name_of_token)
+-  [Specification](#@Specification_1)
+    -  [Function `register_token`](#@Specification_1_register_token)
+    -  [Function `remove_mint_capability`](#@Specification_1_remove_mint_capability)
+    -  [Function `add_mint_capability`](#@Specification_1_add_mint_capability)
+    -  [Function `destroy_mint_capability`](#@Specification_1_destroy_mint_capability)
+    -  [Function `remove_burn_capability`](#@Specification_1_remove_burn_capability)
+    -  [Function `add_burn_capability`](#@Specification_1_add_burn_capability)
+    -  [Function `destroy_burn_capability`](#@Specification_1_destroy_burn_capability)
+    -  [Function `mint`](#@Specification_1_mint)
+    -  [Function `mint_with_capability`](#@Specification_1_mint_with_capability)
+    -  [Function `do_mint`](#@Specification_1_do_mint)
+    -  [Function `issue_fixed_mint_key`](#@Specification_1_issue_fixed_mint_key)
+    -  [Function `issue_linear_mint_key`](#@Specification_1_issue_linear_mint_key)
+    -  [Function `mint_with_fixed_key`](#@Specification_1_mint_with_fixed_key)
+    -  [Function `mint_with_linear_key`](#@Specification_1_mint_with_linear_key)
+    -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
+    -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
+    -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
+    -  [Function `burn`](#@Specification_1_burn)
+    -  [Function `burn_with_capability`](#@Specification_1_burn_with_capability)
+    -  [Function `zero`](#@Specification_1_zero)
+    -  [Function `value`](#@Specification_1_value)
+    -  [Function `split`](#@Specification_1_split)
+    -  [Function `withdraw`](#@Specification_1_withdraw)
+    -  [Function `join`](#@Specification_1_join)
+    -  [Function `deposit`](#@Specification_1_deposit)
+    -  [Function `destroy_zero`](#@Specification_1_destroy_zero)
+    -  [Function `scaling_factor`](#@Specification_1_scaling_factor)
+    -  [Function `market_cap`](#@Specification_1_market_cap)
+    -  [Function `is_registered_in`](#@Specification_1_is_registered_in)
+    -  [Function `is_same_token`](#@Specification_1_is_same_token)
+    -  [Function `token_address`](#@Specification_1_token_address)
+    -  [Function `token_code`](#@Specification_1_token_code)
+    -  [Function `code_to_bytes`](#@Specification_1_code_to_bytes)
+    -  [Function `name_of`](#@Specification_1_name_of)
+    -  [Function `name_of_token`](#@Specification_1_name_of_token)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
+<b>use</b> <a href="LCS.md#0x1_LCS">0x1::LCS</a>;
+<b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
 
 
 <a name="0x1_Token_Token"></a>
@@ -369,9 +375,58 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 </details>
 
-<a name="0x1_Token_MAX_PRECISION"></a>
+<a name="@Constants_0"></a>
 
-## Const `MAX_PRECISION`
+## Constants
+
+
+<a name="0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_Token_EDESTROY_KEY_NOT_EMPTY"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Token_EMINT_KEY_TIME_LIMIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>: u64 = 103;
+</code></pre>
+
+
+
+<a name="0x1_Token_EPRECISION_TOO_LARGE"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_Token_ETOKEN_REGISTER"></a>
+
+Token register's address should same as TokenType's address.
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_Token_MAX_PRECISION"></a>
 
 2^128 < 10**39
 
@@ -380,127 +435,6 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 </code></pre>
 
 
-
-<a name="0x1_Token_ETOKEN_REGISTER"></a>
-
-## Function `ETOKEN_REGISTER`
-
-Token register's address should same as TokenType's address.
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE"></a>
-
-## Function `EAMOUNT_EXCEEDS_COIN_VALUE`
-
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_EMINT_KEY_TIME_LIMIT"></a>
-
-## Function `EMINT_KEY_TIME_LIMIT`
-
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 3
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_EDESTROY_KEY_NOT_EMPTY"></a>
-
-## Function `EDESTROY_KEY_NOT_EMPTY`
-
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 4
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_EPRECISION_TOO_LARGE"></a>
-
-## Function `EPRECISION_TOO_LARGE`
-
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 5
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Token_register_token"></a>
 
@@ -522,10 +456,10 @@ Register the type <code>TokenType</code> as a Token and got MintCapability and B
     account: &signer,
     precision: u8,
 ) {
-    <b>assert</b>(precision &lt;= <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>, <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>());
+    <b>assert</b>(precision &lt;= <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>));
     <b>let</b> scaling_factor = <a href="Math.md#0x1_Math_pow">Math::pow</a>(10, (precision <b>as</b> u64));
     <b>let</b> token_address = <a href="Token.md#0x1_Token_token_address">token_address</a>&lt;TokenType&gt;();
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>());
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == token_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Token.md#0x1_Token_ETOKEN_REGISTER">ETOKEN_REGISTER</a>));
     move_to(account, <a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt; {});
     move_to(account, <a href="Token.md#0x1_Token_BurnCapability">BurnCapability</a>&lt;TokenType&gt; {});
     move_to(
@@ -803,8 +737,8 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                  amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(amount &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> end_time = now + peroid;
     <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
@@ -835,8 +769,8 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                             amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
-    <b>assert</b>(amount &gt; 0, <a href="ErrorCode.md#0x1_ErrorCode_EINVALID_ARGUMENT">ErrorCode::EINVALID_ARGUMENT</a>());
+    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
         total: amount,
@@ -868,7 +802,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>(&key);
-    <b>assert</b>(amount &gt; 0, <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>());
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>));
     <b>let</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a> { total, end_time:_} = key;
     <a href="Token.md#0x1_Token_do_mint">do_mint</a>(total)
 }
@@ -895,7 +829,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>(key);
-    <b>assert</b>(amount &gt; 0, <a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>());
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>));
     <b>let</b> token = <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount);
     key.minted = key.minted + amount;
     token
@@ -1006,7 +940,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; { total, minted, start_time: _, peroid: _ } = key;
-    <b>assert</b>(total == minted, <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>());
+    <b>assert</b>(total == minted, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>));
 }
 </code></pre>
 
@@ -1182,7 +1116,7 @@ Fails if the tokens value is less than <code>value</code>
     value: u128,
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; {
     // Check that `value` is less than the token's value
-    <b>assert</b>(token.value &gt;= value, <a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>());
+    <b>assert</b>(token.value &gt;= value, <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="Token.md#0x1_Token_EAMOUNT_EXCEEDS_COIN_VALUE">EAMOUNT_EXCEEDS_COIN_VALUE</a>));
     token.value = token.value - value;
     <a href="Token.md#0x1_Token">Token</a> { value: value }
 }
@@ -1271,7 +1205,7 @@ so you cannot "burn" any non-zero amount of Token
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = token;
-    <b>assert</b>(value == 0, <a href="ErrorCode.md#0x1_ErrorCode_EDESTORY_TOKEN_NON_ZERO">ErrorCode::EDESTORY_TOKEN_NON_ZERO</a>())
+    <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_EDESTORY_TOKEN_NON_ZERO">Errors::EDESTORY_TOKEN_NON_ZERO</a>()))
 }
 </code></pre>
 
@@ -1510,30 +1444,19 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code>pragma verify = <b>true</b>;
-pragma aborts_if_is_strict = <b>true</b>;
-</code></pre>
-
-
-We use an uninterpreted function to represent the result of derived address. The actual value
-does not matter for the verification of callers.
-
-
-<a name="0x1_Token_spec_token_code"></a>
-
-
-<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;;
+<pre><code><b>pragma</b> verify = <b>true</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_register_token"></a>
+<a name="@Specification_1_register_token"></a>
 
 ### Function `register_token`
 
@@ -1544,7 +1467,7 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> precision &gt; <a href="Token.md#0x1_Token_MAX_PRECISION">MAX_PRECISION</a>;
 <b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
@@ -1557,7 +1480,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_remove_mint_capability"></a>
+<a name="@Specification_1_remove_mint_capability"></a>
 
 ### Function `remove_mint_capability`
 
@@ -1574,7 +1497,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_add_mint_capability"></a>
+<a name="@Specification_1_add_mint_capability"></a>
 
 ### Function `add_mint_capability`
 
@@ -1591,7 +1514,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_destroy_mint_capability"></a>
+<a name="@Specification_1_destroy_mint_capability"></a>
 
 ### Function `destroy_mint_capability`
 
@@ -1602,7 +1525,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_remove_burn_capability"></a>
+<a name="@Specification_1_remove_burn_capability"></a>
 
 ### Function `remove_burn_capability`
 
@@ -1619,7 +1542,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_add_burn_capability"></a>
+<a name="@Specification_1_add_burn_capability"></a>
 
 ### Function `add_burn_capability`
 
@@ -1636,7 +1559,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_destroy_burn_capability"></a>
+<a name="@Specification_1_destroy_burn_capability"></a>
 
 ### Function `destroy_burn_capability`
 
@@ -1647,7 +1570,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_mint"></a>
+<a name="@Specification_1_mint"></a>
 
 ### Function `mint`
 
@@ -1664,7 +1587,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_mint_with_capability"></a>
+<a name="@Specification_1_mint_with_capability"></a>
 
 ### Function `mint_with_capability`
 
@@ -1682,7 +1605,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_do_mint"></a>
+<a name="@Specification_1_do_mint"></a>
 
 ### Function `do_mint`
 
@@ -1699,7 +1622,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_issue_fixed_mint_key"></a>
+<a name="@Specification_1_issue_fixed_mint_key"></a>
 
 ### Function `issue_fixed_mint_key`
 
@@ -1718,7 +1641,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_issue_linear_mint_key"></a>
+<a name="@Specification_1_issue_linear_mint_key"></a>
 
 ### Function `issue_linear_mint_key`
 
@@ -1736,7 +1659,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_mint_with_fixed_key"></a>
+<a name="@Specification_1_mint_with_fixed_key"></a>
 
 ### Function `mint_with_fixed_key`
 
@@ -1755,7 +1678,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_mint_with_linear_key"></a>
+<a name="@Specification_1_mint_with_linear_key"></a>
 
 ### Function `mint_with_linear_key`
 
@@ -1766,12 +1689,12 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_mint_amount_of_linear_key"></a>
+<a name="@Specification_1_mint_amount_of_linear_key"></a>
 
 ### Function `mint_amount_of_linear_key`
 
@@ -1782,7 +1705,7 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma verify = <b>false</b>;
+<pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &lt; key.start_time;
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &gt;= key.peroid && key.total &lt; key.minted;
@@ -1791,7 +1714,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_mint_amount_of_fixed_key"></a>
+<a name="@Specification_1_mint_amount_of_fixed_key"></a>
 
 ### Function `mint_amount_of_fixed_key`
 
@@ -1812,17 +1735,17 @@ does not matter for the verification of callers.
 
 
 <pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_mint_amount_of_fixed_key">spec_mint_amount_of_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): u128 {
-<b>if</b> (<a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &gt;= key.end_time) {
-   key.total
-}<b>else</b>{
-   0
-}
+   <b>if</b> (<a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &gt;= key.end_time) {
+       key.total
+   }<b>else</b>{
+       0
+   }
 }
 </code></pre>
 
 
 
-<a name="@Specification_0_destroy_empty_key"></a>
+<a name="@Specification_1_destroy_empty_key"></a>
 
 ### Function `destroy_empty_key`
 
@@ -1838,7 +1761,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_burn"></a>
+<a name="@Specification_1_burn"></a>
 
 ### Function `burn`
 
@@ -1855,7 +1778,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_burn_with_capability"></a>
+<a name="@Specification_1_burn_with_capability"></a>
 
 ### Function `burn_with_capability`
 
@@ -1873,7 +1796,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_zero"></a>
+<a name="@Specification_1_zero"></a>
 
 ### Function `zero`
 
@@ -1884,7 +1807,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_value"></a>
+<a name="@Specification_1_value"></a>
 
 ### Function `value`
 
@@ -1900,7 +1823,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_split"></a>
+<a name="@Specification_1_split"></a>
 
 ### Function `split`
 
@@ -1917,7 +1840,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_withdraw"></a>
+<a name="@Specification_1_withdraw"></a>
 
 ### Function `withdraw`
 
@@ -1935,7 +1858,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_join"></a>
+<a name="@Specification_1_join"></a>
 
 ### Function `join`
 
@@ -1953,7 +1876,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_deposit"></a>
+<a name="@Specification_1_deposit"></a>
 
 ### Function `deposit`
 
@@ -1970,7 +1893,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_destroy_zero"></a>
+<a name="@Specification_1_destroy_zero"></a>
 
 ### Function `destroy_zero`
 
@@ -1986,7 +1909,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_scaling_factor"></a>
+<a name="@Specification_1_scaling_factor"></a>
 
 ### Function `scaling_factor`
 
@@ -2002,7 +1925,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_market_cap"></a>
+<a name="@Specification_1_market_cap"></a>
 
 ### Function `market_cap`
 
@@ -2018,7 +1941,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_is_registered_in"></a>
+<a name="@Specification_1_is_registered_in"></a>
 
 ### Function `is_registered_in`
 
@@ -2034,7 +1957,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_is_same_token"></a>
+<a name="@Specification_1_is_same_token"></a>
 
 ### Function `is_same_token`
 
@@ -2050,7 +1973,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_token_address"></a>
+<a name="@Specification_1_token_address"></a>
 
 ### Function `token_address`
 
@@ -2061,7 +1984,7 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result);
 <b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();
@@ -2070,7 +1993,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_token_code"></a>
+<a name="@Specification_1_token_code"></a>
 
 ### Function `token_code`
 
@@ -2081,14 +2004,25 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> [abstract] result == <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;();
 </code></pre>
 
 
+We use an uninterpreted function to represent the result of derived address. The actual value
+does not matter for the verification of callers.
 
-<a name="@Specification_0_code_to_bytes"></a>
+
+<a name="0x1_Token_spec_token_code"></a>
+
+
+<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;;
+</code></pre>
+
+
+
+<a name="@Specification_1_code_to_bytes"></a>
 
 ### Function `code_to_bytes`
 
@@ -2104,7 +2038,7 @@ does not matter for the verification of callers.
 
 
 
-<a name="@Specification_0_name_of"></a>
+<a name="@Specification_1_name_of"></a>
 
 ### Function `name_of`
 
@@ -2115,13 +2049,13 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
 
-<a name="@Specification_0_name_of_token"></a>
+<a name="@Specification_1_name_of_token"></a>
 
 ### Function `name_of_token`
 
@@ -2132,7 +2066,7 @@ does not matter for the verification of callers.
 
 
 
-<pre><code>pragma opaque = <b>true</b>;
+<pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>aborts_if</b> <b>false</b>;
 <b>ensures</b> [abstract] <b>exists</b>&lt;<a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a>&lt;TokenType&gt;&gt;(result_1);
 <b>ensures</b> [abstract] result_1 == <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">SPEC_TOKEN_TEST_ADDRESS</a>();

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common::type_not_allowed;
-use libra_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
 use move_core_types::language_storage::TypeTag;
+use starcoin_vm_types::transaction::{ArgumentABI, ScriptABI, TypeArgumentABI};
 
 use std::{
     io::{Result, Write},

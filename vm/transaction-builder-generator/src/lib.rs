@@ -1,7 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use libra_types::transaction::ScriptABI;
+use starcoin_vm_types::transaction::ScriptABI;
 use std::io::Read;
 
 /// Support for code-generation in C++17.

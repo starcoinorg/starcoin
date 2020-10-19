@@ -7,6 +7,7 @@ module UpgradeModuleDaoProposal {
     use 0x1::Option;
     use 0x1::Dao;
     use 0x1::Block;
+    use 0x1::Errors;
 
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_UNABLE_TO_UPGRADE: u64 = 400;
@@ -27,7 +28,7 @@ module UpgradeModuleDaoProposal {
 
     public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let caps = UpgradeModuleCapabilities<TokenT> { caps: Vector::empty() };
         move_to(signer, caps)
     }
@@ -38,7 +39,7 @@ module UpgradeModuleDaoProposal {
         cap: PackageTxnManager::UpgradePlanCapability,
     ) acquires UpgradeModuleCapabilities {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let caps = borrow_global_mut<UpgradeModuleCapabilities<TokenT>>(token_issuer);
         // TODO: should check duplicate cap?
         // for now, only one cap exists for a module address.
@@ -59,7 +60,7 @@ module UpgradeModuleDaoProposal {
         package_hash: vector<u8>,
         exec_delay: u64,
     ) acquires UpgradeModuleCapabilities {
-        assert(able_to_upgrade<TokenT>(module_address), ERR_UNABLE_TO_UPGRADE);
+        assert(able_to_upgrade<TokenT>(module_address), Errors::requires_capability(ERR_UNABLE_TO_UPGRADE));
         Dao::propose<TokenT, UpgradeModule>(
             signer,
             UpgradeModule { module_address, package_hash },
@@ -76,7 +77,7 @@ module UpgradeModuleDaoProposal {
             UpgradeModule,
         >(proposer_address, proposal_id);
         let pos = find_module_upgrade_cap<TokenT>(module_address);
-        assert(Option::is_some(&pos), 500);
+        assert(Option::is_some(&pos), 500); //todo
         let pos = Option::extract(&mut pos);
         let caps = borrow_global<UpgradeModuleCapabilities<TokenT>>(Token::token_address<TokenT>());
         let cap = Vector::borrow(&caps.caps, pos);

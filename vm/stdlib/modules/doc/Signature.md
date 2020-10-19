@@ -6,9 +6,13 @@
 Contains functions for [ed25519](https://en.wikipedia.org/wiki/EdDSA) digital signatures.
 
 
--  [Function <code>ed25519_validate_pubkey</code>](#0x1_Signature_ed25519_validate_pubkey)
--  [Function <code>ed25519_verify</code>](#0x1_Signature_ed25519_verify)
+-  [Function `ed25519_validate_pubkey`](#0x1_Signature_ed25519_validate_pubkey)
+-  [Function `ed25519_verify`](#0x1_Signature_ed25519_verify)
 -  [Specification](#@Specification_0)
+
+
+<pre><code></code></pre>
+
 
 
 <a name="0x1_Signature_ed25519_validate_pubkey"></a>
@@ -61,5 +65,5 @@ Contains functions for [ed25519](https://en.wikipedia.org/wiki/EdDSA) digital si
 
 
 
-<pre><code>pragma intrinsic = <b>true</b>;
+<pre><code><b>pragma</b> intrinsic = <b>true</b>;
 </code></pre>

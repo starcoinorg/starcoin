@@ -4,6 +4,7 @@ module MintDaoProposal {
     use 0x1::Signer;
     use 0x1::Dao;
     use 0x1::Account;
+    use 0x1::Errors;
 
     resource struct WrappedMintCapability<TokenType> {
         cap: Token::MintCapability<TokenType>,
@@ -18,7 +19,7 @@ module MintDaoProposal {
 
     public fun plugin<TokenT>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
-        assert(Signer::address_of(signer) == token_issuer, ERR_NOT_AUTHORIZED);
+        assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
         let mint_cap = Token::remove_mint_capability<TokenT>(signer);
         move_to(signer, WrappedMintCapability { cap: mint_cap });
     }

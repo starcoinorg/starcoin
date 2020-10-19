@@ -4,10 +4,12 @@
 use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
+use crate::genesis_config::ConsensusStrategy;
 use crate::{
     access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
 };
 use move_core_types::{language_storage::StructTag, move_resource::MoveResource};
+use std::convert::TryFrom;
 
 const CONSENSUS_CONFIG_MODULE_NAME: &str = "ConsensusConfig";
 
@@ -119,8 +121,8 @@ impl EpochResource {
         self.block_gas_limit
     }
 
-    pub fn strategy(&self) -> u8 {
-        self.strategy
+    pub fn strategy(&self) -> ConsensusStrategy {
+        ConsensusStrategy::try_from(self.strategy).expect("epoch consensus strategy must exist.")
     }
 
     // TODO/XXX: remove this once the MoveResource trait allows type arguments to `struct_tag`.

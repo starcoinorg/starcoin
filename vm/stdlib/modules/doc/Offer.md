@@ -5,13 +5,19 @@
 
 
 
--  [Resource <code><a href="Offer.md#0x1_Offer">Offer</a></code>](#0x1_Offer_Offer)
--  [Function <code>EOFFER_DNE_FOR_ACCOUNT</code>](#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT)
--  [Function <code>EOFFER_NOT_UNLOCKED</code>](#0x1_Offer_EOFFER_NOT_UNLOCKED)
--  [Function <code>create</code>](#0x1_Offer_create)
--  [Function <code>redeem</code>](#0x1_Offer_redeem)
--  [Function <code>exists_at</code>](#0x1_Offer_exists_at)
--  [Function <code>address_of</code>](#0x1_Offer_address_of)
+-  [Resource `Offer`](#0x1_Offer_Offer)
+-  [Constants](#@Constants_0)
+-  [Function `create`](#0x1_Offer_create)
+-  [Function `redeem`](#0x1_Offer_redeem)
+-  [Function `exists_at`](#0x1_Offer_exists_at)
+-  [Function `address_of`](#0x1_Offer_address_of)
+
+
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
+</code></pre>
+
 
 
 <a name="0x1_Offer_Offer"></a>
@@ -53,53 +59,28 @@
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
 <a name="0x1_Offer_EOFFER_DNE_FOR_ACCOUNT"></a>
 
-## Function `EOFFER_DNE_FOR_ACCOUNT`
 
 
-
-<pre><code><b>fun</b> <a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>(): u64
+<pre><code><b>const</b> <a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>: u64 = 101;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 1
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Offer_EOFFER_NOT_UNLOCKED"></a>
 
-## Function `EOFFER_NOT_UNLOCKED`
 
 
-
-<pre><code><b>fun</b> <a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>(): u64
+<pre><code><b>const</b> <a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>: u64 = 102;
 </code></pre>
 
 
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>(): u64 {
-    <a href="ErrorCode.md#0x1_ErrorCode_ECODE_BASE">ErrorCode::ECODE_BASE</a>() + 2
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Offer_create"></a>
 
@@ -146,8 +127,8 @@
     <b>let</b> <a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt; { offered, for, time_lock } = move_from&lt;<a href="Offer.md#0x1_Offer">Offer</a>&lt;Offered&gt;&gt;(offer_address);
     <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>assert</b>(sender == for || sender == offer_address, <a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>());
-    <b>assert</b>(now &gt;= time_lock, <a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>());
+    <b>assert</b>(sender == for || sender == offer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Offer.md#0x1_Offer_EOFFER_DNE_FOR_ACCOUNT">EOFFER_DNE_FOR_ACCOUNT</a>));
+    <b>assert</b>(now &gt;= time_lock, <a href="Errors.md#0x1_Errors_not_published">Errors::not_published</a>(<a href="Offer.md#0x1_Offer_EOFFER_NOT_UNLOCKED">EOFFER_NOT_UNLOCKED</a>));
     offered
 }
 </code></pre>

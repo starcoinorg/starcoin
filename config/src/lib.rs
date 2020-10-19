@@ -175,6 +175,10 @@ pub struct StarcoinOpt {
     #[structopt(long = "disable-mint-empty-block")]
     /// Do not mint empty block, default is true in Dev network.
     pub disable_mint_empty_block: Option<bool>,
+
+    #[structopt(long = "watch-timeout")]
+    /// Watch timeout in seconds
+    pub watch_timeout: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
