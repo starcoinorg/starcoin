@@ -8,7 +8,6 @@ fn main() {
         .file("ext/CryptonightR_template.S")
         .file("ext/aesb.c")
         .file("ext/blake256.c")
-        .file("ext/chacha.c")
         .file("ext/crypto-ops-data.c")
         .file("ext/crypto-ops.c")
         .file("ext/groestl.c")
