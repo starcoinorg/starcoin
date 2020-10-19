@@ -84,7 +84,7 @@ impl Miner {
         }
 
         let block = ctx.block_template.into_block(nonce, ctx.difficulty);
-        info!("Mint new block with id: {:?}", block.id());
+        info!("Mint new block: {}", block);
         self.bus.broadcast(MinedBlock(Arc::new(block)))?;
         MINER_METRICS.block_mint_count.inc();
         ctx.metrics_timer.observe_duration();
