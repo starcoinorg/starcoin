@@ -436,8 +436,12 @@ impl ChainReader for BlockChain {
     }
 
     fn get_total_difficulty(&self) -> Result<U256> {
-        let block_info = self.storage.get_block_info(self.head_block().id())?;
-        Ok(block_info.map_or(U256::zero(), |info| info.total_difficulty))
+        let id = self.head_block().id();
+        let block_info = self
+            .storage
+            .get_block_info(self.head_block().id())?
+            .ok_or_else(|| format_err!("Can not find block info by id {}", id))?;
+        Ok(block_info.total_difficulty)
     }
 
     fn exist_block(&self, block_id: HashValue) -> bool {
@@ -662,7 +666,9 @@ impl BlockChain {
             verify_block!(
                 VerifyBlockField::Header,
                 header.timestamp() <= ALLOWED_FUTURE_BLOCKTIME + now,
-                "Invalid block: block timestamp too new"
+                "Invalid block: block timestamp too new, now:{}, block time:{}",
+                now,
+                header.timestamp()
             );
         }
 

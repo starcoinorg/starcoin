@@ -7845,6 +7845,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "async-trait",
  "dyn-clone",
  "forkable-jellyfish-merkle",

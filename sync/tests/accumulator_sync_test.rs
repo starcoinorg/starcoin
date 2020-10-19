@@ -15,7 +15,7 @@ use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
 #[ignore]
-#[stest::test]
+#[stest::test(timeout = 120)]
 pub fn test_accumulator_sync() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!(
@@ -30,7 +30,7 @@ pub fn test_accumulator_sync() {
     }
     //wait block generate.
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async { first_chain.master_head_block().await.unwrap().unwrap() });
+    let block_1 = block_on(async { first_chain.master_head_block().await.unwrap() });
     let number_1 = block_1.header().number();
     debug!("first chain head block number is {}", number_1);
     assert_eq!(number_1, count);
@@ -68,7 +68,8 @@ pub fn test_accumulator_sync() {
         client,
         2,
     );
-    let accumulator_info = block_on(async { sync_task.await }).unwrap();
+    let task_handle = async_std::task::spawn(sync_task);
+    let accumulator_info = block_on(async { task_handle.await }).unwrap();
     assert_eq!(accumulator_info, block_info1.block_accumulator_info);
 
     second_node.stop().unwrap();

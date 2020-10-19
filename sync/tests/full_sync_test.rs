@@ -32,14 +32,7 @@ fn test_broadcast_with_difficulty() {
         first_node.generate_block().unwrap();
     }
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async {
-        first_chain
-            .clone()
-            .master_head_block()
-            .await
-            .unwrap()
-            .unwrap()
-    });
+    let block_1 = block_on(async { first_chain.clone().master_head_block().await.unwrap() });
     let number_1 = block_1.header().number();
 
     let mut second_config = NodeConfig::random_for_test();
@@ -58,14 +51,7 @@ fn test_broadcast_with_difficulty() {
     let mut number_2 = 0;
     for i in 0..10 as usize {
         std::thread::sleep(Duration::from_secs(2));
-        let block_2 = block_on(async {
-            second_chain
-                .clone()
-                .master_head_block()
-                .await
-                .unwrap()
-                .unwrap()
-        });
+        let block_2 = block_on(async { second_chain.clone().master_head_block().await.unwrap() });
         number_2 = block_2.header().number();
         debug!("index : {}, second chain number is {}", i, number_2);
         if number_2 == number_1 {

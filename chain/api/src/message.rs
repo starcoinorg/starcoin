@@ -58,9 +58,10 @@ impl ServiceRequest for ChainRequest {
 pub enum ChainResponse {
     BlockTemplate(Box<BlockTemplate>),
     Block(Box<Block>),
-    OptionBlock(Option<Box<Block>>),
-    OptionBlockInfo(Box<Option<BlockInfo>>),
-    BlockHeader(Box<Option<BlockHeader>>),
+    BlockOption(Option<Box<Block>>),
+    BlockInfoOption(Box<Option<BlockInfo>>),
+    BlockHeader(Box<BlockHeader>),
+    BlockHeaderOption(Box<Option<BlockHeader>>),
     HashValue(HashValue),
     StartupInfo(StartupInfo),
     ChainInfo(ChainInfo),

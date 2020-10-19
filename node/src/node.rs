@@ -215,7 +215,7 @@ impl NodeService {
         //test net or dev_net must init mock_time_service
         let net = config.net();
         if net.is_dev() || net.is_test() {
-            if let Ok(Some(block_header)) = starcoin_chain_service.master_head_header().await {
+            if let Ok(block_header) = starcoin_chain_service.master_head_header().await {
                 let global_time = starcoin_chain_service
                     .get_global_time_by_number(block_header.number())
                     .await?;
