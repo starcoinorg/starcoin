@@ -1,9 +1,15 @@
 address 0x1 {
 module CoreAddresses {
+    use 0x1::Signer;
+    use 0x1::Errors;
+
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
     }
+
+    const ENOT_GENESIS_ACCOUNT: u64 = 11;
+
     /// The address of the genesis
     public fun GENESIS_ADDRESS(): address {
         0x1
@@ -14,6 +20,20 @@ module CoreAddresses {
         define SPEC_GENESIS_ADDRESS(): address {
             0x1
         }
+    }
+
+    public fun assert_genesis_address(account: &signer) {
+        assert(Signer::address_of(account) == GENESIS_ADDRESS(), Errors::requires_address(ENOT_GENESIS_ACCOUNT))
+    }
+    spec fun assert_genesis_address {
+        pragma opaque;
+        include AbortsIfNotGenesisAddress;
+    }
+
+    /// Specifies that a function aborts if the account does not have the Libra root address.
+    spec schema AbortsIfNotGenesisAddress {
+        account: signer;
+        aborts_if Signer::spec_address_of(account) != SPEC_GENESIS_ADDRESS();
     }
 
     /// The address of the root association account. This account is

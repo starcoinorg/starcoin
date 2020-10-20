@@ -68,7 +68,6 @@
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
 <b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
 <b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 </code></pre>
 
@@ -361,20 +360,47 @@
 ## Constants
 
 
+<a name="0x1_ConsensusConfig_EINVALID_ARGUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>: u64 = 18;
+</code></pre>
+
+
+
+<a name="0x1_ConsensusConfig_EMAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
+
+
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EMAX_UNCLES_PER_BLOCK_IS_WRONG">EMAX_UNCLES_PER_BLOCK_IS_WRONG</a>: u64 = 101;
+</code></pre>
+
+
+
+<a name="0x1_ConsensusConfig_EUNCLES_IS_NOT_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EUNCLES_IS_NOT_ZERO">EUNCLES_IS_NOT_ZERO</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_ConsensusConfig_EUNREACHABLE"></a>
+
+
+
+<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EUNREACHABLE">EUNREACHABLE</a>: u64 = 19;
+</code></pre>
+
+
+
 <a name="0x1_ConsensusConfig_HUNDRED"></a>
 
 
 
 <pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a>: u64 = 100;
-</code></pre>
-
-
-
-<a name="0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG"></a>
-
-
-
-<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>: u64 = 101;
 </code></pre>
 
 
@@ -393,15 +419,6 @@
 
 
 <pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_THOUSAND_U128">THOUSAND_U128</a>: u128 = 1000;
-</code></pre>
-
-
-
-<a name="0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO"></a>
-
-
-
-<pre><code><b>const</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>: u64 = 102;
 </code></pre>
 
 
@@ -435,11 +452,8 @@
     base_block_gas_limit: u64,
     strategy: u8,
 ) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
-    <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
-    );
+    <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">Self::ConsensusConfig</a>&gt;(
         account,
@@ -508,17 +522,17 @@
                                 base_max_uncles_per_block: u64,
                                 base_block_gas_limit: u64,
                                 strategy: u8,): <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
-    <b>assert</b>(uncle_rate_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_reward_per_block &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(epoch_block_count &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_block_difficulty_window &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_reward_per_uncle_percent &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(min_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(strategy &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(uncle_rate_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_reward_per_block &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(epoch_block_count &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_block_difficulty_window &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_reward_per_uncle_percent &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(min_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(strategy &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
 
     <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
         uncle_rate_target,
@@ -896,20 +910,17 @@
 
 <pre><code><b>public</b> <b>fun</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">adjust_epoch</a>(account: &signer, block_number: u64, now: u64, uncles: u64, parent_gas_used:u64): u128
 <b>acquires</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>, <a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a> {
-    <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()),
-    );
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <b>let</b> epoch_ref = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_Epoch">Epoch</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_MAX_UNCLES_PER_BLOCK_IS_WRONG">MAX_UNCLES_PER_BLOCK_IS_WRONG</a>));
+    <b>assert</b>(epoch_ref.max_uncles_per_block &gt;= uncles, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EMAX_UNCLES_PER_BLOCK_IS_WRONG">EMAX_UNCLES_PER_BLOCK_IS_WRONG</a>));
 
     <b>let</b> epoch_data = borrow_global_mut&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig_EpochData">EpochData</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
     <b>let</b> (new_epoch, reward_per_block) = <b>if</b> (block_number &lt; epoch_ref.end_number) {
         (<b>false</b>, epoch_ref.reward_per_block)
     } <b>else</b> <b>if</b> (block_number == epoch_ref.end_number) {
         //start a new epoch
-        <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_UNCLES_IS_NOT_ZERO">UNCLES_IS_NOT_ZERO</a>));
+        <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EUNCLES_IS_NOT_ZERO">EUNCLES_IS_NOT_ZERO</a>));
         <b>let</b> config = <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">get_config</a>();
         <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
         <b>let</b> total_time = now - epoch_ref.epoch_start_time;
@@ -947,7 +958,7 @@
         (<b>true</b>, new_reward_per_block)
     } <b>else</b> {
         //This should never happened.
-        <b>abort</b> <a href="Errors.md#0x1_Errors_EUNREACHABLE">Errors::EUNREACHABLE</a>()
+        <b>abort</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig_EUNREACHABLE">EUNREACHABLE</a>
     };
     <b>let</b> reward = reward_per_block +
         reward_per_block * (epoch_ref.reward_per_uncle_percent <b>as</b> u128) * (uncles <b>as</b> u128) / (<a href="ConsensusConfig.md#0x1_ConsensusConfig_HUNDRED">HUNDRED</a> <b>as</b> u128);

@@ -12,34 +12,20 @@ address 0x1 {
 ///     number relative to the module which raised the error and can be used to obtain more information about
 ///     the error at hand. It is mostly used for diagnosis purposes. Error reasons may change over time as the
 ///     framework evolves.
+///
+/// Rules to declare or use *error reason*:
+///  1. error reason is declared as const in the user module
+///  2. error reason name must start with "E", for example, const EACCOUNT_DOES_NOT_EXIST = ...
+///  3. value less than 100 is reserved for general purpose and shared by all modules
+///  4. don't change general purpose error reason value, it's co-related with error code in starcoin vm
+///  5. self-defined error reason value must be large than 100
+///  6. error reason must be used together with error category
+///
 module Errors {
     spec module {
         pragma verify;
         pragma aborts_if_is_strict;
     }
-
-    public fun PROLOGUE_ACCOUNT_DOES_NOT_EXIST(): u64 {0}
-    public fun PROLOGUE_INVALID_ACCOUNT_AUTH_KEY(): u64 {1}
-    public fun PROLOGUE_SEQUENCE_NUMBER_TOO_OLD(): u64 {2}
-    public fun PROLOGUE_SEQUENCE_NUMBER_TOO_NEW(): u64 {3}
-    public fun PROLOGUE_CANT_PAY_GAS_DEPOSIT(): u64 {4}
-    public fun PROLOGUE_TRANSACTION_EXPIRED(): u64 {5}
-    public fun PROLOGUE_BAD_CHAIN_ID(): u64 {6}
-    public fun PROLOGUE_MODULE_NOT_ALLOWED(): u64 {7}
-    public fun PROLOGUE_SCRIPT_NOT_ALLOWED(): u64 {8}
-
-    public fun EINSUFFICIENT_BALANCE(): u64 {10}
-    public fun ENOT_GENESIS_ACCOUNT(): u64 {11}
-    public fun ENOT_GENESIS(): u64 {12}
-    public fun ECONFIG_VALUE_DOES_NOT_EXIST(): u64 {13}
-    public fun EINVALID_TIMESTAMP(): u64 {14}
-    public fun ECOIN_DEPOSIT_IS_ZERO(): u64 {15}
-    public fun EDESTORY_TOKEN_NON_ZERO(): u64 {16}
-    public fun EBLOCK_NUMBER_MISMATCH(): u64 {17}
-    /// Invalid argument.
-    public fun EINVALID_ARGUMENT(): u64 {18}
-    /// There code should unreacheable
-    public fun EUNREACHABLE(): u64 {19}
 
     /// A function to create an error from from a category and a reason.
     fun make(category: u8, reason: u64): u64 {

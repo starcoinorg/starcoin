@@ -2,9 +2,7 @@ address 0x1 {
 
 module TransactionTimeoutConfig {
     use 0x1::Timestamp;
-    use 0x1::Signer;
     use 0x1::CoreAddresses;
-    use 0x1::Errors;
     use 0x1::Config;
 
     struct TransactionTimeoutConfig {
@@ -12,8 +10,8 @@ module TransactionTimeoutConfig {
     }
 
     public fun initialize(account: &signer, duration_seconds: u64) {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        Timestamp::assert_genesis();
+        CoreAddresses::assert_genesis_address(account);
 
         Config::publish_new_config<Self::TransactionTimeoutConfig>(
             account,

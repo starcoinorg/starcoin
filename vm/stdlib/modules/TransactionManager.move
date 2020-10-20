@@ -18,6 +18,13 @@ module TransactionManager {
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
 
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
+    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
+    const EPROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
+    const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
+
+
     // The prologue is invoked at the beginning of every transaction
     // It verifies:
     // - The account's auth key matches the transaction's public key
@@ -39,11 +46,11 @@ module TransactionManager {
         // Can only be invoked by genesis account
         assert(
             Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()),
+            Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST),
         );
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
-        assert(ChainId::get() == chain_id, Errors::invalid_argument(Errors::PROLOGUE_BAD_CHAIN_ID()));
+        assert(ChainId::get() == chain_id, Errors::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
         Account::txn_prologue<TokenType>(
             account,
             txn_sender,
@@ -54,12 +61,12 @@ module TransactionManager {
         );
         assert(
             TransactionTimeout::is_valid_transaction_timestamp(txn_expiration_time),
-            Errors::invalid_argument(Errors::PROLOGUE_TRANSACTION_EXPIRED()),
+            Errors::invalid_argument(EPROLOGUE_TRANSACTION_EXPIRED),
         );
         if (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE) {
             assert(
                 TransactionPublishOption::is_module_allowed(Signer::address_of(account)),
-                Errors::invalid_argument(Errors::PROLOGUE_MODULE_NOT_ALLOWED()),
+                Errors::invalid_argument(EPROLOGUE_MODULE_NOT_ALLOWED),
             );
             PackageTxnManager::package_txn_prologue(
                 account,
@@ -73,7 +80,7 @@ module TransactionManager {
                     Signer::address_of(account),
                     &txn_script_or_package_hash,
                 ),
-                Errors::invalid_argument(Errors::PROLOGUE_SCRIPT_NOT_ALLOWED()),
+                Errors::invalid_argument(EPROLOGUE_SCRIPT_NOT_ALLOWED),
             );
         };
     }
@@ -93,10 +100,7 @@ module TransactionManager {
         // txn execute success or fail.
         success: bool,
     ) {
-        assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
-        );
+        CoreAddresses::assert_genesis_address(account);
         Account::txn_epilogue<TokenType>(
             account,
             txn_sender,
@@ -129,14 +133,11 @@ module TransactionManager {
         parent_gas_used: u64,
     ) {
         // Can only be invoked by genesis account
-        assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()),
-        );
+        CoreAddresses::assert_genesis_address(account);
         Timestamp::update_global_time(account, timestamp);
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
-        assert(ChainId::get() == chain_id, Errors::invalid_argument(Errors::PROLOGUE_BAD_CHAIN_ID()));
+        assert(ChainId::get() == chain_id, Errors::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
         //get previous author for distribute txn_fee
         let previous_author = Block::get_current_author();
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);

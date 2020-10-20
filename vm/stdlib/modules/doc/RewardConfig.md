@@ -6,21 +6,20 @@
 
 
 -  [Struct `RewardConfig`](#0x1_RewardConfig_RewardConfig)
+-  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_RewardConfig_initialize)
 -  [Function `new_reward_config`](#0x1_RewardConfig_new_reward_config)
 -  [Function `get_reward_config`](#0x1_RewardConfig_get_reward_config)
 -  [Function `reward_delay`](#0x1_RewardConfig_reward_delay)
--  [Specification](#@Specification_0)
-    -  [Function `initialize`](#@Specification_0_initialize)
-    -  [Function `new_reward_config`](#@Specification_0_new_reward_config)
-    -  [Function `get_reward_config`](#@Specification_0_get_reward_config)
-    -  [Function `reward_delay`](#@Specification_0_reward_delay)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `new_reward_config`](#@Specification_1_new_reward_config)
+    -  [Function `get_reward_config`](#@Specification_1_get_reward_config)
+    -  [Function `reward_delay`](#@Specification_1_reward_delay)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
-<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 </code></pre>
 
@@ -53,6 +52,20 @@
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_RewardConfig_EINVALID_ARGUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="RewardConfig.md#0x1_RewardConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>: u64 = 18;
+</code></pre>
+
+
+
 <a name="0x1_RewardConfig_initialize"></a>
 
 ## Function `initialize`
@@ -69,8 +82,8 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="RewardConfig.md#0x1_RewardConfig_initialize">initialize</a>(account: &signer, reward_delay: u64) {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">Self::RewardConfig</a>&gt;(
         account,
@@ -156,7 +169,7 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -168,7 +181,7 @@
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -188,7 +201,7 @@
 
 
 
-<a name="@Specification_0_new_reward_config"></a>
+<a name="@Specification_1_new_reward_config"></a>
 
 ### Function `new_reward_config`
 
@@ -199,7 +212,7 @@
 
 
 
-<a name="@Specification_0_get_reward_config"></a>
+<a name="@Specification_1_get_reward_config"></a>
 
 ### Function `get_reward_config`
 
@@ -226,7 +239,7 @@
 
 
 
-<a name="@Specification_0_reward_delay"></a>
+<a name="@Specification_1_reward_delay"></a>
 
 ### Function `reward_delay`
 

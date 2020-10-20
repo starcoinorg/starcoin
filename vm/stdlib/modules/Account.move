@@ -97,6 +97,15 @@ module Account {
         token_code: vector<u8>,
     }
 
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+    const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
+    const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
+
+    const EINSUFFICIENT_BALANCE: u64 = 10;
+    const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
+
     const EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED: u64 = 101;
     const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
     const EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED: u64 = 103;
@@ -109,7 +118,7 @@ module Account {
     public fun create_genesis_account(
         new_account_address: address,
     ) :signer {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
+        Timestamp::assert_genesis();
         let new_account = create_signer(new_account_address);
         make_account(&new_account, DUMMY_AUTH_KEY);
         new_account
@@ -254,7 +263,7 @@ module Account {
     ) acquires Account, Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         deposit(payee, to_deposit);
         emit_payment_events<TokenType>(payer, payee, deposit_value, metadata);
     }
@@ -286,7 +295,7 @@ module Account {
     ) acquires Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         let payee_balance = borrow_global_mut<Balance<TokenType>>(account);
         // Deposit the `to_deposit` token
         Token::deposit(&mut payee_balance.token, to_deposit);
@@ -418,7 +427,7 @@ module Account {
 
     fun emit_send_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
     acquires Account  {
-        assert(payment_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
 
         let token_code = Token::token_code<TokenType>();
         // Load the payer's account
@@ -441,7 +450,7 @@ module Account {
 
     fun emit_receive_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
     acquires Account {
-        assert(payment_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         let token_code = Token::token_code<TokenType>();
         // Load the payer's account
         let payee_account_ref = borrow_global_mut<Account>(payee);
@@ -702,11 +711,11 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()));
+        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST));
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
-        assert(exists_at(txn_sender), Errors::requires_address(Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST()));
+        assert(exists_at(txn_sender), Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST));
 
         // Load the transaction sender's account
         let sender_account = borrow_global_mut<Account>(txn_sender);
@@ -714,17 +723,17 @@ module Account {
         // Check that the hash of the transaction's public key matches the account's auth key
         assert(
             Hash::sha3_256(txn_public_key) == *&sender_account.authentication_key,
-            Errors::invalid_argument(Errors::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY())
+            Errors::invalid_argument(EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY)
         );
 
         // Check that the account has enough balance for all of the gas
         let max_transaction_fee = txn_gas_price * txn_max_gas_units;
         let balance_amount = balance<TokenType>(txn_sender);
-        assert(balance_amount >= (max_transaction_fee as u128), Errors::invalid_argument(Errors::PROLOGUE_CANT_PAY_GAS_DEPOSIT()));
+        assert(balance_amount >= (max_transaction_fee as u128), Errors::invalid_argument(EPROLOGUE_CANT_PAY_GAS_DEPOSIT));
 
         // Check that the transaction sequence number matches the sequence number of the account
-        assert(txn_sequence_number >= sender_account.sequence_number, Errors::invalid_argument(Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD()));
-        assert(txn_sequence_number == sender_account.sequence_number, Errors::invalid_argument(Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW()));
+        assert(txn_sequence_number >= sender_account.sequence_number, Errors::invalid_argument(EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD));
+        assert(txn_sequence_number == sender_account.sequence_number, Errors::invalid_argument(EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW));
     }
 
     spec fun txn_prologue {
@@ -749,7 +758,7 @@ module Account {
         txn_max_gas_units: u64,
         gas_units_remaining: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        CoreAddresses::assert_genesis_address(account);
 
         // Load the transaction sender's account and balance resources
         let sender_account = borrow_global_mut<Account>(txn_sender);
@@ -759,7 +768,7 @@ module Account {
         let transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) as u128);
         assert(
             balance_for(sender_balance) >= transaction_fee_amount,
-            Errors::limit_exceeded(Errors::EINSUFFICIENT_BALANCE())
+            Errors::limit_exceeded(EINSUFFICIENT_BALANCE)
         );
 
         // Bump the sequence number

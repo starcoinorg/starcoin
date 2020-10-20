@@ -389,11 +389,29 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
+<a name="0x1_Token_EDESTORY_TOKEN_NON_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>: u64 = 16;
+</code></pre>
+
+
+
 <a name="0x1_Token_EDESTROY_KEY_NOT_EMPTY"></a>
 
 
 
 <pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Token_EINVALID_ARGUMENT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>: u64 = 18;
 </code></pre>
 
 
@@ -737,8 +755,8 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                  amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> end_time = now + peroid;
     <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
@@ -769,8 +787,8 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
                                             amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_ARGUMENT">Errors::EINVALID_ARGUMENT</a>()));
+    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
         total: amount,
@@ -1205,7 +1223,7 @@ so you cannot "burn" any non-zero amount of Token
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = token;
-    <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_EDESTORY_TOKEN_NON_ZERO">Errors::EDESTORY_TOKEN_NON_ZERO</a>()))
+    <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>))
 }
 </code></pre>
 
