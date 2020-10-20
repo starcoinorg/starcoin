@@ -262,7 +262,7 @@ impl NodeService {
         if config.miner.enable_miner_client {
             let miner_client_config = config.miner.client_config.clone();
             registry.put_shared(miner_client_config).await?;
-            let job_client = JobBusClient::new(bus.clone(), config.net().consensus());
+            let job_client = JobBusClient::new(bus.clone());
             registry.put_shared(job_client).await?;
             registry
                 .register::<MinerClientService<JobBusClient>>()

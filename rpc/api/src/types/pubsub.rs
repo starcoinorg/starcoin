@@ -13,6 +13,7 @@ use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::U256;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::{TryFrom, TryInto};
 
 /// Subscription kind.
@@ -244,6 +245,7 @@ impl ThinHeadBlock {
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
 pub struct MintBlock {
+    pub strategy: ConsensusStrategy,
     pub minting_hash: HashValue,
     pub difficulty: U256,
 }

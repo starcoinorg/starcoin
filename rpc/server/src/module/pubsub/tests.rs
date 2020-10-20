@@ -28,6 +28,7 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::{account_address, U256};
 use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 use tokio::time::timeout;
 use tokio::time::Duration;
@@ -228,7 +229,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     // Generate a event
     let diff = U256::from(1024);
     let header_hash = HashValue::random();
-    let mint_block_event = MintBlockEvent::new(header_hash, diff);
+    let mint_block_event = MintBlockEvent::new(ConsensusStrategy::Dummy, header_hash, diff);
     bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.compat().next())
         .await?

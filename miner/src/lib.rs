@@ -103,7 +103,11 @@ impl MinerService {
                 warn!("force set mint task, since mint task is not empty");
             }
             self.current_task = Some(task);
-            ctx.broadcast(MintBlockEvent::new(mining_hash, difficulty));
+            ctx.broadcast(MintBlockEvent::new(
+                block_chain.consensus(),
+                mining_hash,
+                difficulty,
+            ));
             Ok(())
         }
     }
