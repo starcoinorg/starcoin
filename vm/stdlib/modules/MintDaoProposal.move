@@ -33,7 +33,6 @@ module MintDaoProposal {
     }
 
     public fun execute_mint_proposal<TokenT: copyable>(
-        signer: &signer,
         proposer_address: address,
         proposal_id: u64,
     ) acquires WrappedMintCapability {
@@ -43,7 +42,7 @@ module MintDaoProposal {
         );
         let cap = borrow_global<WrappedMintCapability<TokenT>>(Token::token_address<TokenT>());
         let tokens = Token::mint_with_capability<TokenT>(&cap.cap, amount);
-        Account::deposit_to(signer, receiver, tokens);
+        Account::deposit(receiver, tokens);
     }
 }
 }

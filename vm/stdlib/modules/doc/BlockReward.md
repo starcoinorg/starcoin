@@ -207,7 +207,7 @@
                 <b>if</b> (first_info.reward &gt; 0) {
                     <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="BlockReward.md#0x1_BlockReward_EMINER_EXIST">EMINER_EXIST</a>));
                     <b>let</b> reward = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.reward);
-                    <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.miner, reward);
+                    <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(first_info.miner, reward);
                 };
                 <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>(&<b>mut</b> rewards.infos, 0);
                 i = i - 1;

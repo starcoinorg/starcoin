@@ -19,9 +19,9 @@ AccountResource:
     - key_rotation_capability:
         OPTION:
           TYPENAME: KeyRotationCapabilityResource
-    - received_events:
+    - withdraw_events:
         TYPENAME: EventHandle
-    - sent_events:
+    - deposit_events:
         TYPENAME: EventHandle
     - accept_token_events:
         TYPENAME: EventHandle

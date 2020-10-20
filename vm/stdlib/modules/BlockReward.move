@@ -75,7 +75,7 @@ module BlockReward {
                     if (first_info.reward > 0) {
                         assert(Account::exists_at(first_info.miner), Errors::requires_address(EMINER_EXIST));
                         let reward = Token::mint<STC>(account, first_info.reward);
-                        Account::deposit_to<STC>(account, first_info.miner, reward);
+                        Account::deposit<STC>(first_info.miner, reward);
                     };
                     Vector::remove(&mut rewards.infos, 0);
                     i = i - 1;

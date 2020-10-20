@@ -1,10 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    account_address::AccountAddress,
-    account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource},
-};
+use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
 use anyhow::Result;
 use move_core_types::{
     identifier::{IdentStr, Identifier},
@@ -13,45 +10,34 @@ use move_core_types::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-/// Returns the path to the received event counter for an Account resource.
+/// Returns the path to the deposit for an Account resource.
 /// It can be used to query the event DB for the given event.
-pub static ACCOUNT_RECEIVED_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
+pub static ACCOUNT_DEPOSIT_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
     let mut path = AccountResource::resource_path();
-    path.extend_from_slice(b"/received_events_count/");
+    path.extend_from_slice(b"/deposit_events_count/");
     path
 });
 
 /// Struct that represents a ReceivedPaymentEvent.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ReceivedPaymentEvent {
+pub struct DepositEvent {
     amount: u128,
     token_code: Identifier,
-    sender: AccountAddress,
     metadata: Vec<u8>,
 }
 
-impl ReceivedPaymentEvent {
-    pub fn new(
-        amount: u128,
-        token_code: Identifier,
-        sender: AccountAddress,
-        metadata: Vec<u8>,
-    ) -> Self {
+impl DepositEvent {
+    pub fn new(amount: u128, token_code: Identifier, metadata: Vec<u8>) -> Self {
         Self {
             amount,
             token_code,
-            sender,
+
             metadata,
         }
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {
         scs::from_bytes(bytes).map_err(Into::into)
-    }
-
-    /// Get the receiver of this transaction event.
-    pub fn sender(&self) -> AccountAddress {
-        self.sender
     }
 
     /// Get the amount sent or received
@@ -70,7 +56,7 @@ impl ReceivedPaymentEvent {
     }
 }
 
-impl MoveResource for ReceivedPaymentEvent {
+impl MoveResource for DepositEvent {
     const MODULE_NAME: &'static str = ACCOUNT_MODULE_NAME;
-    const STRUCT_NAME: &'static str = "ReceivedPaymentEvent";
+    const STRUCT_NAME: &'static str = "DepositEvent";
 }

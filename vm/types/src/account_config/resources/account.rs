@@ -17,8 +17,8 @@ pub struct AccountResource {
     authentication_key: Vec<u8>,
     withdrawal_capability: Option<WithdrawCapabilityResource>,
     key_rotation_capability: Option<KeyRotationCapabilityResource>,
-    received_events: EventHandle,
-    sent_events: EventHandle,
+    withdraw_events: EventHandle,
+    deposit_events: EventHandle,
     accept_token_events: EventHandle,
     sequence_number: u64,
 }
@@ -30,8 +30,8 @@ impl AccountResource {
         authentication_key: Vec<u8>,
         withdrawal_capability: Option<WithdrawCapabilityResource>,
         key_rotation_capability: Option<KeyRotationCapabilityResource>,
-        sent_events: EventHandle,
-        received_events: EventHandle,
+        deposit_events: EventHandle,
+        withdraw_events: EventHandle,
         accept_token_events: EventHandle,
     ) -> Self {
         AccountResource {
@@ -39,8 +39,8 @@ impl AccountResource {
             withdrawal_capability,
             key_rotation_capability,
             authentication_key,
-            sent_events,
-            received_events,
+            deposit_events,
+            withdraw_events,
             accept_token_events,
         }
     }
@@ -65,14 +65,14 @@ impl AccountResource {
         &self.authentication_key
     }
 
-    /// Return the sent_events handle for the given AccountResource
-    pub fn sent_events(&self) -> &EventHandle {
-        &self.sent_events
+    /// Return the deposit_events handle for the given AccountResource
+    pub fn deposit_events(&self) -> &EventHandle {
+        &self.deposit_events
     }
 
-    /// Return the received_events handle for the given AccountResource
-    pub fn received_events(&self) -> &EventHandle {
-        &self.received_events
+    /// Return the withdraw_events handle for the given AccountResource
+    pub fn withdraw_events(&self) -> &EventHandle {
+        &self.withdraw_events
     }
 
     /// Return the accept_token_events handle for the given AccountResource

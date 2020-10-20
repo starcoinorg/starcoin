@@ -9,7 +9,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_state_api::StateWithProof;
-use starcoin_types::account_config::{MintEvent, ReceivedPaymentEvent, SentPaymentEvent};
+use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
@@ -155,13 +155,11 @@ pub enum EventDataView {
     #[serde(rename = "receivedpayment")]
     ReceivedPayment {
         amount: AmountView,
-        sender: BytesView,
         metadata: BytesView,
     },
     #[serde(rename = "sentpayment")]
     SentPayment {
         amount: AmountView,
-        receiver: BytesView,
         metadata: BytesView,
     },
     #[serde(rename = "upgrade")]
@@ -191,28 +189,25 @@ pub enum EventDataView {
 impl From<ContractEvent> for EventView {
     /// Tries to convert the provided byte array into Event Key.
     fn from(event: ContractEvent) -> EventView {
-        let event_data = if event.type_tag() == &TypeTag::Struct(ReceivedPaymentEvent::struct_tag())
-        {
-            if let Ok(received_event) = ReceivedPaymentEvent::try_from_bytes(&event.event_data()) {
+        let event_data = if event.type_tag() == &TypeTag::Struct(DepositEvent::struct_tag()) {
+            if let Ok(received_event) = DepositEvent::try_from_bytes(&event.event_data()) {
                 let amount_view = AmountView::new(
                     received_event.amount(),
                     received_event.currency_code().as_str(),
                 );
                 Ok(EventDataView::ReceivedPayment {
                     amount: amount_view,
-                    sender: BytesView::from(received_event.sender().as_ref()),
                     metadata: BytesView::from(received_event.metadata()),
                 })
             } else {
                 Err(format_err!("Unable to parse ReceivedPaymentEvent"))
             }
-        } else if event.type_tag() == &TypeTag::Struct(SentPaymentEvent::struct_tag()) {
-            if let Ok(sent_event) = SentPaymentEvent::try_from_bytes(&event.event_data()) {
+        } else if event.type_tag() == &TypeTag::Struct(WithdrawEvent::struct_tag()) {
+            if let Ok(sent_event) = WithdrawEvent::try_from_bytes(&event.event_data()) {
                 let amount_view =
                     AmountView::new(sent_event.amount(), sent_event.currency_code().as_str());
                 Ok(EventDataView::SentPayment {
                     amount: amount_view,
-                    receiver: BytesView::from(sent_event.receiver().as_ref()),
                     metadata: BytesView::from(sent_event.metadata()),
                 })
             } else {

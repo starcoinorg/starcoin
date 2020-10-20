@@ -259,7 +259,7 @@ use 0x1::Account;
 use 0x1::Token;
 fun main(signer: &signer) {
     let token = Token::mint<Token1::Token1>(signer, 100000000);
-    Account::deposit_to(signer, {{liquidier}}, token);
+    Account::deposit({{liquidier}}, token);
     assert(Account::balance<Token1::Token1>({{liquidier}}) == 100000000, 42);
 }
 }

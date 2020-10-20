@@ -20,32 +20,34 @@ module Account {
         pragma aborts_if_is_strict = true;
     }
 
-    // Every account has a Account::Account resource
+    /// Every account has a Account::Account resource
     resource struct Account {
-        // The current authentication key.
-        // This can be different than the key used to create the account
+        /// The current authentication key.
+        /// This can be different than the key used to create the account
         authentication_key: vector<u8>,
-        // A `withdrawal_capability` allows whoever holds this capability
-        // to withdraw from the account. At the time of account creation
-        // this capability is stored in this option. It can later be
-        // "extracted" from this field via `extract_withdraw_capability`,
-        // and can also be restored via `restore_withdraw_capability`.
+        /// A `withdrawal_capability` allows whoever holds this capability
+        /// to withdraw from the account. At the time of account creation
+        /// this capability is stored in this option. It can later be
+        /// "extracted" from this field via `extract_withdraw_capability`,
+        /// and can also be restored via `restore_withdraw_capability`.
         withdrawal_capability: Option<WithdrawCapability>,
-        // A `key_rotation_capability` allows whoever holds this capability
-        // the ability to rotate the authentication key for the account. At
-        // the time of account creation this capability is stored in this
-        // option. It can later be "extracted" from this field via
-        // `extract_key_rotation_capability`, and can also be restored via
-        // `restore_key_rotation_capability`.
+        /// A `key_rotation_capability` allows whoever holds this capability
+        /// the ability to rotate the authentication key for the account. At
+        /// the time of account creation this capability is stored in this
+        /// option. It can later be "extracted" from this field via
+        /// `extract_key_rotation_capability`, and can also be restored via
+        /// `restore_key_rotation_capability`.
         key_rotation_capability: Option<KeyRotationCapability>,
-        // Event handle for received event
-        received_events: Event::EventHandle<ReceivedPaymentEvent>,
-        // Event handle for sent event
-        sent_events: Event::EventHandle<SentPaymentEvent>,
-        // Event handle for accept_token event
+
+        /// event handle for account balance withdraw event
+        withdraw_events: Event::EventHandle<WithdrawEvent>,
+        /// event handle for account balance deposit event
+        deposit_events: Event::EventHandle<DepositEvent>,
+
+        /// Event handle for accept_token event
         accept_token_events: Event::EventHandle<AcceptTokenEvent>,
-        // The current sequence number.
-        // Incremented by one each time a transaction is submitted
+        /// The current sequence number.
+        /// Incremented by one each time a transaction is submitted
         sequence_number: u64,
     }
 
@@ -68,27 +70,22 @@ module Account {
         account_address: address,
     }
 
-    // Message for sent events
-    struct SentPaymentEvent {
+    /// Message for balance withdraw event.
+    struct WithdrawEvent {
         // The amount of Token<TokenType> sent
         amount: u128,
         // The code symbol for the token that was sent
         token_code: vector<u8>,
-        // The address that was paid
-        payee: address,
-        // Metadata associated with the payment
+        // Metadata associated with the withdraw
         metadata: vector<u8>,
     }
-
-    // Message for received events
-    struct ReceivedPaymentEvent {
-        // The amount of Token<TokenType> received
+    /// Message for balance deposit event.
+    struct DepositEvent {
+        // The amount of Token<TokenType> sent
         amount: u128,
-        // The code symbol for the token that was received
+        // The code symbol for the token that was sent
         token_code: vector<u8>,
-        // The address that sent the token
-        payer: address,
-        // Metadata associated with the payment
+        // Metadata associated with the deposit
         metadata: vector<u8>,
     }
 
@@ -190,8 +187,8 @@ module Account {
                   KeyRotationCapability {
                       account_address: new_account_addr
               }),
-              received_events: Event::new_event_handle<ReceivedPaymentEvent>(new_account),
-              sent_events: Event::new_event_handle<SentPaymentEvent>(new_account),
+              withdraw_events: Event::new_event_handle<WithdrawEvent>(new_account),
+              deposit_events: Event::new_event_handle<DepositEvent>(new_account),
               accept_token_events: Event::new_event_handle<AcceptTokenEvent>(new_account),
               sequence_number: 0,
         });
@@ -206,15 +203,6 @@ module Account {
     native fun create_signer(addr: address): signer;
     native fun destroy_signer(sig: signer);
 
-    // Deposits the `to_deposit` token into the `payee`'s account balance
-    public fun deposit_to<TokenType>(account: &signer, payee: address, to_deposit: Token<TokenType>)
-    acquires Account, Balance {
-        deposit_with_metadata(account, payee, to_deposit, x"")
-    }
-
-    spec fun deposit_to {
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>{payer: Signer::spec_address_of(account)};
-    }
     // Deposits the `to_deposit` token into the self's account balance
     public fun deposit_to_self<TokenType>(account: &signer, to_deposit: Token<TokenType>)
     acquires Account, Balance {
@@ -229,85 +217,61 @@ module Account {
         aborts_if to_deposit.value == 0;
         let is_accepts_token = exists<Balance<TokenType>>(Signer::address_of(account));
         aborts_if is_accepts_token && global<Balance<TokenType>>(Signer::address_of(account)).token.value + to_deposit.value > max_u128();
-        aborts_if !is_accepts_token && !exists<Account>(Signer::address_of(account));
+        aborts_if !exists<Account>(Signer::address_of(account));
         ensures exists<Balance<TokenType>>(Signer::address_of(account));
     }
 
+    /// Deposits the `to_deposit` token into the `receiver`'s account balance with the no metadata
+    /// It's a reverse operation of `withdraw`.
+    public fun deposit<TokenType>(
+        receiver: address,
+        to_deposit: Token<TokenType>,
+    ) acquires Account, Balance {
+        deposit_with_metadata<TokenType>(receiver, to_deposit, x"")
+    }
 
-    // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata`
+    spec fun deposit {
+        pragma verify = false;
+    }
+
+    /// Deposits the `to_deposit` token into the `receiver`'s account balance with the attached `metadata`
+    /// It's a reverse operation of `withdraw_with_metadata`.
     public fun deposit_with_metadata<TokenType>(
-        account: &signer,
-        payee: address,
+        receiver: address,
         to_deposit: Token<TokenType>,
         metadata: vector<u8>,
     ) acquires Account, Balance {
-        deposit_with_payer_and_metadata(
-            Signer::address_of(account),
-            payee,
-            to_deposit,
-            metadata,
-        );
+        // Check that the `to_deposit` token is non-zero
+        let deposit_value = Token::value(&to_deposit);
+        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
+
+        // Deposit the `to_deposit` token
+        deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
+
+        // emit deposit event
+        emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
     }
 
     spec fun deposit_with_metadata {
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>{payer: Signer::spec_address_of(account)};
-    }
-
-    // Deposits the `to_deposit` token into the `payee`'s account balance with the attached `metadata` and
-    // payer address
-    fun deposit_with_payer_and_metadata<TokenType>(
-        payer: address,
-        payee: address,
-        to_deposit: Token<TokenType>,
-        metadata: vector<u8>,
-    ) acquires Account, Balance {
-        // Check that the `to_deposit` token is non-zero
-        let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
-        deposit(payee, to_deposit);
-        emit_payment_events<TokenType>(payer, payee, deposit_value, metadata);
-    }
-
-    spec fun deposit_with_payer_and_metadata {
-        include DepositWithPayerAndMetadataAbortsIf<TokenType>;
-    }
-
-    spec schema DepositWithPayerAndMetadataAbortsIf<TokenType> {
-        payer: address;
-        payee: address;
-        to_deposit: Token<TokenType>;
-
         aborts_if to_deposit.value == 0;
-        aborts_if !exists<Account>(payer);
-        aborts_if !exists<Account>(payee);
-        aborts_if !exists<Balance<TokenType>>(payee);
-        aborts_if global<Balance<TokenType>>(payee).token.value + to_deposit.value > max_u128();
+        aborts_if !exists<Account>(receiver);
+        aborts_if !exists<Balance<TokenType>>(receiver);
+
+        aborts_if global<Balance<TokenType>>(receiver).token.value + to_deposit.value > max_u128();
+        ensures exists<Balance<TokenType>>(receiver);
+        ensures old(global<Balance<TokenType>>(receiver)).token.value + to_deposit.value == global<Balance<TokenType>>(receiver).token.value;
+    }
+
+    /// Helper to deposit `amount` to the given account balance
+    fun deposit_to_balance<TokenType>(balance: &mut Balance<TokenType>, token: Token::Token<TokenType>) {
+        Token::deposit(&mut balance.token, token)
+    }
+
+    spec fun deposit_to_balance {
+        aborts_if balance.token.value + token.value > MAX_U128;
     }
 
 
-    /// Deposits the `to_deposit` token into the `payee`'s account balance.
-    /// It's a reverse operation of `withdraw`.
-    /// It doesn't emit sendpayment/receivepayment events, as it's not a transfer action.
-    /// Similar with `withdraw`, the function is mostly used when interacting with contract code.
-    public fun deposit<TokenType>(
-        account: address,
-        to_deposit: Token<TokenType>,
-    ) acquires Balance {
-        // Check that the `to_deposit` token is non-zero
-        let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
-        let payee_balance = borrow_global_mut<Balance<TokenType>>(account);
-        // Deposit the `to_deposit` token
-        Token::deposit(&mut payee_balance.token, to_deposit);
-    }
-    spec fun deposit {
-        aborts_if to_deposit.value == 0;
-        // aborts_if !exists<Account>(account);
-        aborts_if !exists<Balance<TokenType>>(account);
-        aborts_if global<Balance<TokenType>>(account).token.value + to_deposit.value > max_u128();
-        // ensures exists<Balance<TokenType>>(account);
-        ensures old(global<Balance<TokenType>>(account)).token.value + to_deposit.value == global<Balance<TokenType>>(account).token.value;
-    }
 
     // Helper to withdraw `amount` from the given account balance and return the withdrawn Token<TokenType>
     fun withdraw_from_balance<TokenType>(balance: &mut Balance<TokenType>, amount: u128): Token<TokenType>{
@@ -321,15 +285,26 @@ module Account {
     // Withdraw `amount` Token<TokenType> from the account balance
     public fun withdraw<TokenType>(account: &signer, amount: u128): Token<TokenType>
     acquires Account, Balance {
+        withdraw_with_metadata<TokenType>(account, amount, x"")
+    }
+    spec fun withdraw {
+        pragma verify = false;
+    }
+
+
+    public fun withdraw_with_metadata<TokenType>(account: &signer, amount: u128, metadata: vector<u8>): Token<TokenType>
+    acquires Account, Balance {
         let sender_addr = Signer::address_of(account);
         let sender_balance = borrow_global_mut<Balance<TokenType>>(sender_addr);
         // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
         assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED));
+
+        emit_account_withdraw_event<TokenType>(sender_addr, amount, metadata);
         // The sender_addr has retained her withdrawal privileges--proceed.
         withdraw_from_balance<TokenType>(sender_balance, amount)
     }
 
-    spec fun withdraw {
+    spec fun withdraw_with_metadata {
         pragma opaque = true;
         aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
         aborts_if !exists<Account>(Signer::spec_address_of(account));
@@ -342,18 +317,34 @@ module Account {
         Token<TokenType> { value: amount }
     }
 
-    // Withdraw `amount` Token<TokenType> from the account under cap.account_address
+    /// Withdraw `amount` Token<TokenType> from the account under cap.account_address with no metadata
     public fun withdraw_with_capability<TokenType>(
         cap: &WithdrawCapability, amount: u128
-    ): Token<TokenType> acquires Balance {
-        let balance = borrow_global_mut<Balance<TokenType>>(cap.account_address);
-        withdraw_from_balance<TokenType>(balance , amount)
+    ): Token<TokenType> acquires Balance, Account {
+        withdraw_with_capability_and_metadata<TokenType>(cap, amount, x"")
     }
 
     spec fun withdraw_with_capability {
         aborts_if !exists<Balance<TokenType>>(cap.account_address);
+        aborts_if !exists<Account>(cap.account_address);
         aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
     }
+
+    /// Withdraw `amount` Token<TokenType> from the account under cap.account_address with metadata
+    public fun withdraw_with_capability_and_metadata<TokenType>(
+        cap: &WithdrawCapability, amount: u128, metadata: vector<u8>
+    ): Token<TokenType> acquires Balance, Account {
+        let balance = borrow_global_mut<Balance<TokenType>>(cap.account_address);
+        emit_account_withdraw_event<TokenType>(cap.account_address, amount, metadata);
+        withdraw_from_balance<TokenType>(balance , amount)
+    }
+
+    spec fun withdraw_with_capability_and_metadata {
+        aborts_if !exists<Balance<TokenType>>(cap.account_address);
+        aborts_if !exists<Account>(cap.account_address);
+        aborts_if global<Balance<TokenType>>(cap.account_address).token.value < amount;
+    }
+
 
     // Return a unique capability granting permission to withdraw from the sender's account balance.
     public fun extract_withdraw_capability(
@@ -383,6 +374,37 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
+    fun emit_account_withdraw_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    acquires Account {
+        // emit withdraw event
+        let account = borrow_global_mut<Account>(account);
+
+        Event::emit_event<WithdrawEvent>(&mut account.withdraw_events, WithdrawEvent {
+            amount,
+            token_code: Token::token_code<TokenType>(),
+            metadata,
+        });
+    }
+    spec fun emit_account_withdraw_event {
+        aborts_if !exists<Account>(account);
+    }
+
+    fun emit_account_deposit_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    acquires Account {
+        // emit withdraw event
+        let account = borrow_global_mut<Account>(account);
+
+        Event::emit_event<DepositEvent>(&mut account.deposit_events, DepositEvent {
+            amount,
+            token_code: Token::token_code<TokenType>(),
+            metadata,
+        });
+    }
+    spec fun emit_account_deposit_event {
+        aborts_if !exists<Account>(account);
+    }
+
+
     // Withdraws `amount` Token<TokenType> using the passed in WithdrawCapability, and deposits it
     // into the `payee`'s account balance. Creates the `payee` account if it doesn't exist.
     public fun pay_from_capability<TokenType>(
@@ -391,10 +413,10 @@ module Account {
         amount: u128,
         metadata: vector<u8>,
     ) acquires Account, Balance {
-        deposit_with_payer_and_metadata<TokenType>(
-            *&cap.account_address,
+        let tokens = withdraw_with_capability_and_metadata<TokenType>(cap, amount, *&metadata);
+        deposit_with_metadata<TokenType>(
             payee,
-            withdraw_with_capability(cap, amount),
+            tokens,
             metadata,
         );
     }
@@ -414,63 +436,6 @@ module Account {
 
     }
 
-    fun emit_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
-    acquires Account {
-        emit_send_payment_events<TokenType>(payer, payee, payment_value, *&metadata);
-        emit_receive_payment_events<TokenType>(payer, payee, payment_value, metadata);
-    }
-    spec fun emit_payment_events {
-        aborts_if payment_value == 0;
-        aborts_if !exists<Account>(payer);
-        aborts_if !exists<Account>(payee);
-    }
-
-    fun emit_send_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
-    acquires Account  {
-        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
-
-        let token_code = Token::token_code<TokenType>();
-        // Load the payer's account
-        let payer_account_ref = borrow_global_mut<Account>(payer);
-        // Log a sent event
-        Event::emit_event<SentPaymentEvent>(
-            &mut payer_account_ref.sent_events,
-            SentPaymentEvent {
-                amount: payment_value,
-                token_code: (copy token_code),
-                payee: payee,
-                metadata: metadata
-            },
-        );
-    }
-    spec fun emit_send_payment_events {
-        aborts_if payment_value == 0;
-        aborts_if !exists<Account>(payer);
-    }
-
-    fun emit_receive_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
-    acquires Account {
-        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
-        let token_code = Token::token_code<TokenType>();
-        // Load the payer's account
-        let payee_account_ref = borrow_global_mut<Account>(payee);
-        // Log a received event
-        Event::emit_event<ReceivedPaymentEvent>(
-            &mut payee_account_ref.received_events,
-            ReceivedPaymentEvent {
-                amount: payment_value,
-                token_code: token_code,
-                payer: payer,
-                metadata: metadata
-            }
-        );
-    }
-    spec fun emit_receive_payment_events {
-        aborts_if payment_value == 0;
-        aborts_if !exists<Account>(payee);
-    }
-
-
     // Withdraw `amount` Token<TokenType> from the transaction sender's
     // account balance and send the token to the `payee` address with the
     // attached `metadata` Creates the `payee` account if it does not exist
@@ -480,10 +445,10 @@ module Account {
         amount: u128,
         metadata: vector<u8>,
     ) acquires Account, Balance {
+        let tokens = withdraw_with_metadata<TokenType>(account, amount, *&metadata);
         deposit_with_metadata<TokenType>(
-            account,
             payee,
-            withdraw(account, amount),
+            tokens,
             metadata,
         );
     }
@@ -501,6 +466,18 @@ module Account {
             to_deposit: spec_withdraw<TokenType>(account, amount)
         };
     }
+    spec schema DepositWithPayerAndMetadataAbortsIf<TokenType> {
+        payer: address;
+        payee: address;
+        to_deposit: Token<TokenType>;
+
+        aborts_if to_deposit.value == 0;
+        aborts_if !exists<Account>(payer);
+        aborts_if !exists<Account>(payee);
+        aborts_if !exists<Balance<TokenType>>(payee);
+        aborts_if global<Balance<TokenType>>(payee).token.value + to_deposit.value > max_u128();
+    }
+
 
     // Withdraw `amount` Token<TokenType> from the transaction sender's
     // account balance  and send the token to the `payee` address

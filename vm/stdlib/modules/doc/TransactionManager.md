@@ -260,7 +260,7 @@
     //get previous author for distribute txn_fee
     <b>let</b> previous_author = <a href="Block.md#0x1_Block_get_current_author">Block::get_current_author</a>();
     <b>let</b> txn_fee = <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">TransactionFee::distribute_transaction_fees</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
-    <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>(account, txn_fee, previous_author);
+    <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>(txn_fee, previous_author);
     <b>let</b> reward = <a href="Block.md#0x1_Block_process_block_metadata">Block::process_block_metadata</a>(
         account,
         parent_hash,
@@ -284,7 +284,7 @@
 
 
 
-<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(account: &signer, txn_fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, author: address)
+<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, author: address)
 </code></pre>
 
 
@@ -293,10 +293,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(account: &signer, txn_fee: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, author: address) {
+<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, author: address) {
     <b>let</b> value = <a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(&txn_fee);
     <b>if</b> (value &gt; 0) {
-        <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>&lt;TokenType&gt;(account, author, txn_fee);
+        <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;TokenType&gt;(author, txn_fee);
     } <b>else</b> {
         <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>&lt;TokenType&gt;(txn_fee);
     }

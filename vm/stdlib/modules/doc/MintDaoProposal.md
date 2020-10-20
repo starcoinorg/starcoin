@@ -157,7 +157,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -167,7 +167,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(
-    signer: &signer,
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a> {
@@ -177,7 +176,7 @@
     );
     <b>let</b> cap = borrow_global&lt;<a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
     <b>let</b> tokens = <a href="Token.md#0x1_Token_mint_with_capability">Token::mint_with_capability</a>&lt;TokenT&gt;(&cap.cap, amount);
-    <a href="Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(signer, receiver, tokens);
+    <a href="Account.md#0x1_Account_deposit">Account::deposit</a>(receiver, tokens);
 }
 </code></pre>
 

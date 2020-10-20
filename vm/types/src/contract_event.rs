@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    account_config::{BurnEvent, MintEvent, ReceivedPaymentEvent, SentPaymentEvent},
+    account_config::{BurnEvent, DepositEvent, MintEvent, WithdrawEvent},
     event::EventKey,
 };
 use anyhow::{Error, Result};
@@ -94,23 +94,23 @@ impl ContractEventV0 {
     }
 }
 
-impl TryFrom<&ContractEvent> for SentPaymentEvent {
+impl TryFrom<&ContractEvent> for WithdrawEvent {
     type Error = Error;
 
     fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(SentPaymentEvent::struct_tag()) {
-            anyhow::bail!("Expected Sent Payment")
+        if event.type_tag != TypeTag::Struct(WithdrawEvent::struct_tag()) {
+            anyhow::bail!("Expected Withdraw Event")
         }
         Self::try_from_bytes(&event.event_data)
     }
 }
 
-impl TryFrom<&ContractEvent> for ReceivedPaymentEvent {
+impl TryFrom<&ContractEvent> for DepositEvent {
     type Error = Error;
 
     fn try_from(event: &ContractEvent) -> Result<Self> {
-        if event.type_tag != TypeTag::Struct(ReceivedPaymentEvent::struct_tag()) {
-            anyhow::bail!("Expected Received Payment")
+        if event.type_tag != TypeTag::Struct(DepositEvent::struct_tag()) {
+            anyhow::bail!("Expected Deposit Event")
         }
         Self::try_from_bytes(&event.event_data)
     }
@@ -153,13 +153,13 @@ impl std::fmt::Debug for ContractEvent {
 
 impl std::fmt::Display for ContractEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let Ok(payload) = SentPaymentEvent::try_from(self) {
+        if let Ok(payload) = WithdrawEvent::try_from(self) {
             write!(
                 f,
                 "ContractEvent {{ key: {}, index: {:?}, type: {:?}, event_data: {:?} }}",
                 self.key, self.sequence_number, self.type_tag, payload,
             )
-        } else if let Ok(payload) = ReceivedPaymentEvent::try_from(self) {
+        } else if let Ok(payload) = DepositEvent::try_from(self) {
             write!(
                 f,
                 "ContractEvent {{ key: {}, index: {:?}, type: {:?}, event_data: {:?} }}",
