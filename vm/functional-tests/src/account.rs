@@ -472,15 +472,15 @@ impl AccountData {
                 self.key_rotation_capability.as_ref().unwrap().value(),
                 Value::struct_(Struct::pack(
                     vec![
-                        Value::u64(self.deposit_events.count()),
-                        Value::vector_u8(self.deposit_events.key().to_vec()),
+                        Value::u64(self.withdraw_events.count()),
+                        Value::vector_u8(self.withdraw_events.key().to_vec()),
                     ],
                     true,
                 )),
                 Value::struct_(Struct::pack(
                     vec![
-                        Value::u64(self.withdraw_events.count()),
-                        Value::vector_u8(self.withdraw_events.key().to_vec()),
+                        Value::u64(self.deposit_events.count()),
+                        Value::vector_u8(self.deposit_events.key().to_vec()),
                     ],
                     true,
                 )),
