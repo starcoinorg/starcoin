@@ -3,7 +3,6 @@ module ChainId {
     use 0x1::CoreAddresses;
     use 0x1::Timestamp;
     use 0x1::Signer;
-    use 0x1::Errors;
 
     spec module {
         pragma verify;
@@ -16,11 +15,8 @@ module ChainId {
 
     /// Publish the chain ID under the genesis account
     public fun initialize(account: &signer, id: u8) {
-        assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
-        assert(
-            Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(),
-            Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT())
-        );
+        Timestamp::assert_genesis();
+        CoreAddresses::assert_genesis_address(account);
         move_to(account, ChainId { id });
     }
 

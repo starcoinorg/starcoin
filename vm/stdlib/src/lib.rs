@@ -14,7 +14,7 @@ use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
 use std::{
     collections::{BTreeMap, HashMap},
-    fs::File,
+    fs::{self, File},
     io::{Read, Write},
     path::{Path, PathBuf},
 };
@@ -44,6 +44,12 @@ pub const STD_LIB_DOC_DIR: &str = "modules/doc";
 /// The output path for transaction script documentation.
 pub const TRANSACTION_SCRIPTS_DOC_DIR: &str = "transaction_scripts/doc";
 pub const COMPILED_TRANSACTION_SCRIPTS_ABI_DIR: &str = "compiled/latest/transaction_scripts/abi";
+
+pub const ERROR_DESC_DIR: &str = "error_descriptions";
+pub const ERROR_DESC_FILENAME: &str = "error_descriptions";
+pub const ERROR_DESC_EXTENSION: &str = "errmap";
+pub const ERROR_DESCRIPTIONS: &[u8] =
+    std::include_bytes!("../compiled/latest/error_descriptions/error_descriptions.errmap");
 
 // The current stdlib that is freshly built. This will never be used in deployment so we don't need
 // to pull the same trick here in order to include this in the Rust binary.
@@ -295,6 +301,28 @@ fn build_doc(output_path: &str, doc_path: &str, sources: &[String], dep_path: &s
         options.docgen.doc_path = vec![doc_path.to_string()];
     }
     options.docgen.output_directory = output_path.to_string();
+    options.setup_logging_for_test();
+    move_prover::run_move_prover_errors_to_stderr(options).unwrap();
+}
+
+pub fn build_stdlib_error_code_map() {
+    let mut path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
+    path.push(ERROR_DESC_DIR);
+    fs::create_dir_all(&path).unwrap();
+    path.push(ERROR_DESC_FILENAME);
+    path.set_extension(ERROR_DESC_EXTENSION);
+    build_error_code_map(path.to_str().unwrap(), stdlib_files().as_slice(), "")
+}
+
+fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
+    let mut options = move_prover::cli::Options::default();
+    options.move_sources = sources.to_vec();
+    if !dep_path.is_empty() {
+        options.move_deps = vec![dep_path.to_string()]
+    }
+    options.verbosity_level = LevelFilter::Warn;
+    options.run_errmapgen = true;
+    options.errmapgen.output_file = output_path.to_string();
     options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
 }

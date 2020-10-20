@@ -30,10 +30,12 @@ module Block {
           timestamp: u64,
     }
 
+    const EBLOCK_NUMBER_MISMATCH: u64 = 17;
+
     // This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
-      assert(Timestamp::is_genesis(), Errors::invalid_state(Errors::ENOT_GENESIS()));
-      assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+      Timestamp::assert_genesis();
+      CoreAddresses::assert_genesis_address(account);
 
       move_to<BlockMetadata>(
           account,
@@ -80,10 +82,10 @@ module Block {
 
     // Call at block prologue
     public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64, parent_gas_used:u64): u128 acquires BlockMetadata{
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(Errors::ENOT_GENESIS_ACCOUNT()));
+        CoreAddresses::assert_genesis_address(account);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
-        assert(number == (block_metadata_ref.number + 1), Errors::invalid_argument(Errors::EBLOCK_NUMBER_MISMATCH()));
+        assert(number == (block_metadata_ref.number + 1), Errors::invalid_argument(EBLOCK_NUMBER_MISMATCH));
         block_metadata_ref.number = number;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;

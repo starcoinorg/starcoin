@@ -59,6 +59,8 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
+    const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
+    const EINVALID_ARGUMENT: u64 = 18;
     /// Token register's address should same as TokenType's address.
     const ETOKEN_REGISTER: u64 = 101;
 
@@ -212,8 +214,8 @@ module Token {
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                      amount: u128, peroid: u64): FixedTimeMintKey<TokenType>{
-        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
-        assert(amount > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
+        assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let now = Timestamp::now_seconds();
         let end_time = now + peroid;
         FixedTimeMintKey{
@@ -231,8 +233,8 @@ module Token {
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
                                                 amount: u128, peroid: u64): LinearTimeMintKey<TokenType>{
-        assert(peroid > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
-        assert(amount > 0, Errors::invalid_argument(Errors::EINVALID_ARGUMENT()));
+        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
+        assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let start_time = Timestamp::now_seconds();
         LinearTimeMintKey<TokenType> {
             total: amount,
@@ -451,7 +453,7 @@ module Token {
     /// so you cannot "burn" any non-zero amount of Token
     public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token { value } = token;
-        assert(value == 0, Errors::invalid_state(Errors::EDESTORY_TOKEN_NON_ZERO()))
+        assert(value == 0, Errors::invalid_state(EDESTORY_TOKEN_NON_ZERO))
     }
 
     spec fun destroy_zero {

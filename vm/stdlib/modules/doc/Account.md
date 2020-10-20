@@ -374,6 +374,15 @@ Message for accept token events
 ## Constants
 
 
+<a name="0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>: u64 = 0;
+</code></pre>
+
+
+
 <a name="0x1_Account_DUMMY_AUTH_KEY"></a>
 
 
@@ -392,6 +401,24 @@ Message for accept token events
 
 
 
+<a name="0x1_Account_ECOIN_DEPOSIT_IS_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>: u64 = 15;
+</code></pre>
+
+
+
+<a name="0x1_Account_EINSUFFICIENT_BALANCE"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>: u64 = 10;
+</code></pre>
+
+
+
 <a name="0x1_Account_EKEY_ROTATION_CAPABILITY_ALREADY_EXTRACTED"></a>
 
 
@@ -406,6 +433,42 @@ Message for accept token events
 
 
 <pre><code><b>const</b> <a href="Account.md#0x1_Account_EMALFORMED_AUTHENTICATION_KEY">EMALFORMED_AUTHENTICATION_KEY</a>: u64 = 102;
+</code></pre>
+
+
+
+<a name="0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>: u64 = 4;
+</code></pre>
+
+
+
+<a name="0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>: u64 = 1;
+</code></pre>
+
+
+
+<a name="0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW">EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>: u64 = 3;
+</code></pre>
+
+
+
+<a name="0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD"></a>
+
+
+
+<pre><code><b>const</b> <a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>: u64 = 2;
 </code></pre>
 
 
@@ -437,7 +500,7 @@ Message for accept token events
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_genesis_account">create_genesis_account</a>(
     new_account_address: address,
 ) :signer {
-    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
+    <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_account_address);
     <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, <a href="Account.md#0x1_Account_DUMMY_AUTH_KEY">DUMMY_AUTH_KEY</a>);
     new_account
@@ -706,7 +769,7 @@ Message for accept token events
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
     <a href="Account.md#0x1_Account_deposit">deposit</a>(payee, to_deposit);
     <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer, payee, deposit_value, metadata);
 }
@@ -741,7 +804,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 ) <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
     <b>let</b> payee_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account);
     // Deposit the `to_deposit` token
     <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> payee_balance.token, to_deposit);
@@ -966,7 +1029,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 <pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>  {
-    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
 
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
     // Load the payer's account
@@ -1005,7 +1068,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 <pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_ECOIN_DEPOSIT_IS_ZERO">Errors::ECOIN_DEPOSIT_IS_ZERO</a>()));
+    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
     <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
     // Load the payer's account
     <b>let</b> payee_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
@@ -1496,11 +1559,11 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     txn_gas_price: u64,
     txn_max_gas_units: u64,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()));
+    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>));
 
     // FUTURE: Make these error codes sequential
     // Verify that the transaction sender's account <b>exists</b>
-    <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_ACCOUNT_DOES_NOT_EXIST">Errors::PROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>()));
+    <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">exists_at</a>(txn_sender), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Account.md#0x1_Account_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>));
 
     // Load the transaction sender's account
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
@@ -1508,17 +1571,17 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     // Check that the hash of the transaction's <b>public</b> key matches the account's auth key
     <b>assert</b>(
         <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) == *&sender_account.authentication_key,
-        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_INVALID_ACCOUNT_AUTH_KEY">Errors::PROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>())
+        <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY">EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY</a>)
     );
 
     // Check that the account has enough balance for all of the gas
     <b>let</b> max_transaction_fee = txn_gas_price * txn_max_gas_units;
     <b>let</b> balance_amount = <a href="Account.md#0x1_Account_balance">balance</a>&lt;TokenType&gt;(txn_sender);
-    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_CANT_PAY_GAS_DEPOSIT">Errors::PROLOGUE_CANT_PAY_GAS_DEPOSIT</a>()));
+    <b>assert</b>(balance_amount &gt;= (max_transaction_fee <b>as</b> u128), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_CANT_PAY_GAS_DEPOSIT">EPROLOGUE_CANT_PAY_GAS_DEPOSIT</a>));
 
     // Check that the transaction sequence number matches the sequence number of the account
-    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_OLD">Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>()));
-    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_PROLOGUE_SEQUENCE_NUMBER_TOO_NEW">Errors::PROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>()));
+    <b>assert</b>(txn_sequence_number &gt;= sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD">EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD</a>));
+    <b>assert</b>(txn_sequence_number == sender_account.sequence_number, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW">EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW</a>));
 }
 </code></pre>
 
@@ -1549,7 +1612,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     txn_max_gas_units: u64,
     gas_units_remaining: u64,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     // Load the transaction sender's account and balance resources
     <b>let</b> sender_account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(txn_sender);
@@ -1559,7 +1622,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     <b>let</b> transaction_fee_amount =(txn_gas_price * (txn_max_gas_units - gas_units_remaining) <b>as</b> u128);
     <b>assert</b>(
         <a href="Account.md#0x1_Account_balance_for">balance_for</a>(sender_balance) &gt;= transaction_fee_amount,
-        <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="Errors.md#0x1_Errors_EINSUFFICIENT_BALANCE">Errors::EINSUFFICIENT_BALANCE</a>())
+        <a href="Errors.md#0x1_Errors_limit_exceeded">Errors::limit_exceeded</a>(<a href="Account.md#0x1_Account_EINSUFFICIENT_BALANCE">EINSUFFICIENT_BALANCE</a>)
     );
 
     // Bump the sequence number

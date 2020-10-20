@@ -76,6 +76,7 @@ members = [
     "vm/move-coverage",
     "vm/resource-viewer",
     "vm/dev",
+    "vm/move-explain",
     "test-helper",
     "cmd/starcoin",
     "cmd/faucet",

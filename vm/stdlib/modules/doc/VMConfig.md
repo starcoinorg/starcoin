@@ -16,8 +16,6 @@
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
-<b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 </code></pre>
 
 
@@ -262,7 +260,7 @@
     gas_unit_scaling_factor: u64,
     default_account_size: u64,
 ) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
     <a href="Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="VMConfig.md#0x1_VMConfig">VMConfig</a>&gt;(
         account,
         <a href="VMConfig.md#0x1_VMConfig_new_vm_config">new_vm_config</a>(
