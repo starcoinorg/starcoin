@@ -9,16 +9,12 @@ use std::time::Duration;
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
-//FIXME
-#[ignore]
 #[stest::test]
 fn test_full_sync() {
     test_sync::test_sync(SyncMode::FULL)
 }
 
-//FIXME
-#[ignore]
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_broadcast_with_difficulty() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!(
@@ -41,7 +37,7 @@ fn test_broadcast_with_difficulty() {
         second_config.network.self_peer_id().unwrap()
     );
     second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
-    second_config.miner.enable_miner_client = false;
+    //second_config.miner.enable_miner_client = false;
     second_config.sync.set_mode(SyncMode::FULL);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
