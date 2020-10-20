@@ -8,7 +8,7 @@ module CoreAddresses {
         pragma aborts_if_is_strict;
     }
 
-    const ENOT_GENESIS_ACCOUNT: u64 = 11; // do not change
+    const ENOT_GENESIS_ACCOUNT: u64 = 11;
 
     /// The address of the genesis
     public fun GENESIS_ADDRESS(): address {

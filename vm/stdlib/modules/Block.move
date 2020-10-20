@@ -30,7 +30,7 @@ module Block {
           timestamp: u64,
     }
 
-    const EBLOCK_NUMBER_MISMATCH: u64 = 17; // do not change
+    const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
     // This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {

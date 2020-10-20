@@ -18,11 +18,11 @@ module TransactionManager {
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
 
-    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0; // do not change
-    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 5; // do not change
-    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6; // do not change
-    const EPROLOGUE_MODULE_NOT_ALLOWED: u64 = 7; // do not change
-    const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8; // do not change
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+    const EPROLOGUE_TRANSACTION_EXPIRED: u64 = 5;
+    const EPROLOGUE_BAD_CHAIN_ID: u64 = 6;
+    const EPROLOGUE_MODULE_NOT_ALLOWED: u64 = 7;
+    const EPROLOGUE_SCRIPT_NOT_ALLOWED: u64 = 8;
 
 
     // The prologue is invoked at the beginning of every transaction

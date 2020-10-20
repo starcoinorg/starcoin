@@ -30,7 +30,7 @@ module Config {
         value: ConfigValue,
     }
 
-    const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13; // do not change
+    const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
     const ECAPABILITY_HOLDER_NOT_EXISTS: u64 = 101;
 
 

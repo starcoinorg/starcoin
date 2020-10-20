@@ -12,6 +12,15 @@ address 0x1 {
 ///     number relative to the module which raised the error and can be used to obtain more information about
 ///     the error at hand. It is mostly used for diagnosis purposes. Error reasons may change over time as the
 ///     framework evolves.
+///
+/// Rules to declare or use *error reason*:
+///  1. error reason is declared as const in the user module
+///  2. error reason name must start with "E", for example, const EACCOUNT_DOES_NOT_EXIST = ...
+///  3. value less than 100 is reserved for general purpose and shared by all modules
+///  4. don't change general purpose error reason value, it's co-related with error code in starcoin vm
+///  5. self-defined error reason value must be large than 100
+///  5. error reason must be used together with error category
+///
 module Errors {
     spec module {
         pragma verify;

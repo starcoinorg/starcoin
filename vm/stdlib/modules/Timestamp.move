@@ -23,8 +23,8 @@ module Timestamp {
     /// Conversion factor between seconds and milliseconds
     const MILLI_CONVERSION_FACTOR: u64 = 1000;
 
-    const ENOT_GENESIS: u64 = 12; // do not change
-    const EINVALID_TIMESTAMP: u64 = 14; // do not change
+    const ENOT_GENESIS: u64 = 12;
+    const EINVALID_TIMESTAMP: u64 = 14;
     const ENOT_INITIALIZED: u64 = 101;
     // Initialize the global wall clock time resource.
     public fun initialize(account: &signer, genesis_timestamp: u64) {

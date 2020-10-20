@@ -16,7 +16,7 @@ module TokenLockPool {
     // A linear time lock key which can withdraw locked token in a peroid by time-based linear release.
     resource struct LinearTimeLockKey<TokenType> { total: u128, taked: u128, start_time: u64, peroid: u64 }
 
-    const EINVALID_ARGUMENT: u64 = 18; // do not change
+    const EINVALID_ARGUMENT: u64 = 18;
     // The key which to destory is not empty.
     const EDESTROY_KEY_NOT_EMPTY: u64 = 101;
 

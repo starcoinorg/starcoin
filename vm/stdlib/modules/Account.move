@@ -97,14 +97,14 @@ module Account {
         token_code: vector<u8>,
     }
 
-    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0; //do not change
-    const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1; //do not change
-    const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2; //do not change
-    const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3; //do not change
-    const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4; //do not change
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+    const EPROLOGUE_INVALID_ACCOUNT_AUTH_KEY: u64 = 1;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_OLD: u64 = 2;
+    const EPROLOGUE_SEQUENCE_NUMBER_TOO_NEW: u64 = 3;
+    const EPROLOGUE_CANT_PAY_GAS_DEPOSIT: u64 = 4;
 
-    const EINSUFFICIENT_BALANCE: u64 = 10; //do not change
-    const ECOIN_DEPOSIT_IS_ZERO: u64 = 15; //do not change
+    const EINSUFFICIENT_BALANCE: u64 = 10;
+    const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
 
     const EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED: u64 = 101;
     const EMALFORMED_AUTHENTICATION_KEY: u64 = 102;
@@ -263,7 +263,7 @@ module Account {
     ) acquires Account, Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         deposit(payee, to_deposit);
         emit_payment_events<TokenType>(payer, payee, deposit_value, metadata);
     }
@@ -295,7 +295,7 @@ module Account {
     ) acquires Balance {
         // Check that the `to_deposit` token is non-zero
         let deposit_value = Token::value(&to_deposit);
-        assert(deposit_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(deposit_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         let payee_balance = borrow_global_mut<Balance<TokenType>>(account);
         // Deposit the `to_deposit` token
         Token::deposit(&mut payee_balance.token, to_deposit);
@@ -427,7 +427,7 @@ module Account {
 
     fun emit_send_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
     acquires Account  {
-        assert(payment_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
 
         let token_code = Token::token_code<TokenType>();
         // Load the payer's account
@@ -450,7 +450,7 @@ module Account {
 
     fun emit_receive_payment_events<TokenType>(payer: address, payee: address, payment_value: u128, metadata: vector<u8>)
     acquires Account {
-        assert(payment_value > 0, Errors::invalid_argument(Errors::ECOIN_DEPOSIT_IS_ZERO()));
+        assert(payment_value > 0, Errors::invalid_argument(ECOIN_DEPOSIT_IS_ZERO));
         let token_code = Token::token_code<TokenType>();
         // Load the payer's account
         let payee_account_ref = borrow_global_mut<Account>(payee);

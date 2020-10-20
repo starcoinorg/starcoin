@@ -14,8 +14,8 @@ module TransactionPublishOption {
 
     const SCRIPT_HASH_LENGTH: u64 = 32;
 
-    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0; // do not change
-    const EINVALID_ARGUMENT: u64 = 18; // do not change
+    const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
+    const EINVALID_ARGUMENT: u64 = 18;
     /// The script hash has an invalid length
     const EINVALID_SCRIPT_HASH: u64 = 1001;
     /// The script hash already exists in the allowlist

@@ -63,8 +63,8 @@ module ConsensusConfig {
         total_gas: u128,
     }
 
-    const EINVALID_ARGUMENT: u64 = 18; // do not change
-    const EUNREACHABLE: u64 = 19; // do not change
+    const EINVALID_ARGUMENT: u64 = 18;
+    const EUNREACHABLE: u64 = 19;
     const EMAX_UNCLES_PER_BLOCK_IS_WRONG: u64 = 101;
 
     const EUNCLES_IS_NOT_ZERO: u64 = 102;

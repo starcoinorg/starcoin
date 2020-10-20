@@ -15,7 +15,7 @@ module RewardConfig {
         reward_delay: u64,
     }
 
-    const EINVALID_ARGUMENT: u64 = 18; // do not change
+    const EINVALID_ARGUMENT: u64 = 18;
 
     public fun initialize(account: &signer, reward_delay: u64) {
         Timestamp::assert_genesis();
