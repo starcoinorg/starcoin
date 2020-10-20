@@ -7,24 +7,24 @@
 
 -  [Resource `BlockMetadata`](#0x1_Block_BlockMetadata)
 -  [Struct `NewBlockEvent`](#0x1_Block_NewBlockEvent)
+-  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_Block_initialize)
 -  [Function `get_current_block_number`](#0x1_Block_get_current_block_number)
 -  [Function `get_parent_hash`](#0x1_Block_get_parent_hash)
 -  [Function `get_current_author`](#0x1_Block_get_current_author)
 -  [Function `process_block_metadata`](#0x1_Block_process_block_metadata)
--  [Specification](#@Specification_0)
-    -  [Function `initialize`](#@Specification_0_initialize)
-    -  [Function `get_current_block_number`](#@Specification_0_get_current_block_number)
-    -  [Function `get_parent_hash`](#@Specification_0_get_parent_hash)
-    -  [Function `get_current_author`](#@Specification_0_get_current_author)
-    -  [Function `process_block_metadata`](#@Specification_0_process_block_metadata)
+-  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `get_current_block_number`](#@Specification_1_get_current_block_number)
+    -  [Function `get_parent_hash`](#@Specification_1_get_parent_hash)
+    -  [Function `get_current_author`](#@Specification_1_get_current_author)
+    -  [Function `process_block_metadata`](#@Specification_1_process_block_metadata)
 
 
 <pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 </code></pre>
 
@@ -114,6 +114,20 @@
 
 </details>
 
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_Block_EBLOCK_NUMBER_MISMATCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="Block.md#0x1_Block_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>: u64 = 17;
+</code></pre>
+
+
+
 <a name="0x1_Block_initialize"></a>
 
 ## Function `initialize`
@@ -130,8 +144,8 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_initialize">initialize</a>(account: &signer, parent_hash: vector&lt;u8&gt;) {
-  <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS">Errors::ENOT_GENESIS</a>()));
-  <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+  <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
+  <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
   move_to&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(
       account,
@@ -236,10 +250,10 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64, parent_gas_used:u64): u128 <b>acquires</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>{
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <b>let</b> block_metadata_ref = borrow_global_mut&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(number == (block_metadata_ref.number + 1), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EBLOCK_NUMBER_MISMATCH">Errors::EBLOCK_NUMBER_MISMATCH</a>()));
+    <b>assert</b>(number == (block_metadata_ref.number + 1), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Block.md#0x1_Block_EBLOCK_NUMBER_MISMATCH">EBLOCK_NUMBER_MISMATCH</a>));
     block_metadata_ref.number = number;
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;
@@ -262,7 +276,7 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -274,7 +288,7 @@
 
 
 
-<a name="@Specification_0_initialize"></a>
+<a name="@Specification_1_initialize"></a>
 
 ### Function `initialize`
 
@@ -292,7 +306,7 @@
 
 
 
-<a name="@Specification_0_get_current_block_number"></a>
+<a name="@Specification_1_get_current_block_number"></a>
 
 ### Function `get_current_block_number`
 
@@ -308,7 +322,7 @@
 
 
 
-<a name="@Specification_0_get_parent_hash"></a>
+<a name="@Specification_1_get_parent_hash"></a>
 
 ### Function `get_parent_hash`
 
@@ -324,7 +338,7 @@
 
 
 
-<a name="@Specification_0_get_current_author"></a>
+<a name="@Specification_1_get_current_author"></a>
 
 ### Function `get_current_author`
 
@@ -340,7 +354,7 @@
 
 
 
-<a name="@Specification_0_process_block_metadata"></a>
+<a name="@Specification_1_process_block_metadata"></a>
 
 ### Function `process_block_metadata`
 

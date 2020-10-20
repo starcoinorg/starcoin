@@ -6873,6 +6873,7 @@ version = "0.5.1"
 dependencies = [
  "anyhow",
  "crossbeam-channel 0.5.0",
+ "errmapgen",
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
  "hex",
@@ -6890,6 +6891,7 @@ dependencies = [
  "starcoin-genesis",
  "starcoin-logger",
  "starcoin-move-compiler",
+ "starcoin-move-explain",
  "starcoin-node",
  "starcoin-node-api",
  "starcoin-resource-viewer",
@@ -7315,6 +7317,18 @@ dependencies = [
  "starcoin-vm-types",
  "stest",
  "tempfile",
+]
+
+[[package]]
+name = "starcoin-move-explain"
+version = "0.1.0"
+dependencies = [
+ "errmapgen",
+ "libra-workspace-hack",
+ "move-core-types",
+ "starcoin-canonical-serialization",
+ "stdlib",
+ "structopt 0.3.20",
 ]
 
 [[package]]

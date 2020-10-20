@@ -14,6 +14,7 @@
 -  [Function `now_milliseconds`](#0x1_Timestamp_now_milliseconds)
 -  [Function `set_time_has_started`](#0x1_Timestamp_set_time_has_started)
 -  [Function `is_genesis`](#0x1_Timestamp_is_genesis)
+-  [Function `assert_genesis`](#0x1_Timestamp_assert_genesis)
 -  [Specification](#@Specification_1)
     -  [Function `initialize`](#@Specification_1_initialize)
     -  [Function `update_global_time`](#@Specification_1_update_global_time)
@@ -21,11 +22,11 @@
     -  [Function `now_milliseconds`](#@Specification_1_now_milliseconds)
     -  [Function `set_time_has_started`](#@Specification_1_set_time_has_started)
     -  [Function `is_genesis`](#@Specification_1_is_genesis)
+    -  [Function `assert_genesis`](#@Specification_1_assert_genesis)
 
 
 <pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
-<b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 </code></pre>
 
 
@@ -91,6 +92,24 @@ is called at the end of genesis.
 ## Constants
 
 
+<a name="0x1_Timestamp_EINVALID_TIMESTAMP"></a>
+
+
+
+<pre><code><b>const</b> <a href="Timestamp.md#0x1_Timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>: u64 = 14;
+</code></pre>
+
+
+
+<a name="0x1_Timestamp_ENOT_GENESIS"></a>
+
+
+
+<pre><code><b>const</b> <a href="Timestamp.md#0x1_Timestamp_ENOT_GENESIS">ENOT_GENESIS</a>: u64 = 12;
+</code></pre>
+
+
+
 <a name="0x1_Timestamp_ENOT_INITIALIZED"></a>
 
 
@@ -127,7 +146,7 @@ Conversion factor between seconds and milliseconds
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_initialize">initialize</a>(account: &signer, genesis_timestamp: u64) {
     // Only callable by the Genesis address
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
     <b>let</b> milli_timer = <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> {milliseconds: genesis_timestamp};
     move_to&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(account, milli_timer);
 }
@@ -153,10 +172,10 @@ Conversion factor between seconds and milliseconds
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_update_global_time">update_global_time</a>(account: &signer, timestamp: u64) <b>acquires</b> <a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a> {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
     //Do not <b>update</b> time before time start.
     <b>let</b> global_milli_timer = borrow_global_mut&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>assert</b>(timestamp &gt; global_milli_timer.milliseconds, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Errors.md#0x1_Errors_EINVALID_TIMESTAMP">Errors::EINVALID_TIMESTAMP</a>()));
+    <b>assert</b>(timestamp &gt; global_milli_timer.milliseconds, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Timestamp.md#0x1_Timestamp_EINVALID_TIMESTAMP">EINVALID_TIMESTAMP</a>));
     global_milli_timer.milliseconds = timestamp;
 }
 </code></pre>
@@ -230,7 +249,7 @@ Marks that time has started and genesis has finished. This can only be called fr
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_set_time_has_started">set_time_has_started</a>(account: &signer) {
-    <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Errors.md#0x1_Errors_ENOT_GENESIS_ACCOUNT">Errors::ENOT_GENESIS_ACCOUNT</a>()));
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     // Current time must have been initialized.
     <b>assert</b>(
@@ -263,6 +282,31 @@ Helper function to determine if the blockchain is in genesis state.
 
 <pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_is_genesis">is_genesis</a>(): bool {
     !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>())
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Timestamp_assert_genesis"></a>
+
+## Function `assert_genesis`
+
+Helper function to assert genesis state.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_assert_genesis">assert_genesis</a>()
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_assert_genesis">assert_genesis</a>() {
+    <b>assert</b>(<a href="Timestamp.md#0x1_Timestamp_is_genesis">is_genesis</a>(), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Timestamp.md#0x1_Timestamp_ENOT_GENESIS">ENOT_GENESIS</a>));
 }
 </code></pre>
 
@@ -396,4 +440,33 @@ Helper function to determine if the blockchain is in genesis state.
 
 <pre><code><b>aborts_if</b> <b>false</b>;
 <b>ensures</b> result == !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_TimeHasStarted">TimeHasStarted</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+</code></pre>
+
+
+
+<a name="@Specification_1_assert_genesis"></a>
+
+### Function `assert_genesis`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Timestamp.md#0x1_Timestamp_assert_genesis">assert_genesis</a>()
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>include</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfNotGenesis">AbortsIfNotGenesis</a>;
+</code></pre>
+
+
+Helper schema to specify that a function aborts if not in genesis.
+
+
+<a name="0x1_Timestamp_AbortsIfNotGenesis"></a>
+
+
+<pre><code><b>schema</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfNotGenesis">AbortsIfNotGenesis</a> {
+    <b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">is_genesis</a>();
+}
 </code></pre>

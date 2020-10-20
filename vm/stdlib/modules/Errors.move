@@ -19,7 +19,7 @@ address 0x1 {
 ///  3. value less than 100 is reserved for general purpose and shared by all modules
 ///  4. don't change general purpose error reason value, it's co-related with error code in starcoin vm
 ///  5. self-defined error reason value must be large than 100
-///  5. error reason must be used together with error category
+///  6. error reason must be used together with error category
 ///
 module Errors {
     spec module {
