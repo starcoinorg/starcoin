@@ -1,12 +1,12 @@
 
-<a name="update_txn_timeout_config_proposal"></a>
+<a name="propose_update_txn_timeout_config"></a>
 
-# Script `update_txn_timeout_config_proposal`
+# Script `propose_update_txn_timeout_config`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function `update_txn_timeout_config_proposal`](#@Specification_0_update_txn_timeout_config_proposal)
+    -  [Function `propose_update_txn_timeout_config`](#@Specification_0_propose_update_txn_timeout_config)
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
@@ -17,7 +17,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_timeout_config_proposal.md#update_txn_timeout_config_proposal">update_txn_timeout_config_proposal</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_txn_timeout_config.md#propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_txn_timeout_config_proposal.md#update_txn_timeout_config_proposal">update_txn_timeout_config_proposal</a>(account: &signer,
+<pre><code><b>fun</b> <a href="propose_update_txn_timeout_config.md#propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer,
     duration_seconds: u64,
     exec_delay: u64) {
     <b>let</b> txn_timeout_config = <a href="../../modules/doc/TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_new_transaction_timeout_config">TransactionTimeoutConfig::new_transaction_timeout_config</a>(duration_seconds);
@@ -43,12 +43,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_txn_timeout_config_proposal"></a>
+<a name="@Specification_0_propose_update_txn_timeout_config"></a>
 
-### Function `update_txn_timeout_config_proposal`
+### Function `propose_update_txn_timeout_config`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_timeout_config_proposal.md#update_txn_timeout_config_proposal">update_txn_timeout_config_proposal</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_txn_timeout_config.md#propose_update_txn_timeout_config">propose_update_txn_timeout_config</a>(account: &signer, duration_seconds: u64, exec_delay: u64)
 </code></pre>
 
 

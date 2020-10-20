@@ -3,7 +3,7 @@ use 0x1::TransactionPublishOption;
 use 0x1::OnChainConfigDao;
 use 0x1::STC;
 
-fun update_txn_publish_option_proposal(account: &signer,
+fun propose_update_txn_publish_option(account: &signer,
     script_allow_list: vector<u8>,
     module_publishing_allowed: bool,
     exec_delay: u64) {
@@ -11,7 +11,7 @@ fun update_txn_publish_option_proposal(account: &signer,
     OnChainConfigDao::propose_update<STC::STC, TransactionPublishOption::TransactionPublishOption>(account, txn_publish_option, exec_delay);
 }
 
-spec fun update_txn_publish_option_proposal {
+spec fun propose_update_txn_publish_option {
     pragma verify = false;
 }
 }

@@ -138,13 +138,13 @@ pub enum StdlibScript {
     QueueProposalAction,
     SubmitModuleUpgradePlan,
     ExecuteModifyDaoConfigProposal,
-    ExecuteProposal,
-    UpdateConsensusConfigProposal,
-    UpdateRewardConfigProposal,
-    UpdateTxnPublishOptionProposal,
-    UpdateTxnTimeoutConfigProposal,
-    UpdateVersionProposal,
-    UpdateVmConfigProposal,
+    ExecuteOnChainConfigProposal,
+    ProposeUpdateConsensusConfig,
+    ProposeUpdateRewardConfig,
+    ProposeUpdateTxnPublishOption,
+    ProposeUpdateTxnTimeoutConfig,
+    ProposeUpdateVersion,
+    ProposeUpdateVmConfig,
     // ...add new scripts here
 }
 
@@ -170,13 +170,13 @@ impl StdlibScript {
             QueueProposalAction,
             SubmitModuleUpgradePlan,
             ExecuteModifyDaoConfigProposal,
-            ExecuteProposal,
-            UpdateConsensusConfigProposal,
-            UpdateRewardConfigProposal,
-            UpdateTxnPublishOptionProposal,
-            UpdateTxnTimeoutConfigProposal,
-            UpdateVersionProposal,
-            UpdateVmConfigProposal,
+            ExecuteOnChainConfigProposal,
+            ProposeUpdateConsensusConfig,
+            ProposeUpdateRewardConfig,
+            ProposeUpdateTxnPublishOption,
+            ProposeUpdateTxnTimeoutConfig,
+            ProposeUpdateVersion,
+            ProposeUpdateVmConfig,
             // ...add new scripts here
         ]
     }
@@ -230,13 +230,13 @@ impl fmt::Display for StdlibScript {
                 DestroyTerminatedProposal => "destroy_terminated_proposal",
                 ProposeModifyDaoConfig => "propose_modify_dao_config",
                 ExecuteModifyDaoConfigProposal => "execute_modify_dao_config_proposal",
-                ExecuteProposal => "execute_proposal",
-                UpdateConsensusConfigProposal => "update_consensus_config_proposal",
-                UpdateRewardConfigProposal => "update_reward_config_proposal",
-                UpdateTxnPublishOptionProposal => "update_txn_publish_option_proposal",
-                UpdateTxnTimeoutConfigProposal => "update_txn_timeout_config_proposal",
-                UpdateVersionProposal => "update_version_proposal",
-                UpdateVmConfigProposal => "update_vm_config_proposal",
+                ExecuteOnChainConfigProposal => "execute_on_chain_config_proposal",
+                ProposeUpdateConsensusConfig => "propose_update_consensus_config",
+                ProposeUpdateRewardConfig => "propose_update_reward_config",
+                ProposeUpdateTxnPublishOption => "propose_update_txn_publish_option",
+                ProposeUpdateTxnTimeoutConfig => "propose_update_txn_timeout_config",
+                ProposeUpdateVersion => "propose_update_version",
+                ProposeUpdateVmConfig => "propose_update_vm_config",
             }
         )
     }

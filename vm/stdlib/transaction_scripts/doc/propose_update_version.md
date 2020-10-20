@@ -1,12 +1,12 @@
 
-<a name="update_version_proposal"></a>
+<a name="propose_update_version"></a>
 
-# Script `update_version_proposal`
+# Script `propose_update_version`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function `update_version_proposal`](#@Specification_0_update_version_proposal)
+    -  [Function `propose_update_version`](#@Specification_0_propose_update_version)
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
@@ -17,7 +17,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer, major: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_version.md#propose_update_version">propose_update_version</a>(account: &signer, major: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer,
+<pre><code><b>fun</b> <a href="propose_update_version.md#propose_update_version">propose_update_version</a>(account: &signer,
     major: u64,
     exec_delay: u64) {
     <b>let</b> version = <a href="../../modules/doc/Version.md#0x1_Version_new_version">Version::new_version</a>(major);
@@ -43,12 +43,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_version_proposal"></a>
+<a name="@Specification_0_propose_update_version"></a>
 
-### Function `update_version_proposal`
+### Function `propose_update_version`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_version_proposal.md#update_version_proposal">update_version_proposal</a>(account: &signer, major: u64, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_version.md#propose_update_version">propose_update_version</a>(account: &signer, major: u64, exec_delay: u64)
 </code></pre>
 
 

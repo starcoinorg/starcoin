@@ -20,7 +20,9 @@ mod version;
 mod vm_config;
 
 pub use self::{
-    consensus_config::{ConsensusConfig, EpochDataResource, EpochInfo, EpochResource},
+    consensus_config::{
+        consensus_config_type_tag, ConsensusConfig, EpochDataResource, EpochInfo, EpochResource,
+    },
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
     version::Version,
     vm_config::{VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},

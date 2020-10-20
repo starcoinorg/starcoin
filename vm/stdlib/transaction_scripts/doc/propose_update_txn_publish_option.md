@@ -1,12 +1,12 @@
 
-<a name="update_txn_publish_option_proposal"></a>
+<a name="propose_update_txn_publish_option"></a>
 
-# Script `update_txn_publish_option_proposal`
+# Script `propose_update_txn_publish_option`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function `update_txn_publish_option_proposal`](#@Specification_0_update_txn_publish_option_proposal)
+    -  [Function `propose_update_txn_publish_option`](#@Specification_0_propose_update_txn_publish_option)
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/OnChainConfigDao.md#0x1_OnChainConfigDao">0x1::OnChainConfigDao</a>;
@@ -17,7 +17,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_proposal.md#update_txn_publish_option_proposal">update_txn_publish_option_proposal</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_txn_publish_option.md#propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="update_txn_publish_option_proposal.md#update_txn_publish_option_proposal">update_txn_publish_option_proposal</a>(account: &signer,
+<pre><code><b>fun</b> <a href="propose_update_txn_publish_option.md#propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer,
     script_allow_list: vector&lt;u8&gt;,
     module_publishing_allowed: bool,
     exec_delay: u64) {
@@ -44,12 +44,12 @@
 ## Specification
 
 
-<a name="@Specification_0_update_txn_publish_option_proposal"></a>
+<a name="@Specification_0_propose_update_txn_publish_option"></a>
 
-### Function `update_txn_publish_option_proposal`
+### Function `propose_update_txn_publish_option`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="update_txn_publish_option_proposal.md#update_txn_publish_option_proposal">update_txn_publish_option_proposal</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="propose_update_txn_publish_option.md#propose_update_txn_publish_option">propose_update_txn_publish_option</a>(account: &signer, script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool, exec_delay: u64)
 </code></pre>
 
 
