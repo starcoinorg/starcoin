@@ -99,7 +99,7 @@ impl TryFrom<&ContractEvent> for WithdrawEvent {
 
     fn try_from(event: &ContractEvent) -> Result<Self> {
         if event.type_tag != TypeTag::Struct(WithdrawEvent::struct_tag()) {
-            anyhow::bail!("Expected Sent Payment")
+            anyhow::bail!("Expected Withdraw Event")
         }
         Self::try_from_bytes(&event.event_data)
     }
@@ -110,7 +110,7 @@ impl TryFrom<&ContractEvent> for DepositEvent {
 
     fn try_from(event: &ContractEvent) -> Result<Self> {
         if event.type_tag != TypeTag::Struct(DepositEvent::struct_tag()) {
-            anyhow::bail!("Expected Received Payment")
+            anyhow::bail!("Expected Deposit Event")
         }
         Self::try_from_bytes(&event.event_data)
     }
