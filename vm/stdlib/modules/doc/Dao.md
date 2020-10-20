@@ -20,20 +20,24 @@
 -  [Function `new_dao_config`](#0x1_Dao_new_dao_config)
 -  [Function `propose`](#0x1_Dao_propose)
 -  [Function `cast_vote`](#0x1_Dao_cast_vote)
+-  [Function `_cast_vote`](#0x1_Dao__cast_vote)
 -  [Function `change_vote`](#0x1_Dao_change_vote)
+-  [Function `_flip_vote`](#0x1_Dao__flip_vote)
 -  [Function `revoke_vote`](#0x1_Dao_revoke_vote)
--  [Function `proposal_exists`](#0x1_Dao_proposal_exists)
+-  [Function `_revoke_vote`](#0x1_Dao__revoke_vote)
 -  [Function `unstake_votes`](#0x1_Dao_unstake_votes)
 -  [Function `queue_proposal_action`](#0x1_Dao_queue_proposal_action)
 -  [Function `extract_proposal_action`](#0x1_Dao_extract_proposal_action)
 -  [Function `destroy_terminated_proposal`](#0x1_Dao_destroy_terminated_proposal)
+-  [Function `proposal_exists`](#0x1_Dao_proposal_exists)
 -  [Function `proposal_state`](#0x1_Dao_proposal_state)
+-  [Function `_proposal_state`](#0x1_Dao__proposal_state)
 -  [Function `proposal_info`](#0x1_Dao_proposal_info)
 -  [Function `vote_of`](#0x1_Dao_vote_of)
--  [Function `quorum_votes`](#0x1_Dao_quorum_votes)
 -  [Function `generate_next_proposal_id`](#0x1_Dao_generate_next_proposal_id)
 -  [Function `voting_delay`](#0x1_Dao_voting_delay)
 -  [Function `voting_period`](#0x1_Dao_voting_period)
+-  [Function `quorum_votes`](#0x1_Dao_quorum_votes)
 -  [Function `voting_quorum_rate`](#0x1_Dao_voting_quorum_rate)
 -  [Function `min_action_delay`](#0x1_Dao_min_action_delay)
 -  [Function `get_config`](#0x1_Dao_get_config)
@@ -42,6 +46,39 @@
 -  [Function `set_voting_period`](#0x1_Dao_set_voting_period)
 -  [Function `set_voting_quorum_rate`](#0x1_Dao_set_voting_quorum_rate)
 -  [Function `set_min_action_delay`](#0x1_Dao_set_min_action_delay)
+-  [Specification](#@Specification_1)
+    -  [Resource `DaoGlobalInfo`](#@Specification_1_DaoGlobalInfo)
+    -  [Struct `DaoConfig`](#@Specification_1_DaoConfig)
+    -  [Resource `Proposal`](#@Specification_1_Proposal)
+    -  [Resource `Vote`](#@Specification_1_Vote)
+    -  [Function `default_min_action_delay`](#@Specification_1_default_min_action_delay)
+    -  [Function `default_voting_delay`](#@Specification_1_default_voting_delay)
+    -  [Function `default_voting_period`](#@Specification_1_default_voting_period)
+    -  [Function `default_voting_quorum_rate`](#@Specification_1_default_voting_quorum_rate)
+    -  [Function `plugin`](#@Specification_1_plugin)
+    -  [Function `new_dao_config`](#@Specification_1_new_dao_config)
+    -  [Function `propose`](#@Specification_1_propose)
+    -  [Function `cast_vote`](#@Specification_1_cast_vote)
+    -  [Function `_cast_vote`](#@Specification_1__cast_vote)
+    -  [Function `change_vote`](#@Specification_1_change_vote)
+    -  [Function `_flip_vote`](#@Specification_1__flip_vote)
+    -  [Function `revoke_vote`](#@Specification_1_revoke_vote)
+    -  [Function `_revoke_vote`](#@Specification_1__revoke_vote)
+    -  [Function `unstake_votes`](#@Specification_1_unstake_votes)
+    -  [Function `queue_proposal_action`](#@Specification_1_queue_proposal_action)
+    -  [Function `extract_proposal_action`](#@Specification_1_extract_proposal_action)
+    -  [Function `destroy_terminated_proposal`](#@Specification_1_destroy_terminated_proposal)
+    -  [Function `proposal_exists`](#@Specification_1_proposal_exists)
+    -  [Function `proposal_state`](#@Specification_1_proposal_state)
+    -  [Function `proposal_info`](#@Specification_1_proposal_info)
+    -  [Function `vote_of`](#@Specification_1_vote_of)
+    -  [Function `generate_next_proposal_id`](#@Specification_1_generate_next_proposal_id)
+    -  [Function `voting_delay`](#@Specification_1_voting_delay)
+    -  [Function `voting_period`](#@Specification_1_voting_period)
+    -  [Function `quorum_votes`](#@Specification_1_quorum_votes)
+    -  [Function `voting_quorum_rate`](#@Specification_1_voting_quorum_rate)
+    -  [Function `min_action_delay`](#@Specification_1_min_action_delay)
+    -  [Function `get_config`](#@Specification_1_get_config)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
@@ -799,28 +836,27 @@ So think twice before casting vote.
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
-    <b>let</b> stake_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&stake);
-    <b>let</b> total_voted = <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer))) {
-        <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
+    <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+    <b>let</b> total_voted = <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender)) {
+        <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
         <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
         <b>assert</b>(my_vote.agree == agree, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>));
-        <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> my_vote.stake, stake);
+
+        <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>(proposal, my_vote, stake);
         <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake)
     } <b>else</b> {
         <b>let</b> my_vote = <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt; {
             proposer: proposer_address,
             id: proposal_id,
-            stake,
+            stake: <a href="Token.md#0x1_Token_zero">Token::zero</a>(),
             agree,
         };
+        <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>(proposal, &<b>mut</b> my_vote, stake);
+        <b>let</b> total_voted = <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake);
         move_to(signer, my_vote);
-        stake_value
+        total_voted
     };
-    <b>if</b> (agree) {
-        proposal.for_votes = proposal.for_votes + stake_value;
-    } <b>else</b> {
-        proposal.against_votes = proposal.against_votes + stake_value;
-    };
+
     // emit event
     <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
@@ -828,11 +864,41 @@ So think twice before casting vote.
         <a href="Dao.md#0x1_Dao_VoteChangedEvent">VoteChangedEvent</a> {
             proposal_id,
             proposer: proposer_address,
-            voter: <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer),
+            voter: sender,
             agree,
             vote: total_voted,
         },
     );
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao__cast_vote"></a>
+
+## Function `_cast_vote`
+
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;, stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;) {
+    <b>let</b> stake_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&stake);
+    <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> vote.stake, stake);
+    <b>if</b> (vote.agree) {
+        proposal.for_votes = proposal.for_votes + stake_value;
+    } <b>else</b> {
+        proposal.against_votes = proposal.against_votes + stake_value;
+    };
 }
 </code></pre>
 
@@ -870,18 +936,14 @@ Let user change their vote during the voting time.
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+    {
+        <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+    };
+
     // flip the vote
     <b>if</b> (my_vote.agree != agree) {
-        my_vote.agree = agree;
-        <b>let</b> total_voted = <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake);
-        <b>if</b> (agree) {
-            proposal.for_votes = proposal.for_votes + total_voted;
-            proposal.against_votes = proposal.against_votes - total_voted;
-        } <b>else</b> {
-            proposal.for_votes = proposal.for_votes - total_voted;
-            proposal.against_votes = proposal.against_votes + total_voted;
-        };
+        <b>let</b> total_voted = <a href="Dao.md#0x1_Dao__flip_vote">_flip_vote</a>(my_vote, proposal);
         // emit event
         <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
         <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
@@ -895,6 +957,39 @@ Let user change their vote during the voting time.
             },
         );
     };
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao__flip_vote"></a>
+
+## Function `_flip_vote`
+
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__flip_vote">_flip_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(my_vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__flip_vote">_flip_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(my_vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;, proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;): u128 {
+    my_vote.agree = !my_vote.agree;
+    <b>let</b> total_voted = <a href="Token.md#0x1_Token_value">Token::value</a>(&my_vote.stake);
+    <b>if</b> (my_vote.agree) {
+        proposal.for_votes = proposal.for_votes + total_voted;
+        proposal.against_votes = proposal.against_votes - total_voted;
+    } <b>else</b> {
+        proposal.for_votes = proposal.for_votes - total_voted;
+        proposal.against_votes = proposal.against_votes + total_voted;
+    };
+    total_voted
 }
 </code></pre>
 
@@ -929,17 +1024,17 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
         // only when proposal is active, <b>use</b> can revoke vote.
         <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
+    // get proposal
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+
+    // get vote
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
-    <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
-    <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
-    <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> my_vote.stake, voting_power);
-    <b>if</b> (my_vote.agree) {
-        proposal.for_votes = proposal.for_votes - voting_power;
-    } <b>else</b> {
-        proposal.against_votes = proposal.against_votes - voting_power;
+    {
+        <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     };
+    // revoke vote on proposal
+    <b>let</b> reverted_stake =<a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>(proposal, my_vote, voting_power);
     // emit vote changed event
     <b>let</b> gov_info = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>(
@@ -960,13 +1055,13 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
 
 </details>
 
-<a name="0x1_Dao_proposal_exists"></a>
+<a name="0x1_Dao__revoke_vote"></a>
 
-## Function `proposal_exists`
+## Function `_revoke_vote`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): bool
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, to_revoke: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
 </code></pre>
 
 
@@ -975,17 +1070,17 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
-    proposer_address: address,
-    proposal_id: u64,
-): bool <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
-    <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address)) {
-        <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-        <b>if</b> (proposal.id == proposal_id) {
-            <b>return</b> <b>true</b>
-        };
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;, to_revoke: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; {
+    <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> vote.stake, to_revoke);
+    <b>if</b> (vote.agree) {
+        proposal.for_votes = proposal.for_votes - to_revoke;
+    } <b>else</b> {
+        proposal.against_votes = proposal.against_votes - to_revoke;
     };
-    <b>false</b>
+    <b>spec</b> {
+        <b>assert</b> <a href="Token.md#0x1_Token_value">Token::value</a>(reverted_stake) == to_revoke;
+    };
+    reverted_stake
 }
 </code></pre>
 
@@ -1056,7 +1151,10 @@ queue agreed proposal to execute.
     proposal_id: u64,
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
     // Only agreed proposal can be submitted.
-    <b>assert</b>(<a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>, 601); //todo
+    <b>assert</b>(
+        <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) == <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>,
+        <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>)
+    );
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     proposal.eta = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>() + proposal.action_delay;
 }
@@ -1145,6 +1243,38 @@ remove terminated proposal from proposer
 
 </details>
 
+<a name="0x1_Dao_proposal_exists"></a>
+
+## Function `proposal_exists`
+
+check whether a proposal exists in <code>proposer_address</code> with id <code>proposal_id</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+    proposer_address: address,
+    proposal_id: u64,
+): bool <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
+    <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address)) {
+        <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+        <b>return</b> proposal.id == proposal_id
+    };
+    <b>false</b>
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Dao_proposal_state"></a>
 
 ## Function `proposal_state`
@@ -1167,6 +1297,37 @@ remove terminated proposal from proposer
     <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
     <b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <b>let</b> quorum_votes = <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;();
+    <a href="Dao.md#0x1_Dao__proposal_state">_proposal_state</a>(proposal, current_time, quorum_votes)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao__proposal_state"></a>
+
+## Function `_proposal_state`
+
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__proposal_state">_proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;, current_time: u64, quorum_votes: u128): u8
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__proposal_state">_proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+    proposal: &<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;,
+    current_time: u64,
+    quorum_votes: u128,
+): u8 {
+    // <b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    // <b>let</b> quorum_votes = <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;();
     <b>if</b> (current_time &lt; proposal.start_time) {
         // Pending
         <a href="Dao.md#0x1_Dao_PENDING">PENDING</a>
@@ -1174,7 +1335,7 @@ remove terminated proposal from proposer
         // Active
         <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>
     } <b>else</b> <b>if</b> (proposal.for_votes &lt;= proposal.against_votes ||
-        proposal.for_votes &lt; <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;()) {
+        proposal.for_votes &lt; quorum_votes) {
         // Defeated
         <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>
     } <b>else</b> <b>if</b> (proposal.eta == 0) {
@@ -1258,32 +1419,6 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
 
 </details>
 
-<a name="0x1_Dao_quorum_votes"></a>
-
-## Function `quorum_votes`
-
-Quorum votes to make proposal pass.
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128 {
-    <b>let</b> supply = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
-    supply / 100 * (<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;() <b>as</b> u128)
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Dao_generate_next_proposal_id"></a>
 
 ## Function `generate_next_proposal_id`
@@ -1352,6 +1487,36 @@ Quorum votes to make proposal pass.
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT: <b>copyable</b>&gt;(): u64 {
     <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;().voting_period
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Dao_quorum_votes"></a>
+
+## Function `quorum_votes`
+
+Quorum votes to make proposal pass.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128 {
+    <b>let</b> supply = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
+    <b>let</b> rate = <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;();
+    // <b>let</b> rate1 = (rate <b>as</b> u64);
+    <b>let</b> rate2 = (rate <b>as</b> u128);
+    supply * rate2 / 100u128
+    // <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(supply, (<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;() <b>as</b> u128), 100)
 }
 </code></pre>
 
@@ -1597,3 +1762,920 @@ TODO: cap should not be mut to set data.
 
 
 </details>
+
+<a name="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_partial;
+<b>pragma</b> aborts_if_is_strict = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_DaoGlobalInfo"></a>
+
+### Resource `DaoGlobalInfo`
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
+</code></pre>
+
+
+
+<dl>
+<dt>
+<code>next_proposal_id: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>proposal_create_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_ProposalCreatedEvent">Dao::ProposalCreatedEvent</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>vote_changed_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_VoteChangedEvent">Dao::VoteChangedEvent</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+
+<a name="@Specification_1_DaoConfig"></a>
+
+### Struct `DaoConfig`
+
+
+<pre><code><b>struct</b> <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT: <b>copyable</b>&gt;
+</code></pre>
+
+
+
+<dl>
+<dt>
+<code>voting_delay: u64</code>
+</dt>
+<dd>
+ after proposal created, how long use should wait before he can vote.
+</dd>
+<dt>
+<code>voting_period: u64</code>
+</dt>
+<dd>
+ how long the voting window is.
+</dd>
+<dt>
+<code>voting_quorum_rate: u8</code>
+</dt>
+<dd>
+ the quorum rate to agree on the proposal.
+ if 50% votes needed, then the voting_quorum_rate should be 50.
+ it should between (0, 100].
+</dd>
+<dt>
+<code>min_action_delay: u64</code>
+</dt>
+<dd>
+ how long the proposal should wait before it can be executed.
+</dd>
+</dl>
+
+
+
+<pre><code><b>invariant</b> voting_quorum_rate &gt; 0 && <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100;
+<b>invariant</b> voting_delay &gt; 0;
+<b>invariant</b> voting_period &gt; 0;
+<b>invariant</b> min_action_delay &gt; 0;
+</code></pre>
+
+
+
+<a name="@Specification_1_Proposal"></a>
+
+### Resource `Proposal`
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;<a href="Token.md#0x1_Token">Token</a>, Action&gt;
+</code></pre>
+
+
+
+<dl>
+<dt>
+<code>id: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>proposer: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>start_time: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>end_time: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>for_votes: u128</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>against_votes: u128</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>eta: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>action_delay: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>action: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;Action&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+
+<a name="@Specification_1_Vote"></a>
+
+### Resource `Vote`
+
+
+<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+<dl>
+<dt>
+<code>proposer: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>id: u64</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>agree: bool</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+
+<a name="@Specification_1_default_min_action_delay"></a>
+
+### Function `default_min_action_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_default_voting_delay"></a>
+
+### Function `default_voting_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_default_voting_period"></a>
+
+### Function `default_voting_period`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_period">default_voting_period</a>(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_default_voting_quorum_rate"></a>
+
+### Function `default_voting_quorum_rate`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_plugin"></a>
+
+### Function `plugin`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> voting_delay == 0;
+<b>aborts_if</b> voting_period == 0;
+<b>aborts_if</b> voting_quorum_rate == 0 || voting_quorum_rate &gt; 100;
+<b>aborts_if</b> min_action_delay == 0;
+<a name="0x1_Dao_sender$45"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(sender);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;(sender);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;(sender);
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_RequirePluginDao"></a>
+
+
+<a name="0x1_Dao_token_addr$37"></a>
+
+
+<pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_RequirePluginDao">RequirePluginDao</a>&lt;TokenT&gt; {
+    <b>let</b> token_addr = <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(token_addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;(token_addr);
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_AbortIfDaoInfoNotExist"></a>
+
+
+<a name="0x1_Dao_token_addr$38"></a>
+
+
+<pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt; {
+    <b>let</b> token_addr = <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(token_addr);
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_AbortIfDaoConfigNotExist"></a>
+
+
+<a name="0x1_Dao_token_addr$39"></a>
+
+
+<pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt; {
+    <b>let</b> token_addr = <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;(token_addr);
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_AbortIfTimestampNotExist"></a>
+
+
+<pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_AbortIfTimestampNotExist">AbortIfTimestampNotExist</a> {
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+}
+</code></pre>
+
+
+
+
+<pre><code><b>apply</b>
+    <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;
+<b>to</b>
+    <a href="Dao.md#0x1_Dao_generate_next_proposal_id">generate_next_proposal_id</a>&lt;TokenT&gt;;
+<b>apply</b>
+    <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;
+<b>to</b>
+    <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;,
+    <a href="Dao.md#0x1_Dao_voting_delay">voting_delay</a>&lt;TokenT&gt;,
+    <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT&gt;,
+    <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;,
+    <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;,
+    <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;,
+
+    <a href="Dao.md#0x1_Dao_modify_dao_config">modify_dao_config</a>&lt;TokenT&gt;,
+    set_*&lt;TokenT&gt;;
+</code></pre>
+
+
+
+<a name="@Specification_1_new_dao_config"></a>
+
+### Function `new_dao_config`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_new_dao_config">new_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64): <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> voting_delay == 0;
+<b>aborts_if</b> voting_period == 0;
+<b>aborts_if</b> voting_quorum_rate == 0 || voting_quorum_rate &gt; 100;
+<b>aborts_if</b> min_action_delay == 0;
+</code></pre>
+
+
+
+<a name="@Specification_1_propose"></a>
+
+### Function `propose`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_propose">propose</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, action: ActionT, action_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> addition_overflow_unchecked;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> action_delay &gt; 0 && action_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
+<a name="0x1_Dao_sender$46"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(sender);
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
+<b>ensures</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(sender);
+</code></pre>
+
+
+
+<a name="@Specification_1_cast_vote"></a>
+
+### Function `cast_vote`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_cast_vote">cast_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;, agree: bool)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<a name="0x1_Dao_expected_states$47"></a>
+<b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
+<a name="0x1_Dao_sender$48"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<a name="0x1_Dao_vote_exists$49"></a>
+<b>let</b> vote_exists = <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>include</b> vote_exists ==&gt; <a href="Dao.md#0x1_Dao_CheckVoteOnCast">CheckVoteOnCast</a>&lt;TokenT, ActionT&gt; {
+    voter: sender,
+    proposal_id: proposal_id,
+    agree: agree
+};
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>ensures</b> !vote_exists ==&gt; <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).stake.value == stake.value;
+</code></pre>
+
+
+
+<a name="@Specification_1__cast_vote"></a>
+
+### Function `_cast_vote`
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>ensures</b> vote.stake.value == <b>old</b>(vote).stake.value + stake.value;
+<b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes + stake.value == proposal.for_votes;
+<b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).against_votes == proposal.against_votes;
+<b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes + stake.value == proposal.against_votes;
+<b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).for_votes == proposal.for_votes;
+</code></pre>
+
+
+
+<a name="@Specification_1_change_vote"></a>
+
+### Function `change_vote`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_change_vote">change_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, agree: bool)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+<a name="0x1_Dao_expected_states$50"></a>
+<b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
+<a name="0x1_Dao_sender$51"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<a name="0x1_Dao_vote$52"></a>
+<b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
+<b>include</b> vote.agree != agree ==&gt; <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<b>ensures</b> vote.agree != agree ==&gt; vote.agree == agree;
+</code></pre>
+
+
+
+<a name="@Specification_1__flip_vote"></a>
+
+### Function `_flip_vote`
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__flip_vote">_flip_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(my_vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;): u128
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>aborts_if</b> my_vote.agree && proposal.for_votes &lt; my_vote.stake.value;
+<b>aborts_if</b> my_vote.agree && proposal.against_votes + my_vote.stake.value &gt; MAX_U128;
+<b>aborts_if</b> !my_vote.agree && proposal.against_votes &lt; my_vote.stake.value;
+<b>aborts_if</b> !my_vote.agree && proposal.for_votes + my_vote.stake.value &gt; MAX_U128;
+<b>ensures</b> my_vote.agree == !<b>old</b>(my_vote).agree;
+</code></pre>
+
+
+
+<a name="@Specification_1_revoke_vote"></a>
+
+### Function `revoke_vote`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_revoke_vote">revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64, voting_power: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<a name="0x1_Dao_expected_states$53"></a>
+<b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
+<a name="0x1_Dao_sender$54"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<a name="0x1_Dao_vote$55"></a>
+<b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt; {vote, proposer_address, proposal_id};
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
+<b>ensures</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).stake.value + result.value == <b>old</b>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender)).stake.value;
+<b>ensures</b> result.value == voting_power;
+</code></pre>
+
+
+
+<a name="@Specification_1__revoke_vote"></a>
+
+### Function `_revoke_vote`
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Dao::Vote</a>&lt;TokenT&gt;, to_revoke: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>aborts_if</b> vote.stake.value &lt; to_revoke;
+<b>aborts_if</b> vote.agree && proposal.for_votes &lt; to_revoke;
+<b>aborts_if</b> !vote.agree && proposal.against_votes &lt; to_revoke;
+<b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes == proposal.for_votes + to_revoke;
+<b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes == proposal.against_votes + to_revoke;
+<b>ensures</b> result.value == to_revoke;
+</code></pre>
+
+
+
+<a name="@Specification_1_unstake_votes"></a>
+
+### Function `unstake_votes`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_unstake_votes">unstake_votes</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(signer: &signer, proposer_address: address, proposal_id: u64): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_expected_states$56"></a>
+
+
+<pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>);
+<a name="0x1_Dao_expected_states1$57"></a>
+<b>let</b> expected_states1 = concat_vector(expected_states,singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>));
+<a name="0x1_Dao_expected_states2$58"></a>
+<b>let</b> expected_states2 = concat_vector(expected_states1,singleton_vector(<a href="Dao.md#0x1_Dao_QUEUED">QUEUED</a>));
+<a name="0x1_Dao_expected_states3$59"></a>
+<b>let</b> expected_states3 = concat_vector(expected_states2,singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>));
+<a name="0x1_Dao_expected_states4$60"></a>
+<b>let</b> expected_states4 = concat_vector(expected_states3,singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
+<b>aborts_if</b> expected_states4[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
+<b>aborts_if</b> expected_states4[1] != <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>;
+<b>aborts_if</b> expected_states4[2] != <a href="Dao.md#0x1_Dao_QUEUED">QUEUED</a>;
+<b>aborts_if</b> expected_states4[3] != <a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>;
+<b>aborts_if</b> expected_states4[4] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
+<b>include</b> <a href="Dao.md#0x1_Dao_spec_proposal_exists">spec_proposal_exists</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) ==&gt;
+            <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states: expected_states4};
+<a name="0x1_Dao_sender$61"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<a name="0x1_Dao_vote$62"></a>
+<b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
+<b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
+<b>ensures</b> result.value == <b>old</b>(vote).stake.value;
+</code></pre>
+
+
+
+<a name="@Specification_1_queue_proposal_action"></a>
+
+### Function `queue_proposal_action`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_queue_proposal_action">queue_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_expected_states$63"></a>
+
+
+<pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
+<a name="0x1_Dao_proposal$64"></a>
+<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + proposal.action_delay &gt; MAX_U64;
+<b>ensures</b> proposal.eta &gt;= <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>();
+</code></pre>
+
+
+
+<a name="@Specification_1_extract_proposal_action"></a>
+
+### Function `extract_proposal_action`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_extract_proposal_action">extract_proposal_action</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): ActionT
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_expected_states$65"></a>
+
+
+<pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+</code></pre>
+
+
+
+<a name="@Specification_1_destroy_terminated_proposal"></a>
+
+### Function `destroy_terminated_proposal`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_expected_states$66"></a>
+
+
+<pre><code><b>let</b> expected_states = concat_vector(singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>), singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
+<b>aborts_if</b> len(expected_states) != 2;
+<b>aborts_if</b> expected_states[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
+<b>aborts_if</b> expected_states[1] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+<b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+</code></pre>
+
+
+
+<a name="@Specification_1_proposal_exists"></a>
+
+### Function `proposal_exists`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_exists">proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): bool
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>ensures</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address) &&
+            borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).id == proposal_id ==&gt;
+            result;
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_spec_proposal_exists"></a>
+
+
+<pre><code><b>define</b> <a href="Dao.md#0x1_Dao_spec_proposal_exists">spec_proposal_exists</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+   proposer_address: address,
+   proposal_id: u64,
+): bool {
+   <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address)) {
+       <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+       proposal.id == proposal_id
+   } <b>else</b> {
+       <b>false</b>
+   }
+}
+</code></pre>
+
+
+
+<a name="@Specification_1_proposal_state"></a>
+
+### Function `proposal_state`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): u8
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfTimestampNotExist">AbortIfTimestampNotExist</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<a name="0x1_Dao_proposal$67"></a>
+<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>aborts_if</b> proposal.id != proposal_id;
+</code></pre>
+
+
+
+<a name="@Specification_1_proposal_info"></a>
+
+### Function `proposal_info`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64): (u64, u64, u128, u128)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<a name="0x1_Dao_proposal$68"></a>
+<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>aborts_if</b> proposal.id != proposal_id;
+</code></pre>
+
+
+
+<a name="@Specification_1_vote_of"></a>
+
+### Function `vote_of`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_vote_of">vote_of</a>&lt;TokenT: <b>copyable</b>&gt;(voter: address, proposer_address: address, proposal_id: u64): (bool, u128)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
+<a name="0x1_Dao_vote$69"></a>
+<b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
+</code></pre>
+
+
+
+<a name="@Specification_1_generate_next_proposal_id"></a>
+
+### Function `generate_next_proposal_id`
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao_generate_next_proposal_id">generate_next_proposal_id</a>&lt;TokenT&gt;(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> addition_overflow_unchecked;
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
+<b>ensures</b>
+    <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>()).next_proposal_id ==
+    <b>old</b>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>()).next_proposal_id) + 1;
+<b>ensures</b> result == <b>old</b>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>()).next_proposal_id);
+</code></pre>
+
+
+
+<a name="@Specification_1_voting_delay"></a>
+
+### Function `voting_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_delay">voting_delay</a>&lt;TokenT: <b>copyable</b>&gt;(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_voting_period"></a>
+
+### Function `voting_period`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT: <b>copyable</b>&gt;(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_quorum_votes"></a>
+
+### Function `quorum_votes`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_spec_quorum_votes"></a>
+
+
+<pre><code><b>define</b> <a href="Dao.md#0x1_Dao_spec_quorum_votes">spec_quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128 {
+   <b>let</b> supply = <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;TokenT&gt;();
+   supply * <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate / 100
+}
+</code></pre>
+
+
+
+<a name="@Specification_1_voting_quorum_rate"></a>
+
+### Function `voting_quorum_rate`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT: <b>copyable</b>&gt;(): u8
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+<b>ensures</b> result == <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload.voting_quorum_rate;
+</code></pre>
+
+
+
+<a name="@Specification_1_min_action_delay"></a>
+
+### Function `min_action_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT: <b>copyable</b>&gt;(): u64
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+<b>ensures</b> result == <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
+</code></pre>
+
+
+
+<a name="@Specification_1_get_config"></a>
+
+### Function `get_config`
+
+
+<pre><code><b>fun</b> <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT: <b>copyable</b>&gt;(): <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>ensures</b> result == <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload;
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_spec_dao_config"></a>
+
+
+<pre><code><b>define</b> <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(): <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
+    <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload
+}
+</code></pre>
