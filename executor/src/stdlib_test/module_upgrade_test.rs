@@ -387,7 +387,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
 
         let script = compiled_transaction_script(
             net.stdlib_version(),
-            StdlibScript::UpdateConsensusConfigProposal,
+            StdlibScript::ProposeUpdateConsensusConfig,
         )
         .into_vec();
 
@@ -536,9 +536,11 @@ fn test_dao_modify_onchain_config() -> Result<()> {
         );
         assert_eq!(state, EXECUTABLE);
 
-        let script =
-            compiled_transaction_script(net.stdlib_version(), StdlibScript::ExecuteProposal)
-                .into_vec();
+        let script = compiled_transaction_script(
+            net.stdlib_version(),
+            StdlibScript::ExecuteOnChainConfigProposal,
+        )
+        .into_vec();
 
         let script = Script::new(
             script,
