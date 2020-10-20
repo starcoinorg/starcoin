@@ -4,7 +4,7 @@
 use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
-use crate::genesis_config::{BuiltinNetwork, ChainId, ChainNetwork};
+use crate::genesis_config::{BuiltinNetworkID, ChainId, ChainNetwork};
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
@@ -86,6 +86,7 @@ impl AccountInfo {
 pub struct AccountInfoUniverse {
     accounts: Vec<AccountInfo>,
     epoch: u64,
+    net: ChainNetwork,
 }
 
 impl AccountInfoUniverse {
@@ -94,14 +95,18 @@ impl AccountInfoUniverse {
             .into_iter()
             .map(|(private_key, public_key)| AccountInfo::new(private_key, public_key))
             .collect();
-
-        Self { accounts, epoch }
+        let net = ChainNetwork::new_test();
+        Self {
+            accounts,
+            epoch,
+            net,
+        }
     }
 
     pub fn default() -> Result<Self> {
         // association account
         if let (Some(private_key), public_key) =
-            &BuiltinNetwork::Test.genesis_config().association_key_pair
+            &BuiltinNetworkID::Test.genesis_config().association_key_pair
         {
             let account = AccountInfo::new_with_address(
                 account_config::association_address(),
@@ -111,6 +116,7 @@ impl AccountInfoUniverse {
             Ok(Self {
                 accounts: vec![account],
                 epoch: 0,
+                net: ChainNetwork::new_test(),
             })
         } else {
             bail!("association private_key not config at dev network.")
@@ -133,6 +139,10 @@ impl AccountInfoUniverse {
         let epoch = self.epoch;
         self.epoch += 1;
         epoch
+    }
+
+    pub fn net(&self) -> &ChainNetwork {
+        &self.net
     }
 }
 
@@ -274,7 +284,7 @@ impl SignatureCheckedTransaction {
             })
             .prop_flat_map(|(_keypair, raw_txn)| {
                 prop_oneof![Just(
-                    BuiltinNetwork::Test
+                    BuiltinNetworkID::Test
                         .genesis_config()
                         .sign_with_association(raw_txn)
                         .expect("signing should always work")
@@ -443,7 +453,7 @@ impl Arbitrary for BlockMetadata {
                         Some(author_public_key),
                         uncles,
                         number,
-                        ChainNetwork::TEST.chain_id(),
+                        ChainId::test(),
                         parent_gas_used,
                     )
                 },

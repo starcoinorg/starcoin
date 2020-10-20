@@ -103,7 +103,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
 
     let account1 = Account::new();
     let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1, 0, 50_000_000, 1, net,
+        &account1, 0, 50_000_000, 1, &net,
     ));
     let output1 = execute_and_apply(&chain_state, txn1);
     assert_eq!(KeptVMStatus::Executed, output1.status().status().unwrap());

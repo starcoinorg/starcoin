@@ -2,13 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use starcoin_config::{NodeConfig, TimeService};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_state_api::message::{StateRequest, StateResponse};
-use starcoin_state_api::{ChainStateReader, StateNodeStore, StateView, StateWithProof};
+use starcoin_state_api::{
+    AccountStateReader, ChainStateReader, StateNodeStore, StateView, StateWithProof,
+};
 use starcoin_statedb::ChainStateDB;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::system_events::NewHeadBlock;
@@ -23,15 +26,20 @@ pub struct ChainStateService {
 }
 
 impl ChainStateService {
-    pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+    pub fn new(
+        store: Arc<dyn StateNodeStore>,
+        root_hash: Option<HashValue>,
+        time_service: Arc<dyn TimeService>,
+    ) -> Self {
         Self {
-            service: Inner::new(store, root_hash),
+            service: Inner::new(store, root_hash, time_service),
         }
     }
 }
 
 impl ServiceFactory<Self> for ChainStateService {
     fn create(ctx: &mut ServiceContext<ChainStateService>) -> Result<ChainStateService> {
+        let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let startup_info = storage
             .get_startup_info()?
@@ -39,13 +47,18 @@ impl ServiceFactory<Self> for ChainStateService {
         let head_block = storage.get_block(startup_info.master)?.ok_or_else(|| {
             format_err!("Can not find head block by hash:{:?}", startup_info.master)
         })?;
-        Ok(Self::new(storage, Some(head_block.header().state_root)))
+        Ok(Self::new(
+            storage,
+            Some(head_block.header().state_root),
+            config.net().time_service(),
+        ))
     }
 }
 
 impl ActorService for ChainStateService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<NewHeadBlock>();
+        self.service.adjust_time();
         Ok(())
     }
 
@@ -98,15 +111,20 @@ impl EventHandler<Self, NewHeadBlock> for ChainStateService {
 }
 
 pub struct Inner {
-    //TODO use a StateReader
-    reader: ChainStateDB,
+    state_db: ChainStateDB,
+    //for adjust local time by on chain time.
+    time_service: Arc<dyn TimeService>,
 }
 
 impl Inner {
-    pub fn new(store: Arc<dyn StateNodeStore>, root_hash: Option<HashValue>) -> Self {
+    pub fn new(
+        store: Arc<dyn StateNodeStore>,
+        root_hash: Option<HashValue>,
+        time_service: Arc<dyn TimeService>,
+    ) -> Self {
         Self {
-            //TODO use a StateReader
-            reader: ChainStateDB::new(store, root_hash),
+            state_db: ChainStateDB::new(store, root_hash),
+            time_service,
         }
     }
 
@@ -115,7 +133,7 @@ impl Inner {
         access_path: AccessPath,
         state_root: HashValue,
     ) -> Result<StateWithProof> {
-        let reader = self.reader.change_root(state_root);
+        let reader = self.state_db.change_root(state_root);
         reader.get_with_proof(&access_path)
     }
 
@@ -124,26 +142,39 @@ impl Inner {
         account: AccountAddress,
         state_root: HashValue,
     ) -> Result<Option<AccountState>> {
-        let reader = self.reader.change_root(state_root);
+        let reader = self.state_db.change_root(state_root);
         reader.get_account_state(&account)
     }
 
     pub(crate) fn change_root(&mut self, state_root: HashValue) {
-        self.reader = self.reader.change_root(state_root);
+        self.state_db = self.state_db.change_root(state_root);
+        self.adjust_time();
+    }
+
+    pub fn adjust_time(&self) {
+        let reader = AccountStateReader::new(&self.state_db);
+        match reader.get_timestamp() {
+            Ok(on_chain_time) => {
+                self.time_service.adjust(on_chain_time);
+            }
+            Err(e) => {
+                error!("Get global time on chain fail: {:?}", e);
+            }
+        }
     }
 }
 
 impl ChainStateReader for Inner {
     fn get_with_proof(&self, access_path: &AccessPath) -> Result<StateWithProof> {
-        self.reader.get_with_proof(access_path)
+        self.state_db.get_with_proof(access_path)
     }
 
     fn get_account_state(&self, address: &AccountAddress) -> Result<Option<AccountState>> {
-        self.reader.get_account_state(address)
+        self.state_db.get_account_state(address)
     }
 
     fn state_root(&self) -> HashValue {
-        self.reader.state_root()
+        self.state_db.state_root()
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
@@ -153,7 +184,7 @@ impl ChainStateReader for Inner {
 
 impl StateView for Inner {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.reader.get(access_path)
+        self.state_db.get(access_path)
     }
 
     fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
@@ -179,6 +210,7 @@ mod tests {
         let (storage, _startup_info, _) =
             test_helper::Genesis::init_storage_for_test(config.net())?;
         let registry = RegistryService::launch();
+        registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainStateService>().await?;
         let account_state = service_ref.get_account_state(genesis_address()).await?;

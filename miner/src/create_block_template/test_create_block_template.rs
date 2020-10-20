@@ -13,19 +13,19 @@ use starcoin_genesis::Genesis as StarcoinGenesis;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
-use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::genesis_config::ChainNetworkID;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter};
 
 #[stest::test]
 fn test_create_block_template() {
-    test_create_block_template_by_net(ChainNetwork::TEST);
-    test_create_block_template_by_net(ChainNetwork::DEV);
-    test_create_block_template_by_net(ChainNetwork::HALLEY);
+    test_create_block_template_by_net(ChainNetworkID::TEST);
+    test_create_block_template_by_net(ChainNetworkID::DEV);
+    test_create_block_template_by_net(ChainNetworkID::HALLEY);
     //test_create_block_template_by_net(ChainNetwork::PROXIMA);
 }
 
-fn test_create_block_template_by_net(net: ChainNetwork) {
+fn test_create_block_template_by_net(net: ChainNetworkID) {
     debug!("test_create_block_template_by_net {:?}", net);
     let mut opt = StarcoinOpt::default();
     let temp_path = temp_path();
@@ -97,7 +97,11 @@ fn test_switch_master() {
 
         let block = master
             .consensus()
-            .create_block(&master, block_template)
+            .create_block(
+                &master,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
 
         let block_header = block.header().clone();
@@ -140,7 +144,11 @@ fn test_switch_master() {
 
         let block = new_master
             .consensus()
-            .create_block(&new_master, block_template)
+            .create_block(
+                &new_master,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
 
         new_master.apply(block.clone()).unwrap();
@@ -199,7 +207,11 @@ fn test_do_uncles() {
 
         let block = master
             .consensus()
-            .create_block(&master, block_template)
+            .create_block(
+                &master,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         head_id = block.id();
         master.apply(block.clone()).unwrap();
@@ -223,7 +235,11 @@ fn test_do_uncles() {
         let block_template = inner.create_block_template().unwrap();
         let uncle_block = branch
             .consensus()
-            .create_block(&branch, block_template)
+            .create_block(
+                &branch,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         let uncle_block_header = uncle_block.header().clone();
         branch.apply(uncle_block).unwrap();
@@ -245,7 +261,11 @@ fn test_do_uncles() {
             .unwrap();
         let block = master
             .consensus()
-            .create_block(&master, block_template)
+            .create_block(
+                &master,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         if i == 0 {
             assert_eq!(block.uncles().unwrap().len(), times);
@@ -288,7 +308,11 @@ fn test_new_head() {
         let block = master_inner
             .chain
             .consensus()
-            .create_block(&master_inner.chain, block_template)
+            .create_block(
+                &master_inner.chain,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         (&mut master_inner.chain).apply(block.clone()).unwrap();
         if i % 2 == 0 {
@@ -329,7 +353,11 @@ fn test_new_branch() {
         let block = master_inner
             .chain
             .consensus()
-            .create_block(&master_inner.chain, block_template)
+            .create_block(
+                &master_inner.chain,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         (&mut master_inner.chain).apply(block.clone()).unwrap();
     }
@@ -351,7 +379,11 @@ fn test_new_branch() {
         let block_template = inner.create_block_template().unwrap();
         let new_block = branch
             .consensus()
-            .create_block(&branch, block_template)
+            .create_block(
+                &branch,
+                block_template,
+                node_config.net().time_service().as_ref(),
+            )
             .unwrap();
         new_head_id = new_block.id();
         branch.apply(new_block.clone()).unwrap();

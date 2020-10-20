@@ -31,9 +31,11 @@ pub fn gen_blockchain_with_blocks_for_test(count: u64, net: &ChainNetwork) -> Re
                 None,
             )
             .unwrap();
-        let block = block_chain
-            .consensus()
-            .create_block(&block_chain, block_template)?;
+        let block = block_chain.consensus().create_block(
+            &block_chain,
+            block_template,
+            net.time_service().as_ref(),
+        )?;
         block_chain.apply(block)?;
     }
 

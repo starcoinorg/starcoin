@@ -32,13 +32,15 @@ impl<C: JobClient> MinerClient<C> {
             let mp = MultiProgress::new();
             let pb = mp.add(ProgressBar::new(10));
             pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
-            let worker_controller = start_worker(&config, nonce_tx, Some(&mp));
+            let worker_controller =
+                start_worker(&config, nonce_tx, Some(&mp), job_client.time_service());
             thread::spawn(move || {
                 mp.join().expect("MultiProgress join failed");
             });
             (worker_controller, Some(pb))
         } else {
-            let worker_controller = start_worker(&config, nonce_tx, None);
+            let worker_controller =
+                start_worker(&config, nonce_tx, None, job_client.time_service());
             (worker_controller, None)
         };
         Ok(Self {

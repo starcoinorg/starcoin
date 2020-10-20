@@ -287,7 +287,7 @@ impl NetworkAsyncService {
         // merge seeds from chain config
         let mut config = node_config.network.clone();
         if !node_config.network.disable_seed {
-            let seeds = node_config.base.net().boot_nodes().to_vec();
+            let seeds = node_config.net().boot_nodes().to_vec();
             config.seeds.extend(seeds);
         }
         let has_seed = !config.seeds.is_empty();
@@ -524,7 +524,7 @@ impl Inner {
             .entry(peer_id.clone())
             .or_insert_with(|| PeerInfoNet::new(peer_info));
 
-        let path = self.node_config.base.data_dir();
+        let path = self.node_config.data_dir();
         let file = Path::new(PEERS_FILE_NAME);
 
         let path = path.join(file);

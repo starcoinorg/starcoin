@@ -3,13 +3,14 @@
 
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::build_stdlib_package;
 use starcoin_types::transaction::RawUserTransaction;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::TransactionPayload;
 use stdlib::StdLibOptions;
 use structopt::StructOpt;
@@ -71,9 +72,14 @@ impl CommandAction for UpgradeStdlibCommand {
             let account_state_reader = AccountStateReader::new(&chain_state_reader);
             let account_resource = account_state_reader
                 .get_account_resource(association_account.address())?
-                .unwrap_or_else(|| panic!("association_account must exist on chain."));
-            let upgrade_package =
-                build_stdlib_package(cli_state.net(), StdLibOptions::Fresh, false)?;
+                .ok_or_else(|| format_err!("association_account must exist on chain."))?;
+            let net = ChainNetwork::new_builtin(
+                *cli_state
+                    .net()
+                    .as_builtin()
+                    .ok_or_else(|| format_err!("Only support builtin network"))?,
+            );
+            let upgrade_package = build_stdlib_package(&net, StdLibOptions::Fresh, false)?;
 
             let expiration_time = opt.expiration_time + node_info.now;
             let upgrade_txn = RawUserTransaction::new(

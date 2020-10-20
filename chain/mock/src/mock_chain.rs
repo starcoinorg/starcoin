@@ -14,28 +14,37 @@ use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 
 pub struct MockChain {
+    net: ChainNetwork,
     head: BlockChain,
     miner: AccountInfo,
 }
 
 impl MockChain {
-    pub fn new(net: &ChainNetwork) -> Result<Self> {
+    pub fn new(net: ChainNetwork) -> Result<Self> {
         let (storage, startup_info, _) =
-            Genesis::init_storage_for_test(net).expect("init storage by genesis fail.");
+            Genesis::init_storage_for_test(&net).expect("init storage by genesis fail.");
 
         let chain = BlockChain::new(net.time_service(), startup_info.master, storage)?;
         let miner = AccountInfo::random();
-        Ok(Self { head: chain, miner })
+        Ok(Self {
+            net,
+            head: chain,
+            miner,
+        })
     }
 
     pub fn new_with_storage(
-        net: &ChainNetwork,
+        net: ChainNetwork,
         storage: Arc<Storage>,
         head_block_hash: HashValue,
         miner: AccountInfo,
     ) -> Result<Self> {
         let chain = BlockChain::new(net.time_service(), head_block_hash, storage)?;
-        Ok(Self { head: chain, miner })
+        Ok(Self {
+            net,
+            head: chain,
+            miner,
+        })
     }
 
     pub fn head(&self) -> &BlockChain {
@@ -60,7 +69,9 @@ impl MockChain {
             vec![],
             None,
         )?;
-        self.head.consensus().create_block(&self.head, template)
+        self.head
+            .consensus()
+            .create_block(&self.head, template, self.net.time_service().as_ref())
     }
 
     pub fn apply(&mut self, block: Block) -> Result<()> {

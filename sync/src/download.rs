@@ -199,7 +199,7 @@ impl EventHandler<Self, SyncEvent> for DownloadService {
                 let sync_task = self.sync_task.clone();
                 if self.need_sync_state.load(Ordering::Relaxed) {
                     let self_peer_id = self.self_peer_id.clone();
-                    let is_main = self.node_config.clone().base.net().is_main();
+                    let is_main = self.node_config.net().is_main();
                     let downloader = self.downloader.clone();
                     let rpc_client = self.rpc_client.clone();
                     let network = self.network.clone();

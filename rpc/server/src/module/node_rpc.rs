@@ -43,7 +43,15 @@ impl NodeApi for NodeRpcImpl {
         let net = self.config.net().clone();
         let fut = async move {
             let peer_info = service.get_self_peer().await?;
-            let node_info = NodeInfo::new(peer_info, self_address, net);
+            //TODO read consensus_strategy from Epoch.
+            let consensus_strategy = net.genesis_config().consensus();
+            let node_info = NodeInfo::new(
+                peer_info,
+                self_address,
+                net.id().clone(),
+                consensus_strategy,
+                net.time_service().now_secs(),
+            );
             Ok(node_info)
         };
         Box::new(fut.map_err(map_err).boxed().compat())

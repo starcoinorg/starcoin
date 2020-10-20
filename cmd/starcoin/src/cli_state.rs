@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{format_err, Result};
 use starcoin_account_api::AccountInfo;
-use starcoin_config::{ChainNetwork, DataDirPath};
+use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
@@ -17,7 +17,7 @@ use tokio_compat::runtime::Runtime;
 static HISTORY_FILE_NAME: &str = "history";
 
 pub struct CliState {
-    net: ChainNetwork,
+    net: ChainNetworkID,
     client: Arc<RpcClient>,
     watch_timeout: Duration,
     node_handle: Option<NodeHandle>,
@@ -30,7 +30,7 @@ pub struct CliState {
 impl CliState {
     pub const DEFAULT_WATCH_TIMEOUT: Duration = Duration::from_secs(300);
     pub fn new(
-        net: ChainNetwork,
+        net: ChainNetworkID,
         client: Arc<RpcClient>,
         watch_timeout: Option<Duration>,
         node_handle: Option<NodeHandle>,
@@ -62,7 +62,7 @@ impl CliState {
         }
     }
 
-    pub fn net(&self) -> &ChainNetwork {
+    pub fn net(&self) -> &ChainNetworkID {
         &self.net
     }
 
@@ -120,7 +120,7 @@ impl CliState {
         Ok(block)
     }
 
-    pub fn into_inner(self) -> (ChainNetwork, Arc<RpcClient>, Option<NodeHandle>) {
+    pub fn into_inner(self) -> (ChainNetworkID, Arc<RpcClient>, Option<NodeHandle>) {
         (self.net, self.client, self.node_handle)
     }
 }

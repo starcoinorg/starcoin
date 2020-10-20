@@ -18,6 +18,7 @@ use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -120,8 +121,7 @@ impl CommandAction for ExecuteCommand {
 
         let (bytecode, is_script) = if let Some(builtin_script) = opt.script_name.as_ref() {
             let code =
-                compiled_transaction_script(ctx.state().net().stdlib_version(), *builtin_script)
-                    .into_vec();
+                compiled_transaction_script(StdlibVersion::Latest, *builtin_script).into_vec();
             (code, true)
         } else {
             let move_file_path = ctx

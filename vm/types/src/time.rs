@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
+use crate::on_chain_config::GlobalTimeOnChain;
+use log::{info, warn};
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::{
     sync::{
         atomic::{AtomicU64, Ordering},
@@ -21,9 +25,9 @@ pub fn duration_since_epoch() -> Duration {
 
 /// A generic service for providing time related operations (e.g., returning the current time and
 /// sleeping).
-pub trait TimeService: Send + Sync {
-    ///init current time service for fixed reference value
-    fn init(&self, value: u64);
+pub trait TimeService: Send + Sync + Debug {
+    ///Adjust local time by on chain time.
+    fn adjust(&self, value: GlobalTimeOnChain);
     /// Returns the current time since the UNIX_EPOCH in seconds as a u64.
     fn now_secs(&self) -> u64;
     /// Returns the current time since the UNIX_EPOCH in milliseconds as a u64.
@@ -33,10 +37,19 @@ pub trait TimeService: Send + Sync {
     fn sleep(&self, millis: u64);
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
 pub enum TimeServiceType {
     RealTimeService,
     MockTimeService,
+}
+
+impl TimeServiceType {
+    pub fn new_time_service(self) -> Arc<dyn TimeService> {
+        match self {
+            Self::RealTimeService => Arc::new(RealTimeService::new()),
+            Self::MockTimeService => Arc::new(MockTimeService::new_with_value(1)),
+        }
+    }
 }
 
 /// A real-time TimeService
@@ -49,9 +62,22 @@ impl RealTimeService {
     }
 }
 
+impl std::fmt::Debug for RealTimeService {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.now_millis())
+    }
+}
+
 impl TimeService for RealTimeService {
-    fn init(&self, _value: u64) {
-        unimplemented!()
+    fn adjust(&self, value: GlobalTimeOnChain) {
+        let now = self.now_millis();
+        if value.milliseconds > now && value.milliseconds - now > 150000 {
+            warn!(
+                "Local time {} is behind on chain time {} too match.",
+                now / 1000,
+                value.seconds()
+            );
+        }
     }
 
     fn now_secs(&self) -> u64 {
@@ -73,8 +99,13 @@ pub struct MockTimeService {
     now: Arc<AtomicU64>,
 }
 
+impl std::fmt::Debug for MockTimeService {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.now_millis())
+    }
+}
+
 impl MockTimeService {
-    #[cfg(test)]
     pub fn new() -> Self {
         Self::new_with_value(0)
     }
@@ -100,16 +131,21 @@ impl MockTimeService {
 }
 
 impl TimeService for MockTimeService {
-    fn init(&self, value: u64) {
-        self.set(value)
+    fn adjust(&self, value: GlobalTimeOnChain) {
+        if value.milliseconds > self.now_millis() {
+            // add 1 to ensure local time is greater than on chain time.
+            let time = value.milliseconds + 1;
+            info!("Adjust MockTimeService by on chain time: {}", time);
+            self.set(time)
+        }
     }
 
     fn now_secs(&self) -> u64 {
-        self.now.load(Ordering::Relaxed)
+        self.now_millis() / 1000
     }
 
     fn now_millis(&self) -> u64 {
-        self.now_secs()
+        self.now.load(Ordering::Relaxed)
     }
 
     fn sleep(&self, millis: u64) {
@@ -129,11 +165,10 @@ mod tests {
     #[test]
     fn verify_mock_time() {
         let service = MockTimeService::new();
-        test_time_service(&service);
 
-        assert_eq!(service.now_secs(), 0);
+        assert_eq!(service.now_millis(), 0);
         service.increment();
-        assert_eq!(service.now_secs(), 1);
+        assert_eq!(service.now_millis(), 1);
     }
 
     #[test]

@@ -11,6 +11,7 @@ use rand::{rngs::StdRng, SeedableRng};
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
@@ -66,7 +67,11 @@ struct TransactionGenerator {
 }
 
 impl TransactionGenerator {
-    fn new(num_accounts: usize, block_sender: mpsc::SyncSender<Vec<Transaction>>) -> Self {
+    fn new(
+        num_accounts: usize,
+        block_sender: mpsc::SyncSender<Vec<Transaction>>,
+        net: ChainNetwork,
+    ) -> Self {
         let seed = [1u8; 32];
         let mut rng = StdRng::from_seed(seed);
 
@@ -87,7 +92,7 @@ impl TransactionGenerator {
             rng,
             block_sender: Some(block_sender),
             sequence: 0,
-            net: ChainNetwork::TEST,
+            net,
             block_number: 1,
         }
     }
@@ -121,13 +126,14 @@ impl TransactionGenerator {
                 let txn = create_transaction(
                     self.sequence,
                     encode_create_account_script(
-                        ChainNetwork::TEST.stdlib_version(),
+                        StdlibVersion::Latest,
                         stc::stc_type_tag(),
                         &account.address,
                         account.public_key_vec(),
                         init_account_balance as u128,
                     ),
                     self.net.time_service().now_secs() + j as u64 + 1,
+                    &self.net,
                 );
                 transactions.push(txn);
                 self.sequence += 1;
@@ -176,6 +182,7 @@ impl TransactionGenerator {
                         1, /* amount */
                     ),
                     self.net.time_service().now_secs() + j as u64 + 1,
+                    &self.net,
                 );
                 transactions.push(txn);
 
@@ -250,8 +257,8 @@ pub fn run_benchmark(
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance()).unwrap());
 
     let chain_state = ChainStateDB::new(storage, None);
-
-    let genesis_txn = Genesis::build_genesis_transaction(&ChainNetwork::TEST).unwrap();
+    let net = ChainNetwork::new_test();
+    let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
     let _txn_info = Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
 
     let (block_sender, block_receiver) = mpsc::sync_channel(50 /* bound */);
@@ -260,7 +267,7 @@ pub fn run_benchmark(
     let gen_thread = std::thread::Builder::new()
         .name("txn_generator".to_string())
         .spawn(move || {
-            let mut generator = TransactionGenerator::new(num_accounts, block_sender);
+            let mut generator = TransactionGenerator::new(num_accounts, block_sender, net);
             generator.run(init_account_balance, block_size, num_transfer_blocks);
             generator
         })
@@ -285,6 +292,7 @@ fn create_transaction(
     sequence_number: u64,
     program: Script,
     expiration_timestamp_secs: u64,
+    net: &ChainNetwork,
 ) -> Transaction {
     let signed_txn = executor::create_signed_txn_with_association_account(
         TransactionPayload::Script(program),
@@ -292,7 +300,7 @@ fn create_transaction(
         400_000,
         1,
         expiration_timestamp_secs,
-        &ChainNetwork::TEST,
+        net,
     );
     Transaction::UserTransaction(signed_txn)
 }

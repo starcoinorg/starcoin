@@ -10,7 +10,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_config::StarcoinOpt;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_types::genesis_config::ChainNetwork;
+use starcoin_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -25,7 +25,7 @@ pub struct GenGenesisOpt {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GenGenesisResult {
-    pub net: ChainNetwork,
+    pub net: ChainNetworkID,
     pub config_path: PathBuf,
     pub account_info: AccountInfo,
     pub genesis: HashValue,
@@ -51,7 +51,7 @@ impl CommandAction for GenGenesisCommand {
         let (config, .., genesis, account) =
             init_or_load_data_dir(&global_opt, opt.password.clone())?;
         Ok(GenGenesisResult {
-            net: config.net().clone(),
+            net: config.net().id().clone(),
             config_path: config.data_dir().join(starcoin_config::CONFIG_FILE_PATH),
             account_info: account,
             genesis: genesis.block().id(),

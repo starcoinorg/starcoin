@@ -3,7 +3,7 @@
 
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
-use anyhow::{ensure, Result};
+use anyhow::{ensure, format_err, Result};
 use libp2p::core::Multiaddr;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -44,11 +44,11 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
-use starcoin_vm_types::genesis_config::BuiltinNetwork;
 pub use starcoin_vm_types::genesis_config::{
-    genesis_key_pair, ChainNetwork, ConsensusStrategy, GenesisConfig, StdlibVersion, DEV_CONFIG,
-    HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
+    genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy,
+    GenesisConfig, StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
 };
+pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
@@ -60,6 +60,7 @@ pub static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
         .join(".starcoin")
 });
 pub static CONFIG_FILE_PATH: &str = "config.toml";
+pub static GENESIS_CONFIG_FILE_NAME: &str = "genesis_config.json";
 
 pub fn load_config_with_opt(opt: &StarcoinOpt) -> Result<NodeConfig> {
     NodeConfig::load_with_opt(opt)
@@ -108,10 +109,10 @@ impl FromStr for Connect {
 
 static OPT_NET_HELP: &str = r#"Chain Network 
     Builtin network: test,dev,halley,proxima,main
-    Custom network format: chain_name:chain_id:chain_config_name_or_path
+    Custom network format: chain_name:chain_id
     Such as:  
-    my_chain:123:dev will init a new chain with id `123`, but reuse builtin dev network's config.
-    my_chain2:124:/my_chain2/genesis_config.json will init a new chain with id `124`, and the config at /my_chain2/genesis_config.json.
+    my_chain:123 will init a new chain with id `123`. 
+    Custom network first start should also set the `genesis-config` option.
     Use starcoin_generator command to generate a genesis config."#;
 
 #[derive(Debug, Clone, StructOpt, Default)]
@@ -126,7 +127,7 @@ pub struct StarcoinOpt {
     pub data_dir: Option<PathBuf>,
 
     #[structopt(long, short = "n", help = OPT_NET_HELP)]
-    pub net: Option<ChainNetwork>,
+    pub net: Option<ChainNetworkID>,
 
     #[structopt(long)]
     /// P2P network seed, if want add more seeds, please edit config file.
@@ -179,6 +180,11 @@ pub struct StarcoinOpt {
     #[structopt(long = "watch-timeout")]
     /// Watch timeout in seconds
     pub watch_timeout: Option<u64>,
+
+    #[structopt(long = "genesis-config")]
+    /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
+    /// This option only work for node init start.
+    pub genesis_config: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -214,42 +220,89 @@ impl Default for DataDirPath {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BaseConfig {
     net: ChainNetwork,
-    #[serde(skip)]
     base_data_dir: DataDirPath,
-    #[serde(skip)]
     data_dir: PathBuf,
 }
 
 impl BaseConfig {
-    pub fn new(net: ChainNetwork, base_data_dir: Option<PathBuf>) -> Self {
+    pub fn default_with_opt(opt: &StarcoinOpt) -> Result<Self> {
+        let id = opt.net.clone().unwrap_or_default();
+        let base_data_dir = opt.data_dir.clone();
         let base_data_dir = match base_data_dir {
             Some(base_data_dir) => DataDirPath::PathBuf(base_data_dir),
             None => {
-                if net.is_dev() || net.is_test() {
+                if id.is_dev() || id.is_test() {
                     temp_path()
                 } else {
                     DataDirPath::PathBuf(DEFAULT_BASE_DATA_DIR.to_path_buf())
                 }
             }
         };
-        let data_dir = base_data_dir.as_ref().join(net.dir_name());
+        let data_dir = base_data_dir.as_ref().join(id.dir_name());
         if !data_dir.exists() {
-            create_dir_all(data_dir.as_path())
-                .unwrap_or_else(|_| panic!("Create data dir {:?} fail.", data_dir));
+            create_dir_all(data_dir.as_path())?;
         }
-        Self {
+        let genesis_config = Self::load_genesis_config_by_opt(
+            id.clone(),
+            data_dir.as_path(),
+            opt.genesis_config.clone(),
+        )?;
+        let net = ChainNetwork::new(id, genesis_config);
+        Ok(Self {
             net,
             base_data_dir,
             data_dir,
-        }
+        })
     }
-    pub fn load_chain_config(&mut self) -> Result<()> {
-        let data_dir = self.data_dir.as_path();
-        self.net.load_config(data_dir)
+
+    fn load_genesis_config_by_opt(
+        id: ChainNetworkID,
+        data_dir: &Path,
+        genesis_config_name: Option<String>,
+    ) -> Result<GenesisConfig> {
+        let config_path = data_dir.join(GENESIS_CONFIG_FILE_NAME);
+        let config_in_file = if config_path.exists() {
+            Some(GenesisConfig::load(config_path.as_path())?)
+        } else {
+            None
+        };
+        let genesis_config = match (config_in_file, id) {
+            (Some(config_in_file), ChainNetworkID::Builtin(net)) => {
+                ensure!(
+                    &config_in_file == net.genesis_config(),
+                    "GenesisConfig in file:{:?} is not same with builtin config: {:?}",
+                    config_path.as_path(),
+                    net
+                );
+                config_in_file
+            }
+            (Some(config_in_file), ChainNetworkID::Custom(_net)) => config_in_file,
+            (None, ChainNetworkID::Builtin(net)) => {
+                //write genesis config to data_dir
+                let genesis_config = net.genesis_config().clone();
+                genesis_config.save(config_path.as_path())?;
+                genesis_config
+            }
+            (None, ChainNetworkID::Custom(_net)) => {
+                let config_name_or_path = genesis_config_name.ok_or_else(||format_err!("Can not load genesis config from {:?}, please set `genesis-config` cli option.", config_path))?;
+                let genesis_config = match BuiltinNetworkID::from_str(config_name_or_path.as_str())
+                {
+                    Ok(net) => net.genesis_config().clone(),
+                    Err(_) => {
+                        let path = Path::new(config_name_or_path.as_str());
+                        GenesisConfig::load(path)?
+                    }
+                };
+                genesis_config.save(config_path.as_path())?;
+                genesis_config
+            }
+        };
+        Ok(genesis_config)
     }
+
     pub fn net(&self) -> &ChainNetwork {
         &self.net
     }
@@ -274,7 +327,8 @@ pub trait ConfigModule: Sized {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NodeConfig {
-    pub base: BaseConfig,
+    #[serde(skip)]
+    base: Option<BaseConfig>,
     pub network: NetworkConfig,
     pub rpc: RpcConfig,
     pub miner: MinerConfig,
@@ -289,13 +343,12 @@ pub struct NodeConfig {
 impl NodeConfig {
     pub fn random_for_test() -> Self {
         let mut opt = StarcoinOpt::default();
-        opt.net = Some(BuiltinNetwork::Test.into());
+        opt.net = Some(BuiltinNetworkID::Test.into());
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
     pub fn load_with_opt(opt: &StarcoinOpt) -> Result<Self> {
-        let mut base = BaseConfig::new(opt.net.clone().unwrap_or_default(), opt.data_dir.clone());
-        base.load_chain_config()?;
+        let base = BaseConfig::default_with_opt(opt)?;
         let data_dir = base.data_dir();
         ensure!(data_dir.is_dir(), "please pass in a dir as data_dir");
 
@@ -327,18 +380,22 @@ impl NodeConfig {
     }
 
     pub fn data_dir(&self) -> &Path {
-        self.base.data_dir()
+        self.base().data_dir()
     }
 
     pub fn net(&self) -> &ChainNetwork {
-        &self.base.net
+        self.base().net()
+    }
+
+    pub fn base(&self) -> &BaseConfig {
+        self.base.as_ref().expect("Base must exist after init.")
     }
 }
 
 impl NodeConfig {
     pub fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
         Ok(Self {
-            base: base.clone(),
+            base: Some(base.clone()),
             network: NetworkConfig::default_with_opt(opt, &base)?,
             rpc: RpcConfig::default_with_opt(opt, &base)?,
             miner: MinerConfig::default_with_opt(opt, &base)?,
@@ -352,7 +409,7 @@ impl NodeConfig {
     }
 
     pub fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
-        self.base = base.clone();
+        self.base = Some(base.clone());
         self.network.after_load(opt, base)?;
         self.rpc.after_load(opt, base)?;
         self.miner.after_load(opt, base)?;
@@ -431,11 +488,10 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starcoin_vm_types::genesis_config::CustomNetwork;
 
     #[test]
     fn test_generate_and_load() -> Result<()> {
-        for net in BuiltinNetwork::networks() {
+        for net in BuiltinNetworkID::networks() {
             let mut opt = StarcoinOpt::default();
             let temp_path = temp_path();
             opt.net = Some(net.into());
@@ -451,11 +507,11 @@ mod tests {
     #[test]
     fn test_custom_chain_genesis() -> Result<()> {
         let mut opt = StarcoinOpt::default();
-        let net = ChainNetwork::from_str("test1:123:test")?;
+        let net = ChainNetworkID::from_str("test1:123")?;
         let temp_path = temp_path();
         opt.net = Some(net);
         opt.data_dir = Some(temp_path.path().to_path_buf());
-
+        opt.genesis_config = Some(BuiltinNetworkID::Test.to_string());
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
         assert_eq!(
@@ -467,29 +523,11 @@ mod tests {
     }
 
     #[test]
-    fn test_config_serialize() -> Result<()> {
-        for net in vec![
-            ChainNetwork::TEST.clone(),
-            ChainNetwork::from_str("test1:123:test")?,
-        ] {
-            let mut base_config = BaseConfig::new(net, None);
-            base_config.load_chain_config()?;
-            let json = serde_json::to_string(&base_config)?;
-            println!("{} base_config_json: {}", base_config.net(), json);
-            let toml = toml::to_string(&base_config)?;
-            println!("{} base_config_toml: {}", base_config.net(), toml);
-        }
-        Ok(())
-    }
-
-    #[test]
     fn test_genesis_config_save_and_load() -> Result<()> {
-        let mut genesis_config = ChainNetwork::TEST.genesis_config().clone();
+        let mut genesis_config = BuiltinNetworkID::Test.genesis_config().clone();
         genesis_config.timestamp = 1000;
         let temp_path = temp_path();
-        let file_path = temp_path
-            .path()
-            .join(CustomNetwork::GENESIS_CONFIG_FILE_NAME);
+        let file_path = temp_path.path().join(GENESIS_CONFIG_FILE_NAME);
         genesis_config.save(file_path.as_path())?;
         let genesis_config2 = GenesisConfig::load(file_path.as_path())?;
         assert_eq!(genesis_config, genesis_config2);
