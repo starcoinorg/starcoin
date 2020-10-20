@@ -30,8 +30,8 @@
 -  [Function `withdraw_with_capability_and_metadata`](#0x1_Account_withdraw_with_capability_and_metadata)
 -  [Function `extract_withdraw_capability`](#0x1_Account_extract_withdraw_capability)
 -  [Function `restore_withdraw_capability`](#0x1_Account_restore_withdraw_capability)
--  [Function `_emit_account_withdraw_event`](#0x1_Account__emit_account_withdraw_event)
--  [Function `_emit_account_deposit_event`](#0x1_Account__emit_account_deposit_event)
+-  [Function `emit_account_withdraw_event`](#0x1_Account_emit_account_withdraw_event)
+-  [Function `emit_account_deposit_event`](#0x1_Account_emit_account_deposit_event)
 -  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
 -  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
 -  [Function `pay_from`](#0x1_Account_pay_from)
@@ -68,8 +68,8 @@
     -  [Function `withdraw_with_capability_and_metadata`](#@Specification_1_withdraw_with_capability_and_metadata)
     -  [Function `extract_withdraw_capability`](#@Specification_1_extract_withdraw_capability)
     -  [Function `restore_withdraw_capability`](#@Specification_1_restore_withdraw_capability)
-    -  [Function `_emit_account_withdraw_event`](#@Specification_1__emit_account_withdraw_event)
-    -  [Function `_emit_account_deposit_event`](#@Specification_1__emit_account_deposit_event)
+    -  [Function `emit_account_withdraw_event`](#@Specification_1_emit_account_withdraw_event)
+    -  [Function `emit_account_deposit_event`](#@Specification_1_emit_account_deposit_event)
     -  [Function `pay_from_capability`](#@Specification_1_pay_from_capability)
     -  [Function `pay_from_with_metadata`](#@Specification_1_pay_from_with_metadata)
     -  [Function `pay_from`](#@Specification_1_pay_from)
@@ -748,7 +748,7 @@ It's a reverse operation of <code>withdraw_with_metadata</code>.
     <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
 
     // emit deposit event
-    <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(receiver, deposit_value, metadata);
+    <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(receiver, deposit_value, metadata);
 }
 </code></pre>
 
@@ -852,7 +852,7 @@ Helper to deposit <code>amount</code> to the given account balance
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
     <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
 
-    <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(sender_addr, amount, metadata);
+    <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(sender_addr, amount, metadata);
     // The sender_addr has retained her withdrawal privileges--proceed.
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_balance, amount)
 }
@@ -909,7 +909,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;
 ): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
-    <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(cap.account_address, amount, metadata);
+    <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(cap.account_address, amount, metadata);
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance , amount)
 }
 </code></pre>
@@ -974,13 +974,13 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 </details>
 
-<a name="0x1_Account__emit_account_withdraw_event"></a>
+<a name="0x1_Account_emit_account_withdraw_event"></a>
 
-## Function `_emit_account_withdraw_event`
+## Function `emit_account_withdraw_event`
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -989,7 +989,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     // emit withdraw event
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
@@ -1006,13 +1006,13 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 </details>
 
-<a name="0x1_Account__emit_account_deposit_event"></a>
+<a name="0x1_Account_emit_account_deposit_event"></a>
 
-## Function `_emit_account_deposit_event`
+## Function `emit_account_deposit_event`
 
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1021,7 +1021,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     // emit withdraw event
     <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
@@ -1919,12 +1919,12 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
-<a name="@Specification_1__emit_account_withdraw_event"></a>
+<a name="@Specification_1_emit_account_withdraw_event"></a>
 
-### Function `_emit_account_withdraw_event`
+### Function `emit_account_withdraw_event`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_withdraw_event">emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1935,12 +1935,12 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
-<a name="@Specification_1__emit_account_deposit_event"></a>
+<a name="@Specification_1_emit_account_deposit_event"></a>
 
-### Function `_emit_account_deposit_event`
+### Function `emit_account_deposit_event`
 
 
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_account_deposit_event">emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 

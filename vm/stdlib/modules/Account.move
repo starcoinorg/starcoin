@@ -249,7 +249,7 @@ module Account {
         deposit_to_balance<TokenType>(borrow_global_mut<Balance<TokenType>>(receiver), to_deposit);
 
         // emit deposit event
-        _emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
+        emit_account_deposit_event<TokenType>(receiver, deposit_value, metadata);
     }
 
     spec fun deposit_with_metadata {
@@ -299,7 +299,7 @@ module Account {
         // The sender_addr has delegated the privilege to withdraw from her account elsewhere--abort.
         assert(!delegated_withdraw_capability(sender_addr), Errors::invalid_state(EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED));
 
-        _emit_account_withdraw_event<TokenType>(sender_addr, amount, metadata);
+        emit_account_withdraw_event<TokenType>(sender_addr, amount, metadata);
         // The sender_addr has retained her withdrawal privileges--proceed.
         withdraw_from_balance<TokenType>(sender_balance, amount)
     }
@@ -335,7 +335,7 @@ module Account {
         cap: &WithdrawCapability, amount: u128, metadata: vector<u8>
     ): Token<TokenType> acquires Balance, Account {
         let balance = borrow_global_mut<Balance<TokenType>>(cap.account_address);
-        _emit_account_withdraw_event<TokenType>(cap.account_address, amount, metadata);
+        emit_account_withdraw_event<TokenType>(cap.account_address, amount, metadata);
         withdraw_from_balance<TokenType>(balance , amount)
     }
 
@@ -374,7 +374,7 @@ module Account {
         aborts_if !exists<Account>(cap.account_address);
     }
 
-    fun _emit_account_withdraw_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    fun emit_account_withdraw_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
     acquires Account {
         // emit withdraw event
         let account = borrow_global_mut<Account>(account);
@@ -385,11 +385,11 @@ module Account {
             metadata,
         });
     }
-    spec fun _emit_account_withdraw_event {
+    spec fun emit_account_withdraw_event {
         aborts_if !exists<Account>(account);
     }
 
-    fun _emit_account_deposit_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
+    fun emit_account_deposit_event<TokenType>(account: address, amount: u128, metadata: vector<u8>)
     acquires Account {
         // emit withdraw event
         let account = borrow_global_mut<Account>(account);
@@ -400,7 +400,7 @@ module Account {
             metadata,
         });
     }
-    spec fun _emit_account_deposit_event {
+    spec fun emit_account_deposit_event {
         aborts_if !exists<Account>(account);
     }
 
