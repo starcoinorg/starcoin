@@ -12,10 +12,13 @@ use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::Script;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::on_chain_config::consensus_config_type_tag;
 use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::{VMValueCast, Value};
+use statedb::ChainStateDB;
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 
 const PENDING: u8 = 1;
@@ -106,46 +109,15 @@ fn test_dao_upgrade_module() -> Result<()> {
     // Block 1
     let block_number = 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
-    {
-        blockmeta_execute(
-            &chain_state,
-            BlockMetadata::new(
-                HashValue::zero(),
-                block_timestamp,
-                genesis_address(),
-                None,
-                0,
-                block_number,
-                net.chain_id(),
-                0,
-            ),
-        )?;
-        let script = encode_create_account_script(
-            net.stdlib_version(),
-            stc_type_tag(),
-            alice.address(),
-            alice.pubkey.to_bytes().to_vec(),
-            pre_mint_amount / 4,
-        );
-        association_execute(
-            net.genesis_config(),
-            &chain_state,
-            TransactionPayload::Script(script),
-        )?;
-
-        let script = encode_create_account_script(
-            net.stdlib_version(),
-            stc_type_tag(),
-            bob.address(),
-            bob.pubkey.to_bytes().to_vec(),
-            pre_mint_amount / 4,
-        );
-        association_execute(
-            net.genesis_config(),
-            &chain_state,
-            TransactionPayload::Script(script),
-        )?;
-    }
+    execute_create_account(
+        &chain_state,
+        net,
+        &alice,
+        &bob,
+        pre_mint_amount,
+        block_number,
+        block_timestamp,
+    )?;
 
     let module = compile_module_with_address(genesis_address(), TEST_MODULE);
     let package = Package::new_with_module(module)?;
@@ -203,51 +175,15 @@ fn test_dao_upgrade_module() -> Result<()> {
     let block_number = 3;
     let block_timestamp =
         block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
-    {
-        blockmeta_execute(
-            &chain_state,
-            BlockMetadata::new(
-                HashValue::zero(),
-                block_timestamp,
-                *alice.address(),
-                Some(alice.pubkey.clone()),
-                0,
-                block_number,
-                net.chain_id(),
-                0,
-            ),
-        )?;
-        let script =
-            compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
-        let proposer_address = *alice.address();
-        let proposer_id = 0;
-        let voting_power = get_balance(*bob.address(), &chain_state);
-        println!("alice voting power: {}", voting_power);
-        let script = Script::new(
-            script,
-            vec![stc_type_tag(), dao_action_type_tag.clone()],
-            vec![
-                TransactionArgument::Address(proposer_address),
-                TransactionArgument::U64(proposer_id),
-                TransactionArgument::Bool(true),
-                TransactionArgument::U128(voting_power),
-            ],
-        );
-        // vote first.
-        account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
-
-        let quorum = quorum_vote(&chain_state, stc_type_tag());
-        println!("quorum: {}", quorum);
-
-        let state = proposal_state(
-            &chain_state,
-            stc_type_tag(),
-            dao_action_type_tag.clone(),
-            *alice.address(),
-            0,
-        );
-        assert_eq!(state, ACTIVE);
-    }
+    execute_cast_vote(
+        net,
+        &chain_state,
+        &alice,
+        bob,
+        &dao_action_type_tag,
+        block_number,
+        block_timestamp,
+    )?;
 
     // block 4
     let block_number = 4;
@@ -403,6 +339,364 @@ fn test_dao_upgrade_module() -> Result<()> {
     }
 
     Ok(())
+}
+
+#[stest::test]
+fn test_dao_modify_onchain_config() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let alice = Account::new();
+    let bob = Account::new();
+    let pre_mint_amount = net.genesis_config().pre_mine_amount;
+    let one_day: u64 = 60 * 60 * 24 * 1000;
+    // Block 1
+    let block_number = 1;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
+    execute_create_account(
+        &chain_state,
+        net,
+        &alice,
+        &bob,
+        pre_mint_amount,
+        block_number,
+        block_timestamp,
+    )?;
+
+    let dao_action_type_tag = TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("OnChainConfigDao").unwrap(),
+        name: Identifier::new("OnChainConfigUpdate").unwrap(),
+        type_params: vec![consensus_config_type_tag()],
+    });
+    // block 2
+    let block_number = 2;
+    let block_timestamp = net.time_service().now_millis() + one_day * block_number;
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *alice.address(),
+                Some(alice.pubkey.clone()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+
+        let script = compiled_transaction_script(
+            net.stdlib_version(),
+            StdlibScript::UpdateConsensusConfigProposal,
+        )
+        .into_vec();
+
+        let script = Script::new(
+            script,
+            vec![],
+            vec![
+                TransactionArgument::U64(80),
+                TransactionArgument::U64(10),
+                TransactionArgument::U128(64000000000),
+                TransactionArgument::U64(10),
+                TransactionArgument::U64(48),
+                TransactionArgument::U64(24),
+                TransactionArgument::U64(1),
+                TransactionArgument::U64(60),
+                TransactionArgument::U64(2),
+                TransactionArgument::U64(1000000),
+                TransactionArgument::U8(3),
+                TransactionArgument::U64(0),
+            ],
+        );
+        account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, PENDING);
+    }
+
+    // block 3
+    let block_number = 3;
+    let block_timestamp =
+        block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
+    execute_cast_vote(
+        net,
+        &chain_state,
+        &alice,
+        bob,
+        &dao_action_type_tag,
+        block_number,
+        block_timestamp,
+    )?;
+
+    // block 4
+    let block_number = 4;
+    let block_timestamp =
+        block_timestamp + voting_period(&chain_state, stc_type_tag()) * 1000 - 10 * 1000;
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *alice.address(),
+                Some(alice.pubkey.clone()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, ACTIVE);
+    }
+
+    // block 5
+    let block_number = 5;
+    let block_timestamp = block_timestamp + 20 * 1000;
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *alice.address(),
+                Some(alice.pubkey.clone()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, AGREED);
+
+        let script =
+            compiled_transaction_script(net.stdlib_version(), StdlibScript::QueueProposalAction)
+                .into_vec();
+        let script = Script::new(
+            script,
+            vec![stc_type_tag(), dao_action_type_tag.clone()],
+            vec![
+                TransactionArgument::Address(*alice.address()),
+                TransactionArgument::U64(0),
+            ],
+        );
+        account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, QUEUED);
+    }
+
+    // block 6
+    let block_number = 6;
+    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag()) * 1000;
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *alice.address(),
+                Some(alice.pubkey.clone()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag.clone(),
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, EXECUTABLE);
+
+        let script =
+            compiled_transaction_script(net.stdlib_version(), StdlibScript::ExecuteProposal)
+                .into_vec();
+
+        let script = Script::new(
+            script,
+            vec![consensus_config_type_tag()],
+            vec![TransactionArgument::U64(0)],
+        );
+        account_execute(&alice, &chain_state, TransactionPayload::Script(script))?;
+    }
+
+    // block 7
+    let block_number = 7;
+    let block_timestamp = block_timestamp + 1000;
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *alice.address(),
+                Some(alice.pubkey.clone()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+        let state = proposal_state(
+            &chain_state,
+            stc_type_tag(),
+            dao_action_type_tag,
+            *alice.address(),
+            0,
+        );
+        assert_eq!(state, EXTRACTED);
+    }
+    //get consensus config
+    let module_id = ModuleId::new(
+        genesis_address(),
+        Identifier::new("ConsensusConfig").unwrap(),
+    );
+    let mut read_config = execute_readonly_function(
+        &chain_state,
+        &module_id,
+        &Identifier::new("get_config").unwrap(),
+        vec![],
+        vec![],
+    )
+    .unwrap();
+    dbg!(read_config.pop().unwrap());
+
+    Ok(())
+}
+
+fn execute_cast_vote(
+    net: &ChainNetwork,
+    chain_state: &ChainStateDB,
+    alice: &Account,
+    bob: Account,
+    dao_action_type_tag: &TypeTag,
+    block_number: u64,
+    block_timestamp: u64,
+) -> Result<()> {
+    blockmeta_execute(
+        &chain_state,
+        BlockMetadata::new(
+            HashValue::zero(),
+            block_timestamp,
+            *alice.address(),
+            Some(alice.pubkey.clone()),
+            0,
+            block_number,
+            net.chain_id(),
+            0,
+        ),
+    )?;
+    let script =
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
+    let proposer_address = *alice.address();
+    let proposer_id = 0;
+    let voting_power = get_balance(*bob.address(), chain_state);
+    println!("alice voting power: {}", voting_power);
+    let script = Script::new(
+        script,
+        vec![stc_type_tag(), dao_action_type_tag.clone()],
+        vec![
+            TransactionArgument::Address(proposer_address),
+            TransactionArgument::U64(proposer_id),
+            TransactionArgument::Bool(true),
+            TransactionArgument::U128(voting_power),
+        ],
+    );
+    // vote first.
+    account_execute(&alice, chain_state, TransactionPayload::Script(script))?;
+
+    let quorum = quorum_vote(chain_state, stc_type_tag());
+    println!("quorum: {}", quorum);
+
+    let state = proposal_state(
+        chain_state,
+        stc_type_tag(),
+        dao_action_type_tag.clone(),
+        *alice.address(),
+        0,
+    );
+    assert_eq!(state, ACTIVE);
+    Ok(())
+}
+
+fn execute_create_account(
+    chain_state: &ChainStateDB,
+    net: &ChainNetwork,
+    alice: &Account,
+    bob: &Account,
+    pre_mint_amount: u128,
+    block_number: u64,
+    block_timestamp: u64,
+) -> Result<()> {
+    {
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                genesis_address(),
+                None,
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+        let script = encode_create_account_script(
+            net.stdlib_version(),
+            stc_type_tag(),
+            alice.address(),
+            alice.pubkey.to_bytes().to_vec(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            net.genesis_config(),
+            &chain_state,
+            TransactionPayload::Script(script),
+        )?;
+
+        let script = encode_create_account_script(
+            net.stdlib_version(),
+            stc_type_tag(),
+            bob.address(),
+            bob.pubkey.to_bytes().to_vec(),
+            pre_mint_amount / 4,
+        );
+        association_execute(
+            net.genesis_config(),
+            &chain_state,
+            TransactionPayload::Script(script),
+        )?;
+        Ok(())
+    }
 }
 
 fn read_foo(state_view: &dyn StateView) -> u8 {

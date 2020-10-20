@@ -5,14 +5,18 @@ use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
 use crate::genesis_config::ConsensusStrategy;
+use crate::identifier::Identifier;
 use crate::{
     access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
 };
+use move_core_types::language_storage::TypeTag;
 use move_core_types::{language_storage::StructTag, move_resource::MoveResource};
+use once_cell::sync::Lazy;
 use std::convert::TryFrom;
 
 const CONSENSUS_CONFIG_MODULE_NAME: &str = "ConsensusConfig";
-
+static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new(CONSENSUS_CONFIG_MODULE_NAME).unwrap());
 /// The Consensus on chain.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct ConsensusConfig {
@@ -31,6 +35,15 @@ pub struct ConsensusConfig {
 
 impl OnChainConfig for ConsensusConfig {
     const IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+}
+
+pub fn consensus_config_type_tag() -> TypeTag {
+    TypeTag::Struct(StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: CONSENSUS_CONFIG_IDENTIFIER.clone(),
+        name: CONSENSUS_CONFIG_IDENTIFIER.clone(),
+        type_params: vec![],
+    })
 }
 
 /// The Epoch resource held under an account.

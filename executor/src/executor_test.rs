@@ -17,6 +17,7 @@ use starcoin_config::ChainNetwork;
 use starcoin_functional_tests::account::{
     create_account_txn_sent_as_association, peer_to_peer_txn, Account,
 };
+use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
@@ -28,6 +29,7 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::values::VMValueCast;
@@ -71,6 +73,33 @@ fn test_vm_version() {
     let readed_version: u64 = read_version.pop().unwrap().1.cast().unwrap();
     let version = vm.get_version().unwrap().major;
     assert_eq!(readed_version, version);
+}
+
+#[stest::test]
+fn test_consensus_config_get() -> Result<()> {
+    let (chain_state, _net) = prepare_genesis();
+
+    let mut vm = StarcoinVM::new();
+    let module_id = ModuleId::new(
+        genesis_address(),
+        Identifier::new("ConsensusConfig").unwrap(),
+    );
+    let mut read_config = vm.execute_readonly_function(
+        &chain_state,
+        &module_id,
+        &Identifier::new("get_config").unwrap(),
+        vec![],
+        vec![],
+    )?;
+    let annotator = MoveValueAnnotator::new(&chain_state);
+    let (t, v) = read_config.pop().unwrap();
+    let layout = annotator.type_tag_to_type_layout(&t)?;
+    let r = v
+        .simple_serialize(&layout)
+        .ok_or_else(|| anyhow::format_err!("fail to serialize contract result"))?;
+    let config = ConsensusConfig::deserialize_into_config(r.as_slice())?;
+    assert_eq!(config.strategy, 0);
+    Ok(())
 }
 
 #[stest::test]
