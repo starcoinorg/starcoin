@@ -144,7 +144,7 @@ script {
         TokenLockPool::initialize(&genesis_account);
         if (pre_mine_amount > 0) {
             let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
-            Account::deposit_to(&genesis_account, Signer::address_of(&association), stc);
+            Account::deposit(Signer::address_of(&association), stc);
         };
         if (time_mint_amount > 0) {
             let cap = Token::remove_mint_capability<STC>(&genesis_account);

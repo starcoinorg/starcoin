@@ -141,7 +141,7 @@ module TransactionManager {
         //get previous author for distribute txn_fee
         let previous_author = Block::get_current_author();
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
-        distribute(account, txn_fee, previous_author);
+        distribute(txn_fee, previous_author);
         let reward = Block::process_block_metadata(
             account,
             parent_hash,
@@ -154,10 +154,10 @@ module TransactionManager {
         BlockReward::process_block_reward(account, number, reward, author, public_key_vec);
     }
 
-    fun distribute<TokenType>(account: &signer, txn_fee: Token<TokenType>, author: address) {
+    fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {
         let value = Token::value<TokenType>(&txn_fee);
         if (value > 0) {
-            Account::deposit_to<TokenType>(account, author, txn_fee);
+            Account::deposit<TokenType>(author, txn_fee);
         } else {
             Token::destroy_zero<TokenType>(txn_fee);
         }

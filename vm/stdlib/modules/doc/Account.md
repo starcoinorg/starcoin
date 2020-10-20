@@ -9,8 +9,8 @@
 -  [Resource `Balance`](#0x1_Account_Balance)
 -  [Resource `WithdrawCapability`](#0x1_Account_WithdrawCapability)
 -  [Resource `KeyRotationCapability`](#0x1_Account_KeyRotationCapability)
--  [Struct `SentPaymentEvent`](#0x1_Account_SentPaymentEvent)
--  [Struct `ReceivedPaymentEvent`](#0x1_Account_ReceivedPaymentEvent)
+-  [Struct `WithdrawEvent`](#0x1_Account_WithdrawEvent)
+-  [Struct `DepositEvent`](#0x1_Account_DepositEvent)
 -  [Struct `AcceptTokenEvent`](#0x1_Account_AcceptTokenEvent)
 -  [Constants](#@Constants_0)
 -  [Function `create_genesis_account`](#0x1_Account_create_genesis_account)
@@ -19,20 +19,20 @@
 -  [Function `make_account`](#0x1_Account_make_account)
 -  [Function `create_signer`](#0x1_Account_create_signer)
 -  [Function `destroy_signer`](#0x1_Account_destroy_signer)
--  [Function `deposit_to`](#0x1_Account_deposit_to)
 -  [Function `deposit_to_self`](#0x1_Account_deposit_to_self)
--  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
--  [Function `deposit_with_payer_and_metadata`](#0x1_Account_deposit_with_payer_and_metadata)
 -  [Function `deposit`](#0x1_Account_deposit)
+-  [Function `deposit_with_metadata`](#0x1_Account_deposit_with_metadata)
+-  [Function `deposit_to_balance`](#0x1_Account_deposit_to_balance)
 -  [Function `withdraw_from_balance`](#0x1_Account_withdraw_from_balance)
 -  [Function `withdraw`](#0x1_Account_withdraw)
+-  [Function `withdraw_with_metadata`](#0x1_Account_withdraw_with_metadata)
 -  [Function `withdraw_with_capability`](#0x1_Account_withdraw_with_capability)
+-  [Function `withdraw_with_capability_and_metadata`](#0x1_Account_withdraw_with_capability_and_metadata)
 -  [Function `extract_withdraw_capability`](#0x1_Account_extract_withdraw_capability)
 -  [Function `restore_withdraw_capability`](#0x1_Account_restore_withdraw_capability)
+-  [Function `_emit_account_withdraw_event`](#0x1_Account__emit_account_withdraw_event)
+-  [Function `_emit_account_deposit_event`](#0x1_Account__emit_account_deposit_event)
 -  [Function `pay_from_capability`](#0x1_Account_pay_from_capability)
--  [Function `emit_payment_events`](#0x1_Account_emit_payment_events)
--  [Function `emit_send_payment_events`](#0x1_Account_emit_send_payment_events)
--  [Function `emit_receive_payment_events`](#0x1_Account_emit_receive_payment_events)
 -  [Function `pay_from_with_metadata`](#0x1_Account_pay_from_with_metadata)
 -  [Function `pay_from`](#0x1_Account_pay_from)
 -  [Function `rotate_authentication_key`](#0x1_Account_rotate_authentication_key)
@@ -57,20 +57,20 @@
     -  [Function `release_genesis_signer`](#@Specification_1_release_genesis_signer)
     -  [Function `create_account`](#@Specification_1_create_account)
     -  [Function `make_account`](#@Specification_1_make_account)
-    -  [Function `deposit_to`](#@Specification_1_deposit_to)
     -  [Function `deposit_to_self`](#@Specification_1_deposit_to_self)
-    -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
-    -  [Function `deposit_with_payer_and_metadata`](#@Specification_1_deposit_with_payer_and_metadata)
     -  [Function `deposit`](#@Specification_1_deposit)
+    -  [Function `deposit_with_metadata`](#@Specification_1_deposit_with_metadata)
+    -  [Function `deposit_to_balance`](#@Specification_1_deposit_to_balance)
     -  [Function `withdraw_from_balance`](#@Specification_1_withdraw_from_balance)
     -  [Function `withdraw`](#@Specification_1_withdraw)
+    -  [Function `withdraw_with_metadata`](#@Specification_1_withdraw_with_metadata)
     -  [Function `withdraw_with_capability`](#@Specification_1_withdraw_with_capability)
+    -  [Function `withdraw_with_capability_and_metadata`](#@Specification_1_withdraw_with_capability_and_metadata)
     -  [Function `extract_withdraw_capability`](#@Specification_1_extract_withdraw_capability)
     -  [Function `restore_withdraw_capability`](#@Specification_1_restore_withdraw_capability)
+    -  [Function `_emit_account_withdraw_event`](#@Specification_1__emit_account_withdraw_event)
+    -  [Function `_emit_account_deposit_event`](#@Specification_1__emit_account_deposit_event)
     -  [Function `pay_from_capability`](#@Specification_1_pay_from_capability)
-    -  [Function `emit_payment_events`](#@Specification_1_emit_payment_events)
-    -  [Function `emit_send_payment_events`](#@Specification_1_emit_send_payment_events)
-    -  [Function `emit_receive_payment_events`](#@Specification_1_emit_receive_payment_events)
     -  [Function `pay_from_with_metadata`](#@Specification_1_pay_from_with_metadata)
     -  [Function `pay_from`](#@Specification_1_pay_from)
     -  [Function `rotate_authentication_key`](#@Specification_1_rotate_authentication_key)
@@ -111,6 +111,7 @@
 
 ## Resource `Account`
 
+Every account has a Account::Account resource
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Account.md#0x1_Account">Account</a>
@@ -127,43 +128,54 @@
 <code>authentication_key: vector&lt;u8&gt;</code>
 </dt>
 <dd>
-
+ The current authentication key.
+ This can be different than the key used to create the account
 </dd>
 <dt>
 <code>withdrawal_capability: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>&gt;</code>
 </dt>
 <dd>
-
+ A <code>withdrawal_capability</code> allows whoever holds this capability
+ to withdraw from the account. At the time of account creation
+ this capability is stored in this option. It can later be
+ "extracted" from this field via <code>extract_withdraw_capability</code>,
+ and can also be restored via <code>restore_withdraw_capability</code>.
 </dd>
 <dt>
 <code>key_rotation_capability: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;<a href="Account.md#0x1_Account_KeyRotationCapability">Account::KeyRotationCapability</a>&gt;</code>
 </dt>
 <dd>
-
+ A <code>key_rotation_capability</code> allows whoever holds this capability
+ the ability to rotate the authentication key for the account. At
+ the time of account creation this capability is stored in this
+ option. It can later be "extracted" from this field via
+ <code>extract_key_rotation_capability</code>, and can also be restored via
+ <code>restore_key_rotation_capability</code>.
 </dd>
 <dt>
-<code>received_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Account.md#0x1_Account_ReceivedPaymentEvent">Account::ReceivedPaymentEvent</a>&gt;</code>
+<code>withdraw_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Account.md#0x1_Account_WithdrawEvent">Account::WithdrawEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ event handle for account balance withdraw event
 </dd>
 <dt>
-<code>sent_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Account.md#0x1_Account_SentPaymentEvent">Account::SentPaymentEvent</a>&gt;</code>
+<code>deposit_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Account.md#0x1_Account_DepositEvent">Account::DepositEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ event handle for account balance deposit event
 </dd>
 <dt>
 <code>accept_token_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Account.md#0x1_Account_AcceptTokenEvent">Account::AcceptTokenEvent</a>&gt;</code>
 </dt>
 <dd>
-
+ Event handle for accept_token event
 </dd>
 <dt>
 <code>sequence_number: u64</code>
 </dt>
 <dd>
-
+ The current sequence number.
+ Incremented by one each time a transaction is submitted
 </dd>
 </dl>
 
@@ -251,13 +263,14 @@
 
 </details>
 
-<a name="0x1_Account_SentPaymentEvent"></a>
+<a name="0x1_Account_WithdrawEvent"></a>
 
-## Struct `SentPaymentEvent`
+## Struct `WithdrawEvent`
+
+Message for balance withdraw event.
 
 
-
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a>
 </code></pre>
 
 
@@ -275,12 +288,6 @@
 </dd>
 <dt>
 <code>token_code: vector&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>payee: address</code>
 </dt>
 <dd>
 
@@ -296,13 +303,14 @@
 
 </details>
 
-<a name="0x1_Account_ReceivedPaymentEvent"></a>
+<a name="0x1_Account_DepositEvent"></a>
 
-## Struct `ReceivedPaymentEvent`
+## Struct `DepositEvent`
+
+Message for balance deposit event.
 
 
-
-<pre><code><b>struct</b> <a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>
+<pre><code><b>struct</b> <a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a>
 </code></pre>
 
 
@@ -320,12 +328,6 @@
 </dd>
 <dt>
 <code>token_code: vector&lt;u8&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>payer: address</code>
 </dt>
 <dd>
 
@@ -602,8 +604,8 @@ Message for accept token events
               <a href="Account.md#0x1_Account_KeyRotationCapability">KeyRotationCapability</a> {
                   account_address: new_account_addr
           }),
-          received_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(new_account),
-          sent_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(new_account),
+          withdraw_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a>&gt;(new_account),
+          deposit_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a>&gt;(new_account),
           accept_token_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Account.md#0x1_Account_AcceptTokenEvent">AcceptTokenEvent</a>&gt;(new_account),
           sequence_number: 0,
     });
@@ -658,31 +660,6 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_deposit_to"></a>
-
-## Function `deposit_to`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to">deposit_to</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to">deposit_to</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;)
-<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>(account, payee, to_deposit, x"")
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Account_deposit_to_self"></a>
 
 ## Function `deposit_to_self`
@@ -712,84 +689,15 @@ Message for accept token events
 
 </details>
 
-<a name="0x1_Account_deposit_with_metadata"></a>
-
-## Function `deposit_with_metadata`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
-    account: &signer,
-    payee: address,
-    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-    metadata: vector&lt;u8&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <a href="Account.md#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
-        payee,
-        to_deposit,
-        metadata,
-    );
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_deposit_with_payer_and_metadata"></a>
-
-## Function `deposit_with_payer_and_metadata`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>&lt;TokenType&gt;(payer: address, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>&lt;TokenType&gt;(
-    payer: address,
-    payee: address,
-    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-    metadata: vector&lt;u8&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    // Check that the `to_deposit` token is non-zero
-    <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
-    <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
-    <a href="Account.md#0x1_Account_deposit">deposit</a>(payee, to_deposit);
-    <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer, payee, deposit_value, metadata);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_Account_deposit"></a>
 
 ## Function `deposit`
 
-Deposits the <code>to_deposit</code> token into the <code>payee</code>'s account balance.
+Deposits the <code>to_deposit</code> token into the <code>receiver</code>'s account balance with the no metadata
 It's a reverse operation of <code>withdraw</code>.
-It doesn't emit sendpayment/receivepayment events, as it's not a transfer action.
-Similar with <code>withdraw</code>, the function is mostly used when interacting with contract code.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -799,15 +707,73 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(
-    account: address,
+    receiver: address,
     to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
-) <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver, to_deposit, x"")
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_deposit_with_metadata"></a>
+
+## Function `deposit_with_metadata`
+
+Deposits the <code>to_deposit</code> token into the <code>receiver</code>'s account balance with the attached <code>metadata</code>
+It's a reverse operation of <code>withdraw_with_metadata</code>.
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
+    receiver: address,
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;,
+    metadata: vector&lt;u8&gt;,
+) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     // Check that the `to_deposit` token is non-zero
     <b>let</b> deposit_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&to_deposit);
     <b>assert</b>(deposit_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
-    <b>let</b> payee_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account);
+
     // Deposit the `to_deposit` token
-    <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> payee_balance.token, to_deposit);
+    <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver), to_deposit);
+
+    // emit deposit event
+    <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(receiver, deposit_value, metadata);
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_deposit_to_balance"></a>
+
+## Function `deposit_to_balance`
+
+Helper to deposit <code>amount</code> to the given account balance
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;) {
+    <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> balance.token, token)
 }
 </code></pre>
 
@@ -856,10 +822,37 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
 <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account, amount, x"")
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_withdraw_with_metadata"></a>
+
+## Function `withdraw_with_metadata`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
     <b>let</b> sender_addr = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> sender_balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(sender_addr);
     // The sender_addr has delegated the privilege <b>to</b> withdraw from her account elsewhere--<b>abort</b>.
     <b>assert</b>(!<a href="Account.md#0x1_Account_delegated_withdraw_capability">delegated_withdraw_capability</a>(sender_addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Account.md#0x1_Account_EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED">EWITHDRAWAL_CAPABILITY_ALREADY_EXTRACTED</a>));
+
+    <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(sender_addr, amount, metadata);
     // The sender_addr has retained her withdrawal privileges--proceed.
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(sender_balance, amount)
 }
@@ -873,6 +866,7 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 ## Function `withdraw_with_capability`
 
+Withdraw <code>amount</code> Token<TokenType> from the account under cap.account_address with no metadata
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
@@ -886,8 +880,36 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>&lt;TokenType&gt;(
     cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128
-): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a> {
+): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account">Account</a> {
+    <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap, amount, x"")
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account_withdraw_with_capability_and_metadata"></a>
+
+## Function `withdraw_with_capability_and_metadata`
+
+Withdraw <code>amount</code> Token<TokenType> from the account under cap.account_address with metadata
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(
+    cap: &<a href="Account.md#0x1_Account_WithdrawCapability">WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;
+): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Account.md#0x1_Account_Balance">Balance</a>, <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> balance = borrow_global_mut&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
+    <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(cap.account_address, amount, metadata);
     <a href="Account.md#0x1_Account_withdraw_from_balance">withdraw_from_balance</a>&lt;TokenType&gt;(balance , amount)
 }
 </code></pre>
@@ -952,6 +974,70 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 </details>
 
+<a name="0x1_Account__emit_account_withdraw_event"></a>
+
+## Function `_emit_account_withdraw_event`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    // emit withdraw event
+    <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
+
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a>&gt;(&<b>mut</b> account.withdraw_events, <a href="Account.md#0x1_Account_WithdrawEvent">WithdrawEvent</a> {
+        amount,
+        token_code: <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;(),
+        metadata,
+    });
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Account__emit_account_deposit_event"></a>
+
+## Function `_emit_account_deposit_event`
+
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
+    // emit withdraw event
+    <b>let</b> account = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
+
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a>&gt;(&<b>mut</b> account.deposit_events, <a href="Account.md#0x1_Account_DepositEvent">DepositEvent</a> {
+        amount,
+        token_code: <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;(),
+        metadata,
+    });
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Account_pay_from_capability"></a>
 
 ## Function `pay_from_capability`
@@ -973,114 +1059,11 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     amount: u128,
     metadata: vector&lt;u8&gt;,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
-    <a href="Account.md#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>&lt;TokenType&gt;(
-        *&cap.account_address,
+    <b>let</b> tokens = <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap, amount, *&metadata);
+    <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
         payee,
-        <a href="Account.md#0x1_Account_withdraw_with_capability">withdraw_with_capability</a>(cap, amount),
+        tokens,
         metadata,
-    );
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_emit_payment_events"></a>
-
-## Function `emit_payment_events`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer, payee, payment_value, *&metadata);
-    <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer, payee, payment_value, metadata);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_emit_send_payment_events"></a>
-
-## Function `emit_send_payment_events`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-<b>acquires</b> <a href="Account.md#0x1_Account">Account</a>  {
-    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
-
-    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
-    // Load the payer's account
-    <b>let</b> payer_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
-    // Log a sent event
-    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a>&gt;(
-        &<b>mut</b> payer_account_ref.sent_events,
-        <a href="Account.md#0x1_Account_SentPaymentEvent">SentPaymentEvent</a> {
-            amount: payment_value,
-            token_code: (<b>copy</b> token_code),
-            payee: payee,
-            metadata: metadata
-        },
-    );
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Account_emit_receive_payment_events"></a>
-
-## Function `emit_receive_payment_events`
-
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-<b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <b>assert</b>(payment_value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_ECOIN_DEPOSIT_IS_ZERO">ECOIN_DEPOSIT_IS_ZERO</a>));
-    <b>let</b> token_code = <a href="Token.md#0x1_Token_token_code">Token::token_code</a>&lt;TokenType&gt;();
-    // Load the payer's account
-    <b>let</b> payee_account_ref = borrow_global_mut&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
-    // Log a received event
-    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a>&gt;(
-        &<b>mut</b> payee_account_ref.received_events,
-        <a href="Account.md#0x1_Account_ReceivedPaymentEvent">ReceivedPaymentEvent</a> {
-            amount: payment_value,
-            token_code: token_code,
-            payer: payer,
-            metadata: metadata
-        }
     );
 }
 </code></pre>
@@ -1110,10 +1093,10 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     amount: u128,
     metadata: vector&lt;u8&gt;,
 ) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a>, <a href="Account.md#0x1_Account_Balance">Balance</a> {
+    <b>let</b> tokens = <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account, amount, *&metadata);
     <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(
-        account,
         payee,
-        <a href="Account.md#0x1_Account_withdraw">withdraw</a>(account, amount),
+        tokens,
         metadata,
     );
 }
@@ -1728,22 +1711,6 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 
-<a name="@Specification_1_deposit_to"></a>
-
-### Function `deposit_to`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_to">deposit_to</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
-</code></pre>
-
-
-
 <a name="@Specification_1_deposit_to_self"></a>
 
 ### Function `deposit_to_self`
@@ -1759,58 +1726,8 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 <a name="0x1_Account_is_accepts_token$41"></a>
 <b>let</b> is_accepts_token = <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> is_accepts_token && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
-<b>aborts_if</b> !is_accepts_token && !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>ensures</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-</code></pre>
-
-
-
-<a name="@Specification_1_deposit_with_metadata"></a>
-
-### Function `deposit_with_metadata`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(account: &signer, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt;{payer: <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)};
-</code></pre>
-
-
-
-<a name="@Specification_1_deposit_with_payer_and_metadata"></a>
-
-### Function `deposit_with_payer_and_metadata`
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_with_payer_and_metadata">deposit_with_payer_and_metadata</a>&lt;TokenType&gt;(payer: address, payee: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt;;
-</code></pre>
-
-
-
-
-<a name="0x1_Account_DepositWithPayerAndMetadataAbortsIf"></a>
-
-
-<pre><code><b>schema</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt; {
-    payer: address;
-    payee: address;
-    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;;
-    <b>aborts_if</b> to_deposit.value == 0;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee);
-    <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value + to_deposit.value &gt; max_u128();
-}
 </code></pre>
 
 
@@ -1820,16 +1737,50 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 ### Function `deposit`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(account: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit">deposit</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_deposit_with_metadata"></a>
+
+### Function `deposit_with_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_deposit_with_metadata">deposit_with_metadata</a>&lt;TokenType&gt;(receiver: address, to_deposit: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, metadata: vector&lt;u8&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> to_deposit.value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account);
-<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account).token.value + to_deposit.value &gt; max_u128();
-<b>ensures</b> <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account)).token.value + to_deposit.value == <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(account).token.value;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(receiver);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value + to_deposit.value &gt; max_u128();
+<b>ensures</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
+<b>ensures</b> <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver)).token.value + to_deposit.value == <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value;
+</code></pre>
+
+
+
+<a name="@Specification_1_deposit_to_balance"></a>
+
+### Function `deposit_to_balance`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account_deposit_to_balance">deposit_to_balance</a>&lt;TokenType&gt;(balance: &<b>mut</b> <a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;, token: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> balance.token.value + token.value &gt; MAX_U128;
 </code></pre>
 
 
@@ -1856,6 +1807,22 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw">withdraw</a>&lt;TokenType&gt;(account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_withdraw_with_metadata"></a>
+
+### Function `withdraw_with_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_metadata">withdraw_with_metadata</a>&lt;TokenType&gt;(account: &signer, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -1894,6 +1861,25 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
+</code></pre>
+
+
+
+<a name="@Specification_1_withdraw_with_capability_and_metadata"></a>
+
+### Function `withdraw_with_capability_and_metadata`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_withdraw_with_capability_and_metadata">withdraw_with_capability_and_metadata</a>&lt;TokenType&gt;(cap: &<a href="Account.md#0x1_Account_WithdrawCapability">Account::WithdrawCapability</a>, amount: u128, metadata: vector&lt;u8&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(cap.account_address);
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
 </code></pre>
 
@@ -1933,6 +1919,38 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 
 
 
+<a name="@Specification_1__emit_account_withdraw_event"></a>
+
+### Function `_emit_account_withdraw_event`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_withdraw_event">_emit_account_withdraw_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
+</code></pre>
+
+
+
+<a name="@Specification_1__emit_account_deposit_event"></a>
+
+### Function `_emit_account_deposit_event`
+
+
+<pre><code><b>fun</b> <a href="Account.md#0x1_Account__emit_account_deposit_event">_emit_account_deposit_event</a>&lt;TokenType&gt;(account: address, amount: u128, metadata: vector&lt;u8&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(account);
+</code></pre>
+
+
+
 <a name="@Specification_1_pay_from_capability"></a>
 
 ### Function `pay_from_capability`
@@ -1953,58 +1971,6 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(cap.account_address).token.value &lt; amount;
 <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value + amount &gt; max_u128();
 <b>ensures</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value == <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value) + amount;
-</code></pre>
-
-
-
-<a name="@Specification_1_emit_payment_events"></a>
-
-### Function `emit_payment_events`
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_payment_events">emit_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> payment_value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
-</code></pre>
-
-
-
-<a name="@Specification_1_emit_send_payment_events"></a>
-
-### Function `emit_send_payment_events`
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_send_payment_events">emit_send_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> payment_value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
-</code></pre>
-
-
-
-<a name="@Specification_1_emit_receive_payment_events"></a>
-
-### Function `emit_receive_payment_events`
-
-
-<pre><code><b>fun</b> <a href="Account.md#0x1_Account_emit_receive_payment_events">emit_receive_payment_events</a>&lt;TokenType&gt;(payer: address, payee: address, payment_value: u128, metadata: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> payment_value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
 </code></pre>
 
 
@@ -2030,6 +1996,24 @@ Similar with <code>withdraw</code>, the function is mostly used when interacting
     payee: payee,
     to_deposit: <a href="Account.md#0x1_Account_spec_withdraw">spec_withdraw</a>&lt;TokenType&gt;(account, amount)
 };
+</code></pre>
+
+
+
+
+<a name="0x1_Account_DepositWithPayerAndMetadataAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Account.md#0x1_Account_DepositWithPayerAndMetadataAbortsIf">DepositWithPayerAndMetadataAbortsIf</a>&lt;TokenType&gt; {
+    payer: address;
+    payee: address;
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;;
+    <b>aborts_if</b> to_deposit.value == 0;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payer);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(payee);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee);
+    <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(payee).token.value + to_deposit.value &gt; max_u128();
+}
 </code></pre>
 
 

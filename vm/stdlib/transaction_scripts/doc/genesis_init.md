@@ -165,7 +165,7 @@
     <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool_initialize">TokenLockPool::initialize</a>(&genesis_account);
     <b>if</b> (pre_mine_amount &gt; 0) {
         <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_amount);
-        <a href="../../modules/doc/Account.md#0x1_Account_deposit_to">Account::deposit_to</a>(&genesis_account, <a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
+        <a href="../../modules/doc/Account.md#0x1_Account_deposit">Account::deposit</a>(<a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
     };
     <b>if</b> (time_mint_amount &gt; 0) {
         <b>let</b> cap = <a href="../../modules/doc/Token.md#0x1_Token_remove_mint_capability">Token::remove_mint_capability</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account);

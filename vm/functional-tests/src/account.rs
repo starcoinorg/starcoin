@@ -312,8 +312,8 @@ pub struct AccountData {
     sequence_number: u64,
     key_rotation_capability: Option<KeyRotationCapability>,
     withdrawal_capability: Option<WithdrawCapability>,
-    sent_events: EventHandle,
-    received_events: EventHandle,
+    withdraw_events: EventHandle,
+    deposit_events: EventHandle,
     accept_token_events: EventHandle,
     balances: BTreeMap<String, Balance>,
     event_generator: EventHandleGenerator,
@@ -373,8 +373,8 @@ impl AccountData {
         balance: u128,
         balance_token_code: &str,
         sequence_number: u64,
-        sent_events_count: u64,
-        received_events_count: u64,
+        withdraw_events_count: u64,
+        deposit_events_count: u64,
         accept_token_events_count: u64,
         delegated_key_rotation_capability: bool,
         delegated_withdrawal_capability: bool,
@@ -399,8 +399,8 @@ impl AccountData {
             sequence_number,
             key_rotation_capability,
             withdrawal_capability,
-            sent_events: new_event_handle(sent_events_count),
-            received_events: new_event_handle(received_events_count),
+            withdraw_events: new_event_handle(withdraw_events_count),
+            deposit_events: new_event_handle(deposit_events_count),
             accept_token_events: new_event_handle(accept_token_events_count),
         }
     }
@@ -472,15 +472,15 @@ impl AccountData {
                 self.key_rotation_capability.as_ref().unwrap().value(),
                 Value::struct_(Struct::pack(
                     vec![
-                        Value::u64(self.received_events.count()),
-                        Value::vector_u8(self.received_events.key().to_vec()),
+                        Value::u64(self.deposit_events.count()),
+                        Value::vector_u8(self.deposit_events.key().to_vec()),
                     ],
                     true,
                 )),
                 Value::struct_(Struct::pack(
                     vec![
-                        Value::u64(self.sent_events.count()),
-                        Value::vector_u8(self.sent_events.key().to_vec()),
+                        Value::u64(self.withdraw_events.count()),
+                        Value::vector_u8(self.withdraw_events.key().to_vec()),
                     ],
                     true,
                 )),
@@ -586,24 +586,24 @@ impl AccountData {
         self.sequence_number
     }
 
-    /// Returns the unique key for this sent events stream.
-    pub fn sent_events_key(&self) -> &[u8] {
-        self.sent_events.key().as_bytes()
+    /// Returns the unique key for this withdraw events stream.
+    pub fn withdraw_events_key(&self) -> &[u8] {
+        self.withdraw_events.key().as_bytes()
     }
 
-    /// Returns the initial sent events count.
-    pub fn sent_events_count(&self) -> u64 {
-        self.sent_events.count()
+    /// Returns the initial withdraw events count.
+    pub fn withdraw_events_count(&self) -> u64 {
+        self.withdraw_events.count()
     }
 
-    /// Returns the unique key for this received events stream.
-    pub fn received_events_key(&self) -> &[u8] {
-        self.received_events.key().as_bytes()
+    /// Returns the unique key for this deposit events stream.
+    pub fn deposit_events_key(&self) -> &[u8] {
+        self.deposit_events.key().as_bytes()
     }
 
-    /// Returns the initial received events count.
-    pub fn received_events_count(&self) -> u64 {
-        self.received_events.count()
+    /// Returns the initial deposit count.
+    pub fn deposit_events_count(&self) -> u64 {
+        self.deposit_events.count()
     }
 
     /// Returns the initial accept token events count.
