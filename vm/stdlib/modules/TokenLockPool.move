@@ -6,6 +6,12 @@ module TokenLockPool {
     use 0x1::STC::STC;
     use 0x1::Errors;
     use 0x1::Math;
+    use 0x1::Signer;
+
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
 
     // A global pool for lock token.
     resource struct TokenPool<TokenType> { token: Token<TokenType> }
@@ -34,6 +40,12 @@ module TokenLockPool {
         //TODO how to init other token's pool.
     }
 
+    spec fun initialize {
+        include Timestamp::AbortsIfNotGenesis;
+        include CoreAddresses::AbortsIfNotGenesisAddress;
+        aborts_if exists<TokenPool<STC>>(Signer::address_of(account));
+    }
+
     // Create a LinearTimeLock by token and peroid in seconds.
     public fun create_linear_lock<TokenType>(token: Token<TokenType>, peroid: u64): LinearTimeLockKey<TokenType> acquires TokenPool {
         assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
@@ -47,6 +59,13 @@ module TokenLockPool {
             start_time,
             peroid
         }
+    }
+
+    spec fun create_linear_lock {
+        aborts_if peroid <= 0;
+        include Timestamp::AbortsIfTimestampNotExists;
+        aborts_if !exists<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if global<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS()).token.value + token.value > max_u128();
     }
 
     // Create a FixedTimeLock by token and peroid in seconds.
@@ -63,6 +82,14 @@ module TokenLockPool {
         }
     }
 
+    spec fun create_fixed_lock {
+        aborts_if peroid <= 0;
+        include Timestamp::AbortsIfTimestampNotExists;
+        aborts_if Timestamp::now_seconds() + peroid > max_u64();
+        aborts_if !exists<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if global<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS()).token.value + token.value > max_u128();
+    }
+
     // Unlock token with LinearTimeLockKey
     public fun unlock_with_linear_key<TokenType>(key: &mut LinearTimeLockKey<TokenType>): Token<TokenType> acquires TokenPool {
         let amount = unlocked_amount_of_linear_key(key);
@@ -73,6 +100,15 @@ module TokenLockPool {
         token
     }
 
+    spec fun unlock_with_linear_key {
+        //aborts_if unlocked_amount_of_linear_key(key) <= 0;
+        aborts_if !exists<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if global<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS()).token.value < key.total;
+        include Timestamp::AbortsIfTimestampNotExists;
+        //aborts_if unlocked_amount_of_linear_key(old(key)) + key.taked  > max_u128();
+        pragma verify = false;// fix me
+    }
+
     // Unlock token with FixedTimeLockKey
     public fun unlock_with_fixed_key<TokenType>(key: FixedTimeLockKey<TokenType>): Token<TokenType>  acquires TokenPool {
         let amount = unlocked_amount_of_fixed_key(&key);
@@ -81,6 +117,13 @@ module TokenLockPool {
         let token = Token::withdraw(&mut token_pool.token, key.total);
         let FixedTimeLockKey { total: _, end_time: _ } = key;
         token
+    }
+
+    spec fun unlock_with_fixed_key {
+        aborts_if unlocked_amount_of_fixed_key(key) <= 0;
+        aborts_if !exists<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if global<TokenPool<TokenType>>(CoreAddresses::GENESIS_ADDRESS()).token.value < key.total;
+        include Timestamp::AbortsIfTimestampNotExists;
     }
 
     // Returns the unlocked amount of the LinearTimeLockKey.
@@ -95,6 +138,12 @@ module TokenLockPool {
         }
     }
 
+    spec fun unlocked_amount_of_linear_key {
+        include Timestamp::AbortsIfTimestampNotExists;
+        //aborts_if key.total - key.taked > max_u128();
+        pragma verify = false;// fix me
+    }
+
     // Returns the unlocked amount of the FixedTimeLockKey.
     public fun unlocked_amount_of_fixed_key<TokenType>(key: &FixedTimeLockKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
@@ -105,13 +154,23 @@ module TokenLockPool {
         }
     }
 
+    spec fun unlocked_amount_of_fixed_key {
+        include Timestamp::AbortsIfTimestampNotExists;
+    }
+
     public fun end_time_of<TokenType>(key: &FixedTimeLockKey<TokenType>): u64 {
         key.end_time
     }
 
+    spec fun end_time_of {aborts_if false;}
+
     public fun destroy_empty<TokenType>(key: LinearTimeLockKey<TokenType>) {
         let LinearTimeLockKey<TokenType> { total, taked, start_time: _, peroid: _ } = key;
         assert(total == taked, Errors::invalid_state(EDESTROY_KEY_NOT_EMPTY));
+    }
+
+    spec fun destroy_empty {
+        aborts_if key.total != key.taked;
     }
 
 }

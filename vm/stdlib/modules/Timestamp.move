@@ -118,5 +118,9 @@ module Timestamp {
     spec schema AbortsIfNotGenesis {
         aborts_if !is_genesis();
     }
+
+    spec schema AbortsIfTimestampNotExists {
+        aborts_if !exists<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    }
 }
 }

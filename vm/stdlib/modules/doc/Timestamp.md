@@ -470,3 +470,14 @@ Helper schema to specify that a function aborts if not in genesis.
     <b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">is_genesis</a>();
 }
 </code></pre>
+
+
+
+
+<a name="0x1_Timestamp_AbortsIfTimestampNotExists"></a>
+
+
+<pre><code><b>schema</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfTimestampNotExists">AbortsIfTimestampNotExists</a> {
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+}
+</code></pre>

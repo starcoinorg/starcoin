@@ -5,6 +5,11 @@ module Box {
     use 0x1::Errors;
     use 0x1::Vector;
 
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
+
     resource struct Box<T>{
         thing:vector<T>,
     }
@@ -15,6 +20,8 @@ module Box {
         exists<Box<T>>(addr)
     }
 
+    spec fun exists_at {aborts_if false;}
+
     public fun length<T>(addr: address): u64 acquires Box{
         if (exists_at<T>(addr)) {
             let box = borrow_global<Box<T>>(addr);
@@ -23,6 +30,8 @@ module Box {
            0
         }
     }
+
+    spec fun length {aborts_if false;}
 
     // Put thing to account's box last postion.
     public fun put<T>(account: &signer, thing: T) acquires Box{
@@ -35,6 +44,8 @@ module Box {
         }
     }
 
+    spec fun put {aborts_if false;}
+
     public fun put_all<T>(account: &signer, thing: vector<T>) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
@@ -44,6 +55,8 @@ module Box {
             move_to(account, Box<T>{thing})
         }
     }
+
+    spec fun put_all {aborts_if false;}
 
     // Take last thing from account's box
     public fun take<T>(account: &signer): T acquires Box{
@@ -57,6 +70,12 @@ module Box {
         thing
     }
 
+    spec fun take {
+        aborts_if !exists_at<T>(Signer::address_of(account));
+        aborts_if !exists<Box<T>>(Signer::address_of(account));
+        aborts_if len(global<Box<T>>(Signer::address_of(account)).thing) == 0;
+    }
+
     public fun take_all<T>(account: &signer): vector<T> acquires Box{
         let addr = Signer::address_of(account);
         assert(exists_at<T>(addr), Errors::invalid_state(EBOX_NOT_EXIST));
@@ -64,9 +83,18 @@ module Box {
         thing
     }
 
+    spec fun take_all {
+        aborts_if !exists_at<T>(Signer::address_of(account));
+    }
+
     fun destory_empty<T>(addr: address) acquires Box{
         let Box{ thing } = move_from<Box<T>>(addr);
         Vector::destroy_empty(thing);
+    }
+
+    spec fun destory_empty {
+        aborts_if !exists<Box<T>>(addr);
+        aborts_if len(global<Box<T>>(addr).thing) > 0;
     }
 
 }
