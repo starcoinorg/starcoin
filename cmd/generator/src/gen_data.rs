@@ -53,7 +53,7 @@ impl CommandAction for GenDataCommand {
         }
         let begin = SystemTime::now();
         let mut mock_chain = MockChain::new_with_storage(
-            config.net(),
+            config.net().clone(),
             storage.clone(),
             startup_info.master,
             account,

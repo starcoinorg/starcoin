@@ -12,7 +12,7 @@ pub mod chain;
 pub mod helper;
 pub mod storage;
 
-pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
+pub fn random_txn(seq_num: u64, net: &ChainNetwork) -> SignedUserTransaction {
     let random_public_key = random_public_key();
     let addr = account_address::from_public_key(&random_public_key);
     peer_to_peer_txn_sent_as_association(
@@ -20,7 +20,7 @@ pub fn random_txn(seq_num: u64) -> SignedUserTransaction {
         random_public_key.to_bytes().to_vec(),
         seq_num,
         1000,
-        ChainNetwork::TEST.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        &ChainNetwork::TEST,
+        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+        net,
     )
 }

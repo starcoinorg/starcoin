@@ -6,9 +6,8 @@ use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
-use starcoin_config::ChainNetwork;
 use starcoin_types::peer_info::PeerInfo;
-use starcoin_vm_types::genesis_config::ConsensusStrategy;
+use starcoin_vm_types::genesis_config::{ChainNetworkID, ConsensusStrategy};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -16,15 +15,19 @@ pub struct NodeInfo {
     /// Node self peer info
     pub peer_info: PeerInfo,
     pub self_address: String,
-    pub net: ChainNetwork,
+    pub net: ChainNetworkID,
     pub consensus: ConsensusStrategy,
     pub now: u64,
 }
 
 impl NodeInfo {
-    pub fn new(peer_info: PeerInfo, self_address: String, net: ChainNetwork) -> Self {
-        let consensus = net.consensus();
-        let now = net.time_service().now_secs();
+    pub fn new(
+        peer_info: PeerInfo,
+        self_address: String,
+        net: ChainNetworkID,
+        consensus: ConsensusStrategy,
+        now: u64,
+    ) -> Self {
         Self {
             peer_info,
             self_address,

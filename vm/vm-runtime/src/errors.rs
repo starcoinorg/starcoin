@@ -42,11 +42,11 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
     let status = error.into_vm_status();
     Err(match status {
         VMStatus::Executed => VMStatus::Executed,
-        VMStatus::MoveAbort(_location, code) => {
+        VMStatus::MoveAbort(location, code) => {
             let (category, reason) = error_split(code);
-            error!(
-                "[starcoin_vm] Prologue error: {:?} (Category: {:?} Reason: {:?})",
-                code, category, reason
+            warn!(
+                "[starcoin_vm] Prologue error: {:?} (Category: {:?} Reason: {:?}), location: {:?}",
+                code, category, reason, location
             );
             let new_major_status = match (category, reason) {
                 (REQUIRES_ADDRESS, PROLOGUE_ACCOUNT_DOES_NOT_EXIST) => {

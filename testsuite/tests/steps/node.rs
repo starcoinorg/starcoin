@@ -4,6 +4,7 @@ use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
 use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
+use starcoin_vm_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -12,7 +13,7 @@ pub fn steps() -> Steps<MyWorld> {
     builder
         .given("a test node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::TEST);
+            opt.net = Some(ChainNetworkID::TEST);
             opt.disable_metrics = true;
             opt.disable_seed = true;
             let config = NodeConfig::load_with_opt(&opt).unwrap();
@@ -21,7 +22,7 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("a dev node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::DEV);
+            opt.net = Some(ChainNetworkID::DEV);
             opt.disable_metrics = true;
             opt.disable_seed = true;
             let config = NodeConfig::load_with_opt(&opt).unwrap();
@@ -29,7 +30,7 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("halley node config", |world: &mut MyWorld, _step| {
             let mut opt = StarcoinOpt::default();
-            opt.net = Some(ChainNetwork::HALLEY);
+            opt.net = Some(ChainNetworkID::HALLEY);
             opt.disable_metrics = true;
             opt.data_dir = Some(PathBuf::from(starcoin_config::temp_path().as_ref()));
             let config = NodeConfig::load_with_opt(&opt).unwrap();

@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use anyhow::{bail, Result};
+use anyhow::{bail, ensure, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
 use starcoin_config::{BaseConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_types::genesis_config::{BuiltinNetwork, ChainNetwork, CustomNetwork};
+use starcoin_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;
-use std::str::FromStr;
 use structopt::StructOpt;
 
 /// Generate starcoin genesis config in data_dir
@@ -20,7 +19,7 @@ pub struct GenGenesisConfigOpt {}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GenGenesisConfigResult {
-    pub net: ChainNetwork,
+    pub net: ChainNetworkID,
     pub config_path: PathBuf,
 }
 
@@ -40,53 +39,30 @@ impl CommandAction for GenGenesisConfigCommand {
         if global_opt.data_dir.is_none() {
             warn!("data_dir option is none, use default data_dir.")
         }
-        let base = BaseConfig::new(
-            global_opt.net.clone().unwrap_or_default(),
-            global_opt.data_dir.clone(),
+        ensure!(
+            global_opt.genesis_config.is_some(),
+            "please set genesis-config option"
         );
+        let base = BaseConfig::default_with_opt(global_opt)?;
         if !base.net().is_custom() {
             bail!("Only allow generate custom chain network config.");
-        }
-        if base
-            .data_dir()
-            .join(CustomNetwork::GENESIS_CONFIG_FILE_NAME)
-            .exists()
-        {
-            bail!(
-                "Genesis config file is exists in dir {:?}.",
-                base.data_dir()
-            );
         }
         if base.data_dir().join(Genesis::GENESIS_FILE_NAME).exists() {
             bail!("Genesis file is exists in dir {:?}.", base.data_dir());
         }
-        let custom_network = base
-            .net()
-            .as_custom()
-            .expect("This network must be custom chain network.");
-        let genesis_config_name = custom_network.genesis_config_name();
-        match BuiltinNetwork::from_str(genesis_config_name) {
-            Ok(net) => {
-                let genesis_config = net.genesis_config();
-                let config_path = base
-                    .data_dir()
-                    .join(CustomNetwork::GENESIS_CONFIG_FILE_NAME);
-                genesis_config.save(config_path.as_path())?;
-                Ok(GenGenesisConfigResult {
-                    net: ChainNetwork::new_custom(
-                        custom_network.chain_name().to_string(),
-                        custom_network.chain_id(),
-                        None,
-                    )?,
-                    config_path,
-                })
-            }
-            Err(_) => {
-                bail!(
-                    "Can not find builtin network by name {} for genesis config template",
-                    genesis_config_name
-                );
-            }
-        }
+
+        let config_path = base
+            .data_dir()
+            .join(starcoin_config::GENESIS_CONFIG_FILE_NAME);
+        // genesis config file auto generate in BaseConfig::default_with_opt
+        ensure!(
+            config_path.exists(),
+            "Genesis Config should exist in {:?}",
+            config_path
+        );
+        Ok(GenGenesisConfigResult {
+            net: base.net().id().clone(),
+            config_path,
+        })
     }
 }

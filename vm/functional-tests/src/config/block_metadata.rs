@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{common::strip, config::global::Config as GlobalConfig, errors::*};
-use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::genesis_config::ChainId;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -86,6 +86,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             Entry::Uncles(new_uncles) => uncles = *new_uncles,
         }
     }
+    //TODO support read timestamp from FakeExecutor's net.time_service()
     if let (Some(t), Some(author), Some(number)) = (timestamp, author, number) {
         Ok(BlockMetadata::new(
             HashValue::random(),
@@ -94,7 +95,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             author_public_key,
             uncles,
             *number,
-            ChainNetwork::TEST.chain_id(),
+            ChainId::test(),
             0,
         ))
     } else {

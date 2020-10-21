@@ -45,10 +45,10 @@ pub(crate) const TEST_MODULE_2: &str = r#"
     }
     "#;
 
-pub fn prepare_genesis() -> (ChainStateDB, &'static ChainNetwork) {
-    let net = &ChainNetwork::TEST;
+pub fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
+    let net = ChainNetwork::new_test();
     let chain_state = ChainStateDB::mock();
-    let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
+    let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
     Genesis::execute_genesis_txn(&chain_state, genesis_txn).unwrap();
     (chain_state, net)
 }

@@ -67,9 +67,11 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         None,
     )?;
     debug!("block_template: gas_used: {}", block_template.gas_used);
-    let new_block = block_chain
-        .consensus()
-        .create_block(&block_chain, block_template)?;
+    let new_block = block_chain.consensus().create_block(
+        &block_chain,
+        block_template,
+        net.time_service().as_ref(),
+    )?;
     block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());

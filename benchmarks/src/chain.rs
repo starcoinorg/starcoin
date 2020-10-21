@@ -29,7 +29,7 @@ pub struct ChainBencher {
 
 impl ChainBencher {
     pub fn new(num: Option<u64>) -> Self {
-        let net = ChainNetwork::TEST;
+        let net = ChainNetwork::new_test();
         let temp_path = temp_path();
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -75,7 +75,11 @@ impl ChainBencher {
                 )
                 .unwrap();
             let block = ConsensusStrategy::Dummy
-                .create_block(self.chain.read().deref(), block_template)
+                .create_block(
+                    self.chain.read().deref(),
+                    block_template,
+                    self.net.time_service().as_ref(),
+                )
                 .unwrap();
             self.chain.write().apply(block).unwrap();
         }

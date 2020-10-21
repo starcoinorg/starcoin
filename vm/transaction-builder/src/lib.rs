@@ -130,7 +130,8 @@ pub fn raw_peer_to_peer_txn(
         sender,
         seq_num,
         TransactionPayload::Script(encode_transfer_script_by_token_code(
-            chain_id.net().unwrap().stdlib_version(),
+            //TODO should use latest?
+            StdlibVersion::Latest,
             receiver,
             recipient_public_key_vec,
             transfer_amount,
@@ -156,11 +157,8 @@ pub fn raw_accept_token_txn(
         sender,
         seq_num,
         TransactionPayload::Script(Script::new(
-            compiled_transaction_script(
-                chain_id.net().unwrap().stdlib_version(),
-                StdlibScript::AcceptToken,
-            )
-            .into_vec(),
+            compiled_transaction_script(StdlibVersion::Latest, StdlibScript::AcceptToken)
+                .into_vec(),
             vec![token_code.into()],
             vec![],
         )),

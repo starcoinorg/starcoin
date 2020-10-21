@@ -11,6 +11,7 @@ use starcoin_types::{
     U256,
 };
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::time::TimeService;
 
 pub trait Consensus {
     fn calculate_next_difficulty(
@@ -20,7 +21,12 @@ pub trait Consensus {
     ) -> Result<U256>;
 
     /// Calculate new block consensus header
-    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
+    fn solve_consensus_nonce(
+        &self,
+        mining_hash: HashValue,
+        difficulty: U256,
+        _time_service: &dyn TimeService,
+    ) -> u64 {
         let mut nonce = generate_nonce();
         loop {
             let pow_hash: U256 = self
@@ -52,11 +58,12 @@ pub trait Consensus {
         &self,
         reader: &dyn ChainReader,
         block_template: BlockTemplate,
+        time_service: &dyn TimeService,
     ) -> Result<Block> {
         let epoch = reader.epoch_info()?;
         let difficulty = self.calculate_next_difficulty(reader, &epoch)?;
         let mining_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
-        let consensus_nonce = self.solve_consensus_nonce(mining_hash, difficulty);
+        let consensus_nonce = self.solve_consensus_nonce(mining_hash, difficulty, time_service);
         Ok(block_template.into_block(consensus_nonce, difficulty))
     }
     /// Inner helper for verify and unit testing

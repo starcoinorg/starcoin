@@ -33,7 +33,7 @@ fn get_storage() -> impl Strategy<Value = Storage> {
 
 /// This produces the genesis block
 pub fn genesis_strategy(storage: Arc<Storage>) -> impl Strategy<Value = Block> {
-    let net = &ChainNetwork::TEST;
+    let net = &ChainNetwork::new_test();
     let genesis = Genesis::load(net).unwrap();
     genesis.execute_genesis_block(net, storage).unwrap();
     Just(genesis.block().clone())
@@ -90,11 +90,11 @@ fn gen_script_payload(version: StdlibVersion) -> TransactionPayload {
 }
 
 fn txn_transfer(
-    mut universe: AccountInfoUniverse,
+    universe: &mut AccountInfoUniverse,
     gens: Vec<(Index, SignatureCheckedTransactionGen)>,
 ) -> Vec<Transaction> {
     let mut temp_index: Option<Index> = None;
-    let expired = ChainNetwork::TEST.time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
+    let expired = universe.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME;
     gens.into_iter()
         .map(|(index, gen)| {
             if temp_index.is_none() {
@@ -103,9 +103,9 @@ fn txn_transfer(
             Transaction::UserTransaction(
                 gen.materialize(
                     temp_index.unwrap(),
-                    &mut universe,
+                    universe,
                     expired,
-                    Some(gen_script_payload(ChainNetwork::TEST.stdlib_version())),
+                    Some(gen_script_payload(StdlibVersion::Latest)),
                 )
                 .into_inner(),
             )
@@ -128,8 +128,8 @@ prop_compose! {
         storage in Just(storage),
     ) -> Block {
     //transfer transactions
-     let account = AccountInfoUniverse::default().unwrap();
-    let mut txns = txn_transfer(account, gens);
+    let mut account = AccountInfoUniverse::default().unwrap();
+    let mut txns = txn_transfer(&mut account, gens);
     let user_txns = {
             let mut t=   vec![];
             t.extend(
@@ -141,30 +141,31 @@ prop_compose! {
             t
         };
     let p_header = parent_header.clone();
+    let net = account.net();
     let block_metadata = BlockMetadata::new(
         p_header.parent_hash(),
-        ChainNetwork::TEST.time_service().now_secs(),
+        net.time_service().now_millis(),
         p_header.author,
         p_header.author_public_key,
         0,
         p_header.number + 1,
-        ChainNetwork::TEST.chain_id(),
+        net.chain_id(),
         p_header.gas_used,
-        );
-        txns.insert(0, Transaction::BlockMetadata(block_metadata));
+    );
+    txns.insert(0, Transaction::BlockMetadata(block_metadata));
 
-        //gen state_root, acc_root
-        let (state_root, acc_root) = gen_root_hashes(
-            storage,
-            parent_header.accumulator_root(),
-            parent_header.state_root(),
-            txns,
-            u64::max_value(), /*block_gas_limit*/
-        );
-        let body = BlockBody::new(user_txns, None);
-        let header = gen_header(parent_header, state_root, acc_root, body.hash());
-        Block::new(header, body)
-    }
+    //gen state_root, acc_root
+    let (state_root, acc_root) = gen_root_hashes(
+        storage,
+        parent_header.accumulator_root(),
+        parent_header.state_root(),
+        txns,
+        u64::max_value(), /*block_gas_limit*/
+    );
+    let body = BlockBody::new(user_txns, None);
+    let header = gen_header(parent_header, state_root, acc_root, body.hash());
+    Block::new(header, body)
+  }
 }
 
 prop_compose! {
@@ -278,8 +279,8 @@ proptest! {
                 1..2
             ), ) {
         let chain_state = ChainStateDB::new(Arc::new(storage), None);
-        let account = AccountInfoUniverse::default().unwrap();
-        let txns = txn_transfer(account, gens);
+        let mut account = AccountInfoUniverse::default().unwrap();
+        let txns = txn_transfer(&mut account, gens);
         let result = executor::block_execute(&chain_state, txns, 0);
         info!("execute result: {:?}", result);
     }

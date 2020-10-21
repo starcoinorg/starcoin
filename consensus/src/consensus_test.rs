@@ -9,7 +9,9 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockHeader, RawBlockHeader};
 use starcoin_types::U256;
-use starcoin_vm_types::time::{duration_since_epoch, MockTimeService, TimeService};
+use starcoin_vm_types::time::{
+    duration_since_epoch, MockTimeService, TimeService, TimeServiceType,
+};
 use std::collections::VecDeque;
 
 #[stest::test]
@@ -33,7 +35,12 @@ fn verify_header_test() {
     let mut header = BlockHeader::random();
     header.difficulty = 1.into();
     let raw_header: RawBlockHeader = header.clone().into();
-    let nonce = CRYPTONIGHT.solve_consensus_nonce(raw_header.crypto_hash(), raw_header.difficulty);
+    let time_service = TimeServiceType::RealTimeService.new_time_service();
+    let nonce = CRYPTONIGHT.solve_consensus_nonce(
+        raw_header.crypto_hash(),
+        raw_header.difficulty,
+        time_service.as_ref(),
+    );
     header.nonce = nonce;
     CRYPTONIGHT
         .verify_header_difficulty(header.difficulty, &header)

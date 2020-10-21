@@ -24,7 +24,7 @@ pub fn init_or_load_data_dir(
     password: Option<String>,
 ) -> Result<(NodeConfig, Arc<Storage>, StartupInfo, Genesis, AccountInfo)> {
     let config = NodeConfig::load_with_opt(global_opt)?;
-    if config.base.base_data_dir().is_temp() {
+    if config.base().base_data_dir().is_temp() {
         bail!("Please set data_dir option.")
     }
     let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(

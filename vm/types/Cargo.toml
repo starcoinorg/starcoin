@@ -17,6 +17,7 @@ num_enum = "0.5.1"
 hex = "0.4.2"
 chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
 mirai-annotations = "1.10.1"
+log = "0.4.11"
 
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }

@@ -18,7 +18,6 @@ use starcoin_types::{
 };
 use starcoin_vm_runtime::starcoin_vm::StarcoinVM;
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE_STR};
-use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::on_chain_resource::GlobalTimeOnChain;
 use starcoin_vm_types::{
@@ -33,7 +32,7 @@ use starcoin_vm_types::{
 pub struct FakeExecutor {
     data_store: ChainStateDB,
     block_time: u64,
-    chain_id: ChainId,
+    net: ChainNetwork,
 }
 
 impl Default for FakeExecutor {
@@ -44,34 +43,24 @@ impl Default for FakeExecutor {
 
 impl FakeExecutor {
     pub fn new() -> Self {
-        let net = &ChainNetwork::TEST;
-        let genesis_txn = Genesis::build_genesis_transaction(net).unwrap();
+        let net = ChainNetwork::new_test();
+        let genesis_txn = Genesis::build_genesis_transaction(&net).unwrap();
         let data_store = ChainStateDB::mock();
         Genesis::execute_genesis_txn(&data_store, genesis_txn).unwrap();
         Self {
             data_store,
             block_time: 0,
-            chain_id: net.chain_id(),
+            net,
         }
-    }
-
-    /// Creates an executor from a genesis [`WriteSet`].
-    pub fn from_genesis(write_set: &WriteSet) -> Self {
-        let mut executor = FakeExecutor {
-            data_store: ChainStateDB::mock(),
-            block_time: 0,
-            chain_id: ChainNetwork::TEST.chain_id(),
-        };
-        executor.apply_write_set(write_set);
-        executor
     }
 
     /// Creates an executor in which no genesis state has been applied yet.
     pub fn no_genesis() -> Self {
+        let net = ChainNetwork::new_test();
         FakeExecutor {
             data_store: ChainStateDB::mock(),
             block_time: 0,
-            chain_id: ChainNetwork::TEST.chain_id(),
+            net,
         }
     }
 
@@ -232,7 +221,7 @@ impl FakeExecutor {
             None,
             0,
             self.block_time,
-            self.chain_id,
+            self.net.chain_id(),
             0,
         );
         let (_vm_status, output) = self

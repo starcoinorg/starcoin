@@ -18,14 +18,14 @@ use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::{ChainNetwork, MOCK_TIME_SERVICE};
+use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
 fn test_chain_filter_events() {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
     {
@@ -109,7 +109,7 @@ fn test_chain_filter_events() {
 
 #[stest::test(timeout = 120)]
 fn test_block_chain_head() {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
@@ -117,7 +117,8 @@ fn test_block_chain_head() {
 
 #[stest::test(timeout = 480)]
 fn test_halley_consensus() {
-    let mut mock_chain = MockChain::new(&ChainNetwork::HALLEY).unwrap();
+    let mut mock_chain =
+        MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap();
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
@@ -125,19 +126,20 @@ fn test_halley_consensus() {
 
 #[stest::test(timeout = 240)]
 fn test_dev_consensus() {
-    let mut mock_chain = MockChain::new(&ChainNetwork::DEV).unwrap();
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Dev);
+    let mut mock_chain = MockChain::new(ChainNetwork::new_builtin(BuiltinNetworkID::Dev)).unwrap();
     let global = mock_chain
         .head()
         .get_global_time_by_number(mock_chain.head().current_header().number)
         .unwrap();
-    MOCK_TIME_SERVICE.init(global.milliseconds + 1);
+    net.time_service().adjust(global);
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
 }
 
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     let mut times = 10;
     mock_chain.produce_and_apply_times(times).unwrap();
 
@@ -168,7 +170,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
         .unwrap();
     branch
         .consensus()
-        .create_block(branch, block_template)
+        .create_block(branch, block_template, branch.time_service().as_ref())
         .unwrap()
 }
 
@@ -333,9 +335,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
 
-    let block_b1 = block_chain
-        .consensus()
-        .create_block(&block_chain, template_b1)?;
+    let block_b1 = block_chain.consensus().create_block(
+        &block_chain,
+        template_b1,
+        config.net().time_service().as_ref(),
+    )?;
     block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
@@ -365,9 +369,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b2 = block_chain
-        .consensus()
-        .create_block(&block_chain, template_b2)?;
+    let block_b2 = block_chain.consensus().create_block(
+        &block_chain,
+        template_b2,
+        config.net().time_service().as_ref(),
+    )?;
 
     block_chain.apply(block_b2)?;
     let (template_b3, excluded) = block_chain2.create_block_template(
@@ -379,9 +385,11 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b3 = block_chain2
-        .consensus()
-        .create_block(&block_chain2, template_b3)?;
+    let block_b3 = block_chain2.consensus().create_block(
+        &block_chain2,
+        template_b3,
+        config.net().time_service().as_ref(),
+    )?;
     block_chain2.apply(block_b3)?;
 
     let vec_txn = block_chain2
@@ -397,7 +405,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
 
 #[stest::test]
 fn test_verify_txn() {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
     let head = mock_chain.head();
     let block = head.head_block();
@@ -418,7 +426,7 @@ fn test_verify_txn() {
 }
 
 fn verify_txn_failed(txns: &[Transaction]) {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
     let head = mock_chain.head();
     let header = head.current_header();
@@ -446,7 +454,7 @@ fn test_verify_txn_hash() {
 }
 
 fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>) -> Result<()> {
-    let mut mock_chain = MockChain::new(&ChainNetwork::TEST).unwrap();
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
     mock_chain.produce_and_apply_times(10).unwrap();
     let block = mock_chain.head().head_block();
     let parent_block_header = mock_chain

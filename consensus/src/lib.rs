@@ -27,6 +27,7 @@ use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::time::TimeService;
 
 pub fn difficult_1_target() -> U256 {
     U256::max_value()
@@ -71,13 +72,24 @@ impl Consensus for ConsensusStrategy {
         }
     }
 
-    fn solve_consensus_nonce(&self, mining_hash: HashValue, difficulty: U256) -> u64 {
+    fn solve_consensus_nonce(
+        &self,
+        mining_hash: HashValue,
+        difficulty: U256,
+        time_service: &dyn TimeService,
+    ) -> u64 {
         match self {
-            ConsensusStrategy::Dummy => DUMMY.solve_consensus_nonce(mining_hash, difficulty),
-            ConsensusStrategy::Argon => ARGON.solve_consensus_nonce(mining_hash, difficulty),
-            ConsensusStrategy::Keccak => KECCAK.solve_consensus_nonce(mining_hash, difficulty),
+            ConsensusStrategy::Dummy => {
+                DUMMY.solve_consensus_nonce(mining_hash, difficulty, time_service)
+            }
+            ConsensusStrategy::Argon => {
+                ARGON.solve_consensus_nonce(mining_hash, difficulty, time_service)
+            }
+            ConsensusStrategy::Keccak => {
+                KECCAK.solve_consensus_nonce(mining_hash, difficulty, time_service)
+            }
             ConsensusStrategy::CryptoNight => {
-                CRYPTONIGHT.solve_consensus_nonce(mining_hash, difficulty)
+                CRYPTONIGHT.solve_consensus_nonce(mining_hash, difficulty, time_service)
             }
         }
     }

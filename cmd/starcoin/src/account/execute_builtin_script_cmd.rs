@@ -14,6 +14,7 @@ use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
@@ -106,8 +107,7 @@ impl CommandAction for ExecuteBuildInCommand {
         let expiration_time = opt.expiration_time + node_info.now;
 
         let bytecode =
-            compiled_transaction_script(ctx.state().net().stdlib_version(), opt.script_name)
-                .into_vec();
+            compiled_transaction_script(StdlibVersion::Latest, opt.script_name).into_vec();
 
         let type_tags = opt.type_tags.clone();
         let args = opt.args.clone();

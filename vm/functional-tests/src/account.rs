@@ -18,7 +18,7 @@ use starcoin_types::{
     write_set::{WriteOp, WriteSet, WriteSetMut},
 };
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
-use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork};
+use starcoin_vm_types::genesis_config::{ChainId, ChainNetwork, StdlibVersion};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
@@ -678,11 +678,7 @@ pub fn peer_to_peer_txn(
 
     // get a SignedTransaction
     sender.create_signed_txn_with_args(
-        compiled_transaction_script(
-            chain_id.net().unwrap().stdlib_version(),
-            StdlibScript::PeerToPeer,
-        )
-        .into_vec(),
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeer).into_vec(),
         vec![stc_type_tag()],
         args,
         seq_num,
@@ -710,7 +706,7 @@ pub fn create_account_txn_sent_as_association(
 
     create_signed_txn_with_association_account(
         TransactionPayload::Script(Script::new(
-            compiled_transaction_script(net.stdlib_version(), StdlibScript::CreateAccount)
+            compiled_transaction_script(StdlibVersion::Latest, StdlibScript::CreateAccount)
                 .into_vec(),
             vec![stc_type_tag()],
             args,

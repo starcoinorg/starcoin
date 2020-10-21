@@ -193,6 +193,8 @@ impl NodeService {
         let genesis_hash = genesis.block().header().id();
         registry.put_shared(genesis).await?;
 
+        registry.register::<ChainStateService>().await?;
+
         let vault_config = &config.vault;
         let account_storage = AccountStorage::create_from_path(vault_config.dir())?;
         registry
@@ -208,19 +210,8 @@ impl NodeService {
         Delay::new(Duration::from_millis(200)).await;
         // TxPoolActorService auto put shared TxPoolService,
         registry.get_shared::<TxPoolService>().await?;
-        registry.register::<ChainStateService>().await?;
-        let _starcoin_chain_service = registry.register::<ChainReaderService>().await?;
-        //test net or dev_net must init mock_time_service
-        //TODO init mock time service after refactor TimeService & ChainNetwork
-        // let net = config.net();
-        // if net.is_dev() || net.is_test() {
-        //     if let Ok(block_header) = starcoin_chain_service.master_head_header().await {
-        //         let global_time = starcoin_chain_service
-        //             .get_global_time_by_number(block_header.number())
-        //             .await?;
-        //         MOCK_TIME_SERVICE.init(global_time.milliseconds + 1);
-        //     }
-        // }
+
+        registry.register::<ChainReaderService>().await?;
 
         registry.register::<ChainNotifyHandlerService>().await?;
 
@@ -262,7 +253,7 @@ impl NodeService {
         if config.miner.enable_miner_client {
             let miner_client_config = config.miner.client_config.clone();
             registry.put_shared(miner_client_config).await?;
-            let job_client = JobBusClient::new(bus.clone());
+            let job_client = JobBusClient::new(bus.clone(), config.net().time_service());
             registry.put_shared(job_client).await?;
             registry
                 .register::<MinerClientService<JobBusClient>>()

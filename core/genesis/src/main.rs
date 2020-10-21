@@ -4,6 +4,7 @@
 use starcoin_config::ChainNetwork;
 use starcoin_genesis::{Genesis, GenesisOpt, GENESIS_GENERATED_DIR};
 use starcoin_logger::prelude::*;
+use starcoin_vm_types::genesis_config::BuiltinNetworkID;
 use std::path::Path;
 use structopt::StructOpt;
 
@@ -12,24 +13,25 @@ use structopt::StructOpt;
 pub struct GenesisGeneratorOpt {
     #[structopt(long, short = "n")]
     /// Chain Network to generate genesis, if omit this, generate all network's genesis.
-    pub net: Option<ChainNetwork>,
+    pub net: Option<BuiltinNetworkID>,
 }
 
 fn main() {
     let _logger = starcoin_logger::init();
     let opts = GenesisGeneratorOpt::from_args();
-    let networks = match opts.net.as_ref() {
+    let networks = match opts.net {
         Some(network) => vec![network],
-        None => ChainNetwork::builtin_networks(),
+        None => BuiltinNetworkID::networks(),
     };
-    for net in networks {
+    for id in networks {
         // skip test network generate.
-        if net.is_test() {
+        if id.is_test() {
             continue;
         }
+        let net = ChainNetwork::new_builtin(id);
         let new_genesis =
-            Genesis::load_by_opt(GenesisOpt::Fresh, net).expect("build genesis fail.");
-        let generated_genesis = Genesis::load(net);
+            Genesis::load_by_opt(GenesisOpt::Fresh, &net).expect("build genesis fail.");
+        let generated_genesis = Genesis::load(&net);
         let regenerate = match generated_genesis {
             Ok(generated_genesis) => {
                 let regenerate = new_genesis.block().id() != generated_genesis.block().id();

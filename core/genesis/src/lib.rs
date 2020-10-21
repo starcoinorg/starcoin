@@ -34,7 +34,7 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_vm_types::genesis_config::BuiltinNetwork;
+use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID};
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";
 
@@ -44,28 +44,38 @@ const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/g
 const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
 
 static FRESH_TEST_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(&ChainNetwork::TEST)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::TEST, e))
+    Genesis::build(&ChainNetwork::new_builtin(BuiltinNetworkID::Test))
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", BuiltinNetworkID::Test, e))
 });
 
 static FRESH_DEV_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(&ChainNetwork::DEV)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::DEV, e))
+    Genesis::build(&ChainNetwork::new_builtin(BuiltinNetworkID::Dev))
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", BuiltinNetworkID::Dev, e))
 });
 
 static FRESH_HALLEY_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(&ChainNetwork::HALLEY)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::HALLEY, e))
+    Genesis::build(&ChainNetwork::new_builtin(BuiltinNetworkID::Halley)).unwrap_or_else(|e| {
+        panic!(
+            "build genesis for {} fail: {:?}",
+            BuiltinNetworkID::Halley,
+            e
+        )
+    })
 });
 
 static FRESH_PROXIMA_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(&ChainNetwork::PROXIMA)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::PROXIMA, e))
+    Genesis::build(&ChainNetwork::new_builtin(BuiltinNetworkID::Proxima)).unwrap_or_else(|e| {
+        panic!(
+            "build genesis for {} fail: {:?}",
+            BuiltinNetworkID::Proxima,
+            e
+        )
+    })
 });
 
 static FRESH_MAIN_GENESIS: Lazy<Genesis> = Lazy::new(|| {
-    Genesis::build(&ChainNetwork::MAIN)
-        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", ChainNetwork::MAIN, e))
+    Genesis::build(&ChainNetwork::new_builtin(BuiltinNetworkID::Main))
+        .unwrap_or_else(|e| panic!("build genesis for {} fail: {:?}", BuiltinNetworkID::Main, e))
 });
 
 pub enum GenesisOpt {
@@ -93,14 +103,14 @@ impl Genesis {
     pub const GENESIS_FILE_NAME: &'static str = "genesis";
 
     pub fn load_by_opt(option: GenesisOpt, net: &ChainNetwork) -> Result<Self> {
-        match (option, net) {
-            (GenesisOpt::Generated, ChainNetwork::Builtin(net)) => Self::load_generated(*net),
-            (GenesisOpt::Fresh, ChainNetwork::Builtin(net)) => match net {
-                BuiltinNetwork::Test => Ok(FRESH_TEST_GENESIS.clone()),
-                BuiltinNetwork::Dev => Ok(FRESH_DEV_GENESIS.clone()),
-                BuiltinNetwork::Halley => Ok(FRESH_HALLEY_GENESIS.clone()),
-                BuiltinNetwork::Proxima => Ok(FRESH_PROXIMA_GENESIS.clone()),
-                BuiltinNetwork::Main => Ok(FRESH_MAIN_GENESIS.clone()),
+        match (option, net.id()) {
+            (GenesisOpt::Generated, ChainNetworkID::Builtin(net)) => Self::load_generated(*net),
+            (GenesisOpt::Fresh, ChainNetworkID::Builtin(net)) => match net {
+                BuiltinNetworkID::Test => Ok(FRESH_TEST_GENESIS.clone()),
+                BuiltinNetworkID::Dev => Ok(FRESH_DEV_GENESIS.clone()),
+                BuiltinNetworkID::Halley => Ok(FRESH_HALLEY_GENESIS.clone()),
+                BuiltinNetworkID::Proxima => Ok(FRESH_PROXIMA_GENESIS.clone()),
+                BuiltinNetworkID::Main => Ok(FRESH_MAIN_GENESIS.clone()),
             },
             (_, _) => Self::build(net),
         }
@@ -229,17 +239,17 @@ impl Genesis {
         Ok(Some(genesis))
     }
 
-    fn genesis_bytes(net: BuiltinNetwork) -> &'static [u8] {
+    fn genesis_bytes(net: BuiltinNetworkID) -> &'static [u8] {
         match net {
-            BuiltinNetwork::Test => unreachable!(),
-            BuiltinNetwork::Dev => DEV_GENESIS_BYTES,
-            BuiltinNetwork::Halley => HALLEY_GENESIS_BYTES,
-            BuiltinNetwork::Proxima => PROXIMA_GENESIS_BYTES,
-            BuiltinNetwork::Main => MAIN_GENESIS_BYTES,
+            BuiltinNetworkID::Test => unreachable!(),
+            BuiltinNetworkID::Dev => DEV_GENESIS_BYTES,
+            BuiltinNetworkID::Halley => HALLEY_GENESIS_BYTES,
+            BuiltinNetworkID::Proxima => PROXIMA_GENESIS_BYTES,
+            BuiltinNetworkID::Main => MAIN_GENESIS_BYTES,
         }
     }
 
-    pub fn load_generated(net: BuiltinNetwork) -> Result<Self> {
+    pub fn load_generated(net: BuiltinNetworkID) -> Result<Self> {
         let bytes = Self::genesis_bytes(net);
         scs::from_bytes(bytes)
     }
@@ -367,30 +377,31 @@ mod tests {
 
     #[stest::test]
     pub fn test_genesis_load() -> Result<()> {
-        for net in ChainNetwork::builtin_networks() {
-            Genesis::load(net)?;
+        for id in BuiltinNetworkID::networks() {
+            let net = ChainNetwork::new_builtin(id);
+            Genesis::load(&net)?;
         }
         Ok(())
     }
 
     #[stest::test(timeout = 120)]
     pub fn test_builtin_genesis() -> Result<()> {
-        for net in ChainNetwork::builtin_networks() {
+        for id in BuiltinNetworkID::networks() {
+            let net = ChainNetwork::new_builtin(id);
             let temp_dir = starcoin_config::temp_path();
-            do_test_genesis(net, temp_dir.path())?;
+            do_test_genesis(&net, temp_dir.path())?;
         }
         Ok(())
     }
 
     #[stest::test]
     pub fn test_custom_genesis() -> Result<()> {
-        let mut net = ChainNetwork::new_custom(
+        let net = ChainNetwork::new_custom(
             "testx".to_string(),
             ChainId::new(123),
-            Some("test".to_string()),
+            BuiltinNetworkID::Test.genesis_config().clone(),
         )?;
         let temp_dir = starcoin_config::temp_path();
-        net.load_config(temp_dir.path())?;
         do_test_genesis(&net, temp_dir.path())
     }
 

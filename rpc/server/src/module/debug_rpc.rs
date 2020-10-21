@@ -46,7 +46,7 @@ impl DebugApi for DebugRpcImpl {
     }
 
     fn panic(&self) -> Result<()> {
-        if !self.config.net().is_test_or_dev() {
+        if !self.config.net().is_test() || self.config.net().is_dev() {
             return Err(jsonrpc_core::Error::invalid_request());
         }
         panic!("DebugApi.panic")

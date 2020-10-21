@@ -8,7 +8,7 @@ use crate::gas_schedule::{
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
-use crate::time::{MockTimeService, RealTimeService, TimeService, TimeServiceType};
+use crate::time::{TimeService, TimeServiceType};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
@@ -18,6 +18,7 @@ use move_core_types::move_resource::MoveResource;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::de::Error;
+use serde::export::fmt::Debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
 use starcoin_uint::U256;
@@ -141,7 +142,7 @@ pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
     Serialize,
 )]
 #[repr(u8)]
-pub enum BuiltinNetwork {
+pub enum BuiltinNetworkID {
     /// A ephemeral network just for unit test.
     Test = 255,
     /// A ephemeral network just for developer test.
@@ -159,34 +160,34 @@ pub enum BuiltinNetwork {
     Main = 1,
 }
 
-impl Display for BuiltinNetwork {
+impl Display for BuiltinNetworkID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            BuiltinNetwork::Test => write!(f, "test"),
-            BuiltinNetwork::Dev => write!(f, "dev"),
-            BuiltinNetwork::Halley => write!(f, "halley"),
-            BuiltinNetwork::Proxima => write!(f, "proxima"),
-            BuiltinNetwork::Main => write!(f, "main"),
+            BuiltinNetworkID::Test => write!(f, "test"),
+            BuiltinNetworkID::Dev => write!(f, "dev"),
+            BuiltinNetworkID::Halley => write!(f, "halley"),
+            BuiltinNetworkID::Proxima => write!(f, "proxima"),
+            BuiltinNetworkID::Main => write!(f, "main"),
         }
     }
 }
 
-impl FromStr for BuiltinNetwork {
+impl FromStr for BuiltinNetworkID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "test" => Ok(BuiltinNetwork::Test),
-            "dev" => Ok(BuiltinNetwork::Dev),
-            "halley" => Ok(BuiltinNetwork::Halley),
-            "proxima" => Ok(BuiltinNetwork::Proxima),
-            "main" => Ok(BuiltinNetwork::Main),
+            "test" => Ok(BuiltinNetworkID::Test),
+            "dev" => Ok(BuiltinNetworkID::Dev),
+            "halley" => Ok(BuiltinNetworkID::Halley),
+            "proxima" => Ok(BuiltinNetworkID::Proxima),
+            "main" => Ok(BuiltinNetworkID::Main),
             s => Err(format_err!("Unknown network: {}", s)),
         }
     }
 }
 
-impl BuiltinNetwork {
+impl BuiltinNetworkID {
     pub fn chain_name(self) -> String {
         self.to_string()
     }
@@ -204,111 +205,102 @@ impl BuiltinNetwork {
 
     pub fn is_test_or_dev(self) -> bool {
         match self {
-            BuiltinNetwork::Test | BuiltinNetwork::Dev => true,
+            BuiltinNetworkID::Test | BuiltinNetworkID::Dev => true,
             _ => false,
         }
     }
 
     pub fn is_test(self) -> bool {
         match self {
-            BuiltinNetwork::Test => true,
+            BuiltinNetworkID::Test => true,
             _ => false,
         }
     }
 
     pub fn is_dev(self) -> bool {
         match self {
-            BuiltinNetwork::Dev => true,
+            BuiltinNetworkID::Dev => true,
             _ => false,
         }
     }
 
     pub fn is_main(self) -> bool {
         match self {
-            BuiltinNetwork::Main => true,
+            BuiltinNetworkID::Main => true,
             _ => false,
         }
     }
 
     pub fn is_halley(self) -> bool {
         match self {
-            BuiltinNetwork::Halley => true,
+            BuiltinNetworkID::Halley => true,
             _ => false,
         }
     }
 
-    pub fn networks() -> Vec<BuiltinNetwork> {
+    pub fn networks() -> Vec<BuiltinNetworkID> {
         vec![
-            BuiltinNetwork::Test,
-            BuiltinNetwork::Dev,
-            BuiltinNetwork::Halley,
-            BuiltinNetwork::Proxima,
-            BuiltinNetwork::Main,
+            BuiltinNetworkID::Test,
+            BuiltinNetworkID::Dev,
+            BuiltinNetworkID::Halley,
+            BuiltinNetworkID::Proxima,
+            BuiltinNetworkID::Main,
         ]
     }
 
     pub fn genesis_config(self) -> &'static GenesisConfig {
         match self {
-            BuiltinNetwork::Test => &TEST_CONFIG,
-            BuiltinNetwork::Dev => &DEV_CONFIG,
-            BuiltinNetwork::Halley => &HALLEY_CONFIG,
-            BuiltinNetwork::Proxima => &PROXIMA_CONFIG,
-            BuiltinNetwork::Main => &MAIN_CONFIG,
+            BuiltinNetworkID::Test => &TEST_CONFIG,
+            BuiltinNetworkID::Dev => &DEV_CONFIG,
+            BuiltinNetworkID::Halley => &HALLEY_CONFIG,
+            BuiltinNetworkID::Proxima => &PROXIMA_CONFIG,
+            BuiltinNetworkID::Main => &MAIN_CONFIG,
         }
     }
 
     pub fn boot_nodes(self) -> &'static [Multiaddr] {
         match self {
-            BuiltinNetwork::Test => EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetwork::Dev => &EMPTY_BOOT_NODES.as_slice(),
-            BuiltinNetwork::Halley => &HALLEY_BOOT_NODES.as_slice(),
-            BuiltinNetwork::Proxima => &PROXIMA_BOOT_NODES.as_slice(),
-            BuiltinNetwork::Main => &MAIN_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Test => EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Dev => &EMPTY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Halley => &HALLEY_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Proxima => &PROXIMA_BOOT_NODES.as_slice(),
+            BuiltinNetworkID::Main => &MAIN_BOOT_NODES.as_slice(),
         }
     }
 }
 
-impl Default for BuiltinNetwork {
+impl Default for BuiltinNetworkID {
     fn default() -> Self {
-        BuiltinNetwork::Dev
+        BuiltinNetworkID::Dev
     }
 }
 
-impl From<BuiltinNetwork> for ChainNetwork {
-    fn from(network: BuiltinNetwork) -> Self {
-        ChainNetwork::new_builtin(network)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
-pub struct CustomNetwork {
-    chain_name: String,
-    chain_id: ChainId,
-    genesis_config_name: String,
-    #[serde(skip)]
-    genesis_config: Option<GenesisConfig>,
-}
-
-impl Display for CustomNetwork {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}:{}:{}",
-            self.chain_name, self.chain_id, self.genesis_config_name
+impl From<BuiltinNetworkID> for ChainNetwork {
+    fn from(network: BuiltinNetworkID) -> Self {
+        ChainNetwork::new(
+            ChainNetworkID::Builtin(network),
+            network.genesis_config().clone(),
         )
     }
 }
 
-impl CustomNetwork {
-    pub const GENESIS_CONFIG_FILE_NAME: &'static str = "genesis_config.json";
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+pub struct CustomNetworkID {
+    chain_name: String,
+    chain_id: ChainId,
+}
 
-    fn new(chain_name: String, chain_id: ChainId, genesis_config_name: Option<String>) -> Self {
+impl Display for CustomNetworkID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}:{}", self.chain_name, self.chain_id)
+    }
+}
+
+impl CustomNetworkID {
+    fn new(chain_name: String, chain_id: ChainId) -> Self {
         Self {
             chain_name,
             chain_id,
-            genesis_config_name: genesis_config_name
-                .unwrap_or_else(|| Self::GENESIS_CONFIG_FILE_NAME.to_string()),
-            genesis_config: None,
         }
     }
 
@@ -319,67 +311,31 @@ impl CustomNetwork {
     pub fn chain_name(&self) -> &str {
         self.chain_name.as_str()
     }
-
-    pub fn genesis_config_name(&self) -> &str {
-        self.genesis_config_name.as_str()
-    }
-
-    pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
-        if self.genesis_config.is_some() {
-            bail!("Chain config has bean loaded");
-        }
-        let config_name_or_path = self.genesis_config_name.as_str();
-        let genesis_config = match BuiltinNetwork::from_str(config_name_or_path) {
-            Ok(net) => net.genesis_config().clone(),
-            Err(_) => {
-                let path = Path::new(config_name_or_path);
-                let config_path = if path.is_relative() {
-                    base_dir.join(path)
-                } else {
-                    path.to_path_buf()
-                };
-                GenesisConfig::load(config_path)?
-            }
-        };
-        self.genesis_config = Some(genesis_config);
-        Ok(())
-    }
-
-    pub fn genesis_config(&self) -> &GenesisConfig {
-        self.genesis_config
-            .as_ref()
-            .expect("chain config should load before get.")
-    }
 }
 
-impl FromStr for CustomNetwork {
+impl FromStr for CustomNetworkID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() <= 1 || parts.len() > 3 {
-            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id:genesis_config_name_or_path", s);
+        if parts.len() != 2 {
+            bail!("Invalid Custom chain network {}, custom chain network format is: chain_name:chain_id", s);
         }
         let chain_name = parts[0].to_string();
         let chain_id = ChainId::from_str(parts[1])?;
-        let genesis_config = if parts.len() == 3 {
-            Some(parts[2].to_string())
-        } else {
-            None
-        };
-        Ok(Self::new(chain_name, chain_id, genesis_config))
+        Ok(Self::new(chain_name, chain_id))
     }
 }
 
 // ChainNetwork is a global variable and does not create many instances, so allow large enum
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
-pub enum ChainNetwork {
-    Builtin(BuiltinNetwork),
-    Custom(CustomNetwork),
+pub enum ChainNetworkID {
+    Builtin(BuiltinNetworkID),
+    Custom(CustomNetworkID),
 }
 
-impl Display for ChainNetwork {
+impl Display for ChainNetworkID {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let name = match self {
             Self::Builtin(b) => b.to_string(),
@@ -389,18 +345,24 @@ impl Display for ChainNetwork {
     }
 }
 
-impl FromStr for ChainNetwork {
+impl From<BuiltinNetworkID> for ChainNetworkID {
+    fn from(network: BuiltinNetworkID) -> Self {
+        ChainNetworkID::Builtin(network)
+    }
+}
+
+impl FromStr for ChainNetworkID {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match BuiltinNetwork::from_str(s) {
+        match BuiltinNetworkID::from_str(s) {
             Ok(net) => Ok(Self::Builtin(net)),
-            Err(_e) => Ok(Self::Custom(CustomNetwork::from_str(s)?)),
+            Err(_e) => Ok(Self::Custom(CustomNetworkID::from_str(s)?)),
         }
     }
 }
 
-impl Serialize for ChainNetwork {
+impl Serialize for ChainNetworkID {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
     where
         S: Serializer,
@@ -409,7 +371,7 @@ impl Serialize for ChainNetwork {
     }
 }
 
-impl<'de> Deserialize<'de> for ChainNetwork {
+impl<'de> Deserialize<'de> for ChainNetworkID {
     fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
     where
         D: Deserializer<'de>,
@@ -419,22 +381,18 @@ impl<'de> Deserialize<'de> for ChainNetwork {
     }
 }
 
-impl ChainNetwork {
-    pub const TEST: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Test);
-    pub const DEV: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Dev);
-    pub const HALLEY: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Halley);
-    pub const PROXIMA: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Proxima);
-    pub const MAIN: ChainNetwork = ChainNetwork::Builtin(BuiltinNetwork::Main);
+impl ChainNetworkID {
+    pub const TEST: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Test);
+    pub const DEV: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Dev);
+    pub const HALLEY: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Halley);
+    pub const PROXIMA: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Proxima);
+    pub const MAIN: ChainNetworkID = ChainNetworkID::Builtin(BuiltinNetworkID::Main);
 
-    pub fn new_builtin(network: BuiltinNetwork) -> Self {
+    pub fn new_builtin(network: BuiltinNetworkID) -> Self {
         Self::Builtin(network)
     }
-    pub fn new_custom(
-        chain_name: String,
-        chain_id: ChainId,
-        genesis_config: Option<String>,
-    ) -> Result<Self> {
-        for net in BuiltinNetwork::networks() {
+    pub fn new_custom(chain_name: String, chain_id: ChainId) -> Result<Self> {
+        for net in BuiltinNetworkID::networks() {
             if net.chain_id() == chain_id {
                 bail!("Chain id {} has used for builtin {}", chain_id, net);
             }
@@ -442,18 +400,7 @@ impl ChainNetwork {
                 bail!("Chain name {} has used for builtin {}", chain_name, net);
             }
         }
-        Ok(Self::Custom(CustomNetwork::new(
-            chain_name,
-            chain_id,
-            genesis_config,
-        )))
-    }
-
-    pub fn load_config(&mut self, base_dir: &Path) -> Result<()> {
-        match self {
-            ChainNetwork::Custom(net) => net.load_config(base_dir),
-            _ => Ok(()),
-        }
+        Ok(Self::Custom(CustomNetworkID::new(chain_name, chain_id)))
     }
 
     pub fn chain_id(&self) -> ChainId {
@@ -476,28 +423,28 @@ impl ChainNetwork {
 
     pub fn is_test(&self) -> bool {
         match self {
-            Self::Builtin(BuiltinNetwork::Test) => true,
+            Self::Builtin(BuiltinNetworkID::Test) => true,
             _ => false,
         }
     }
 
     pub fn is_dev(&self) -> bool {
         match self {
-            Self::Builtin(BuiltinNetwork::Dev) => true,
+            Self::Builtin(BuiltinNetworkID::Dev) => true,
             _ => false,
         }
     }
 
     pub fn is_main(&self) -> bool {
         match self {
-            Self::Builtin(BuiltinNetwork::Main) => true,
+            Self::Builtin(BuiltinNetworkID::Main) => true,
             _ => false,
         }
     }
 
     pub fn is_halley(&self) -> bool {
         match self {
-            Self::Builtin(BuiltinNetwork::Halley) => true,
+            Self::Builtin(BuiltinNetworkID::Halley) => true,
             _ => false,
         }
     }
@@ -517,13 +464,6 @@ impl ChainNetwork {
         }
     }
 
-    pub fn genesis_config(&self) -> &GenesisConfig {
-        match self {
-            Self::Builtin(b) => b.genesis_config(),
-            Self::Custom(c) => c.genesis_config(),
-        }
-    }
-
     pub fn boot_nodes(&self) -> &[Multiaddr] {
         match self {
             Self::Builtin(b) => b.boot_nodes(),
@@ -531,47 +471,117 @@ impl ChainNetwork {
         }
     }
 
-    pub fn consensus(&self) -> ConsensusStrategy {
-        ConsensusStrategy::try_from(self.genesis_config().consensus_config.strategy)
-            .expect("consensus strategy config error.")
-    }
-
-    pub fn time_service(&self) -> Arc<dyn TimeService> {
-        self.genesis_config().time_service()
-    }
-
-    pub fn as_builtin(&self) -> Option<&BuiltinNetwork> {
+    pub fn as_builtin(&self) -> Option<&BuiltinNetworkID> {
         match self {
             Self::Builtin(net) => Some(net),
             _ => None,
         }
     }
 
-    pub fn as_custom(&self) -> Option<&CustomNetwork> {
+    pub fn as_custom(&self) -> Option<&CustomNetworkID> {
         match self {
             Self::Custom(net) => Some(net),
             _ => None,
         }
     }
+}
 
-    pub fn builtin_networks() -> Vec<&'static ChainNetwork> {
-        vec![
-            &Self::TEST,
-            &Self::DEV,
-            &Self::HALLEY,
-            &Self::PROXIMA,
-            &Self::MAIN,
-        ]
+impl Default for ChainNetworkID {
+    fn default() -> Self {
+        ChainNetworkID::Builtin(BuiltinNetworkID::default())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ChainNetwork {
+    id: ChainNetworkID,
+    genesis_config: GenesisConfig,
+    time_service: Arc<dyn TimeService>,
+}
+
+impl Display for ChainNetwork {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+impl PartialEq for ChainNetwork {
+    fn eq(&self, other: &Self) -> bool {
+        self.id.eq(&other.id)
+    }
+}
+
+impl ChainNetwork {
+    pub fn new(id: ChainNetworkID, genesis_config: GenesisConfig) -> Self {
+        let time_service = genesis_config.time_service_type.new_time_service();
+        Self {
+            id,
+            genesis_config,
+            time_service,
+        }
+    }
+
+    pub fn new_builtin(builtin_id: BuiltinNetworkID) -> Self {
+        Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
+    }
+
+    pub fn new_custom(
+        chain_name: String,
+        chain_id: ChainId,
+        genesis_config: GenesisConfig,
+    ) -> Result<Self> {
+        Ok(Self::new(
+            ChainNetworkID::new_custom(chain_name, chain_id)?,
+            genesis_config,
+        ))
+    }
+
+    pub fn new_test() -> Self {
+        Self::new_builtin(BuiltinNetworkID::Test)
+    }
+
+    pub fn id(&self) -> &ChainNetworkID {
+        &self.id
+    }
+
+    pub fn genesis_config(&self) -> &GenesisConfig {
+        &self.genesis_config
+    }
+
+    pub fn time_service(&self) -> Arc<dyn TimeService> {
+        self.time_service.clone()
     }
 
     pub fn stdlib_version(&self) -> StdlibVersion {
         self.genesis_config().stdlib_version
     }
-}
 
-impl Default for ChainNetwork {
-    fn default() -> Self {
-        ChainNetwork::Builtin(BuiltinNetwork::default())
+    pub fn chain_id(&self) -> ChainId {
+        self.id.chain_id()
+    }
+
+    pub fn is_test(&self) -> bool {
+        self.id.is_test()
+    }
+
+    pub fn is_dev(&self) -> bool {
+        self.id.is_dev()
+    }
+
+    pub fn is_halley(&self) -> bool {
+        self.id.is_halley()
+    }
+
+    pub fn is_main(&self) -> bool {
+        self.id.is_main()
+    }
+
+    pub fn is_custom(&self) -> bool {
+        self.id.is_custom()
+    }
+
+    pub fn boot_nodes(&self) -> &[Multiaddr] {
+        self.id.boot_nodes()
     }
 }
 
@@ -590,31 +600,17 @@ impl ChainId {
     }
 
     pub fn test() -> Self {
-        BuiltinNetwork::Test.chain_id()
+        BuiltinNetworkID::Test.chain_id()
     }
 
     pub fn dev() -> Self {
-        BuiltinNetwork::Dev.chain_id()
+        BuiltinNetworkID::Dev.chain_id()
     }
+}
 
-    pub fn net(self) -> Option<ChainNetwork> {
-        if self.id() == BuiltinNetwork::Test.chain_id().id() {
-            Some(ChainNetwork::TEST)
-        } else if self.id() == BuiltinNetwork::Dev.chain_id().id() {
-            Some(ChainNetwork::DEV)
-        } else if self.id() == BuiltinNetwork::Halley.chain_id().id() {
-            Some(ChainNetwork::HALLEY)
-        } else if self.id() == BuiltinNetwork::Proxima.chain_id().id() {
-            Some(ChainNetwork::PROXIMA)
-        } else if self.id() == BuiltinNetwork::Main.chain_id().id() {
-            Some(ChainNetwork::MAIN)
-        } else {
-            None // ToDo: handle custom network
-        }
-    }
-
-    pub fn is_builtin(self) -> bool {
-        self.net().is_some()
+impl From<ChainNetworkID> for ChainId {
+    fn from(id: ChainNetworkID) -> Self {
+        id.chain_id()
     }
 }
 
@@ -723,11 +719,9 @@ impl GenesisConfig {
         Ok(())
     }
 
-    pub fn time_service(&self) -> Arc<dyn TimeService> {
-        match self.time_service_type {
-            TimeServiceType::RealTimeService => (*REAL_TIME_SERVICE).clone(),
-            TimeServiceType::MockTimeService => (*MOCK_TIME_SERVICE).clone(),
-        }
+    pub fn consensus(&self) -> ConsensusStrategy {
+        ConsensusStrategy::try_from(self.consensus_config.strategy)
+            .expect("consensus strategy config error.")
     }
 }
 
@@ -750,12 +744,6 @@ static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(64));
-//time service
-pub static REAL_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
-    Lazy::new(|| Arc::new(RealTimeService::new()));
-
-pub static MOCK_TIME_SERVICE: Lazy<Arc<dyn TimeService>> =
-    Lazy::new(|| Arc::new(MockTimeService::new_with_value(1)));
 
 pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000;
 

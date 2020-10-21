@@ -111,7 +111,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     execute_create_account(
         &chain_state,
-        net,
+        &net,
         &alice,
         &bob,
         pre_mint_amount,
@@ -176,7 +176,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let block_timestamp =
         block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
     execute_cast_vote(
-        net,
+        &net,
         &chain_state,
         &alice,
         bob,
@@ -353,7 +353,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     execute_create_account(
         &chain_state,
-        net,
+        &net,
         &alice,
         &bob,
         pre_mint_amount,
@@ -425,7 +425,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
     let block_timestamp =
         block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
     execute_cast_vote(
-        net,
+        &net,
         &chain_state,
         &alice,
         bob,

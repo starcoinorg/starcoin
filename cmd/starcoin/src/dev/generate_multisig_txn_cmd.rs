@@ -18,6 +18,7 @@ use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
 use std::fs::{File, OpenOptions};
@@ -128,9 +129,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
         };
 
         let bytecode = match (ctx.opt().stdlib_script, ctx.opt().script_file.clone()) {
-            (Some(s), None) => {
-                compiled_transaction_script(ctx.state().net().stdlib_version(), s).into_vec()
-            }
+            (Some(s), None) => compiled_transaction_script(StdlibVersion::Latest, s).into_vec(),
             (None, Some(bytecode_path)) => {
                 let mut file = OpenOptions::new()
                     .read(true)

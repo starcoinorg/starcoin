@@ -10,8 +10,9 @@ use futures::executor::block_on;
 use futures::SinkExt;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
-use starcoin_config::{ConsensusStrategy, MinerClientConfig};
+use starcoin_config::{ConsensusStrategy, MinerClientConfig, TimeService};
 use starcoin_types::U256;
+use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -21,6 +22,7 @@ pub fn start_worker(
     config: &MinerClientConfig,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     mp: Option<&MultiProgress>,
+    time_service: Arc<dyn TimeService>,
 ) -> WorkerController {
     let thread_num = config.thread_num;
     let worker_txs = (0..thread_num)
@@ -40,13 +42,13 @@ pub fn start_worker(
                 };
             let nonce_range = partition_nonce(i as u64, thread_num as u64);
             let nonce_tx_clone = nonce_tx.clone();
-
+            let time_service = time_service.clone();
             thread::Builder::new()
                 .name(worker_name.clone())
                 .spawn(move || {
                     let mut worker = Worker::new(worker_rx, nonce_tx_clone);
                     let rng = nonce_generator(nonce_range);
-                    worker.run(rng, solver, pb);
+                    worker.run(rng, solver, pb, time_service.as_ref());
                 })
                 .expect("Start worker thread failed");
             info!("start mine worker: {:?}", worker_name);
@@ -118,12 +120,20 @@ impl Worker {
 
     fn run<
         G: FnMut() -> u64,
-        S: Fn(ConsensusStrategy, HashValue, u64, U256, mpsc::UnboundedSender<(Vec<u8>, u64)>) -> bool,
+        S: Fn(
+            ConsensusStrategy,
+            HashValue,
+            u64,
+            U256,
+            mpsc::UnboundedSender<(Vec<u8>, u64)>,
+            &dyn TimeService,
+        ) -> bool,
     >(
         &mut self,
         mut rng: G,
         solver: S,
         pb: Option<ProgressBar>,
+        time_service: &dyn TimeService,
     ) {
         let mut hash_counter = 0usize;
         let mut start = Instant::now();
@@ -143,6 +153,7 @@ impl Worker {
                             rng(),
                             self.diff,
                             self.nonce_tx.clone(),
+                            time_service,
                         ) {
                             self.start = false;
                             self.num_seal_found += 1;
@@ -210,6 +221,7 @@ fn solver(
     nonce: u64,
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
+    time_service: &dyn TimeService,
 ) -> bool {
     match strategy {
         ConsensusStrategy::Argon | ConsensusStrategy::Keccak | ConsensusStrategy::CryptoNight => {
@@ -228,7 +240,7 @@ fn solver(
             false
         }
         strategy => {
-            let nonce = strategy.solve_consensus_nonce(minting_hash, diff);
+            let nonce = strategy.solve_consensus_nonce(minting_hash, diff, time_service);
             if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
                 error!("Failed to send nonce: {:?}", e);
                 return false;

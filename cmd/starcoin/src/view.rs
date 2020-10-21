@@ -5,7 +5,7 @@ use anyhow::{format_err, Error};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
-use starcoin_config::ChainNetwork;
+use starcoin_config::ChainNetworkID;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_state_api::StateWithProof;
@@ -313,7 +313,7 @@ impl From<PeerInfo> for PeerInfoView {
 pub struct NodeInfoView {
     pub peer_info: PeerInfoView,
     pub self_address: String,
-    pub net: ChainNetwork,
+    pub net: ChainNetworkID,
     pub now: u64,
 }
 

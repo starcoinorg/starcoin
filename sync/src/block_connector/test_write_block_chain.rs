@@ -13,6 +13,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::Store;
 use starcoin_txpool_mock_service::MockTxPoolService;
 use starcoin_types::block::Block;
+use starcoin_vm_types::time::TimeService;
 use std::sync::Arc;
 use traits::{ChainReader, WriteableChainService};
 
@@ -47,11 +48,16 @@ pub async fn create_writeable_block_chain() -> (
 pub fn gen_blocks(
     times: u64,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    time_service: &dyn TimeService,
 ) {
     let miner_account = AccountInfo::random();
     if times > 0 {
         for _i in 0..times {
-            let block = new_block(Some(&miner_account), writeable_block_chain_service);
+            let block = new_block(
+                Some(&miner_account),
+                writeable_block_chain_service,
+                time_service,
+            );
             writeable_block_chain_service.try_connect(block).unwrap();
         }
     }
@@ -60,6 +66,7 @@ pub fn gen_blocks(
 pub fn new_block(
     miner_account: Option<&AccountInfo>,
     writeable_block_chain_service: &mut WriteBlockChainService<MockTxPoolService>,
+    time_service: &dyn TimeService,
 ) -> Block {
     let miner = match miner_account {
         Some(m) => m.clone(),
@@ -79,15 +86,20 @@ pub fn new_block(
         .unwrap();
     block_chain
         .consensus()
-        .create_block(block_chain, block_template)
+        .create_block(block_chain, block_template, time_service)
         .unwrap()
 }
 
 #[stest::test]
 async fn test_block_chain_apply() {
     let times = 10;
-    let (mut writeable_block_chain_service, _node_config, _) = create_writeable_block_chain().await;
-    gen_blocks(times, &mut writeable_block_chain_service);
+    let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
+    let net = node_config.net();
+    gen_blocks(
+        times,
+        &mut writeable_block_chain_service,
+        net.time_service().as_ref(),
+    );
     assert_eq!(
         writeable_block_chain_service
             .get_master()
@@ -130,7 +142,7 @@ fn gen_fork_block_chain(
                 .unwrap();
             let block = block_chain
                 .consensus()
-                .create_block(&block_chain, block_template)
+                .create_block(&block_chain, block_template, net.time_service().as_ref())
                 .unwrap();
             parent_id = block.id();
 
@@ -143,7 +155,12 @@ fn gen_fork_block_chain(
 async fn test_block_chain_forks() {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
-    gen_blocks(times, &mut writeable_block_chain_service);
+    let net = node_config.net();
+    gen_blocks(
+        times,
+        &mut writeable_block_chain_service,
+        net.time_service().as_ref(),
+    );
     assert_eq!(
         writeable_block_chain_service
             .get_master()
@@ -172,7 +189,12 @@ async fn test_block_chain_forks() {
 async fn test_block_chain_switch_master() {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
-    gen_blocks(times, &mut writeable_block_chain_service);
+    let net = node_config.net();
+    gen_blocks(
+        times,
+        &mut writeable_block_chain_service,
+        net.time_service().as_ref(),
+    );
     assert_eq!(
         writeable_block_chain_service
             .get_master()
