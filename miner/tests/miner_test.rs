@@ -27,7 +27,7 @@ fn test_miner() {
     let mut config = NodeConfig::random_for_test();
     config.miner.enable_miner_client = false;
     let config = Arc::new(config);
-    let handle = test_helper::run_node_by_config(config.clone()).unwrap();
+    let handle = test_helper::run_node_by_config(config).unwrap();
     let bus = handle.bus().unwrap();
     let fut = async move {
         let new_block_receiver = bus.oneshot::<NewHeadBlock>().await.unwrap();
@@ -39,9 +39,8 @@ fn test_miner() {
             .unwrap()
             .await
             .unwrap();
-        let nonce = config
-            .net()
-            .consensus()
+        let nonce = mint_block_event
+            .strategy
             .solve_consensus_nonce(mint_block_event.minting_hash, mint_block_event.difficulty);
         // mint client submit seal
         bus.broadcast(SubmitSealEvent {

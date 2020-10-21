@@ -6,6 +6,7 @@ use crate::U256;
 use actix::prelude::*;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
+use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
@@ -62,13 +63,15 @@ impl GenerateBlockEvent {
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub struct MintBlockEvent {
+    pub strategy: ConsensusStrategy,
     pub minting_hash: HashValue,
     pub difficulty: U256,
 }
 
 impl MintBlockEvent {
-    pub fn new(minting_hash: HashValue, difficulty: U256) -> Self {
+    pub fn new(strategy: ConsensusStrategy, minting_hash: HashValue, difficulty: U256) -> Self {
         Self {
+            strategy,
             minting_hash,
             difficulty,
         }

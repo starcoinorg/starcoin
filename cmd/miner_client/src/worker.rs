@@ -19,50 +19,16 @@ const HASH_RATE_UPDATE_DURATION_MILLIS: u128 = 300;
 
 pub fn start_worker(
     config: &MinerClientConfig,
-    consensus_strategy: ConsensusStrategy,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     mp: Option<&MultiProgress>,
 ) -> WorkerController {
-    match consensus_strategy {
-        ConsensusStrategy::Argon | ConsensusStrategy::Keccak | ConsensusStrategy::CryptoNight => {
-            let thread_num = config.thread_num;
-            let worker_txs = (0..thread_num)
-                .map(|i| {
-                    let (worker_tx, worker_rx) = mpsc::unbounded();
-                    let worker_name =
-                        format!("starcoin-miner-{}-cpu-worker-{}", consensus_strategy, i);
-                    let pb = if let Some(mp) = mp {
-                        let pb = mp.add(ProgressBar::new(100));
-                        pb.set_style(ProgressStyle::default_bar().template(
-                            "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
-                        ));
-                        pb.set_prefix(&worker_name);
-                        Some(pb)
-                    } else {
-                        None
-                    };
-                    let nonce_range = partition_nonce(i as u64, thread_num as u64);
-                    let nonce_tx_clone = nonce_tx.clone();
-
-                    thread::Builder::new()
-                        .name(worker_name.clone())
-                        .spawn(move || {
-                            let mut worker = Worker::new(worker_rx, nonce_tx_clone);
-                            let rng = nonce_generator(nonce_range);
-                            worker.run(rng, solver, consensus_strategy, pb);
-                        })
-                        .expect("Start worker thread failed");
-                    info!("start mine worker: {:?}", worker_name);
-                    worker_tx
-                })
-                .collect();
-            WorkerController::new(worker_txs)
-        }
-        strategy => {
+    let thread_num = config.thread_num;
+    let worker_txs = (0..thread_num)
+        .map(|i| {
             let (worker_tx, worker_rx) = mpsc::unbounded();
-            let worker_name = format!("starcoin-miner-{}-worker", strategy);
+            let worker_name = format!("starcoin-miner-cpu-worker-{}", i);
             let pb =
-                if let Some(mp) = mp.as_ref() {
+                if let Some(mp) = mp {
                     let pb = mp.add(ProgressBar::new(100));
                     pb.set_style(ProgressStyle::default_bar().template(
                         "{prefix:.bold.dim} {spinner:.cyan/blue} [{elapsed_precise}] {msg}",
@@ -72,24 +38,32 @@ pub fn start_worker(
                 } else {
                     None
                 };
-            let nonce_range = partition_nonce(1 as u64, 2 as u64);
+            let nonce_range = partition_nonce(i as u64, thread_num as u64);
+            let nonce_tx_clone = nonce_tx.clone();
+
             thread::Builder::new()
-                .name(worker_name)
+                .name(worker_name.clone())
                 .spawn(move || {
-                    let mut worker = Worker::new(worker_rx, nonce_tx);
+                    let mut worker = Worker::new(worker_rx, nonce_tx_clone);
                     let rng = nonce_generator(nonce_range);
-                    worker.run(rng, dummy_solver, consensus_strategy, pb);
+                    worker.run(rng, solver, pb);
                 })
                 .expect("Start worker thread failed");
-            WorkerController::new(vec![worker_tx])
-        }
-    }
+            info!("start mine worker: {:?}", worker_name);
+            worker_tx
+        })
+        .collect();
+    WorkerController::new(worker_txs)
 }
 
 #[derive(Clone)]
 pub enum WorkerMessage {
     Stop,
-    NewWork { minting_hash: HashValue, diff: U256 },
+    NewWork {
+        strategy: ConsensusStrategy,
+        minting_hash: HashValue,
+        diff: U256,
+    },
 }
 
 impl Default for WorkerMessage {
@@ -119,6 +93,7 @@ impl WorkerController {
 pub struct Worker {
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
     worker_rx: mpsc::UnboundedReceiver<WorkerMessage>,
+    strategy: Option<ConsensusStrategy>,
     diff: U256,
     minting_hash: Option<HashValue>,
     start: bool,
@@ -133,6 +108,7 @@ impl Worker {
         Self {
             nonce_tx,
             worker_rx,
+            strategy: None,
             diff: 1.into(),
             minting_hash: None,
             start: false,
@@ -147,7 +123,6 @@ impl Worker {
         &mut self,
         mut rng: G,
         solver: S,
-        strategy: ConsensusStrategy,
         pb: Option<ProgressBar>,
     ) {
         let mut hash_counter = 0usize;
@@ -160,32 +135,34 @@ impl Worker {
             }
             if self.start {
                 if let Some(minting_hash) = self.minting_hash {
-                    hash_counter += 1;
-                    if solver(
-                        strategy,
-                        minting_hash,
-                        rng(),
-                        self.diff,
-                        self.nonce_tx.clone(),
-                    ) {
-                        self.start = false;
-                        self.num_seal_found += 1;
-                        if let Some(pb) = pb {
-                            pb.reset_elapsed()
+                    if let Some(strategy) = self.strategy {
+                        hash_counter += 1;
+                        if solver(
+                            strategy,
+                            minting_hash,
+                            rng(),
+                            self.diff,
+                            self.nonce_tx.clone(),
+                        ) {
+                            self.start = false;
+                            self.num_seal_found += 1;
+                            if let Some(pb) = pb {
+                                pb.reset_elapsed()
+                            }
                         }
-                    }
-                    let elapsed = start.elapsed();
-                    if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
-                        let elapsed_sec: f64 = elapsed.as_nanos() as f64 / 1_000_000_000.0;
-                        if let Some(pb) = pb {
-                            pb.set_message(&format!(
-                                "Hash rate: {:>10.3} Seals found: {:>3}",
-                                hash_counter as f64 / elapsed_sec,
-                                self.num_seal_found
-                            ));
+                        let elapsed = start.elapsed();
+                        if elapsed.as_millis() > HASH_RATE_UPDATE_DURATION_MILLIS {
+                            let elapsed_sec: f64 = elapsed.as_nanos() as f64 / 1_000_000_000.0;
+                            if let Some(pb) = pb {
+                                pb.set_message(&format!(
+                                    "Hash rate: {:>10.3} Seals found: {:>3}",
+                                    hash_counter as f64 / elapsed_sec,
+                                    self.num_seal_found
+                                ));
+                            }
+                            start = Instant::now();
+                            hash_counter = 0;
                         }
-                        start = Instant::now();
-                        hash_counter = 0;
                     }
                 }
             } else {
@@ -200,10 +177,16 @@ impl Worker {
         match self.worker_rx.try_next() {
             Ok(msg) => match msg {
                 Some(msg) => match msg {
-                    WorkerMessage::NewWork { minting_hash, diff } => {
+                    WorkerMessage::NewWork {
+                        strategy,
+                        minting_hash,
+                        diff,
+                    } => {
+                        self.strategy = Some(strategy);
                         self.minting_hash = Some(minting_hash);
                         self.diff = diff;
                         self.start = true;
+
                         Ok(())
                     }
                     WorkerMessage::Stop => {
@@ -228,32 +211,29 @@ fn solver(
     diff: U256,
     mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
 ) -> bool {
-    if let Ok(pow_hash) = strategy.calculate_pow_hash(minting_hash, nonce) {
-        let pow_hash_u256: U256 = pow_hash.into();
-        let target = difficult_to_target(diff);
-        if pow_hash_u256 <= target {
-            info!("Seal found {:?}", nonce);
+    match strategy {
+        ConsensusStrategy::Argon | ConsensusStrategy::Keccak | ConsensusStrategy::CryptoNight => {
+            if let Ok(pow_hash) = strategy.calculate_pow_hash(minting_hash, nonce) {
+                let pow_hash_u256: U256 = pow_hash.into();
+                let target = difficult_to_target(diff);
+                if pow_hash_u256 <= target {
+                    info!("Seal found {:?}", nonce);
+                    if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
+                        error!("Failed to send nonce: {:?}", e);
+                        return false;
+                    };
+                    return true;
+                }
+            }
+            false
+        }
+        strategy => {
+            let nonce = strategy.solve_consensus_nonce(minting_hash, diff);
             if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
                 error!("Failed to send nonce: {:?}", e);
                 return false;
             };
-            return true;
+            true
         }
     }
-    false
-}
-
-fn dummy_solver(
-    strategy: ConsensusStrategy,
-    minting_hash: HashValue,
-    _nonce: u64,
-    diff: U256,
-    mut nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u64)>,
-) -> bool {
-    let nonce = strategy.solve_consensus_nonce(minting_hash, diff);
-    if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
-        error!("Failed to send nonce: {:?}", e);
-        return false;
-    };
-    true
 }

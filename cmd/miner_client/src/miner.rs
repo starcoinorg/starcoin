@@ -11,6 +11,7 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use starcoin_types::U256;
 use std::sync::Mutex;
@@ -26,19 +27,18 @@ pub struct MinerClient<C: JobClient> {
 
 impl<C: JobClient> MinerClient<C> {
     pub fn new(config: MinerClientConfig, job_client: C) -> Result<Self> {
-        let consensus_strategy = job_client.consensus()?;
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
         let (worker_controller, pb) = if config.enable_stderr {
             let mp = MultiProgress::new();
             let pb = mp.add(ProgressBar::new(10));
             pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
-            let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, Some(&mp));
+            let worker_controller = start_worker(&config, nonce_tx, Some(&mp));
             thread::spawn(move || {
                 mp.join().expect("MultiProgress join failed");
             });
             (worker_controller, Some(pb))
         } else {
-            let worker_controller = start_worker(&config, consensus_strategy, nonce_tx, None);
+            let worker_controller = start_worker(&config, nonce_tx, None);
             (worker_controller, None)
         };
         Ok(Self {
@@ -69,11 +69,12 @@ impl<C: JobClient> MinerClient<C> {
         }
     }
 
-    fn start_mint_work(&self, minting_hash: HashValue, diff: U256) {
-        block_on(
-            self.worker_controller
-                .send_message(WorkerMessage::NewWork { minting_hash, diff }),
-        )
+    fn start_mint_work(&self, strategy: ConsensusStrategy, minting_hash: HashValue, diff: U256) {
+        block_on(self.worker_controller.send_message(WorkerMessage::NewWork {
+            strategy,
+            minting_hash,
+            diff,
+        }))
     }
 }
 
@@ -115,7 +116,7 @@ impl<C: JobClient> EventHandler<Self, MintBlockEvent> for MinerClientService<C> 
         _ctx: &mut ServiceContext<MinerClientService<C>>,
     ) {
         self.inner
-            .start_mint_work(event.minting_hash, event.difficulty);
+            .start_mint_work(event.strategy, event.minting_hash, event.difficulty);
     }
 }
 

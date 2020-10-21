@@ -10,14 +10,12 @@ use anyhow::Result;
 use crypto::HashValue;
 use futures::stream::BoxStream;
 use rand::Rng;
-use starcoin_types::genesis_config::ConsensusStrategy;
 use starcoin_types::system_events::MintBlockEvent;
 use std::ops::Range;
 
 pub trait JobClient: Send + Unpin + Sync + Clone {
     fn subscribe(&self) -> Result<BoxStream<'static, MintBlockEvent>>;
     fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()>;
-    fn consensus(&self) -> Result<ConsensusStrategy>;
 }
 
 fn partition_nonce(id: u64, total: u64) -> Range<u64> {
