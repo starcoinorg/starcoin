@@ -90,7 +90,7 @@ module Epoch {
         aborts_if exists<EpochData>(Signer::spec_address_of(account));
     }
 
-    public fun compute_next_block_time_target(config: &ConsensusConfig, last_epoch_time_target: u64, epoch_start_time: u64,now_seconds: u64,  start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
+    public fun compute_next_block_time_target(config: &ConsensusConfig, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
         let total_time = now_seconds - epoch_start_time;
         let blocks = end_block_number - start_block_number;
         let avg_block_time = total_time / blocks;
@@ -98,7 +98,10 @@ module Epoch {
         let new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time /
                 (ConsensusConfig::uncle_rate_target(config) + THOUSAND);
         if (new_epoch_block_time_target > last_epoch_time_target * 2) {
-            new_epoch_block_time_target = last_epoch_time_target*2;
+            new_epoch_block_time_target = last_epoch_time_target * 2;
+        };
+        if (new_epoch_block_time_target < last_epoch_time_target / 2) {
+            new_epoch_block_time_target = last_epoch_time_target / 2;
         };
         let min_block_time_target = ConsensusConfig::min_block_time_target(config);
         let max_block_time_target = ConsensusConfig::max_block_time_target(config);
