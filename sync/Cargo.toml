@@ -36,7 +36,7 @@ starcoin-canonical-serialization = { package = "starcoin-canonical-serialization
 starcoin-accumulator = { package = "starcoin-accumulator", path = "../core/accumulator" }
 starcoin-metrics = { path = "../commons/metrics" }
 once_cell = "1.4.1"
-dyn-clone = "1.0.1"
+dyn-clone = "1.0.3"
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
 starcoin-network-rpc = { path = "../network-rpc/", package = "starcoin-network-rpc" }
 stest = { path = "../commons/stest" }
