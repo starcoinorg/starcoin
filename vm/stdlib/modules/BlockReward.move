@@ -55,7 +55,7 @@ module BlockReward {
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-                                    current_author: address, public_key_vec: vector<u8>) acquires RewardQueue {
+                                    current_author: address, auth_key_vec: vector<u8>) acquires RewardQueue {
         CoreAddresses::assert_genesis_address(account);
 
         if (current_number > 0) {
@@ -84,8 +84,8 @@ module BlockReward {
 
             if (!Account::exists_at(current_author)) {
                 //create account from public key
-                assert(!Vector::is_empty(&public_key_vec), Errors::invalid_argument(EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY));
-                Account::create_account<STC>(current_author, public_key_vec);
+                assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY));
+                Account::create_account<STC>(current_author, auth_key_vec);
             };
             let current_info = RewardInfo {
                 number: current_number,
@@ -108,9 +108,8 @@ module BlockReward {
         aborts_if current_number > 0 && Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos) >= global<Config::Config<RewardConfig::RewardConfig>>(CoreAddresses::GENESIS_ADDRESS()).payload.reward_delay
                 && (global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).reward_number + 1) > max_u64();
 
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && Vector::is_empty(public_key_vec);
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && len(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != 32;
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && Authenticator::spec_derived_address(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != current_author;
+        aborts_if current_number > 0 && !Account::exists_at(current_author) && len(auth_key_vec) != 32;
+        aborts_if current_number > 0 && !Account::exists_at(current_author) && Authenticator::spec_derived_address(auth_key_vec) != current_author;
 
         pragma verify = false;
     }

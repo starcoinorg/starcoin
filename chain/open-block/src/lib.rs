@@ -9,6 +9,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::genesis_config::ChainId;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress,
@@ -64,7 +65,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            author_public_key,
+            author_public_key.map(|k| AuthenticationKey::ed25519(&k)),
             uncles.len() as u64,
             previous_header.number + 1,
             chain_id,
@@ -232,7 +233,7 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, author_public_key, _uncles, number, _, _) =
+        let (parent_id, timestamp, author, author_auth_key, _uncles, number, _, _) =
             self.block_meta.into_inner();
 
         let uncles = if !self.uncles.is_empty() {
@@ -249,7 +250,7 @@ impl OpenedBlock {
             timestamp,
             number,
             author,
-            author_public_key,
+            author_auth_key,
             accumulator_root,
             state_root,
             self.gas_used,

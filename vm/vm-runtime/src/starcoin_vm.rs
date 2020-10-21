@@ -511,7 +511,7 @@ impl StarcoinVM {
             parent_id,
             timestamp,
             author,
-            author_public_key,
+            author_auth_key,
             uncles,
             number,
             chain_id,
@@ -522,8 +522,8 @@ impl StarcoinVM {
             Value::vector_u8(parent_id.to_vec()),
             Value::u64(timestamp),
             Value::address(author),
-            match author_public_key {
-                Some(author_public_key) => Value::vector_u8(author_public_key.to_bytes().to_vec()),
+            match author_auth_key {
+                Some(author_auth_key) => Value::vector_u8(author_auth_key.to_vec()),
                 None => Value::vector_u8(Vec::new()),
             },
             Value::u64(uncles),

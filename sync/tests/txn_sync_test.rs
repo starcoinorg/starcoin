@@ -3,6 +3,7 @@ use executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_crypto::{hash::PlainCryptoHash, keygen::KeyGen};
 use starcoin_service_registry::RegistryAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, transaction::SignedUserTransaction};
 use std::sync::Arc;
 use std::time::Duration;
@@ -54,7 +55,7 @@ fn gen_user_txn(config: &NodeConfig) -> SignedUserTransaction {
     let account_address = account_address::from_public_key(&public_key);
     let txn = executor::build_transfer_from_association(
         account_address,
-        public_key.to_bytes().to_vec(),
+        Some(AuthenticationKey::ed25519(&public_key)),
         0,
         10000,
         config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,

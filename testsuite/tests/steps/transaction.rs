@@ -11,6 +11,7 @@ use starcoin_rpc_client::{RemoteStateReader, RpcClient};
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use std::time::Duration;
 
@@ -62,7 +63,7 @@ fn transfer_txn(
     let raw_txn = starcoin_executor::build_transfer_txn(
         from,
         to.address,
-        to.public_key.to_bytes().to_vec(),
+        AuthenticationKey::ed25519(&to.pubkey),
         account_resource.sequence_number(),
         amount,
         1,

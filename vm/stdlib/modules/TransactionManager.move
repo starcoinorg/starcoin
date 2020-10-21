@@ -127,7 +127,7 @@ module TransactionManager {
         parent_hash: vector<u8>,
         timestamp: u64,
         author: address,
-        public_key_vec: vector<u8>,
+        auth_key_vec: vector<u8>,
         uncles: u64,
         number: u64,
         chain_id: u8,
@@ -152,7 +152,7 @@ module TransactionManager {
             number,
         );
         let reward = Epoch::adjust_epoch(account, number, timestamp, uncles, parent_gas_used);
-        BlockReward::process_block_reward(account, number, reward, author, public_key_vec);
+        BlockReward::process_block_reward(account, number, reward, author, auth_key_vec);
     }
 
     fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {

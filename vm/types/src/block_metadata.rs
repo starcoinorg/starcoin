@@ -6,8 +6,8 @@
 
 use crate::account_address::AccountAddress;
 use crate::genesis_config::ChainId;
+use crate::transaction::authenticator::AuthenticationKey;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::{
     hash::{CryptoHash, CryptoHasher},
     HashValue,
@@ -30,7 +30,7 @@ pub struct BlockMetadata {
     parent_hash: HashValue,
     timestamp: u64,
     author: AccountAddress,
-    author_public_key: Option<Ed25519PublicKey>,
+    author_auth_key: Option<AuthenticationKey>,
     uncles: u64,
     number: u64,
     chain_id: ChainId,
@@ -42,7 +42,7 @@ impl BlockMetadata {
         parent_hash: HashValue,
         timestamp: u64,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         uncles: u64,
         number: u64,
         chain_id: ChainId,
@@ -52,7 +52,7 @@ impl BlockMetadata {
             parent_hash,
             timestamp,
             author,
-            author_public_key,
+            author_auth_key,
             uncles,
             number,
             chain_id,
@@ -66,7 +66,7 @@ impl BlockMetadata {
         HashValue,
         u64,
         AccountAddress,
-        Option<Ed25519PublicKey>,
+        Option<AuthenticationKey>,
         u64,
         u64,
         ChainId,
@@ -76,7 +76,7 @@ impl BlockMetadata {
             self.parent_hash,
             self.timestamp,
             self.author,
-            self.author_public_key,
+            self.author_auth_key,
             self.uncles,
             self.number,
             self.chain_id,

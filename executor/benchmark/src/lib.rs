@@ -13,6 +13,7 @@ use starcoin_genesis::Genesis;
 use starcoin_state_api::ChainState;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::token::stc;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use statedb::ChainStateDB;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -31,8 +32,8 @@ struct AccountData {
 }
 
 impl AccountData {
-    pub fn public_key_vec(&self) -> Vec<u8> {
-        self.public_key.to_bytes().to_vec()
+    pub fn public_key(&self) -> &Ed25519PublicKey {
+        &self.public_key
     }
     pub fn random() -> Self {
         let seed = [1u8; 32];
@@ -113,7 +114,7 @@ impl TransactionGenerator {
                 HashValue::random(),
                 self.net.time_service().now_millis(),
                 minter_account.address,
-                Some(minter_account.public_key),
+                Some(AuthenticationKey::ed25519(&minter_account.public_key)),
                 0,
                 self.block_number,
                 self.net.chain_id(),
@@ -129,7 +130,7 @@ impl TransactionGenerator {
                         StdlibVersion::Latest,
                         stc::stc_type_tag(),
                         &account.address,
-                        account.public_key_vec(),
+                        AuthenticationKey::ed25519(account.public_key()),
                         init_account_balance as u128,
                     ),
                     self.net.time_service().now_secs() + j as u64 + 1,
@@ -157,7 +158,7 @@ impl TransactionGenerator {
                 HashValue::random(),
                 self.net.time_service().now_millis(),
                 minter_account.address,
-                Some(minter_account.public_key),
+                Some(AuthenticationKey::ed25519(&minter_account.public_key)),
                 0,
                 self.block_number,
                 self.net.chain_id(),
@@ -178,7 +179,7 @@ impl TransactionGenerator {
                     encode_transfer_script(
                         self.net.stdlib_version(),
                         receiver.address,
-                        receiver.public_key.to_bytes().to_vec(),
+                        Some(AuthenticationKey::ed25519(&receiver.public_key)),
                         1, /* amount */
                     ),
                     self.net.time_service().now_secs() + j as u64 + 1,

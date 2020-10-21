@@ -146,7 +146,7 @@ prop_compose! {
         p_header.parent_hash(),
         net.time_service().now_millis(),
         p_header.author,
-        p_header.author_public_key,
+        p_header.author_auth_key,
         0,
         p_header.number + 1,
         net.chain_id(),
