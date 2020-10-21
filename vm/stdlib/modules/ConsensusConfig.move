@@ -71,10 +71,8 @@ module ConsensusConfig {
         aborts_if base_reward_per_block == 0;
         aborts_if base_block_time_target == 0;
         aborts_if base_block_difficulty_window == 0;
-        aborts_if base_reward_per_uncle_percent == 0;
         aborts_if min_block_time_target == 0;
         aborts_if max_block_time_target < min_block_time_target;
-        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
 
         include Config::PublishNewConfigAbortsIf<ConsensusConfig>;
         include Config::PublishNewConfigEnsures<ConsensusConfig>;
@@ -190,6 +188,7 @@ module ConsensusConfig {
     }
 
     spec fun compute_reward_per_block {
+        pragma verify = false;
         aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 

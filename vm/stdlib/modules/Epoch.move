@@ -111,6 +111,10 @@ module Epoch {
         new_epoch_block_time_target
     }
 
+    spec fun compute_next_block_time_target {
+        pragma verify = false;
+    }
+
     public fun adjust_epoch(account: &signer, block_number: u64, timestamp: u64, uncles: u64, parent_gas_used:u64): u128
     acquires Epoch, EpochData {
         CoreAddresses::assert_genesis_address(account);
