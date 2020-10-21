@@ -15,6 +15,12 @@ module TransactionManager {
     use 0x1::Errors;
     use 0x1::TransactionPublishOption;
     use 0x1::Epoch;
+    use 0x1::Hash;
+
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -86,6 +92,17 @@ module TransactionManager {
         };
     }
 
+    spec fun prologue {
+        aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
+        aborts_if !exists<ChainId::ChainId>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if ChainId::get() != chain_id;
+        aborts_if !exists<Account::Account>(txn_sender);
+        aborts_if Hash::sha3_256(txn_public_key) != global<Account::Account>(txn_sender).authentication_key;
+        aborts_if txn_gas_price * txn_max_gas_units > max_u64();
+        aborts_if txn_sequence_number < global<Account::Account>(txn_sender).sequence_number;
+        aborts_if txn_sequence_number != global<Account::Account>(txn_sender).sequence_number;
+    }
+
     // The epilogue is invoked at the end of transactions.
     // It collects gas and bumps the sequence number
     public fun epilogue<TokenType>(
@@ -118,6 +135,11 @@ module TransactionManager {
                 success,
             );
         }
+    }
+
+    spec fun epilogue {
+        include CoreAddresses::AbortsIfNotGenesisAddress;
+        pragma verify = false;
     }
 
     // Set the metadata for the current block.
@@ -155,6 +177,10 @@ module TransactionManager {
         BlockReward::process_block_reward(account, number, reward, author, auth_key_vec);
     }
 
+    spec fun block_prologue {
+        pragma verify = false;
+    }
+
     fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {
         let value = Token::value<TokenType>(&txn_fee);
         if (value > 0) {
@@ -162,6 +188,10 @@ module TransactionManager {
         } else {
             Token::destroy_zero<TokenType>(txn_fee);
         }
+    }
+
+    spec fun distribute {
+        pragma verify = false;
     }
 }
 }
