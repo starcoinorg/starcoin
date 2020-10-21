@@ -746,7 +746,7 @@ static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
     Lazy::new(|| STCUnit::STC.value_of(1));
 
-pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_00_000;
+pub static BASE_BLOCK_GAS_LIMIT: u64 = 100_000;
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 

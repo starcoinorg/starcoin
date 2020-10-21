@@ -21,8 +21,7 @@
     -  [Function `process_block_metadata`](#@Specification_1_process_block_metadata)
 
 
-<pre><code><b>use</b> <a href="ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
-<b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<pre><code><b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
@@ -60,6 +59,12 @@
 </dd>
 <dt>
 <code>author: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>uncles: u64</code>
 </dt>
 <dd>
 
@@ -109,6 +114,12 @@
 <dd>
 
 </dd>
+<dt>
+<code>uncles: u64</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -144,17 +155,18 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_initialize">initialize</a>(account: &signer, parent_hash: vector&lt;u8&gt;) {
-  <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
-  <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
+    <a href="Timestamp.md#0x1_Timestamp_assert_genesis">Timestamp::assert_genesis</a>();
+    <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
-  move_to&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(
-      account,
-  <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a> {
-    number: 0,
-    parent_hash: parent_hash,
-    author: <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-    new_block_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Block.md#0x1_Block_NewBlockEvent">Self::NewBlockEvent</a>&gt;(account),
-  });
+    move_to&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(
+        account,
+        <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a> {
+            number: 0,
+            parent_hash: parent_hash,
+            author: <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
+            uncles: 0,
+            new_block_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="Block.md#0x1_Block_NewBlockEvent">Self::NewBlockEvent</a>&gt;(account),
+        });
 }
 </code></pre>
 
@@ -240,7 +252,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64)
 </code></pre>
 
 
@@ -249,7 +261,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64, parent_gas_used:u64): u128 <b>acquires</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;,author: address, timestamp: u64, uncles:u64, number:u64) <b>acquires</b> <a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>{
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <b>let</b> block_metadata_ref = borrow_global_mut&lt;<a href="Block.md#0x1_Block_BlockMetadata">BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
@@ -257,18 +269,17 @@
     block_metadata_ref.number = number;
     block_metadata_ref.author= author;
     block_metadata_ref.parent_hash = parent_hash;
-
-    <b>let</b> reward = <a href="ConsensusConfig.md#0x1_ConsensusConfig_adjust_epoch">ConsensusConfig::adjust_epoch</a>(account, number, timestamp, uncles, parent_gas_used);
+    block_metadata_ref.uncles = uncles;
 
     <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a>&gt;(
       &<b>mut</b> block_metadata_ref.new_block_events,
       <a href="Block.md#0x1_Block_NewBlockEvent">NewBlockEvent</a> {
-        number: number,
-        author: author,
-        timestamp: timestamp,
+          number: number,
+          author: author,
+          timestamp: timestamp,
+          uncles: uncles,
       }
     );
-    reward
 }
 </code></pre>
 
@@ -359,7 +370,7 @@
 ### Function `process_block_metadata`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64, parent_gas_used: u64): u128
+<pre><code><b>public</b> <b>fun</b> <a href="Block.md#0x1_Block_process_block_metadata">process_block_metadata</a>(account: &signer, parent_hash: vector&lt;u8&gt;, author: address, timestamp: u64, uncles: u64, number: u64)
 </code></pre>
 
 

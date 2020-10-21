@@ -16,6 +16,7 @@
 <b>use</b> <a href="../../modules/doc/ConsensusStrategy.md#0x1_ConsensusStrategy">0x1::ConsensusStrategy</a>;
 <b>use</b> <a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="../../modules/doc/DummyToken.md#0x1_DummyToken">0x1::DummyToken</a>;
+<b>use</b> <a href="../../modules/doc/Epoch.md#0x1_Epoch">0x1::Epoch</a>;
 <b>use</b> <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="../../modules/doc/STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="../../modules/doc/Signer.md#0x1_Signer">0x1::Signer</a>;
@@ -143,6 +144,7 @@
         base_block_gas_limit,
         strategy,
     );
+    <a href="../../modules/doc/Epoch.md#0x1_Epoch_initialize">Epoch::initialize</a>(&genesis_account);
     <a href="../../modules/doc/BlockReward.md#0x1_BlockReward_initialize">BlockReward::initialize</a>(&genesis_account, reward_delay);
     <a href="../../modules/doc/TransactionFee.md#0x1_TransactionFee_initialize">TransactionFee::initialize</a>(&genesis_account);
     <b>let</b> association = <a href="../../modules/doc/Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(
