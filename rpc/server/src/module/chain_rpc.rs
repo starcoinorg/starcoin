@@ -12,7 +12,7 @@ use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
-use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 
 pub struct ChainRpcImpl<S>

@@ -10,7 +10,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_resource::EpochInfo;
 use starcoin_vm_types::time::TimeService;
 
 pub trait Consensus {

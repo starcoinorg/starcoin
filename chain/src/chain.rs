@@ -30,7 +30,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
 use std::iter::Extend;
@@ -47,7 +47,7 @@ pub struct BlockChain {
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     uncles: HashSet<HashValue>,
-    epoch: Option<EpochResource>,
+    epoch: Option<Epoch>,
 }
 
 impl BlockChain {
@@ -141,15 +141,15 @@ impl BlockChain {
 
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> bool {
         let epoch = self.epoch.as_ref().expect("epoch is none.");
-        epoch.start_number() <= block_header.number()
-            && epoch.end_number() > block_header.number()
+        epoch.start_block_number() <= block_header.number()
+            && epoch.end_block_number() > block_header.number()
             && self.exist_block(block_header.parent_hash())
             && !self.exist_block(block_header.id())
             && !self.uncles.contains(&block_header.id())
             && block_header.number() <= self.current_header().number()
     }
 
-    fn epoch_uncles(&self, epoch_resource: &EpochResource) -> Result<Vec<HashValue>> {
+    fn epoch_uncles(&self, epoch_resource: &Epoch) -> Result<Vec<HashValue>> {
         let mut uncles = Vec::new();
         let mut block = self.head_block();
         let mut number = block.header().number();
@@ -165,7 +165,9 @@ impl BlockChain {
 
             number -= 1;
 
-            if epoch_resource.start_number() > number || epoch_resource.end_number() <= number {
+            if epoch_resource.start_block_number() > number
+                || epoch_resource.end_block_number() <= number
+            {
                 break;
             }
 
@@ -291,7 +293,7 @@ impl BlockChain {
         self.get_block_by_number(num)
     }
 
-    fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<EpochResource> {
+    fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<Epoch> {
         if let Some(block) = self.block_with_number(number)? {
             let chain_state = ChainStateDB::new(
                 self.storage.clone().into_super_arc(),
@@ -299,7 +301,7 @@ impl BlockChain {
             );
             let account_reader = AccountStateReader::new(&chain_state);
             let epoch = account_reader
-                .get_resource::<EpochResource>(genesis_address())?
+                .get_resource::<Epoch>(genesis_address())?
                 .ok_or_else(|| format_err!("Epoch is none."))?;
             Ok(epoch)
         } else {
@@ -718,13 +720,14 @@ impl BlockChain {
         let (epoch_start_number, epoch_end_number) = if let Some(epoch) = &self.epoch {
             verify_block!(
                 VerifyBlockField::Uncle,
-                header.number() > epoch.start_number() && header.number() <= epoch.end_number(),
+                header.number() > epoch.start_block_number()
+                    && header.number() <= epoch.end_block_number(),
                 "block number is {:?}, epoch start number is {:?}, epoch end number is {:?}",
                 header.number(),
-                epoch.start_number(),
-                epoch.end_number(),
+                epoch.start_block_number(),
+                epoch.end_block_number(),
             );
-            (epoch.start_number(), epoch.end_number())
+            (epoch.start_block_number(), epoch.end_block_number())
         } else {
             return Err(ConnectBlockError::VerifyBlockFailed(
                 VerifyBlockField::Uncle,
@@ -860,7 +863,7 @@ impl BlockChain {
                 header.id(),
             );
 
-            if header.number() == epoch_info.end_number() {
+            if header.number() == epoch_info.end_block_number() {
                 switch_epoch = true;
             }
 
@@ -1037,7 +1040,7 @@ impl BlockChain {
                 .epoch
                 .as_ref()
                 .expect("epoch resource is none.")
-                .end_number()
+                .end_block_number()
                 == block.header().number()
         {
             self.head = Some(block);

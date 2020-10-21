@@ -20,6 +20,7 @@ script {
     use 0x1::TokenLockPool;
     use 0x1::Box;
     use 0x1::TransactionTimeoutConfig;
+    use 0x1::Epoch;
 
     fun genesis_init(
 
@@ -122,6 +123,7 @@ script {
             base_block_gas_limit,
             strategy,
         );
+        Epoch::initialize(&genesis_account);
         BlockReward::initialize(&genesis_account, reward_delay);
         TransactionFee::initialize(&genesis_account);
         let association = Account::create_genesis_account(

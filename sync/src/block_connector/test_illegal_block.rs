@@ -682,7 +682,7 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
         .get_master()
         .epoch_info()
         .unwrap()
-        .epoch_number();
+        .number();
     // create block loop
     loop {
         apply_legal_block(
@@ -700,10 +700,10 @@ async fn test_verify_uncles_in_old_epoch(begin_epoch: bool) -> Result<Block> {
                 .epoch_info()
                 .unwrap();
             if begin_epoch {
-                assert_eq!(old_epoch_num, epoch_info.epoch_number());
-                assert_eq!(block_number + 1, epoch_info.end_number());
+                assert_eq!(old_epoch_num, epoch_info.number());
+                assert_eq!(block_number + 1, epoch_info.end_block_number());
             } else {
-                assert_eq!(old_epoch_num + 1, epoch_info.epoch_number());
+                assert_eq!(old_epoch_num + 1, epoch_info.number());
             }
             break;
         }
@@ -878,20 +878,23 @@ async fn test_verify_uncle_which_parent_is_end_block_in_last_epoch() {
         .epoch_info()
         .unwrap();
     assert_eq!(
-        epoch.start_number(),
+        epoch.start_block_number(),
         writeable_block_chain_service
             .get_master()
             .current_header()
             .number()
     );
 
-    assert_eq!(epoch.start_number(), uncle_header.number());
+    assert_eq!(epoch.start_block_number(), uncle_header.number());
     let uncle_parent_header = writeable_block_chain_service
         .get_master()
         .get_header(uncle_header.parent_hash())
         .unwrap()
         .unwrap();
-    assert_eq!(epoch.start_number(), (uncle_parent_header.number() + 1));
+    assert_eq!(
+        epoch.start_block_number(),
+        (uncle_parent_header.number() + 1)
+    );
 
     let mut uncles = Vec::new();
     uncles.push(uncle_header);

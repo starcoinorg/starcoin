@@ -14,6 +14,7 @@ module TransactionManager {
     use 0x1::ChainId;
     use 0x1::Errors;
     use 0x1::TransactionPublishOption;
+    use 0x1::Epoch;
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -142,15 +143,15 @@ module TransactionManager {
         let previous_author = Block::get_current_author();
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
         distribute(txn_fee, previous_author);
-        let reward = Block::process_block_metadata(
+        Block::process_block_metadata(
             account,
             parent_hash,
             author,
             timestamp,
             uncles,
             number,
-            parent_gas_used,
         );
+        let reward = Epoch::adjust_epoch(account, number, timestamp, uncles, parent_gas_used);
         BlockReward::process_block_reward(account, number, reward, author, public_key_vec);
     }
 

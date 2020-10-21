@@ -9,7 +9,7 @@ use starcoin_types::{
     transaction::{Transaction, TransactionInfo},
     U256,
 };
-use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 pub trait ChainReader {
     fn head_block(&self) -> Block;

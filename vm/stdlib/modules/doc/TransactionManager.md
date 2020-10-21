@@ -17,6 +17,7 @@
 <b>use</b> <a href="BlockReward.md#0x1_BlockReward">0x1::BlockReward</a>;
 <b>use</b> <a href="ChainId.md#0x1_ChainId">0x1::ChainId</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
+<b>use</b> <a href="Epoch.md#0x1_Epoch">0x1::Epoch</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
@@ -261,15 +262,15 @@
     <b>let</b> previous_author = <a href="Block.md#0x1_Block_get_current_author">Block::get_current_author</a>();
     <b>let</b> txn_fee = <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">TransactionFee::distribute_transaction_fees</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
     <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>(txn_fee, previous_author);
-    <b>let</b> reward = <a href="Block.md#0x1_Block_process_block_metadata">Block::process_block_metadata</a>(
+    <a href="Block.md#0x1_Block_process_block_metadata">Block::process_block_metadata</a>(
         account,
         parent_hash,
         author,
         timestamp,
         uncles,
         number,
-        parent_gas_used,
     );
+    <b>let</b> reward = <a href="Epoch.md#0x1_Epoch_adjust_epoch">Epoch::adjust_epoch</a>(account, number, timestamp, uncles, parent_gas_used);
     <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, public_key_vec);
 }
 </code></pre>

@@ -191,7 +191,7 @@ impl Inner {
     pub fn do_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
         if let Ok(epoch) = self.chain.epoch_info() {
-            if epoch.end_number() != (self.chain.current_header().number() + 1) {
+            if epoch.end_block_number() != (self.chain.current_header().number() + 1) {
                 for maybe_uncle in self.uncles.values() {
                     if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
                         break;
@@ -211,7 +211,7 @@ impl Inner {
             if let Ok(epoch) = self.chain.epoch_info() {
                 // epoch的end_number是开区间，当前块已经生成但还没有apply，所以应该在epoch（最终状态）
                 // 的倒数第二块处理时清理uncles
-                if epoch.end_number() == (self.chain.current_header().number() + 2) {
+                if epoch.end_block_number() == (self.chain.current_header().number() + 2) {
                     self.uncles.clear();
                 }
             }

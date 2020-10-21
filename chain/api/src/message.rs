@@ -12,7 +12,7 @@ use starcoin_types::{
     startup_info::{ChainInfo, StartupInfo},
     transaction::{Transaction, TransactionInfo},
 };
-use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
