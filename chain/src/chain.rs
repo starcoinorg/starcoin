@@ -141,8 +141,8 @@ impl BlockChain {
 
     pub fn can_be_uncle(&self, block_header: &BlockHeader) -> bool {
         let epoch = self.epoch.as_ref().expect("epoch is none.");
-        epoch.start_number() <= block_header.number()
-            && epoch.end_number() > block_header.number()
+        epoch.start_block_number() <= block_header.number()
+            && epoch.end_block_number() > block_header.number()
             && self.exist_block(block_header.parent_hash())
             && !self.exist_block(block_header.id())
             && !self.uncles.contains(&block_header.id())
@@ -165,7 +165,9 @@ impl BlockChain {
 
             number -= 1;
 
-            if epoch_resource.start_number() > number || epoch_resource.end_number() <= number {
+            if epoch_resource.start_block_number() > number
+                || epoch_resource.end_block_number() <= number
+            {
                 break;
             }
 
@@ -718,13 +720,14 @@ impl BlockChain {
         let (epoch_start_number, epoch_end_number) = if let Some(epoch) = &self.epoch {
             verify_block!(
                 VerifyBlockField::Uncle,
-                header.number() > epoch.start_number() && header.number() <= epoch.end_number(),
+                header.number() > epoch.start_block_number()
+                    && header.number() <= epoch.end_block_number(),
                 "block number is {:?}, epoch start number is {:?}, epoch end number is {:?}",
                 header.number(),
-                epoch.start_number(),
-                epoch.end_number(),
+                epoch.start_block_number(),
+                epoch.end_block_number(),
             );
-            (epoch.start_number(), epoch.end_number())
+            (epoch.start_block_number(), epoch.end_block_number())
         } else {
             return Err(ConnectBlockError::VerifyBlockFailed(
                 VerifyBlockField::Uncle,
@@ -860,7 +863,7 @@ impl BlockChain {
                 header.id(),
             );
 
-            if header.number() == epoch_info.end_number() {
+            if header.number() == epoch_info.end_block_number() {
                 switch_epoch = true;
             }
 
@@ -1037,7 +1040,7 @@ impl BlockChain {
                 .epoch
                 .as_ref()
                 .expect("epoch resource is none.")
-                .end_number()
+                .end_block_number()
                 == block.header().number()
         {
             self.head = Some(block);

@@ -17,6 +17,7 @@ use std::convert::TryFrom;
 const CONSENSUS_CONFIG_MODULE_NAME: &str = "ConsensusConfig";
 static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(CONSENSUS_CONFIG_MODULE_NAME).unwrap());
+
 /// The Consensus on chain.
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct ConsensusConfig {
@@ -49,10 +50,12 @@ pub fn consensus_config_type_tag() -> TypeTag {
 /// The Epoch resource held under an account.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EpochResource {
-    epoch_number: u64,
-    epoch_start_time: u64,
-    start_number: u64,
-    end_number: u64,
+    number: u64,
+    //seconds
+    start_time: u64,
+    start_block_number: u64,
+    end_block_number: u64,
+    //seconds
     block_time_target: u64,
     reward_per_block: u128,
     reward_per_uncle_percent: u64,
@@ -65,10 +68,10 @@ pub struct EpochResource {
 
 impl EpochResource {
     pub fn new(
-        epoch_number: u64,
-        epoch_start_time: u64,
-        start_number: u64,
-        end_number: u64,
+        number: u64,
+        start_time: u64,
+        start_block_number: u64,
+        end_block_number: u64,
         block_time_target: u64,
         reward_per_block: u128,
         reward_per_uncle_percent: u64,
@@ -79,10 +82,10 @@ impl EpochResource {
         new_epoch_events: EventHandle,
     ) -> Self {
         Self {
-            epoch_number,
-            epoch_start_time,
-            start_number,
-            end_number,
+            number,
+            start_time,
+            start_block_number,
+            end_block_number,
             block_time_target,
             reward_per_block,
             reward_per_uncle_percent,
@@ -94,20 +97,20 @@ impl EpochResource {
         }
     }
 
-    pub fn epoch_number(&self) -> u64 {
-        self.epoch_number
+    pub fn number(&self) -> u64 {
+        self.number
     }
 
-    pub fn epoch_start_time(&self) -> u64 {
-        self.epoch_start_time
+    pub fn start_time(&self) -> u64 {
+        self.start_time
     }
 
-    pub fn start_number(&self) -> u64 {
-        self.start_number
+    pub fn start_block_number(&self) -> u64 {
+        self.start_block_number
     }
 
-    pub fn end_number(&self) -> u64 {
-        self.end_number
+    pub fn end_block_number(&self) -> u64 {
+        self.end_block_number
     }
 
     pub fn block_time_target(&self) -> u64 {
@@ -155,7 +158,7 @@ impl EpochResource {
 }
 
 impl MoveResource for EpochResource {
-    const MODULE_NAME: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const MODULE_NAME: &'static str = "Epoch";
     const STRUCT_NAME: &'static str = "Epoch";
 }
 
@@ -178,12 +181,12 @@ impl EpochInfo {
         &self.epoch_data
     }
 
-    pub fn start_number(&self) -> u64 {
-        self.epoch.start_number
+    pub fn start_block_number(&self) -> u64 {
+        self.epoch.start_block_number
     }
 
-    pub fn end_number(&self) -> u64 {
-        self.epoch.end_number
+    pub fn end_block_number(&self) -> u64 {
+        self.epoch.end_block_number
     }
 
     pub fn block_time_target(&self) -> u64 {
@@ -202,8 +205,8 @@ impl EpochInfo {
         self.epoch_data.total_reward
     }
 
-    pub fn epoch_number(&self) -> u64 {
-        self.epoch.epoch_number()
+    pub fn number(&self) -> u64 {
+        self.epoch.number()
     }
 }
 
@@ -216,7 +219,7 @@ pub struct EpochDataResource {
 }
 
 impl MoveResource for EpochDataResource {
-    const MODULE_NAME: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const MODULE_NAME: &'static str = "Epoch";
     const STRUCT_NAME: &'static str = "EpochData";
 }
 

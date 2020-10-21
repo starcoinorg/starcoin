@@ -24,7 +24,9 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     };
     let blocks: Vec<BlockDiffInfo> = (start_window_num..current_header.number + 1)
         .rev()
-        .filter(|&n| epoch.start_number() <= n && current_header.number <= epoch.end_number())
+        .filter(|&n| {
+            epoch.start_block_number() <= n && current_header.number <= epoch.end_block_number()
+        })
         .map(|n| chain.get_block_by_number(n))
         .filter_map(Result::ok)
         .filter_map(|x| x)

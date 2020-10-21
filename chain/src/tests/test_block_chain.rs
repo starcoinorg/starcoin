@@ -269,7 +269,7 @@ fn test_switch_epoch() {
 
     // 4. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_number();
+    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {
@@ -294,7 +294,7 @@ fn test_uncle_in_diff_epoch() {
 
     // 3. block apply
     let begin_number = mock_chain.head().current_header().number();
-    let end_number = mock_chain.head().epoch_info().unwrap().end_number();
+    let end_number = mock_chain.head().epoch_info().unwrap().end_block_number();
     assert!(begin_number < end_number);
     if begin_number < (end_number - 1) {
         for _i in begin_number..(end_number - 1) {

@@ -5,7 +5,6 @@ module Block {
     use 0x1::Timestamp;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
-    use 0x1::ConsensusConfig;
     use 0x1::Errors;
 
     spec module {
@@ -20,31 +19,34 @@ module Block {
           parent_hash: vector<u8>,
           // Author of the current block.
           author: address,
+          uncles: u64,
           // Handle where events with the time of new blocks are emitted
           new_block_events: Event::EventHandle<Self::NewBlockEvent>,
     }
 
     struct NewBlockEvent {
-          number: u64,
-          author: address,
-          timestamp: u64,
+        number: u64,
+        author: address,
+        timestamp: u64,
+        uncles: u64,
     }
 
     const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
     // This can only be invoked by the GENESIS_ACCOUNT at genesis
     public fun initialize(account: &signer, parent_hash: vector<u8>) {
-      Timestamp::assert_genesis();
-      CoreAddresses::assert_genesis_address(account);
+        Timestamp::assert_genesis();
+        CoreAddresses::assert_genesis_address(account);
 
-      move_to<BlockMetadata>(
-          account,
-      BlockMetadata {
-        number: 0,
-        parent_hash: parent_hash,
-        author: CoreAddresses::GENESIS_ADDRESS(),
-        new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
-      });
+        move_to<BlockMetadata>(
+            account,
+            BlockMetadata {
+                number: 0,
+                parent_hash: parent_hash,
+                author: CoreAddresses::GENESIS_ADDRESS(),
+                uncles: 0,
+                new_block_events: Event::new_event_handle<Self::NewBlockEvent>(account),
+            });
     }
 
     spec fun initialize {
@@ -81,7 +83,7 @@ module Block {
     }
 
     // Call at block prologue
-    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64, parent_gas_used:u64): u128 acquires BlockMetadata{
+    public fun process_block_metadata(account: &signer, parent_hash: vector<u8>,author: address, timestamp: u64, uncles:u64, number:u64) acquires BlockMetadata{
         CoreAddresses::assert_genesis_address(account);
 
         let block_metadata_ref = borrow_global_mut<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
@@ -89,18 +91,17 @@ module Block {
         block_metadata_ref.number = number;
         block_metadata_ref.author= author;
         block_metadata_ref.parent_hash = parent_hash;
-
-        let reward = ConsensusConfig::adjust_epoch(account, number, timestamp, uncles, parent_gas_used);
+        block_metadata_ref.uncles = uncles;
 
         Event::emit_event<NewBlockEvent>(
           &mut block_metadata_ref.new_block_events,
           NewBlockEvent {
-            number: number,
-            author: author,
-            timestamp: timestamp,
+              number: number,
+              author: author,
+              timestamp: timestamp,
+              uncles: uncles,
           }
         );
-        reward
     }
 
     spec fun process_block_metadata {
