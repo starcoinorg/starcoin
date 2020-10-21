@@ -27,6 +27,7 @@
 -  [Function `block_time_target`](#0x1_Epoch_block_time_target)
 -  [Specification](#@Specification_1)
     -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `compute_next_block_time_target`](#@Specification_1_compute_next_block_time_target)
     -  [Function `adjust_epoch`](#@Specification_1_adjust_epoch)
     -  [Function `adjust_gas_limit`](#@Specification_1_adjust_gas_limit)
     -  [Function `compute_gas_limit`](#@Specification_1_compute_gas_limit)
@@ -361,7 +362,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64,now_seconds: u64,  start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
+<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
     <b>let</b> total_time = now_seconds - epoch_start_time;
     <b>let</b> blocks = end_block_number - start_block_number;
     <b>let</b> avg_block_time = total_time / blocks;
@@ -369,7 +370,10 @@
     <b>let</b> new_epoch_block_time_target = (<a href="Epoch.md#0x1_Epoch_THOUSAND">THOUSAND</a> + uncles_rate) * avg_block_time /
             (<a href="ConsensusConfig.md#0x1_ConsensusConfig_uncle_rate_target">ConsensusConfig::uncle_rate_target</a>(config) + <a href="Epoch.md#0x1_Epoch_THOUSAND">THOUSAND</a>);
     <b>if</b> (new_epoch_block_time_target &gt; last_epoch_time_target * 2) {
-        new_epoch_block_time_target = last_epoch_time_target*2;
+        new_epoch_block_time_target = last_epoch_time_target * 2;
+    };
+    <b>if</b> (new_epoch_block_time_target &lt; last_epoch_time_target / 2) {
+        new_epoch_block_time_target = last_epoch_time_target / 2;
     };
     <b>let</b> min_block_time_target = <a href="ConsensusConfig.md#0x1_ConsensusConfig_min_block_time_target">ConsensusConfig::min_block_time_target</a>(config);
     <b>let</b> max_block_time_target = <a href="ConsensusConfig.md#0x1_ConsensusConfig_max_block_time_target">ConsensusConfig::max_block_time_target</a>(config);
@@ -850,6 +854,22 @@
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Epoch.md#0x1_Epoch">Epoch</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Epoch.md#0x1_Epoch_EpochData">EpochData</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+</code></pre>
+
+
+
+<a name="@Specification_1_compute_next_block_time_target"></a>
+
+### Function `compute_next_block_time_target`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
 </code></pre>
 
 
