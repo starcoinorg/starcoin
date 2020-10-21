@@ -78,9 +78,9 @@ impl Default for StdlibVersion {
 #[serde(tag = "type")]
 pub enum ConsensusStrategy {
     Dummy = 0,
-    Argon = 2,
-    Keccak = 3,
-    CryptoNight = 4,
+    Argon = 1,
+    Keccak = 2,
+    CryptoNight = 3,
 }
 
 impl ConsensusStrategy {
@@ -729,23 +729,24 @@ static UNCLE_RATE_TARGET: u64 = 80;
 static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static MIN_BLOCK_TIME_TARGET: u64 = 1;
+static MIN_BLOCK_TIME_TARGET: u64 = 10;
 static MAX_BLOCK_TIME_TARGET: u64 = 60;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
-//for pre sell
+//for private funding + partnership + dev
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(500_000_000));
-//for dev and ecosystem build.
+    Lazy::new(|| STCUnit::STC.value_of(15925680 + 4777704 + 9555408));
+
+//for partnership + dev time lock release.
 static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(1_500_000_000));
+    Lazy::new(|| STCUnit::STC.value_of(3726609 * 3 + 7421367 * 3));
 //three years.
 static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
 static DEFAULT_BASE_REWARD_PER_BLOCK: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(64));
+    Lazy::new(|| STCUnit::STC.value_of(1));
 
-pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_000_000;
+pub static BASE_BLOCK_GAS_LIMIT: u64 = 1_00_000;
 
 pub static MAX_TRANSACTION_SIZE_IN_BYTES: u64 = 4096 * 10;
 
@@ -773,9 +774,8 @@ static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     }
 });
 
-pub static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
-
-pub const ONE_DAY: u64 = 86400;
+static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
+const ONE_DAY: u64 = 86400;
 
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     let (association_private_key, association_public_key) = genesis_key_pair();
@@ -834,11 +834,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         version: Version { major: 1 },
         //use latest git commit version's hash
-        parent_hash: HashValue::sha3_256_of(
-            hex::decode("8bf9cdf5f3624db507613f7fe0cd786c8c9f8037")
-                .expect("invalid hex")
-                .as_slice(),
-        ),
+        parent_hash: HashValue::sha3_256_of(b"starcoin_dev"),
         timestamp: 0,
         reward_delay: 1,
         difficulty: 1.into(),
