@@ -15,7 +15,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     startup_info::StartupInfo,
 };
-use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 /// Readable block chain service trait
 pub trait ReadableChainService {

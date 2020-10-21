@@ -17,9 +17,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::{genesis_address, STC_TOKEN_CODE};
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::on_chain_config::{
-    EpochDataResource, EpochInfo, EpochResource, GlobalTimeOnChain,
-};
+use starcoin_vm_types::on_chain_resource::{Epoch, EpochData, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::{
     move_resource::MoveResource,
@@ -289,11 +287,11 @@ impl<'a> AccountStateReader<'a> {
 
     pub fn get_epoch_info(&self) -> Result<EpochInfo> {
         let epoch = self
-            .get_resource::<EpochResource>(genesis_address())?
+            .get_resource::<Epoch>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))?;
 
         let epoch_data = self
-            .get_resource::<EpochDataResource>(genesis_address())?
+            .get_resource::<EpochData>(genesis_address())?
             .ok_or_else(|| format_err!("Epoch is none."))?;
 
         Ok(EpochInfo::new(epoch, epoch_data))

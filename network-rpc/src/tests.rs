@@ -15,7 +15,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::{access_path, account_config::genesis_address, block::BlockHeader};
 use std::sync::Arc;
 use vm_types::move_resource::MoveResource;
-use vm_types::on_chain_config::EpochResource;
+use vm_types::on_chain_resource::Epoch;
 
 #[stest::test]
 fn test_network_rpc() {
@@ -39,8 +39,7 @@ fn test_network_rpc() {
     let peer_id_2 = network_2.identify();
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
 
-    let access_path =
-        access_path::AccessPath::new(genesis_address(), EpochResource::resource_path());
+    let access_path = access_path::AccessPath::new(genesis_address(), Epoch::resource_path());
 
     //ping ok
     let req = Ping {
@@ -86,7 +85,7 @@ fn test_network_rpc() {
             .unwrap()
     });
     let state = state_with_proof.state.unwrap();
-    let epoch = scs::from_bytes::<EpochResource>(state.as_slice()).unwrap();
+    let epoch = scs::from_bytes::<Epoch>(state.as_slice()).unwrap();
     state_with_proof
         .proof
         .verify(state_root, access_path, Some(&state))

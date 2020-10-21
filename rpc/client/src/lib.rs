@@ -51,7 +51,7 @@ use starcoin_rpc_api::types::ContractCall;
 use starcoin_service_registry::ServiceInfo;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
-use starcoin_vm_types::on_chain_config::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::thread::JoinHandle;

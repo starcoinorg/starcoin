@@ -30,7 +30,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_config::{EpochInfo, EpochResource, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
 use std::cmp::min;
 use std::iter::Extend;
@@ -47,7 +47,7 @@ pub struct BlockChain {
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     uncles: HashSet<HashValue>,
-    epoch: Option<EpochResource>,
+    epoch: Option<Epoch>,
 }
 
 impl BlockChain {
@@ -149,7 +149,7 @@ impl BlockChain {
             && block_header.number() <= self.current_header().number()
     }
 
-    fn epoch_uncles(&self, epoch_resource: &EpochResource) -> Result<Vec<HashValue>> {
+    fn epoch_uncles(&self, epoch_resource: &Epoch) -> Result<Vec<HashValue>> {
         let mut uncles = Vec::new();
         let mut block = self.head_block();
         let mut number = block.header().number();
@@ -293,7 +293,7 @@ impl BlockChain {
         self.get_block_by_number(num)
     }
 
-    fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<EpochResource> {
+    fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<Epoch> {
         if let Some(block) = self.block_with_number(number)? {
             let chain_state = ChainStateDB::new(
                 self.storage.clone().into_super_arc(),
@@ -301,7 +301,7 @@ impl BlockChain {
             );
             let account_reader = AccountStateReader::new(&chain_state);
             let epoch = account_reader
-                .get_resource::<EpochResource>(genesis_address())?
+                .get_resource::<Epoch>(genesis_address())?
                 .ok_or_else(|| format_err!("Epoch is none."))?;
             Ok(epoch)
         } else {

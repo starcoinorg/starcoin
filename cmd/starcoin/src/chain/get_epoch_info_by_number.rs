@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::on_chain_config::EpochInfo;
+use starcoin_vm_types::on_chain_resource::EpochInfo;
 use structopt::StructOpt;
 
 /// Get epoch info of master.
