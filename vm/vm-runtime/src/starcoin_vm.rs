@@ -8,6 +8,7 @@ use crate::errors::{
 };
 use crate::metrics::TXN_EXECUTION_GAS_USAGE;
 use anyhow::{format_err, Error, Result};
+use crypto::HashValue;
 use move_vm_runtime::data_cache::RemoteCache;
 use move_vm_runtime::data_cache::TransactionEffects;
 use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
@@ -565,6 +566,7 @@ impl StarcoinVM {
                 }
             }
         };
+        let txn_id = txn.id();
         let txn_data = TransactionMetadata::new(&txn);
         let mut cost_strategy = CostStrategy::system(gas_schedule, txn_data.max_gas_amount());
         // check signature
@@ -592,14 +594,21 @@ impl StarcoinVM {
                     ),
                 };
                 match result {
-                    Ok(status_and_output) => status_and_output,
+                    Ok(status_and_output) => {
+                        log_vm_status(
+                            txn_id,
+                            &txn_data,
+                            &status_and_output.0,
+                            &status_and_output.1.status(),
+                        );
+                        status_and_output
+                    }
                     Err(err) => {
-                        print_vm_status(err.clone());
                         let txn_status = TransactionStatus::from(err.clone());
+                        log_vm_status(txn_id, &txn_data, &err, &txn_status);
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
                         } else {
-                            info!("vm execution error, but txn is kept");
                             self.failed_transaction_cleanup(
                                 err,
                                 gas_schedule,
@@ -955,18 +964,27 @@ pub enum VerifiedTransactionPayload {
     Package(Package),
 }
 
-pub fn print_vm_status(status: VMStatus) {
-    match status {
-        VMStatus::Executed => {}
-        VMStatus::MoveAbort(_location, code) => {
-            let (category, reason) = error_split(code);
-            info!(
-                "move vm execution status: {:?} (Category: {:?} Reason: {:?})",
-                code, category, reason
-            );
+pub fn log_vm_status(
+    txn_id: HashValue,
+    txn_data: &TransactionMetadata,
+    status: &VMStatus,
+    txn_status: &TransactionStatus,
+) {
+    let msg = match status {
+        VMStatus::Executed => "Executed".to_string(),
+        VMStatus::MoveAbort(location, code) => {
+            let (category, reason) = error_split(*code);
+            format!(
+                "MoveAbort code: {}, (Category: {:?} Reason: {:?}), location: {:?}",
+                code, category, reason, location
+            )
         }
-        status => {
-            info!("move vm execution status: {:?}", status);
-        }
-    }
+        status => format!("{:?}", status),
+    };
+
+    //TODO change log level after main network launch.
+    info!(
+        "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, vm_status: {}",
+        txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
+    );
 }

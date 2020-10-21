@@ -194,8 +194,8 @@ impl Inner {
         // we need to remove invalid txn here.
         // In fact, it would be better if caller can make it into one.
         // In this situation, we don't need to reimport invalid txn on chain_new_block.
-        self.queue
-            .cull(self.get_pool_client(), self.chain_header.read().timestamp)
+        let now_seconds = self.chain_header.read().timestamp / 1000;
+        self.queue.cull(self.get_pool_client(), now_seconds)
     }
 
     pub(crate) fn import_txns(
