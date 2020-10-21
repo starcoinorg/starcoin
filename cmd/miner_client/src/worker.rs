@@ -224,7 +224,15 @@ fn solver(
     time_service: &dyn TimeService,
 ) -> bool {
     match strategy {
-        ConsensusStrategy::Argon | ConsensusStrategy::Keccak | ConsensusStrategy::CryptoNight => {
+        ConsensusStrategy::Dummy => {
+            let nonce = strategy.solve_consensus_nonce(minting_hash, diff, time_service);
+            if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
+                error!("Failed to send nonce: {:?}", e);
+                return false;
+            };
+            true
+        }
+        strategy => {
             if let Ok(pow_hash) = strategy.calculate_pow_hash(minting_hash, nonce) {
                 let pow_hash_u256: U256 = pow_hash.into();
                 let target = difficult_to_target(diff);
@@ -238,14 +246,6 @@ fn solver(
                 }
             }
             false
-        }
-        strategy => {
-            let nonce = strategy.solve_consensus_nonce(minting_hash, diff, time_service);
-            if let Err(e) = block_on(nonce_tx.send((minting_hash.to_vec(), nonce))) {
-                error!("Failed to send nonce: {:?}", e);
-                return false;
-            };
-            true
         }
     }
 }
