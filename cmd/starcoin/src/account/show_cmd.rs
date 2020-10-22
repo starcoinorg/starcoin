@@ -62,9 +62,10 @@ impl CommandAction for ShowCommand {
                 balances.insert(token_name, b);
             }
         }
-
-        let auth_key_prefix = hex::encode(AuthenticationKey::ed25519(&account.public_key).prefix());
+        let auth_key = AuthenticationKey::ed25519(&account.public_key);
+        let auth_key_prefix = hex::encode(auth_key.prefix());
         Ok(AccountWithStateView {
+            auth_key: hex::encode(auth_key.to_vec()),
             auth_key_prefix,
             account,
             sequence_number,

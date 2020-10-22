@@ -62,6 +62,7 @@ impl CommandAction for DeriveAddressCommand {
         Ok(DerivedAddressData {
             address: auth_key.derived_address(),
             auth_key_prefix: hex::encode(auth_key.prefix().to_vec()),
+            auth_key: hex::encode(auth_key.to_vec()),
         })
     }
 }
@@ -69,6 +70,7 @@ impl CommandAction for DeriveAddressCommand {
 #[derive(Debug, Clone, Hash, Serialize, Deserialize)]
 pub struct DerivedAddressData {
     pub address: AccountAddress,
+    pub auth_key: String,
     /// hex encoded
     pub auth_key_prefix: String,
 }
