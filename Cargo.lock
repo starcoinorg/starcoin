@@ -925,6 +925,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytes"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0dcbc35f504eb6fc275a6d20e4ebcda18cf50d40ba6fabff8c711fa16cb3b16"
+
+[[package]]
 name = "c_linked_list"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4436,7 +4442,7 @@ dependencies = [
  "async-std",
  "bitflags",
  "bs58",
- "bytes 0.5.6",
+ "bytes 0.6.0",
  "derive_more",
  "either",
  "erased-serde",
@@ -7343,7 +7349,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bitflags",
- "bytes 0.5.6",
+ "bytes 0.6.0",
  "derive_more",
  "fnv",
  "futures 0.3.5",
@@ -7391,7 +7397,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
- "bytes 0.5.6",
+ "bytes 0.6.0",
  "futures 0.3.5",
  "futures-timer",
  "hex",
@@ -8065,7 +8071,7 @@ dependencies = [
  "actix",
  "anyhow",
  "byteorder 1.3.4",
- "bytes 0.5.6",
+ "bytes 0.6.0",
  "futures 0.3.5",
  "hex",
  "itertools 0.9.0",

@@ -10,7 +10,7 @@ edition = "2018"
 anyhow = "1.0.33"
 
 bitflags = "1.2.0"
-bytes = "0.5.0"
+bytes = "0.6.0"
 codec = { package = "parity-scale-codec", version = "1.0.0", features = ["derive"] }
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
