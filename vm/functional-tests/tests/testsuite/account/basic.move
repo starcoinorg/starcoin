@@ -114,10 +114,13 @@ script {
 script {
 use 0x1::Account;
 use 0x1::STC::STC;
+use 0x1::Authenticator;
 fun main() {
-    let dummy_auth_public_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
-    Account::create_account<STC>(0xa5a77454f673d5438721dff88564981d, dummy_auth_public_key);
-    assert(Account::exists_at(0xa5a77454f673d5438721dff88564981d), 1000);
+    let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
+    let address = Account::create_account<STC>(copy dummy_auth_key);
+    let expected_address = Authenticator::derived_address(dummy_auth_key);
+    assert(Account::exists_at(address), 1000);
+    assert(address == expected_address, 1001);
 }
 }
 // check: EXECUTED

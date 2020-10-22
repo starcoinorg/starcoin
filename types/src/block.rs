@@ -15,8 +15,8 @@ use crate::U256;
 use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -34,8 +34,8 @@ pub struct BlockHeader {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author public key.
-    pub author_public_key: Option<Ed25519PublicKey>,
+    /// Block author auth key.
+    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
@@ -92,7 +92,7 @@ impl BlockHeader {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
@@ -107,7 +107,7 @@ impl BlockHeader {
             number,
             timestamp,
             author,
-            author_public_key,
+            author_auth_key,
             accumulator_root,
             state_root,
             gas_used,
@@ -188,7 +188,7 @@ impl BlockHeader {
             timestamp,
             number: 0,
             author: CORE_CODE_ADDRESS,
-            author_public_key: None,
+            author_auth_key: None,
             accumulator_root,
             state_root,
             gas_used: 0,
@@ -206,7 +206,7 @@ impl BlockHeader {
             timestamp: rand::random(),
             number: rand::random(),
             author: AccountAddress::random(),
-            author_public_key: None,
+            author_auth_key: None,
             accumulator_root: HashValue::random(),
             state_root: HashValue::random(),
             gas_used: rand::random(),
@@ -225,7 +225,7 @@ impl Into<RawBlockHeader> for BlockHeader {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
-            author_public_key: self.author_public_key,
+            author_auth_key: self.author_auth_key,
             accumulator_root: self.accumulator_root,
             parent_block_accumulator_root: self.parent_block_accumulator_root,
             state_root: self.state_root,
@@ -247,8 +247,8 @@ pub struct RawBlockHeader {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author public key.
-    pub author_public_key: Option<Ed25519PublicKey>,
+    /// Block author auth key.
+    pub author_auth_key: Option<AuthenticationKey>,
     /// The transaction accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
@@ -393,7 +393,7 @@ impl Block {
             self.header.parent_hash(),
             self.header.timestamp,
             self.header.author,
-            self.header.author_public_key.clone(),
+            self.header.author_auth_key,
             uncles,
             self.header.number,
             self.header.chain_id,
@@ -509,8 +509,8 @@ pub struct BlockTemplate {
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
-    /// Block author public key.
-    pub author_public_key: Option<Ed25519PublicKey>,
+    /// Block author auth key.
+    pub author_auth_key: Option<AuthenticationKey>,
     /// The accumulator root hash after executing this block.
     pub accumulator_root: HashValue,
     /// The parent block accumulator root hash.
@@ -533,7 +533,7 @@ impl BlockTemplate {
         timestamp: u64,
         number: BlockNumber,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
@@ -547,7 +547,7 @@ impl BlockTemplate {
             timestamp,
             number,
             author,
-            author_public_key,
+            author_auth_key,
             accumulator_root,
             state_root,
             gas_used,
@@ -564,7 +564,7 @@ impl BlockTemplate {
             self.timestamp,
             self.number,
             self.author,
-            self.author_public_key,
+            self.author_auth_key,
             self.accumulator_root,
             self.state_root,
             self.gas_used,
@@ -585,7 +585,7 @@ impl BlockTemplate {
             timestamp: self.timestamp,
             number: self.number,
             author: self.author,
-            author_public_key: self.author_public_key.clone(),
+            author_auth_key: self.author_auth_key,
             accumulator_root: self.accumulator_root,
             parent_block_accumulator_root: self.parent_block_accumulator_root,
             state_root: self.state_root,
@@ -603,7 +603,7 @@ impl BlockTemplate {
             self.timestamp,
             self.number,
             self.author,
-            self.author_public_key,
+            self.author_auth_key,
             self.accumulator_root,
             self.state_root,
             self.gas_used,
@@ -621,7 +621,7 @@ impl BlockTemplate {
             timestamp: block.header().timestamp,
             number: block.header().number,
             author: block.header().author,
-            author_public_key: block.header().author_public_key.clone(),
+            author_auth_key: block.header().author_auth_key,
             accumulator_root: block.header().accumulator_root,
             state_root: block.header().state_root,
             gas_used: block.header().gas_used,

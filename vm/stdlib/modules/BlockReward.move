@@ -29,10 +29,11 @@ module BlockReward {
         miner: address,
     }
 
-    const EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY: u64 = 101;
+    const EAUTHOR_AUTH_KEY_IS_EMPTY: u64 = 101;
     const ECURRENT_NUMBER_IS_WRONG: u64 = 102;
     const EREWARD_NUMBER_IS_WRONG: u64 = 103;
     const EMINER_EXIST: u64 = 104;
+    const EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     public fun initialize(account: &signer, reward_delay: u64) {
         Timestamp::assert_genesis();
@@ -55,7 +56,7 @@ module BlockReward {
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-                                    current_author: address, public_key_vec: vector<u8>) acquires RewardQueue {
+                                    current_author: address, auth_key_vec: vector<u8>) acquires RewardQueue {
         CoreAddresses::assert_genesis_address(account);
 
         if (current_number > 0) {
@@ -84,8 +85,9 @@ module BlockReward {
 
             if (!Account::exists_at(current_author)) {
                 //create account from public key
-                assert(!Vector::is_empty(&public_key_vec), Errors::invalid_argument(EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY));
-                Account::create_account<STC>(current_author, public_key_vec);
+                assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_AUTH_KEY_IS_EMPTY));
+                let expected_address = Account::create_account<STC>(auth_key_vec);
+                assert(current_author == expected_address, Errors::invalid_argument(EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH));
             };
             let current_info = RewardInfo {
                 number: current_number,
@@ -108,9 +110,8 @@ module BlockReward {
         aborts_if current_number > 0 && Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos) >= global<Config::Config<RewardConfig::RewardConfig>>(CoreAddresses::GENESIS_ADDRESS()).payload.reward_delay
                 && (global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).reward_number + 1) > max_u64();
 
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && Vector::is_empty(public_key_vec);
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && len(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != 32;
-        aborts_if current_number > 0 && !Account::exists_at(current_author) && Authenticator::spec_derived_address(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != current_author;
+        aborts_if current_number > 0 && !Account::exists_at(current_author) && len(auth_key_vec) != 32;
+        aborts_if current_number > 0 && !Account::exists_at(current_author) && Authenticator::spec_derived_address(auth_key_vec) != current_author;
 
         pragma verify = false;
     }

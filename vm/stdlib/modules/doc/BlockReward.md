@@ -104,11 +104,20 @@
 ## Constants
 
 
-<a name="0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
+<a name="0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH"></a>
 
 
 
-<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>: u64 = 101;
+<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY"></a>
+
+
+
+<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>: u64 = 101;
 </code></pre>
 
 
@@ -177,7 +186,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -187,7 +196,7 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128,
-                                current_author: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> {
+                                current_author: address, auth_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
 
     <b>if</b> (current_number &gt; 0) {
@@ -216,8 +225,9 @@
 
         <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
             //create account from <b>public</b> key
-            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&public_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>));
-            <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(current_author, public_key_vec);
+            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>));
+            <b>let</b> expected_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(auth_key_vec);
+            <b>assert</b>(current_author == expected_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>));
         };
         <b>let</b> current_info = <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> {
             number: current_number,
@@ -271,7 +281,7 @@
 ### Function `process_block_reward`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -285,8 +295,7 @@
 && (<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).reward_number + 1) != <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos, 0).number;
 <b>aborts_if</b> current_number &gt; 0 && <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos) &gt;= <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).payload.reward_delay
         && (<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).reward_number + 1) &gt; max_u64();
-<b>aborts_if</b> current_number &gt; 0 && !<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author) && <a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(public_key_vec);
-<b>aborts_if</b> current_number &gt; 0 && !<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author) && len(<a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">Authenticator::spec_ed25519_authentication_key</a>(public_key_vec)) != 32;
-<b>aborts_if</b> current_number &gt; 0 && !<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author) && <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(<a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">Authenticator::spec_ed25519_authentication_key</a>(public_key_vec)) != current_author;
+<b>aborts_if</b> current_number &gt; 0 && !<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author) && len(auth_key_vec) != 32;
+<b>aborts_if</b> current_number &gt; 0 && !<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author) && <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(auth_key_vec) != current_author;
 <b>pragma</b> verify = <b>false</b>;
 </code></pre>

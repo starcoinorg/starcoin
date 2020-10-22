@@ -5,6 +5,7 @@ use crate::{common::strip, config::global::Config as GlobalConfig, errors::*};
 use starcoin_crypto::HashValue;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -92,7 +93,9 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             HashValue::random(),
             *t,
             author,
-            author_public_key,
+            author_public_key
+                .as_ref()
+                .map(|k| AuthenticationKey::ed25519(&k)),
             uncles,
             *number,
             ChainId::test(),

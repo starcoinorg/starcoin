@@ -26,7 +26,7 @@ starcoin-types = {path = "../../types"}
 starcoin-rpc-client = { path = "../../rpc/client"}
 starcoin-account-api = {path = "../../account/api"}
 starcoin-executor = {path = "../../executor"}
-
+starcoin-crypto = {path = "../../commons/crypto"}
 [[bin]]
 name = "starcoin_faucet"
 path = "src/main.rs"

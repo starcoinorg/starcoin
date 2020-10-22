@@ -672,7 +672,7 @@ pub fn peer_to_peer_txn(
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
     args.push(TransactionArgument::U8Vector(
-        receiver.pubkey.to_bytes().to_vec(),
+        AuthenticationKey::ed25519(&receiver.pubkey).to_vec(),
     ));
     args.push(TransactionArgument::U128(transfer_amount));
 
@@ -700,7 +700,7 @@ pub fn create_account_txn_sent_as_association(
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
     args.push(TransactionArgument::U8Vector(
-        new_account.pubkey.to_bytes().to_vec(),
+        AuthenticationKey::ed25519(&new_account.pubkey).to_vec(),
     ));
     args.push(TransactionArgument::U128(initial_amount));
 

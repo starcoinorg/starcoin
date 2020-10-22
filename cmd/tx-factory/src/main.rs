@@ -51,7 +51,7 @@ pub struct TxFactoryOpt {
     #[structopt(
         long,
         short = "k",
-        help = "public key(hex encoded) of address to receive balance, default to none"
+        help = "public key(hex encoded) of address to receive balance"
     )]
     pub receiver_public_key: Option<String>,
 }
@@ -92,14 +92,10 @@ fn main() {
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
-    let public_key = receiver_public_key
-        .map(|k| {
-            Ed25519PublicKey::from_encoded_string(&k)
-                .expect("public key should be hex encoded")
-                .to_bytes()
-                .to_vec()
-        })
-        .unwrap_or_default();
+    let public_key = receiver_public_key.map(|k| {
+        Ed25519PublicKey::from_encoded_string(&k).expect("public key should be hex encoded")
+    });
+
     let net = client.node_info().unwrap().net;
     let txn_generator = MockTxnGenerator::new(
         net.chain_id(),

@@ -7,6 +7,7 @@ use starcoin_config::NodeConfig;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::ChainReader;
+use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, account_config};
 use std::{convert::TryInto, sync::Arc};
 
@@ -37,7 +38,7 @@ pub fn test_open_block() -> Result<()> {
     let receiver = account_address::from_public_key(&receive_public_key);
     let txn1 = executor::build_transfer_from_association(
         receiver,
-        receive_public_key.to_bytes().to_vec(),
+        Some(AuthenticationKey::ed25519(&receive_public_key)),
         association_sequence_num,
         50_000_000,
         config.net().time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
@@ -67,7 +68,7 @@ pub fn test_open_block() -> Result<()> {
         executor::build_transfer_txn(
             receiver,
             address,
-            pubkey.to_bytes().to_vec(),
+            Some(AuthenticationKey::ed25519(&pubkey)),
             seq_number,
             10_000,
             1,

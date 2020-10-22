@@ -5,6 +5,7 @@ use crate::account_address::AccountAddress;
 use crate::block_metadata::BlockMetadata;
 use crate::event::EventHandle;
 use crate::genesis_config::{BuiltinNetworkID, ChainId, ChainNetwork};
+use crate::transaction::authenticator::AuthenticationKey;
 use crate::transaction::{
     Module, Package, RawUserTransaction, Script, SignatureCheckedTransaction,
     SignedUserTransaction, TransactionPayload,
@@ -450,7 +451,7 @@ impl Arbitrary for BlockMetadata {
                         parent_hash,
                         timestamp,
                         addresses,
-                        Some(author_public_key),
+                        Some(AuthenticationKey::ed25519(&author_public_key)),
                         uncles,
                         number,
                         ChainId::test(),

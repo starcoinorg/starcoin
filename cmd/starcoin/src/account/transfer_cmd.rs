@@ -14,6 +14,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
 use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -93,10 +94,11 @@ impl CommandAction for TransferCommand {
         let receiver_exist_on_chain = account_state_reader
             .get_account_resource(&receiver)?
             .is_some();
-        let receiver_public_key_vec = if receiver_exist_on_chain {
-            vec![]
+        let receiver_auth_key = if receiver_exist_on_chain {
+            None
         } else {
-            opt.public_key
+            let k = opt
+                .public_key
                 .as_ref()
                 .ok_or_else(|| {
                     format_err!(
@@ -104,11 +106,8 @@ impl CommandAction for TransferCommand {
                         receiver
                     )
                 })
-                .and_then(|pubkey_str| {
-                    Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?
-                        .to_bytes()
-                        .to_vec())
-                })?
+                .and_then(|pubkey_str| Ok(Ed25519PublicKey::from_encoded_string(pubkey_str)?))?;
+            Some(k)
         };
         let account_resource = account_state_reader
             .get_account_resource(sender.address())?
@@ -125,7 +124,9 @@ impl CommandAction for TransferCommand {
         let raw_txn = starcoin_executor::build_transfer_txn_by_token_type(
             sender.address,
             receiver,
-            receiver_public_key_vec,
+            receiver_auth_key
+                .as_ref()
+                .map(|k| AuthenticationKey::ed25519(k)),
             account_resource.sequence_number(),
             opt.amount,
             opt.gas_price,

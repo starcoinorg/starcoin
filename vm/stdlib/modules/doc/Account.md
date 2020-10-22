@@ -543,7 +543,7 @@ Message for accept token events
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
@@ -552,11 +552,9 @@ Message for accept token events
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
-    <b>let</b> authentication_key = <a href="Authenticator.md#0x1_Authenticator_ed25519_authentication_key">Authenticator::ed25519_authentication_key</a>(public_key_vec);
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address <b>acquires</b> <a href="Account.md#0x1_Account">Account</a> {
     <b>let</b> new_address = <a href="Authenticator.md#0x1_Authenticator_derived_address">Authenticator::derived_address</a>(<b>copy</b> authentication_key);
-    <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
-
+    // <b>assert</b>(new_address == fresh_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Account.md#0x1_Account_EADDRESS_PUBLIC_KEY_INCONSISTENT">EADDRESS_PUBLIC_KEY_INCONSISTENT</a>));
     <b>let</b> new_account = <a href="Account.md#0x1_Account_create_signer">create_signer</a>(new_address);
     <a href="Account.md#0x1_Account_make_account">make_account</a>(&new_account, authentication_key);
     // Make sure all account accept <a href="STC.md#0x1_STC">STC</a>.
@@ -565,6 +563,7 @@ Message for accept token events
     };
     <a href="Account.md#0x1_Account_accept_token">accept_token</a>&lt;TokenType&gt;(&new_account);
     <a href="Account.md#0x1_Account_destroy_signer">destroy_signer</a>(new_account);
+    new_address
 }
 </code></pre>
 
@@ -1676,14 +1675,15 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 ### Function `create_account`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(fresh_address: address, public_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Account.md#0x1_Account_create_account">create_account</a>&lt;TokenType&gt;(authentication_key: vector&lt;u8&gt;): address
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> len(<a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">Authenticator::spec_ed25519_authentication_key</a>(public_key_vec)) != 32;
-<b>aborts_if</b> <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(<a href="Authenticator.md#0x1_Authenticator_spec_ed25519_authentication_key">Authenticator::spec_ed25519_authentication_key</a>(public_key_vec)) != fresh_address;
+<pre><code><b>aborts_if</b> len(authentication_key) != 32;
+<a name="0x1_Account_fresh_address$41"></a>
+<b>let</b> fresh_address = <a href="Authenticator.md#0x1_Authenticator_spec_derived_address">Authenticator::spec_derived_address</a>(authentication_key);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(fresh_address);
 <b>aborts_if</b> <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;TokenType&gt;() != <a href="Token.md#0x1_Token_spec_token_code">Token::spec_token_code</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;() && <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;&gt;(fresh_address);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(fresh_address);
@@ -1723,7 +1723,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 <pre><code><b>aborts_if</b> to_deposit.value == 0;
-<a name="0x1_Account_is_accepts_token$41"></a>
+<a name="0x1_Account_is_accepts_token$42"></a>
 <b>let</b> is_accepts_token = <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> is_accepts_token && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).token.value + to_deposit.value &gt; max_u128();
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));

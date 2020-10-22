@@ -11,7 +11,7 @@ use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::contract_event::{ContractEvent, ContractEventV0};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
-use starcoin_types::transaction::authenticator::TransactionAuthenticator;
+use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::{
     Module, Package, Script, ScriptABI, SignedUserTransaction, Transaction, TransactionArgument,
     TransactionPayload,
@@ -32,6 +32,11 @@ fn generate() -> Result<(), Error> {
         tracer.trace_value(&mut samples, &pri_key)?;
         tracer.trace_value(&mut samples, &pri_key.public_key())?;
         tracer.trace_value(&mut samples, &pri_key.sign(&AccountAddress::random()))?;
+
+        tracer.trace_value::<AuthenticationKey>(
+            &mut samples,
+            &AuthenticationKey::ed25519(&pri_key.public_key()),
+        )?;
     }
     {
         let pri_key = MultiEd25519PrivateKey::generate_for_testing();

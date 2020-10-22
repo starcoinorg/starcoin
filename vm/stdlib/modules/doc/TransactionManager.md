@@ -232,7 +232,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, public_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8, parent_gas_used: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, auth_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8, parent_gas_used: u64)
 </code></pre>
 
 
@@ -246,7 +246,7 @@
     parent_hash: vector&lt;u8&gt;,
     timestamp: u64,
     author: address,
-    public_key_vec: vector&lt;u8&gt;,
+    auth_key_vec: vector&lt;u8&gt;,
     uncles: u64,
     number: u64,
     chain_id: u8,
@@ -271,7 +271,7 @@
         number,
     );
     <b>let</b> reward = <a href="Epoch.md#0x1_Epoch_adjust_epoch">Epoch::adjust_epoch</a>(account, number, timestamp, uncles, parent_gas_used);
-    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, public_key_vec);
+    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, auth_key_vec);
 }
 </code></pre>
 

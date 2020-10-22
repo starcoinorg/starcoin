@@ -7097,6 +7097,7 @@ dependencies = [
  "rust-embed",
  "starcoin-account-api",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-executor",
  "starcoin-logger",
  "starcoin-rpc-client",

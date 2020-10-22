@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 use crate::MyWorld;
 use cucumber::{Steps, StepsBuilder};
-use starcoin_config::{ChainNetwork, NodeConfig, StarcoinOpt};
+use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::genesis_config::ChainNetworkID;
 use std::path::PathBuf;

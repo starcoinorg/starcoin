@@ -140,11 +140,9 @@ module Account {
     // key `public_key_vec` | `fresh_address`.
     // Creating an account at address 0x1 will cause runtime failure as it is a
     // reserved address for the MoveVM.
-    public fun create_account<TokenType>(fresh_address: address, public_key_vec: vector<u8>) acquires Account {
-        let authentication_key = Authenticator::ed25519_authentication_key(public_key_vec);
+    public fun create_account<TokenType>(authentication_key: vector<u8>): address acquires Account {
         let new_address = Authenticator::derived_address(copy authentication_key);
-        assert(new_address == fresh_address, Errors::invalid_argument(EADDRESS_PUBLIC_KEY_INCONSISTENT));
-
+        // assert(new_address == fresh_address, Errors::invalid_argument(EADDRESS_PUBLIC_KEY_INCONSISTENT));
         let new_account = create_signer(new_address);
         make_account(&new_account, authentication_key);
         // Make sure all account accept STC.
@@ -153,13 +151,13 @@ module Account {
         };
         accept_token<TokenType>(&new_account);
         destroy_signer(new_account);
+        new_address
     }
 
     spec fun create_account {
         //abort condition for derived_address
-        aborts_if len(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != 32;
-        //abort condition for assert
-        aborts_if Authenticator::spec_derived_address(Authenticator::spec_ed25519_authentication_key(public_key_vec)) != fresh_address;
+        aborts_if len(authentication_key) != 32;
+        let fresh_address = Authenticator::spec_derived_address(authentication_key);
         //abort condition for make_account
         aborts_if exists<Account>(fresh_address);
         //abort condition for accept_token<STC>

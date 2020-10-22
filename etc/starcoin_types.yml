@@ -31,6 +31,8 @@ ArgumentABI:
     - name: STR
     - type_tag:
         TYPENAME: TypeTag
+AuthenticationKey:
+  NEWTYPESTRUCT: BYTES
 BlockMetadata:
   STRUCT:
     - parent_hash:
@@ -38,9 +40,9 @@ BlockMetadata:
     - timestamp: U64
     - author:
         TYPENAME: AccountAddress
-    - author_public_key:
+    - author_auth_key:
         OPTION:
-          TYPENAME: Ed25519PublicKey
+          TYPENAME: AuthenticationKey
     - uncles: U64
     - number: U64
     - chain_id:

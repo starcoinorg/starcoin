@@ -6,13 +6,14 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::ed25519::random_public_key;
+use starcoin_crypto::ed25519::{random_public_key, Ed25519PublicKey};
 use starcoin_executor::DEFAULT_MAX_GAS_AMOUNT;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::DEFAULT_EXPIRATION_TIME;
 use starcoin_vm_types::account_address;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -71,11 +72,11 @@ impl CommandAction for GenTxnCommand {
             bail!("This command only work for test or dev or halley network");
         }
         let node_info = client.node_info()?;
-        let account_provider: Box<dyn Fn() -> (AccountAddress, Vec<u8>)> = if opt.random {
-            Box::new(|| -> (AccountAddress, Vec<u8>) {
+        let account_provider: Box<dyn Fn() -> (AccountAddress, Ed25519PublicKey)> = if opt.random {
+            Box::new(|| -> (AccountAddress, Ed25519PublicKey) {
                 let public_key = random_public_key();
                 let addr = account_address::from_public_key(&public_key);
-                (addr, public_key.to_bytes().to_vec())
+                (addr, public_key)
             })
         } else {
             let to_account = match opt.to {
@@ -87,8 +88,10 @@ impl CommandAction for GenTxnCommand {
                 None => client.account_create("".to_string()),
             })?;
             let address = to_account.address;
-            let public_key_vec = to_account.public_key.to_bytes().to_vec();
-            Box::new(move || -> (AccountAddress, Vec<u8>) { (address, public_key_vec.clone()) })
+            let public_key_vec = to_account.public_key;
+            Box::new(move || -> (AccountAddress, Ed25519PublicKey) {
+                (address, public_key_vec.clone())
+            })
         };
         let sender = client
             .account_default()?
@@ -112,12 +115,12 @@ impl CommandAction for GenTxnCommand {
         let mut gen_result = GenerateResult::default();
         gen_result.count = opt.count;
         for i in 0..opt.count {
-            let (to, to_auth_key_prefix) = account_provider.as_ref()();
+            let (to, public_key) = account_provider.as_ref()();
 
             let raw_txn = starcoin_executor::build_transfer_txn(
                 sender.address,
                 to,
-                to_auth_key_prefix,
+                Some(AuthenticationKey::ed25519(&public_key)),
                 sequence_number + i as u64,
                 opt.amount,
                 1,
