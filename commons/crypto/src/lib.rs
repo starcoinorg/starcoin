@@ -8,23 +8,24 @@
 
 pub mod ed25519 {
     use crate::keygen::KeyGen;
-    // use crate::test_utils::KeyPair;
-    // use crate::Uniform;
+    use crate::{Genesis, PrivateKey};
     pub use libra_crypto::ed25519::*;
-    // use rand::rngs::{OsRng, StdRng};
-    // use rand::{Rng, SeedableRng};
 
     pub fn random_public_key() -> Ed25519PublicKey {
         KeyGen::from_os_rng().generate_keypair().1
     }
-}
 
-pub mod multi_ed25519 {
-    pub use libra_crypto::multi_ed25519::*;
+    /// A static key pair
+    pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
+        let private_key = Ed25519PrivateKey::genesis();
+        let public_key = private_key.public_key();
+        (private_key, public_key)
+    }
 }
 
 pub mod hash;
 pub mod keygen;
+pub mod multi_ed25519;
 
 pub mod test_utils {
     pub use libra_crypto::test_utils::*;
@@ -44,5 +45,5 @@ pub use once_cell as _once_cell;
 pub use serde_name as _serde_name;
 
 pub mod derive {
-    pub use libra_crypto_derive::{DeserializeKey, SerializeKey};
+    pub use libra_crypto_derive::{DeserializeKey, SerializeKey, SilentDebug, SilentDisplay};
 }
