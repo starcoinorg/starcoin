@@ -6,7 +6,6 @@ use anyhow::Result;
 use once_cell::sync::Lazy;
 use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
 };
@@ -29,7 +28,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         0,
         1,
         net.chain_id(),
@@ -46,7 +45,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         0,
         3, //EBLOCK_NUMBER_MISMATCH
         net.chain_id(),
@@ -63,7 +62,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         0, //EINVALID_TIMESTAMP
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         0,
         2,
         net.chain_id(),
@@ -80,7 +79,7 @@ fn test_block_metadata_error_code() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         net.genesis_config()
             .consensus_config
             .base_max_uncles_per_block
@@ -114,7 +113,7 @@ fn test_execute_transfer_txn_with_wrong_token_code() -> Result<()> {
     let raw_txn = crate::build_transfer_txn_by_token_type(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         0,
         1000,
         1,

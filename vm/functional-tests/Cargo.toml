@@ -29,6 +29,7 @@ starcoin-move-compiler = { path = "../../vm/compiler"}
 executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-consensus = { path = "../../consensus" }
+starcoin-account-api = { path = "../../account/api" }
 
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}

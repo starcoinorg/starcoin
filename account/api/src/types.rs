@@ -27,6 +27,7 @@ pub enum AccountPublicKey {
     Multi(MultiEd25519PublicKey),
 }
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum AccountPrivateKey {
     Single(Ed25519PrivateKey),
     Multi(MultiEd25519KeyShard),

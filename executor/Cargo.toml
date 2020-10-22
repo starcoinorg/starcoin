@@ -17,6 +17,7 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 state-tree = {path = "../state/state-tree", package="starcoin-state-tree"}
 statedb = {path = "../state/statedb", package="starcoin-statedb"}
 starcoin-state-api = {path="../state/api"}
+starcoin-account-api = {path="../account/api"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 vm-runtime = { package="starcoin-vm-runtime", path = "../vm/vm-runtime"}
 starcoin-vm-types = { path = "../vm/types"}
