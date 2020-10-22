@@ -23,9 +23,17 @@ module TransactionTimeout {
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time
   }
   spec fun is_valid_transaction_timestamp {
-    pragma verify = false;
+    aborts_if Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
     aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
   }
+
+    spec schema AbortsIfTimestampNotValid {
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        include Timestamp::AbortsIfTimestampNotExists;
+        //aborts_if !exists<TransactionTimeoutConfig::TransactionTimeoutConfig>(CoreAddresses::GENESIS_ADDRESS());
+        //aborts_if Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
+    }
 }
 }

@@ -109,5 +109,9 @@ module Block {
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if number != global<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS()).number + 1;
     }
+
+    spec schema AbortsIfBlockMetadataNotExist {
+        aborts_if !exists<BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
+    }
 }
 }

@@ -99,8 +99,13 @@ module TransactionManager {
         aborts_if !exists<Account::Account>(txn_sender);
         aborts_if Hash::sha3_256(txn_public_key) != global<Account::Account>(txn_sender).authentication_key;
         aborts_if txn_gas_price * txn_max_gas_units > max_u64();
+        include Timestamp::AbortsIfTimestampNotExists;
+        include Block::AbortsIfBlockMetadataNotExist;
+        aborts_if !exists<Account::Balance<TokenType>>(txn_sender);
+        aborts_if global<Account::Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
         aborts_if txn_sequence_number < global<Account::Account>(txn_sender).sequence_number;
         aborts_if txn_sequence_number != global<Account::Account>(txn_sender).sequence_number;
+        include TransactionTimeout::AbortsIfTimestampNotValid;
     }
 
     // The epilogue is invoked at the end of transactions.
