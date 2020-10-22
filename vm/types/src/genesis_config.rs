@@ -893,13 +893,8 @@ pub static HALLEY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
 pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         version: Version { major: 1 },
-        //use latest git commit hash
-        parent_hash: HashValue::sha3_256_of(
-            hex::decode("8bf9cdf5f3624db507613f7fe0cd786c8c9f8037")
-                .expect("invalid hex")
-                .as_slice(),
-        ),
-        timestamp: 1603006373457,
+        parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
+        timestamp: 1603390644000,
         reward_delay: 3,
         difficulty: 10.into(),
         nonce: 0,
@@ -926,13 +921,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         association_key_pair: (
             None,
-            MultiEd25519PublicKey::new(
-                vec![Ed25519PublicKey::from_encoded_string(
-                    "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-                )
-                .expect("decode public key must success.")],
-                1,
-            )
+            MultiEd25519PublicKey::from_encoded_string("fde53c76807c8a5ec5855ed6200868be8653c34a0f18c6b01f60040ead5daa87b1157be91c2637b709c09ed5d420976c0d4df79537372d69a272fc4869c1364ce3700a1ed3f00ea87c015028cd4a03a4881f6fe203b02f7059db906b764cd23202")
             .expect("create multi public key must success."),
         ),
         genesis_key_pair: None,
@@ -954,14 +943,11 @@ pub static PROXIMA_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ]
 });
 
-pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
+pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    GenesisConfig {
     version: Version { major: 1 },
-    parent_hash: HashValue::sha3_256_of(
-        hex::decode("6b1eddc3847bb8476f8937abd017e5833e878b60")
-            .expect("invalid hex")
-            .as_slice(),
-    ),
-    timestamp: 1603006373457,
+    parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
+    timestamp: 1603390644000,
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,
@@ -988,13 +974,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     },
     association_key_pair: (
         None,
-        MultiEd25519PublicKey::new(
-            vec![Ed25519PublicKey::from_encoded_string(
-                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-            )
-            .expect("decode public key must success.")],
-            1,
-        )
+        MultiEd25519PublicKey::from_encoded_string("3e6c08fb7f265a35ffd121c809bfa233041d92165c2fdd13f8b85be0814243ba2d616c5105dc8baa39ff764bbcd072e44fcb8bfe5a2f773636285c40d1af15087b00e16ec03438e99858127374c3c148b57a5e10068ca956eff06240c8199f46e4746a6fac58d7d65cfd3ccad4331d071a9ff1a0a29c3bc3896b86c0a7f4ce79e75fbc8422501f5a6bb50ae39e7656949f76d24ce4b677ea224254d8661e509d839e3222ea576580b965d94920765aa1ec62047b7536b0ae57fbdffef968f09e3a5847fb627a9a7909961b21c50c868e26797e2a406879f5cf1d80f4035a448a32fa70d239907d561e116d03dfd9fcba8ab1095117b36b188bf277cc977fc4af87c071e8106a551f0bfe57e9aa2b03d037afd3aaab5c8f0eb56d725f598deada04")
         .expect("create multi public key must success."),
     ),
     genesis_key_pair: None,
@@ -1007,6 +987,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
         min_action_delay: 60 * 60 * 24, // 1d
     },
     transaction_timeout: ONE_DAY,
+}
 });
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);

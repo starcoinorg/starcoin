@@ -149,6 +149,11 @@ impl MultiEd25519KeyShard {
         bytes
     }
 
+    pub fn from_encoded_string(encoded_str: &str) -> Result<Self> {
+        let bytes_out = ::hex::decode(encoded_str)?;
+        Self::try_from(bytes_out.as_slice())
+    }
+
     pub fn to_encoded_string(&self) -> Result<String> {
         Ok(::hex::encode(&self.to_bytes()))
     }
@@ -402,7 +407,6 @@ fn bitmap_last_set_bit(input: [u8; BITMAP_NUM_OF_BYTES]) -> Option<u8> {
 mod tests {
     use super::*;
     use crate::test_utils::{TestLibraCrypto, TEST_SEED};
-    use crate::ValidCryptoMaterialStringExt;
     use once_cell::sync::Lazy;
     use rand::prelude::*;
 
@@ -418,18 +422,22 @@ mod tests {
     }
 
     #[test]
-    pub fn test_read_seed() {
+    pub fn test_to_string_by_read_seed() {
         let mut seed_rng = rand::rngs::OsRng;
         let seed_buf: [u8; 32] = seed_rng.gen();
         let mut rng = StdRng::from_seed(seed_buf);
-        let shards = MultiEd25519KeyShard::generate(&mut rng, 9, 4).unwrap();
+        let shards = MultiEd25519KeyShard::generate(&mut rng, 3, 2).unwrap();
         for shard in shards {
-            println!(
-                "index: {}\npublic_key:\n{} \nimport_key:\n{}\n",
-                shard.index,
-                shard.public_key().to_encoded_string().unwrap(),
-                shard.to_encoded_string().unwrap(),
-            )
+            let hex_str = shard.to_encoded_string().unwrap();
+            let shard2 = MultiEd25519KeyShard::from_encoded_string(hex_str.as_str()).unwrap();
+            assert_eq!(shard, shard2);
+            assert!(shard.to_encoded_string().is_ok());
+            // println!(
+            //     "index: {}\npublic_key:\n{} \nimport_key:\n{}\n",
+            //     shard.index,
+            //     shard.public_key().to_encoded_string().unwrap(),
+            //     shard.to_encoded_string().unwrap(),
+            // )
         }
     }
 

@@ -24,8 +24,8 @@ fn main() {
         None => BuiltinNetworkID::networks(),
     };
     for id in networks {
-        // skip test network generate.
-        if id.is_test() {
+        // skip test && dev network generate.
+        if id.is_test() || id.is_dev() {
             continue;
         }
         let net = ChainNetwork::new_builtin(id);

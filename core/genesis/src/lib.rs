@@ -38,7 +38,6 @@ use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID};
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";
 
-const DEV_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/dev/genesis");
 const HALLEY_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/halley/genesis");
 const PROXIMA_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/proxima/genesis");
 const MAIN_GENESIS_BYTES: &[u8] = std::include_bytes!("../generated/main/genesis");
@@ -118,7 +117,8 @@ impl Genesis {
 
     /// Load pre generated genesis.
     pub fn load(net: &ChainNetwork) -> Result<Self> {
-        if net.is_test() {
+        // test and dev always use Fresh genesis.
+        if net.is_test() || net.is_dev() {
             Self::load_by_opt(GenesisOpt::Fresh, net)
         } else {
             Self::load_by_opt(GenesisOpt::Generated, net)
@@ -242,7 +242,7 @@ impl Genesis {
     fn genesis_bytes(net: BuiltinNetworkID) -> &'static [u8] {
         match net {
             BuiltinNetworkID::Test => unreachable!(),
-            BuiltinNetworkID::Dev => DEV_GENESIS_BYTES,
+            BuiltinNetworkID::Dev => unreachable!(),
             BuiltinNetworkID::Halley => HALLEY_GENESIS_BYTES,
             BuiltinNetworkID::Proxima => PROXIMA_GENESIS_BYTES,
             BuiltinNetworkID::Main => MAIN_GENESIS_BYTES,
