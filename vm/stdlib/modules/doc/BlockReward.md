@@ -104,11 +104,20 @@
 ## Constants
 
 
-<a name="0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY"></a>
+<a name="0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH"></a>
 
 
 
-<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>: u64 = 101;
+<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY"></a>
+
+
+
+<pre><code><b>const</b> <a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>: u64 = 101;
 </code></pre>
 
 
@@ -216,8 +225,9 @@
 
         <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
             //create account from <b>public</b> key
-            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY">EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY</a>));
-            <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(current_author, auth_key_vec);
+            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>));
+            <b>let</b> expected_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(auth_key_vec);
+            <b>assert</b>(current_author == expected_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>));
         };
         <b>let</b> current_info = <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> {
             number: current_number,

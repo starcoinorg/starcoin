@@ -29,10 +29,11 @@ module BlockReward {
         miner: address,
     }
 
-    const EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY: u64 = 101;
+    const EAUTHOR_AUTH_KEY_IS_EMPTY: u64 = 101;
     const ECURRENT_NUMBER_IS_WRONG: u64 = 102;
     const EREWARD_NUMBER_IS_WRONG: u64 = 103;
     const EMINER_EXIST: u64 = 104;
+    const EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH: u64 = 105;
 
     public fun initialize(account: &signer, reward_delay: u64) {
         Timestamp::assert_genesis();
@@ -84,8 +85,9 @@ module BlockReward {
 
             if (!Account::exists_at(current_author)) {
                 //create account from public key
-                assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_PUBLIC_KEY_IS_NOT_EMPTY));
-                Account::create_account<STC>(current_author, auth_key_vec);
+                assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_AUTH_KEY_IS_EMPTY));
+                let expected_address = Account::create_account<STC>(auth_key_vec);
+                assert(current_author == expected_address, Errors::invalid_argument(EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH));
             };
             let current_info = RewardInfo {
                 number: current_number,
