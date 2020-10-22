@@ -105,8 +105,6 @@ module Block {
     }
 
     spec fun process_block_metadata {
-        pragma verify = false;
-
         aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
         aborts_if !exists<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if number != global<BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS()).number + 1;
