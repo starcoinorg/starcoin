@@ -6600,9 +6600,11 @@ dependencies = [
  "async-trait",
  "dashmap",
  "futures 0.3.5",
+ "hex",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
+ "serde_bytes",
  "starcoin-crypto",
  "starcoin-service-registry",
  "starcoin-types",
@@ -6965,6 +6967,8 @@ dependencies = [
 name = "starcoin-crypto"
 version = "0.5.1"
 dependencies = [
+ "anyhow",
+ "hex",
  "libra-crypto",
  "libra-crypto-derive",
  "once_cell",
@@ -6972,6 +6976,7 @@ dependencies = [
  "rand_core 0.5.1",
  "serde",
  "serde-name",
+ "serde_bytes",
  "starcoin-canonical-serialization",
  "starcoin-crypto-macro",
 ]

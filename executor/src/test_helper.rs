@@ -21,9 +21,12 @@ use starcoin_types::{
     transaction::TransactionStatus,
 };
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::values::VMValueCast;
 use statedb::ChainStateDB;
 use stdlib::stdlib_files;
+
+//TODO warp to A MockTxnExecutor
 
 pub(crate) const TEST_MODULE: &str = r#"
     module M {
@@ -125,12 +128,9 @@ pub fn association_execute(
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<()> {
-    user_execute(
-        association_address(),
-        &config.genesis_key_pair.as_ref().unwrap().0,
-        state,
-        payload,
-    )
+    let txn = build_raw_txn(association_address(), state, payload, ChainId::test());
+    let txn = config.sign_with_association(txn)?;
+    execute_signed_txn(state, txn)
 }
 pub fn account_execute(
     account: &Account,
@@ -190,6 +190,10 @@ fn user_execute(
 ) -> Result<()> {
     let txn = build_raw_txn(user_address, state, payload, ChainId::test());
     let txn = txn.sign(prikey, prikey.public_key()).unwrap().into_inner();
+    execute_signed_txn(state, txn)
+}
+
+fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Result<()> {
     let txn = Transaction::UserTransaction(txn);
     let output = execute_and_apply(state, txn);
 

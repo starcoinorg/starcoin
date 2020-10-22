@@ -12,7 +12,7 @@ use crate::time::{TimeService, TimeServiceType};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, ensure, format_err, Result};
 use libp2p::multiaddr::Multiaddr;
 use move_core_types::move_resource::MoveResource;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
@@ -20,7 +20,12 @@ use once_cell::sync::Lazy;
 use serde::de::Error;
 use serde::export::fmt::Debug;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_crypto::{ed25519::*, Genesis, HashValue, PrivateKey, ValidCryptoMaterialStringExt};
+use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
+use starcoin_crypto::{
+    ed25519::*,
+    multi_ed25519::{genesis_multi_key_pair, MultiEd25519PublicKey},
+    HashValue, ValidCryptoMaterialStringExt,
+};
 use starcoin_uint::U256;
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
@@ -118,13 +123,6 @@ impl FromStr for ConsensusStrategy {
             s => Err(format_err!("Unknown ConsensusStrategy: {}", s)),
         }
     }
-}
-
-/// A static key pair to sign genesis txn
-pub fn genesis_key_pair() -> (Ed25519PrivateKey, Ed25519PublicKey) {
-    let private_key = Ed25519PrivateKey::genesis();
-    let public_key = private_key.public_key();
-    (private_key, public_key)
 }
 
 #[derive(
@@ -670,8 +668,8 @@ pub struct GenesisConfig {
     pub gas_constants: GasConstants,
     pub consensus_config: ConsensusConfig,
     /// association account's key pair
-    pub association_key_pair: (Option<Arc<Ed25519PrivateKey>>, Ed25519PublicKey),
-    /// genesis account's key pair
+    pub association_key_pair: (Option<Arc<MultiEd25519KeyShard>>, MultiEd25519PublicKey),
+    /// genesis account's key pair, only set at Test and Dev network for test.
     pub genesis_key_pair: Option<(Arc<Ed25519PrivateKey>, Ed25519PublicKey)>,
 
     pub stdlib_version: StdlibVersion,
@@ -685,7 +683,16 @@ pub struct GenesisConfig {
 impl GenesisConfig {
     pub fn sign_with_association(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         if let (Some(private_key), public_key) = &self.association_key_pair {
-            Ok(txn.sign(private_key, public_key.clone())?.into_inner())
+            let signature = private_key.sign(&txn);
+            ensure!(
+                signature.is_enough(),
+                "association key shard threshold should be 1"
+            );
+            Ok(SignedUserTransaction::multi_ed25519(
+                txn,
+                public_key.clone(),
+                signature.into(),
+            ))
         } else {
             bail!("association private_key not config at current network",)
         }
@@ -778,7 +785,7 @@ static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let (association_private_key, association_public_key) = genesis_key_pair();
+    let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     GenesisConfig {
@@ -828,7 +835,7 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 });
 
 pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
-    let (association_private_key, association_public_key) = genesis_key_pair();
+    let (association_private_key, association_public_key) = genesis_multi_key_pair();
     let (genesis_private_key, genesis_public_key) = genesis_key_pair();
 
     GenesisConfig {
@@ -919,10 +926,14 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         },
         association_key_pair: (
             None,
-            Ed25519PublicKey::from_encoded_string(
-                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+            MultiEd25519PublicKey::new(
+                vec![Ed25519PublicKey::from_encoded_string(
+                    "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+                )
+                .expect("decode public key must success.")],
+                1,
             )
-            .expect("decode public key must success."),
+            .expect("create multi public key must success."),
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
@@ -977,10 +988,14 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
     },
     association_key_pair: (
         None,
-        Ed25519PublicKey::from_encoded_string(
-            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+        MultiEd25519PublicKey::new(
+            vec![Ed25519PublicKey::from_encoded_string(
+                "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
+            )
+            .expect("decode public key must success.")],
+            1,
         )
-        .expect("decode public key must success."),
+        .expect("create multi public key must success."),
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
@@ -996,50 +1011,48 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
 
 pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
 
-pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| GenesisConfig {
-    version: Version { major: 1 },
-    //TODO set parent_hash and timestamp
-    parent_hash: HashValue::zero(),
-    timestamp: 0,
-    reward_delay: 7,
-    difficulty: 10.into(),
-    nonce: 0,
-    pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
-    time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
-    time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
-    vm_config: VMConfig {
-        gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
-    },
-    publishing_option: VMPublishingOption::Open,
-    gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
-    consensus_config: ConsensusConfig {
-        uncle_rate_target: UNCLE_RATE_TARGET,
-        base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
-        base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
-        epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
-        base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
-        base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
-        min_block_time_target: MIN_BLOCK_TIME_TARGET,
-        max_block_time_target: MAX_BLOCK_TIME_TARGET,
-        base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
-        base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
-        strategy: ConsensusStrategy::CryptoNight.value(),
-    },
-    association_key_pair: (
-        None,
-        Ed25519PublicKey::from_encoded_string(
-            "025fbcc063f74edb4909fd8fb5f2fa3ed92748141fefc5eda29e425d98a95505",
-        )
-        .expect("decode public key must success."),
-    ),
-    genesis_key_pair: None,
-    time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::Latest,
-    dao_config: DaoConfig {
-        voting_delay: 60 * 60,           // 1h
-        voting_period: 60 * 60 * 24 * 2, // 2d
-        voting_quorum_rate: 4,
-        min_action_delay: 60 * 60 * 24, // 1d
-    },
-    transaction_timeout: ONE_DAY,
+pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
+    //TODO set public key
+    let (_association_private_key, association_public_key) = genesis_multi_key_pair();
+    GenesisConfig {
+        version: Version { major: 1 },
+        //TODO set parent_hash and timestamp
+        parent_hash: HashValue::zero(),
+        timestamp: 0,
+        reward_delay: 7,
+        difficulty: 10.into(),
+        nonce: 0,
+        pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
+        time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
+        time_mint_period: DEFAULT_TIME_LOCKED_PERIOD,
+        vm_config: VMConfig {
+            gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
+        },
+        publishing_option: VMPublishingOption::Open,
+        gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
+        consensus_config: ConsensusConfig {
+            uncle_rate_target: UNCLE_RATE_TARGET,
+            base_block_time_target: DEFAULT_BASE_BLOCK_TIME_TARGET,
+            base_reward_per_block: DEFAULT_BASE_REWARD_PER_BLOCK.scaling(),
+            epoch_block_count: DEFAULT_BASE_BLOCK_DIFF_WINDOW * 10,
+            base_block_difficulty_window: DEFAULT_BASE_BLOCK_DIFF_WINDOW,
+            base_reward_per_uncle_percent: BASE_REWARD_PER_UNCLE_PERCENT,
+            min_block_time_target: MIN_BLOCK_TIME_TARGET,
+            max_block_time_target: MAX_BLOCK_TIME_TARGET,
+            base_max_uncles_per_block: BASE_MAX_UNCLES_PER_BLOCK,
+            base_block_gas_limit: BASE_BLOCK_GAS_LIMIT,
+            strategy: ConsensusStrategy::CryptoNight.value(),
+        },
+        association_key_pair: (None, association_public_key),
+        genesis_key_pair: None,
+        time_service_type: TimeServiceType::RealTimeService,
+        stdlib_version: StdlibVersion::Latest,
+        dao_config: DaoConfig {
+            voting_delay: 60 * 60,           // 1h
+            voting_period: 60 * 60 * 24 * 2, // 2d
+            voting_quorum_rate: 4,
+            min_action_delay: 60 * 60 * 24, // 1d
+        },
+        transaction_timeout: ONE_DAY,
+    }
 });

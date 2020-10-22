@@ -19,9 +19,12 @@ use proptest::sample::Index as PropIndex;
 use proptest::{collection::vec, prelude::*};
 use proptest_derive::Arbitrary;
 use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_crypto::multi_ed25519::multi_shard::MultiEd25519KeyShard;
+use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
 use starcoin_crypto::test_utils::KeyPair;
-use starcoin_crypto::{ed25519, HashValue};
+use starcoin_crypto::{ed25519, HashValue, SigningKey};
 use std::ops::Deref;
+use std::sync::Arc;
 use vm::CompiledModule;
 
 /// Wrapper for `proptest`'s [`Index`][proptest::sample::Index] that allows `AsRef` to work.
@@ -45,11 +48,50 @@ impl Deref for Index {
     }
 }
 
+/// A private key and public key pair holder for test
+#[derive(Debug, Clone)]
+pub enum KeyPairHolder {
+    Ed25519(Arc<Ed25519PrivateKey>, Ed25519PublicKey),
+    MultiEd25519(Arc<MultiEd25519KeyShard>, MultiEd25519PublicKey),
+}
+
+impl KeyPairHolder {
+    pub fn new(private_key: Arc<Ed25519PrivateKey>, public_key: Ed25519PublicKey) -> Self {
+        Self::Ed25519(private_key, public_key)
+    }
+
+    pub fn new_multi(
+        private_key: Arc<MultiEd25519KeyShard>,
+        public_key: MultiEd25519PublicKey,
+    ) -> Self {
+        Self::MultiEd25519(private_key, public_key)
+    }
+
+    pub fn sign_txn(&self, txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        Ok(match self {
+            Self::Ed25519(private_key, public_key) => {
+                let signature = private_key.sign(&txn);
+                SignedUserTransaction::ed25519(txn, public_key.clone(), signature)
+            }
+            Self::MultiEd25519(private_key, public_key) => {
+                let signature = private_key.sign(&txn);
+                SignedUserTransaction::multi_ed25519(txn, public_key.clone(), signature.into())
+            }
+        })
+    }
+
+    pub fn auth_key(&self) -> AuthenticationKey {
+        match self {
+            Self::Ed25519(_, public_key) => AuthenticationKey::ed25519(&public_key),
+            Self::MultiEd25519(_, public_key) => AuthenticationKey::multi_ed25519(&public_key),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
-struct AccountInfo {
+pub struct AccountInfo {
     address: AccountAddress,
-    private_key: Ed25519PrivateKey,
-    public_key: Ed25519PublicKey,
+    key_pair: KeyPairHolder,
     sequence_number: u64,
     sent_event_handle: EventHandle,
     received_event_handle: EventHandle,
@@ -60,8 +102,7 @@ impl AccountInfo {
         let address = account_address::from_public_key(&public_key);
         Self {
             address,
-            private_key,
-            public_key,
+            key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
             sequence_number: 0,
             sent_event_handle: EventHandle::new_from_address(&address, 0),
             received_event_handle: EventHandle::new_from_address(&address, 1),
@@ -74,8 +115,21 @@ impl AccountInfo {
     ) -> Self {
         Self {
             address,
-            private_key,
-            public_key,
+            key_pair: KeyPairHolder::new(Arc::new(private_key), public_key),
+            sequence_number: 0,
+            sent_event_handle: EventHandle::new_from_address(&address, 0),
+            received_event_handle: EventHandle::new_from_address(&address, 1),
+        }
+    }
+
+    pub fn new_multi(
+        address: AccountAddress,
+        private_key: Arc<MultiEd25519KeyShard>,
+        public_key: MultiEd25519PublicKey,
+    ) -> Self {
+        Self {
+            address,
+            key_pair: KeyPairHolder::new_multi(private_key, public_key),
             sequence_number: 0,
             sent_event_handle: EventHandle::new_from_address(&address, 0),
             received_event_handle: EventHandle::new_from_address(&address, 1),
@@ -109,9 +163,9 @@ impl AccountInfoUniverse {
         if let (Some(private_key), public_key) =
             &BuiltinNetworkID::Test.genesis_config().association_key_pair
         {
-            let account = AccountInfo::new_with_address(
+            let account = AccountInfo::new_multi(
                 account_config::association_address(),
-                private_key.as_ref().clone(),
+                private_key.clone(),
                 public_key.clone(),
             );
             Ok(Self {
@@ -313,9 +367,11 @@ impl SignatureCheckedTransactionGen {
             self.raw_transaction_gen
                 .materialize(sender_index, universe, expired_time, payload);
         let account_info = universe.get_account_info(sender_index);
-        raw_txn
-            .sign(&account_info.private_key, account_info.public_key.clone())
-            .expect("Signing raw transaction should work.")
+        let txn = account_info
+            .key_pair
+            .sign_txn(raw_txn)
+            .expect("Signing raw transaction should work.");
+        txn.check_signature().expect("Check signature should ok")
     }
 }
 

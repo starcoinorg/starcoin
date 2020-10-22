@@ -12,6 +12,3 @@ pub use service::*;
 pub use types::*;
 
 pub type AccountResult<T> = std::result::Result<T, error::AccountError>;
-
-#[cfg(any(test, feature = "mock"))]
-pub mod mock;

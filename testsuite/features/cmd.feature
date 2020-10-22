@@ -25,7 +25,6 @@ Feature: cmd integration test
 #    Then cmd: "debug gen_dev_block -p $.head_block"
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
-    Then cmd: "debug gen_txn -r -v 10"
 #    Then cmd: "debug log level Debug"
     Then stop
 
@@ -59,7 +58,9 @@ Feature: cmd integration test
     Then cmd: "account create -p 111"
     Then cmd: "account create -p 222"
     Then cmd: "account list"
-    Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[1].public_key@ -p @$[2].public_key@"
+    # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
+    # TODO support remove account and remove 0000000000000000000000000A550C18
+    Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
     Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg 0x@$.address@ --arg <para> --arg 10000000u128"
     Then stop
 

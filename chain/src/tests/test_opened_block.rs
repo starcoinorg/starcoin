@@ -25,7 +25,7 @@ pub fn test_open_block() -> Result<()> {
             header,
             block_gas_limit,
             miner_account.address,
-            Some(miner_account.public_key),
+            Some(miner_account.public_key.auth_key()),
             config.net().time_service().now_millis(),
             vec![],
         )?

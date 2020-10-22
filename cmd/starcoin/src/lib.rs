@@ -97,7 +97,6 @@ pub fn add_command(
                         .subcommand(debug::LogLevelCommand)
                         .subcommand(debug::LogPatternCommand),
                 )
-                .subcommand(debug::GenTxnCommand)
                 .subcommand(debug::PanicCommand)
                 .subcommand(debug::GetBlockByUncleCommand)
                 .subcommand(TxPoolStatusCommand)

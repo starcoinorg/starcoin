@@ -149,6 +149,10 @@ impl MultiEd25519KeyShard {
         bytes
     }
 
+    pub fn to_encoded_string(&self) -> Result<String> {
+        Ok(::hex::encode(&self.to_bytes()))
+    }
+
     pub fn len(&self) -> usize {
         self.private_keys.len()
     }
@@ -398,38 +402,35 @@ fn bitmap_last_set_bit(input: [u8; BITMAP_NUM_OF_BYTES]) -> Option<u8> {
 mod tests {
     use super::*;
     use crate::test_utils::{TestLibraCrypto, TEST_SEED};
-    use crate::Uniform;
+    use crate::ValidCryptoMaterialStringExt;
     use once_cell::sync::Lazy;
     use rand::prelude::*;
 
-    // Helper function to generate N ed25519 private keys.
-    fn generate_keys(n: usize) -> Vec<Ed25519PrivateKey> {
-        let mut rng = StdRng::from_seed(TEST_SEED);
-        (0..n)
-            .map(|_| Ed25519PrivateKey::generate(&mut rng))
-            .collect()
-    }
-
     fn generate_shards(n: usize, threshold: u8) -> Vec<MultiEd25519KeyShard> {
-        let private_keys = generate_keys(n);
-        let public_keys = private_keys
-            .iter()
-            .map(|private_key| private_key.public_key())
-            .collect::<Vec<_>>();
-        private_keys
-            .into_iter()
-            .enumerate()
-            .map(|(idx, private_key)| {
-                MultiEd25519KeyShard::new(public_keys.clone(), threshold, private_key, idx as u8)
-                    .unwrap()
-            })
-            .collect()
+        let mut rng = StdRng::from_seed(TEST_SEED);
+        MultiEd25519KeyShard::generate(&mut rng, n, threshold).unwrap()
     }
 
     static MESSAGE: Lazy<TestLibraCrypto> =
         Lazy::new(|| TestLibraCrypto("Test Message".to_string()));
     fn message() -> &'static TestLibraCrypto {
         &MESSAGE
+    }
+
+    #[test]
+    pub fn test_read_seed() {
+        let mut seed_rng = rand::rngs::OsRng;
+        let seed_buf: [u8; 32] = seed_rng.gen();
+        let mut rng = StdRng::from_seed(seed_buf);
+        let shards = MultiEd25519KeyShard::generate(&mut rng, 9, 4).unwrap();
+        for shard in shards {
+            println!(
+                "index: {}\npublic_key:\n{} \nimport_key:\n{}\n",
+                shard.index,
+                shard.public_key().to_encoded_string().unwrap(),
+                shard.to_encoded_string().unwrap(),
+            )
+        }
     }
 
     #[test]

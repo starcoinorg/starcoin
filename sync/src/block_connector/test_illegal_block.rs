@@ -90,7 +90,7 @@ async fn uncle_block_and_writeable_block_chain(
     let (block_template, _) = new_branch
         .create_block_template(
             *miner_account.address(),
-            Some(miner_account.public_key.clone()),
+            Some(miner_account.public_key.auth_key()),
             None,
             Vec::new(),
             vec![],
@@ -122,7 +122,7 @@ fn apply_with_illegal_uncle(
         .get_master()
         .create_block_template(
             *miner_account.address(),
-            Some(miner_account.public_key.clone()),
+            Some(miner_account.public_key.auth_key()),
             None,
             Vec::new(),
             uncles,
@@ -154,7 +154,7 @@ fn apply_legal_block(
         .get_master()
         .create_block_template(
             *miner_account.address(),
-            Some(miner_account.public_key.clone()),
+            Some(miner_account.public_key.auth_key()),
             None,
             Vec::new(),
             uncles,
@@ -360,7 +360,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
         let (block_template, _) = new_branch
             .create_block_template(
                 *miner_account.address(),
-                Some(miner_account.public_key.clone()),
+                Some(miner_account.public_key.auth_key()),
                 None,
                 Vec::new(),
                 vec![],
@@ -436,7 +436,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let (block_template, _) = fork_block_chain
         .create_block_template(
             *miner.address(),
-            Some(miner.public_key.clone()),
+            Some(miner.public_key.auth_key()),
             None,
             Vec::new(),
             Vec::new(),
@@ -464,7 +464,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
     let (block_template, _) = master_block_chain
         .create_block_template(
             *miner.address(),
-            Some(miner.public_key.clone()),
+            Some(miner.public_key.auth_key()),
             None,
             Vec::new(),
             uncles,
@@ -749,7 +749,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
         .get_master()
         .create_block_template(
             *miner_account.address(),
-            Some(miner_account.public_key.clone()),
+            Some(miner_account.public_key.auth_key()),
             None,
             Vec::new(),
             uncles.clone(),
@@ -827,7 +827,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
         .get_master()
         .create_block_template(
             *miner_account.address(),
-            Some(miner_account.public_key.clone()),
+            Some(miner_account.public_key.auth_key()),
             None,
             Vec::new(),
             Vec::new(),

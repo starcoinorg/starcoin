@@ -177,7 +177,7 @@ async fn test_rollback() -> Result<()> {
             block_header,
             u64::MAX,
             account_address,
-            Some(public_key),
+            Some(AuthenticationKey::ed25519(&public_key)),
             (start_timestamp + 60 * 10) * 1000,
             vec![],
         )?;

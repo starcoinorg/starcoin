@@ -233,10 +233,10 @@ impl Inner {
 
         let chain_state = self.chain.chain_state_reader();
         let author = *self.miner_account.address();
-        let author_public_key = if chain_state.exist_account(self.miner_account.address())? {
+        let author_auth_key = if chain_state.exist_account(self.miner_account.address())? {
             None
         } else {
-            Some(self.miner_account.public_key.clone())
+            Some(self.miner_account.public_key.auth_key())
         };
 
         let previous_header = self.chain.current_header();
@@ -255,7 +255,7 @@ impl Inner {
             previous_header,
             block_gas_limit,
             author,
-            author_public_key,
+            author_auth_key,
             self.chain.time_service().now_millis(),
             uncles,
         )?;

@@ -61,7 +61,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     };
     let (block_template, _) = block_chain.create_block_template(
         *miner_account.address(),
-        Some(miner_account.public_key.clone()),
+        Some(miner_account.public_key.auth_key()),
         None,
         vec![txn.clone()],
         vec![],
@@ -179,7 +179,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
         let account = AccountInfo::random();
         let txn = starcoin_executor::build_transfer_from_association(
             account.address,
-            Some(AuthenticationKey::ed25519(&account.public_key)),
+            Some(account.public_key.auth_key()),
             0,
             10000,
             DEFAULT_EXPIRATION_TIME,

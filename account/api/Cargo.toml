@@ -11,6 +11,8 @@ anyhow = "1.0.33"
 thiserror = "1.0"
 async-trait = "0.1"
 serde = { version = "1.0", default-features = false }
+serde_bytes = "0.11.5"
+hex= "0.4.2"
 starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 rand = "0.7.3"

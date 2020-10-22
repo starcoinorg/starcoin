@@ -167,7 +167,7 @@ impl RawUserTransaction {
         public_key: Ed25519PublicKey,
     ) -> Result<SignatureCheckedTransaction> {
         let signature = private_key.sign(&self);
-        Ok(SignatureCheckedTransaction(SignedUserTransaction::new(
+        Ok(SignatureCheckedTransaction(SignedUserTransaction::ed25519(
             self, public_key, signature,
         )))
     }
@@ -310,6 +310,16 @@ impl fmt::Debug for SignedUserTransaction {
 
 impl SignedUserTransaction {
     pub fn new(
+        raw_txn: RawUserTransaction,
+        authenticator: TransactionAuthenticator,
+    ) -> SignedUserTransaction {
+        SignedUserTransaction {
+            raw_txn,
+            authenticator,
+        }
+    }
+
+    pub fn ed25519(
         raw_txn: RawUserTransaction,
         public_key: Ed25519PublicKey,
         signature: Ed25519Signature,

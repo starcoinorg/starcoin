@@ -1,3 +1,6 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::account_storage::AccountStorage;
 use crate::Account;
 use crate::AccountManager;
@@ -22,9 +25,8 @@ pub fn test_import_account() -> Result<()> {
 
     // should success
     let wallet = manager.create_account("hello")?;
-    let kp = super::account_manager::gen_keypair();
-    let result =
-        manager.import_account(*wallet.address(), kp.private_key.to_bytes().to_vec(), "abc");
+    let private_key = super::account_manager::gen_private_key();
+    let result = manager.import_account(*wallet.address(), private_key.to_bytes().to_vec(), "abc");
     assert!(result.is_err());
 
     assert!(
@@ -33,7 +35,7 @@ pub fn test_import_account() -> Result<()> {
 
     let normal_address = AccountAddress::random();
     let _account =
-        manager.import_account(normal_address, kp.private_key.to_bytes().to_vec(), "abc")?;
+        manager.import_account(normal_address, private_key.to_bytes().to_vec(), "abc")?;
     assert_eq!(manager.list_account_infos()?.len(), 2);
     Ok(())
 }
@@ -98,7 +100,7 @@ pub fn test_wallet_unlock() -> Result<()> {
 #[test]
 pub fn test_libra_wallet() -> Result<()> {
     use core::convert::{From, TryFrom};
-    use starcoin_canonical_serialization::SCSCodec;
+    use scs::SCSCodec;
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};
     use starcoin_crypto::{
         hash::{CryptoHash, PlainCryptoHash},

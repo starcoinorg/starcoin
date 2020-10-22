@@ -60,8 +60,9 @@ impl CommandAction for PartialSignTxnCommand {
         };
         let wallet_account = ctx.state().get_account_or_default(opt.signer)?;
         let signer_address = wallet_account.address;
+        //TODO refactor this
         ensure!(
-            txn.can_signed_by(&wallet_account.public_key),
+            txn.can_signed_by(&wallet_account.public_key.as_single().unwrap()),
             "account {} cannot sign the txn",
             signer_address
         );
