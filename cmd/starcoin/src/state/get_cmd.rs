@@ -59,6 +59,8 @@ impl CommandAction for GetCommand {
         let state = client
             .state_get(AccessPath::new(account_addr, struct_tag.access_vector()))?
             .ok_or_else(|| format_err!("Account with address {} state not exist.", account_addr))?;
+        let account_state = client.state_get_account_state(account_addr).unwrap();
+        dbg!(account_state);
         let chain_state_reader = RemoteStateReader::new(client);
         let viewer = MoveValueAnnotator::new(&chain_state_reader);
         let annotated_resource = viewer.view_struct(struct_tag, state.as_slice())?;

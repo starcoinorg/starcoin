@@ -926,7 +926,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         ),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version: StdlibVersion::new(0, 5),
         dao_config: DaoConfig {
             voting_delay: 60,       // 1min
             voting_period: 60 * 60, // 1h

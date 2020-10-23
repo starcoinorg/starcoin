@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-tx-factory"
-version = "0.5.1"
+version = "0.6.0"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
