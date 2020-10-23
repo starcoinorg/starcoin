@@ -5,10 +5,8 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_account_api::AccountInfo;
-use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::{PrivateKey, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::account_address::{self, parse_address, AccountAddress};
+use starcoin_account_api::{AccountInfo, AccountPrivateKey};
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -50,10 +48,10 @@ impl CommandAction for ImportCommand {
         let opt: &ImportOpt = ctx.opt();
 
         let private_key = match (opt.from_input.as_ref(), opt.from_file.as_ref()) {
-            (Some(p), _) => Ed25519PrivateKey::from_encoded_string(p)?,
+            (Some(p), _) => AccountPrivateKey::from_encoded_string(p)?,
             (None, Some(p)) => {
                 let data = std::fs::read_to_string(p)?;
-                Ed25519PrivateKey::from_encoded_string(data.as_str())?
+                AccountPrivateKey::from_encoded_string(data.as_str())?
             }
             (None, None) => {
                 bail!("private key should be specified, use one of <input>, <from-file>")
@@ -62,7 +60,7 @@ impl CommandAction for ImportCommand {
 
         let address = opt
             .account_address
-            .unwrap_or_else(|| account_address::from_public_key(&private_key.public_key()));
+            .unwrap_or_else(|| private_key.public_key().derived_address());
         let account = client.account_import(
             address,
             private_key.to_bytes().to_vec(),
