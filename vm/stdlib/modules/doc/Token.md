@@ -1727,7 +1727,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &lt; key.start_time;
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &gt;= key.peroid && key.total &lt; key.minted;
-<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &lt; key.peroid && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>(key.total) &lt; key.minted;
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &lt; key.peroid && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>() &lt; key.minted;
 </code></pre>
 
 

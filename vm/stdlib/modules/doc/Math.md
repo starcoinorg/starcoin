@@ -272,11 +272,33 @@ does not matter for the verification of callers.
 
 
 <pre><code><b>pragma</b> opaque = <b>true</b>;
-<b>pragma</b> verify = <b>false</b>;
-<b>aborts_if</b> x &gt; z && z == 0;
-<b>aborts_if</b> x / z * y &gt; MAX_U128;
-<b>aborts_if</b> x /z * x % z * z + x / z * y % z + x % z * y / z + x % z * y % z / z &gt; MAX_U128;
-<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x);
+<b>include</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">MulDivAbortsIf</a>;
+<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>();
+</code></pre>
+
+
+
+
+<a name="0x1_Math_MulDivAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">MulDivAbortsIf</a> {
+    x: u128;
+    y: u128;
+    z: u128;
+    <b>aborts_if</b> y != z && x &gt; z && z == 0;
+    <b>aborts_if</b> y != z && x &gt; z && z!=0 && x/z*y &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && z == 0;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (y % z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y / z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y % z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x % z * (y % z) / z &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) &gt; MAX_U128;
+    <b>aborts_if</b> y != z && x &lt;= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) + x % z * (y % z) / z &gt; MAX_U128;
+}
 </code></pre>
 
 
@@ -285,5 +307,5 @@ does not matter for the verification of callers.
 <a name="0x1_Math_spec_mul_div"></a>
 
 
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(x: u128): u128;
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>(): u128;
 </code></pre>

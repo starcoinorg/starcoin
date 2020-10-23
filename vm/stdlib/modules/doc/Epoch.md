@@ -938,7 +938,8 @@
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">Math::MulDivAbortsIf</a>{x: last_epoch_block_gas_limit, y: percent, z: <a href="Epoch.md#0x1_Epoch_HUNDRED">HUNDRED</a>};
+<b>aborts_if</b> <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>() &gt; MAX_U64;
 </code></pre>
 
 

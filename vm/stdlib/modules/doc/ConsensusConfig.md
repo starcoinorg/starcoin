@@ -689,8 +689,8 @@
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>include</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">Math::MulDivAbortsIf</a>{x: <a href="ConsensusConfig.md#0x1_ConsensusConfig_spec_get_config">spec_get_config</a>().base_reward_per_block, y: new_epoch_block_time_target, z: <a href="ConsensusConfig.md#0x1_ConsensusConfig_spec_get_config">spec_get_config</a>().base_block_time_target};
 </code></pre>
 
 
@@ -706,5 +706,5 @@
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">Math::MulDivAbortsIf</a>{x: config.base_reward_per_block, y: new_epoch_block_time_target, z: config.base_block_time_target};
 </code></pre>

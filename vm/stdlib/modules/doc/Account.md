@@ -1743,7 +1743,7 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithMetadataAbortsIf">DepositWithMetadataAbortsIf</a>&lt;TokenType&gt;;
 </code></pre>
 
 
@@ -1759,12 +1759,25 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
-<pre><code><b>aborts_if</b> to_deposit.value == 0;
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(receiver);
-<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
-<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value + to_deposit.value &gt; max_u128();
+<pre><code><b>include</b> <a href="Account.md#0x1_Account_DepositWithMetadataAbortsIf">DepositWithMetadataAbortsIf</a>&lt;TokenType&gt;;
 <b>ensures</b> <b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
 <b>ensures</b> <b>old</b>(<b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver)).token.value + to_deposit.value == <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value;
+</code></pre>
+
+
+
+
+<a name="0x1_Account_DepositWithMetadataAbortsIf"></a>
+
+
+<pre><code><b>schema</b> <a href="Account.md#0x1_Account_DepositWithMetadataAbortsIf">DepositWithMetadataAbortsIf</a>&lt;TokenType&gt; {
+    receiver: address;
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;;
+    <b>aborts_if</b> to_deposit.value == 0;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(receiver);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
+    <b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value + to_deposit.value &gt; max_u128();
+}
 </code></pre>
 
 
@@ -1812,7 +1825,10 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account));
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).token.value &lt; amount;
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(<a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account)).withdrawal_capability);
 </code></pre>
 
 
