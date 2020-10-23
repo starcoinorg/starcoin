@@ -171,6 +171,11 @@ impl AccountPrivateKey {
         }
     }
 
+    pub fn from_encoded_string(encoded_str: &str) -> Result<Self> {
+        let bytes = ::hex::decode(encoded_str)?;
+        Self::try_from(bytes.as_slice())
+    }
+
     pub fn public_key(&self) -> AccountPublicKey {
         match self {
             Self::Single(key) => AccountPublicKey::Single(key.public_key()),
