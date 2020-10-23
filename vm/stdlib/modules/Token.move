@@ -292,7 +292,7 @@ module Token {
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if Timestamp::spec_now_seconds() < key.start_time;
         aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.peroid && key.total < key.minted;
-        aborts_if Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div(key.total) < key.minted;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div() < key.minted;
     }
 
     // Returns the mint amount of the FixedTimeMintKey.

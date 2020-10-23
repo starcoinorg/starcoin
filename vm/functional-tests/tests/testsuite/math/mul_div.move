@@ -13,6 +13,11 @@ script {
 
         assert(mul_div(100, 1, 3) == 33, 1008);
         assert(mul_div(100, 1000, 3000) == 33, 1009);
+        assert(mul_div(100, 2, 101) == 1, 1010);
+        assert(mul_div(100, 50, 101) == 49, 1011);
+        assert(mul_div(100, 1000, 101) == 990, 1012);
+        assert(mul_div(100, 1000, 1) == 100000, 1013);
+
     }
 }
 

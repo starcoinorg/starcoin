@@ -224,7 +224,8 @@ module Epoch {
     }
 
     spec fun in_or_decrease_gas_limit {
-        pragma verify = false; //mul_div() timeout
+        include Math::MulDivAbortsIf{x: last_epoch_block_gas_limit, y: percent, z: HUNDRED};
+        aborts_if Math::spec_mul_div() > MAX_U64;
     }
 
     fun update_epoch_data(epoch_data: &mut EpochData, new_epoch: bool, reward: u128, uncles: u64, parent_gas_used:u64) {
