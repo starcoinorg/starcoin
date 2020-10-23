@@ -303,7 +303,7 @@ pub fn build_stdlib_package(
             .unwrap_or_else(Vec::new);
 
         let association_auth_key =
-            AuthenticationKey::ed25519(&genesis_config.association_key_pair.1).to_vec();
+            AuthenticationKey::multi_ed25519(&genesis_config.association_key_pair.1).to_vec();
 
         // for test
         // let initial_script_allow_list =

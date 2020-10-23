@@ -63,7 +63,7 @@ impl MockChain {
     pub fn produce(&self) -> Result<Block> {
         let (template, _) = self.head.create_block_template(
             *self.miner.address(),
-            Some(self.miner.public_key.clone()),
+            Some(self.miner.public_key.auth_key()),
             None,
             vec![],
             vec![],

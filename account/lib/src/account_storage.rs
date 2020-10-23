@@ -1,9 +1,11 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use anyhow::{Error, Result};
+use scs::SCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
-use starcoin_account_api::Setting;
-use starcoin_canonical_serialization::SCSCodec;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
@@ -156,21 +158,20 @@ impl ValueCodec for EncryptedPrivateKey {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PublicKeyWrapper(Ed25519PublicKey);
-impl From<Ed25519PublicKey> for PublicKeyWrapper {
-    fn from(s: Ed25519PublicKey) -> Self {
+pub struct PublicKeyWrapper(AccountPublicKey);
+impl From<AccountPublicKey> for PublicKeyWrapper {
+    fn from(s: AccountPublicKey) -> Self {
         Self(s)
     }
 }
 
 impl ValueCodec for PublicKeyWrapper {
     fn encode_value(&self) -> Result<Vec<u8>, Error> {
-        Ok(self.0.to_bytes().to_vec())
+        scs::to_bytes(&self.0)
     }
 
     fn decode_value(data: &[u8]) -> Result<Self, Error> {
-        let key = Ed25519PublicKey::try_from(data)?;
-        Ok(Self(key))
+        Ok(Self(scs::from_bytes::<AccountPublicKey>(data)?))
     }
 }
 
@@ -279,7 +280,7 @@ impl AccountStorage {
         Ok(value.map(|v| v.addresses).unwrap_or_default())
     }
 
-    pub fn public_key(&self, address: AccountAddress) -> Result<Option<Ed25519PublicKey>> {
+    pub fn public_key(&self, address: AccountAddress) -> Result<Option<AccountPublicKey>> {
         self.public_key_store
             .get(address.into())
             .map(|w| w.map(|p| p.0))
@@ -289,7 +290,7 @@ impl AccountStorage {
         &self,
         address: AccountAddress,
         password: impl AsRef<str>,
-    ) -> Result<Option<Ed25519PrivateKey>> {
+    ) -> Result<Option<AccountPrivateKey>> {
         let encrypted_key = self.private_key_store.get(address.into())?;
         if encrypted_key.is_none() {
             return Ok(None);
@@ -298,20 +299,20 @@ impl AccountStorage {
 
         let plain_key_data = decrypt(password.as_ref().as_bytes(), &encrypted_key.0)?;
 
-        let private_key = Ed25519PrivateKey::try_from(plain_key_data.as_slice())?;
+        let private_key = AccountPrivateKey::try_from(plain_key_data.as_slice())?;
         Ok(Some(private_key))
     }
 
     pub fn update_key(
         &self,
         address: AccountAddress,
-        public_key: Ed25519PublicKey,
-        private_key: &Ed25519PrivateKey,
+        private_key: &AccountPrivateKey,
         password: impl AsRef<str>,
     ) -> Result<()> {
         let encrypted_prikey = encrypt(password.as_ref().as_bytes(), &private_key.to_bytes());
         self.private_key_store
             .put(address.into(), encrypted_prikey.into())?;
+        let public_key = private_key.public_key();
         self.public_key_store
             .put(address.into(), public_key.into())?;
         Ok(())

@@ -5,7 +5,6 @@ use crate::{common::strip, config::global::Config as GlobalConfig, errors::*};
 use starcoin_crypto::HashValue;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -71,7 +70,7 @@ impl Entry {
 pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<BlockMetadata> {
     let mut timestamp = None;
     let mut author = None;
-    let mut author_public_key = None;
+    let mut author_auth_key = None;
     let mut number = None;
     let mut uncles = 0u64;
 
@@ -80,7 +79,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             Entry::Author(s) => {
                 let account = config.get_account_for_name(s)?;
                 author = Some(*account.address());
-                author_public_key = Some(account.clone().pubkey);
+                author_auth_key = Some(account.auth_key());
             }
             Entry::Timestamp(new_timestamp) => timestamp = Some(new_timestamp),
             Entry::Number(new_number) => number = Some(new_number),
@@ -93,9 +92,7 @@ pub fn build_block_metadata(config: &GlobalConfig, entries: &[Entry]) -> Result<
             HashValue::random(),
             *t,
             author,
-            author_public_key
-                .as_ref()
-                .map(|k| AuthenticationKey::ed25519(&k)),
+            author_auth_key,
             uncles,
             *number,
             ChainId::test(),

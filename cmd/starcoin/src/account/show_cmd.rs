@@ -6,9 +6,9 @@ use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
+use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use std::collections::HashMap;
 use structopt::StructOpt;
@@ -62,11 +62,10 @@ impl CommandAction for ShowCommand {
                 balances.insert(token_name, b);
             }
         }
-        let auth_key = AuthenticationKey::ed25519(&account.public_key);
-        let auth_key_prefix = hex::encode(auth_key.prefix());
+        let auth_key = account.public_key.auth_key();
+
         Ok(AccountWithStateView {
-            auth_key: hex::encode(auth_key.to_vec()),
-            auth_key_prefix,
+            auth_key: auth_key.to_encoded_string()?,
             account,
             sequence_number,
             balances,

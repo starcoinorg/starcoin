@@ -35,8 +35,6 @@ pub struct StringView {
 pub struct AccountWithStateView {
     pub account: AccountInfo,
     pub auth_key: String,
-    // hex encoded bytes
-    pub auth_key_prefix: String,
     pub sequence_number: Option<u64>,
     pub balances: HashMap<String, u128>,
 }

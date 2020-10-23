@@ -44,9 +44,10 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
+pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::genesis_config::{
-    genesis_key_pair, BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy,
-    GenesisConfig, StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
+    BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy, GenesisConfig,
+    StdlibVersion, DEV_CONFIG, HALLEY_CONFIG, MAIN_CONFIG, PROXIMA_CONFIG,
 };
 pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService};
 pub use storage_config::StorageConfig;

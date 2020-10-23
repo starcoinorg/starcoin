@@ -8,7 +8,7 @@ use crate::{
     executor::FakeExecutor,
 };
 use mirai_annotations::checked_verify;
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
+use starcoin_account_api::AccountPrivateKey;
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -254,8 +254,7 @@ pub fn verify_module(
 /// A set of common parameters required to create transactions.
 struct TransactionParameters<'a> {
     pub sender_addr: AccountAddress,
-    pub pubkey: &'a Ed25519PublicKey,
-    pub privkey: &'a Ed25519PrivateKey,
+    pub privkey: &'a AccountPrivateKey,
     pub sequence_number: u64,
     pub max_gas_amount: u64,
     pub gas_unit_price: u64,
@@ -288,8 +287,7 @@ fn get_transaction_parameters<'a>(
 
     TransactionParameters {
         sender_addr: *config.sender.address(),
-        pubkey: &config.sender.pubkey,
-        privkey: &config.sender.privkey,
+        privkey: &config.sender.private_key(),
         sequence_number: config
             .sequence_number
             .unwrap_or_else(|| account_resource.sequence_number()),
@@ -311,7 +309,7 @@ fn make_script_transaction(
     let script = TransactionScript::new(blob, config.ty_args.clone(), config.args.clone());
 
     let params = get_transaction_parameters(exec, config);
-    Ok(RawUserTransaction::new_script(
+    let raw_txn = RawUserTransaction::new_script(
         params.sender_addr,
         params.sequence_number,
         script,
@@ -319,9 +317,9 @@ fn make_script_transaction(
         params.gas_unit_price,
         params.expiration_timestamp_seconds,
         ChainId::test(),
-    )
-    .sign(params.privkey, params.pubkey.clone())?
-    .into_inner())
+    );
+    let signature = params.privkey.sign(&raw_txn);
+    signature.build_transaction(raw_txn)
 }
 
 /// Creates and signs a module transaction.
@@ -335,7 +333,7 @@ fn make_module_transaction(
     let module = TransactionModule::new(blob);
 
     let params = get_transaction_parameters(exec, config);
-    Ok(RawUserTransaction::new_module(
+    let raw_txn = RawUserTransaction::new_module(
         params.sender_addr,
         params.sequence_number,
         module,
@@ -343,9 +341,9 @@ fn make_module_transaction(
         params.gas_unit_price,
         params.expiration_timestamp_seconds,
         ChainId::test(),
-    )
-    .sign(params.privkey, params.pubkey.clone())?
-    .into_inner())
+    );
+    let signature = params.privkey.sign(&raw_txn);
+    signature.build_transaction(raw_txn)
 }
 
 /// Runs a single transaction using the fake executor.

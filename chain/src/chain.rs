@@ -3,7 +3,6 @@
 
 use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
-use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{
@@ -32,6 +31,7 @@ use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
+use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::cmp::min;
 use std::iter::Extend;
 use std::{collections::HashSet, sync::Arc};
@@ -188,7 +188,7 @@ impl BlockChain {
     pub fn create_block_template(
         &self,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         parent_hash: Option<HashValue>,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -205,7 +205,7 @@ impl BlockChain {
             .ok_or_else(|| format_err!("Can find block header by {:?}", block_id))?;
         self.create_block_template_inner(
             author,
-            author_public_key,
+            author_auth_key,
             previous_header,
             user_txns,
             uncles,
@@ -216,7 +216,7 @@ impl BlockChain {
     fn create_block_template_inner(
         &self,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         previous_header: BlockHeader,
         user_txns: Vec<SignedUserTransaction>,
         uncles: Vec<BlockHeader>,
@@ -231,7 +231,7 @@ impl BlockChain {
             previous_header,
             final_block_gas_limit,
             author,
-            author_public_key,
+            author_auth_key,
             self.time_service.now_millis(),
             uncles,
         )?;

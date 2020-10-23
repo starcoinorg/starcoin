@@ -9,7 +9,6 @@ use starcoin_transaction_builder::encode_create_account_script;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
-use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::transaction::Script;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::block_metadata::BlockMetadata;
@@ -140,7 +139,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -197,7 +196,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -224,7 +223,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -272,7 +271,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -314,7 +313,7 @@ fn test_dao_upgrade_module() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -378,7 +377,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -446,7 +445,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -473,7 +472,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -521,7 +520,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -561,7 +560,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 HashValue::zero(),
                 block_timestamp,
                 *alice.address(),
-                Some(AuthenticationKey::ed25519(&alice.pubkey)),
+                Some(alice.auth_key()),
                 0,
                 block_number,
                 net.chain_id(),
@@ -610,7 +609,7 @@ fn execute_cast_vote(
             HashValue::zero(),
             block_timestamp,
             *alice.address(),
-            Some(AuthenticationKey::ed25519(&alice.pubkey)),
+            Some(alice.auth_key()),
             0,
             block_number,
             net.chain_id(),
@@ -677,7 +676,7 @@ fn execute_create_account(
             net.stdlib_version(),
             stc_type_tag(),
             alice.address(),
-            AuthenticationKey::ed25519(&alice.pubkey),
+            alice.auth_key(),
             pre_mint_amount / 4,
         );
         association_execute(
@@ -690,7 +689,7 @@ fn execute_create_account(
             net.stdlib_version(),
             stc_type_tag(),
             bob.address(),
-            AuthenticationKey::ed25519(&bob.pubkey),
+            bob.auth_key(),
             pre_mint_amount / 4,
         );
         association_execute(

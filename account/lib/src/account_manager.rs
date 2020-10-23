@@ -7,11 +7,11 @@ use crate::account_storage::AccountStorage;
 use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::error::AccountError;
-use starcoin_account_api::{AccountInfo, AccountResult};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::{PrivateKey, Uniform};
+use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountResult};
+use starcoin_crypto::ed25519::Ed25519PrivateKey;
+use starcoin_crypto::Uniform;
 use starcoin_types::{
-    account_address::{self, AccountAddress},
+    account_address::AccountAddress,
     account_config::token_code::TokenCode,
     transaction::{RawUserTransaction, SignedUserTransaction},
 };
@@ -20,8 +20,6 @@ use std::convert::TryFrom;
 use std::ops::Add;
 use std::time::Duration;
 use std::time::Instant;
-
-type KeyPair = starcoin_crypto::test_utils::KeyPair<Ed25519PrivateKey, Ed25519PublicKey>;
 
 /// Account manager
 pub struct AccountManager {
@@ -71,15 +69,10 @@ impl AccountManager {
     }
 
     pub fn create_account(&self, password: &str) -> AccountResult<Account> {
-        let keypair = gen_keypair();
-        let address = account_address::from_public_key(&keypair.public_key);
-
-        self.save_account(
-            address,
-            keypair.public_key.clone(),
-            keypair.private_key,
-            password.to_string(),
-        )
+        let private_key = gen_private_key();
+        let private_key = AccountPrivateKey::Single(private_key);
+        let address = private_key.public_key().derived_address();
+        self.save_account(address, private_key, password.to_string())
     }
 
     pub fn unlock_account(
@@ -108,33 +101,21 @@ impl AccountManager {
         private_key: Vec<u8>,
         password: &str,
     ) -> AccountResult<Account> {
-        let private_key = Ed25519PrivateKey::try_from(private_key.as_slice())
+        let private_key = AccountPrivateKey::try_from(private_key.as_slice())
             .map_err(|_| AccountError::InvalidPrivateKey)?;
-        self.save_account(
-            address,
-            private_key.public_key(),
-            private_key,
-            password.to_string(),
-        )
+        self.save_account(address, private_key, password.to_string())
     }
 
     fn save_account(
         &self,
         address: AccountAddress,
-        public_key: Ed25519PublicKey,
-        private_key: Ed25519PrivateKey,
+        private_key: AccountPrivateKey,
         password: String,
     ) -> AccountResult<Account> {
         if self.contains(&address)? {
             return Err(AccountError::AccountAlreadyExist(address));
         }
-        let account = Account::create(
-            public_key,
-            private_key,
-            Some(address),
-            password,
-            self.store.clone(),
-        )?;
+        let account = Account::create(private_key, Some(address), password, self.store.clone())?;
         self.store.add_address(*account.address())?;
 
         // if it's the first address, set it default.
@@ -247,10 +228,9 @@ impl AccountManager {
     }
 }
 
-pub(crate) fn gen_keypair() -> KeyPair {
+pub(crate) fn gen_private_key() -> Ed25519PrivateKey {
     let mut seed_rng = rand::rngs::OsRng;
     let seed_buf: [u8; 32] = seed_rng.gen();
     let mut rng: StdRng = SeedableRng::from_seed(seed_buf);
-    let key_pair: KeyPair = KeyPair::generate(&mut rng);
-    key_pair
+    Ed25519PrivateKey::generate(&mut rng)
 }

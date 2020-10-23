@@ -4,9 +4,11 @@
 //! Test infrastructure for modeling Libra accounts.
 
 use executor::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_account_api::{AccountPrivateKey, AccountPublicKey};
 use starcoin_config::genesis_key_pair;
 use starcoin_crypto::ed25519::*;
 use starcoin_crypto::keygen::KeyGen;
+use starcoin_crypto::multi_ed25519::genesis_multi_key_pair;
 use starcoin_types::{
     access_path::AccessPath,
     account_address::AccountAddress,
@@ -30,6 +32,7 @@ use starcoin_vm_types::{
 };
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use std::sync::Arc;
 use stdlib::transaction_scripts::compiled_transaction_script;
 use stdlib::transaction_scripts::StdlibScript;
 
@@ -43,10 +46,7 @@ pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Account {
     addr: AccountAddress,
-    /// The current private key for this account.
-    pub privkey: Ed25519PrivateKey,
-    /// The current public key for this account.
-    pub pubkey: Ed25519PublicKey,
+    private_key: Arc<AccountPrivateKey>,
 }
 
 impl Account {
@@ -70,8 +70,7 @@ impl Account {
         let addr = starcoin_types::account_address::from_public_key(&pubkey);
         Account {
             addr,
-            privkey,
-            pubkey,
+            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
         }
     }
 
@@ -80,11 +79,10 @@ impl Account {
     /// The address will be [`address`], which should be an address for a genesis account and
     /// the account will use ChainNetwork::genesis_key_pair() as its keypair.
     pub fn new_genesis_account(address: AccountAddress) -> Self {
-        let (privkey, pubkey) = genesis_key_pair();
+        let (privkey, _pubkey) = genesis_key_pair();
         Account {
             addr: address,
-            pubkey,
-            privkey,
+            private_key: Arc::new(AccountPrivateKey::Single(privkey)),
         }
     }
 
@@ -93,7 +91,23 @@ impl Account {
     /// The address will be [`association_address`][account_config::association_address], and
     /// the account will use [`GENESIS_KEYPAIR`][struct@GENESIS_KEYPAIR] as its keypair.
     pub fn new_association() -> Self {
-        Self::new_genesis_account(account_config::association_address())
+        let (privkey, _pubkey) = genesis_multi_key_pair();
+        Account {
+            addr: account_config::association_address(),
+            private_key: Arc::new(AccountPrivateKey::Multi(privkey)),
+        }
+    }
+
+    pub fn private_key(&self) -> &AccountPrivateKey {
+        &self.private_key
+    }
+
+    pub fn auth_key(&self) -> AuthenticationKey {
+        self.private_key.public_key().auth_key()
+    }
+
+    pub fn public_key(&self) -> AccountPublicKey {
+        self.private_key.public_key()
     }
 
     /// Returns the address of the account. This is a hash of the public key the account was created
@@ -128,7 +142,6 @@ impl Account {
         self.make_access_path(BalanceResource::struct_tag_for_token_code(token_code))
     }
 
-    // TODO: plug in the account type
     fn make_access_path(&self, tag: StructTag) -> AccessPath {
         // TODO: we need a way to get the type (FatStructType) of the Account in place
         let resource_tag = ResourceKey::new(self.addr, tag);
@@ -136,21 +149,8 @@ impl Account {
     }
 
     /// Changes the keys for this account to the provided ones.
-    pub fn rotate_key(&mut self, privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) {
-        self.privkey = privkey;
-        self.pubkey = pubkey;
-    }
-
-    /// Computes the authentication key for this account, as stored on the chain.
-    ///
-    /// This is the same as the account's address if the keys have never been rotated.
-    pub fn auth_key(&self) -> Vec<u8> {
-        AuthenticationKey::ed25519(&self.pubkey).to_vec()
-    }
-
-    /// Return the first 16 bytes of the account's auth key
-    pub fn auth_key_prefix(&self) -> Vec<u8> {
-        AuthenticationKey::ed25519(&self.pubkey).prefix().to_vec()
+    pub fn rotate_key(&mut self, privkey: AccountPrivateKey) {
+        self.private_key = Arc::new(privkey);
     }
 
     /// Returns a [`SignedUserTransaction`] with the arguments defined in `args` and this account as
@@ -190,7 +190,7 @@ impl Account {
         expiration_timestamp_secs: u64,
         chain_id: ChainId,
     ) -> SignedUserTransaction {
-        Self::create_raw_txn_impl(
+        let raw_txn = Self::create_raw_txn_impl(
             sender,
             program,
             sequence_number,
@@ -198,10 +198,11 @@ impl Account {
             gas_unit_price,
             expiration_timestamp_secs,
             chain_id,
-        )
-        .sign(&self.privkey, self.pubkey.clone())
-        .unwrap()
-        .into_inner()
+        );
+        let signature = self.private_key.sign(&raw_txn);
+        signature
+            .build_transaction(raw_txn)
+            .expect("Build transaction should success")
     }
 
     // get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
@@ -226,10 +227,10 @@ impl Account {
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> SignedUserTransaction {
-        raw_txn
-            .sign(&self.privkey, self.pubkey.clone())
-            .unwrap()
-            .into_inner()
+        let signature = self.private_key.sign(&raw_txn);
+        signature
+            .build_transaction(raw_txn)
+            .expect("build txn should success")
     }
 }
 
@@ -412,8 +413,8 @@ impl AccountData {
     }
 
     /// Changes the keys for this account to the provided ones.
-    pub fn rotate_key(&mut self, privkey: Ed25519PrivateKey, pubkey: Ed25519PublicKey) {
-        self.account.rotate_key(privkey, pubkey)
+    pub fn rotate_key(&mut self, privkey: AccountPrivateKey) {
+        self.account.rotate_key(privkey)
     }
 
     pub fn sent_payment_event_layout() -> MoveStructLayout {
@@ -467,7 +468,7 @@ impl AccountData {
         let account = Value::struct_(Struct::pack(
             vec![
                 // TODO: this needs to compute the auth key instead
-                Value::vector_u8(AuthenticationKey::ed25519(&self.account.pubkey).to_vec()),
+                Value::vector_u8(self.account.auth_key().to_vec()),
                 self.withdrawal_capability.as_ref().unwrap().value(),
                 self.key_rotation_capability.as_ref().unwrap().value(),
                 Value::struct_(Struct::pack(
@@ -671,9 +672,7 @@ pub fn peer_to_peer_txn(
 ) -> SignedUserTransaction {
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*receiver.address()));
-    args.push(TransactionArgument::U8Vector(
-        AuthenticationKey::ed25519(&receiver.pubkey).to_vec(),
-    ));
+    args.push(TransactionArgument::U8Vector(receiver.auth_key().to_vec()));
     args.push(TransactionArgument::U128(transfer_amount));
 
     // get a SignedTransaction
@@ -700,7 +699,7 @@ pub fn create_account_txn_sent_as_association(
     let mut args: Vec<TransactionArgument> = Vec::new();
     args.push(TransactionArgument::Address(*new_account.address()));
     args.push(TransactionArgument::U8Vector(
-        AuthenticationKey::ed25519(&new_account.pubkey).to_vec(),
+        new_account.auth_key().to_vec(),
     ));
     args.push(TransactionArgument::U128(initial_amount));
 

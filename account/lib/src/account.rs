@@ -1,9 +1,11 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::account_manager::gen_private_key;
 use crate::account_storage::AccountStorage;
 use anyhow::{format_err, Result};
 use starcoin_account_api::error::AccountError;
-use starcoin_account_api::{AccountInfo, AccountResult};
-use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey};
-use starcoin_crypto::keygen::KeyGen;
+use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
 use starcoin_crypto::PrivateKey;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
@@ -13,21 +15,20 @@ use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 
 pub struct Account {
     addr: AccountAddress,
-    //TODO security, this field should keep in memory?
-    private_key: Ed25519PrivateKey,
+    private_key: AccountPrivateKey,
     store: AccountStorage,
 }
 
 impl Account {
     pub fn create(
-        public_key: Ed25519PublicKey,
-        private_key: Ed25519PrivateKey,
+        private_key: AccountPrivateKey,
         addr: Option<AccountAddress>,
         password: String,
         storage: AccountStorage,
     ) -> AccountResult<Self> {
-        let address = addr.unwrap_or_else(|| account_address::from_public_key(&public_key));
-        storage.update_key(address, public_key, &private_key, password.as_str())?;
+        let address = addr.unwrap_or_else(|| private_key.public_key().derived_address());
+
+        storage.update_key(address, &private_key, password.as_str())?;
 
         Ok(Self {
             addr: address,
@@ -70,9 +71,9 @@ impl Account {
     }
 
     pub fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
-        raw_txn
-            .sign(&self.private_key, self.private_key.public_key())
-            .map(|t| t.into_inner())
+        //TODO handle multi signature
+        let signature = self.private_key.sign(&raw_txn);
+        signature.build_transaction(raw_txn)
     }
 
     pub fn destroy(self) -> Result<()> {
@@ -83,32 +84,25 @@ impl Account {
         &self.addr
     }
 
-    pub fn private_key(&self) -> &Ed25519PrivateKey {
+    pub fn private_key(&self) -> &AccountPrivateKey {
         &self.private_key
     }
 
-    pub fn public_key(&self) -> Ed25519PublicKey {
-        //TODO should keep a public_key cache?
+    pub fn public_key(&self) -> AccountPublicKey {
         self.private_key.public_key()
     }
 
-    pub fn get_auth_key(&self) -> AuthenticationKey {
-        AuthenticationKey::ed25519(&self.public_key())
+    pub fn auth_key(&self) -> AuthenticationKey {
+        self.public_key().auth_key()
     }
 
     ///Generate a random account for test.
     pub fn random() -> Result<Self> {
-        let mut key_gen = KeyGen::from_os_rng();
-        let (private_key, public_key) = key_gen.generate_keypair();
+        let private_key = gen_private_key();
+        let public_key = private_key.public_key();
         let address = account_address::from_public_key(&public_key);
         let storage = AccountStorage::new(StorageInstance::new_cache_instance());
-        Self::create(
-            public_key,
-            private_key,
-            Some(address),
-            "".to_string(),
-            storage,
-        )
-        .map_err(|e| e.into())
+        Self::create(private_key.into(), Some(address), "".to_string(), storage)
+            .map_err(|e| e.into())
     }
 }

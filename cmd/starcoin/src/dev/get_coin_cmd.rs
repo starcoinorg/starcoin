@@ -11,7 +11,6 @@ use starcoin_executor::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_config;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use structopt::StructOpt;
 use tokio::time::Duration;
 
@@ -62,25 +61,25 @@ impl CommandAction for GetCoinCommand {
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&association_address)?
-            .unwrap_or_else(|| {
-                panic!(
+            .ok_or_else(|| {
+                format_err!(
                     "association_address address {} must exist",
                     association_address
                 )
-            });
+            })?;
         let balance = account_state_reader
             .get_balance(&association_address)?
-            .unwrap_or_else(|| {
-                panic!(
+            .ok_or_else(|| {
+                format_err!(
                     "association_address address {} balance must exist",
                     association_address
                 )
-            });
+            })?;
         let amount = opt.amount.unwrap_or(balance * 20 / 100);
         let raw_txn = starcoin_executor::build_transfer_txn(
             association_address,
             to.address,
-            Some(AuthenticationKey::ed25519(&to.public_key)),
+            Some(to.public_key.auth_key()),
             account_resource.sequence_number(),
             amount,
             1,

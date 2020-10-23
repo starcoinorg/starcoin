@@ -45,7 +45,7 @@ pub fn create_user_txn<T: TransactionSigner + ?Sized>(
 impl TransactionSigner for KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
     fn sign_txn(&self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
         let signature = self.private_key.sign(&raw_txn);
-        Ok(SignedUserTransaction::new(
+        Ok(SignedUserTransaction::ed25519(
             raw_txn,
             self.public_key.clone(),
             signature,

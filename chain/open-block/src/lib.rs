@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, format_err, Result};
-use crypto::ed25519::Ed25519PublicKey;
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
@@ -44,7 +43,7 @@ impl OpenedBlock {
         previous_header: BlockHeader,
         block_gas_limit: u64,
         author: AccountAddress,
-        author_public_key: Option<Ed25519PublicKey>,
+        author_auth_key: Option<AuthenticationKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
     ) -> Result<Self> {
@@ -65,7 +64,7 @@ impl OpenedBlock {
             previous_block_id,
             block_timestamp,
             author,
-            author_public_key.map(|k| AuthenticationKey::ed25519(&k)),
+            author_auth_key,
             uncles.len() as u64,
             previous_header.number + 1,
             chain_id,

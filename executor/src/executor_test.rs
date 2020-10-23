@@ -30,7 +30,6 @@ use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
-use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
@@ -111,7 +110,7 @@ fn test_txn_verify_err_case() -> Result<()> {
         net.stdlib_version(),
         stc_type_tag(),
         alice.address(),
-        AuthenticationKey::ed25519(&alice.pubkey),
+        alice.auth_key(),
         100000,
     );
     let txn = RawUserTransaction::new(
@@ -147,7 +146,7 @@ fn test_package_txn() -> Result<()> {
             net.stdlib_version(),
             stc_type_tag(),
             alice.address(),
-            AuthenticationKey::ed25519(&alice.pubkey),
+            alice.auth_key(),
             pre_mint_amount / 4,
         );
         association_execute(
@@ -160,7 +159,7 @@ fn test_package_txn() -> Result<()> {
             net.stdlib_version(),
             stc_type_tag(),
             bob.address(),
-            AuthenticationKey::ed25519(&bob.pubkey),
+            bob.auth_key(),
             pre_mint_amount / 4,
         );
         association_execute(
@@ -292,7 +291,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         0,
         1,
         net.chain_id(),
@@ -337,7 +336,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         starcoin_crypto::HashValue::random(),
         net.time_service().now_millis(),
         *account1.address(),
-        Some(AuthenticationKey::ed25519(&account1.pubkey)),
+        Some(account1.auth_key()),
         0,
         2,
         net.chain_id(),
@@ -426,7 +425,7 @@ fn test_validate_txn() -> Result<()> {
     let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -456,7 +455,7 @@ fn test_validate_txn_chain_id() -> Result<()> {
     let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -558,7 +557,7 @@ fn test_execute_mint_txn_with_starcoin_vm() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        Some(AuthenticationKey::ed25519(&account.pubkey)),
+        Some(account.auth_key()),
         0,
         1000,
         1,
@@ -586,7 +585,7 @@ fn test_execute_transfer_txn_with_starcoin_vm() -> Result<()> {
     let raw_txn = crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -618,7 +617,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
     let txn2 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         0,
         1000,
         1,
@@ -630,7 +629,7 @@ fn test_execute_multi_txn_with_same_account() -> Result<()> {
     let txn3 = Transaction::UserTransaction(account1.sign_txn(crate::build_transfer_txn(
         *account1.address(),
         *account2.address(),
-        Some(AuthenticationKey::ed25519(&account2.pubkey)),
+        Some(account2.auth_key()),
         1,
         1000,
         1,
@@ -658,7 +657,7 @@ fn test_sequence_number() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        Some(AuthenticationKey::ed25519(&account.pubkey)),
+        Some(account.auth_key()),
         old_sequence_number,
         1000,
         1,
@@ -682,7 +681,7 @@ fn test_gas_used() -> Result<()> {
     let account = Account::new();
     let txn = crate::build_transfer_from_association(
         *account.address(),
-        Some(AuthenticationKey::ed25519(&account.pubkey)),
+        Some(account.auth_key()),
         0,
         1000,
         1,
@@ -770,7 +769,7 @@ fn test_block_metadata() -> Result<()> {
             starcoin_crypto::HashValue::random(),
             net.time_service().now_millis(),
             *account1.address(),
-            Some(AuthenticationKey::ed25519(&account1.pubkey)),
+            Some(account1.auth_key()),
             0,
             i + 1,
             net.chain_id(),
