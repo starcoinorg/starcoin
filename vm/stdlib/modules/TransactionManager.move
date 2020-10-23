@@ -106,6 +106,10 @@ module TransactionManager {
         aborts_if txn_sequence_number < global<Account::Account>(txn_sender).sequence_number;
         aborts_if txn_sequence_number != global<Account::Account>(txn_sender).sequence_number;
         include TransactionTimeout::AbortsIfTimestampNotValid;
+        aborts_if !TransactionTimeout::spec_is_valid_transaction_timestamp(txn_expiration_time);
+        //include TransactionPublishOption::AbortsIfTxnPublishOptionNotExist;
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account), txn_script_or_package_hash);
     }
 
     // The epilogue is invoked at the end of transactions.

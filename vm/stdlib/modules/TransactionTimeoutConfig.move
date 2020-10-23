@@ -4,6 +4,7 @@ module TransactionTimeoutConfig {
     use 0x1::Timestamp;
     use 0x1::CoreAddresses;
     use 0x1::Config;
+    use 0x1::Signer;
 
     spec module {
         pragma verify = true;
@@ -25,8 +26,10 @@ module TransactionTimeoutConfig {
     }
 
     spec fun initialize {
-        //aborts_if Timestamp::
-        pragma verify = false;
+        aborts_if !Timestamp::is_genesis();
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        include Config::PublishNewConfigAbortsIf<TransactionTimeoutConfig>;
+        include Config::PublishNewConfigEnsures<TransactionTimeoutConfig>;
     }
 
     public fun new_transaction_timeout_config(duration_seconds: u64) : TransactionTimeoutConfig {
@@ -34,7 +37,7 @@ module TransactionTimeoutConfig {
     }
 
     spec fun new_transaction_timeout_config {
-        pragma verify = false;
+        aborts_if false;
     }
 
     public fun get_transaction_timeout_config(): TransactionTimeoutConfig {
@@ -42,7 +45,9 @@ module TransactionTimeoutConfig {
     }
 
     spec fun get_transaction_timeout_config {
-        pragma verify = false;
+        include Config::AbortsIfConfigNotExist<TransactionTimeoutConfig>{
+            addr: CoreAddresses::GENESIS_ADDRESS()
+        };
     }
 
     public fun duration_seconds() :u64 {
@@ -51,7 +56,15 @@ module TransactionTimeoutConfig {
     }
 
     spec fun duration_seconds {
-        pragma verify = false;
+        include Config::AbortsIfConfigNotExist<TransactionTimeoutConfig>{
+            addr: CoreAddresses::GENESIS_ADDRESS()
+        };
+    }
+
+    spec schema AbortsIfTxnTimeoutConfigNotExist {
+        include Config::AbortsIfConfigNotExist<TransactionTimeoutConfig>{
+            addr: CoreAddresses::GENESIS_ADDRESS()
+        };
     }
 }
 }

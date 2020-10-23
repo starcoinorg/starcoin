@@ -5,10 +5,20 @@ module TransactionTimeout {
   use 0x1::Timestamp;
   use 0x1::Block;
   use 0x1::TransactionTimeoutConfig;
+  use 0x1::Config;
 
   spec module {
       pragma verify;
       pragma aborts_if_is_strict;
+
+      define spec_is_valid_transaction_timestamp(txn_timestamp: u64):bool {
+        if (Block::get_current_block_number() == 0) {
+          txn_timestamp > Timestamp::now_seconds()
+        } else {
+            Timestamp::now_seconds() < txn_timestamp && txn_timestamp <
+            (Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds())
+        }
+      }
   }
 
   public fun is_valid_transaction_timestamp(txn_timestamp: u64): bool {
@@ -23,17 +33,19 @@ module TransactionTimeout {
     current_block_time < txn_timestamp && txn_timestamp < max_txn_time
   }
   spec fun is_valid_transaction_timestamp {
-    aborts_if Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
     aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+    include Timestamp::AbortsIfTimestampNotExists;
+    aborts_if Block::get_current_block_number() != 0 && Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
+    aborts_if Block::get_current_block_number() != 0 && !exists<Config::Config<TransactionTimeoutConfig::TransactionTimeoutConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
   }
 
     spec schema AbortsIfTimestampNotValid {
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if !exists<Block::BlockMetadata>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         include Timestamp::AbortsIfTimestampNotExists;
-        //aborts_if !exists<TransactionTimeoutConfig::TransactionTimeoutConfig>(CoreAddresses::GENESIS_ADDRESS());
-        //aborts_if Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
+        aborts_if Block::get_current_block_number() != 0 && Timestamp::now_seconds() + TransactionTimeoutConfig::duration_seconds() > max_u64();
+        aborts_if Block::get_current_block_number() != 0 && !exists<Config::Config<TransactionTimeoutConfig::TransactionTimeoutConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
 }
 }
