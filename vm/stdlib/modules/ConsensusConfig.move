@@ -188,8 +188,8 @@ module ConsensusConfig {
     }
 
     spec fun compute_reward_per_block {
-        pragma verify = false;
         aborts_if !exists<Config::Config<ConsensusConfig>>(CoreAddresses::SPEC_GENESIS_ADDRESS());
+        include Math::MulDivAbortsIf{x: spec_get_config().base_reward_per_block, y: new_epoch_block_time_target, z: spec_get_config().base_block_time_target};
     }
 
     public fun do_compute_reward_per_block(config: &ConsensusConfig, new_epoch_block_time_target: u64): u128 {
@@ -197,7 +197,7 @@ module ConsensusConfig {
     }
 
     spec fun do_compute_reward_per_block {
-        pragma verify = false;
+        include Math::MulDivAbortsIf{x: config.base_reward_per_block, y: new_epoch_block_time_target, z: config.base_block_time_target};
     }
 
 

@@ -229,7 +229,7 @@ module Account {
     }
 
     spec fun deposit {
-        pragma verify = false;
+        include DepositWithMetadataAbortsIf<TokenType>;
     }
 
     /// Deposits the `to_deposit` token into the `receiver`'s account balance with the attached `metadata`
@@ -251,13 +251,21 @@ module Account {
     }
 
     spec fun deposit_with_metadata {
+        include DepositWithMetadataAbortsIf<TokenType>;
+        ensures exists<Balance<TokenType>>(receiver);
+        ensures old(global<Balance<TokenType>>(receiver)).token.value + to_deposit.value == global<Balance<TokenType>>(receiver).token.value;
+    }
+
+    spec schema DepositWithMetadataAbortsIf<TokenType> {
+        receiver: address;
+        to_deposit: Token<TokenType>;
+
         aborts_if to_deposit.value == 0;
         aborts_if !exists<Account>(receiver);
         aborts_if !exists<Balance<TokenType>>(receiver);
 
         aborts_if global<Balance<TokenType>>(receiver).token.value + to_deposit.value > max_u128();
-        ensures exists<Balance<TokenType>>(receiver);
-        ensures old(global<Balance<TokenType>>(receiver)).token.value + to_deposit.value == global<Balance<TokenType>>(receiver).token.value;
+
     }
 
     /// Helper to deposit `amount` to the given account balance
@@ -286,7 +294,10 @@ module Account {
         withdraw_with_metadata<TokenType>(account, amount, x"")
     }
     spec fun withdraw {
-        pragma verify = false;
+        aborts_if !exists<Balance<TokenType>>(Signer::spec_address_of(account));
+        aborts_if !exists<Account>(Signer::spec_address_of(account));
+        aborts_if global<Balance<TokenType>>(Signer::spec_address_of(account)).token.value < amount;
+        aborts_if Option::spec_is_none(global<Account>(Signer::spec_address_of(account)).withdrawal_capability);
     }
 
 

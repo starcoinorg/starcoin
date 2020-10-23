@@ -87,15 +87,39 @@ module Math {
     }
 
     spec fun mul_div {
-        // Timeout
         pragma opaque = true;
-        pragma verify = false;
-        aborts_if x > z && z == 0;
-        aborts_if x / z * y > MAX_U128;
-        aborts_if x /z * x % z * z + x / z * y % z + x % z * y / z + x % z * y % z / z > MAX_U128;
-        ensures [abstract] result == spec_mul_div(x);
+        include MulDivAbortsIf;
+        ensures [abstract] result == spec_mul_div();
     }
 
-    spec define spec_mul_div(x: u128): u128;
+    spec schema MulDivAbortsIf {
+        x: u128;
+        y: u128;
+        z: u128;
+        aborts_if y != z && x > z && z == 0;
+        aborts_if y != z && x > z && z!=0 && x/z*y > MAX_U128;
+        aborts_if y != z && x <= z && z == 0;
+        //a * b overflow
+        aborts_if y != z && x <= z && x / z * (x % z) > MAX_U128;
+        //a * b * z overflow
+        aborts_if y != z && x <= z && x / z * (x % z) * z > MAX_U128;
+        //a * d overflow
+        aborts_if y != z && x <= z && x / z * (y % z) > MAX_U128;
+        //a * b * z + a * d overflow
+        aborts_if y != z && x <= z && x / z * (x % z) * z + x / z * (y % z) > MAX_U128;
+        //b * c overflow
+        aborts_if y != z && x <= z && x % z * (y / z) > MAX_U128;
+        //b * d overflow
+        aborts_if y != z && x <= z && x % z * (y % z) > MAX_U128;
+        //b * d / z overflow
+        aborts_if y != z && x <= z && x % z * (y % z) / z > MAX_U128;
+        //a * b * z + a * d + b * c overflow
+        aborts_if y != z && x <= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) > MAX_U128;
+        //a * b * z + a * d + b * c + b * d / z overflow
+        aborts_if y != z && x <= z && x / z * (x % z) * z + x / z * (y % z) + x % z * (y / z) + x % z * (y % z) / z > MAX_U128;
+
+    }
+
+    spec define spec_mul_div(): u128;
 }
 }
