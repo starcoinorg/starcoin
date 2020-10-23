@@ -41,6 +41,7 @@ pub mod generate_summaries {
 pub mod installer {
     pub use libra_x::installer::*;
 }
+#[cfg(not(windows))]
 pub mod lint {
     pub use libra_x::lint::*;
 }
