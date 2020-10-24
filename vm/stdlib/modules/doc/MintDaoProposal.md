@@ -11,6 +11,10 @@
 -  [Function `plugin`](#0x1_MintDaoProposal_plugin)
 -  [Function `propose_mint_to`](#0x1_MintDaoProposal_propose_mint_to)
 -  [Function `execute_mint_proposal`](#0x1_MintDaoProposal_execute_mint_proposal)
+-  [Specification](#@Specification_1)
+    -  [Function `plugin`](#@Specification_1_plugin)
+    -  [Function `propose_mint_to`](#@Specification_1_propose_mint_to)
+    -  [Function `execute_mint_proposal`](#@Specification_1_execute_mint_proposal)
 
 
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
@@ -183,3 +187,83 @@
 
 
 </details>
+
+<a name="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
+<b>pragma</b> aborts_if_is_partial;
+</code></pre>
+
+
+
+<a name="@Specification_1_plugin"></a>
+
+### Function `plugin`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<a name="0x1_MintDaoProposal_sender$3"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+<b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenT&gt;&gt;(sender);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenT&gt;&gt;(sender);
+<b>ensures</b> !<b>exists</b>&lt;<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenT&gt;&gt;(sender);
+<b>ensures</b> <b>exists</b>&lt;<a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenT&gt;&gt;(sender);
+</code></pre>
+
+
+
+<a name="@Specification_1_propose_mint_to"></a>
+
+### Function `propose_mint_to`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_propose_mint_to">propose_mint_to</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, receiver: address, amount: u128, exec_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">Dao::AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">Dao::AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
+<a name="0x1_MintDaoProposal_sender$4"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;&gt;(sender);
+</code></pre>
+
+
+
+<a name="@Specification_1_execute_mint_proposal"></a>
+
+### Function `execute_mint_proposal`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="MintDaoProposal.md#0x1_MintDaoProposal_execute_mint_proposal">execute_mint_proposal</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+<a name="0x1_MintDaoProposal_expected_states$5"></a>
+<b>let</b> expected_states = singleton_vector(6);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">Dao::CheckProposalStates</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;{expected_states};
+<a name="0x1_MintDaoProposal_proposal$6"></a>
+<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="MintDaoProposal.md#0x1_MintDaoProposal_MintToken">MintToken</a>&gt;&gt;(proposer_address);
+<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(proposal.action);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="MintDaoProposal.md#0x1_MintDaoProposal_WrappedMintCapability">WrappedMintCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
+</code></pre>

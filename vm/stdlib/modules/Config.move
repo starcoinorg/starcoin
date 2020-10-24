@@ -140,10 +140,14 @@ module Config {
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
         Option::extract(&mut cap_holder.cap)
     }
+    spec schema AbortsIfCapNotExist<ConfigValue> {
+        account: address;
+        aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(account);
+        aborts_if Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(account).cap);
+    }
 
     spec fun extract_modify_config_capability {
-        aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        aborts_if Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
+        include AbortsIfCapNotExist<ConfigValue>{account: Signer::spec_address_of(account)};
         ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
         ensures Option::spec_is_none<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account)).cap);
     }

@@ -11,6 +11,10 @@
 -  [Function `plugin`](#0x1_ModifyDaoConfigProposal_plugin)
 -  [Function `propose`](#0x1_ModifyDaoConfigProposal_propose)
 -  [Function `execute`](#0x1_ModifyDaoConfigProposal_execute)
+-  [Specification](#@Specification_1)
+    -  [Function `plugin`](#@Specification_1_plugin)
+    -  [Function `propose`](#@Specification_1_propose)
+    -  [Function `execute`](#@Specification_1_execute)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
@@ -227,3 +231,77 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 
 </details>
+
+<a name="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify;
+<b>pragma</b> aborts_if_is_strict;
+<b>pragma</b> aborts_if_is_partial;
+</code></pre>
+
+
+
+<a name="@Specification_1_plugin"></a>
+
+### Function `plugin`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<a name="0x1_ModifyDaoConfigProposal_sender$3"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
+<b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+<b>include</b> <a href="Config.md#0x1_Config_AbortsIfCapNotExist">Config::AbortsIfCapNotExist</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;{account: sender};
+<b>aborts_if</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
+<b>ensures</b> <b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(sender);
+</code></pre>
+
+
+
+<a name="@Specification_1_propose"></a>
+
+### Function `propose`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_propose">propose</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, exec_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>aborts_if</b> voting_quorum_rate &gt; 100;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">Dao::AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">Dao::AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
+<b>aborts_if</b> exec_delay &gt; 0 && exec_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">Dao::spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
+<a name="0x1_ModifyDaoConfigProposal_sender$4"></a>
+<b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
+<b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Dao::Proposal</a>&lt;TokenT, <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a>&gt;&gt;(sender);
+</code></pre>
+
+
+
+<a name="@Specification_1_execute"></a>
+
+### Function `execute`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_execute">execute</a>&lt;TokenT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
+</code></pre>
