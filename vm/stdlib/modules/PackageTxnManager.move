@@ -232,7 +232,7 @@ address 0x1 {
             aborts_if false;
         }
 
-        spec define sepc_get_module_upgrade_strategy(module_address: address): u8 {
+        spec define spec_get_module_upgrade_strategy(module_address: address): u8 {
             if (exists<ModuleUpgradeStrategy>(module_address)) {
                 global<ModuleUpgradeStrategy>(module_address).strategy
             }else{
@@ -252,7 +252,7 @@ address 0x1 {
             aborts_if false;
         }
 
-        spec define sepc_get_upgrade_plan(module_address: address): Option<UpgradePlan> {
+        spec define spec_get_upgrade_plan(module_address: address): Option<UpgradePlan> {
             if (exists<TwoPhaseUpgrade>(module_address)) {
                 global<TwoPhaseUpgrade>(module_address).plan
             }else{
@@ -288,11 +288,11 @@ address 0x1 {
             package_address: address;
             package_hash: vector<u8>;
             aborts_if spec_get_module_maintainer(package_address) != sender;
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 3;
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(sepc_get_upgrade_plan(package_address));
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(sepc_get_upgrade_plan(package_address)).package_hash != package_hash;
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 1 && !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(sepc_get_upgrade_plan(package_address)).active_after_number > global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 3;
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(spec_get_upgrade_plan(package_address));
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_number > global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
         }
 
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
@@ -330,7 +330,7 @@ address 0x1 {
 
         spec fun package_txn_epilogue {
             aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
-            aborts_if sepc_get_module_upgrade_strategy(package_address) == 1
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1
                     && success && !exists<TwoPhaseUpgrade>(package_address);
     }
 
