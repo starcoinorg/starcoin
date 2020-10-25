@@ -201,7 +201,7 @@ module TransactionManager {
     }
 
     spec fun block_prologue {
-        pragma verify = false;
+        pragma verify = false;//fixme : timeout
     }
 
     fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {

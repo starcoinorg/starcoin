@@ -564,6 +564,31 @@
 
 
 
+<a name="0x1_Config_AbortsIfConfigNotExist"></a>
+
+
+<pre><code><b>schema</b> <a href="Config.md#0x1_Config_AbortsIfConfigNotExist">AbortsIfConfigNotExist</a>&lt;ConfigValue&gt; {
+    addr: address;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
+}
+</code></pre>
+
+
+
+
+<a name="0x1_Config_AbortsIfConfigOrCapabilityNotExist"></a>
+
+
+<pre><code><b>schema</b> <a href="Config.md#0x1_Config_AbortsIfConfigOrCapabilityNotExist">AbortsIfConfigOrCapabilityNotExist</a>&lt;ConfigValue&gt; {
+    addr: address;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">ModifyConfigCapabilityHolder</a>&lt;ConfigValue&gt;&gt;(addr);
+}
+</code></pre>
+
+
+
+
 <a name="0x1_Config_PublishNewConfigEnsures"></a>
 
 

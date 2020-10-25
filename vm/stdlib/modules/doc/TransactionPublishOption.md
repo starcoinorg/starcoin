@@ -11,10 +11,11 @@
 -  [Function `new_transaction_publish_option`](#0x1_TransactionPublishOption_new_transaction_publish_option)
 -  [Function `is_script_allowed`](#0x1_TransactionPublishOption_is_script_allowed)
 -  [Function `is_module_allowed`](#0x1_TransactionPublishOption_is_module_allowed)
--  [Function `add_to_script_allow_list`](#0x1_TransactionPublishOption_add_to_script_allow_list)
--  [Function `set_open_script`](#0x1_TransactionPublishOption_set_open_script)
--  [Function `set_open_module`](#0x1_TransactionPublishOption_set_open_module)
 -  [Specification](#@Specification_1)
+    -  [Function `initialize`](#@Specification_1_initialize)
+    -  [Function `new_transaction_publish_option`](#@Specification_1_new_transaction_publish_option)
+    -  [Function `is_script_allowed`](#@Specification_1_is_script_allowed)
+    -  [Function `is_module_allowed`](#@Specification_1_is_module_allowed)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
@@ -249,112 +250,119 @@ The script hash has an invalid length
 
 </details>
 
-<a name="0x1_TransactionPublishOption_add_to_script_allow_list"></a>
-
-## Function `add_to_script_allow_list`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_add_to_script_allow_list">add_to_script_allow_list</a>(account: &signer, new_hash: vector&lt;u8&gt;)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_add_to_script_allow_list">add_to_script_allow_list</a>(account: &signer, new_hash: vector&lt;u8&gt;) {
-    <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>),
-    );
-    <b>assert</b>(<a href="Vector.md#0x1_Vector_length">Vector::length</a>(&new_hash) == <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_SCRIPT_HASH_LENGTH">SCRIPT_HASH_LENGTH</a>, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
-    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
-    );
-    <b>if</b> (<a href="Vector.md#0x1_Vector_contains">Vector::contains</a>(&publish_option.script_allow_list, &new_hash)) {
-        <b>abort</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EALLOWLIST_ALREADY_CONTAINS_SCRIPT">EALLOWLIST_ALREADY_CONTAINS_SCRIPT</a>
-    };
-    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> publish_option.script_allow_list, new_hash);
-    <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account, publish_option);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_TransactionPublishOption_set_open_script"></a>
-
-## Function `set_open_script`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_set_open_script">set_open_script</a>(account: &signer)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_set_open_script">set_open_script</a>(account: &signer) {
-    <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>),
-    );
-    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
-    );
-    publish_option.script_allow_list = <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>();
-    <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account, publish_option);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_TransactionPublishOption_set_open_module"></a>
-
-## Function `set_open_module`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_set_open_module">set_open_module</a>(account: &signer, open_module: bool)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_set_open_module">set_open_module</a>(account: &signer, open_module: bool) {
-    <b>assert</b>(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) == <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>(),
-        <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_EPROLOGUE_ACCOUNT_DOES_NOT_EXIST">EPROLOGUE_ACCOUNT_DOES_NOT_EXIST</a>),
-    );
-    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(
-        <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account),
-    );
-    publish_option.module_publishing_allowed = open_module;
-    <a href="Config.md#0x1_Config_set">Config::set</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(account, publish_option);
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="@Specification_1"></a>
 
 ## Specification
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
-<b>pragma</b> aborts_if_is_strict;
+<pre><code><b>pragma</b> verify = <b>true</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
+<a name="0x1_TransactionPublishOption_spec_is_script_allowed"></a>
+<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">spec_is_script_allowed</a>(addr: address, hash: vector&lt;u8&gt;) : bool{
+    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
+    len(publish_option.script_allow_list) == 0 ||
+        <a href="Vector.md#0x1_Vector_spec_contains">Vector::spec_contains</a>(publish_option.script_allow_list, hash)
+}
+<a name="0x1_TransactionPublishOption_spec_is_module_allowed"></a>
+<b>define</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">spec_is_module_allowed</a>(addr: address) : bool{
+    <b>let</b> publish_option = <a href="Config.md#0x1_Config_get_by_address">Config::get_by_address</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;(addr);
+    publish_option.module_publishing_allowed
+}
+</code></pre>
+
+
+
+<a name="@Specification_1_initialize"></a>
+
+### Function `initialize`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_initialize">initialize</a>(account: &signer, merged_script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !<a href="Timestamp.md#0x1_Timestamp_is_genesis">Timestamp::is_genesis</a>();
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>include</b> <a href="Config.md#0x1_Config_PublishNewConfigAbortsIf">Config::PublishNewConfigAbortsIf</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;;
+<b>include</b> <a href="Config.md#0x1_Config_PublishNewConfigEnsures">Config::PublishNewConfigEnsures</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;;
+</code></pre>
+
+
+
+<a name="@Specification_1_new_transaction_publish_option"></a>
+
+### Function `new_transaction_publish_option`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_new_transaction_publish_option">new_transaction_publish_option</a>(script_allow_list: vector&lt;u8&gt;, module_publishing_allowed: bool): <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_TransactionPublishOption">TransactionPublishOption::TransactionPublishOption</a>
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_is_script_allowed"></a>
+
+### Function `is_script_allowed`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_script_allowed">is_script_allowed</a>(account: address, hash: &vector&lt;u8&gt;): bool
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Config.md#0x1_Config_AbortsIfConfigNotExist">Config::AbortsIfConfigNotExist</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;{
+    addr: account
+};
+</code></pre>
+
+
+
+<a name="@Specification_1_is_module_allowed"></a>
+
+### Function `is_module_allowed`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_is_module_allowed">is_module_allowed</a>(account: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Config.md#0x1_Config_AbortsIfConfigNotExist">Config::AbortsIfConfigNotExist</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;{
+    addr: account
+};
+</code></pre>
+
+
+
+
+<a name="0x1_TransactionPublishOption_AbortsIfTxnPublishOptionNotExist"></a>
+
+
+<pre><code><b>schema</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_AbortsIfTxnPublishOptionNotExist">AbortsIfTxnPublishOptionNotExist</a> {
+    <b>include</b> <a href="Config.md#0x1_Config_AbortsIfConfigNotExist">Config::AbortsIfConfigNotExist</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;{
+        addr: <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()
+    };
+}
+</code></pre>
+
+
+
+
+<a name="0x1_TransactionPublishOption_AbortsIfTxnPublishOptionNotExistWithBool"></a>
+
+
+<pre><code><b>schema</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_AbortsIfTxnPublishOptionNotExistWithBool">AbortsIfTxnPublishOptionNotExistWithBool</a> {
+    is_script_or_package : bool;
+    <b>aborts_if</b> is_script_or_package && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="TransactionPublishOption.md#0x1_TransactionPublishOption">TransactionPublishOption</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+}
 </code></pre>

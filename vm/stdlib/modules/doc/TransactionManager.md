@@ -10,6 +10,11 @@
 -  [Function `epilogue`](#0x1_TransactionManager_epilogue)
 -  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
 -  [Function `distribute`](#0x1_TransactionManager_distribute)
+-  [Specification](#@Specification_1)
+    -  [Function `prologue`](#@Specification_1_prologue)
+    -  [Function `epilogue`](#@Specification_1_epilogue)
+    -  [Function `block_prologue`](#@Specification_1_block_prologue)
+    -  [Function `distribute`](#@Specification_1_distribute)
 
 
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
@@ -307,3 +312,112 @@
 
 
 </details>
+
+<a name="@Specification_1"></a>
+
+## Specification
+
+
+
+<pre><code><b>pragma</b> verify = <b>true</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_prologue"></a>
+
+### Function `prologue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_prologue">prologue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_public_key: vector&lt;u8&gt;, txn_gas_price: u64, txn_max_gas_units: u64, txn_expiration_time: u64, chain_id: u8, txn_payload_type: u8, txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="ChainId.md#0x1_ChainId_ChainId">ChainId::ChainId</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+<b>aborts_if</b> <a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() != chain_id;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender);
+<b>aborts_if</b> <a href="Hash.md#0x1_Hash_sha3_256">Hash::sha3_256</a>(txn_public_key) != <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).authentication_key;
+<b>aborts_if</b> txn_gas_price * txn_max_gas_units &gt; max_u64();
+<b>include</b> <a href="Timestamp.md#0x1_Timestamp_AbortsIfTimestampNotExists">Timestamp::AbortsIfTimestampNotExists</a>;
+<b>include</b> <a href="Block.md#0x1_Block_AbortsIfBlockMetadataNotExist">Block::AbortsIfBlockMetadataNotExist</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
+<b>aborts_if</b> <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;&gt;(txn_sender).token.value &lt; txn_gas_price * txn_max_gas_units;
+<b>aborts_if</b> txn_sequence_number &lt; <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).sequence_number;
+<b>aborts_if</b> txn_sequence_number != <b>global</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender).sequence_number;
+<b>include</b> <a href="TransactionTimeout.md#0x1_TransactionTimeout_AbortsIfTimestampNotValid">TransactionTimeout::AbortsIfTimestampNotValid</a>;
+<b>aborts_if</b> !<a href="TransactionTimeout.md#0x1_TransactionTimeout_spec_is_valid_transaction_timestamp">TransactionTimeout::spec_is_valid_transaction_timestamp</a>(txn_expiration_time);
+<b>include</b> <a href="TransactionPublishOption.md#0x1_TransactionPublishOption_AbortsIfTxnPublishOptionNotExistWithBool">TransactionPublishOption::AbortsIfTxnPublishOptionNotExistWithBool</a> {
+    is_script_or_package: (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a> || txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a>),
+};
+<b>aborts_if</b> txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a> && !<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_module_allowed">TransactionPublishOption::spec_is_module_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<b>aborts_if</b> txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_SCRIPT">TXN_PAYLOAD_TYPE_SCRIPT</a> && !<a href="TransactionPublishOption.md#0x1_TransactionPublishOption_spec_is_script_allowed">TransactionPublishOption::spec_is_script_allowed</a>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account), txn_script_or_package_hash);
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIfWithType">PackageTxnManager::CheckPackageTxnAbortsIfWithType</a>{is_package: (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
+</code></pre>
+
+
+
+<a name="@Specification_1_epilogue"></a>
+
+### Function `epilogue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_epilogue">epilogue</a>&lt;TokenType&gt;(account: &signer, txn_sender: address, txn_sequence_number: u64, txn_gas_price: u64, txn_max_gas_units: u64, gas_units_remaining: u64, txn_payload_type: u8, _txn_script_or_package_hash: vector&lt;u8&gt;, txn_package_address: address, success: bool)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+<b>include</b> <a href="CoreAddresses.md#0x1_CoreAddresses_AbortsIfNotGenesisAddress">CoreAddresses::AbortsIfNotGenesisAddress</a>;
+<b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Account">Account::Account</a>&gt;(txn_sender);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Account::Balance</a>&lt;TokenType&gt;&gt;(txn_sender);
+<b>aborts_if</b> txn_max_gas_units &lt; gas_units_remaining;
+<b>aborts_if</b> txn_sequence_number + 1 &gt; max_u64();
+<b>aborts_if</b> txn_gas_price * (txn_max_gas_units - gas_units_remaining) &gt; max_u64();
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_AbortsIfPackageTxnEpilogue">PackageTxnManager::AbortsIfPackageTxnEpilogue</a> {
+    is_package: (txn_payload_type == <a href="TransactionManager.md#0x1_TransactionManager_TXN_PAYLOAD_TYPE_PACKAGE">TXN_PAYLOAD_TYPE_PACKAGE</a>),
+    package_address: txn_package_address,
+    success: success,
+};
+</code></pre>
+
+
+
+<a name="@Specification_1_block_prologue"></a>
+
+### Function `block_prologue`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_block_prologue">block_prologue</a>(account: &signer, parent_hash: vector&lt;u8&gt;, timestamp: u64, author: address, auth_key_vec: vector&lt;u8&gt;, uncles: u64, number: u64, chain_id: u8, parent_gas_used: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_distribute"></a>
+
+### Function `distribute`
+
+
+<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, author: address)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Account.md#0x1_Account_AbortsIfDepositWithMetadata">Account::AbortsIfDepositWithMetadata</a>&lt;TokenType&gt;{
+    value_is_not_zero: (<a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(txn_fee) &gt; 0),
+    receiver: author,
+    to_deposit: txn_fee,
+};
+</code></pre>

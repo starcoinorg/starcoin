@@ -1782,6 +1782,23 @@ Withdraw <code>amount</code> Token<TokenType> from the account under cap.account
 
 
 
+
+<a name="0x1_Account_AbortsIfDepositWithMetadata"></a>
+
+
+<pre><code><b>schema</b> <a href="Account.md#0x1_Account_AbortsIfDepositWithMetadata">AbortsIfDepositWithMetadata</a>&lt;TokenType&gt; {
+    value_is_not_zero: bool;
+    receiver: address;
+    to_deposit: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;;
+    <b>aborts_if</b> value_is_not_zero && to_deposit.value == 0;
+    <b>aborts_if</b> value_is_not_zero && !<b>exists</b>&lt;<a href="Account.md#0x1_Account">Account</a>&gt;(receiver);
+    <b>aborts_if</b> value_is_not_zero && !<b>exists</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver);
+    <b>aborts_if</b> value_is_not_zero && <b>global</b>&lt;<a href="Account.md#0x1_Account_Balance">Balance</a>&lt;TokenType&gt;&gt;(receiver).token.value + to_deposit.value &gt; max_u128();
+}
+</code></pre>
+
+
+
 <a name="@Specification_1_deposit_to_balance"></a>
 
 ### Function `deposit_to_balance`
