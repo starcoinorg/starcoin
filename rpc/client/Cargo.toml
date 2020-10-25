@@ -27,7 +27,7 @@ jsonrpc-pubsub = "15.1.0"
 jsonrpc-core-client = { version = "15.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"]}
 jsonrpc-client-transports = { version = "15.1.0", features = ["http", "ipc", "ws", "arbitrary_precision"] }
 futures03 = { package="futures",version = "0.3", features = ["compat"] }
-futures = "0.1.29"
+futures = "0.3.7"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../../vm/types"}
