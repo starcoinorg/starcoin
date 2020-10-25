@@ -107,9 +107,12 @@ module TransactionManager {
         aborts_if txn_sequence_number != global<Account::Account>(txn_sender).sequence_number;
         include TransactionTimeout::AbortsIfTimestampNotValid;
         aborts_if !TransactionTimeout::spec_is_valid_transaction_timestamp(txn_expiration_time);
-        //include TransactionPublishOption::AbortsIfTxnPublishOptionNotExist;
+        include TransactionPublishOption::AbortsIfTxnPublishOptionNotExistWithBool {
+            is_script_or_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE || txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT),
+        };
         aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
         aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account), txn_script_or_package_hash);
+        include PackageTxnManager::CheckPackageTxnAbortsIfWithType{is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
     }
 
     // The epilogue is invoked at the end of transactions.
@@ -147,8 +150,19 @@ module TransactionManager {
     }
 
     spec fun epilogue {
+        pragma verify = false;//fixme : timeout
         include CoreAddresses::AbortsIfNotGenesisAddress;
-        pragma verify = false;
+        aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<Account::Account>(txn_sender);
+        aborts_if !exists<Account::Balance<TokenType>>(txn_sender);
+        aborts_if txn_max_gas_units < gas_units_remaining;
+        aborts_if txn_sequence_number + 1 > max_u64();
+        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
+        include PackageTxnManager::AbortsIfPackageTxnEpilogue {
+            is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE),
+            package_address: txn_package_address,
+            success: success,
+        };
     }
 
     // Set the metadata for the current block.
@@ -200,7 +214,11 @@ module TransactionManager {
     }
 
     spec fun distribute {
-        pragma verify = false;
+        include Account::AbortsIfDepositWithMetadata<TokenType>{
+            value_is_not_zero: (Token::value<TokenType>(txn_fee) > 0),
+            receiver: author,
+            to_deposit: txn_fee,
+        };
     }
 }
 }

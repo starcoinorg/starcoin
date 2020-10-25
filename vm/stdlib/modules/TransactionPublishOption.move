@@ -127,5 +127,10 @@ module TransactionPublishOption {
             addr: CoreAddresses::SPEC_GENESIS_ADDRESS()
         };
     }
+
+    spec schema AbortsIfTxnPublishOptionNotExistWithBool {
+        is_script_or_package : bool;
+        aborts_if is_script_or_package && !exists<Config::Config<TransactionPublishOption>>(CoreAddresses::GENESIS_ADDRESS());
+    }
 }
 }
