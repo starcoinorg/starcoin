@@ -1151,6 +1151,26 @@ Package txn finished, and clean UpgradePlan
 
 
 
+
+<a name="0x1_PackageTxnManager_CheckPackageTxnAbortsIfWithType"></a>
+
+
+<pre><code><b>schema</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIfWithType">CheckPackageTxnAbortsIfWithType</a> {
+    is_package: bool;
+    sender: address;
+    package_address: address;
+    package_hash: vector&lt;u8&gt;;
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_maintainer">spec_get_module_maintainer</a>(package_address) != sender;
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 3;
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address));
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).package_hash != package_hash;
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).active_after_number &gt; <b>global</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).number;
+}
+</code></pre>
+
+
+
 <a name="@Specification_1_finish_upgrade_plan"></a>
 
 ### Function `finish_upgrade_plan`

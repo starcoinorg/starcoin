@@ -128,6 +128,19 @@ module Config {
         aborts_if exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
+    spec schema AbortsIfConfigNotExist<ConfigValue> {
+        addr: address;
+
+        aborts_if !exists<Config<ConfigValue>>(addr);
+    }
+
+    spec schema AbortsIfConfigOrCapabilityNotExist<ConfigValue> {
+        addr: address;
+
+        aborts_if !exists<Config<ConfigValue>>(addr);
+        aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(addr);
+    }
+
     spec schema PublishNewConfigEnsures<ConfigValue> {
         account: signer;
         ensures exists<Config<ConfigValue>>(Signer::spec_address_of(account));
@@ -188,6 +201,5 @@ module Config {
     spec fun emit_config_change_event {
         aborts_if false;
     }
-
 }
 }

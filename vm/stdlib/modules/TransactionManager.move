@@ -15,6 +15,12 @@ module TransactionManager {
     use 0x1::Errors;
     use 0x1::TransactionPublishOption;
     use 0x1::Epoch;
+    use 0x1::Hash;
+
+    spec module {
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+    }
 
     const TXN_PAYLOAD_TYPE_SCRIPT: u8 = 0;
     const TXN_PAYLOAD_TYPE_PACKAGE: u8 = 1;
@@ -86,6 +92,29 @@ module TransactionManager {
         };
     }
 
+    spec fun prologue {
+        aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
+        aborts_if !exists<ChainId::ChainId>(CoreAddresses::GENESIS_ADDRESS());
+        aborts_if ChainId::get() != chain_id;
+        aborts_if !exists<Account::Account>(txn_sender);
+        aborts_if Hash::sha3_256(txn_public_key) != global<Account::Account>(txn_sender).authentication_key;
+        aborts_if txn_gas_price * txn_max_gas_units > max_u64();
+        include Timestamp::AbortsIfTimestampNotExists;
+        include Block::AbortsIfBlockMetadataNotExist;
+        aborts_if !exists<Account::Balance<TokenType>>(txn_sender);
+        aborts_if global<Account::Balance<TokenType>>(txn_sender).token.value < txn_gas_price * txn_max_gas_units;
+        aborts_if txn_sequence_number < global<Account::Account>(txn_sender).sequence_number;
+        aborts_if txn_sequence_number != global<Account::Account>(txn_sender).sequence_number;
+        include TransactionTimeout::AbortsIfTimestampNotValid;
+        aborts_if !TransactionTimeout::spec_is_valid_transaction_timestamp(txn_expiration_time);
+        include TransactionPublishOption::AbortsIfTxnPublishOptionNotExistWithBool {
+            is_script_or_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE || txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT),
+        };
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE && !TransactionPublishOption::spec_is_module_allowed(Signer::address_of(account));
+        aborts_if txn_payload_type == TXN_PAYLOAD_TYPE_SCRIPT && !TransactionPublishOption::spec_is_script_allowed(Signer::address_of(account), txn_script_or_package_hash);
+        include PackageTxnManager::CheckPackageTxnAbortsIfWithType{is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE), sender:txn_sender, package_address: txn_package_address, package_hash: txn_script_or_package_hash};
+    }
+
     // The epilogue is invoked at the end of transactions.
     // It collects gas and bumps the sequence number
     public fun epilogue<TokenType>(
@@ -118,6 +147,22 @@ module TransactionManager {
                 success,
             );
         }
+    }
+
+    spec fun epilogue {
+        pragma verify = false;//fixme : timeout
+        include CoreAddresses::AbortsIfNotGenesisAddress;
+        aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        aborts_if !exists<Account::Account>(txn_sender);
+        aborts_if !exists<Account::Balance<TokenType>>(txn_sender);
+        aborts_if txn_max_gas_units < gas_units_remaining;
+        aborts_if txn_sequence_number + 1 > max_u64();
+        aborts_if txn_gas_price * (txn_max_gas_units - gas_units_remaining) > max_u64();
+        include PackageTxnManager::AbortsIfPackageTxnEpilogue {
+            is_package: (txn_payload_type == TXN_PAYLOAD_TYPE_PACKAGE),
+            package_address: txn_package_address,
+            success: success,
+        };
     }
 
     // Set the metadata for the current block.
@@ -155,6 +200,10 @@ module TransactionManager {
         BlockReward::process_block_reward(account, number, reward, author, auth_key_vec);
     }
 
+    spec fun block_prologue {
+        pragma verify = false;//fixme : timeout
+    }
+
     fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {
         let value = Token::value<TokenType>(&txn_fee);
         if (value > 0) {
@@ -162,6 +211,14 @@ module TransactionManager {
         } else {
             Token::destroy_zero<TokenType>(txn_fee);
         }
+    }
+
+    spec fun distribute {
+        include Account::AbortsIfDepositWithMetadata<TokenType>{
+            value_is_not_zero: (Token::value<TokenType>(txn_fee) > 0),
+            receiver: author,
+            to_deposit: txn_fee,
+        };
     }
 }
 }

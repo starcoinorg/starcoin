@@ -8,8 +8,19 @@ module TransactionPublishOption {
     use 0x1::Signer;
 
     spec module {
-        pragma verify = false;
-        pragma aborts_if_is_strict;
+        pragma verify = true;
+        pragma aborts_if_is_strict = true;
+
+        define spec_is_script_allowed(addr: address, hash: vector<u8>) : bool{
+            let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
+            len(publish_option.script_allow_list) == 0 ||
+                Vector::spec_contains(publish_option.script_allow_list, hash)
+        }
+
+        define spec_is_module_allowed(addr: address) : bool{
+            let publish_option = Config::get_by_address<TransactionPublishOption>(addr);
+            publish_option.module_publishing_allowed
+        }
     }
 
     const SCRIPT_HASH_LENGTH: u64 = 32;
@@ -51,6 +62,13 @@ module TransactionPublishOption {
         );
     }
 
+    spec fun initialize {
+        aborts_if !Timestamp::is_genesis();
+        aborts_if Signer::spec_address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
+        include Config::PublishNewConfigAbortsIf<TransactionPublishOption>;
+        include Config::PublishNewConfigEnsures<TransactionPublishOption>;
+    }
+
     public fun new_transaction_publish_option(
         script_allow_list: vector<u8>,
         module_publishing_allowed: bool,
@@ -75,6 +93,10 @@ module TransactionPublishOption {
         TransactionPublishOption { script_allow_list: list, module_publishing_allowed }
     }
 
+    spec fun new_transaction_publish_option {
+        aborts_if false;
+    }
+
     // Check if sender can execute script with `hash`
     public fun is_script_allowed(account: address, hash: &vector<u8>): bool {
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
@@ -82,10 +104,33 @@ module TransactionPublishOption {
             Vector::contains(&publish_option.script_allow_list, hash)
     }
 
+    spec fun is_script_allowed {
+        include Config::AbortsIfConfigNotExist<TransactionPublishOption>{
+            addr: account
+        };
+    }
+
     // Check if a sender can publish a module
     public fun is_module_allowed(account: address): bool {
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
         publish_option.module_publishing_allowed
+    }
+
+    spec fun is_module_allowed {
+        include Config::AbortsIfConfigNotExist<TransactionPublishOption>{
+            addr: account
+        };
+    }
+
+    spec schema AbortsIfTxnPublishOptionNotExist {
+        include Config::AbortsIfConfigNotExist<TransactionPublishOption>{
+            addr: CoreAddresses::SPEC_GENESIS_ADDRESS()
+        };
+    }
+
+    spec schema AbortsIfTxnPublishOptionNotExistWithBool {
+        is_script_or_package : bool;
+        aborts_if is_script_or_package && !exists<Config::Config<TransactionPublishOption>>(CoreAddresses::GENESIS_ADDRESS());
     }
 
     // Add `new_hash` to the list of script hashes that is allowed to be executed by the network.
@@ -105,6 +150,10 @@ module TransactionPublishOption {
         Config::set<TransactionPublishOption>(account, publish_option);
     }
 
+    spec fun add_to_script_allow_list {
+        pragma verify = false;
+    }
+
     // Allow the execution of arbitrary script or not.
     public fun set_open_script(account: &signer) {
         assert(
@@ -118,6 +167,10 @@ module TransactionPublishOption {
         Config::set<TransactionPublishOption>(account, publish_option);
     }
 
+    spec fun set_open_script {
+        pragma verify = false;
+    }
+
     // Allow module publishing from arbitrary sender or not.
     public fun set_open_module(account: &signer, open_module: bool) {
         assert(
@@ -129,6 +182,10 @@ module TransactionPublishOption {
         );
         publish_option.module_publishing_allowed = open_module;
         Config::set<TransactionPublishOption>(account, publish_option);
+    }
+
+    spec fun set_open_module {
+        pragma verify = false;
     }
 }
 }

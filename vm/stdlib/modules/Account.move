@@ -268,6 +268,18 @@ module Account {
 
     }
 
+    spec schema AbortsIfDepositWithMetadata<TokenType> {
+        value_is_not_zero: bool;
+        receiver: address;
+        to_deposit: Token<TokenType>;
+
+        aborts_if value_is_not_zero && to_deposit.value == 0;
+        aborts_if value_is_not_zero && !exists<Account>(receiver);
+        aborts_if value_is_not_zero && !exists<Balance<TokenType>>(receiver);
+
+        aborts_if value_is_not_zero && global<Balance<TokenType>>(receiver).token.value + to_deposit.value > max_u128();
+    }
+
     /// Helper to deposit `amount` to the given account balance
     fun deposit_to_balance<TokenType>(balance: &mut Balance<TokenType>, token: Token::Token<TokenType>) {
         Token::deposit(&mut balance.token, token)
