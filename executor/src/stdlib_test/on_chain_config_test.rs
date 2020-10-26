@@ -214,7 +214,7 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
     let chain_state = dao_vote_test(
         alice,
         chain_state,
-        net.clone(),
+        net,
         vote_script,
         on_chain_config_type_tag(txn_publish_config_type_tag()),
         execute_script,
