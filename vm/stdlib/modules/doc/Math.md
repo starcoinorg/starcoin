@@ -223,10 +223,21 @@
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
-<b>pragma</b> timeout = 120;
-<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) + y/2 +1 &gt; max_u128();
-<b>aborts_if</b> y &gt;= 4 && y / (y/2 +1) &gt; max_u128();
+<pre><code><b>pragma</b> opaque = <b>true</b>;
+<b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> [abstract] <b>false</b>;
+<b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_sqrt">spec_sqrt</a>();
+</code></pre>
+
+
+We use an uninterpreted function to represent the result of sqrt. The actual value
+does not matter for the verification of callers.
+
+
+<a name="0x1_Math_spec_sqrt"></a>
+
+
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_sqrt">spec_sqrt</a>(): u128;
 </code></pre>
 
 
@@ -244,6 +255,7 @@
 
 <pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>pragma</b> verify = <b>false</b>;
+<b>aborts_if</b> [abstract] <b>false</b>;
 <b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>();
 </code></pre>
 
@@ -255,7 +267,7 @@ does not matter for the verification of callers.
 <a name="0x1_Math_spec_pow"></a>
 
 
-<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>(): u128 { 10000 }
+<pre><code><b>define</b> <a href="Math.md#0x1_Math_spec_pow">spec_pow</a>(): u128;
 </code></pre>
 
 
@@ -273,6 +285,7 @@ does not matter for the verification of callers.
 
 <pre><code><b>pragma</b> opaque = <b>true</b>;
 <b>include</b> <a href="Math.md#0x1_Math_MulDivAbortsIf">MulDivAbortsIf</a>;
+<b>aborts_if</b> [abstract] <b>false</b>;
 <b>ensures</b> [abstract] result == <a href="Math.md#0x1_Math_spec_mul_div">spec_mul_div</a>();
 </code></pre>
 

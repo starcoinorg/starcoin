@@ -2604,7 +2604,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;TokenT&gt;() * <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate &gt; MAX_U128;
 </code></pre>
 
 

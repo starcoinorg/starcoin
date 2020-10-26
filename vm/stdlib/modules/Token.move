@@ -97,7 +97,6 @@ module Token {
     }
 
     spec fun register_token {
-        pragma verify = false; // missing spec for Math::pow
         aborts_if precision > MAX_PRECISION;
         aborts_if Signer::spec_address_of(account) != SPEC_TOKEN_TEST_ADDRESS();
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
@@ -288,11 +287,11 @@ module Token {
     }
 
     spec fun mint_amount_of_linear_key {
-        pragma verify = false; // timeout, fix later
+        pragma verify = false; //timeout, fix later
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if Timestamp::spec_now_seconds() < key.start_time;
         aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.peroid && key.total < key.minted;
-        aborts_if Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div() < key.minted;
+        aborts_if [abstract] Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div() < key.minted;
     }
 
     // Returns the mint amount of the FixedTimeMintKey.
