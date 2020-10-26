@@ -3,6 +3,9 @@ module Version {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::CoreAddresses;
+    use 0x1::Errors;
+
+    const EMAJOR_TO_OLD: u64 = 101;
 
     spec module {
         pragma verify;
@@ -50,7 +53,7 @@ module Version {
     public fun set(account: &signer, major: u64) {
         CoreAddresses::assert_genesis_address(account);
         let old_config = Config::get_by_address<Self::Version>(Signer::address_of(account));
-        assert(old_config.major < major, 25);  //todo
+        assert(old_config.major < major, Errors::invalid_argument(EMAJOR_TO_OLD));
         Config::set<Self::Version>(account, Version { major });
     }
 
