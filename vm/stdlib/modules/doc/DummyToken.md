@@ -16,7 +16,8 @@
 -  [Function `token_address`](#0x1_DummyToken_token_address)
 
 
-<pre><code><b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
+<pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
 </code></pre>
 
 
@@ -116,6 +117,15 @@
 
 
 
+<a name="0x1_DummyToken_EMINT_TOO_MUCH"></a>
+
+
+
+<pre><code><b>const</b> <a href="DummyToken.md#0x1_DummyToken_EMINT_TOO_MUCH">EMINT_TOO_MUCH</a>: u64 = 101;
+</code></pre>
+
+
+
 <a name="0x1_DummyToken_initialize"></a>
 
 ## Function `initialize`
@@ -203,8 +213,7 @@ Returns true if <code>TokenType</code> is <code><a href="DummyToken.md#0x1_Dummy
 
 ## Function `mint`
 
-Anyone can mint any amount DummyToken
-TODO should add a amount limit?
+Anyone can mint DummyToken, amount should < 10000
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_mint">mint</a>(_account: &signer, amount: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="DummyToken.md#0x1_DummyToken_DummyToken">DummyToken::DummyToken</a>&gt;
@@ -217,6 +226,7 @@ TODO should add a amount limit?
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="DummyToken.md#0x1_DummyToken_mint">mint</a>(_account: &signer, amount: u128) : <a href="Token.md#0x1_Token">Token</a>&lt;<a href="DummyToken.md#0x1_DummyToken">DummyToken</a>&gt; <b>acquires</b> <a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a>{
+    <b>assert</b>(amount &lt;= 10000, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="DummyToken.md#0x1_DummyToken_EMINT_TOO_MUCH">EMINT_TOO_MUCH</a>));
     <b>let</b> cap = borrow_global&lt;<a href="DummyToken.md#0x1_DummyToken_SharedMintCapability">SharedMintCapability</a>&gt;(<a href="DummyToken.md#0x1_DummyToken_token_address">token_address</a>());
     <a href="Token.md#0x1_Token_mint_with_capability">Token::mint_with_capability</a>(&cap.cap, amount)
 }

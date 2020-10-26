@@ -20,7 +20,7 @@ fun main(account: &signer) {
 script {
 use 0x1::PackageTxnManager;
 fun main(account: &signer) {
-    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::STRATEGY_TWO_PHASE());
+    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase());
 }
 }
 

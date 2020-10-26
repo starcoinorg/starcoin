@@ -17,7 +17,6 @@ script {
     use 0x1::ChainId;
     use 0x1::ConsensusStrategy;
     use 0x1::TransactionPublishOption;
-    use 0x1::TokenLockPool;
     use 0x1::Box;
     use 0x1::TransactionTimeoutConfig;
     use 0x1::Epoch;
@@ -134,7 +133,7 @@ script {
         // stdlib use two phase upgrade strategy.
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,
-            PackageTxnManager::STRATEGY_TWO_PHASE(),
+            PackageTxnManager::get_strategy_two_phase(),
         );
         // stc should be initialized after genesis_account's module upgrade strategy set.
         {
@@ -143,7 +142,6 @@ script {
             DummyToken::initialize(&genesis_account);
             Account::accept_token<STC>(&association);
         };
-        TokenLockPool::initialize(&genesis_account);
         if (pre_mine_amount > 0) {
             let stc = Token::mint<STC>(&genesis_account, pre_mine_amount);
             Account::deposit(Signer::address_of(&association), stc);

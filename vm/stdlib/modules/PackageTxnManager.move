@@ -21,11 +21,18 @@ address 0x1 {
             account_address: address,
         }
 
-        //TODO use constants when Move support constants
-        public fun STRATEGY_ARBITRARY() : u8{0}
-        public fun STRATEGY_TWO_PHASE() : u8{1}
-        public fun STRATEGY_NEW_MODULE(): u8{2}
-        public fun STRATEGY_FREEZE(): u8{3}
+        const STRATEGY_ARBITRARY: u8 = 0;
+        const STRATEGY_TWO_PHASE: u8 = 1;
+        const STRATEGY_NEW_MODULE: u8 = 2;
+        const STRATEGY_FREEZE: u8 = 3;
+
+        public fun get_strategy_arbitrary(): u8 { STRATEGY_ARBITRARY }
+
+        public fun get_strategy_two_phase(): u8 { STRATEGY_TWO_PHASE }
+
+        public fun get_strategy_new_module(): u8 { STRATEGY_NEW_MODULE }
+
+        public fun get_strategy_freeze(): u8 { STRATEGY_FREEZE }
 
         const ESENDER_IS_NOT_MAINTAINER: u64 = 101;
         const EUPGRADE_PLAN_IS_NONE: u64 = 102;
@@ -70,7 +77,7 @@ address 0x1 {
 
         // Update account's ModuleUpgradeStrategy
         public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
-            assert(strategy == STRATEGY_ARBITRARY() || strategy == STRATEGY_TWO_PHASE() || strategy == STRATEGY_NEW_MODULE() || strategy == STRATEGY_FREEZE(), Errors::invalid_argument(EUNKNOWN_STRATEGY));
+            assert(strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE || strategy == STRATEGY_FREEZE, Errors::invalid_argument(EUNKNOWN_STRATEGY));
             let account_address = Signer::address_of(account);
             let previous_strategy = get_module_upgrade_strategy(account_address);
             assert(strategy > previous_strategy, Errors::invalid_argument(ESTRATEGY_INCORRECT));
@@ -79,12 +86,12 @@ address 0x1 {
             }else{
                 move_to(account, ModuleUpgradeStrategy{ strategy: strategy});
             };
-            if (strategy == STRATEGY_TWO_PHASE()){
+            if (strategy == STRATEGY_TWO_PHASE){
                 move_to(account, UpgradePlanCapability{ account_address: account_address});
                 move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>()});
             };
             //clean two phase upgrade resource
-            if (previous_strategy == STRATEGY_TWO_PHASE()){
+            if (previous_strategy == STRATEGY_TWO_PHASE){
                 let tpu = move_from<TwoPhaseUpgrade>(account_address);
                 let TwoPhaseUpgrade{plan:_} = tpu;
                 // UpgradePlanCapability may be extracted
@@ -121,7 +128,7 @@ address 0x1 {
 
         public fun extract_submit_upgrade_plan_cap(account: &signer): UpgradePlanCapability acquires ModuleUpgradeStrategy, UpgradePlanCapability{
             let account_address = Signer::address_of(account);
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             move_from<UpgradePlanCapability>(account_address)
         }
 
@@ -144,22 +151,24 @@ address 0x1 {
         }
 
         public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
-            //FIXME
-            //assert(active_after_number >= Block::get_current_block_number(), EACTIVE_TIME_INCORRECT());
+            assert(active_after_number >= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
             assert(Option::is_none(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NOT_NONE));
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
         }
 
         spec fun submit_upgrade_plan_with_cap {
-            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address};
+            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address, active_after_number};
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
 
         spec schema SubmitUpgradePlanWithCapAbortsIf {
             account: address;
+            active_after_number: u64;
+            aborts_if !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if active_after_number < global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
@@ -180,7 +189,7 @@ address 0x1 {
 
         public fun cancel_upgrade_plan_with_cap(cap: &UpgradePlanCapability) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
-            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE(), Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
+            assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
             assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
             tpu.plan = Option::none<UpgradePlan>();
@@ -264,17 +273,17 @@ address 0x1 {
             let module_maintainer = get_module_maintainer(package_address);
             assert(module_maintainer == sender, Errors::requires_address(ESENDER_IS_NOT_MAINTAINER));
             let strategy = get_module_upgrade_strategy(package_address);
-            if (strategy == STRATEGY_ARBITRARY()){
+            if (strategy == STRATEGY_ARBITRARY){
                 //do nothing
-            }else if(strategy == STRATEGY_TWO_PHASE()){
+            }else if(strategy == STRATEGY_TWO_PHASE){
                 let plan_opt = get_upgrade_plan(package_address);
                 assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
                 assert(plan.active_after_number <= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
-            }else if(strategy == STRATEGY_NEW_MODULE()){
+            }else if(strategy == STRATEGY_NEW_MODULE){
                 //do check at VM runtime.
-            }else if(strategy == STRATEGY_FREEZE()){
+            }else if(strategy == STRATEGY_FREEZE){
                 abort(ESTRATEGY_FREEZED)
             };
         }
@@ -333,7 +342,7 @@ address 0x1 {
             // Can only be invoked by genesis account
             CoreAddresses::assert_genesis_address(account);
             let strategy = get_module_upgrade_strategy(package_address);
-            if(strategy == STRATEGY_TWO_PHASE()){
+            if(strategy == STRATEGY_TWO_PHASE){
                 if (success) {
                     finish_upgrade_plan(package_address)
                     //TODO fire event.
@@ -345,7 +354,7 @@ address 0x1 {
             is_package: bool;
             package_address: address;
             success: bool;
-            aborts_if is_package && get_module_upgrade_strategy(package_address) == STRATEGY_TWO_PHASE() && success && !exists<TwoPhaseUpgrade>(package_address);
+            aborts_if is_package && get_module_upgrade_strategy(package_address) == STRATEGY_TWO_PHASE && success && !exists<TwoPhaseUpgrade>(package_address);
         }
 
         spec fun package_txn_epilogue {

@@ -2,8 +2,12 @@ address 0x1{
 
 module DummyToken {
     use 0x1::Token::{Self, Token};
+    use 0x1::Errors;
 
     struct DummyToken { }
+
+
+    const EMINT_TOO_MUCH:u64 = 101;
 
     const PRECISION: u8 = 3;
 
@@ -38,9 +42,9 @@ module DummyToken {
         Token::burn_with_capability(&cap.cap, token);
     }
 
-    /// Anyone can mint any amount DummyToken
-    /// TODO should add a amount limit?
+    /// Anyone can mint DummyToken, amount should < 10000
     public fun mint(_account: &signer, amount: u128) : Token<DummyToken> acquires SharedMintCapability{
+        assert(amount <= 10000, Errors::invalid_argument(EMINT_TOO_MUCH));
         let cap = borrow_global<SharedMintCapability>(token_address());
         Token::mint_with_capability(&cap.cap, amount)
     }
