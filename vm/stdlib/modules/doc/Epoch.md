@@ -577,7 +577,7 @@
     <b>if</b> (new_epoch) {
         epoch_data.total_reward = reward;
         epoch_data.uncles = uncles;
-        epoch_data.total_reward = 0;
+        epoch_data.total_gas = 0;
     } <b>else</b> {
         epoch_data.total_reward = epoch_data.total_reward + reward;
         epoch_data.uncles = epoch_data.uncles + uncles;
