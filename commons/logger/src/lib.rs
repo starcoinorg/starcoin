@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
-use lazy_static::lazy_static;
 use log::LevelFilter;
 use log4rs::{
     append::{
@@ -16,7 +15,9 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Handle,
 };
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Mutex;
@@ -84,13 +85,41 @@ impl std::fmt::Display for LogPattern {
     }
 }
 
-#[derive(Debug, Clone, PartialOrd, PartialEq, Ord, Eq)]
+/// set some third party module's default log level for reduce debug log.
+static THIRD_PARTY_MODULES: Lazy<Vec<(&str, LevelFilter)>> = Lazy::new(|| {
+    vec![
+        ("tokio_reactor", LevelFilter::Info),
+        ("yamux", LevelFilter::Info),
+        ("jsonrpc_core", LevelFilter::Info),
+        ("jsonrpc_client_transports", LevelFilter::Info),
+        ("parity_ws", LevelFilter::Info),
+        ("multistream_select", LevelFilter::Info),
+        ("network_p2p", LevelFilter::Info),
+        //sub-libp2p and sync is network_p2p log target.
+        ("sub-libp2p", LevelFilter::Info),
+        ("sync", LevelFilter::Info),
+        ("libp2p", LevelFilter::Info),
+        ("libp2p_swarm", LevelFilter::Info),
+        ("libp2p_core", LevelFilter::Info),
+        ("libp2p_ping", LevelFilter::Info),
+        ("libp2p_websocket", LevelFilter::Info),
+        ("libp2p_tcp", LevelFilter::Info),
+        ("libp2p_noise", LevelFilter::Info),
+        ("libp2p_dns", LevelFilter::Info),
+        ("libp2p_identify", LevelFilter::Info),
+        ("jsonrpc_ws_server", LevelFilter::Info),
+        ("jsonrpc_core", LevelFilter::Info),
+        ("rustyline", LevelFilter::Warn),
+    ]
+});
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct LoggerConfigArg {
     enable_stderr: bool,
     // global level
     level: LevelFilter,
     // sub path level
-    module_levels: Vec<(String, LevelFilter)>,
+    module_levels: HashMap<String, LevelFilter>,
     log_path: Option<PathBuf>,
     max_file_size: u64,
     max_backup: u32,
@@ -104,10 +133,20 @@ impl LoggerConfigArg {
         module_levels: Vec<(String, LevelFilter)>,
         pattern: Option<LogPattern>,
     ) -> Self {
+        let mut default_module_levels = THIRD_PARTY_MODULES
+            .iter()
+            .map(|(m, m_level)| {
+                (
+                    m.to_string(),
+                    if &level <= m_level { level } else { *m_level },
+                )
+            })
+            .collect::<HashMap<_, _>>();
+        default_module_levels.extend(module_levels);
         Self {
             enable_stderr,
             level,
-            module_levels,
+            module_levels: default_module_levels,
             log_path: None,
             max_file_size: 0,
             max_backup: 0,
@@ -158,15 +197,7 @@ impl LoggerHandle {
 
     pub fn set_log_level(&self, logger_name: String, level: LevelFilter) {
         let mut arg = self.arg.lock().unwrap().clone();
-        if let Some(t) = arg
-            .module_levels
-            .iter_mut()
-            .find(|(n, _)| n == &logger_name)
-        {
-            t.1 = level;
-        } else {
-            arg.module_levels.push((logger_name, level));
-        }
+        arg.module_levels.insert(logger_name, level);
         self.update_logger(arg);
     }
 
@@ -273,9 +304,7 @@ fn env_log_level(default_level: &str) -> (LevelFilter, Vec<(String, LevelFilter)
     (default_level, level_filters.module_levels)
 }
 
-lazy_static! {
-    static ref LOGGER_HANDLE: Mutex<Option<Arc<LoggerHandle>>> = Mutex::new(None);
-}
+static LOGGER_HANDLE: Lazy<Mutex<Option<Arc<LoggerHandle>>>> = Lazy::new(|| Mutex::new(None));
 
 pub fn init() -> Arc<LoggerHandle> {
     init_with_default_level("info", None)
