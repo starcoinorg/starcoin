@@ -7229,9 +7229,9 @@ version = "0.6.0"
 dependencies = [
  "anyhow",
  "chrono",
- "lazy_static",
  "log 0.4.11",
  "log4rs",
+ "once_cell",
  "serde",
 ]
 

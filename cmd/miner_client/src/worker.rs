@@ -208,7 +208,7 @@ impl Worker {
                 None => bail!("Receiver get None, channel is closed."),
             },
             Err(_) => {
-                debug!("work channel is empty.");
+                trace!("work channel is empty.");
                 Ok(())
             }
         }
