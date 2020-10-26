@@ -37,11 +37,15 @@ module Math {
     }
 
     spec fun sqrt {
-        pragma verify = false; //costs too much time
-        pragma timeout = 120;
-        aborts_if y >= 4 && y / (y/2 +1) + y/2 +1 > max_u128();
-        aborts_if y >= 4 && y / (y/2 +1) > max_u128();
+        pragma opaque = true;
+        pragma verify = false; //while loop
+        aborts_if [abstract] false;
+        ensures [abstract] result == spec_sqrt();
     }
+
+    /// We use an uninterpreted function to represent the result of sqrt. The actual value
+    /// does not matter for the verification of callers.
+    spec define spec_sqrt(): u128;
 
     public fun pow(x: u64, y: u64): u128 {
         let result = 1u128;
@@ -59,14 +63,14 @@ module Math {
 
     spec fun pow {
         pragma opaque = true;
-        pragma verify = false; // missing boogie pow operation
-        //aborts_if y > 0 && x * x > max_u128();
+        pragma verify = false; //while loop
+        aborts_if [abstract] false;
         ensures [abstract] result == spec_pow();
     }
 
     /// We use an uninterpreted function to represent the result of pow. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_pow(): u128 { 10000 }
+    spec define spec_pow(): u128;
 
     //https://medium.com/coinmonks/math-in-solidity-part-3-percents-and-proportions-4db014e080b1
     // calculate x * y /z with as little loss of precision as possible and avoid overflow
@@ -89,6 +93,7 @@ module Math {
     spec fun mul_div {
         pragma opaque = true;
         include MulDivAbortsIf;
+        aborts_if [abstract] false;
         ensures [abstract] result == spec_mul_div();
     }
 

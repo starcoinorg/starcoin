@@ -880,8 +880,9 @@ module Dao {
     }
     spec fun quorum_votes {
         // TODO: why
-        pragma verify = false;
+        //pragma verify = false;
         // pragma addition_overflow_unchecked;
+        aborts_if Token::spec_abstract_total_value<TokenT>() * spec_dao_config<TokenT>().voting_quorum_rate > MAX_U128;
     }
 
     spec define spec_quorum_votes<TokenT: copyable>(): u128 {
