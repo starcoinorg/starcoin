@@ -2,7 +2,7 @@ address 0x1 {
 module BitOperators {
 
     spec module {
-        pragma verify = false;
+        pragma verify = false; // doesn't support bit ops
     }
 
     public fun and(x: u64, y: u64): u64 {

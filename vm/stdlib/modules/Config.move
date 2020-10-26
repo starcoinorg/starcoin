@@ -58,17 +58,19 @@ module Config {
         assert(exists<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
         let cap_holder = borrow_global_mut<ModifyConfigCapabilityHolder<ConfigValue>>(signer_address);
         assert(Option::is_some(&cap_holder.cap), Errors::requires_capability(ECAPABILITY_HOLDER_NOT_EXISTS));
-        set_with_capability(Option::borrow_mut(&mut cap_holder.cap), payload)
+        set_with_capability<ConfigValue>(Option::borrow_mut(&mut cap_holder.cap), payload)
     }
 
     spec fun set {
         pragma verify = false;
 
         aborts_if !exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
-        aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account)));
+        let cap_opt = spec_cap<ConfigValue>(Signer::spec_address_of(account));
+        aborts_if !Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(cap_opt);
         //Todo: why below aborts_if does not work?
-        aborts_if !exists<Config<ConfigValue>>(Option::spec_get<ModifyConfigCapability<ConfigValue>>(spec_cap<ConfigValue>(Signer::spec_address_of(account))).account_address);
-        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
+        let cap = Option::spec_get<ModifyConfigCapability<ConfigValue>>(cap_opt);
+        aborts_if !exists<Config<ConfigValue>>(cap.account_address);
+//        ensures exists<ModifyConfigCapabilityHolder<ConfigValue>>(Signer::spec_address_of(account));
     }
 
     spec module {

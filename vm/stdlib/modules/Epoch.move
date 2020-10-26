@@ -115,7 +115,20 @@ module Epoch {
     }
 
     spec fun compute_next_block_time_target {
-        pragma verify = false;
+        pragma verify = false; //timeout
+
+        aborts_if now_seconds < epoch_start_time;
+        aborts_if end_block_number - start_block_number < 0;
+        aborts_if end_block_number - start_block_number == 0;
+        //total_uncles * THOUSAND overflow
+        aborts_if total_uncles * 1000 > MAX_U64;
+        //THOUSAND + uncles_rate overflow
+        aborts_if 1000 + total_uncles * 1000 / (end_block_number - start_block_number) > MAX_U64;
+        //(THOUSAND + uncles_rate) * avg_block_time overflow
+        aborts_if (1000 + total_uncles * 1000 / (end_block_number - start_block_number)) * ((now_seconds - epoch_start_time)/(end_block_number - start_block_number)) > MAX_U64;
+        //ConsensusConfig::uncle_rate_target(config) + THOUSAND overflow
+        aborts_if config.uncle_rate_target + 1000  > MAX_U64;
+        aborts_if last_epoch_time_target * 2 > MAX_U64;
     }
 
     public fun adjust_epoch(account: &signer, block_number: u64, timestamp: u64, uncles: u64, parent_gas_used:u64): u128

@@ -97,11 +97,22 @@ module Token {
     }
 
     spec fun register_token {
+        include RegisterTokenAbortsIf<TokenType>;
+        include RegisterTokenEnsures<TokenType>;
+    }
+
+    spec schema RegisterTokenAbortsIf<TokenType> {
+        precision: u8;
+        account: signer;
         aborts_if precision > MAX_PRECISION;
         aborts_if Signer::spec_address_of(account) != SPEC_TOKEN_TEST_ADDRESS();
         aborts_if exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
         aborts_if exists<TokenInfo<TokenType>>(Signer::spec_address_of(account));
+    }
+
+    spec schema RegisterTokenEnsures<TokenType> {
+        account: signer;
         ensures exists<MintCapability<TokenType>>(Signer::spec_address_of(account));
         ensures exists<BurnCapability<TokenType>>(Signer::spec_address_of(account));
         ensures exists<TokenInfo<TokenType>>(Signer::spec_address_of(account));

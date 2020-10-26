@@ -15,7 +15,7 @@ module STC {
 
     spec module {
         pragma verify;
-        pragma aborts_if_is_strict;
+        pragma aborts_if_is_strict = true;
     }
 
     struct STC { }
@@ -61,8 +61,9 @@ module STC {
     }
 
     spec fun initialize {
-        // Todo: fix name_of()
-        pragma verify = false;
+        include Token::RegisterTokenAbortsIf<STC>{precision: PRECISION};
+        // need double check - why below aborts_if not necessary?
+        //aborts_if exists<SharedBurnCapability>(Signer::spec_address_of(account));
     }
 
     /// Returns true if `TokenType` is `STC::STC`
