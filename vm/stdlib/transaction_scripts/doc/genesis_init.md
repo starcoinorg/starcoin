@@ -22,7 +22,6 @@
 <b>use</b> <a href="../../modules/doc/Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="../../modules/doc/Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="../../modules/doc/Token.md#0x1_Token">0x1::Token</a>;
-<b>use</b> <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool">0x1::TokenLockPool</a>;
 <b>use</b> <a href="../../modules/doc/TransactionFee.md#0x1_TransactionFee">0x1::TransactionFee</a>;
 <b>use</b> <a href="../../modules/doc/TransactionPublishOption.md#0x1_TransactionPublishOption">0x1::TransactionPublishOption</a>;
 <b>use</b> <a href="../../modules/doc/TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">0x1::TransactionTimeoutConfig</a>;
@@ -155,7 +154,7 @@
     // stdlib <b>use</b> two phase upgrade strategy.
     <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         &genesis_account,
-        <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">PackageTxnManager::STRATEGY_TWO_PHASE</a>(),
+        <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_two_phase">PackageTxnManager::get_strategy_two_phase</a>(),
     );
     // stc should be initialized after genesis_account's <b>module</b> upgrade strategy set.
     {
@@ -164,7 +163,6 @@
         <a href="../../modules/doc/DummyToken.md#0x1_DummyToken_initialize">DummyToken::initialize</a>(&genesis_account);
         <a href="../../modules/doc/Account.md#0x1_Account_accept_token">Account::accept_token</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&association);
     };
-    <a href="../../modules/doc/TokenLockPool.md#0x1_TokenLockPool_initialize">TokenLockPool::initialize</a>(&genesis_account);
     <b>if</b> (pre_mine_amount &gt; 0) {
         <b>let</b> stc = <a href="../../modules/doc/Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="../../modules/doc/STC.md#0x1_STC">STC</a>&gt;(&genesis_account, pre_mine_amount);
         <a href="../../modules/doc/Account.md#0x1_Account_deposit">Account::deposit</a>(<a href="../../modules/doc/Signer.md#0x1_Signer_address_of">Signer::address_of</a>(&association), stc);
