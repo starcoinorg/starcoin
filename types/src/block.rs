@@ -404,7 +404,12 @@ impl Block {
 
 impl std::fmt::Display for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Block{{id:\"{}\",", self.id())?;
+        write!(
+            f,
+            "Block{{id:\"{}\", parent_id:\"{}\",",
+            self.id(),
+            self.header().parent_hash()
+        )?;
         if let Some(uncles) = &self.body.uncles {
             write!(f, "uncles:[")?;
             for uncle in uncles {
