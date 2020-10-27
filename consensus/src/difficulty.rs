@@ -4,7 +4,7 @@
 use starcoin_types::{U256, U512};
 
 use crate::{difficult_1_target, difficult_to_target};
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
@@ -27,11 +27,16 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
         .map(|n| {
             chain
                 .get_header_by_number(n)?
-                .ok_or_else(|| format_err!("Can not find header by number {}", n))?
+                .ok_or_else(|| format_err!("Can not find header by number {}", n))
+                .map(|header| header.into())
         })
-        .map(|b| b.into())
         .collect();
-    get_next_target_helper(blocks?, epoch.block_time_target() * 1000)
+    let target = get_next_target_helper(blocks?, epoch.block_time_target() * 1000)?;
+    debug!(
+        "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
+        current_header.number, epoch, target
+    );
+    Ok(target)
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
