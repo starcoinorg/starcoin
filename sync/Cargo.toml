@@ -5,22 +5,27 @@ authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
-chain = {path = "../chain", package="starcoin-chain" }
 anyhow = "1.0.34"
+thiserror = "1.0"
 actix = "0.10.0"
 rand = "0.7.3"
 pin-utils = "0.1.0"
 async-std = "1.7"
+futures = "0.3"
+futures-retry = "0.5.0"
+itertools = { version = "0.9.0", default-features = false }
+pin-project = "1.0.1"
+futures-timer = "3.0"
+
+stream-task ={ path = "../commons/stream-task"}
+chain = {path = "../chain", package="starcoin-chain" }
 config = {path = "../config", package="starcoin-config"}
 network = { path = "../network", package = "starcoin-network" }
 starcoin-types = { path = "../types" }
 starcoin-crypto = { path = "../commons/crypto" }
-itertools = { version = "0.9.0", default-features = false }
 traits = {path = "../core/traits", package="starcoin-traits"}
-futures = "0.3"
 txpool = {path = "../txpool", package="starcoin-txpool"}
 starcoin-txpool-api = {path="../txpool/api"}
-futures-timer = "3.0"
 starcoin-genesis = {path = "../core/genesis"}
 starcoin-storage = {path = "../storage"}
 logger = {path = "../commons/logger",package="starcoin-logger"}

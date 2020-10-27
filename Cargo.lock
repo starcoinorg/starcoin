@@ -2215,6 +2215,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-retry"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "759bfe7464299589f02197a973e0e01f17c4cdcef87b454579af8b0629ba7420"
+dependencies = [
+ "futures 0.3.5",
+ "pin-project 0.4.27",
+ "tokio 0.2.22",
+]
+
+[[package]]
 name = "futures-sink"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7934,6 +7945,7 @@ dependencies = [
  "dyn-clone",
  "forkable-jellyfish-merkle",
  "futures 0.3.5",
+ "futures-retry",
  "futures-timer",
  "hex",
  "itertools 0.9.0",
@@ -7941,6 +7953,7 @@ dependencies = [
  "network-api",
  "once_cell",
  "parking_lot 0.11.0",
+ "pin-project 1.0.1",
  "pin-utils",
  "rand 0.7.3",
  "starcoin-account-api",
@@ -7976,7 +7989,9 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "stream-task",
  "test-helper",
+ "thiserror",
  "tokio 0.2.22",
 ]
 
@@ -8319,6 +8334,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09f8ed9974042b8c3672ff3030a69fcc03b74c47c3d1ecb7755e8a3626011e88"
 dependencies = [
  "generic-array 0.14.4",
+]
+
+[[package]]
+name = "stream-task"
+version = "0.7.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "futures 0.3.5",
+ "futures-retry",
+ "futures-timer",
+ "log 0.4.11",
+ "pin-project 0.4.27",
+ "pin-utils",
+ "rand 0.7.3",
+ "starcoin-logger",
+ "stest",
+ "thiserror",
 ]
 
 [[package]]

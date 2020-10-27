@@ -9,7 +9,7 @@ pub mod state_sync;
 mod sync;
 mod sync_metrics;
 mod sync_task;
-pub mod task;
+pub mod tasks;
 pub mod txn_sync;
 
 pub use download::Downloader;
