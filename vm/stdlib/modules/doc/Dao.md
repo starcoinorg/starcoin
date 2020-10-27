@@ -47,10 +47,7 @@
 -  [Function `set_voting_quorum_rate`](#0x1_Dao_set_voting_quorum_rate)
 -  [Function `set_min_action_delay`](#0x1_Dao_set_min_action_delay)
 -  [Specification](#@Specification_1)
-    -  [Resource `DaoGlobalInfo`](#@Specification_1_DaoGlobalInfo)
     -  [Struct `DaoConfig`](#@Specification_1_DaoConfig)
-    -  [Resource `Proposal`](#@Specification_1_Proposal)
-    -  [Resource `Vote`](#@Specification_1_Vote)
     -  [Function `default_min_action_delay`](#@Specification_1_default_min_action_delay)
     -  [Function `default_voting_delay`](#@Specification_1_default_voting_delay)
     -  [Function `default_voting_period`](#@Specification_1_default_voting_period)
@@ -79,6 +76,11 @@
     -  [Function `voting_quorum_rate`](#@Specification_1_voting_quorum_rate)
     -  [Function `min_action_delay`](#@Specification_1_min_action_delay)
     -  [Function `get_config`](#@Specification_1_get_config)
+    -  [Function `modify_dao_config`](#@Specification_1_modify_dao_config)
+    -  [Function `set_voting_delay`](#@Specification_1_set_voting_delay)
+    -  [Function `set_voting_period`](#@Specification_1_set_voting_period)
+    -  [Function `set_voting_quorum_rate`](#@Specification_1_set_voting_quorum_rate)
+    -  [Function `set_min_action_delay`](#@Specification_1_set_min_action_delay)
 
 
 <pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
@@ -268,7 +270,7 @@ emitted when user vote/revoke_vote.
 
 ## Resource `Proposal`
 
-TODO: support that one can propose mutli proposals.
+Proposal data struct.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;<a href="Token.md#0x1_Token">Token</a>, Action&gt;
@@ -344,6 +346,7 @@ TODO: support that one can propose mutli proposals.
 
 ## Resource `Vote`
 
+User vote info.
 
 
 <pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;
@@ -688,8 +691,6 @@ can optin this moudle by call this <code>register function</code>.
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ) {
-    // TODO: we can add a token manage cap in <a href="Token.md#0x1_Token">Token</a> <b>module</b>.
-    // and only token manager can register this.
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     // <b>let</b> proposal_id = ProposalId {next: 0};
@@ -1071,6 +1072,9 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
 
 
 <pre><code><b>fun</b> <a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposal: &<b>mut</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;, vote: &<b>mut</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;, to_revoke: u128): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; {
+    <b>spec</b> {
+        <b>assume</b> vote.stake.value &gt;= to_revoke;
+    };
     <b>let</b> reverted_stake = <a href="Token.md#0x1_Token_withdraw">Token::withdraw</a>(&<b>mut</b> vote.stake, to_revoke);
     <b>if</b> (vote.agree) {
         proposal.for_votes = proposal.for_votes - to_revoke;
@@ -1513,10 +1517,8 @@ Quorum votes to make proposal pass.
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT: <b>copyable</b>&gt;(): u128 {
     <b>let</b> supply = <a href="Token.md#0x1_Token_market_cap">Token::market_cap</a>&lt;TokenT&gt;();
     <b>let</b> rate = <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;();
-    // <b>let</b> rate1 = (rate <b>as</b> u64);
-    <b>let</b> rate2 = (rate <b>as</b> u128);
-    supply * rate2 / 100u128
-    // <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(supply, (<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;() <b>as</b> u128), 100)
+    <b>let</b> rate = (rate <b>as</b> u128);
+    supply * rate / 100
 }
 </code></pre>
 
@@ -1601,8 +1603,8 @@ Quorum votes to make proposal pass.
 
 ## Function `modify_dao_config`
 
-update function
-TODO: cap should not be mut to set data.
+update function, modify dao config.
+if any param is 0, it means no change to that param.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_modify_dao_config">modify_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
@@ -1621,6 +1623,7 @@ TODO: cap should not be mut to set data.
     voting_quorum_rate: u8,
     min_action_delay: u64,
 ) {
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     <b>if</b> (voting_period &gt; 0) {
         config.voting_period = voting_period;
@@ -1647,6 +1650,7 @@ TODO: cap should not be mut to set data.
 
 ## Function `set_voting_delay`
 
+set voting delay
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_delay">set_voting_delay</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
@@ -1662,6 +1666,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_delay = value;
@@ -1677,6 +1682,7 @@ TODO: cap should not be mut to set data.
 
 ## Function `set_voting_period`
 
+set voting period
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_period">set_voting_period</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
@@ -1692,6 +1698,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_period = value;
@@ -1707,6 +1714,7 @@ TODO: cap should not be mut to set data.
 
 ## Function `set_voting_quorum_rate`
 
+set voting quorum rate
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_quorum_rate">set_voting_quorum_rate</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u8)
@@ -1722,6 +1730,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u8,
 ) {
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_quorum_rate = value;
@@ -1737,6 +1746,7 @@ TODO: cap should not be mut to set data.
 
 ## Function `set_min_action_delay`
 
+set min action delay
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_min_action_delay">set_min_action_delay</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
@@ -1752,6 +1762,7 @@ TODO: cap should not be mut to set data.
     cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;,
     value: u64,
 ) {
+    <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
     <b>assert</b>(value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_CONFIG_PARAM_INVALID">ERR_CONFIG_PARAM_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.min_action_delay = value;
@@ -1770,42 +1781,9 @@ TODO: cap should not be mut to set data.
 
 
 <pre><code><b>pragma</b> verify;
-<b>pragma</b> aborts_if_is_partial;
-<b>pragma</b> aborts_if_is_strict = <b>false</b>;
+<b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<b>pragma</b> aborts_if_is_strict = <b>true</b>;
 </code></pre>
-
-
-
-<a name="@Specification_1_DaoGlobalInfo"></a>
-
-### Resource `DaoGlobalInfo`
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;<a href="Token.md#0x1_Token">Token</a>&gt;
-</code></pre>
-
-
-
-<dl>
-<dt>
-<code>next_proposal_id: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>proposal_create_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_ProposalCreatedEvent">Dao::ProposalCreatedEvent</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>vote_changed_event: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="Dao.md#0x1_Dao_VoteChangedEvent">Dao::VoteChangedEvent</a>&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
 
 
 
@@ -1855,114 +1833,6 @@ TODO: cap should not be mut to set data.
 <b>invariant</b> voting_period &gt; 0;
 <b>invariant</b> min_action_delay &gt; 0;
 </code></pre>
-
-
-
-<a name="@Specification_1_Proposal"></a>
-
-### Resource `Proposal`
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;<a href="Token.md#0x1_Token">Token</a>, Action&gt;
-</code></pre>
-
-
-
-<dl>
-<dt>
-<code>id: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>proposer: address</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>start_time: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>end_time: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>for_votes: u128</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>against_votes: u128</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>eta: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>action_delay: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>action: <a href="Option.md#0x1_Option_Option">Option::Option</a>&lt;Action&gt;</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-
-<a name="@Specification_1_Vote"></a>
-
-### Resource `Vote`
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;
-</code></pre>
-
-
-
-<dl>
-<dt>
-<code>proposer: address</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>id: u64</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>stake: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt;</code>
-</dt>
-<dd>
-
-</dd>
-<dt>
-<code>agree: bool</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
 
 
 
@@ -2045,7 +1915,7 @@ TODO: cap should not be mut to set data.
 <b>aborts_if</b> voting_period == 0;
 <b>aborts_if</b> voting_quorum_rate == 0 || voting_quorum_rate &gt; 100;
 <b>aborts_if</b> min_action_delay == 0;
-<a name="0x1_Dao_sender$45"></a>
+<a name="0x1_Dao_sender$46"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(sender);
@@ -2125,10 +1995,7 @@ TODO: cap should not be mut to set data.
     <a href="Dao.md#0x1_Dao_voting_period">voting_period</a>&lt;TokenT&gt;,
     <a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a>&lt;TokenT&gt;,
     <a href="Dao.md#0x1_Dao_min_action_delay">min_action_delay</a>&lt;TokenT&gt;,
-    <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;,
-
-    <a href="Dao.md#0x1_Dao_modify_dao_config">modify_dao_config</a>&lt;TokenT&gt;,
-    set_*&lt;TokenT&gt;;
+    <a href="Dao.md#0x1_Dao_quorum_votes">quorum_votes</a>&lt;TokenT&gt;;
 </code></pre>
 
 
@@ -2168,7 +2035,7 @@ TODO: cap should not be mut to set data.
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> action_delay &gt; 0 && action_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
-<a name="0x1_Dao_sender$46"></a>
+<a name="0x1_Dao_sender$47"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(sender);
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
@@ -2188,19 +2055,22 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
+<pre><code><b>pragma</b> addition_overflow_unchecked = <b>true</b>;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
-<a name="0x1_Dao_expected_states$47"></a>
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
+<a name="0x1_Dao_expected_states$48"></a>
 <b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
-<a name="0x1_Dao_sender$48"></a>
+<a name="0x1_Dao_sender$49"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
-<a name="0x1_Dao_vote_exists$49"></a>
+<a name="0x1_Dao_vote_exists$50"></a>
 <b>let</b> vote_exists = <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> vote_exists ==&gt; <a href="Dao.md#0x1_Dao_CheckVoteOnCast">CheckVoteOnCast</a>&lt;TokenT, ActionT&gt; {
     voter: sender,
     proposal_id: proposal_id,
-    agree: agree
+    agree: agree,
+    stake_value: stake.value,
 };
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>ensures</b> !vote_exists ==&gt; <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender).stake.value == stake.value;
@@ -2219,7 +2089,9 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>ensures</b> vote.stake.value == <b>old</b>(vote).stake.value + stake.value;
+<pre><code><b>pragma</b> addition_overflow_unchecked = <b>true</b>;
+<b>aborts_if</b> vote.stake.value + stake.value &gt; MAX_U128;
+<b>ensures</b> vote.stake.value == <b>old</b>(vote).stake.value + stake.value;
 <b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes + stake.value == proposal.for_votes;
 <b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).against_votes == proposal.against_votes;
 <b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes + stake.value == proposal.against_votes;
@@ -2239,17 +2111,18 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>pragma</b> aborts_if_is_partial = <b>true</b>;
-<a name="0x1_Dao_expected_states$50"></a>
-<b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
+<a name="0x1_Dao_expected_states$51"></a>
+
+
+<pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<a name="0x1_Dao_sender$51"></a>
+<a name="0x1_Dao_sender$52"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$52"></a>
+<a name="0x1_Dao_vote$53"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
-<b>include</b> vote.agree != agree ==&gt; <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
+<b>include</b> vote.agree != agree ==&gt; <a href="Dao.md#0x1_Dao_CheckChangeVote">CheckChangeVote</a>&lt;TokenT, ActionT&gt;{vote, proposer_address};
 <b>ensures</b> vote.agree != agree ==&gt; vote.agree == agree;
 </code></pre>
 
@@ -2266,11 +2139,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<b>aborts_if</b> my_vote.agree && proposal.for_votes &lt; my_vote.stake.value;
-<b>aborts_if</b> my_vote.agree && proposal.against_votes + my_vote.stake.value &gt; MAX_U128;
-<b>aborts_if</b> !my_vote.agree && proposal.against_votes &lt; my_vote.stake.value;
-<b>aborts_if</b> !my_vote.agree && proposal.for_votes + my_vote.stake.value &gt; MAX_U128;
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckFlipVote">CheckFlipVote</a>&lt;TokenT, ActionT&gt;;
 <b>ensures</b> my_vote.agree == !<b>old</b>(my_vote).agree;
 </code></pre>
 
@@ -2289,15 +2158,20 @@ TODO: cap should not be mut to set data.
 
 <pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
-<a name="0x1_Dao_expected_states$53"></a>
+<a name="0x1_Dao_expected_states$54"></a>
 <b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
-<a name="0x1_Dao_sender$54"></a>
+<a name="0x1_Dao_sender$55"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$55"></a>
+<a name="0x1_Dao_vote$56"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt; {vote, proposer_address, proposal_id};
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckRevokeVote">CheckRevokeVote</a>&lt;TokenT, ActionT&gt; {
+    vote,
+    proposal: <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address),
+    to_revoke: voting_power,
+};
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
@@ -2318,10 +2192,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<b>aborts_if</b> vote.stake.value &lt; to_revoke;
-<b>aborts_if</b> vote.agree && proposal.for_votes &lt; to_revoke;
-<b>aborts_if</b> !vote.agree && proposal.against_votes &lt; to_revoke;
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckRevokeVote">CheckRevokeVote</a>&lt;TokenT, ActionT&gt;;
 <b>ensures</b> vote.agree ==&gt; <b>old</b>(proposal).for_votes == proposal.for_votes + to_revoke;
 <b>ensures</b> !vote.agree ==&gt; <b>old</b>(proposal).against_votes == proposal.against_votes + to_revoke;
 <b>ensures</b> result.value == to_revoke;
@@ -2340,17 +2211,17 @@ TODO: cap should not be mut to set data.
 
 
 
-<a name="0x1_Dao_expected_states$56"></a>
+<a name="0x1_Dao_expected_states$57"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>);
-<a name="0x1_Dao_expected_states1$57"></a>
+<a name="0x1_Dao_expected_states1$58"></a>
 <b>let</b> expected_states1 = concat_vector(expected_states,singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>));
-<a name="0x1_Dao_expected_states2$58"></a>
+<a name="0x1_Dao_expected_states2$59"></a>
 <b>let</b> expected_states2 = concat_vector(expected_states1,singleton_vector(<a href="Dao.md#0x1_Dao_QUEUED">QUEUED</a>));
-<a name="0x1_Dao_expected_states3$59"></a>
+<a name="0x1_Dao_expected_states3$60"></a>
 <b>let</b> expected_states3 = concat_vector(expected_states2,singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>));
-<a name="0x1_Dao_expected_states4$60"></a>
+<a name="0x1_Dao_expected_states4$61"></a>
 <b>let</b> expected_states4 = concat_vector(expected_states3,singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
 <b>aborts_if</b> expected_states4[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
 <b>aborts_if</b> expected_states4[1] != <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>;
@@ -2359,10 +2230,10 @@ TODO: cap should not be mut to set data.
 <b>aborts_if</b> expected_states4[4] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
 <b>include</b> <a href="Dao.md#0x1_Dao_spec_proposal_exists">spec_proposal_exists</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) ==&gt;
             <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states: expected_states4};
-<a name="0x1_Dao_sender$61"></a>
+<a name="0x1_Dao_sender$62"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$62"></a>
+<a name="0x1_Dao_vote$63"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 <b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
@@ -2382,12 +2253,12 @@ TODO: cap should not be mut to set data.
 
 
 
-<a name="0x1_Dao_expected_states$63"></a>
+<a name="0x1_Dao_expected_states$64"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<a name="0x1_Dao_proposal$64"></a>
+<a name="0x1_Dao_proposal$65"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + proposal.action_delay &gt; MAX_U64;
 <b>ensures</b> proposal.eta &gt;= <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>();
@@ -2406,10 +2277,9 @@ TODO: cap should not be mut to set data.
 
 
 
-<a name="0x1_Dao_expected_states$65"></a>
-
-
-<pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>);
+<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
+<a name="0x1_Dao_expected_states$66"></a>
+<b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
@@ -2428,7 +2298,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<a name="0x1_Dao_expected_states$66"></a>
+<a name="0x1_Dao_expected_states$67"></a>
 
 
 <pre><code><b>let</b> expected_states = concat_vector(singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>), singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
@@ -2453,8 +2323,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<b>ensures</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address) &&
+<pre><code><b>ensures</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address) &&
             borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).id == proposal_id ==&gt;
             result;
 </code></pre>
@@ -2493,9 +2362,10 @@ TODO: cap should not be mut to set data.
 
 <pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfTimestampNotExist">AbortIfTimestampNotExist</a>;
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$67"></a>
+<a name="0x1_Dao_proposal$68"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2514,7 +2384,7 @@ TODO: cap should not be mut to set data.
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$68"></a>
+<a name="0x1_Dao_proposal$69"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2533,7 +2403,7 @@ TODO: cap should not be mut to set data.
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-<a name="0x1_Dao_vote$69"></a>
+<a name="0x1_Dao_vote$70"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 </code></pre>
@@ -2604,7 +2474,7 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>aborts_if</b> <a href="Token.md#0x1_Token_spec_abstract_total_value">Token::spec_abstract_total_value</a>&lt;TokenT&gt;() * <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().voting_quorum_rate &gt; MAX_U128;
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
 </code></pre>
 
 
@@ -2666,7 +2536,8 @@ TODO: cap should not be mut to set data.
 
 
 
-<pre><code><b>ensures</b> result == <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload;
+<pre><code><b>aborts_if</b> <b>false</b>;
+<b>ensures</b> result == <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload;
 </code></pre>
 
 
@@ -2678,4 +2549,102 @@ TODO: cap should not be mut to set data.
 <pre><code><b>define</b> <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(): <a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt; {
     <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;((<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>())).payload
 }
+</code></pre>
+
+
+
+
+<a name="0x1_Dao_CheckModifyConfigWithCap"></a>
+
+
+<pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt; {
+    cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;;
+    <b>aborts_if</b> cap.account_address != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;&gt;(cap.account_address);
+}
+</code></pre>
+
+
+
+<a name="@Specification_1_modify_dao_config"></a>
+
+### Function `modify_dao_config`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_modify_dao_config">modify_dao_config</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt;;
+<b>aborts_if</b> voting_quorum_rate &gt; 0 && voting_quorum_rate &gt; 100;
+</code></pre>
+
+
+
+<a name="@Specification_1_set_voting_delay"></a>
+
+### Function `set_voting_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_delay">set_voting_delay</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt;;
+<b>aborts_if</b> value == 0;
+</code></pre>
+
+
+
+<a name="@Specification_1_set_voting_period"></a>
+
+### Function `set_voting_period`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_period">set_voting_period</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>include</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt;;
+<b>aborts_if</b> value == 0;
+</code></pre>
+
+
+
+<a name="@Specification_1_set_voting_quorum_rate"></a>
+
+### Function `set_voting_quorum_rate`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_voting_quorum_rate">set_voting_quorum_rate</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u8)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> !(value &gt; 0 && value &lt;= 100);
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt;;
+</code></pre>
+
+
+
+<a name="@Specification_1_set_min_action_delay"></a>
+
+### Function `set_min_action_delay`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_set_min_action_delay">set_min_action_delay</a>&lt;TokenT: <b>copyable</b>&gt;(cap: &<b>mut</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;&gt;, value: u64)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> value == 0;
+<b>include</b> <a href="Dao.md#0x1_Dao_CheckModifyConfigWithCap">CheckModifyConfigWithCap</a>&lt;TokenT&gt;;
 </code></pre>

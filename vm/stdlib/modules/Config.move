@@ -187,6 +187,13 @@ module Config {
         aborts_if false;
     }
 
+    public fun account_address<ConfigValue: copyable>(cap: &ModifyConfigCapability<ConfigValue>): address {
+        cap.account_address
+    }
+    spec fun account_address {
+        aborts_if false;
+    }
+
     // Emit a config change event.
     fun emit_config_change_event<ConfigValue: copyable>(cap: &mut ModifyConfigCapability<ConfigValue>, value: ConfigValue) {
         Event::emit_event<ConfigChangeEvent<ConfigValue>>(
