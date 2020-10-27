@@ -4,10 +4,10 @@
 use starcoin_types::{U256, U512};
 
 use crate::{difficult_1_target, difficult_to_target};
-use anyhow::{bail, Result};
+use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::Block;
+use starcoin_types::block::BlockHeader;
 use starcoin_vm_types::on_chain_resource::EpochInfo;
 use std::convert::TryInto;
 
@@ -22,17 +22,21 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
     } else {
         current_header.number - epoch.block_difficulty_window() + 1
     };
-    let blocks: Vec<BlockDiffInfo> = (start_window_num..current_header.number + 1)
+    let blocks: Result<Vec<BlockDiffInfo>> = (start_window_num..current_header.number + 1)
         .rev()
-        .filter(|&n| {
-            epoch.start_block_number() <= n && current_header.number <= epoch.end_block_number()
+        .map(|n| {
+            chain
+                .get_header_by_number(n)?
+                .ok_or_else(|| format_err!("Can not find header by number {}", n))
+                .map(|header| header.into())
         })
-        .map(|n| chain.get_block_by_number(n))
-        .filter_map(Result::ok)
-        .filter_map(|x| x)
-        .map(|b| b.into())
         .collect();
-    get_next_target_helper(blocks, epoch.block_time_target() * 1000)
+    let target = get_next_target_helper(blocks?, epoch.block_time_target() * 1000)?;
+    debug!(
+        "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
+        current_header.number, epoch, target
+    );
+    Ok(target)
 }
 
 pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Result<U256> {
@@ -101,11 +105,11 @@ impl BlockDiffInfo {
     }
 }
 
-impl From<Block> for BlockDiffInfo {
-    fn from(block: Block) -> Self {
+impl From<BlockHeader> for BlockDiffInfo {
+    fn from(block_header: BlockHeader) -> Self {
         Self {
-            timestamp: block.header.timestamp,
-            target: difficult_to_target(block.header.difficulty),
+            timestamp: block_header.timestamp,
+            target: difficult_to_target(block_header.difficulty),
         }
     }
 }

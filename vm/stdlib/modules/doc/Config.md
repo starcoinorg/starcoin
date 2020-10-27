@@ -18,6 +18,7 @@
 -  [Function `extract_modify_config_capability`](#0x1_Config_extract_modify_config_capability)
 -  [Function `restore_modify_config_capability`](#0x1_Config_restore_modify_config_capability)
 -  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
+-  [Function `account_address`](#0x1_Config_account_address)
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#@Specification_1)
     -  [Function `get_by_address`](#@Specification_1_get_by_address)
@@ -28,6 +29,7 @@
     -  [Function `extract_modify_config_capability`](#@Specification_1_extract_modify_config_capability)
     -  [Function `restore_modify_config_capability`](#@Specification_1_restore_modify_config_capability)
     -  [Function `destory_modify_config_capability`](#@Specification_1_destory_modify_config_capability)
+    -  [Function `account_address`](#@Specification_1_account_address)
     -  [Function `emit_config_change_event`](#@Specification_1_emit_config_change_event)
 
 
@@ -394,6 +396,30 @@
 
 </details>
 
+<a name="0x1_Config_account_address"></a>
+
+## Function `account_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_account_address">account_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;): address
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_account_address">account_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;): address {
+    cap.account_address
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Config_emit_config_change_event"></a>
 
 ## Function `emit_config_change_event`
@@ -644,6 +670,22 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_account_address"></a>
+
+### Function `account_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_account_address">account_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: &<a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;): address
 </code></pre>
 
 
