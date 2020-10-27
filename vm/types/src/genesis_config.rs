@@ -895,7 +895,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         version: Version { major: 1 },
         parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
-        timestamp: 1603390644000,
+        timestamp: 1603766401000,
         reward_delay: 3,
         difficulty: 10.into(),
         nonce: 0,
@@ -948,7 +948,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
     version: Version { major: 1 },
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-    timestamp: 1603390644000,
+    timestamp: 1603766401000,
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,
@@ -980,7 +980,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::new(0, 5),
+    stdlib_version: StdlibVersion::new(0, 6),
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
         voting_period: 60 * 60 * 24 * 2, // 2d
@@ -1028,7 +1028,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (None, association_public_key),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version: StdlibVersion::new(0, 6),
         dao_config: DaoConfig {
             voting_delay: 60 * 60,           // 1h
             voting_period: 60 * 60 * 24 * 2, // 2d
