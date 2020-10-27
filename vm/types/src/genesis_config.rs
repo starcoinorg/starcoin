@@ -740,13 +740,14 @@ static MIN_BLOCK_TIME_TARGET: u64 = 10;
 static MAX_BLOCK_TIME_TARGET: u64 = 60;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
-//for private funding + partnership + dev
+//for Private funding
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(15925680 + 4777704 + 9555408));
+    Lazy::new(|| STCUnit::STC.value_of(15925680));
 
-//for partnership + dev time lock release.
+//for Starcoin Foundation + DevTeam time lock release.
 static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(3726609 * 3 + 7421367 * 3));
+    Lazy::new(|| STCUnit::STC.value_of(8504313 * 3 + 7421367 * 3));
+
 //three years.
 static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 
@@ -894,7 +895,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
         version: Version { major: 1 },
         parent_hash: HashValue::sha3_256_of(b"starcoin_halley"),
-        timestamp: 1603390644000,
+        timestamp: 1603766401000,
         reward_delay: 3,
         difficulty: 10.into(),
         nonce: 0,
@@ -947,7 +948,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
     version: Version { major: 1 },
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-    timestamp: 1603390644000,
+    timestamp: 1603766401000,
     reward_delay: 7,
     difficulty: 10.into(),
     nonce: 0,
@@ -979,7 +980,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::new(0, 5),
+    stdlib_version: StdlibVersion::new(0, 6),
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
         voting_period: 60 * 60 * 24 * 2, // 2d
@@ -1027,7 +1028,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (None, association_public_key),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::Latest,
+        stdlib_version: StdlibVersion::new(0, 6),
         dao_config: DaoConfig {
             voting_delay: 60 * 60,           // 1h
             voting_period: 60 * 60 * 24 * 2, // 2d

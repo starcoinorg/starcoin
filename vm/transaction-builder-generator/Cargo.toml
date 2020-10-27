@@ -1,6 +1,6 @@
 [package]
 name = "transaction-builder-generator"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Libra Association <opensource@libra.org>"]
 description = "Libra transaction-builder"
 repository = "https://github.com/libra/libra"
