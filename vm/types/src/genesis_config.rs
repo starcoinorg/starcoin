@@ -740,13 +740,14 @@ static MIN_BLOCK_TIME_TARGET: u64 = 10;
 static MAX_BLOCK_TIME_TARGET: u64 = 60;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
-//for private funding + partnership + dev
+//for Private funding
 static DEFAULT_PRE_MINT_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(15925680 + 4777704 + 9555408));
+    Lazy::new(|| STCUnit::STC.value_of(15925680));
 
-//for partnership + dev time lock release.
+//for Starcoin Foundation + DevTeam time lock release.
 static DEFAULT_TIME_LOCKED_AMOUNT: Lazy<TokenValue<STCUnit>> =
-    Lazy::new(|| STCUnit::STC.value_of(3726609 * 3 + 7421367 * 3));
+    Lazy::new(|| STCUnit::STC.value_of(8504313 * 3 + 7421367 * 3));
+
 //three years.
 static DEFAULT_TIME_LOCKED_PERIOD: u64 = 3600 * 24 * 365 * 3;
 

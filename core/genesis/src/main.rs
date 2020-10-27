@@ -28,6 +28,10 @@ fn main() {
         if id.is_test() || id.is_dev() {
             continue;
         }
+        if id.is_main() {
+            info!("Main network not ready to bean generate, skip.");
+            continue;
+        }
         let net = ChainNetwork::new_builtin(id);
         let new_genesis =
             Genesis::load_by_opt(GenesisOpt::Fresh, &net).expect("build genesis fail.");
