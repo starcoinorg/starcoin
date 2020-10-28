@@ -224,7 +224,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 </dd>
 <dt>
-<code>peroid: u64</code>
+<code>period: u64</code>
 </dt>
 <dd>
 
@@ -389,11 +389,11 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
-<a name="0x1_Token_EDESTORY_TOKEN_NON_ZERO"></a>
+<a name="0x1_Token_EDESTROY_TOKEN_NON_ZERO"></a>
 
 
 
-<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>: u64 = 16;
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_TOKEN_NON_ZERO">EDESTROY_TOKEN_NON_ZERO</a>: u64 = 16;
 </code></pre>
 
 
@@ -744,7 +744,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -754,11 +754,11 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
-                                 amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+                                 amount: u128, period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;{
+    <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>let</b> end_time = now + peroid;
+    <b>let</b> end_time = now + period;
     <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
         total: amount,
         end_time,
@@ -776,7 +776,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
@@ -786,15 +786,15 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;( _capability: &<a href="Token.md#0x1_Token_MintCapability">MintCapability</a>&lt;TokenType&gt;,
-                                            amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
-    <b>assert</b>(peroid &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
+                                            amount: u128, period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;{
+    <b>assert</b>(period &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
         total: amount,
         minted: 0,
         start_time,
-        peroid
+        period
     }
 }
 </code></pre>
@@ -876,10 +876,10 @@ Only the Association account can acquire such a reference, and it can do so only
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): u128 {
     <b>let</b> now = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
     <b>let</b> elapsed_time = now - key.start_time;
-    <b>if</b> (elapsed_time &gt;= key.peroid) {
+    <b>if</b> (elapsed_time &gt;= key.period) {
         key.total - key.minted
     }<b>else</b> {
-        <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(key.total, (elapsed_time <b>as</b> u128), (key.peroid <b>as</b> u128)) - key.minted
+        <a href="Math.md#0x1_Math_mul_div">Math::mul_div</a>(key.total, (elapsed_time <b>as</b> u128), (key.period <b>as</b> u128)) - key.minted
     }
 }
 </code></pre>
@@ -957,7 +957,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_empty_key">destroy_empty_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) {
-    <b>let</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; { total, minted, start_time: _, peroid: _ } = key;
+    <b>let</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; { total, minted, start_time: _, period: _ } = key;
     <b>assert</b>(total == minted, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>));
 }
 </code></pre>
@@ -1223,7 +1223,7 @@ so you cannot "burn" any non-zero amount of Token
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_destroy_zero">destroy_zero</a>&lt;TokenType&gt;(token: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;) {
     <b>let</b> <a href="Token.md#0x1_Token">Token</a> { value } = token;
-    <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EDESTORY_TOKEN_NON_ZERO">EDESTORY_TOKEN_NON_ZERO</a>))
+    <b>assert</b>(value == 0, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EDESTROY_TOKEN_NON_ZERO">EDESTROY_TOKEN_NON_ZERO</a>))
 }
 </code></pre>
 
@@ -1644,16 +1644,16 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `issue_fixed_mint_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_fixed_mint_key">issue_fixed_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> peroid == 0;
+<pre><code><b>aborts_if</b> period == 0;
 <b>aborts_if</b> amount == 0;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
-<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + peroid &gt; MAX_U64;
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + period &gt; MAX_U64;
 </code></pre>
 
 
@@ -1663,13 +1663,13 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `issue_linear_mint_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, peroid: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_issue_linear_mint_key">issue_linear_mint_key</a>&lt;TokenType&gt;(_capability: &<a href="Token.md#0x1_Token_MintCapability">Token::MintCapability</a>&lt;TokenType&gt;, amount: u128, period: u64): <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> peroid == 0;
+<pre><code><b>aborts_if</b> period == 0;
 <b>aborts_if</b> amount == 0;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 </code></pre>
@@ -1725,8 +1725,8 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 <pre><code><b>pragma</b> verify = <b>false</b>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">0x1::CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() &lt; key.start_time;
-<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &gt;= key.peroid && key.total &lt; key.minted;
-<b>aborts_if</b> [abstract] <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &lt; key.peroid && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>() &lt; key.minted;
+<b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &gt;= key.period && key.total &lt; key.minted;
+<b>aborts_if</b> [abstract] <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() - key.start_time &lt; key.period && <a href="Math.md#0x1_Math_spec_mul_div">Math::spec_mul_div</a>() &lt; key.minted;
 </code></pre>
 
 

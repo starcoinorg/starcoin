@@ -25,8 +25,8 @@ module Token {
     // A fixed time mint key which can mint token until global time > end_time
     resource struct FixedTimeMintKey<TokenType> { total: u128, end_time: u64 }
 
-    // A linear time mint key which can mint token in a peroid by time-based linear release.
-    resource struct LinearTimeMintKey<TokenType> { total: u128, minted: u128, start_time: u64, peroid: u64 }
+    // A linear time mint key which can mint token in a period by time-based linear release.
+    resource struct LinearTimeMintKey<TokenType> { total: u128, minted: u128, start_time: u64, period: u64 }
 
     resource struct BurnCapability<TokenType> { }
 
@@ -59,7 +59,7 @@ module Token {
         burn_events: Event::EventHandle<BurnEvent>,
     }
 
-    const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
+    const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
     const EINVALID_ARGUMENT: u64 = 18;
     /// Token register's address should same as TokenType's address.
     const ETOKEN_REGISTER: u64 = 101;
@@ -212,11 +212,11 @@ module Token {
     }
 
     public fun issue_fixed_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
-                                     amount: u128, peroid: u64): FixedTimeMintKey<TokenType>{
-        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
+                                     amount: u128, period: u64): FixedTimeMintKey<TokenType>{
+        assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let now = Timestamp::now_seconds();
-        let end_time = now + peroid;
+        let end_time = now + period;
         FixedTimeMintKey{
             total: amount,
             end_time,
@@ -224,27 +224,27 @@ module Token {
     }
 
     spec fun issue_fixed_mint_key {
-        aborts_if peroid == 0;
+        aborts_if period == 0;
         aborts_if amount == 0;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
-        aborts_if Timestamp::spec_now_seconds() + peroid > MAX_U64;
+        aborts_if Timestamp::spec_now_seconds() + period > MAX_U64;
     }
 
     public fun issue_linear_mint_key<TokenType>( _capability: &MintCapability<TokenType>,
-                                                amount: u128, peroid: u64): LinearTimeMintKey<TokenType>{
-        assert(peroid > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
+                                                amount: u128, period: u64): LinearTimeMintKey<TokenType>{
+        assert(period > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         assert(amount > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         let start_time = Timestamp::now_seconds();
         LinearTimeMintKey<TokenType> {
             total: amount,
             minted: 0,
             start_time,
-            peroid
+            period
         }
     }
 
     spec fun issue_linear_mint_key {
-        aborts_if peroid == 0;
+        aborts_if period == 0;
         aborts_if amount == 0;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
     }
@@ -279,10 +279,10 @@ module Token {
     public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
         let elapsed_time = now - key.start_time;
-        if (elapsed_time >= key.peroid) {
+        if (elapsed_time >= key.period) {
             key.total - key.minted
         }else {
-            Math::mul_div(key.total, (elapsed_time as u128), (key.peroid as u128)) - key.minted
+            Math::mul_div(key.total, (elapsed_time as u128), (key.period as u128)) - key.minted
         }
     }
 
@@ -290,8 +290,8 @@ module Token {
         pragma verify = false; //timeout, fix later
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(0x1::CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if Timestamp::spec_now_seconds() < key.start_time;
-        aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.peroid && key.total < key.minted;
-        aborts_if [abstract] Timestamp::spec_now_seconds() - key.start_time < key.peroid && Math::spec_mul_div() < key.minted;
+        aborts_if Timestamp::spec_now_seconds() - key.start_time >= key.period && key.total < key.minted;
+        aborts_if [abstract] Timestamp::spec_now_seconds() - key.start_time < key.period && Math::spec_mul_div() < key.minted;
     }
 
     // Returns the mint amount of the FixedTimeMintKey.
@@ -321,7 +321,7 @@ module Token {
     }
 
     public fun destroy_empty_key<TokenType>(key: LinearTimeMintKey<TokenType>) {
-        let LinearTimeMintKey<TokenType> { total, minted, start_time: _, peroid: _ } = key;
+        let LinearTimeMintKey<TokenType> { total, minted, start_time: _, period: _ } = key;
         assert(total == minted, Errors::invalid_argument(EDESTROY_KEY_NOT_EMPTY));
     }
 
@@ -452,7 +452,7 @@ module Token {
     /// so you cannot "burn" any non-zero amount of Token
     public fun destroy_zero<TokenType>(token: Token<TokenType>) {
         let Token { value } = token;
-        assert(value == 0, Errors::invalid_state(EDESTORY_TOKEN_NON_ZERO))
+        assert(value == 0, Errors::invalid_state(EDESTROY_TOKEN_NON_ZERO))
     }
 
     spec fun destroy_zero {

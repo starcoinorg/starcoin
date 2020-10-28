@@ -47,7 +47,7 @@ module UpgradeModuleDaoProposal {
         ensures len(global<UpgradeModuleCapabilities<TokenT>>(sender).caps) == 0;
     }
 
-    /// If this govverment can upgrade module, call this to register capability.
+    /// If this government can upgrade module, call this to register capability.
     public fun delegate_module_upgrade_capability<TokenT>(
         signer: &signer,
         cap: PackageTxnManager::UpgradePlanCapability,
@@ -69,7 +69,7 @@ module UpgradeModuleDaoProposal {
         ensures len(global<UpgradeModuleCapabilities<TokenT>>(sender).caps) == len(old(global<UpgradeModuleCapabilities<TokenT>>(sender).caps)) + 1;
     }
 
-    /// check whether this gov has the ability to upgrade module in `moudle_address`.
+    /// check whether this gov has the ability to upgrade module in `module_address`.
     public fun able_to_upgrade<TokenT>(module_address: address): bool
     acquires UpgradeModuleCapabilities {
         let pos = find_module_upgrade_cap<TokenT>(module_address);

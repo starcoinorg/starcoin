@@ -178,12 +178,12 @@ module Config {
         ensures Option::spec_is_some<ModifyConfigCapability<ConfigValue>>(global<ModifyConfigCapabilityHolder<ConfigValue>>(cap.account_address).cap);
     }
 
-    public fun destory_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) {
+    public fun destroy_modify_config_capability<ConfigValue: copyable>(cap: ModifyConfigCapability<ConfigValue>) {
         let ModifyConfigCapability{account_address:_, events} = cap;
         Event::destroy_handle(events)
     }
 
-    spec fun destory_modify_config_capability {
+    spec fun destroy_modify_config_capability {
         aborts_if false;
     }
 

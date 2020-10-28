@@ -177,7 +177,7 @@
 
 ## Function `delegate_module_upgrade_capability`
 
-If this govverment can upgrade module, call this to register capability.
+If this government can upgrade module, call this to register capability.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_delegate_module_upgrade_capability">delegate_module_upgrade_capability</a>&lt;TokenT&gt;(signer: &signer, cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)
@@ -210,7 +210,7 @@ If this govverment can upgrade module, call this to register capability.
 
 ## Function `able_to_upgrade`
 
-check whether this gov has the ability to upgrade module in <code>moudle_address</code>.
+check whether this gov has the ability to upgrade module in <code>module_address</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_able_to_upgrade">able_to_upgrade</a>&lt;TokenT&gt;(module_address: address): bool

@@ -18,9 +18,9 @@ module ModifyDaoConfigProposal {
     }
 
     const ERR_NOT_AUTHORIZED: u64 = 401;
-    const ERR_QUROM_RATE_INVALID: u64 = 402;
+    const ERR_QUORUM_RATE_INVALID: u64 = 402;
 
-    /// a proposal action to udpate dao config.
+    /// a proposal action to update dao config.
     /// if any field is `0`, that means the proposal want to update.
     struct DaoConfigUpdate {
         voting_delay: u64,
@@ -32,11 +32,11 @@ module ModifyDaoConfigProposal {
     public fun plugin<TokenT: copyable>(signer: &signer) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
-        let dao_config_moidify_cap = Config::extract_modify_config_capability<
+        let dao_config_modify_cap = Config::extract_modify_config_capability<
             Dao::DaoConfig<TokenT>,
         >(signer);
         // TODO: assert cap.account_address == token_issuer
-        let cap = DaoConfigModifyCapability { cap: dao_config_moidify_cap };
+        let cap = DaoConfigModifyCapability { cap: dao_config_modify_cap };
         move_to(signer, cap);
     }
 
@@ -57,7 +57,7 @@ module ModifyDaoConfigProposal {
         min_action_delay: u64,
         exec_delay: u64,
     ) {
-        assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
+        assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUORUM_RATE_INVALID));
         let action = DaoConfigUpdate {
             voting_delay,
             voting_period,

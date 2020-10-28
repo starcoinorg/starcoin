@@ -22,8 +22,8 @@ module ConsensusStrategy {
             account,
             ConsensusStrategy { value:consensus_strategy }
         );
-        //destory the cap, so ConsensusStrategy can not been change.
-        Config::destory_modify_config_capability(cap);
+        //destroy the cap, so ConsensusStrategy can not been change.
+        Config::destroy_modify_config_capability(cap);
     }
 
     spec fun initialize {

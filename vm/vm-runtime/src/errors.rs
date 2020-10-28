@@ -24,7 +24,7 @@ const ENOT_GENESIS: u64 = 12;
 const ECONFIG_VALUE_DOES_NOT_EXIST: u64 = 13;
 const EINVALID_TIMESTAMP: u64 = 14;
 const ECOIN_DEPOSIT_IS_ZERO: u64 = 15;
-const EDESTORY_TOKEN_NON_ZERO: u64 = 16;
+const EDESTROY_TOKEN_NON_ZERO: u64 = 16;
 const EBLOCK_NUMBER_MISMATCH: u64 = 17;
 
 const INVALID_STATE: u8 = 1;
@@ -83,7 +83,7 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
-                (INVALID_STATE, EDESTORY_TOKEN_NON_ZERO) => {
+                (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => {
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => {

@@ -57,7 +57,7 @@
 
 ## Struct `DaoConfigUpdate`
 
-a proposal action to udpate dao config.
+a proposal action to update dao config.
 if any field is <code>0</code>, that means the proposal want to update.
 
 
@@ -114,11 +114,11 @@ if any field is <code>0</code>, that means the proposal want to update.
 
 
 
-<a name="0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID"></a>
+<a name="0x1_ModifyDaoConfigProposal_ERR_QUORUM_RATE_INVALID"></a>
 
 
 
-<pre><code><b>const</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>: u64 = 402;
+<pre><code><b>const</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUORUM_RATE_INVALID">ERR_QUORUM_RATE_INVALID</a>: u64 = 402;
 </code></pre>
 
 
@@ -141,11 +141,11 @@ if any field is <code>0</code>, that means the proposal want to update.
 <pre><code><b>public</b> <b>fun</b> <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer) {
     <b>let</b> token_issuer = <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;();
     <b>assert</b>(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer) == token_issuer, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
-    <b>let</b> dao_config_moidify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
+    <b>let</b> dao_config_modify_cap = <a href="Config.md#0x1_Config_extract_modify_config_capability">Config::extract_modify_config_capability</a>&lt;
         <a href="Dao.md#0x1_Dao_DaoConfig">Dao::DaoConfig</a>&lt;TokenT&gt;,
     &gt;(signer);
     // TODO: <b>assert</b> cap.account_address == token_issuer
-    <b>let</b> cap = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> { cap: dao_config_moidify_cap };
+    <b>let</b> cap = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigModifyCapability">DaoConfigModifyCapability</a> { cap: dao_config_modify_cap };
     move_to(signer, cap);
 }
 </code></pre>
@@ -177,7 +177,7 @@ if any field is <code>0</code>, that means the proposal want to update.
     min_action_delay: u64,
     exec_delay: u64,
 ) {
-    <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
+    <b>assert</b>(voting_quorum_rate &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_ERR_QUORUM_RATE_INVALID">ERR_QUORUM_RATE_INVALID</a>));
     <b>let</b> action = <a href="ModifyDaoConfigProposal.md#0x1_ModifyDaoConfigProposal_DaoConfigUpdate">DaoConfigUpdate</a> {
         voting_delay,
         voting_period,

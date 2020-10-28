@@ -13,7 +13,7 @@
 -  [Function `put_all`](#0x1_Box_put_all)
 -  [Function `take`](#0x1_Box_take)
 -  [Function `take_all`](#0x1_Box_take_all)
--  [Function `destory_empty`](#0x1_Box_destory_empty)
+-  [Function `destroy_empty`](#0x1_Box_destroy_empty)
 -  [Specification](#@Specification_1)
     -  [Function `exists_at`](#@Specification_1_exists_at)
     -  [Function `length`](#@Specification_1_length)
@@ -21,7 +21,7 @@
     -  [Function `put_all`](#@Specification_1_put_all)
     -  [Function `take`](#@Specification_1_take)
     -  [Function `take_all`](#@Specification_1_take_all)
-    -  [Function `destory_empty`](#@Specification_1_destory_empty)
+    -  [Function `destroy_empty`](#@Specification_1_destroy_empty)
 
 
 <pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
@@ -206,7 +206,7 @@
     <b>let</b> box = borrow_global_mut&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
     <b>let</b> thing = <a href="Vector.md#0x1_Vector_pop_back">Vector::pop_back</a>(&<b>mut</b> box.thing);
     <b>if</b> (<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&box.thing)){
-        <a href="Box.md#0x1_Box_destory_empty">destory_empty</a>&lt;T&gt;(addr);
+        <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T&gt;(addr);
     };
     thing
 }
@@ -243,13 +243,13 @@
 
 </details>
 
-<a name="0x1_Box_destory_empty"></a>
+<a name="0x1_Box_destroy_empty"></a>
 
-## Function `destory_empty`
+## Function `destroy_empty`
 
 
 
-<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destory_empty">destory_empty</a>&lt;T&gt;(addr: address)
+<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T&gt;(addr: address)
 </code></pre>
 
 
@@ -258,7 +258,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destory_empty">destory_empty</a>&lt;T&gt;(addr: address) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
+<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T&gt;(addr: address) <b>acquires</b> <a href="Box.md#0x1_Box">Box</a>{
     <b>let</b> <a href="Box.md#0x1_Box">Box</a>{ thing } = move_from&lt;<a href="Box.md#0x1_Box">Box</a>&lt;T&gt;&gt;(addr);
     <a href="Vector.md#0x1_Vector_destroy_empty">Vector::destroy_empty</a>(thing);
 }
@@ -378,12 +378,12 @@
 
 
 
-<a name="@Specification_1_destory_empty"></a>
+<a name="@Specification_1_destroy_empty"></a>
 
-### Function `destory_empty`
+### Function `destroy_empty`
 
 
-<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destory_empty">destory_empty</a>&lt;T&gt;(addr: address)
+<pre><code><b>fun</b> <a href="Box.md#0x1_Box_destroy_empty">destroy_empty</a>&lt;T&gt;(addr: address)
 </code></pre>
 
 

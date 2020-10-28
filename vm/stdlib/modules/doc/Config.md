@@ -17,7 +17,7 @@
 -  [Function `publish_new_config`](#0x1_Config_publish_new_config)
 -  [Function `extract_modify_config_capability`](#0x1_Config_extract_modify_config_capability)
 -  [Function `restore_modify_config_capability`](#0x1_Config_restore_modify_config_capability)
--  [Function `destory_modify_config_capability`](#0x1_Config_destory_modify_config_capability)
+-  [Function `destroy_modify_config_capability`](#0x1_Config_destroy_modify_config_capability)
 -  [Function `account_address`](#0x1_Config_account_address)
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#@Specification_1)
@@ -28,7 +28,7 @@
     -  [Function `publish_new_config`](#@Specification_1_publish_new_config)
     -  [Function `extract_modify_config_capability`](#@Specification_1_extract_modify_config_capability)
     -  [Function `restore_modify_config_capability`](#@Specification_1_restore_modify_config_capability)
-    -  [Function `destory_modify_config_capability`](#@Specification_1_destory_modify_config_capability)
+    -  [Function `destroy_modify_config_capability`](#@Specification_1_destroy_modify_config_capability)
     -  [Function `account_address`](#@Specification_1_account_address)
     -  [Function `emit_config_change_event`](#@Specification_1_emit_config_change_event)
 
@@ -371,13 +371,13 @@
 
 </details>
 
-<a name="0x1_Config_destory_modify_config_capability"></a>
+<a name="0x1_Config_destroy_modify_config_capability"></a>
 
-## Function `destory_modify_config_capability`
+## Function `destroy_modify_config_capability`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destroy_modify_config_capability">destroy_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
 </code></pre>
 
 
@@ -386,7 +386,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) {
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destroy_modify_config_capability">destroy_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>&lt;ConfigValue&gt;) {
     <b>let</b> <a href="Config.md#0x1_Config_ModifyConfigCapability">ModifyConfigCapability</a>{account_address:_, events} = cap;
     <a href="Event.md#0x1_Event_destroy_handle">Event::destroy_handle</a>(events)
 }
@@ -664,12 +664,12 @@
 
 
 
-<a name="@Specification_1_destory_modify_config_capability"></a>
+<a name="@Specification_1_destroy_modify_config_capability"></a>
 
-### Function `destory_modify_config_capability`
+### Function `destroy_modify_config_capability`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destory_modify_config_capability">destory_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_destroy_modify_config_capability">destroy_modify_config_capability</a>&lt;ConfigValue: <b>copyable</b>&gt;(cap: <a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;ConfigValue&gt;)
 </code></pre>
 
 

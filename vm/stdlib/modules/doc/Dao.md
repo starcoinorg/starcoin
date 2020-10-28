@@ -421,12 +421,12 @@ default action_delay: 1days
 
 
 
-<a name="0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE"></a>
+<a name="0x1_Dao_DEFAULT_VOTING_QUORUM_RATE"></a>
 
-default quorum rate: 4% of toal token supply.
+default quorum rate: 4% of total token supply.
 
 
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>: u8 = 4;
+<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_QUORUM_RATE">DEFAULT_VOTING_QUORUM_RATE</a>: u8 = 4;
 </code></pre>
 
 
@@ -514,11 +514,11 @@ default voting_period: 2days
 
 
 
-<a name="0x1_Dao_ERR_QUROM_RATE_INVALID"></a>
+<a name="0x1_Dao_ERR_QUORUM_RATE_INVALID"></a>
 
 
 
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>: u64 = 1406;
+<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_QUORUM_RATE_INVALID">ERR_QUORUM_RATE_INVALID</a>: u64 = 1406;
 </code></pre>
 
 
@@ -658,7 +658,7 @@ default min_action_delay
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8 {
-    <a href="Dao.md#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>
+    <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_QUORUM_RATE">DEFAULT_VOTING_QUORUM_RATE</a>
 }
 </code></pre>
 
@@ -672,7 +672,7 @@ default min_action_delay
 
 plugin function, can only be called by token issuer.
 Any token who wants to has gov functionality
-can optin this moudle by call this <code>register function</code>.
+can optin this module by call this <code>register function</code>.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_plugin">plugin</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64)
@@ -1632,7 +1632,7 @@ if any param is 0, it means no change to that param.
         config.voting_delay = voting_delay;
     };
     <b>if</b> (voting_quorum_rate &gt; 0) {
-        <b>assert</b>(<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
+        <b>assert</b>(<a href="Dao.md#0x1_Dao_voting_quorum_rate">voting_quorum_rate</a> &lt;= 100, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUORUM_RATE_INVALID">ERR_QUORUM_RATE_INVALID</a>));
         config.voting_quorum_rate = voting_quorum_rate;
     };
     <b>if</b> (min_action_delay &gt; 0) {
@@ -1731,7 +1731,7 @@ set voting quorum rate
     value: u8,
 ) {
     <b>assert</b>(<a href="Config.md#0x1_Config_account_address">Config::account_address</a>(cap) == <a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_NOT_AUTHORIZED">ERR_NOT_AUTHORIZED</a>));
-    <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUROM_RATE_INVALID">ERR_QUROM_RATE_INVALID</a>));
+    <b>assert</b>(value &lt;= 100 && value &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_QUORUM_RATE_INVALID">ERR_QUORUM_RATE_INVALID</a>));
     <b>let</b> config = <a href="Dao.md#0x1_Dao_get_config">get_config</a>&lt;TokenT&gt;();
     config.voting_quorum_rate = value;
     <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Dao.md#0x1_Dao_DaoConfig">DaoConfig</a>&lt;TokenT&gt;&gt;(cap, config);
