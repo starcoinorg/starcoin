@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use starcoin_canonical_serialization as scs;
 use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_api::StateNodeStore;
@@ -46,17 +45,11 @@ impl PlaygroudService {
         func: String,
         type_args: Vec<TypeTag>,
         args: Vec<TransactionArgument>,
-    ) -> Result<Vec<Vec<u8>>> {
+    ) -> Result<Vec<AnnotatedMoveValue>> {
         let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
         let module_id = ModuleId::new(module_address, Identifier::new(module_name)?);
         let rets = call_contract(&state_view, module_id, func.as_str(), type_args, args)?;
-        let mut bytes = vec![];
-        for v in rets {
-            let data = scs::to_bytes(&v)?;
-            bytes.push(data);
-        }
-
-        Ok(bytes)
+        Ok(rets)
     }
 }
 

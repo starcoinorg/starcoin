@@ -122,7 +122,7 @@ impl RpcService {
             api_registry.register(APIType::Public, MinerApi::to_delegate(miner_api));
         }
         if let Some(dev_api) = dev_api {
-            api_registry.register(APIType::Admin, DevApi::to_delegate(dev_api));
+            api_registry.register(APIType::Public, DevApi::to_delegate(dev_api));
         }
         Self::new(config, api_registry)
     }
