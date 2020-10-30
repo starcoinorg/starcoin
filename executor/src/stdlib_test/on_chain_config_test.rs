@@ -2,47 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::execute_readonly_function;
-use crate::stdlib_test::dao_vote_test;
-use crate::test_helper::prepare_genesis;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_functional_tests::account::Account;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_types::identifier::Identifier;
-use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
+use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::Script;
-use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::account_config::{association_address, genesis_address};
 use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, ConsensusConfig, OnChainConfig,
 };
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::values::{VMValueCast, Value};
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
-
-pub fn on_chain_config_type_tag(params_type_tag: TypeTag) -> TypeTag {
-    TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("OnChainConfigDao").unwrap(),
-        name: Identifier::new("OnChainConfigUpdate").unwrap(),
-        type_params: vec![params_type_tag],
-    })
-}
-pub fn reward_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("RewardConfig").unwrap(),
-        name: Identifier::new("RewardConfig").unwrap(),
-        type_params: vec![],
-    })
-}
-pub fn txn_publish_config_type_tag() -> TypeTag {
-    TypeTag::Struct(StructTag {
-        address: genesis_address(),
-        module: Identifier::new("TransactionPublishOption").unwrap(),
-        name: Identifier::new("TransactionPublishOption").unwrap(),
-        type_params: vec![],
-    })
-}
+use test_helper::dao::{
+    dao_vote_test, on_chain_config_type_tag, reward_config_type_tag, txn_publish_config_type_tag,
+};
+use test_helper::executor::prepare_genesis;
+use test_helper::Account;
 
 #[stest::test]
 fn test_modify_on_chain_consensus_config() -> Result<()> {
@@ -219,18 +196,18 @@ fn test_modify_on_chain_txn_publish_option() -> Result<()> {
         on_chain_config_type_tag(txn_publish_config_type_tag()),
         execute_script,
     )?;
-    //get RewardConfig
-    let address = genesis_address();
+    //get TransactionPublishOption
     let module_id = ModuleId::new(
-        address,
+        genesis_address(),
         Identifier::new("TransactionPublishOption").unwrap(),
     );
+
     let mut read_config = execute_readonly_function(
         &chain_state,
         &module_id,
         &Identifier::new("is_module_allowed").unwrap(),
         vec![],
-        vec![Value::address(address)],
+        vec![Value::address(association_address())],
     )?;
     let is_script_allowed_on_chain: bool = read_config.pop().unwrap().1.cast().unwrap();
 

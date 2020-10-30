@@ -29,6 +29,7 @@ starcoin-miner = { path = "../miner" }
 starcoin-crypto = { package = "starcoin-crypto", path = "../commons/crypto" }
 starcoin-logger = { path = "../commons/logger" }
 starcoin-types = { path = "../types" }
+starcoin-vm-types = { path = "../vm/types" }
 starcoin-sync = { path = "../sync" }
 starcoin-traits = { path = "../core/traits" }
 starcoin-genesis = { path = "../core/genesis" }
@@ -47,6 +48,9 @@ starcoin-node = { path = "../node" }
 starcoin-node-api = { path = "../node/api" }
 starcoin-functional-tests = { path = "../vm/functional-tests" }
 starcoin-service-registry = { path = "../commons/service-registry" }
+stdlib = {path ="../vm/stdlib"}
+starcoin-statedb = {path = "../state/statedb"}
+starcoin-move-compiler = { path = "../vm/compiler"}
 rand = "0.7.3"
 network-api = { path = "../network/api" }
 libp2p = "0.22.0"

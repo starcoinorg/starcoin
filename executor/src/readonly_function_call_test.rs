@@ -1,9 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_helper::{compile_module_with_address, execute_and_apply, prepare_genesis};
+use crate::account::{create_account_txn_sent_as_association, Account};
 use anyhow::Result;
-use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction::Transaction;
 use starcoin_vm_types::errors::Location;
@@ -14,6 +13,7 @@ use starcoin_vm_types::transaction::{Package, TransactionPayload};
 use starcoin_vm_types::values::{Struct, Value};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::{StatusCode, VMStatus};
+use test_helper::executor::{compile_module_with_address, execute_and_apply, prepare_genesis};
 
 #[stest::test]
 fn test_readonly_function_call() -> Result<()> {
