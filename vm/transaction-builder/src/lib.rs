@@ -3,14 +3,17 @@
 
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::language_storage::TypeTag;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
@@ -405,4 +408,41 @@ pub fn build_stdlib_package(
         ));
     }
     Ok(package)
+}
+
+pub fn build_module_upgrade_proposal(
+    net: ChainNetwork,
+    package: &Package,
+    day: u64,
+) -> (Script, HashValue) {
+    let module_upgrade_proposal_script =
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeModuleUpgrade)
+            .into_vec();
+    let package_hash = package.crypto_hash();
+    (
+        Script::new(
+            module_upgrade_proposal_script,
+            vec![stc_type_tag()],
+            vec![
+                TransactionArgument::Address(genesis_address()),
+                TransactionArgument::U8Vector(package_hash.clone().to_vec()),
+                TransactionArgument::U64(day),
+            ],
+        ),
+        package_hash,
+    )
+}
+
+pub fn build_module_upgrade_plan(net: ChainNetwork, proposal_id: u64) -> Script {
+    let module_upgrade_plan_script =
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::SubmitModuleUpgradePlan)
+            .into_vec();
+    Script::new(
+        module_upgrade_plan_script,
+        vec![stc_type_tag()],
+        vec![
+            TransactionArgument::Address(genesis_address()),
+            TransactionArgument::U64(proposal_id),
+        ],
+    )
 }

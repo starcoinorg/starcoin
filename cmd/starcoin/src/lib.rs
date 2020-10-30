@@ -81,7 +81,9 @@ pub fn add_command(
                 .subcommand(dev::DeriveAddressCommand)
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
-                .subcommand(dev::UpgradeStdlibCommand)
+                .subcommand(dev::UpgradeStdlibProposalCommand)
+                .subcommand(dev::UpgradeStdlibPlanCommand)
+                .subcommand(dev::UpgradeStdlibExeCommand)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
