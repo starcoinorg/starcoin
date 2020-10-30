@@ -7626,6 +7626,7 @@ dependencies = [
  "starcoin-consensus",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-resource-viewer",
  "starcoin-rpc-middleware",
  "starcoin-service-registry",
  "starcoin-state-api",

@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::dev::DevApi;
-use starcoin_rpc_api::types::ContractCall;
+use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
 use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionOutput};
@@ -48,7 +48,7 @@ where
         Box::new(f.boxed().compat())
     }
 
-    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<Vec<u8>>> {
+    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValue>> {
         let service = self.service.clone();
         let playground = self.playground.clone();
         let ContractCall {

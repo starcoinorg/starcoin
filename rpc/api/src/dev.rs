@@ -1,7 +1,7 @@
 use jsonrpc_derive::rpc;
 
 pub use self::gen_client::Client as DevClient;
-use crate::types::ContractCall;
+use crate::types::{AnnotatedMoveValue, ContractCall};
 use crate::FutureResult;
 use starcoin_vm_types::{
     transaction::{SignedUserTransaction, TransactionOutput},
@@ -16,5 +16,5 @@ pub trait DevApi {
 
     /// Call a move contract, return returned move values in lcs bytes.
     #[rpc(name = "dev.call_contract")]
-    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<Vec<u8>>>;
+    fn call_contract(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValue>>;
 }

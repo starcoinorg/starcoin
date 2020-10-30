@@ -33,3 +33,4 @@ starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}

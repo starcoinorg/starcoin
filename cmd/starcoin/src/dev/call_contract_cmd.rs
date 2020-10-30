@@ -69,13 +69,6 @@ impl CommandAction for CallContractCommand {
         };
 
         let result = ctx.state().client().contract_call(call)?;
-
-        let mut values = Vec::with_capacity(result.len());
-        for r in result {
-            let value: AnnotatedMoveValue = scs::from_bytes(&r)?;
-            values.push(value);
-        }
-
-        Ok(values)
+        Ok(result)
     }
 }

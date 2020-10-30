@@ -47,7 +47,6 @@ pub struct AnnotatedMoveStruct {
 /// the long run, we would like to transform this struct to a Json value so that we can have a cross
 /// platform interpretation of the on chain data.
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(tag = "type", content = "value")]
 pub enum AnnotatedMoveValue {
     U8(u8),
     U64(u64),
