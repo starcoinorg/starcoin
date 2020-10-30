@@ -362,20 +362,22 @@ pub fn compile_scripts_2_bytes(script_dir: &Path) -> HashMap<String, (HashValue,
 }
 
 pub fn compiled_scripts(script_dir: &Path) -> HashMap<String, HashValue> {
-    let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
-    let script_files = filter_mv_files(script_source_files);
     let mut scripts: HashMap<String, HashValue> = HashMap::new();
+    if script_dir.exists() {
+        let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+        let script_files = filter_mv_files(script_source_files);
 
-    for script_file in script_files {
-        let file_name =
-            file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
-        let mut compiled_script = Vec::new();
-        File::open(script_file)
-            .expect("Failed to open script bytecode file")
-            .read_to_end(&mut compiled_script)
-            .expect("Failed to read script bytecode file");
-        let hash = HashValue::sha3_256_of(&compiled_script);
-        scripts.insert(file_name, hash);
+        for script_file in script_files {
+            let file_name =
+                file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
+            let mut compiled_script = Vec::new();
+            File::open(script_file)
+                .expect("Failed to open script bytecode file")
+                .read_to_end(&mut compiled_script)
+                .expect("Failed to read script bytecode file");
+            let hash = HashValue::sha3_256_of(&compiled_script);
+            scripts.insert(file_name, hash);
+        }
     }
 
     scripts

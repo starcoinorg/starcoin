@@ -4,10 +4,14 @@
 #![forbid(unsafe_code)]
 
 use clap::{App, Arg};
+use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::{
+    language_storage::ModuleId,
+    transaction::{Module, Package},
+};
 use std::collections::HashMap;
 use std::{
     collections::BTreeMap,
@@ -96,34 +100,47 @@ fn incremental_update_with_version(
             }
         }
 
-        let mut full_path = dest_dir;
-        full_path.push(sub_dir);
+        let mut base_path = dest_dir;
+        base_path.push(sub_dir);
 
         println!(
             "update modules : {} write to path : {:?}, pre version path : {:?}",
             update_modules.len(),
-            full_path,
+            base_path,
             pre_dir
         );
-        if full_path.exists() {
-            std::fs::remove_dir_all(&full_path).unwrap();
+        if base_path.exists() {
+            std::fs::remove_dir_all(&base_path).unwrap();
         }
+        std::fs::create_dir_all(&base_path).unwrap();
         if !update_modules.is_empty() {
-            std::fs::create_dir_all(&full_path).unwrap();
+            let mut std_path = base_path.clone();
+            std_path.push(STDLIB_DIR_NAME);
+            std::fs::create_dir_all(&std_path).unwrap();
+            let mut modules = Vec::new();
             for (name, module) in update_modules {
                 let mut bytes = Vec::new();
                 module.serialize(&mut bytes).unwrap();
-                full_path.push(name);
-                full_path.set_extension(COMPILED_EXTENSION);
-                save_binary(full_path.as_path(), &bytes);
-                full_path.pop();
+                std_path.push(name);
+                std_path.set_extension(COMPILED_EXTENSION);
+                save_binary(std_path.as_path(), &bytes);
+                modules.push(Module::new(bytes));
+                std_path.pop();
             }
+            let package = Package::new_with_modules(modules).unwrap();
+            let package_hash = package.crypto_hash();
+            let mut package_path = base_path.clone();
+            package_path.push("stdlib");
+            package_path.set_extension("blob");
+            let blob = scs::to_bytes(&package).unwrap();
+            save_binary(package_path.as_path(), &blob);
+            println!("new package hash : {:?}", package_hash);
         }
 
         let mut pre_script_dir = pre_dir.clone();
         pre_script_dir.pop();
         pre_script_dir.push(TRANSACTION_SCRIPTS);
-        incremental_update_scripts_with_version(&pre_script_dir, new_script, full_path);
+        incremental_update_scripts_with_version(&pre_script_dir, new_script, base_path);
     }
 }
 
