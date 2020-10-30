@@ -17,6 +17,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
+use starcoin_crypto::hash::PlainCryptoHash;
 
 #[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "txfactory", about = "tx generator for starcoin")]
@@ -54,7 +55,12 @@ pub struct TxFactoryOpt {
         help = "public key(hex encoded) of address to receive balance"
     )]
     pub receiver_public_key: Option<String>,
+
+    #[structopt(long = "stress", short = "s", help = "is stress test or not")]
+    pub stress: bool,
 }
+
+const WATCH_TIMEOUT: Duration = Duration::from_secs(30);
 
 fn get_account_or_default(
     client: &RpcClient,
@@ -96,12 +102,18 @@ fn main() {
         Ed25519PublicKey::from_encoded_string(&k).expect("public key should be hex encoded")
     });
 
+    let is_stress = opts.stress;
+
     let net = client.node_info().unwrap().net;
+    let node_info = client
+        .node_info()
+        .unwrap_or_else(|_| panic!("Failed to get node info"));
     let txn_generator = MockTxnGenerator::new(
         net.chain_id(),
         account.clone(),
         receiver_address,
         public_key,
+        node_info,
     );
     let tx_mocker = TxnMocker::new(
         client,
@@ -126,12 +138,23 @@ fn main() {
     .unwrap();
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
-            let success = tx_mocker.gen_and_submit_txn();
-            if let Err(e) = success {
-                error!("fail to generate/submit mock txn, err: {:?}", &e);
-                // if txn is rejected, recheck sequence number, and start over
-                if let Err(e) = tx_mocker.recheck_sequence_number() {
-                    error!("fail to start over, err: {:?}", e);
+            if is_stress {
+                let success = tx_mocker.stress_test();
+                if let Err(e) = success {
+                    error!("fail to run stress test, err: {:?}", &e);
+                    // if txn is rejected, recheck sequence number, and start over
+                    if let Err(e) = tx_mocker.recheck_sequence_number() {
+                        error!("fail to re-check sequence number, err: {:?}", e);
+                    }
+                }
+            } else {
+                let success = tx_mocker.gen_and_submit_txn(false);
+                if let Err(e) = success {
+                    error!("fail to generate/submit mock txn, err: {:?}", &e);
+                    // if txn is rejected, recheck sequence number, and start over
+                    if let Err(e) = tx_mocker.recheck_sequence_number() {
+                        error!("fail to start over, err: {:?}", e);
+                    }
                 }
             }
 
@@ -214,7 +237,8 @@ impl TxnMocker {
         };
         Ok(())
     }
-    fn gen_and_submit_txn(&mut self) -> Result<()> {
+
+    fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
         // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
         // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
         // if let Some(n) = seq_number_in_pool {
@@ -224,6 +248,35 @@ impl TxnMocker {
             .generate_mock_txn(self.next_sequence_number)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
+        self.unlock_account()?;
+
+        let user_txn = match self.client.account_sign_txn(raw_txn) {
+            Err(e) => {
+                // sign txn fail, we should unlock again
+                self.account_unlock_time = None;
+                return Err(e);
+            }
+            Ok(txn) => txn,
+        };
+        info!(
+            "prepare to submit txn, sender:{},seq:{}",
+            user_txn.sender(),
+            user_txn.sequence_number(),
+        );
+        let txn_hash = user_txn.crypto_hash();
+        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
+
+        // increase sequence number if added in pool.
+        if matches!(result, Ok(_)) {
+            self.next_sequence_number += 1;
+        }
+        if blocking {
+            self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;
+        }
+        result
+    }
+
+    fn unlock_account(&mut self) -> Result<()> {
         let unlock_time = self.account_unlock_time;
         match unlock_time {
             Some(t) if t + self.unlock_duration > Instant::now() => {}
@@ -242,11 +295,38 @@ impl TxnMocker {
                 self.account_unlock_time = Some(new_unlock_time);
             }
         }
+        Ok(())
+    }
+
+    fn gen_and_submit_transfer_txn(
+        &mut self,
+        sender: AccountAddress,
+        receiver_address: AccountAddress,
+        receiver_public_key: Option<Ed25519PublicKey>,
+        amount: u128,
+        sequence_number: u64,
+        blocking: bool,
+    ) -> Result<()> {
+        let raw_txn = self.generator.generate_transfer_txn(
+            sequence_number,
+            sender,
+            receiver_address,
+            receiver_public_key,
+            amount,
+        )?;
+        info!("prepare to sign txn, sender: {}", raw_txn.sender());
+
+        // try unlock account
+        self.client.account_unlock(
+            sender,
+            self.account_password.clone(),
+            self.unlock_duration,
+        )?;
 
         let user_txn = match self.client.account_sign_txn(raw_txn) {
             Err(e) => {
                 // sign txn fail, we should unlock again
-                self.account_unlock_time = None;
+                //self.account_unlock_time = None;
                 return Err(e);
             }
             Ok(txn) => txn,
@@ -256,12 +336,58 @@ impl TxnMocker {
             user_txn.sender(),
             user_txn.sequence_number(),
         );
+        let txn_hash = user_txn.crypto_hash();
         let result = self.client.submit_transaction(user_txn).and_then(|r| r);
 
-        // increase sequence number if added in pool.
-        if matches!(result, Ok(_)) {
-            self.next_sequence_number += 1;
+        if blocking {
+            self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;
         }
         result
+    }
+
+    fn create_accounts(&mut self) -> Result<Vec<AccountInfo>> {
+        self.unlock_account()?;
+
+        let mut account_list = Vec::new();
+        for _i in 0..10 {
+            let account = self.client.account_create(self.account_password.clone())?;
+            let result = self.gen_and_submit_transfer_txn(
+                self.account_address,
+                account.address.clone(),
+                account.public_key.as_single(),
+                20000,
+                self.next_sequence_number,
+                false,
+            );
+            if matches!(result, Ok(_)) {
+                self.next_sequence_number += 1;
+            }
+            account_list.push(account);
+        }
+        Ok(account_list)
+    }
+
+    fn stress_test(&mut self) -> Result<()> {
+        let accounts = self.create_accounts()?;
+        self.gen_and_submit_txn(true)?;
+        for account in &accounts {
+            let mut seq = 0u64;
+            for receiver in &accounts {
+                if account.address != receiver.address {
+                    let result = self.gen_and_submit_transfer_txn(
+                        account.address.clone(),
+                        receiver.address.clone(),
+                        receiver.public_key.as_single(),
+                        10,
+                        seq,
+                        false,
+                    );
+                    if matches!(result, Ok(_)) {
+                        seq += 1;
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 }
