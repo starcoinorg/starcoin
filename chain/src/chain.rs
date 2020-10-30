@@ -11,6 +11,7 @@ use starcoin_accumulator::{
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
 };
+use starcoin_executor::BlockExecutedData;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -913,7 +914,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
+            starcoin_executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };
@@ -1061,16 +1062,12 @@ impl BlockChain {
         &self,
         block_id: HashValue,
         txns: &[Transaction],
-    ) -> Result<executor::BlockExecutedData> {
+    ) -> Result<BlockExecutedData> {
         self.verify_txns(block_id, txns)
     }
 
-    fn verify_txns(
-        &self,
-        block_id: HashValue,
-        txns: &[Transaction],
-    ) -> Result<executor::BlockExecutedData> {
-        let mut block_executed_data = executor::BlockExecutedData::default();
+    fn verify_txns(&self, block_id: HashValue, txns: &[Transaction]) -> Result<BlockExecutedData> {
+        let mut block_executed_data = BlockExecutedData::default();
 
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
 

@@ -14,7 +14,7 @@ actix-rt = "1.1"
 starcoin-types = { path = "../../types", package = "starcoin-types" }
 starcoin-config = { path = "../../config" }
 state-tree = { path = "../../state/state-tree", package = "starcoin-state-tree" }
-executor = { path = "../../executor", package = "starcoin-executor" }
+starcoin-executor = { path = "../../executor", package = "starcoin-executor" }
 crypto = { package = "starcoin-crypto", path = "../../commons/crypto" }
 starcoin-consensus = { path = "../../consensus" }
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }

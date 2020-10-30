@@ -1,9 +1,11 @@
 use anyhow::Result;
 use crypto::keygen::KeyGen;
-use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_config::NodeConfig;
+use starcoin_executor::{
+    build_transfer_from_association, build_transfer_txn, DEFAULT_EXPIRATION_TIME,
+};
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::ChainReader;
@@ -36,7 +38,7 @@ pub fn test_open_block() -> Result<()> {
         account_reader.get_sequence_number(account_config::association_address())?;
     let (receive_prikey, receive_public_key) = KeyGen::from_os_rng().generate_keypair();
     let receiver = account_address::from_public_key(&receive_public_key);
-    let txn1 = executor::build_transfer_from_association(
+    let txn1 = build_transfer_from_association(
         receiver,
         Some(AuthenticationKey::ed25519(&receive_public_key)),
         association_sequence_num,
@@ -65,7 +67,7 @@ pub fn test_open_block() -> Result<()> {
     let build_transfer_txn = |seq_number: u64| {
         let (_prikey, pubkey) = KeyGen::from_os_rng().generate_keypair();
         let address = account_address::from_public_key(&pubkey);
-        executor::build_transfer_txn(
+        build_transfer_txn(
             receiver,
             address,
             Some(AuthenticationKey::ed25519(&pubkey)),

@@ -4,8 +4,8 @@
 // The config holds the options that define the testing environment.
 // A config entry starts with "//!", differentiating it from a directive.
 
-use crate::account::{Account, AccountData};
 use crate::{common::strip, errors::*, genesis_accounts::make_genesis_accounts};
+use executor::account::{Account, AccountData};
 use once_cell::sync::Lazy;
 use starcoin_crypto::keygen::KeyGen;
 use starcoin_vm_types::account_config::STC_TOKEN_CODE_STR;
