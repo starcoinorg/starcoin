@@ -130,6 +130,8 @@ fn main() {
         }
     };
 
+    let accounts = tx_mocker.create_accounts().expect("create accounts should success");
+
     let stopping_signal = Arc::new(AtomicBool::new(false));
     let stopping_signal_clone = stopping_signal.clone();
     ctrlc::set_handler(move || {
@@ -139,12 +141,12 @@ fn main() {
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
             if is_stress {
-                let success = tx_mocker.stress_test();
+                let success = tx_mocker.stress_test(accounts.clone());
                 if let Err(e) = success {
                     error!("fail to run stress test, err: {:?}", &e);
                     // if txn is rejected, recheck sequence number, and start over
                     if let Err(e) = tx_mocker.recheck_sequence_number() {
-                        error!("fail to re-check sequence number, err: {:?}", e);
+                        error!("fail to start over, err: {:?}", e);
                     }
                 }
             } else {
@@ -357,37 +359,81 @@ impl TxnMocker {
                 account.public_key.as_single(),
                 20000,
                 self.next_sequence_number,
+                true,
+            );
+            self.next_sequence_number += 1;
+            if matches!(result, Ok(_)) {
+                account_list.push(account);
+            }
+        }
+        Ok(account_list)
+    }
+
+    fn transfer_to_accounts(&mut self, accounts: &Vec<AccountInfo>) -> Result<()> {
+        self.unlock_account()?;
+
+        for account in accounts {
+            let result = self.gen_and_submit_transfer_txn(
+                self.account_address,
+                account.address.clone(),
+                account.public_key.as_single(),
+                20000,
+                self.next_sequence_number,
                 false,
             );
             if matches!(result, Ok(_)) {
                 self.next_sequence_number += 1;
             }
-            account_list.push(account);
         }
-        Ok(account_list)
+        Ok(())
     }
 
-    fn stress_test(&mut self) -> Result<()> {
-        let accounts = self.create_accounts()?;
-        self.gen_and_submit_txn(true)?;
+    fn stress_test(&mut self, accounts: Vec<AccountInfo>) -> Result<()> {
+        self.transfer_to_accounts(&accounts)?;
         for account in &accounts {
-            let mut seq = 0u64;
-            for receiver in &accounts {
-                if account.address != receiver.address {
-                    let result = self.gen_and_submit_transfer_txn(
-                        account.address.clone(),
-                        receiver.address.clone(),
-                        receiver.public_key.as_single(),
-                        10,
-                        seq,
-                        false,
-                    );
-                    if matches!(result, Ok(_)) {
-                        seq += 1;
+            let seq = self.sequence_number(account.address.clone())?;
+            if seq.is_some() {
+                let mut seq_num= seq.unwrap();
+                for receiver in &accounts {
+                    if account.address != receiver.address {
+                        let result = self.gen_and_submit_transfer_txn(
+                            account.address.clone(),
+                            receiver.address.clone(),
+                            receiver.public_key.as_single(),
+                            10,
+                            seq_num,
+                            false,
+                        );
+                        //if matches!(result, Ok(_)) {
+                            seq_num += 1;
+                        //}
                     }
                 }
             }
         }
         Ok(())
+    }
+
+    fn sequence_number(&mut self, address: AccountAddress) -> Result<Option<u64>> {
+        let seq_number_in_pool = self
+            .client
+            .next_sequence_number_in_txpool(address)?;
+
+        let result = match seq_number_in_pool {
+            Some(n) => Some(n),
+            None => {
+                let state_reader = RemoteStateReader::new(&self.client);
+                let account_state_reader = AccountStateReader::new(&state_reader);
+
+                let account_resource =
+                    account_state_reader.get_account_resource(&address)?;
+                if account_resource.is_none() {
+                    None
+                } else {
+                    Some(account_resource.unwrap().sequence_number())
+                }
+            }
+        };
+        Ok(result)
     }
 }
