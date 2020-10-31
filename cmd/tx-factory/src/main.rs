@@ -60,7 +60,7 @@ pub struct TxFactoryOpt {
     pub stress: bool,
 }
 
-const WATCH_TIMEOUT: Duration = Duration::from_secs(30);
+const WATCH_TIMEOUT: Duration = Duration::from_secs(60);
 
 fn get_account_or_default(
     client: &RpcClient,
@@ -240,6 +240,15 @@ impl TxnMocker {
         Ok(())
     }
 
+    fn is_account_exist(&mut self, account: &AccountAddress) -> bool {
+        let state_reader = RemoteStateReader::new(&self.client);
+        let account_state_reader = AccountStateReader::new(&state_reader);
+
+        let account_resource =
+            account_state_reader.get_account_resource(account).unwrap_or(None);
+        account_resource.is_some()
+    }
+
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
         // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
         // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
@@ -341,7 +350,7 @@ impl TxnMocker {
         let txn_hash = user_txn.crypto_hash();
         let result = self.client.submit_transaction(user_txn).and_then(|r| r);
 
-        if blocking {
+        if matches!(result, Ok(_)) && blocking {
             self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;
         }
         result
@@ -352,18 +361,22 @@ impl TxnMocker {
 
         let mut account_list = Vec::new();
         for _i in 0..10 {
+            self.recheck_sequence_number()?;
             let account = self.client.account_create(self.account_password.clone())?;
             let result = self.gen_and_submit_transfer_txn(
                 self.account_address,
                 account.address.clone(),
                 account.public_key.as_single(),
-                20000,
+                100000,
                 self.next_sequence_number,
                 true,
             );
-            self.next_sequence_number += 1;
             if matches!(result, Ok(_)) {
-                account_list.push(account);
+                if self.is_account_exist(&account.address) {
+                    account_list.push(account);
+                } else {
+                    info!("create account failed, watch timeout?");
+                }
             }
         }
         Ok(account_list)
@@ -371,13 +384,13 @@ impl TxnMocker {
 
     fn transfer_to_accounts(&mut self, accounts: &Vec<AccountInfo>) -> Result<()> {
         self.unlock_account()?;
-
+        self.recheck_sequence_number()?;
         for account in accounts {
             let result = self.gen_and_submit_transfer_txn(
                 self.account_address,
                 account.address.clone(),
                 account.public_key.as_single(),
-                20000,
+                100000,
                 self.next_sequence_number,
                 false,
             );
@@ -404,9 +417,9 @@ impl TxnMocker {
                             seq_num,
                             false,
                         );
-                        //if matches!(result, Ok(_)) {
+                        if matches!(result, Ok(_)) {
                             seq_num += 1;
-                        //}
+                        }
                     }
                 }
             }
