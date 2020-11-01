@@ -6,7 +6,6 @@ module TransactionPublishOption {
     use 0x1::CoreAddresses;
     use 0x1::Errors;
     use 0x1::Signer;
-    use 0x1::Debug;
 
     spec module {
         pragma verify = true;
@@ -113,7 +112,6 @@ module TransactionPublishOption {
 
     // Check if a sender can publish a module
     public fun is_module_allowed(account: address): bool {
-        Debug::print(&account);
         let publish_option = Config::get_by_address<TransactionPublishOption>(account);
         publish_option.module_publishing_allowed
     }
