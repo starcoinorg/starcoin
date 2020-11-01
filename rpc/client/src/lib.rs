@@ -47,7 +47,7 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::types::ContractCall;
+use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
 use starcoin_service_registry::ServiceInfo;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
@@ -413,7 +413,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<Vec<u8>>> {
+    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValue>> {
         self.call_rpc_blocking(|inner| async move {
             inner.dev_client.call_contract(call).compat().await
         })
