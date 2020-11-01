@@ -17,6 +17,7 @@ use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{Script, TransactionArgument, TransactionPayload};
 use starcoin_vm_types::values::{VMValueCast, Value};
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
+
 //TODO transfer to enum
 pub const PENDING: u8 = 1;
 pub const ACTIVE: u8 = 2;
@@ -226,10 +227,97 @@ fn execute_cast_vote(
     Ok(())
 }
 
+///vote script consensus
+pub fn vote_script_consensus(net: &ChainNetwork, strategy: u8) -> Script {
+    let script1 = compiled_transaction_script(
+        net.stdlib_version(),
+        StdlibScript::ProposeUpdateConsensusConfig,
+    )
+    .into_vec();
+
+    Script::new(
+        script1,
+        vec![],
+        vec![
+            TransactionArgument::U64(80),
+            TransactionArgument::U64(10),
+            TransactionArgument::U128(64000000000),
+            TransactionArgument::U64(10),
+            TransactionArgument::U64(48),
+            TransactionArgument::U64(24),
+            TransactionArgument::U64(1),
+            TransactionArgument::U64(60),
+            TransactionArgument::U64(2),
+            TransactionArgument::U64(1000000),
+            TransactionArgument::U8(strategy),
+            TransactionArgument::U64(0),
+        ],
+    )
+}
+
+///reward on chain config script
+pub fn vote_reward_scripts(net: &ChainNetwork, reward_delay: u64) -> Script {
+    let script1 = compiled_transaction_script(
+        net.stdlib_version(),
+        StdlibScript::ProposeUpdateRewardConfig,
+    )
+    .into_vec();
+
+    Script::new(
+        script1,
+        vec![],
+        vec![
+            TransactionArgument::U64(reward_delay),
+            TransactionArgument::U64(0),
+        ],
+    )
+}
+
+/// vote txn publish option scripts
+pub fn vote_txn_publish_option_script(
+    net: &ChainNetwork,
+    script_hash: HashValue,
+    module_publishing_allowed: bool,
+) -> Script {
+    let script1 = compiled_transaction_script(
+        net.stdlib_version(),
+        StdlibScript::ProposeUpdateTxnPublishOption,
+    )
+    .into_vec();
+    Script::new(
+        script1,
+        vec![],
+        vec![
+            TransactionArgument::U8Vector(script_hash.to_vec()),
+            TransactionArgument::Bool(module_publishing_allowed),
+            TransactionArgument::U64(0),
+        ],
+    )
+}
+
+/// execute on chain config scripts
+pub fn execute_script_on_chain_config(
+    net: &ChainNetwork,
+    type_tag: TypeTag,
+    proposal_id: u64,
+) -> Script {
+    let script2 = compiled_transaction_script(
+        net.stdlib_version(),
+        StdlibScript::ExecuteOnChainConfigProposal,
+    )
+    .into_vec();
+
+    Script::new(
+        script2,
+        vec![type_tag],
+        vec![TransactionArgument::U64(proposal_id)],
+    )
+}
+
 pub fn dao_vote_test(
     alice: Account,
     chain_state: ChainStateDB,
-    net: ChainNetwork,
+    net: &ChainNetwork,
     vote_script: Script,
     action_type_tag: TypeTag,
     execute_script: Script,
@@ -388,7 +476,6 @@ pub fn dao_vote_test(
                 0,
             ),
         )?;
-        dbg!("dddddddddddd");
         let state = proposal_state(
             &chain_state,
             stc_type_tag(),
@@ -402,7 +489,6 @@ pub fn dao_vote_test(
             &chain_state,
             TransactionPayload::Script(execute_script),
         )?;
-        dbg!("eeeeeeeeeeeeee");
     }
 
     // block 7

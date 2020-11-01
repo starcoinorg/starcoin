@@ -7,16 +7,15 @@ use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::Script;
-use starcoin_vm_types::account_config::{association_address, genesis_address};
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::on_chain_config::{
     consensus_config_type_tag, ConsensusConfig, OnChainConfig,
 };
-use starcoin_vm_types::transaction_argument::TransactionArgument;
-use starcoin_vm_types::values::{VMValueCast, Value};
-use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
+use starcoin_vm_types::values::VMValueCast;
 use test_helper::dao::{
-    dao_vote_test, on_chain_config_type_tag, reward_config_type_tag, txn_publish_config_type_tag,
+    dao_vote_test, execute_script_on_chain_config, on_chain_config_type_tag,
+    reward_config_type_tag, txn_publish_config_type_tag, vote_reward_scripts,
+    vote_script_consensus, vote_txn_publish_option_script,
 };
 use test_helper::executor::prepare_genesis;
 use test_helper::Account;
@@ -25,52 +24,16 @@ use test_helper::Account;
 fn test_modify_on_chain_consensus_config() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
-
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateConsensusConfig,
-    )
-    .into_vec();
-
+    let action_type_tag = consensus_config_type_tag();
     let strategy = 2u8;
-    let vote_script = Script::new(
-        script1,
-        vec![],
-        vec![
-            TransactionArgument::U64(80),
-            TransactionArgument::U64(10),
-            TransactionArgument::U128(64000000000),
-            TransactionArgument::U64(10),
-            TransactionArgument::U64(48),
-            TransactionArgument::U64(24),
-            TransactionArgument::U64(1),
-            TransactionArgument::U64(60),
-            TransactionArgument::U64(2),
-            TransactionArgument::U64(1000000),
-            TransactionArgument::U8(strategy),
-            TransactionArgument::U64(0),
-        ],
-    );
-
-    let script2 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ExecuteOnChainConfigProposal,
-    )
-    .into_vec();
-
-    let execute_script = Script::new(
-        script2,
-        vec![consensus_config_type_tag()],
-        vec![TransactionArgument::U64(0)],
-    );
 
     let chain_state = dao_vote_test(
         alice,
         chain_state,
-        net,
-        vote_script,
-        on_chain_config_type_tag(consensus_config_type_tag()),
-        execute_script,
+        &net,
+        vote_script_consensus(&net, strategy),
+        on_chain_config_type_tag(action_type_tag.clone()),
+        execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
     //get consensus config
     let module_id = ModuleId::new(genesis_address(), Identifier::new("ConsensusConfig")?);
@@ -97,41 +60,16 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
 
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateRewardConfig,
-    )
-    .into_vec();
-
-    let reward_delay: u64 = 10;
-    let vote_script = Script::new(
-        script1,
-        vec![],
-        vec![
-            TransactionArgument::U64(reward_delay),
-            TransactionArgument::U64(0),
-        ],
-    );
-
-    let script2 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ExecuteOnChainConfigProposal,
-    )
-    .into_vec();
-
-    let execute_script = Script::new(
-        script2,
-        vec![reward_config_type_tag()],
-        vec![TransactionArgument::U64(0)],
-    );
+    let action_type_tag = reward_config_type_tag();
+    let reward_delay: u64 = 100;
 
     let chain_state = dao_vote_test(
         alice,
         chain_state,
-        net,
-        vote_script,
-        on_chain_config_type_tag(reward_config_type_tag()),
-        execute_script,
+        &net,
+        vote_reward_scripts(&net, reward_delay),
+        on_chain_config_type_tag(action_type_tag.clone()),
+        execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
     //get RewardConfig
     let module_id = ModuleId::new(genesis_address(), Identifier::new("RewardConfig")?);
@@ -152,50 +90,24 @@ fn test_modify_on_chain_reward_config() -> Result<()> {
 fn test_modify_on_chain_txn_publish_option() -> Result<()> {
     let alice = Account::new();
     let (chain_state, net) = prepare_genesis();
-
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateTxnPublishOption,
-    )
-    .into_vec();
-
+    let action_type_tag = txn_publish_config_type_tag();
     let script_hash = HashValue::random();
-    let module_publishing_allowed: bool = true;
-    let vote_script = Script::new(
-        script1,
-        vec![],
-        vec![
-            TransactionArgument::U8Vector(script_hash.to_vec()),
-            TransactionArgument::Bool(module_publishing_allowed),
-            TransactionArgument::U64(0),
-        ],
-    );
+    let module_publishing_allowed = true;
+    let vote_script = vote_txn_publish_option_script(&net, script_hash, module_publishing_allowed);
 
-    let script2 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ExecuteOnChainConfigProposal,
-    )
-    .into_vec();
-
-    let execute_script = Script::new(
-        script2,
-        vec![txn_publish_config_type_tag()],
-        vec![TransactionArgument::U64(0)],
-    );
-
-    let chain_state = dao_vote_test(
+    let _chain_state = dao_vote_test(
         alice.clone(),
         chain_state,
-        net,
+        &net,
         vote_script,
-        on_chain_config_type_tag(txn_publish_config_type_tag()),
-        execute_script,
+        on_chain_config_type_tag(action_type_tag.clone()),
+        execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
     //get TransactionPublishOption
-    let module_id = ModuleId::new(
-        genesis_address(),
-        Identifier::new("TransactionPublishOption")?,
-    );
+    // let module_id = ModuleId::new(
+    //     genesis_address(),
+    //     Identifier::new("TransactionPublishOption")?,
+    // );
 
     // Fixme: verify
     // let mut read_config = execute_readonly_function(

@@ -55,7 +55,7 @@ fn test_dao_upgrade_module() -> Result<()> {
     let chain_state = dao_vote_test(
         alice,
         chain_state,
-        net.clone(),
+        &net,
         vote_script,
         dao_action_type_tag,
         execute_script,

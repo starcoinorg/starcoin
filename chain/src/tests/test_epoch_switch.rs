@@ -16,13 +16,17 @@ use starcoin_types::genesis_config::{ChainId, ChainNetwork};
 use starcoin_types::transaction::{
     Script, SignedUserTransaction, TransactionArgument, TransactionPayload,
 };
-use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
+use starcoin_vm_types::language_storage::TypeTag;
+use starcoin_vm_types::on_chain_config::{consensus_config_type_tag, GlobalTimeOnChain};
 use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 use test_helper::dao::{
+    execute_script_on_chain_config,
     min_action_delay,
     reward_config_type_tag,
+    vote_reward_scripts,
+    vote_script_consensus,
     voting_delay,
     voting_period,
     // ACTIVE, AGREED, EXTRACTED, PENDING,
@@ -102,23 +106,9 @@ fn create_user_txn(
 fn create_vote_txn(
     alice: &Account,
     seq_number: u64,
-    net: &ChainNetwork,
+    vote_script: Script,
     expire_time: u64,
 ) -> Result<SignedUserTransaction> {
-    let reward_delay: u64 = 10;
-    let script1 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ProposeUpdateRewardConfig,
-    )
-    .into_vec();
-    let vote_script = Script::new(
-        script1,
-        vec![],
-        vec![
-            TransactionArgument::U64(reward_delay),
-            TransactionArgument::U64(0),
-        ],
-    );
     let txn = alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
@@ -164,6 +154,7 @@ fn queue_txn(
     alice: &Account,
     bob: &Account,
     net: &ChainNetwork,
+    action_type_tag: TypeTag,
     expire_time: u64,
 ) -> Result<SignedUserTransaction> {
     let script =
@@ -171,7 +162,7 @@ fn queue_txn(
             .into_vec();
     let script = Script::new(
         script,
-        vec![stc_type_tag(), reward_config_type_tag()],
+        vec![stc_type_tag(), action_type_tag],
         vec![
             TransactionArgument::Address(*bob.address()),
             TransactionArgument::U64(0),
@@ -189,20 +180,9 @@ fn queue_txn(
 fn execute_txn(
     seq_number: u64,
     alice: &Account,
-    net: &ChainNetwork,
+    execute_script: Script,
     expire_time: u64,
 ) -> Result<SignedUserTransaction> {
-    let script2 = compiled_transaction_script(
-        net.stdlib_version(),
-        StdlibScript::ExecuteOnChainConfigProposal,
-    )
-    .into_vec();
-
-    let execute_script = Script::new(
-        script2,
-        vec![reward_config_type_tag()],
-        vec![TransactionArgument::U64(0)],
-    );
     let txn = alice.sign_txn(build_transaction(
         *alice.address(),
         seq_number,
@@ -212,13 +192,15 @@ fn execute_txn(
     Ok(txn)
 }
 
-#[stest::test]
-fn test_dao_modify_onchain_config() -> Result<()> {
-    let config = Arc::new(NodeConfig::random_for_test());
-    let net = config.net();
-    let mut chain = test_helper::gen_blockchain_for_test(net)?;
-    let alice = Account::new();
-    let bob = Account::new();
+pub fn modify_on_chain_config_by_dao_block(
+    alice: Account,
+    bob: Account,
+    mut chain: BlockChain,
+    net: &ChainNetwork,
+    vote_script: Script,
+    action_type_tag: TypeTag,
+    execute_script: Script,
+) -> Result<()> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     let address = association_address();
@@ -272,7 +254,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
             vec![create_vote_txn(
                 &alice,
                 alice_seq,
-                net,
+                vote_script,
                 block_timestamp / 1000,
             )?],
         )?;
@@ -357,6 +339,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
                 &alice,
                 &bob,
                 net,
+                action_type_tag.clone(),
                 block_timestamp / 1000,
             )?],
         )?;
@@ -399,7 +382,12 @@ fn test_dao_modify_onchain_config() -> Result<()> {
         let block8 = create_new_block(
             &chain,
             *alice.address(),
-            vec![execute_txn(alice_seq, &alice, net, block_timestamp / 1000)?],
+            vec![execute_txn(
+                alice_seq,
+                &alice,
+                execute_script,
+                block_timestamp / 1000,
+            )?],
         )?;
         chain.apply(block8)?;
     }
@@ -424,5 +412,50 @@ fn test_dao_modify_onchain_config() -> Result<()> {
     // );
     // assert_eq!(state, EXTRACTED);
     // return chain state for verify
+    Ok(())
+}
+
+#[stest::test]
+fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let net = config.net();
+    let chain = test_helper::gen_blockchain_for_test(net)?;
+    let alice = Account::new();
+    let bob = Account::new();
+    let action_type_tag = reward_config_type_tag();
+    let reward_delay: u64 = 10;
+
+    modify_on_chain_config_by_dao_block(
+        alice,
+        bob,
+        chain,
+        net,
+        vote_reward_scripts(&net, reward_delay),
+        action_type_tag.clone(),
+        execute_script_on_chain_config(net, action_type_tag, 0u64),
+    )?;
+
+    Ok(())
+}
+
+#[stest::test]
+fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
+    let config = Arc::new(NodeConfig::random_for_test());
+    let net = config.net();
+    let chain = test_helper::gen_blockchain_for_test(net)?;
+    let alice = Account::new();
+    let bob = Account::new();
+    let action_type_tag = consensus_config_type_tag();
+    let strategy = 2u8;
+    modify_on_chain_config_by_dao_block(
+        alice,
+        bob,
+        chain,
+        net,
+        vote_script_consensus(&net, strategy),
+        action_type_tag.clone(),
+        execute_script_on_chain_config(net, action_type_tag, 0u64),
+    )?;
+
     Ok(())
 }
