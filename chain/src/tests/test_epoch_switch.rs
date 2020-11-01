@@ -21,8 +21,11 @@ use starcoin_vm_types::transaction::RawUserTransaction;
 use std::sync::Arc;
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 use test_helper::dao::{
-    min_action_delay, on_chain_config_type_tag, proposal_state, reward_config_type_tag,
-    voting_delay, voting_period, ACTIVE, AGREED, EXTRACTED, PENDING,
+    min_action_delay,
+    reward_config_type_tag,
+    voting_delay,
+    voting_period,
+    // ACTIVE, AGREED, EXTRACTED, PENDING,
 };
 use test_helper::executor::{get_balance, get_sequence_number};
 
@@ -128,6 +131,7 @@ fn create_vote_txn(
 fn cast_vote_txn(
     seq_number: u64,
     alice: &Account,
+    bob: &Account,
     voting_power: u128,
     net: &ChainNetwork,
     expire_time: u64,
@@ -135,19 +139,19 @@ fn cast_vote_txn(
     let script =
         compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
     let proposer_id = 0;
-    println!("alice voting power: {}", voting_power);
+    println!("bob voting power: {}", voting_power);
     let vote_script = Script::new(
         script,
         vec![stc_type_tag(), reward_config_type_tag()],
         vec![
-            TransactionArgument::Address(*alice.address()),
+            TransactionArgument::Address(*bob.address()),
             TransactionArgument::U64(proposer_id),
             TransactionArgument::Bool(true),
             TransactionArgument::U128(voting_power),
         ],
     );
     let txn = alice.sign_txn(build_transaction(
-        association_address(),
+        *alice.address(),
         seq_number,
         TransactionPayload::Script(vote_script),
         expire_time,
@@ -158,6 +162,7 @@ fn cast_vote_txn(
 fn queue_txn(
     seq_number: u64,
     alice: &Account,
+    bob: &Account,
     net: &ChainNetwork,
     expire_time: u64,
 ) -> Result<SignedUserTransaction> {
@@ -168,12 +173,12 @@ fn queue_txn(
         script,
         vec![stc_type_tag(), reward_config_type_tag()],
         vec![
-            TransactionArgument::Address(*alice.address()),
+            TransactionArgument::Address(*bob.address()),
             TransactionArgument::U64(0),
         ],
     );
     let txn = alice.sign_txn(build_transaction(
-        association_address(),
+        *alice.address(),
         seq_number,
         TransactionPayload::Script(script),
         expire_time,
@@ -199,7 +204,7 @@ fn execute_txn(
         vec![TransactionArgument::U64(0)],
     );
     let txn = alice.sign_txn(build_transaction(
-        association_address(),
+        *alice.address(),
         seq_number,
         TransactionPayload::Script(execute_script),
         expire_time,
@@ -286,7 +291,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
     // block 3
     //voting delay
     let chain_state = chain.chain_state();
-    let voting_power = get_balance(*alice.address(), chain_state);
+    let voting_power = get_balance(*bob.address(), chain_state);
     let alice_seq = get_sequence_number(*alice.address(), chain_state);
     let block_timestamp =
         block_timestamp + voting_delay(chain_state.as_super(), stc_type_tag()) * 1000 + 10000;
@@ -300,6 +305,7 @@ fn test_dao_modify_onchain_config() -> Result<()> {
             vec![cast_vote_txn(
                 alice_seq,
                 &alice,
+                &bob,
                 voting_power,
                 net,
                 block_timestamp / 1000,
@@ -307,7 +313,6 @@ fn test_dao_modify_onchain_config() -> Result<()> {
         )?;
         chain.apply(block3)?;
     }
-
     // block 4
     let chain_state = chain.chain_state();
     let block_timestamp =
@@ -347,7 +352,13 @@ fn test_dao_modify_onchain_config() -> Result<()> {
         let block6 = create_new_block(
             &chain,
             *alice.address(),
-            vec![queue_txn(alice_seq, &alice, net, block_timestamp / 1000)?],
+            vec![queue_txn(
+                alice_seq,
+                &alice,
+                &bob,
+                net,
+                block_timestamp / 1000,
+            )?],
         )?;
         chain.apply(block6)?;
     }

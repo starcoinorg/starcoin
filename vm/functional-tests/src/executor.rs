@@ -240,8 +240,8 @@ impl FakeExecutor {
 
 #[cfg(test)]
 mod tests {
-    use crate::account::AccountData;
     use crate::executor::FakeExecutor;
+    use executor::account::AccountData;
 
     #[test]
     fn test_executor() {

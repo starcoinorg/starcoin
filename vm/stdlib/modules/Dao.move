@@ -7,6 +7,7 @@ module Dao {
     use 0x1::Config;
     use 0x1::Event;
     use 0x1::Errors;
+    use 0x1::Debug;
 
     spec module {
         pragma verify;
@@ -246,6 +247,7 @@ module Dao {
         };
         let proposal_id = generate_next_proposal_id<TokenT>();
         let proposer = Signer::address_of(signer);
+        Debug::print(&proposer);
         let start_time = Timestamp::now_seconds() + voting_delay<TokenT>();
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
@@ -732,10 +734,13 @@ module Dao {
         proposer_address: address,
         proposal_id: u64,
     ): u8 acquires Proposal {
+        Debug::print(&proposer_address);
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
+        Debug::print(&proposal_id);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let current_time = Timestamp::now_seconds();
         let quorum_votes = quorum_votes<TokenT>();
+        Debug::print(&quorum_votes);
         _proposal_state(proposal, current_time, quorum_votes)
     }
 

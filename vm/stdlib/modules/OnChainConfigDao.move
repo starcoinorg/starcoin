@@ -5,6 +5,7 @@ module OnChainConfigDao {
     use 0x1::Config;
     use 0x1::Dao;
     use 0x1::Errors;
+    use 0x1::Debug;
 
     spec module {
         pragma verify;
@@ -78,6 +79,8 @@ module OnChainConfigDao {
             Token::token_address<TokenT>(),
         );
         Config::set_with_capability(&mut cap.cap, value);
+        Debug::print(&proposer_address);
+        Debug::print(&proposal_id);
     }
     spec fun execute {
         pragma aborts_if_is_partial = true;

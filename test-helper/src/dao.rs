@@ -388,6 +388,7 @@ pub fn dao_vote_test(
                 0,
             ),
         )?;
+        dbg!("dddddddddddd");
         let state = proposal_state(
             &chain_state,
             stc_type_tag(),
@@ -401,6 +402,7 @@ pub fn dao_vote_test(
             &chain_state,
             TransactionPayload::Script(execute_script),
         )?;
+        dbg!("eeeeeeeeeeeeee");
     }
 
     // block 7
