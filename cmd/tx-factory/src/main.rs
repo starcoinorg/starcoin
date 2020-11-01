@@ -18,6 +18,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
 use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 
 #[derive(Debug, Clone, StructOpt, Default)]
 #[structopt(name = "txfactory", about = "tx generator for starcoin")]
@@ -317,6 +318,7 @@ impl TxnMocker {
         amount: u128,
         sequence_number: u64,
         blocking: bool,
+        expiration_timestamp: u64,
     ) -> Result<()> {
         let raw_txn = self.generator.generate_transfer_txn(
             sequence_number,
@@ -324,6 +326,7 @@ impl TxnMocker {
             receiver_address,
             receiver_public_key,
             amount,
+            expiration_timestamp,
         )?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
@@ -359,8 +362,10 @@ impl TxnMocker {
     fn create_accounts(&mut self) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
 
+        let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
         let mut account_list = Vec::new();
-        for _i in 0..10 {
+        let mut i = 0;
+        while i < 10 {
             self.recheck_sequence_number()?;
             let account = self.client.account_create(self.account_password.clone())?;
             let result = self.gen_and_submit_transfer_txn(
@@ -370,10 +375,12 @@ impl TxnMocker {
                 100000,
                 self.next_sequence_number,
                 true,
+                expiration_timestamp,
             );
             if matches!(result, Ok(_)) {
                 if self.is_account_exist(&account.address) {
                     account_list.push(account);
+                    i += 1;
                 } else {
                     info!("create account failed, watch timeout?");
                 }
@@ -382,27 +389,36 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn transfer_to_accounts(&mut self, accounts: &Vec<AccountInfo>) -> Result<()> {
+    fn transfer_to_accounts(&mut self, accounts: &Vec<AccountInfo>, expiration_timestamp: u64) -> Result<()> {
         self.unlock_account()?;
         self.recheck_sequence_number()?;
-        for account in accounts {
+        let length = Vec::len(accounts);
+        let mut i = 0;
+        while i < length {
             let result = self.gen_and_submit_transfer_txn(
                 self.account_address,
-                account.address.clone(),
-                account.public_key.as_single(),
+                accounts[i].address.clone(),
+                accounts[i].public_key.as_single(),
                 100000,
                 self.next_sequence_number,
                 false,
+                expiration_timestamp,
             );
             if matches!(result, Ok(_)) {
                 self.next_sequence_number += 1;
+                i += 1;
+            } else {
+                info!("submit txn failed. error: {:?}. try again after 100ms.", result);
+                std::thread::sleep(Duration::from_millis(500));
             }
         }
         Ok(())
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>) -> Result<()> {
-        self.transfer_to_accounts(&accounts)?;
+        let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
+
+        self.transfer_to_accounts(&accounts, expiration_timestamp)?;
         for account in &accounts {
             let seq = self.sequence_number(account.address.clone())?;
             if seq.is_some() {
@@ -416,6 +432,7 @@ impl TxnMocker {
                             10,
                             seq_num,
                             false,
+                            expiration_timestamp,
                         );
                         if matches!(result, Ok(_)) {
                             seq_num += 1;

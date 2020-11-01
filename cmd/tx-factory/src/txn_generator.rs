@@ -62,6 +62,7 @@ impl MockTxnGenerator {
         receiver_address: AccountAddress,
         receiver_public_key: Option<Ed25519PublicKey>,
         amount: u128,
+        expiration_timestamp: u64,
     ) -> Result<RawUserTransaction> {
         let transfer_txn = starcoin_executor::build_transfer_txn(
             sender,
@@ -73,7 +74,7 @@ impl MockTxnGenerator {
             amount,
             1,
             5000,
-            self.node_info.now + DEFAULT_EXPIRATION_TIME,
+            expiration_timestamp,
             self.chain_id,
         );
         Ok(transfer_txn)
