@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::upgrade_stdlib::sign_txn_with_association_account_by_rpc_client;
+use crate::dev::sign_txn_helper::sign_txn_with_association_account_by_rpc_client;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
