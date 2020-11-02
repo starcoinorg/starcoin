@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::upgrade_stdlib::to_txn_with_association_account_by_rpc_client;
+use crate::dev::upgrade_stdlib::sign_txn_with_default_account_by_rpc_client;
 use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
@@ -13,7 +13,7 @@ use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "upgrade_stdlib_plan")]
+#[structopt(name = "stdlib_plan")]
 pub struct UpgradeStdlibPlanOpt {
     #[structopt(
         short = "g",
@@ -77,7 +77,7 @@ impl CommandAction for UpgradeStdlibPlanCommand {
         );
 
         let module_upgrade_plan = build_module_upgrade_plan(net, opt.proposal_id);
-        let signed_txn = to_txn_with_association_account_by_rpc_client(
+        let signed_txn = sign_txn_with_default_account_by_rpc_client(
             cli_state,
             opt.max_gas_amount,
             opt.gas_price,
