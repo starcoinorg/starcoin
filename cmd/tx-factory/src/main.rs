@@ -62,6 +62,7 @@ pub struct TxFactoryOpt {
 }
 
 const WATCH_TIMEOUT: Duration = Duration::from_secs(60);
+const ACCOUNT_NUM: u8 = 15;
 
 fn get_account_or_default(
     client: &RpcClient,
@@ -365,27 +366,31 @@ impl TxnMocker {
         let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
         let mut account_list = Vec::new();
         let mut i = 0;
-        while i < 10 {
+        while i < ACCOUNT_NUM {
             self.recheck_sequence_number()?;
             let account = self.client.account_create(self.account_password.clone())?;
             let result = self.gen_and_submit_transfer_txn(
                 self.account_address,
                 account.address.clone(),
                 account.public_key.as_single(),
-                100000,
+                1000000000,
                 self.next_sequence_number,
                 true,
                 expiration_timestamp,
             );
             if matches!(result, Ok(_)) {
+                account_list.push(account);
+                i += 1;
+            } else {
                 if self.is_account_exist(&account.address) {
                     account_list.push(account);
                     i += 1;
-                } else {
-                    info!("create account failed, watch timeout?");
+                    info!("watch timeout.")
                 }
+                info!("error: {:?}", result);
             }
         }
+        info!("{:?} accounts are created successfully.", Vec::len(&account_list));
         Ok(account_list)
     }
 
@@ -408,7 +413,7 @@ impl TxnMocker {
                 self.next_sequence_number += 1;
                 i += 1;
             } else {
-                info!("submit txn failed. error: {:?}. try again after 100ms.", result);
+                info!("submit txn failed. error: {:?}. try again after 500ms.", result);
                 std::thread::sleep(Duration::from_millis(500));
             }
         }
@@ -417,18 +422,22 @@ impl TxnMocker {
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>) -> Result<()> {
         let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
-
-        self.transfer_to_accounts(&accounts, expiration_timestamp)?;
-        for account in &accounts {
-            let seq = self.sequence_number(account.address.clone())?;
+        info!("start stress......");
+        //self.transfer_to_accounts(&accounts, expiration_timestamp)?;
+        let length = Vec::len(&accounts);
+        let mut i = 0;
+        let mut j = 0;
+        while i < length {
+            j = 0;
+            let seq = self.sequence_number(accounts[i].address.clone())?;
             if seq.is_some() {
-                let mut seq_num= seq.unwrap();
-                for receiver in &accounts {
-                    if account.address != receiver.address {
+                let mut seq_num = seq.unwrap();
+                while j < length {
+                    if i != j {
                         let result = self.gen_and_submit_transfer_txn(
-                            account.address.clone(),
-                            receiver.address.clone(),
-                            receiver.public_key.as_single(),
+                            accounts[i].address.clone(),
+                            accounts[j].address.clone(),
+                            accounts[j].public_key.as_single(),
                             10,
                             seq_num,
                             false,
@@ -436,9 +445,16 @@ impl TxnMocker {
                         );
                         if matches!(result, Ok(_)) {
                             seq_num += 1;
+                            j +=1;
+                        } else {
+                            info!("submit txn failed. error: {:?}. try again after 500ms.", result);
+                            std::thread::sleep(Duration::from_millis(500));
                         }
+                    } else {
+                        j += 1;
                     }
                 }
+                i += 1;
             }
         }
         Ok(())
