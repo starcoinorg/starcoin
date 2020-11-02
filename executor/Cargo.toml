@@ -34,3 +34,7 @@ starcoin-resource-viewer = {path = "../vm/resource-viewer"}
 tempfile = "3.1.0"
 starcoin-consensus = { path = "../consensus" }
 test-helper= {path = "../test-helper"}
+
+[features]
+default = []
+fuzzing = ["starcoin-types/fuzzing"]
