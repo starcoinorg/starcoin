@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::BlockChain;
 use anyhow::Result;
 use crypto::HashValue;
 use starcoin_account_api::AccountInfo;
-use starcoin_chain::BlockChain;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::Storage;

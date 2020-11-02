@@ -29,10 +29,12 @@ stdlib = { package="stdlib", path = "../vm/stdlib"}
 starcoin-move-compiler = { path = "../vm/compiler"}
 log = "0.4.11"
 
-
 [dev-dependencies]
-starcoin-functional-tests = { path = "../vm/functional-tests"}
 starcoin-resource-viewer = {path = "../vm/resource-viewer"}
-starcoin-genesis = { path = "../core/genesis"}
 tempfile = "3.1.0"
 starcoin-consensus = { path = "../consensus" }
+test-helper= {path = "../test-helper"}
+
+[features]
+default = []
+fuzzing = ["starcoin-types/fuzzing"]

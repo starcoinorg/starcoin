@@ -3,6 +3,7 @@
 #[macro_use]
 extern crate log;
 
+pub use account::Account;
 pub use block_executor::{block_execute, BlockExecutedData};
 pub use executor::*;
 pub use starcoin_transaction_builder::{
@@ -12,11 +13,10 @@ pub use starcoin_transaction_builder::{
     DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT,
 };
 
+pub mod account;
 mod block_executor;
 #[cfg(test)]
 pub mod error_code_test;
-#[cfg(test)]
-pub(crate) mod test_helper;
 
 mod executor;
 #[cfg(test)]

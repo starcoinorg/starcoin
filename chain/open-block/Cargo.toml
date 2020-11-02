@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.33"
 starcoin-types = {path = "../../types"}
-executor = {path = "../../executor", package="starcoin-executor"}
+starcoin-executor = {path = "../../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 traits = {path = "../../core/traits", package="starcoin-traits"}

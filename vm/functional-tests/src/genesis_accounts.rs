@@ -1,7 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account::Account;
+use executor::account::Account;
 use starcoin_vm_types::account_config::genesis_address;
 use std::collections::BTreeMap;
 

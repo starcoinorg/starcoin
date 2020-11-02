@@ -4,4 +4,7 @@
 pub mod block_test_utils;
 #[cfg(test)]
 mod test_block_chain;
+
+#[cfg(test)]
+mod test_epoch_switch;
 mod test_opened_block;

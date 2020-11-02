@@ -1,6 +1,8 @@
-use starcoin_functional_tests::account::{
-    create_account_txn_sent_as_association, peer_to_peer_txn, Account,
-};
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+use crate::Account;
+use starcoin_executor::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_config;

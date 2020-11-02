@@ -1,10 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_helper::{execute_and_apply, prepare_genesis};
+use crate::account::{create_account_txn_sent_as_association, Account};
 use anyhow::Result;
 use once_cell::sync::Lazy;
-use starcoin_functional_tests::account::{create_account_txn_sent_as_association, Account};
 use starcoin_transaction_builder::{DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::{
     block_metadata::BlockMetadata, transaction::Transaction, transaction::TransactionStatus,
@@ -13,6 +12,7 @@ use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::vm_status::StatusCode;
 use std::str::FromStr;
+use test_helper::executor::{execute_and_apply, prepare_genesis};
 
 pub static WRONG_TOKEN_CODE_FOR_TEST: Lazy<TokenCode> = Lazy::new(|| {
     TokenCode::from_str("0x1::ABC::ABC").expect("Parse wrong token code should success.")
