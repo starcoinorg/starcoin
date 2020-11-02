@@ -94,7 +94,7 @@ impl CommandAction for DeployCommand {
 
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
         let deploy_txn = RawUserTransaction::new_module(
             module_address,
             account_resource.sequence_number(),

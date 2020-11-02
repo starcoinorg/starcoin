@@ -81,7 +81,7 @@ impl CommandAction for UpgradeStdlibCommand {
             );
             let upgrade_package = build_stdlib_package(&net, StdLibOptions::Fresh, false)?;
 
-            let expiration_time = opt.expiration_time + node_info.now;
+            let expiration_time = opt.expiration_time + node_info.now_seconds;
             let upgrade_txn = RawUserTransaction::new(
                 association_account.address,
                 account_resource.sequence_number(),

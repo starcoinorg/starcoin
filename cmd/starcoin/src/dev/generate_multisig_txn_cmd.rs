@@ -166,7 +166,7 @@ impl CommandAction for GenerateMultisigTxnCommand {
             bail!("address {} not exists on chain", &sender);
         }
         let account_resource = account_resource.unwrap();
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
         let script_txn = RawUserTransaction::new_script(
             sender,
             account_resource.sequence_number(),
