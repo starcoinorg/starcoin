@@ -132,7 +132,7 @@ impl CommandAction for TransferCommand {
             opt.gas_price,
             opt.max_gas_amount,
             token_code,
-            node_info.now + DEFAULT_EXPIRATION_TIME,
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
         let txn = client.account_sign_txn(raw_txn)?;

@@ -86,7 +86,7 @@ impl CommandAction for AcceptTokenCommand {
             opt.gas_price,
             opt.max_gas_amount,
             opt.token_code.clone(),
-            node_info.now + DEFAULT_EXPIRATION_TIME,
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
 

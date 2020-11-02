@@ -180,7 +180,7 @@ impl CommandAction for ExecuteCommand {
         }
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
         let script_txn = if is_script {
             RawUserTransaction::new_script(
                 sender,

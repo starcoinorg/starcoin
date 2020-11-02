@@ -104,7 +104,7 @@ impl CommandAction for ExecuteBuildInCommand {
         }
 
         let account_resource = account_resource.unwrap();
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
 
         let bytecode =
             compiled_transaction_script(StdlibVersion::Latest, opt.script_name).into_vec();

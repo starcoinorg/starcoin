@@ -67,7 +67,7 @@ fn transfer_txn(
         amount,
         1,
         DEFAULT_MAX_GAS_AMOUNT,
-        node_info.now + DEFAULT_EXPIRATION_TIME,
+        node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
         node_info.net.chain_id(),
     );
 

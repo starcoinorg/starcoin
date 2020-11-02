@@ -17,7 +17,7 @@ pub struct NodeInfo {
     pub self_address: String,
     pub net: ChainNetworkID,
     pub consensus: ConsensusStrategy,
-    pub now: u64,
+    pub now_seconds: u64,
 }
 
 impl NodeInfo {
@@ -26,14 +26,14 @@ impl NodeInfo {
         self_address: String,
         net: ChainNetworkID,
         consensus: ConsensusStrategy,
-        now: u64,
+        now_seconds: u64,
     ) -> Self {
         Self {
             peer_info,
             self_address,
             net,
             consensus,
-            now,
+            now_seconds,
         }
     }
 }
