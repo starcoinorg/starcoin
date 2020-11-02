@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::debug::TxPoolStatusCommand;
+use crate::debug::{SleepCommand, TxPoolStatusCommand};
 use scmd::{CmdContext, Command};
 
 pub mod account;
@@ -83,6 +83,7 @@ pub fn add_command(
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
                 .subcommand(dev::UpgradeStdlibProposalCommand)
                 .subcommand(dev::UpgradeStdlibPlanCommand)
+                .subcommand(dev::UpgradeStdlibQueueCommand)
                 .subcommand(dev::UpgradeStdlibExeCommand)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
@@ -102,6 +103,7 @@ pub fn add_command(
                 .subcommand(debug::PanicCommand)
                 .subcommand(debug::GetBlockByUncleCommand)
                 .subcommand(TxPoolStatusCommand)
+                .subcommand(SleepCommand)
                 .subcommand(debug::MoveExplain),
         )
 }

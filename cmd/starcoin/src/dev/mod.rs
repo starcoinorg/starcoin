@@ -14,6 +14,7 @@ mod upgrade_stdlib;
 mod upgrade_stdlib_exe_cmd;
 mod upgrade_stdlib_plan_cmd;
 mod upgrade_stdlib_proposal_cmd;
+mod upgrade_stdlib_queue_cmd;
 
 pub use call_contract_cmd::*;
 pub use compile_cmd::*;
@@ -27,3 +28,4 @@ pub use subscribe_cmd::*;
 pub use upgrade_stdlib_exe_cmd::*;
 pub use upgrade_stdlib_plan_cmd::*;
 pub use upgrade_stdlib_proposal_cmd::*;
+pub use upgrade_stdlib_queue_cmd::*;

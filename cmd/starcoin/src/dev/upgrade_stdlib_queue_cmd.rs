@@ -7,18 +7,14 @@ use crate::StarcoinOpt;
 use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_transaction_builder::{build_module_upgrade_proposal, build_stdlib_package};
-use starcoin_vm_types::genesis_config::{ChainNetwork, DEV_CONFIG};
+use starcoin_transaction_builder::build_module_upgrade_queue;
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::TransactionPayload;
-use std::fs::File;
-use std::io::Read;
-use std::path::PathBuf;
-use stdlib::StdLibOptions;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "upgrade_stdlib_proposal")]
-pub struct UpgradeStdlibProposalOpt {
+#[structopt(name = "upgrade_stdlib_queue")]
+pub struct UpgradeStdlibQueueOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -52,21 +48,20 @@ pub struct UpgradeStdlibProposalOpt {
 
     #[structopt(
         short = "s",
-        name = "stdlib-file",
+        name = "stdlib-proposal-id",
         long = "stdlib",
-        help = "path for stdlib file, can be empty.",
-        parse(from_os_str)
+        help = "proposal id."
     )]
-    stdlib_file: Option<PathBuf>,
+    proposal_id: u64,
 }
 
-pub struct UpgradeStdlibProposalCommand;
+pub struct UpgradeStdlibQueueCommand;
 
-impl CommandAction for UpgradeStdlibProposalCommand {
+impl CommandAction for UpgradeStdlibQueueCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = UpgradeStdlibProposalOpt;
-    type ReturnItem = (HashValue, HashValue);
+    type Opt = UpgradeStdlibQueueOpt;
+    type ReturnItem = HashValue;
 
     fn run(
         &self,
@@ -80,25 +75,14 @@ impl CommandAction for UpgradeStdlibProposalCommand {
                 .as_builtin()
                 .ok_or_else(|| format_err!("Only support builtin network"))?,
         );
-        let upgrade_package = if let Some(stdlib_file) = &opt.stdlib_file {
-            let mut bytes = vec![];
-            File::open(stdlib_file)?.read_to_end(&mut bytes)?;
-            scs::from_bytes(&bytes)?
-        } else {
-            build_stdlib_package(&net, StdLibOptions::Fresh, false)?
-        };
 
-        let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
-            net,
-            &upgrade_package,
-            DEV_CONFIG.dao_config.min_action_delay,
-        );
+        let module_upgrade_queue = build_module_upgrade_queue(net, opt.proposal_id);
         let signed_txn = to_txn_with_association_account_by_rpc_client(
             cli_state,
             opt.max_gas_amount,
             opt.gas_price,
             opt.expiration_time,
-            TransactionPayload::Script(module_upgrade_proposal),
+            TransactionPayload::Script(module_upgrade_queue),
         )?;
         let txn_hash = signed_txn.crypto_hash();
         let success = cli_state.client().submit_transaction(signed_txn)?;
@@ -110,6 +94,6 @@ impl CommandAction for UpgradeStdlibProposalCommand {
         if opt.blocking {
             ctx.state().watch_txn(txn_hash)?;
         }
-        Ok((package_hash, txn_hash))
+        Ok(txn_hash)
     }
 }
