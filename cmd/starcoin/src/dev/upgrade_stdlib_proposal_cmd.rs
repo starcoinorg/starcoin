@@ -91,7 +91,7 @@ impl CommandAction for UpgradeStdlibProposalCommand {
         let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
             net,
             &upgrade_package,
-            DEV_CONFIG.dao_config.min_action_delay,
+            net.genesis_config().dao_config.min_action_delay,
         );
         let signed_txn = sign_txn_with_association_account_by_rpc_client(
             cli_state,
