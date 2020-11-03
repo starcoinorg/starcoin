@@ -8,6 +8,7 @@ use log::LevelFilter;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 pub use starcoin_config::StdlibVersion;
+use starcoin_crypto::HashValue;
 use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
@@ -158,13 +159,25 @@ pub fn use_compiled() -> bool {
 }
 
 pub fn filter_move_files(dir_iter: impl Iterator<Item = PathBuf>) -> impl Iterator<Item = String> {
-    dir_iter.flat_map(|path| {
-        if path.extension()?.to_str()? == MOVE_EXTENSION {
-            path.into_os_string().into_string().ok()
+    filter_files(dir_iter, MOVE_EXTENSION.to_string())
+        .flat_map(|file| file.into_os_string().into_string().ok())
+}
+
+fn filter_files(
+    dir_iter: impl Iterator<Item = PathBuf>,
+    extension: String,
+) -> impl Iterator<Item = PathBuf> {
+    dir_iter.flat_map(move |path| {
+        if path.extension()?.to_str()? == extension {
+            Some(path)
         } else {
             None
         }
     })
+}
+
+pub fn filter_mv_files(dir_iter: impl Iterator<Item = PathBuf>) -> impl Iterator<Item = PathBuf> {
+    filter_files(dir_iter, COMPILED_EXTENSION.to_string())
 }
 
 pub fn stdlib_files() -> Vec<String> {
@@ -325,4 +338,66 @@ fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
     options.errmapgen.output_file = output_path.to_string();
     options.setup_logging_for_test();
     move_prover::run_move_prover_errors_to_stderr(options).unwrap();
+}
+
+pub fn compile_scripts(script_dir: &Path, dest_dir: PathBuf) {
+    let scripts = compile_scripts_to_bytes(script_dir);
+    save_scripts(scripts, dest_dir);
+}
+
+pub fn compile_scripts_to_bytes(script_dir: &Path) -> HashMap<String, (HashValue, Vec<u8>)> {
+    let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+    let script_files = filter_files(script_source_files, MOVE_EXTENSION.to_string());
+    let mut scripts: HashMap<String, (HashValue, Vec<u8>)> = HashMap::new();
+
+    for script_file in script_files {
+        let file_name =
+            file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
+        let compiled_script = compile_script(script_file.into_os_string().into_string().unwrap());
+        let hash = HashValue::sha3_256_of(&compiled_script);
+        scripts.insert(file_name, (hash, compiled_script));
+    }
+
+    scripts
+}
+
+pub fn compiled_scripts(script_dir: &Path) -> HashMap<String, HashValue> {
+    let mut scripts: HashMap<String, HashValue> = HashMap::new();
+    if script_dir.exists() {
+        let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
+        let script_files = filter_mv_files(script_source_files);
+
+        for script_file in script_files {
+            let file_name =
+                file_name_without_extension(script_file.file_name().unwrap().to_str().unwrap());
+            let mut compiled_script = Vec::new();
+            File::open(script_file)
+                .expect("Failed to open script bytecode file")
+                .read_to_end(&mut compiled_script)
+                .expect("Failed to read script bytecode file");
+            let hash = HashValue::sha3_256_of(&compiled_script);
+            scripts.insert(file_name, hash);
+        }
+    }
+
+    scripts
+}
+
+pub fn save_scripts(scripts: HashMap<String, (HashValue, Vec<u8>)>, dest_dir: PathBuf) {
+    for script_file in scripts.keys() {
+        if let Some((_, script)) = scripts.get(script_file) {
+            let mut dest_dir = dest_dir.clone();
+            dest_dir.push(script_file.clone());
+            dest_dir.set_extension(COMPILED_EXTENSION);
+            File::create(dest_dir)
+                .unwrap()
+                .write_all(&script.clone())
+                .unwrap();
+        }
+    }
+}
+
+fn file_name_without_extension(file_name: &str) -> String {
+    let tmp: Vec<&str> = file_name.split('.').collect();
+    tmp.get(0).unwrap().to_string()
 }

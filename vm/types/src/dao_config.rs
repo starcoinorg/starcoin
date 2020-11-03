@@ -1,3 +1,4 @@
+use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
@@ -12,4 +13,8 @@ pub struct DaoConfig {
     pub voting_quorum_rate: u8,
     /// how long the proposal should wait before it can be executed.
     pub min_action_delay: u64,
+}
+
+impl OnChainConfig for DaoConfig {
+    const IDENTIFIER: &'static str = "DaoConfig";
 }
