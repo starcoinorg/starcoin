@@ -387,7 +387,7 @@ impl TxnMocker {
     fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
 
-        let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
+        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
         let mut account_list = Vec::new();
         let mut i = 0;
         while i < account_num {
@@ -474,7 +474,7 @@ impl TxnMocker {
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
-        let expiration_timestamp = self.client.node_info()?.now + DEFAULT_EXPIRATION_TIME;
+        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
         info!("start stress......");
         if long_term {
             // running in long term, we must deposit STC to accounts frequently

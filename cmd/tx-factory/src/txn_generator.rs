@@ -49,7 +49,7 @@ impl MockTxnGenerator {
             amount_to_transfer,
             1,
             10000,
-            self.node_info.now + DEFAULT_EXPIRATION_TIME,
+            self.node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
             self.chain_id,
         );
         Ok(transfer_txn)
