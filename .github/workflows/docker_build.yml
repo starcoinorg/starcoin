@@ -6,6 +6,9 @@ on:
       - 'master'
     paths-ignore:
       - '**.md'
+  release:
+    types: [ published ]
+
 jobs:
   build-starcoin-docker:
     name: build starcoin docker
@@ -25,3 +28,4 @@ jobs:
           registry: docker.pkg.github.com
           dockerfile: docker/Dockerfile
           buildargs: GIT_REV
+          tag_names: true
