@@ -7,13 +7,13 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_transaction_builder::build_module_upgrade_queue;
+use starcoin_transaction_builder::build_module_upgrade_plan;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "stdlib_queue")]
-pub struct UpgradeStdlibQueueOpt {
+#[structopt(name = "module_plan")]
+pub struct UpgradeModulePlanOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -46,20 +46,20 @@ pub struct UpgradeStdlibQueueOpt {
     blocking: bool,
 
     #[structopt(
-        short = "s",
-        name = "stdlib-proposal-id",
-        long = "stdlib",
+        short = "m",
+        name = "module-proposal-id",
+        long = "module",
         help = "proposal id."
     )]
     proposal_id: u64,
 }
 
-pub struct UpgradeStdlibQueueCommand;
+pub struct UpgradeModulePlanCommand;
 
-impl CommandAction for UpgradeStdlibQueueCommand {
+impl CommandAction for UpgradeModulePlanCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = UpgradeStdlibQueueOpt;
+    type Opt = UpgradeModulePlanOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -68,13 +68,13 @@ impl CommandAction for UpgradeStdlibQueueCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-        let module_upgrade_queue = build_module_upgrade_queue(opt.proposal_id);
+        let module_upgrade_plan = build_module_upgrade_plan(opt.proposal_id);
         let signed_txn = sign_txn_with_default_account_by_rpc_client(
             cli_state,
             opt.max_gas_amount,
             opt.gas_price,
             opt.expiration_time,
-            TransactionPayload::Script(module_upgrade_queue),
+            TransactionPayload::Script(module_upgrade_plan),
         )?;
         let txn_hash = signed_txn.crypto_hash();
         let success = cli_state.client().submit_transaction(signed_txn)?;

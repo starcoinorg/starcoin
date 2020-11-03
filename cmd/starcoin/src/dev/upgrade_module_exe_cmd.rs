@@ -14,8 +14,8 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "stdlib_exe")]
-pub struct UpgradeStdlibExeOpt {
+#[structopt(name = "module_exe")]
+pub struct UpgradeModuleExeOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -48,21 +48,21 @@ pub struct UpgradeStdlibExeOpt {
     blocking: bool,
 
     #[structopt(
-        short = "s",
-        name = "stdlib-file",
-        long = "stdlib",
-        help = "path for stdlib file, can be empty.",
+        short = "m",
+        name = "module-file",
+        long = "module",
+        help = "path for module file, can be empty.",
         parse(from_os_str)
     )]
-    stdlib_file: Option<PathBuf>,
+    module_file: Option<PathBuf>,
 }
 
-pub struct UpgradeStdlibExeCommand;
+pub struct UpgradeModuleExeCommand;
 
-impl CommandAction for UpgradeStdlibExeCommand {
+impl CommandAction for UpgradeModuleExeCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = UpgradeStdlibExeOpt;
+    type Opt = UpgradeModuleExeOpt;
     type ReturnItem = HashValue;
 
     fn run(
@@ -71,9 +71,9 @@ impl CommandAction for UpgradeStdlibExeCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-        if let Some(stdlib_file) = &opt.stdlib_file {
+        if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
-            File::open(stdlib_file)?.read_to_end(&mut bytes)?;
+            File::open(module_file)?.read_to_end(&mut bytes)?;
             let upgrade_package = scs::from_bytes(&bytes)?;
 
             let signed_txn = sign_txn_with_association_account_by_rpc_client(

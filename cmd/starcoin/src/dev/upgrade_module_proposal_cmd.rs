@@ -15,8 +15,8 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "stdlib_proposal")]
-pub struct UpgradeStdlibProposalOpt {
+#[structopt(name = "module_proposal")]
+pub struct UpgradeModuleProposalOpt {
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -49,21 +49,21 @@ pub struct UpgradeStdlibProposalOpt {
     blocking: bool,
 
     #[structopt(
-        short = "s",
-        name = "stdlib-file",
-        long = "stdlib",
-        help = "path for stdlib file, can be empty.",
+        short = "m",
+        name = "module-file",
+        long = "module",
+        help = "path for module file, can be empty.",
         parse(from_os_str)
     )]
-    stdlib_file: Option<PathBuf>,
+    module_file: Option<PathBuf>,
 }
 
-pub struct UpgradeStdlibProposalCommand;
+pub struct UpgradeModuleProposalCommand;
 
-impl CommandAction for UpgradeStdlibProposalCommand {
+impl CommandAction for UpgradeModuleProposalCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = UpgradeStdlibProposalOpt;
+    type Opt = UpgradeModuleProposalOpt;
     type ReturnItem = (HashValue, HashValue);
 
     fn run(
@@ -72,9 +72,9 @@ impl CommandAction for UpgradeStdlibProposalCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-        if let Some(stdlib_file) = &opt.stdlib_file {
+        if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
-            File::open(stdlib_file)?.read_to_end(&mut bytes)?;
+            File::open(module_file)?.read_to_end(&mut bytes)?;
             let upgrade_package = scs::from_bytes(&bytes)?;
 
             let min_action_delay = cli_state.client().min_action_delay()?;
