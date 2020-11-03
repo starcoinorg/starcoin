@@ -8005,6 +8005,7 @@ dependencies = [
  "starcoin-crypto",
  "starcoin-executor",
  "starcoin-logger",
+ "starcoin-rpc-api",
  "starcoin-rpc-client",
  "starcoin-state-api",
  "starcoin-types",
