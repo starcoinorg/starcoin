@@ -7987,6 +7987,7 @@ dependencies = [
  "anyhow",
  "starcoin-canonical-serialization",
  "starcoin-config",
+ "starcoin-crypto",
  "starcoin-logger",
  "starcoin-vm-types",
  "stdlib",

@@ -13,6 +13,7 @@ stdlib = { package="stdlib", path = "../stdlib"}
 starcoin-vm-types = { path = "../types"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-logger = { path = "../../commons/logger"}
+starcoin-crypto = { path = "../../commons/crypto"}
 
 [dev-dependencies]
 stest = {path = "../../commons/stest"}
