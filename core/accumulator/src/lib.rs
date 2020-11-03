@@ -32,7 +32,7 @@ pub const MAC_CACHE_SIZE: usize = 65535;
 /// accumulator method define
 pub trait Accumulator {
     /// Append leaves and return new root
-    fn append(&self, leaves: &[HashValue]) -> Result<(HashValue, u64)>;
+    fn append(&self, leaves: &[HashValue]) -> Result<HashValue>;
     /// Get leaf node by index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
     /// Batch get leaves by index.
@@ -109,11 +109,10 @@ impl MerkleAccumulator {
 }
 
 impl Accumulator for MerkleAccumulator {
-    fn append(&self, new_leaves: &[HashValue]) -> Result<(HashValue, u64)> {
+    fn append(&self, new_leaves: &[HashValue]) -> Result<HashValue> {
         let mut tree_guard = self.tree.lock();
-        let first_index_leaf = tree_guard.num_leaves;
         let root_hash = tree_guard.append(new_leaves)?;
-        Ok((root_hash, first_index_leaf))
+        Ok(root_hash)
     }
 
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>> {
@@ -130,26 +129,36 @@ impl Accumulator for MerkleAccumulator {
     ) -> Result<Vec<HashValue>> {
         let mut tree = self.tree.lock();
         let max_size_u64 = max_size as u64;
-        let seq = if reverse {
+        if reverse {
             let end = start_index + 1;
             let begin = if end > max_size_u64 {
                 end - max_size_u64
             } else {
                 0
             };
-            begin..end
+            (begin..end)
+                .rev()
+                .map(|idx| {
+                    tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
+                        .ok_or_else(|| {
+                            format_err!("Can not find accumulator leaf by index: {}", idx)
+                        })
+                })
+                .collect()
         } else {
             let mut end = start_index + max_size_u64;
             if end > tree.num_leaves {
                 end = tree.num_leaves;
             }
-            start_index..end
-        };
-        seq.map(|idx| {
-            tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
-                .ok_or_else(|| format_err!("Can not find accumulator leaf by index: {}", idx))
-        })
-        .collect()
+            (start_index..end)
+                .map(|idx| {
+                    tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
+                        .ok_or_else(|| {
+                            format_err!("Can not find accumulator leaf by index: {}", idx)
+                        })
+                })
+                .collect()
+        }
     }
 
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>> {

@@ -241,8 +241,7 @@ fn gen_root_hashes(
                 .iter()
                 .map(|info| info.id())
                 .collect();
-            let (accumulator_root, _first_leaf_idx) =
-                txn_accumulator.append(&included_txn_info_hashes).unwrap();
+            let accumulator_root = txn_accumulator.append(&included_txn_info_hashes).unwrap();
             (accumulator_root, executed_data.state_root)
         }
         // Err(err) => {
