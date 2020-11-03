@@ -15,5 +15,5 @@ actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
 tokio = { version = "0.2", features = ["full"] }
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 

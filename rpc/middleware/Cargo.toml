@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 # for RpcError convert.
 failure = "0.1"
