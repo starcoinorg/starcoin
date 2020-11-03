@@ -63,20 +63,23 @@ pub struct TxFactoryOpt {
     #[structopt(
         long,
         short = "n",
-        default_value = "15",
+        default_value = "30",
         help = "numbers of account will be created"
     )]
     pub account_num: u8,
 
-    #[structopt(long = "long_term", short = "l", help = "run stress test in long term")]
+    #[structopt(long, short = "l", help = "run stress test in long term")]
     pub long_term: bool,
 }
 
 const WATCH_TIMEOUT: Duration = Duration::from_secs(60);
+const INITIAL_BALANCE: u128 = 1_000_000_000;
+const TXN_LIMIT: usize = 16;
 
 fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
+    account_num: u8,
 ) -> Result<AccountInfo> {
     let account = match account_address {
         None => {
@@ -89,12 +92,11 @@ fn get_account_or_default(
             let addr = default_account.clone().unwrap().address;
             let state_reader = RemoteStateReader::new(&client);
             let account_state_reader = AccountStateReader::new(&state_reader);
-            let account_resource = &account_state_reader.get_account_resource(&addr)?.unwrap();
-            let mut seq = account_resource.sequence_number();
+            let mut balance = account_state_reader.get_balance(&addr)?.unwrap();
             // account has enough STC
-            while seq < 20 {
+            while balance < INITIAL_BALANCE * account_num as u128 {
                 std::thread::sleep(Duration::from_millis(1000));
-                seq = account_resource.sequence_number();
+                balance = account_state_reader.get_balance(&addr)?.unwrap();
             }
 
             default_account.unwrap()
@@ -117,18 +119,18 @@ fn main() {
     let interval = Duration::from_millis(opts.interval);
     let account_password = opts.account_password.clone();
 
+    let is_stress = opts.stress;
+    let account_num = opts.account_num;
+    let long_term = opts.long_term;
+
     let client = RpcClient::connect_ipc(opts.ipc_path, &mut runtime).expect("ipc connect success");
-    let account = get_account_or_default(&client, account_address).unwrap();
+    let account = get_account_or_default(&client, account_address, account_num).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
     let receiver_public_key = opts.receiver_public_key;
     let public_key = receiver_public_key.map(|k| {
         Ed25519PublicKey::from_encoded_string(&k).expect("public key should be hex encoded")
     });
-
-    let is_stress = opts.stress;
-    let account_num = opts.account_num;
-    let long_term = opts.long_term;
 
     let net = client.node_info().unwrap().net;
     let node_info = client
@@ -364,8 +366,6 @@ impl TxnMocker {
 
         let user_txn = match self.client.account_sign_txn(raw_txn) {
             Err(e) => {
-                // sign txn fail, we should unlock again
-                //self.account_unlock_time = None;
                 return Err(e);
             }
             Ok(txn) => txn,
@@ -488,7 +488,7 @@ impl TxnMocker {
             let seq = self.sequence_number(accounts[i].address)?;
             if let Some(seq) = seq {
                 let mut seq_num = seq;
-                while j < length {
+                while j < TXN_LIMIT {
                     if i != j {
                         let result = self.gen_and_submit_transfer_txn(
                             accounts[i].address,
