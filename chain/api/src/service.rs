@@ -58,7 +58,6 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
-    fn min_action_delay(&self) -> Result<u64>;
 }
 
 /// Writeable block chain service trait
@@ -116,7 +115,6 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
-    async fn min_action_delay(&self) -> Result<u64>;
 }
 
 #[async_trait::async_trait]
@@ -382,15 +380,6 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
-        }
-    }
-
-    async fn min_action_delay(&self) -> Result<u64> {
-        let response = self.send(ChainRequest::GetMinActionDelay()).await??;
-        if let ChainResponse::MinActionDelay(delay) = response {
-            Ok(delay)
-        } else {
-            bail!("MinActionDelay invalid response")
         }
     }
 }

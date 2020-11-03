@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_helper::sign_txn_with_association_account_by_rpc_client;
+use crate::dev::sign_txn_helper::{
+    get_dao_config, sign_txn_with_association_account_by_rpc_client,
+};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
@@ -77,7 +79,7 @@ impl CommandAction for UpgradeModuleProposalCommand {
             File::open(module_file)?.read_to_end(&mut bytes)?;
             let upgrade_package = scs::from_bytes(&bytes)?;
 
-            let min_action_delay = cli_state.client().min_action_delay()?;
+            let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
             let (module_upgrade_proposal, package_hash) =
                 build_module_upgrade_proposal(&upgrade_package, min_action_delay);
             let signed_txn = sign_txn_with_association_account_by_rpc_client(

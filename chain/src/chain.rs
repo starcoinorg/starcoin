@@ -28,11 +28,11 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::time::TimeService;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::{account_config::genesis_address, dao_config::DaoConfig};
 use std::cmp::min;
 use std::iter::Extend;
 use std::{collections::HashSet, sync::Arc};
@@ -470,23 +470,6 @@ impl ChainReader for BlockChain {
             account_reader.get_epoch_info()
         } else {
             Err(format_err!("Block is none when query epoch info."))
-        }
-    }
-
-    fn min_action_delay(&self, number: Option<BlockNumber>) -> Result<u64> {
-        if let Some(block) = self.block_with_number(number)? {
-            let chain_state = ChainStateDB::new(
-                self.storage.clone().into_super_arc(),
-                Some(block.header().state_root()),
-            );
-            let account_reader = AccountStateReader::new(&chain_state);
-            if let Some(config) = account_reader.get_on_chain_config::<DaoConfig>()? {
-                Ok(config.min_action_delay)
-            } else {
-                Err(format_err!("DaoConfig is none."))
-            }
-        } else {
-            Err(format_err!("Block is none."))
         }
     }
 

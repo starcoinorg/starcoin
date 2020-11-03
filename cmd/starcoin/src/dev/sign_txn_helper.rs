@@ -8,8 +8,8 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
+use starcoin_vm_types::{dao_config::DaoConfig, genesis_config::ChainNetwork};
 
 pub fn sign_txn_with_association_account_by_rpc_client(
     cli_state: &CliState,
@@ -79,4 +79,13 @@ fn sign_txn_by_rpc_client(
     );
 
     client.account_sign_txn(raw_txn)
+}
+
+pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
+    let client = cli_state.client();
+    let chain_state_reader = RemoteStateReader::new(client);
+    let account_state_reader = AccountStateReader::new(&chain_state_reader);
+    Ok(account_state_reader
+        .get_on_chain_config::<DaoConfig>()?
+        .ok_or_else(|| format_err!("account must exist on chain."))?)
 }

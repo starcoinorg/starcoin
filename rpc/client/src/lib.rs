@@ -464,13 +464,6 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn min_action_delay(&self) -> anyhow::Result<u64> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.min_action_delay().compat().await
-        })
-        .map_err(map_err)
-    }
-
     pub fn get_epoch_info_by_number(&self, number: BlockNumber) -> anyhow::Result<EpochInfo> {
         self.call_rpc_blocking(|inner| async move {
             inner

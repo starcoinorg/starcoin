@@ -79,7 +79,4 @@ pub trait ChainApi {
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_uncle")]
     fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
-
-    #[rpc(name = "chain.min_action_delay")]
-    fn min_action_delay(&self) -> FutureResult<u64>;
 }
