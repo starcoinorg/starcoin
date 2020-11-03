@@ -111,7 +111,7 @@ fn get_command_args(world: &mut MyWorld, args: String) -> String {
     let mut result = args.clone();
     for (arg_key, arg_val) in replace_map {
         let key = "@".to_owned() + arg_key + "@";
-        if arg_key.ends_with("key_prefix") {
+        if arg_key.ends_with("auth_key") {
             let val = "\"".to_owned() + arg_val + "\"";
             result = result.replace(key.as_str(), val.as_str());
         } else {
