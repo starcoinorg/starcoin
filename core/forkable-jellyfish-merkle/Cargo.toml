@@ -1,6 +1,6 @@
 [package]
 name = "forkable-jellyfish-merkle"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Libra Association <opensource@libra.org>", "Starcoin Core Dev <dev@starcoin.org>"]
 description = "Libra jellyfish merkle"
 license = "Apache-2.0"
