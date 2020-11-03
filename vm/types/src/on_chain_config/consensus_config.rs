@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 const CONSENSUS_CONFIG_MODULE_NAME: &str = "ConsensusConfig";
-static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
+pub static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(CONSENSUS_CONFIG_MODULE_NAME).unwrap());
 
 /// The Consensus on chain.

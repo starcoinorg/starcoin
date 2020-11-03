@@ -125,6 +125,16 @@ pub fn account_execute(
 ) -> Result<()> {
     user_execute(*account.address(), account.private_key(), state, payload)
 }
+
+pub fn account_execute_with_output(
+    account: &Account,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> TransactionOutput {
+    let txn = build_signed_txn(*account.address(), account.private_key(), state, payload);
+    execute_and_apply(state, Transaction::UserTransaction(txn))
+}
+
 pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()> {
     let txn = Transaction::BlockMetadata(meta);
     let output = execute_and_apply(state, txn);
@@ -174,10 +184,19 @@ fn user_execute(
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<()> {
+    let txn = build_signed_txn(user_address, prikey, state, payload);
+    execute_signed_txn(state, txn)
+}
+
+fn build_signed_txn(
+    user_address: AccountAddress,
+    prikey: &AccountPrivateKey,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> SignedUserTransaction {
     let txn = build_raw_txn(user_address, state, payload, ChainId::test());
     let signature = prikey.sign(&txn);
-    let txn = signature.build_transaction(txn)?;
-    execute_signed_txn(state, txn)
+    signature.build_transaction(txn).unwrap()
 }
 
 fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Result<()> {
