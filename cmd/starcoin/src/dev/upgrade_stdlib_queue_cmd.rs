@@ -76,7 +76,8 @@ impl CommandAction for UpgradeStdlibQueueCommand {
                 .ok_or_else(|| format_err!("Only support builtin network"))?,
         );
 
-        let module_upgrade_queue = build_module_upgrade_queue(net, opt.proposal_id);
+        let module_upgrade_queue =
+            build_module_upgrade_queue(net.stdlib_version(), opt.proposal_id);
         let signed_txn = sign_txn_with_default_account_by_rpc_client(
             cli_state,
             opt.max_gas_amount,

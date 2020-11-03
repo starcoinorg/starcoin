@@ -213,10 +213,10 @@ fn replace_stdlib_by_path(
 }
 
 fn pre_version(version: &str) -> Option<String> {
-    let tmp: Vec<&str> = version.clone().rsplit(".").collect();
+    let tmp: Vec<&str> = <&str>::clone(&version).rsplit('.').collect();
     let num = tmp.get(0).unwrap().parse::<u64>().unwrap();
     if num > 0 {
-        let append_whitespace = format!("{} ", version.clone());
+        let append_whitespace = format!("{} ", <&str>::clone(&version));
         let pre_version = append_whitespace.replace(
             format!(".{} ", num).as_str(),
             format!(".{}", num - 1).as_str(),

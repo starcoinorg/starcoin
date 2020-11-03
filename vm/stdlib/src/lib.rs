@@ -168,7 +168,7 @@ fn filter_files(
     extension: String,
 ) -> impl Iterator<Item = PathBuf> {
     dir_iter.flat_map(move |path| {
-        if path.extension()?.to_str()?.to_string() == extension {
+        if path.extension()?.to_str()? == extension {
             Some(path)
         } else {
             None
@@ -398,6 +398,6 @@ pub fn save_scripts(scripts: HashMap<String, (HashValue, Vec<u8>)>, dest_dir: Pa
 }
 
 fn file_name_without_extension(file_name: &str) -> String {
-    let tmp: Vec<&str> = file_name.split(".").collect();
+    let tmp: Vec<&str> = file_name.split('.').collect();
     tmp.get(0).unwrap().to_string()
 }

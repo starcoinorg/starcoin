@@ -8,7 +8,7 @@ use anyhow::{bail, format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_transaction_builder::{build_module_upgrade_proposal, build_stdlib_package};
-use starcoin_vm_types::genesis_config::{ChainNetwork, DEV_CONFIG};
+use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -89,7 +89,7 @@ impl CommandAction for UpgradeStdlibProposalCommand {
         };
 
         let (module_upgrade_proposal, package_hash) = build_module_upgrade_proposal(
-            net,
+            net.stdlib_version(),
             &upgrade_package,
             net.genesis_config().dao_config.min_action_delay,
         );

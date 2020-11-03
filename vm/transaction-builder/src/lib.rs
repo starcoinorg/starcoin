@@ -412,13 +412,12 @@ pub fn build_stdlib_package(
 }
 
 pub fn build_module_upgrade_proposal(
-    net: ChainNetwork,
+    version: StdlibVersion,
     package: &Package,
     day: u64,
 ) -> (Script, HashValue) {
     let module_upgrade_proposal_script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeModuleUpgrade)
-            .into_vec();
+        compiled_transaction_script(version, StdlibScript::ProposeModuleUpgrade).into_vec();
     let package_hash = package.crypto_hash();
     (
         Script::new(
@@ -434,10 +433,9 @@ pub fn build_module_upgrade_proposal(
     )
 }
 
-pub fn build_module_upgrade_plan(net: ChainNetwork, proposal_id: u64) -> Script {
+pub fn build_module_upgrade_plan(version: StdlibVersion, proposal_id: u64) -> Script {
     let module_upgrade_plan_script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::SubmitModuleUpgradePlan)
-            .into_vec();
+        compiled_transaction_script(version, StdlibScript::SubmitModuleUpgradePlan).into_vec();
     Script::new(
         module_upgrade_plan_script,
         vec![stc_type_tag()],
@@ -448,7 +446,7 @@ pub fn build_module_upgrade_plan(net: ChainNetwork, proposal_id: u64) -> Script 
     )
 }
 
-pub fn build_module_upgrade_queue(net: ChainNetwork, proposal_id: u64) -> Script {
+pub fn build_module_upgrade_queue(version: StdlibVersion, proposal_id: u64) -> Script {
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
@@ -456,8 +454,7 @@ pub fn build_module_upgrade_queue(net: ChainNetwork, proposal_id: u64) -> Script
         type_params: vec![],
     });
     let module_upgrade_queue_script =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::QueueProposalAction)
-            .into_vec();
+        compiled_transaction_script(version, StdlibScript::QueueProposalAction).into_vec();
     Script::new(
         module_upgrade_queue_script,
         vec![stc_type_tag(), upgrade_module],

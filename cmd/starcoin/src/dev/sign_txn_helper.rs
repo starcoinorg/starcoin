@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::transaction::RawUserTransaction;
@@ -67,7 +67,7 @@ fn sign_txn_by_rpc_client(
             .as_builtin()
             .ok_or_else(|| format_err!("Only support builtin network"))?,
     );
-    let expiration_time = expiration_time + node_info.now;
+    let expiration_time = expiration_time + node_info.now_seconds;
     let raw_txn = RawUserTransaction::new(
         account.address,
         account_resource.sequence_number(),
