@@ -61,16 +61,16 @@ Feature: cmd integration test
     # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
     # TODO support remove account and remove 0000000000000000000000000A550C18
     Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
-    Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg 0x@$.address@ --arg <para> --arg 10000000u128"
+    Then cmd: "dev execute --blocking --script create_account --type_tag 0x01::STC::STC --arg @$.address@ --arg <para> --arg 10000000u128"
     Then stop
 
     Examples:
       | para |
-      | x@$.auth_key_prefix@  |
+      | x@$.auth_key@  |
 
  #dev
   Scenario Outline: [cmd] dev test
-    Then cmd: "account unlock -d 30000 0000000000000000000000000A550C18"
+    Then cmd: "account unlock -d 30000 0x0000000000000000000000000A550C18"
     Then stop
 
     Examples:
@@ -80,7 +80,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
     Then cmd: "dev get_coin"
-    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000A550C18"
+    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0x0000000000000000000000000a550c18"
     Then cmd: "account show"
     Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"

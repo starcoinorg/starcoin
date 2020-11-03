@@ -193,7 +193,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     let res = receiver.next().await.transpose().unwrap();
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
     let suffix = r#""],"subscription":0}}"#;
-    let response = format!("{}{}{}", prefix, txn_id.to_hex(), suffix);
+    let response = format!("{}0x{}{}", prefix, txn_id.to_hex(), suffix);
     assert_eq!(res, Some(response));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;

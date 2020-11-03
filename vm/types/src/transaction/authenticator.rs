@@ -276,7 +276,7 @@ impl FromStr for AuthenticationKey {
             !s.is_empty(),
             "authentication key string should not be empty.",
         );
-        let bytes_out = ::hex::decode(s)?;
+        let bytes_out = ::hex::decode(s.strip_prefix("0x").unwrap_or_else(|| s))?;
         let key = AuthenticationKey::try_from(bytes_out.as_slice())?;
         Ok(key)
     }
@@ -297,7 +297,7 @@ impl fmt::LowerHex for AuthenticationKey {
 impl fmt::Display for AuthenticationKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         // Forward to the LowerHex impl with a "0x" prepended (the # flag).
-        write!(f, "{:#x}", self)
+        write!(f, "0x{:#x}", self)
     }
 }
 

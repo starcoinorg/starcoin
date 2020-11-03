@@ -45,15 +45,18 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
+use serde_helpers::{deserialize_binary, serialize_binary};
 use starcoin_crypto::hash::HashValue;
 use std::convert::TryFrom;
 use std::fmt;
-
 #[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct AccessPath {
     pub address: AccountAddress,
-    #[serde(with = "serde_bytes")]
+    #[serde(
+        deserialize_with = "deserialize_binary",
+        serialize_with = "serialize_binary"
+    )]
     pub path: Vec<u8>,
 }
 

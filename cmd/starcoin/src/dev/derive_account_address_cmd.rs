@@ -9,15 +9,14 @@ use serde::Deserialize;
 use serde::Serialize;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
-use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_crypto::ValidCryptoMaterialHexStringExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction;
 use structopt::StructOpt;
-
 #[derive(Debug, StructOpt)]
 #[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {
-    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_encoded_string))]
+    #[structopt(short = "p", required=true, min_values=1, max_values=32, parse(try_from_str=Ed25519PublicKey::from_hex_string))]
     /// public key used to derive address.If multi public keys is provided, a mutli-sig account address is derived.
     public_key: Vec<Ed25519PublicKey>,
 

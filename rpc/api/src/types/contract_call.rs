@@ -22,13 +22,13 @@ mod test {
     fn test_deserialize() {
         let s = r#"
 {
-  "module_address": "0CC02653F9D7A62D07754D859B066BDE",
+  "module_address": "0x0CC02653F9D7A62D07754D859B066BDE",
   "module_name": "T",
   "func": "A",
   "type_args": [
     {
       "Struct": {
-        "address": "42C4DDA17CC39AF459C20D09F6A82EDF",
+        "address": "0x42C4DDA17CC39AF459C20D09F6A82EDF",
         "module": "T",
         "name": "T",
         "type_params": []
@@ -37,7 +37,7 @@ mod test {
   ],
   "args": [
     {
-      "Address": "D6F8FAF8FA976104B8BA8C6F85DCF9E4"
+      "Address": "0xD6F8FAF8FA976104B8BA8C6F85DCF9E4"
     }
   ]
 }        
