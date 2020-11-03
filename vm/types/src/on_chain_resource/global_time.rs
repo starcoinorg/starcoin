@@ -14,6 +14,12 @@ pub struct GlobalTimeOnChain {
 }
 
 impl GlobalTimeOnChain {
+    pub fn new(milliseconds: u64) -> Self {
+        Self { milliseconds }
+    }
+}
+
+impl GlobalTimeOnChain {
     pub fn seconds(&self) -> u64 {
         self.milliseconds / 1000
     }

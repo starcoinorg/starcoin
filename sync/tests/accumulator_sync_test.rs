@@ -15,7 +15,7 @@ use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 180)]
 pub fn test_accumulator_sync() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!(
@@ -63,7 +63,7 @@ pub fn test_accumulator_sync() {
     let client = VerifiedRpcClient::new(peer_selector, network);
 
     let current_info = accumulator.get_info();
-    let target_info = block_info1.block_accumulator_info.clone();
+    let target_info = block_info1.block_accumulator_info;
     let task_state =
         BlockAccumulatorSyncTask::new(current_info.num_leaves, target_info.clone(), client, 3);
     let collector = AccumulatorCollector::new(store, current_info, target_info.clone());

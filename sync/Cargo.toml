@@ -49,6 +49,7 @@ starcoin-vm-types = { path = "../vm/types" }
 starcoin-state-api = { path = "../state/api" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-chain-service = { path = "../chain/service" }
+starcoin-chain-api = { path = "../chain/api" }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }

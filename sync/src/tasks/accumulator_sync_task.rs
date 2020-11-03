@@ -88,10 +88,10 @@ pub struct AccumulatorCollector {
 impl AccumulatorCollector {
     pub fn new(
         store: Arc<dyn AccumulatorTreeStore>,
-        current: AccumulatorInfo,
+        start: AccumulatorInfo,
         target: AccumulatorInfo,
     ) -> Self {
-        let accumulator = MerkleAccumulator::new_with_info(current, store);
+        let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,
             target,
@@ -105,7 +105,11 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
     fn collect(self: Pin<&mut Self>, item: HashValue) -> Result<CollectorState> {
         self.accumulator.append(&[item])?;
         self.accumulator.flush()?;
-        Ok(CollectorState::Need)
+        if self.accumulator.num_leaves() == self.target.num_leaves {
+            Ok(CollectorState::Enough)
+        } else {
+            Ok(CollectorState::Need)
+        }
     }
 
     fn finish(self) -> Result<Self::Output> {

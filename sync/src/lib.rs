@@ -7,6 +7,7 @@ pub mod download;
 pub mod helper;
 pub mod state_sync;
 mod sync;
+pub mod sync2;
 mod sync_metrics;
 mod sync_task;
 pub mod tasks;

@@ -1,7 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use crate::tasks::SyncTarget;
+use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
 use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
@@ -126,8 +127,7 @@ impl VerifiedRpcClient {
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
-        //TODO best peer should select at init  VerifiedRpcClient
-        self.peer_selector.clone().bests().random()
+        self.peer_selector.bests().random().cloned()
     }
 
     pub fn random_peer(&self) -> Result<PeerId> {
@@ -222,6 +222,40 @@ impl VerifiedRpcClient {
         let verified_infos =
             verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
         Ok(verified_infos)
+    }
+
+    pub async fn get_sync_target(&self) -> Result<SyncTarget> {
+        //TODO optimize target selector,
+        let selector = self.peer_selector.bests();
+        let peer = selector
+            .random()
+            .ok_or_else(|| format_err!("No peer to request"))?;
+        let peer_id = peer.get_peer_id();
+        let header = peer.get_latest_header();
+        let block_id = header.id();
+
+        let block_info = self
+            .client
+            .get_block_infos(peer_id.clone(), vec![block_id])
+            .await?
+            .pop()
+            .ok_or_else(|| {
+                format_err!(
+                    "Get block info by id:{} from peer_id:{} return None",
+                    block_id,
+                    peer_id
+                )
+            })?;
+        ensure!(
+            block_id == block_info.block_id,
+            "Invalid block info from {}",
+            peer_id
+        );
+        Ok(SyncTarget {
+            block_header: header.clone(),
+            block_info,
+            peers: selector.cloned(),
+        })
     }
 
     pub async fn get_blocks_by_number(

@@ -406,8 +406,9 @@ impl std::fmt::Display for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Block{{id:\"{}\", parent_id:\"{}\",",
+            "Block{{id:\"{}\", number:\"{}\", parent_id:\"{}\",",
             self.id(),
+            self.header().number(),
             self.header().parent_hash()
         )?;
         if let Some(uncles) = &self.body.uncles {

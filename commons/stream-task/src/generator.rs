@@ -81,28 +81,13 @@ pub trait Generator: Send {
 
     fn get_event_handle(&self) -> Arc<dyn TaskEventHandle>;
 
-    fn and_then<S, C, M>(
-        self,
-        buffer_size: usize,
-        max_retry_times: u64,
-        delay_milliseconds: u64,
-        collector: C,
-        init_state_map: M,
-    ) -> AndThenGenerator<Self, C, S, M>
+    fn and_then<M, G2>(self, init_function: M) -> AndThenGenerator<Self, M, G2>
     where
         Self: Sized + 'static,
-        C: TaskResultCollector<S::Item> + 'static,
-        S: TaskState + 'static,
-        M: FnOnce(Self::Output) -> Result<S> + Send + 'static,
+        G2: Generator + 'static,
+        M: FnOnce(Self::Output, Arc<dyn TaskEventHandle>) -> Result<G2> + Send + 'static,
     {
-        AndThenGenerator::new(
-            self,
-            buffer_size,
-            max_retry_times,
-            delay_milliseconds,
-            collector,
-            init_state_map,
-        )
+        AndThenGenerator::new(self, init_function)
     }
 }
 
@@ -199,80 +184,49 @@ where
     }
 }
 
-pub struct AndThenGenerator<G, C, S, M> {
-    g1: G,
-    buffer_size: usize,
-    max_retry_times: u64,
-    delay_milliseconds: u64,
-    collector: C,
-    init_state_map: M,
-    init_state: PhantomData<S>,
+pub struct AndThenGenerator<G1, M, G2> {
+    g1: G1,
+    init_function: M,
+    g2: PhantomData<G2>,
 }
 
-impl<G, C, S, M> AndThenGenerator<G, C, S, M>
+impl<G1, M, G2> AndThenGenerator<G1, M, G2>
 where
-    G: Generator + 'static,
-    S: TaskState + 'static,
-    C: TaskResultCollector<S::Item> + 'static,
-    M: FnOnce(G::Output) -> Result<S> + Send + 'static,
+    G1: Generator + 'static,
+    G2: Generator + 'static,
+    M: FnOnce(G1::Output, Arc<dyn TaskEventHandle>) -> Result<G2> + Send + 'static,
 {
-    pub(crate) fn new(
-        g1: G,
-        buffer_size: usize,
-        max_retry_times: u64,
-        delay_milliseconds: u64,
-        collector: C,
-        init_state_map: M,
-    ) -> Self {
+    pub(crate) fn new(g1: G1, init_function: M) -> Self {
         Self {
             g1,
-            buffer_size,
-            max_retry_times,
-            delay_milliseconds,
-            collector,
-            init_state_map,
-            init_state: PhantomData,
+            init_function,
+            g2: PhantomData,
         }
     }
 }
 
-impl<G, C, S, M> Generator for AndThenGenerator<G, C, S, M>
+impl<G1, M, G2> Generator for AndThenGenerator<G1, M, G2>
 where
-    G: Generator + 'static,
-    S: TaskState + 'static,
-    C: TaskResultCollector<S::Item> + 'static,
-    M: FnOnce(G::Output) -> Result<S> + Send + 'static,
+    G1: Generator + 'static,
+    G2: Generator + 'static,
+    M: FnOnce(G1::Output, Arc<dyn TaskEventHandle>) -> Result<G2> + Send + 'static,
 {
-    type State = S;
-    type Output = C::Output;
+    type State = G2::State;
+    type Output = G2::Output;
 
     fn generate(self) -> TaskFuture<Self::Output> {
         let Self {
             g1,
-            buffer_size,
-            max_retry_times,
-            delay_milliseconds,
-            collector,
-            init_state_map,
-            init_state: _,
+            init_function,
+            g2: _,
         } = self;
         let event_handle = g1.get_event_handle();
         let first_task = g1.generate();
         let then_fut = first_task
             .and_then(|output| async move {
-                (init_state_map)(output).map_err(TaskError::CollectorError)
+                (init_function)(output, event_handle).map_err(TaskError::BreakError)
             })
-            .and_then(move |init_state| {
-                TaskGenerator::new(
-                    init_state,
-                    buffer_size,
-                    max_retry_times,
-                    delay_milliseconds,
-                    collector,
-                    event_handle,
-                )
-                .generate()
-            })
+            .and_then(move |g2| g2.generate())
             .boxed();
         TaskFuture::new(then_fut)
     }

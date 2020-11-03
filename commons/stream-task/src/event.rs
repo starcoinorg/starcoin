@@ -133,6 +133,14 @@ impl TaskEventCounterHandle {
         }
         reports
     }
+
+    pub fn get_report(&self) -> Option<CounterReport> {
+        self.current_counter
+            .lock()
+            .unwrap()
+            .as_ref()
+            .map(|counter| counter.get_report())
+    }
 }
 
 impl TaskEventHandle for TaskEventCounterHandle {

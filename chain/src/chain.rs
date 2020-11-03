@@ -655,10 +655,24 @@ impl BlockChain {
     fn verify_header(&self, header: &BlockHeader, is_uncle: bool, epoch: &EpochInfo) -> Result<()> {
         let parent_hash = header.parent_hash();
         if !is_uncle {
+            let current_head_id = self.head_block().id();
+            let current_number = self.head_block().header().number();
+            let expect_number = current_number + 1;
+
             verify_block!(
                 VerifyBlockField::Header,
-                self.head_block().id() == parent_hash,
-                "Invalid block: Parent id mismatch."
+                expect_number == header.number,
+                "Invalid block: Unexpect block number, expect:{}, got: {}.",
+                expect_number,
+                header.number
+            );
+
+            verify_block!(
+                VerifyBlockField::Header,
+                current_head_id == parent_hash,
+                "Invalid block: Parent id mismatch, expect:{}, got: {}.",
+                current_head_id,
+                parent_hash
             );
         }
         // do not check genesis block timestamp check

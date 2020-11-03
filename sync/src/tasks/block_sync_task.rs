@@ -3,12 +3,16 @@
 
 use crate::tasks::BlockFetcher;
 use anyhow::Result;
+use chain::BlockChain;
 use futures::future::BoxFuture;
 use futures::FutureExt;
+use pin_utils::core_reexport::pin::Pin;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_chain_api::ChainWriter;
 use starcoin_types::block::{Block, BlockNumber};
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
-use stream_task::TaskState;
+use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
 #[derive(Clone)]
 pub struct BlockSyncTask {
@@ -48,7 +52,7 @@ impl TaskState for BlockSyncTask {
             if block_ids.is_empty() {
                 return Ok(vec![]);
             }
-            self.fetcher.fetch(block_ids).await
+            self.fetcher.fetch_block(block_ids).await
         }
         .boxed()
     }
@@ -69,6 +73,34 @@ impl TaskState for BlockSyncTask {
 
     fn total_items(&self) -> Option<u64> {
         Some(self.accumulator.num_leaves() - self.start_number)
+    }
+}
+
+pub struct BlockCollector {
+    chain: BlockChain,
+}
+
+impl BlockCollector {
+    pub fn new(chain: BlockChain) -> Self {
+        Self { chain }
+    }
+}
+
+impl TaskResultCollector<Block> for BlockCollector {
+    type Output = BlockChain;
+
+    fn collect(mut self: Pin<&mut Self>, item: Block) -> Result<CollectorState> {
+        let timestamp = item.header().timestamp();
+        self.chain.apply(item)?;
+        //TODO should do this in chain?
+        self.chain
+            .time_service()
+            .adjust(GlobalTimeOnChain::new(timestamp));
+        Ok(CollectorState::Need)
+    }
+
+    fn finish(self) -> Result<Self::Output> {
+        Ok(self.chain)
     }
 }
 
@@ -104,7 +136,7 @@ mod tests {
     }
 
     impl BlockFetcher for MockBlockFetcher {
-        fn fetch(&self, block_ids: Vec<HashValue>) -> BoxFuture<Result<Vec<Block>>> {
+        fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<Result<Vec<Block>>> {
             let blocks = self.blocks.lock().unwrap();
             let result: Result<Vec<Block>> = block_ids
                 .iter()
@@ -127,7 +159,7 @@ mod tests {
         let fetcher = MockBlockFetcher::new();
 
         let store = Arc::new(MockAccumulatorStore::new());
-        let accumulator = MerkleAccumulator::new_empty(store.clone());
+        let accumulator = MerkleAccumulator::new_empty(store);
         for i in 0..total_blocks {
             let mut header = BlockHeader::random();
             header.number = i;
