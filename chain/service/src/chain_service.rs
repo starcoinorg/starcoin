@@ -178,6 +178,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlocks(ids) => {
                 Ok(ChainResponse::BlockOptionVec(self.inner.get_blocks(ids)?))
             }
+            ChainRequest::GetMinActionDelay() => Ok(ChainResponse::MinActionDelay(
+                self.inner.min_action_delay()?,
+            )),
         }
     }
 }
@@ -319,6 +322,10 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn epoch_info(&self) -> Result<EpochInfo> {
         self.master.epoch_info()
+    }
+
+    fn min_action_delay(&self) -> Result<u64> {
+        self.master.min_action_delay(None)
     }
 
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {

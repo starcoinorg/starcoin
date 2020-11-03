@@ -42,6 +42,7 @@ pub trait ChainReader {
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
+    fn min_action_delay(&self, number: Option<BlockNumber>) -> Result<u64>;
 }
 
 pub trait ChainWriter {

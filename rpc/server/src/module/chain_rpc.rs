@@ -198,4 +198,15 @@ where
 
         Box::new(fut.boxed().compat())
     }
+
+    fn min_action_delay(&self) -> FutureResult<u64> {
+        let service = self.service.clone();
+        let fut = async move {
+            let block = service.min_action_delay().await?;
+            Ok(block)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
 }

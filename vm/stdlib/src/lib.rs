@@ -341,11 +341,11 @@ fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
 }
 
 pub fn compile_scripts(script_dir: &Path, dest_dir: PathBuf) {
-    let scripts = compile_scripts_2_bytes(script_dir);
+    let scripts = compile_scripts_to_bytes(script_dir);
     save_scripts(scripts, dest_dir);
 }
 
-pub fn compile_scripts_2_bytes(script_dir: &Path) -> HashMap<String, (HashValue, Vec<u8>)> {
+pub fn compile_scripts_to_bytes(script_dir: &Path) -> HashMap<String, (HashValue, Vec<u8>)> {
     let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
     let script_files = filter_files(script_source_files, MOVE_EXTENSION.to_string());
     let mut scripts: HashMap<String, (HashValue, Vec<u8>)> = HashMap::new();

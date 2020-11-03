@@ -21,7 +21,7 @@ use std::{
 };
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, build_transaction_script_abi,
-    build_transaction_script_doc, compile_scripts, compile_scripts_2_bytes, compiled_scripts,
+    build_transaction_script_doc, compile_scripts, compile_scripts_to_bytes, compiled_scripts,
     save_binary, save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
     COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
     STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
@@ -283,7 +283,6 @@ fn main() {
     module_path.push(STDLIB_DIR_NAME);
     let new_modules = build_stdlib();
 
-    let mut is_compatible = true;
     if !no_check_compatibility {
         let old_compiled_modules = latest_compiled_modules();
         for module in new_modules.values() {
@@ -291,16 +290,13 @@ fn main() {
             let new_module_id = module.self_id();
             if let Some(old_module) = old_compiled_modules.get(&new_module_id) {
                 let compatibility = check_compiled_module_compat(old_module, module);
-                if is_compatible && !compatibility {
-                    println!("Stdlib {:?} is incompatible!", new_module_id);
-                    is_compatible = false
-                }
+                assert!(compatibility, "Stdlib {:?} is incompatible!", new_module_id);
             }
         }
     }
 
-    if no_check_compatibility || is_compatible {
-        let new_scripts = compile_scripts_2_bytes(Path::new(TRANSACTION_SCRIPTS));
+    if no_check_compatibility {
+        let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
 
         if generate_new_version {
             let dest_dir = full_update_with_version(&version_number);

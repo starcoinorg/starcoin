@@ -411,13 +411,10 @@ pub fn build_stdlib_package(
     Ok(package)
 }
 
-pub fn build_module_upgrade_proposal(
-    version: StdlibVersion,
-    package: &Package,
-    day: u64,
-) -> (Script, HashValue) {
+pub fn build_module_upgrade_proposal(package: &Package, day: u64) -> (Script, HashValue) {
     let module_upgrade_proposal_script =
-        compiled_transaction_script(version, StdlibScript::ProposeModuleUpgrade).into_vec();
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::ProposeModuleUpgrade)
+            .into_vec();
     let package_hash = package.crypto_hash();
     (
         Script::new(
@@ -433,9 +430,10 @@ pub fn build_module_upgrade_proposal(
     )
 }
 
-pub fn build_module_upgrade_plan(version: StdlibVersion, proposal_id: u64) -> Script {
+pub fn build_module_upgrade_plan(proposal_id: u64) -> Script {
     let module_upgrade_plan_script =
-        compiled_transaction_script(version, StdlibScript::SubmitModuleUpgradePlan).into_vec();
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::SubmitModuleUpgradePlan)
+            .into_vec();
     Script::new(
         module_upgrade_plan_script,
         vec![stc_type_tag()],
@@ -446,7 +444,7 @@ pub fn build_module_upgrade_plan(version: StdlibVersion, proposal_id: u64) -> Sc
     )
 }
 
-pub fn build_module_upgrade_queue(version: StdlibVersion, proposal_id: u64) -> Script {
+pub fn build_module_upgrade_queue(proposal_id: u64) -> Script {
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
@@ -454,7 +452,8 @@ pub fn build_module_upgrade_queue(version: StdlibVersion, proposal_id: u64) -> S
         type_params: vec![],
     });
     let module_upgrade_queue_script =
-        compiled_transaction_script(version, StdlibScript::QueueProposalAction).into_vec();
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::QueueProposalAction)
+            .into_vec();
     Script::new(
         module_upgrade_queue_script,
         vec![stc_type_tag(), upgrade_module],

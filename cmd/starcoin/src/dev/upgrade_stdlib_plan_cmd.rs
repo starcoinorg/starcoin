@@ -4,11 +4,10 @@
 use crate::cli_state::CliState;
 use crate::dev::sign_txn_helper::sign_txn_with_default_account_by_rpc_client;
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_transaction_builder::build_module_upgrade_plan;
-use starcoin_vm_types::genesis_config::ChainNetwork;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
@@ -69,14 +68,7 @@ impl CommandAction for UpgradeStdlibPlanCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
-        let net = ChainNetwork::new_builtin(
-            *cli_state
-                .net()
-                .as_builtin()
-                .ok_or_else(|| format_err!("Only support builtin network"))?,
-        );
-
-        let module_upgrade_plan = build_module_upgrade_plan(net.stdlib_version(), opt.proposal_id);
+        let module_upgrade_plan = build_module_upgrade_plan(opt.proposal_id);
         let signed_txn = sign_txn_with_default_account_by_rpc_client(
             cli_state,
             opt.max_gas_amount,
