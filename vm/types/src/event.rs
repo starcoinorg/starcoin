@@ -107,6 +107,7 @@ impl<'de> de::Deserialize<'de> for EventKey {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
+            let s = s.strip_prefix("0x").unwrap_or_else(|| s.as_str());
             Self::try_from(
                 hex::decode(s)
                     .map_err(<D::Error as ::serde::de::Error>::custom)?
@@ -198,6 +199,6 @@ impl fmt::LowerHex for EventKey {
 impl fmt::Display for EventKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         // Forward to the LowerHex impl with a "0x" prepended (the # flag).
-        write!(f, "{:#x}", self)
+        write!(f, "0x{:#x}", self)
     }
 }

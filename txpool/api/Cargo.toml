@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 async-trait = "0.1"
 futures-channel = "0.3"
 starcoin-types = {path = "../../types", package="starcoin-types"}

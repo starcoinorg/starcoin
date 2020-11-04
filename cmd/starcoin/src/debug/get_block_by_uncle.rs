@@ -14,7 +14,7 @@ use structopt::StructOpt;
 #[structopt(name = "get_block_by_uncle")]
 pub struct GetBlockByUncleOpt {
     ///Uncle hash
-    #[structopt(short = "u")]
+    #[structopt(short = "u", parse(try_from_str = HashValue::from_hex_literal))]
     uncle: HashValue,
 }
 

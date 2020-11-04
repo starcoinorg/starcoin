@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 tiny_http = "0.6"
 futures = { version = "0.3"}
 hex = { version = "0.4.2", default-features = false }
