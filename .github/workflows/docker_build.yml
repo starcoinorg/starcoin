@@ -1,27 +1,29 @@
-- name: Build Docker
-  on:
-    push:
-      # only build master
-      branches:
-        - 'master'
-      paths-ignore:
-        - '**.md'
-  jobs:
-    build-starcoin-docker:
-      name: build starcoin docker
-      if: github.ref == 'refs/heads/master'
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v1
-          with:
-            submodules: recursive
-        - uses: elgohr/Publish-Docker-Github-Action@master
-          env:
-            GIT_REV: $GITHUB_SHA
-          with:
-            name: starcoinorg/starcoin/
-            username: $GITHUB_ACTOR
-            password: ${{ secrets.GITHUB_TOKEN }}
-            registry: docker.pkg.github.com
-            dockerfile: docker/Dockerfile
-            buildargs: GIT_REV
+name: Build Docker
+on:
+  workflow_dispatch:
+  push:
+    # only build master
+    branches:
+      - 'master'
+    paths-ignore:
+      - '**.md'
+  release:
+    types: [ published ]
+
+jobs:
+  build-starcoin-docker:
+    name: build starcoin docker
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - uses: docker/build-push-action@v1
+        with:
+          push: true
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          registry: docker.pkg.github.com
+          dockerfile: docker/Dockerfile
+          tag_with_ref: true
