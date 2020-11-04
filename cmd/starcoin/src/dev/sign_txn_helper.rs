@@ -9,11 +9,7 @@ use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
-use starcoin_vm_types::{
-    dao_config::DaoConfig,
-    genesis_config::{ChainNetwork, StdlibVersion},
-};
-use stdlib::transaction_scripts::StdlibScript;
+use starcoin_vm_types::{dao_config::DaoConfig, genesis_config::ChainNetwork};
 
 pub fn sign_txn_with_association_account_by_rpc_client(
     cli_state: &CliState,
@@ -106,12 +102,13 @@ mod tests {
     };
     use starcoin_types::transaction::{parse_transaction_argument, Script, TransactionArgument};
     use starcoin_vm_types::{
-        account_config::AccountResource, transaction::Package, vm_status::KeptVMStatus,
+        account_config::AccountResource, genesis_config::StdlibVersion, transaction::Package,
+        vm_status::KeptVMStatus,
     };
     use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
     use std::sync::Arc;
     use std::time::Duration;
-    use stdlib::transaction_scripts::compiled_transaction_script;
+    use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
     use test_helper::executor::compile_module_with_address;
     use test_helper::run_node_by_config;
 
