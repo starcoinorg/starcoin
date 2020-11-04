@@ -11,7 +11,7 @@ anyhow = "1.0.34"
 once_cell = "1.4.1"
 prometheus = "0.10"
 starcoin-types = { path = "../../types"}
-move-vm-runtime = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/libra", rev="5371b4756e83b231c19107ff139f99980842182d" }
 starcoin-state-api = {path="../../state/api"}
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}

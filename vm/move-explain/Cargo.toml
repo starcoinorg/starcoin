@@ -12,9 +12,9 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.18"
 stdlib = { package="stdlib", path = "../stdlib"}
-libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-errmapgen = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="5371b4756e83b231c19107ff139f99980842182d" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="5371b4756e83b231c19107ff139f99980842182d" }
+move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "5371b4756e83b231c19107ff139f99980842182d" }
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 
 [features]

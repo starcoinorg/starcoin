@@ -47,7 +47,10 @@ fn generate() -> Result<(), Error> {
 
     tracer.trace_type::<BlockMetadata>(&samples)?;
 
-    tracer.trace_value(&mut samples, &EventKey::random())?;
+    tracer.trace_value(
+        &mut samples,
+        &EventKey::new_from_address(&AccountAddress::random(), 0),
+    )?;
     tracer.trace_type::<ContractEventV0>(&samples)?;
     tracer.trace_type::<ContractEvent>(&samples)?;
     tracer.trace_type::<WriteSet>(&samples)?;
