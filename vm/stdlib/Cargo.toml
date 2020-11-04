@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 bytecode-verifier = { package="bytecode-verifier", git = "https://github.com/starcoinorg/libra", version = "0.1.0",rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 datatest-stable = { package="datatest-stable", git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
 starcoin-crypto = { path = "../../commons/crypto"}

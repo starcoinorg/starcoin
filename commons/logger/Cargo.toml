@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 log = "0.4.11"
 chrono = "0.4.19"
 log4rs = { version="0.13.0", features = ["background_rotation", "gzip"]}
