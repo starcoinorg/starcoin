@@ -4,7 +4,7 @@ on:
   push:
     # only build master
     branches:
-      - 'master'
+      - 'docker_build'
     paths-ignore:
       - '**.md'
   release:
@@ -22,8 +22,8 @@ jobs:
       - uses: docker/build-push-action@v1
         with:
           push: true
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GIT_PACKAGE_TOKEN }}
           registry: docker.pkg.github.com
           dockerfile: docker/Dockerfile
           tag_with_ref: true
