@@ -15,6 +15,8 @@ use starcoin_types::genesis_config::ChainNetwork;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_types::transaction::{Script, TransactionArgument, TransactionPayload};
+use starcoin_vm_types::gas_schedule::GasAlgebra;
+use starcoin_vm_types::on_chain_config::VMConfig;
 use starcoin_vm_types::values::{VMValueCast, Value};
 use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
 
@@ -79,6 +81,14 @@ pub fn reward_config_type_tag() -> TypeTag {
         address: genesis_address(),
         module: Identifier::new("RewardConfig").unwrap(),
         name: Identifier::new("RewardConfig").unwrap(),
+        type_params: vec![],
+    })
+}
+pub fn transasction_timeout_type_tag() -> TypeTag {
+    TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("TransactionTimeoutConfig").unwrap(),
+        name: Identifier::new("TransactionTimeoutConfig").unwrap(),
         type_params: vec![],
     })
 }
@@ -293,6 +303,22 @@ pub fn vote_reward_scripts(net: &ChainNetwork, reward_delay: u64) -> Script {
 }
 
 /// vote txn publish option scripts
+pub fn vote_txn_timeout_script(net: &ChainNetwork, duration_seconds: u64) -> Script {
+    let script1 = compiled_transaction_script(
+        net.stdlib_version(),
+        StdlibScript::ProposeUpdateTxnTimeoutConfig,
+    )
+    .into_vec();
+    Script::new(
+        script1,
+        vec![],
+        vec![
+            TransactionArgument::U64(duration_seconds),
+            TransactionArgument::U64(0),
+        ],
+    )
+}
+/// vote txn publish option scripts
 pub fn vote_txn_publish_option_script(
     net: &ChainNetwork,
     script_hash: HashValue,
@@ -309,6 +335,49 @@ pub fn vote_txn_publish_option_script(
         vec![
             TransactionArgument::U8Vector(script_hash.to_vec()),
             TransactionArgument::Bool(module_publishing_allowed),
+            TransactionArgument::U64(0),
+        ],
+    )
+}
+
+/// vote txn publish option scripts
+pub fn vote_version_script(net: &ChainNetwork, major: u64) -> Script {
+    let script1 =
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeUpdateVersion)
+            .into_vec();
+    Script::new(
+        script1,
+        vec![],
+        vec![TransactionArgument::U64(major), TransactionArgument::U64(0)],
+    )
+}
+/// vote vm config scripts
+pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script {
+    let script1 =
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeUpdateVmConfig)
+            .into_vec();
+    let gas_constants = &vm_config.gas_schedule.gas_constants;
+    Script::new(
+        script1,
+        vec![],
+        vec![
+            TransactionArgument::U8Vector(
+                scs::to_bytes(&vm_config.gas_schedule.instruction_table).unwrap(),
+            ),
+            TransactionArgument::U8Vector(
+                scs::to_bytes(&vm_config.gas_schedule.native_table).unwrap(),
+            ),
+            TransactionArgument::U64(gas_constants.global_memory_per_byte_cost.get()),
+            TransactionArgument::U64(gas_constants.global_memory_per_byte_write_cost.get()),
+            TransactionArgument::U64(gas_constants.min_transaction_gas_units.get()),
+            TransactionArgument::U64(gas_constants.large_transaction_cutoff.get()),
+            TransactionArgument::U64(gas_constants.intrinsic_gas_per_byte.get()),
+            TransactionArgument::U64(gas_constants.maximum_number_of_gas_units.get()),
+            TransactionArgument::U64(gas_constants.min_price_per_gas_unit.get()),
+            TransactionArgument::U64(gas_constants.max_price_per_gas_unit.get()),
+            TransactionArgument::U64(gas_constants.max_transaction_size_in_bytes),
+            TransactionArgument::U64(gas_constants.gas_unit_scaling_factor),
+            TransactionArgument::U64(gas_constants.default_account_size.get()),
             TransactionArgument::U64(0),
         ],
     )
@@ -331,6 +400,14 @@ pub fn execute_script_on_chain_config(
         vec![type_tag],
         vec![TransactionArgument::U64(proposal_id)],
     )
+}
+
+pub fn empty_txn_payload(net: &ChainNetwork) -> TransactionPayload {
+    TransactionPayload::Script(Script::new(
+        compiled_transaction_script(net.stdlib_version(), StdlibScript::EmptyScript).into_vec(),
+        vec![],
+        vec![],
+    ))
 }
 
 pub fn dao_vote_test(
