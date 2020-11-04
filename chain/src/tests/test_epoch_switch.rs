@@ -6,6 +6,7 @@ use consensus::Consensus;
 use starcoin_chain_mock::BlockChain;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{Account, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_state_api::AccountStateReader;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_transaction_builder::encode_create_account_script;
 use starcoin_types::account_address::AccountAddress;
@@ -30,10 +31,17 @@ use test_helper::executor::{get_balance, get_sequence_number};
 
 pub fn create_new_block(
     chain: &BlockChain,
-    address: AccountAddress,
+    account: &Account,
     txns: Vec<SignedUserTransaction>,
 ) -> Result<Block> {
-    let (template, _) = chain.create_block_template(address, None, None, txns, vec![], None)?;
+    let (template, _) = chain.create_block_template(
+        *account.address(),
+        Some(account.auth_key()),
+        None,
+        txns,
+        vec![],
+        None,
+    )?;
     chain
         .consensus()
         .create_block(chain, template, chain.time_service().as_ref())
@@ -61,7 +69,6 @@ fn create_user_txn(
     seq_number: u64,
     net: &ChainNetwork,
     alice: &Account,
-    bob: &Account,
     pre_mint_amount: u128,
     expire_time: u64,
 ) -> Result<Vec<SignedUserTransaction>> {
@@ -72,13 +79,6 @@ fn create_user_txn(
         alice.auth_key(),
         pre_mint_amount / 4,
     );
-    let script2 = encode_create_account_script(
-        net.stdlib_version(),
-        stc_type_tag(),
-        bob.address(),
-        bob.auth_key(),
-        pre_mint_amount / 4,
-    );
     let txn = net
         .genesis_config()
         .sign_with_association(build_transaction(
@@ -87,15 +87,7 @@ fn create_user_txn(
             TransactionPayload::Script(script),
             expire_time + 60 * 60,
         ))?;
-    let txn2 = net
-        .genesis_config()
-        .sign_with_association(build_transaction(
-            address,
-            seq_number + 1,
-            TransactionPayload::Script(script2),
-            expire_time + 60 * 60,
-        ))?;
-    Ok(vec![txn, txn2])
+    Ok(vec![txn])
 }
 
 fn create_vote_txn(
@@ -124,7 +116,7 @@ fn cast_vote_txn(
     let script =
         compiled_transaction_script(net.stdlib_version(), StdlibScript::CastVote).into_vec();
     let proposer_id = 0;
-    println!("bob voting power: {}", voting_power);
+    println!("alice voting power: {}", voting_power);
     let vote_script = Script::new(
         script,
         vec![stc_type_tag(), action_type_tag],
@@ -188,7 +180,6 @@ fn execute_txn(
 
 pub fn modify_on_chain_config_by_dao_block(
     alice: Account,
-    bob: Account,
     mut chain: BlockChain,
     net: &ChainNetwork,
     vote_script: Script,
@@ -218,7 +209,6 @@ pub fn modify_on_chain_config_by_dao_block(
                 seq,
                 net,
                 &alice,
-                &bob,
                 pre_mint_amount,
                 block_timestamp / 1000,
             )?,
@@ -244,7 +234,7 @@ pub fn modify_on_chain_config_by_dao_block(
         });
         let block2 = create_new_block(
             &chain,
-            *alice.address(),
+            &alice,
             vec![create_vote_txn(
                 &alice,
                 alice_seq,
@@ -278,7 +268,7 @@ pub fn modify_on_chain_config_by_dao_block(
         });
         let block3 = create_new_block(
             &chain,
-            *alice.address(),
+            &alice,
             vec![cast_vote_txn(
                 alice_seq,
                 &alice,
@@ -298,7 +288,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
         });
-        let block4 = create_new_block(&chain, *alice.address(), vec![])?;
+        let block4 = create_new_block(&chain, &alice, vec![])?;
         chain.apply(block4)?;
         let chain_state = chain.chain_state();
         let quorum = quorum_vote(chain_state.as_super(), stc_type_tag());
@@ -320,7 +310,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
         });
-        chain.apply(create_new_block(&chain, *alice.address(), vec![])?)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state.as_super(),
@@ -342,7 +332,7 @@ pub fn modify_on_chain_config_by_dao_block(
         });
         let block6 = create_new_block(
             &chain,
-            *alice.address(),
+            &alice,
             vec![queue_txn(
                 alice_seq,
                 &alice,
@@ -371,7 +361,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
         });
-        chain.apply(create_new_block(&chain, *alice.address(), vec![])?)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state.as_super(),
@@ -388,7 +378,7 @@ pub fn modify_on_chain_config_by_dao_block(
     {
         let block8 = create_new_block(
             &chain,
-            *alice.address(),
+            &alice,
             vec![execute_txn(
                 alice_seq,
                 &alice,
@@ -406,7 +396,7 @@ pub fn modify_on_chain_config_by_dao_block(
         chain.time_service().adjust(GlobalTimeOnChain {
             milliseconds: block_timestamp,
         });
-        chain.apply(create_new_block(&chain, *alice.address(), vec![])?)?;
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
         let chain_state = chain.chain_state();
         let state = proposal_state(
             chain_state.as_super(),
@@ -431,16 +421,31 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
     let bob = Account::new();
     let action_type_tag = reward_config_type_tag();
     let reward_delay: u64 = 10;
-
-    modify_on_chain_config_by_dao_block(
-        alice,
-        bob,
+    let mut chain = modify_on_chain_config_by_dao_block(
+        alice.clone(),
         chain,
         net,
         vote_reward_scripts(&net, reward_delay),
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(net, action_type_tag, 0u64),
     )?;
+
+    //get first miner reward
+    let begin_reward = chain.epoch_info()?.total_reward();
+    chain.apply(create_new_block(&chain, &bob, vec![])?)?;
+    let account_state_reader = AccountStateReader::new(chain.chain_state_reader());
+    let balance = account_state_reader.get_balance(bob.address())?.unwrap();
+    let end_reward = chain.epoch_info()?.total_reward();
+    // get reward after modify delay
+    let mut count = 0;
+    while count < reward_delay {
+        chain.apply(create_new_block(&chain, &alice, vec![])?)?;
+        count += 1;
+    }
+    let account_state_reader = AccountStateReader::new(chain.chain_state_reader());
+    let after_balance = account_state_reader.get_balance(bob.address())?.unwrap();
+    assert!(after_balance > balance);
+    assert_eq!(after_balance, (balance + (end_reward - begin_reward)));
     Ok(())
 }
 
@@ -448,19 +453,19 @@ fn test_modify_on_chain_config_reward_by_dao() -> Result<()> {
 fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let config = Arc::new(NodeConfig::random_for_test());
     let net = config.net();
-    let chain = test_helper::gen_blockchain_for_test(net)?;
+    let chain = test_helper::gen_blockchain_for_test(&net)?;
+
     let alice = Account::new();
     let bob = Account::new();
     let action_type_tag = consensus_config_type_tag();
     let strategy = 3u8;
     let mut modified_chain = modify_on_chain_config_by_dao_block(
         alice,
-        bob.clone(),
         chain,
-        net,
+        &net,
         vote_script_consensus(&net, strategy),
         on_chain_config_type_tag(action_type_tag.clone()),
-        execute_script_on_chain_config(net, action_type_tag, 0u64),
+        execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
 
     // add block to switch epoch
@@ -470,7 +475,7 @@ fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
         - modified_chain.current_header().number;
     dbg!(number);
     while number > 0 {
-        modified_chain.apply(create_new_block(&modified_chain, *bob.address(), vec![])?)?;
+        modified_chain.apply(create_new_block(&modified_chain, &bob, vec![])?)?;
         number -= 1;
     }
 
