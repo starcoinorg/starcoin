@@ -945,9 +945,7 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
-            let (accumulator_root, _first_leaf_idx) =
-                self.txn_accumulator.append(&included_txn_info_hashes)?;
-            accumulator_root
+            self.txn_accumulator.append(&included_txn_info_hashes)?
         };
 
         verify_block!(

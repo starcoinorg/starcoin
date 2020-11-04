@@ -151,7 +151,7 @@ impl Genesis {
         );
         let txn_info_hash = transaction_info.id();
 
-        let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
+        let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
         accumulator.flush()?;
         Ok(Block::genesis_block(
             genesis_config.parent_hash,
