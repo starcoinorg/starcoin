@@ -1,0 +1,16 @@
+[package]
+name = "serde-helpers"
+version = "0.4.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_bytes = {version = "0.11"}
+hex = {version = "0.4"}
+
+[dev-dependencies]
+scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
+serde_json = { version = "1.0", features = ["arbitrary_precision"] }

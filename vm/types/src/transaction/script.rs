@@ -4,15 +4,18 @@
 use crate::transaction::transaction_argument::TransactionArgument;
 use move_core_types::language_storage::TypeTag;
 use serde::{Deserialize, Serialize};
+use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
-
 #[allow(dead_code)]
 pub const SCRIPT_HASH_LENGTH: usize = 32;
 
 /// Call a Move script.
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Script {
-    #[serde(with = "serde_bytes")]
+    #[serde(
+        deserialize_with = "deserialize_binary",
+        serialize_with = "serialize_binary"
+    )]
     code: Vec<u8>,
     ty_args: Vec<TypeTag>,
     args: Vec<TransactionArgument>,

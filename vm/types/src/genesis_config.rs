@@ -518,6 +518,17 @@ impl ChainNetwork {
             time_service,
         }
     }
+    pub fn new_with_time_service(
+        id: ChainNetworkID,
+        genesis_config: GenesisConfig,
+        time_service: Arc<dyn TimeService>,
+    ) -> Self {
+        Self {
+            id,
+            genesis_config,
+            time_service,
+        }
+    }
 
     pub fn new_builtin(builtin_id: BuiltinNetworkID) -> Self {
         Self::new(builtin_id.into(), builtin_id.genesis_config().clone())
