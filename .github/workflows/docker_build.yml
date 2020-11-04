@@ -1,5 +1,6 @@
 name: Build Docker
 on:
+  workflow_dispatch:
   push:
     # only build master
     branches:
@@ -18,14 +19,11 @@ jobs:
       - uses: actions/checkout@v1
         with:
           submodules: recursive
-      - uses: elgohr/Publish-Docker-Github-Action@master
-        env:
-          GIT_REV: $GITHUB_SHA
+      - uses: docker/build-push-action@v1
         with:
-          name: starcoinorg/starcoin/
-          username: $GITHUB_ACTOR
-          password: ${{ secrets.GITHUB_TOKEN }}
+          push: true
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           registry: docker.pkg.github.com
           dockerfile: docker/Dockerfile
-          buildargs: GIT_REV
-          tag_names: true
+          tag_with_ref: true
