@@ -40,7 +40,7 @@ pub struct SubscribeEventOpt {
 }
 
 fn parse_event_key(s: &str) -> Result<EventKey> {
-    let b = hex::decode(s)?;
+    let b = hex::decode(s.strip_prefix("0x").unwrap_or_else(|| s))?;
     EventKey::try_from(b.as_slice())
 }
 

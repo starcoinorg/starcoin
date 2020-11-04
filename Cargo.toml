@@ -13,6 +13,7 @@ members = [
     "commons/proptest-helpers",
     "commons/service-registry",
     "commons/timeout-join-handler",
+    "commons/serde-helpers",
     "types",
     "types/uint",
     "core/traits",
