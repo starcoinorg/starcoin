@@ -20,4 +20,8 @@ pub trait DebugApi {
     ///Trigger the node panic, only work for dev network.
     #[rpc(name = "debug.panic")]
     fn panic(&self) -> Result<()>;
+
+    ///Only can used under dev net.
+    #[rpc(name = "debug.sleep")]
+    fn sleep(&self, time: u64) -> Result<()>;
 }

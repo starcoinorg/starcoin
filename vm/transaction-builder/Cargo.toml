@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-transaction-builder"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -13,6 +13,7 @@ stdlib = { package="stdlib", path = "../stdlib"}
 starcoin-vm-types = { path = "../types"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-logger = { path = "../../commons/logger"}
+starcoin-crypto = { path = "../../commons/crypto"}
 
 [dev-dependencies]
 stest = {path = "../../commons/stest"}

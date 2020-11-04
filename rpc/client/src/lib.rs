@@ -447,6 +447,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn sleep(&self, time: u64) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.debug_client.sleep(time).compat().await })
+            .map_err(map_err)
+    }
+
     pub fn chain_head(&self) -> anyhow::Result<ChainInfo> {
         self.call_rpc_blocking(|inner| async move { inner.chain_client.head().compat().await })
             .map_err(map_err)
