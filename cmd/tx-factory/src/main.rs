@@ -92,11 +92,16 @@ fn get_account_or_default(
             let addr = default_account.clone().unwrap().address;
             let state_reader = RemoteStateReader::new(&client);
             let account_state_reader = AccountStateReader::new(&state_reader);
-            let mut balance = account_state_reader.get_balance(&addr)?.unwrap();
-            // account has enough STC
-            while balance < INITIAL_BALANCE * account_num as u128 {
+            let mut balance = account_state_reader.get_balance(&addr)?;
+            // balance resource has not been created
+            while balance.is_none() {
                 std::thread::sleep(Duration::from_millis(1000));
-                balance = account_state_reader.get_balance(&addr)?.unwrap();
+                balance = account_state_reader.get_balance(&addr)?;
+            }
+            // account has enough STC
+            while balance.unwrap() < INITIAL_BALANCE * account_num as u128 {
+                std::thread::sleep(Duration::from_millis(1000));
+                balance = account_state_reader.get_balance(&addr)?;
             }
 
             default_account.unwrap()
@@ -123,7 +128,13 @@ fn main() {
     let account_num = opts.account_num;
     let long_term = opts.long_term;
 
-    let client = RpcClient::connect_ipc(opts.ipc_path, &mut runtime).expect("ipc connect success");
+    let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+    while matches!(connected, Err(_)) {
+        std::thread::sleep(Duration::from_millis(1000));
+        connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+    }
+    let client = connected.unwrap();
+
     let account = get_account_or_default(&client, account_address, account_num).unwrap();
 
     let receiver_address = opts.receiver_address.unwrap_or_else(association_address);
@@ -457,6 +468,10 @@ impl TxnMocker {
     fn sequence_number(&mut self, address: AccountAddress) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
 
+        info!(
+            "seq_number_in_pool for address {:?} is {:?}",
+            address, seq_number_in_pool
+        );
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
@@ -466,7 +481,10 @@ impl TxnMocker {
                 let account_resource = account_state_reader.get_account_resource(&address)?;
                 match account_resource {
                     None => None,
-                    Some(resource) => Some(resource.sequence_number()),
+                    Some(resource) => {
+                        info!("read from state {:?}", resource.sequence_number());
+                        Some(resource.sequence_number())
+                    }
                 }
             }
         };
@@ -499,15 +517,19 @@ impl TxnMocker {
                             false,
                             expiration_timestamp,
                         );
-                        if matches!(result, Ok(_)) {
-                            seq_num += 1;
-                            j += 1;
-                        } else {
-                            info!(
-                                "submit txn failed. error: {:?}. try again after 500ms.",
-                                result
-                            );
-                            std::thread::sleep(Duration::from_millis(500));
+                        match result {
+                            Ok(_) => {
+                                seq_num += 1;
+                                j += 1;
+                            }
+                            Err(_) => {
+                                info!(
+                                    "Submit txn failed. error: {:?}. Try again after 500ms.",
+                                    result
+                                );
+                                std::thread::sleep(Duration::from_millis(500));
+                                j += 1;
+                            }
                         }
                     } else {
                         j += 1;
