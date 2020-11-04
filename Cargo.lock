@@ -6965,7 +6965,9 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "stdlib",
+ "stest",
  "structopt 0.3.20",
+ "test-helper",
  "tokio 0.2.22",
  "tokio-compat",
 ]
