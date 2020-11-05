@@ -4,14 +4,16 @@ on:
   push:
     # only build master
     branches:
-      - 'docker_build2'
+      - 'master'
     paths-ignore:
       - '**.md'
+  release:
+    types: [ published ]
 
 jobs:
   build-starcoin-docker:
     name: build starcoin docker
-    #if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -26,4 +28,3 @@ jobs:
           repository: starcoinorg/starcoin/starcoin
           dockerfile: docker/Dockerfile
           tag_with_ref: true
-
