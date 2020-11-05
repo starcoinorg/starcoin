@@ -96,6 +96,7 @@ mod tests {
     use starcoin_config::NodeConfig;
     use starcoin_crypto::hash::PlainCryptoHash;
     use starcoin_logger::prelude::*;
+    use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
     use starcoin_rpc_client::RpcClient;
     use starcoin_transaction_builder::{
         build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
@@ -370,6 +371,23 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(package_txn_info.status(), &KeptVMStatus::Executed);
+
+        // 9. verify
+        let call = ContractCall {
+            module_address: association_address(),
+            module_name: "TestModule".to_string(),
+            func: "is_test".to_string(),
+            type_args: Vec::new(),
+            args: Vec::new(),
+        };
+        let result = cli_state.client().contract_call(call).unwrap();
+        assert!(!result.is_empty());
+        info!("result: {:?}", result);
+        if let AnnotatedMoveValue::Bool(flag) = result.get(0).unwrap() {
+            assert!(flag);
+        } else {
+            unreachable!("result err.");
+        }
 
         node_handle.stop().unwrap();
     }
