@@ -22,4 +22,4 @@ log = "0.4.11"
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-async-std = "1.6"
+async-std = "1.7"
