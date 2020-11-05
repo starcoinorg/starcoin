@@ -14,6 +14,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use starcoin_types::transaction::helpers::get_current_timestamp;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -125,7 +126,10 @@ fn main() {
     let account_password = opts.account_password.clone();
 
     let is_stress = opts.stress;
-    let account_num = opts.account_num;
+    let mut account_num = opts.account_num;
+    if !is_stress {
+        account_num = 0;
+    }
     let long_term = opts.long_term;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
@@ -144,15 +148,11 @@ fn main() {
     });
 
     let net = client.node_info().unwrap().net;
-    let node_info = client
-        .node_info()
-        .unwrap_or_else(|_| panic!("Failed to get node info"));
     let txn_generator = MockTxnGenerator::new(
         net.chain_id(),
         account.clone(),
         receiver_address,
         public_key,
-        node_info,
     );
     let tx_mocker = TxnMocker::new(
         client,
@@ -292,13 +292,16 @@ impl TxnMocker {
     }
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
-        // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
-        // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
-        // if let Some(n) = seq_number_in_pool {
-        // }
+        let node_info = self.client.node_info()?;
+        let expiration_timestamp = if node_info.net.is_test_or_dev() {
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+        } else {
+            get_current_timestamp()
+        };
+
         let raw_txn = self
             .generator
-            .generate_mock_txn(self.next_sequence_number)?;
+            .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
         self.unlock_account()?;
@@ -398,7 +401,13 @@ impl TxnMocker {
     fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
 
-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
+        let node_info = self.client.node_info()?;
+        let expiration_timestamp = if node_info.net.is_test_or_dev() {
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+        } else {
+            get_current_timestamp()
+        };
+
         let mut account_list = Vec::new();
         let mut i = 0;
         while i < account_num {
@@ -425,10 +434,7 @@ impl TxnMocker {
                 info!("error: {:?}", result);
             }
         }
-        info!(
-            "{:?} accounts are created successfully.",
-            Vec::len(&account_list)
-        );
+        info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)
     }
 
@@ -492,7 +498,13 @@ impl TxnMocker {
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
+        let node_info = self.client.node_info()?;
+        let expiration_timestamp = if node_info.net.is_test_or_dev() {
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+        } else {
+            get_current_timestamp()
+        };
+
         info!("start stress......");
         if long_term {
             // running in long term, we must deposit STC to accounts frequently
@@ -524,7 +536,7 @@ impl TxnMocker {
                             }
                             Err(_) => {
                                 info!(
-                                    "Submit txn failed. error: {:?}. Try again after 500ms.",
+                                    "Submit txn failed with error: {:?}. Try again after 500ms.",
                                     result
                                 );
                                 std::thread::sleep(Duration::from_millis(500));
