@@ -28,3 +28,4 @@ jobs:
           repository: starcoinorg/starcoin/starcoin
           dockerfile: docker/Dockerfile
           tag_with_ref: true
+
