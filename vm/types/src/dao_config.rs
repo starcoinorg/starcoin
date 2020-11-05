@@ -1,3 +1,5 @@
+use crate::account_config::stc_type_tag;
+use crate::language_storage::TypeTag;
 use crate::on_chain_config::OnChainConfig;
 use serde::{Deserialize, Serialize};
 
@@ -17,4 +19,10 @@ pub struct DaoConfig {
 
 impl OnChainConfig for DaoConfig {
     const IDENTIFIER: &'static str = "DaoConfig";
+
+    fn type_params() -> Box<Vec<TypeTag>> {
+        let mut params = vec![];
+        params.push(stc_type_tag());
+        Box::new(params)
+    }
 }

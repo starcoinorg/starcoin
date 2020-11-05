@@ -30,24 +30,18 @@ pub use crate::on_chain_resource::GlobalTimeOnChain;
 /// To register an on-chain config in Rust:
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config
 /// 2. Add the config's `ConfigID` to `ON_CHAIN_CONFIG_REGISTRY`
-#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
-pub struct ConfigID(&'static str, &'static str);
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct ConfigID(&'static str, &'static str, Box<Vec<TypeTag>>);
 
 impl ConfigID {
     pub fn access_path(self) -> AccessPath {
         access_path_for_config(
             AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
             Identifier::new(self.1).expect("failed to get Identifier"),
+            self.2.to_vec(),
         )
     }
 }
-
-/// State sync will panic if the value of any config in this registry is uninitialized
-pub const ON_CHAIN_CONFIG_REGISTRY: &[ConfigID] = &[
-    VMConfig::CONFIG_ID,
-    Version::CONFIG_ID,
-    ConsensusConfig::CONFIG_ID,
-];
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OnChainConfigPayload {
@@ -67,7 +61,7 @@ impl OnChainConfigPayload {
     pub fn get<T: OnChainConfig>(&self) -> Result<T> {
         let bytes = self
             .configs
-            .get(&T::CONFIG_ID)
+            .get(&T::config_id())
             .ok_or_else(|| format_err!("[on-chain cfg] config not in payload"))?;
         T::deserialize_into_config(bytes)
     }
@@ -87,7 +81,6 @@ pub trait ConfigStorage {
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
     const ADDRESS: &'static str = "0x1";
     const IDENTIFIER: &'static str;
-    const CONFIG_ID: ConfigID = ConfigID(Self::ADDRESS, Self::IDENTIFIER);
 
     // Single-round LCS deserialization from bytes to `Self`
     // This is the expected deserialization pattern for most Rust representations,
@@ -114,9 +107,17 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
         T: ConfigStorage,
     {
         storage
-            .fetch_config(Self::CONFIG_ID.access_path())
+            .fetch_config(Self::config_id().access_path())
             .map(|bytes| Self::deserialize_into_config(&bytes))
             .transpose()
+    }
+
+    fn type_params() -> Box<Vec<TypeTag>> {
+        Box::new(vec![])
+    }
+
+    fn config_id() -> ConfigID {
+        ConfigID(Self::ADDRESS, Self::IDENTIFIER, Self::type_params())
     }
 }
 
@@ -124,7 +125,11 @@ pub fn new_epoch_event_key() -> EventKey {
     EventKey::new_from_address(&genesis_address(), 0)
 }
 
-pub fn access_path_for_config(address: AccountAddress, config_name: Identifier) -> AccessPath {
+pub fn access_path_for_config(
+    address: AccountAddress,
+    config_name: Identifier,
+    params: Vec<TypeTag>,
+) -> AccessPath {
     AccessPath::new(
         address,
         AccessPath::resource_access_vec(&StructTag {
@@ -135,7 +140,7 @@ pub fn access_path_for_config(address: AccountAddress, config_name: Identifier) 
                 address: CORE_CODE_ADDRESS,
                 module: config_name.clone(),
                 name: config_name,
-                type_params: vec![],
+                type_params: params,
             })],
         }),
     )

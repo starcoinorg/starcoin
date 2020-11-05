@@ -60,7 +60,13 @@ fn sign_txn_by_rpc_client(
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
         .get_account_resource(account.address())?
-        .ok_or_else(|| format_err!("account must exist on chain."))?;
+        .ok_or_else(|| {
+            format_err!(
+                "account {:?} : {:?} must exist on chain.",
+                account_address,
+                account.address()
+            )
+        })?;
     let net = ChainNetwork::new_builtin(
         *cli_state
             .net()
@@ -87,7 +93,7 @@ pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     Ok(account_state_reader
         .get_on_chain_config::<DaoConfig>()?
-        .ok_or_else(|| format_err!("account must exist on chain."))?)
+        .ok_or_else(|| format_err!("DaoConfig not exist on chain."))?)
 }
 
 #[cfg(test)]
