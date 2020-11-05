@@ -43,9 +43,15 @@ enum DataType {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-struct BlockIdAndNumber {
+pub struct BlockIdAndNumber {
     pub id: HashValue,
     pub number: BlockNumber,
+}
+
+impl BlockIdAndNumber {
+    pub fn new(id: HashValue, number: BlockNumber) -> Self {
+        Self { id, number }
+    }
 }
 
 #[derive(Debug, Message)]

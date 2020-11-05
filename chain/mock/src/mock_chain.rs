@@ -47,6 +47,10 @@ impl MockChain {
         })
     }
 
+    pub fn net(&self) -> &ChainNetwork {
+        &self.net
+    }
+
     pub fn head(&self) -> &BlockChain {
         &self.head
     }
@@ -58,6 +62,15 @@ impl MockChain {
         };
         assert!(self.head.exist_block(block_id));
         BlockChain::new(self.head.time_service(), block_id, self.head.get_storage())
+    }
+
+    pub fn fork(&self, head_id: Option<HashValue>) -> Result<MockChain> {
+        let chain = self.fork_new_branch(head_id)?;
+        Ok(Self {
+            head: chain,
+            net: self.net.clone(),
+            miner: AccountInfo::random(),
+        })
     }
 
     pub fn produce(&self) -> Result<Block> {

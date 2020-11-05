@@ -370,7 +370,9 @@ impl DownloadService {
                 let peer_selector = network
                     .peer_selector()
                     .await?
-                    .filter_by_block_number(latest_number);
+                    .selector()
+                    .filter_by_block_number(latest_number)
+                    .into_selector();
                 let verified_rpc_client =
                     VerifiedRpcClient::new_with_client(peer_selector, rpc_client.clone());
                 let block_sync_task = BlockSyncTaskActor::launch(
@@ -492,7 +494,9 @@ impl DownloadService {
                         let peer_selector = network
                             .peer_selector()
                             .await?
-                            .filter_by_block_number(end_number);
+                            .selector()
+                            .filter_by_block_number(end_number)
+                            .into_selector();
                         let verified_rpc_client =
                             VerifiedRpcClient::new_with_client(peer_selector, rpc_client.clone());
                         let block_sync_task = BlockSyncTaskActor::launch(

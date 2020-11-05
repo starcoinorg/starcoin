@@ -14,6 +14,7 @@ members = [
     "commons/service-registry",
     "commons/timeout-join-handler",
     "commons/serde-helpers",
+    "commons/stream-task",
     "types",
     "types/uint",
     "core/traits",

@@ -7,15 +7,15 @@ use logger::prelude::*;
 use network_api::PeerProvider;
 use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_sync::task::BlockAccumulatorSyncTask;
+use starcoin_sync::tasks::{AccumulatorCollector, BlockAccumulatorSyncTask};
 use starcoin_sync::verified_rpc_client::VerifiedRpcClient;
 use std::thread::sleep;
 use std::{sync::Arc, time::Duration};
+use stream_task::{Generator, TaskEventCounterHandle, TaskGenerator};
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
-#[ignore]
-#[stest::test(timeout = 120)]
+#[stest::test(timeout = 180)]
 pub fn test_accumulator_sync() {
     let first_config = Arc::new(NodeConfig::random_for_test());
     info!(
@@ -61,17 +61,21 @@ pub fn test_accumulator_sync() {
 
     let peer_selector = block_on(async { network.peer_selector().await }).unwrap();
     let client = VerifiedRpcClient::new(peer_selector, network);
-    let sync_task = BlockAccumulatorSyncTask::new(
-        store,
-        accumulator.get_info(),
-        block_info1.block_accumulator_info.clone(),
-        client,
-        2,
-    );
-    let task_handle = async_std::task::spawn(sync_task);
-    let accumulator_info = block_on(async { task_handle.await }).unwrap();
-    assert_eq!(accumulator_info, block_info1.block_accumulator_info);
 
+    let current_info = accumulator.get_info();
+    let target_info = block_info1.block_accumulator_info;
+    let task_state =
+        BlockAccumulatorSyncTask::new(current_info.num_leaves, target_info.clone(), client, 3);
+    let collector = AccumulatorCollector::new(store, current_info, target_info.clone());
+
+    let event_handle = Arc::new(TaskEventCounterHandle::new());
+    let sync_task =
+        TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
+
+    let accumulator_info = block_on(async { sync_task.await }).unwrap().get_info();
+    assert_eq!(accumulator_info, target_info);
+    let report = event_handle.get_reports().pop().unwrap();
+    debug!("report: {}", report);
     second_node.stop().unwrap();
     first_node.stop().unwrap();
 }
