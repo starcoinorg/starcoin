@@ -3,7 +3,7 @@
 
 use crate::account_config::constants::CORE_CODE_ADDRESS;
 use crate::identifier::Identifier;
-use crate::on_chain_config::OnChainConfig;
+use crate::on_chain_config::{empty_type_params, OnChainConfig};
 use move_core_types::language_storage::StructTag;
 use move_core_types::language_storage::TypeTag;
 use once_cell::sync::Lazy;
@@ -30,7 +30,13 @@ pub struct ConsensusConfig {
 }
 
 impl OnChainConfig for ConsensusConfig {
-    const IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+
+    #[allow(clippy::box_vec)]
+    fn type_params() -> Box<Vec<TypeTag>> {
+        empty_type_params()
+    }
 }
 
 pub fn consensus_config_type_tag() -> TypeTag {

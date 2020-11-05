@@ -31,14 +31,16 @@ pub use crate::on_chain_resource::GlobalTimeOnChain;
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config
 /// 2. Add the config's `ConfigID` to `ON_CHAIN_CONFIG_REGISTRY`
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct ConfigID(&'static str, &'static str, Box<Vec<TypeTag>>);
+#[allow(clippy::box_vec)]
+pub struct ConfigID(&'static str, &'static str, &'static str, Box<Vec<TypeTag>>);
 
 impl ConfigID {
     pub fn access_path(self) -> AccessPath {
         access_path_for_config(
             AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
             Identifier::new(self.1).expect("failed to get Identifier"),
-            self.2.to_vec(),
+            Identifier::new(self.2).expect("failed to get Identifier"),
+            self.3.to_vec(),
         )
     }
 }
@@ -71,6 +73,11 @@ impl OnChainConfigPayload {
     }
 }
 
+#[allow(clippy::box_vec)]
+pub fn empty_type_params() -> Box<Vec<TypeTag>> {
+    Box::new(vec![])
+}
+
 /// Trait to be implemented by a storage type from which to read on-chain configs
 pub trait ConfigStorage {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>>;
@@ -80,7 +87,8 @@ pub trait ConfigStorage {
 /// that is stored in storage as a serialized byte array
 pub trait OnChainConfig: Send + Sync + DeserializeOwned {
     const ADDRESS: &'static str = "0x1";
-    const IDENTIFIER: &'static str;
+    const MODULE_IDENTIFIER: &'static str;
+    const CONF_IDENTIFIER: &'static str;
 
     // Single-round LCS deserialization from bytes to `Self`
     // This is the expected deserialization pattern for most Rust representations,
@@ -112,12 +120,16 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
             .transpose()
     }
 
-    fn type_params() -> Box<Vec<TypeTag>> {
-        Box::new(vec![])
-    }
+    #[allow(clippy::box_vec)]
+    fn type_params() -> Box<Vec<TypeTag>>;
 
     fn config_id() -> ConfigID {
-        ConfigID(Self::ADDRESS, Self::IDENTIFIER, Self::type_params())
+        ConfigID(
+            Self::ADDRESS,
+            Self::MODULE_IDENTIFIER,
+            Self::CONF_IDENTIFIER,
+            Self::type_params(),
+        )
     }
 }
 
@@ -127,6 +139,7 @@ pub fn new_epoch_event_key() -> EventKey {
 
 pub fn access_path_for_config(
     address: AccountAddress,
+    module_name: Identifier,
     config_name: Identifier,
     params: Vec<TypeTag>,
 ) -> AccessPath {
@@ -138,7 +151,7 @@ pub fn access_path_for_config(
             name: Identifier::new("Config").unwrap(),
             type_params: vec![TypeTag::Struct(StructTag {
                 address: CORE_CODE_ADDRESS,
-                module: config_name.clone(),
+                module: module_name,
                 name: config_name,
                 type_params: params,
             })],

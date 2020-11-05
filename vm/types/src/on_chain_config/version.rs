@@ -1,7 +1,7 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::on_chain_config::OnChainConfig;
+use crate::on_chain_config::{empty_type_params, OnChainConfig};
 use move_core_types::identifier::Identifier;
 use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
 use once_cell::sync::Lazy;
@@ -18,7 +18,13 @@ pub struct Version {
 }
 
 impl OnChainConfig for Version {
-    const IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+
+    #[allow(clippy::box_vec)]
+    fn type_params() -> Box<Vec<TypeTag>> {
+        empty_type_params()
+    }
 }
 
 pub fn version_config_type_tag() -> TypeTag {
