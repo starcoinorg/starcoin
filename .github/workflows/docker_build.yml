@@ -4,7 +4,7 @@ on:
   push:
     # only build master
     branches:
-      - 'master'
+      - 'docker_build2'
     paths-ignore:
       - '**.md'
   release:
