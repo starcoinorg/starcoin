@@ -59,7 +59,7 @@ features = ["identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-std"
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}
-async-std = "1.6"
+async-std = "1.7"
 tempfile = "3.1.0"
 libp2p = { version = "0.22.0", default-features = false, features = ["secio"] }
 
