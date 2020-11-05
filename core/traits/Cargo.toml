@@ -14,6 +14,6 @@ starcoin-types = { path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-state-api = { path = "../../state/api"}
 starcoin-config = { path = "../../config" }
-thiserror = "1.0.21"
+thiserror = "1.0.22"
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-chain-api = { path = "../../chain/api" }

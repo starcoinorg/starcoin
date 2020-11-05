@@ -22,7 +22,7 @@ rand = "0.7.3"
 rand_core = { version = "0.5.1", default-features = false }
 ref-cast = "1.0"
 serde = { version = "1.0", default-features = false }
-thiserror = "1.0.21"
+thiserror = "1.0.22"
 tiny-keccak = { version = "1.5.0", default-features = false }
 num_enum = "0.5.1"
 actix = "0.10.0"
