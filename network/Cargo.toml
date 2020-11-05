@@ -47,7 +47,7 @@ slog_derive = "0.2.0"
 derive_more = "0.99.11"
 async-trait = "0.1.41"
 stest = { path = "../commons/stest" }
-async-std = "1.6"
+async-std = "1.7"
 
 prometheus = "0.10"
 

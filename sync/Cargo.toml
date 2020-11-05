@@ -10,7 +10,7 @@ anyhow = "1.0.34"
 actix = "0.10.0"
 rand = "0.7.3"
 pin-utils = "0.1.0"
-async-std = "1.6"
+async-std = "1.7"
 config = {path = "../config", package="starcoin-config"}
 network = { path = "../network", package = "starcoin-network" }
 starcoin-types = { path = "../types" }
