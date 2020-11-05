@@ -36,10 +36,9 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_sync::download::DownloadService;
+use starcoin_sync::block_connector::BlockConnectorService;
+use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_sync::SyncService;
-use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -242,8 +241,11 @@ impl NodeService {
         );
 
         registry.register::<TxnSyncService>().await?;
-        registry.register::<DownloadService>().await?;
-        registry.register::<SyncService>().await?;
+        //registry.register::<DownloadService>().await?;
+        //registry.register::<SyncService>().await?;
+
+        registry.register::<BlockConnectorService>().await?;
+        registry.register::<SyncService2>().await?;
 
         delay_for(Duration::from_secs(1)).await;
 
@@ -262,7 +264,7 @@ impl NodeService {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
 
-        bus.broadcast(StartSyncTxnEvent)?;
+        //bus.broadcast(StartSyncTxnEvent)?;
         bus.broadcast(SystemStarted)?;
 
         registry.register::<OndemandPacemaker>().await?;

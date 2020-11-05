@@ -13,7 +13,7 @@ use thiserror::Error;
 
 #[derive(Clone, Copy, Debug)]
 pub enum CollectorState {
-    /// Collector is enough, do not feed more item.
+    /// Collector is enough, do not feed more item, finish task.
     Enough,
     /// Collector is need more item.
     Need,
@@ -23,6 +23,9 @@ pub trait TaskResultCollector<Item>: std::marker::Send + Unpin {
     type Output: std::marker::Send;
 
     fn collect(self: Pin<&mut Self>, item: Item) -> Result<CollectorState>;
+    fn flush(self: Pin<&mut Self>) -> Result<CollectorState> {
+        Ok(CollectorState::Need)
+    }
     fn finish(self) -> Result<Self::Output>;
 }
 
@@ -121,6 +124,20 @@ impl<C> FutureTaskSink<C> {
     pub fn into_collector(self) -> C {
         self.collector
     }
+
+    fn flush_inner<Item>(self: Pin<&mut Self>) -> Poll<Result<(), SinkError>>
+    where
+        C: TaskResultCollector<Item>,
+    {
+        let this = self.project();
+        match this.collector.flush() {
+            Err(e) => Poll::Ready(Err(SinkError::CollectorError(e))),
+            Ok(state) => match state {
+                CollectorState::Need => Poll::Ready(Ok(())),
+                CollectorState::Enough => Poll::Ready(Err(SinkError::CollectorEnough)),
+            },
+        }
+    }
 }
 
 impl<C, Item> Sink<Item> for FutureTaskSink<C>
@@ -147,10 +164,10 @@ where
     }
 
     fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
+        self.flush_inner()
     }
 
     fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
+        self.flush_inner()
     }
 }

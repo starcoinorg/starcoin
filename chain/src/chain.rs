@@ -670,9 +670,10 @@ impl BlockChain {
             verify_block!(
                 VerifyBlockField::Header,
                 current_head_id == parent_hash,
-                "Invalid block: Parent id mismatch, expect:{}, got: {}.",
-                current_head_id,
-                parent_hash
+                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                current_head_id.to_hex(),
+                parent_hash.to_hex(),
+                header.number
             );
         }
         // do not check genesis block timestamp check

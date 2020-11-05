@@ -51,8 +51,6 @@ impl Display for VerifyBlockField {
 
 #[derive(Error, Debug)]
 pub enum ConnectBlockError {
-    #[error("DuplicateConn block: {:?} ", .0.header())]
-    DuplicateConn(Box<Block>),
     #[error("Future block: {:?} ", .0.header())]
     FutureBlock(Box<Block>),
     #[error("Block {0:?} 's parent not exist")]

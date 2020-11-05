@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::block_sync::BlockIdAndNumber;
 use crate::tasks::BlockIdFetcher;
 use anyhow::{ensure, Result};
 use futures::future::BoxFuture;
@@ -82,34 +83,41 @@ impl TaskState for BlockAccumulatorSyncTask {
 
 pub struct AccumulatorCollector {
     accumulator: MerkleAccumulator,
+    ancestor: BlockIdAndNumber,
     target: AccumulatorInfo,
 }
 
 impl AccumulatorCollector {
     pub fn new(
         store: Arc<dyn AccumulatorTreeStore>,
+        ancestor: BlockIdAndNumber,
         start: AccumulatorInfo,
         target: AccumulatorInfo,
     ) -> Self {
         let accumulator = MerkleAccumulator::new_with_info(start, store);
         Self {
             accumulator,
+            ancestor,
             target,
         }
     }
 }
 
 impl TaskResultCollector<HashValue> for AccumulatorCollector {
-    type Output = MerkleAccumulator;
+    type Output = (BlockIdAndNumber, MerkleAccumulator);
 
     fn collect(self: Pin<&mut Self>, item: HashValue) -> Result<CollectorState> {
         self.accumulator.append(&[item])?;
-        self.accumulator.flush()?;
         if self.accumulator.num_leaves() == self.target.num_leaves {
             Ok(CollectorState::Enough)
         } else {
             Ok(CollectorState::Need)
         }
+    }
+
+    fn flush(self: Pin<&mut Self>) -> Result<CollectorState> {
+        self.accumulator.flush()?;
+        Ok(CollectorState::Need)
     }
 
     fn finish(self) -> Result<Self::Output> {
@@ -120,7 +128,7 @@ impl TaskResultCollector<HashValue> for AccumulatorCollector {
             self.target,
             info
         );
-        Ok(self.accumulator)
+        Ok((self.ancestor, self.accumulator))
     }
 }
 
@@ -152,11 +160,12 @@ mod tests {
         let store2 = MockAccumulatorStore::copy_from(store.as_ref());
 
         let task_state = BlockAccumulatorSyncTask::new(info0.num_leaves, info1.clone(), fetcher, 7);
-        let collector = AccumulatorCollector::new(Arc::new(store2), info0, info1.clone());
+        let ancestor = BlockIdAndNumber::new(HashValue::random(), info0.num_leaves - 1);
+        let collector = AccumulatorCollector::new(Arc::new(store2), ancestor, info0, info1.clone());
         let event_handle = Arc::new(TaskEventCounterHandle::new());
         let sync_task =
             TaskGenerator::new(task_state, 5, 3, 1, collector, event_handle.clone()).generate();
-        let info2 = sync_task.await?.get_info();
+        let info2 = sync_task.await?.1.get_info();
         assert_eq!(info1, info2);
         let report = event_handle.get_reports().pop().unwrap();
         debug!("report: {}", report);

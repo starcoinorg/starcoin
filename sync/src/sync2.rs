@@ -1,20 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{full_sync_task, BlockCollector, SyncTarget};
+use crate::block_connector::{BlockConnectorService, ConnectBlockRequest};
+use crate::tasks::{full_sync_task, SyncTarget};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
-use chain::BlockChain;
 use config::NodeConfig;
 use futures::FutureExt;
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network::PeerEvent;
 use network_api::{PeerProvider, PeerSelector};
-use starcoin_chain_api::ChainReader;
-use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
+use starcoin_chain_api::{ChainReader, ConnectBlockError};
+use starcoin_service_registry::bus::Bus;
+use starcoin_service_registry::{
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
+use starcoin_types::system_events::{SyncBegin, SyncDone};
 use std::sync::Arc;
 use stream_task::{TaskEventCounterHandle, TaskHandle};
 
@@ -29,6 +33,7 @@ pub struct SyncService2 {
     config: Arc<NodeConfig>,
     network: NetworkAsyncService,
     storage: Arc<Storage>,
+    connector_service: ServiceRef<BlockConnectorService>,
     task_handle: Option<SyncTaskHandle>,
 }
 
@@ -37,11 +42,13 @@ impl SyncService2 {
         config: Arc<NodeConfig>,
         network: NetworkAsyncService,
         storage: Arc<Storage>,
+        connector_service: ServiceRef<BlockConnectorService>,
     ) -> Self {
         Self {
             config,
             network,
             storage,
+            connector_service,
             task_handle: None,
         }
     }
@@ -55,7 +62,7 @@ impl SyncService2 {
             } else if task_running && !force {
                 debug!("Sync task is running");
                 if let Some(report) = task_handle.task_event_handle.get_report() {
-                    info!("{}", report);
+                    info!("[sync]{}", report);
                 }
                 return Ok(());
             }
@@ -92,20 +99,15 @@ impl SyncService2 {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let current_block_id = startup_info.master;
-        let storage = self.storage.clone();
         let network = self.network.clone();
         let peer_selector = PeerSelector::new(target.peers.clone());
         let rpc_client = VerifiedRpcClient::new(peer_selector, network);
-        let block_chain = BlockChain::new(
-            self.config.net().time_service(),
-            current_block_id,
-            self.storage.clone(),
-        )?;
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
             target.block_info.clone(),
-            storage,
-            BlockCollector::new(block_chain),
+            self.config.net().time_service(),
+            self.storage.clone(),
+            self.connector_service.clone(),
             rpc_client,
         )?;
         self.task_handle = Some(SyncTaskHandle {
@@ -113,13 +115,18 @@ impl SyncService2 {
             task_handle,
             task_event_handle,
         });
-        ctx.spawn(fut.then(|result| async {
+        ctx.broadcast(SyncBegin);
+        let bus = ctx.bus_ref().clone();
+        ctx.spawn(fut.then(|result| async move {
             //TODO process sync result;
             match result {
                 Ok(chain) => info!("Sync to latest block: {:?}", chain.current_header()),
                 Err(err) => {
                     error!("Sync task error: {:?}", err);
                 }
+            }
+            if let Err(e) = bus.broadcast(SyncDone) {
+                error!("Broadcast SyncDone event error: {:?}", e);
             }
         }));
         Ok(())
@@ -131,8 +138,9 @@ impl ServiceFactory<Self> for SyncService2 {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let connect_service = ctx.service_ref::<BlockConnectorService>()?;
         //let peer_id = node_config.network.self_peer_id()?;
-        Ok(Self::new(config, network, storage))
+        Ok(Self::new(config, network, storage, connect_service.clone()))
     }
 }
 
@@ -151,23 +159,27 @@ impl ActorService for SyncService2 {
 }
 
 impl EventHandler<Self, PeerEvent> for SyncService2 {
-    fn handle_event(&mut self, msg: PeerEvent, _ctx: &mut ServiceContext<SyncService2>) {
+    fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<SyncService2>) {
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("connect new peer:{:?}", open_peer_id);
-                //TODO enable auto check after sync refactor.
-                // let Err(e) = self.check_sync(false, ctx){
-                //     error!("Check sync error: {:?}",e);
-                // };
+                if let Err(e) = self.check_sync(false, ctx) {
+                    error!("Check sync error: {:?}", e);
+                };
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("disconnect peer: {:?}", close_peer_id);
-                if let Some(task_handle) = self.task_handle.as_ref() {
+                if let Some(task_handle) = self.task_handle.as_mut() {
                     if task_handle.target.peers.len() == 1
                         && task_handle.target.peers[0].peer_id == close_peer_id
                     {
                         task_handle.task_handle.cancel();
                         info!("Cancel task handle because peer {} closed", close_peer_id);
+                    } else {
+                        task_handle
+                            .target
+                            .peers
+                            .retain(|peers| peers.peer_id != close_peer_id);
                     }
                 }
             }
@@ -176,7 +188,40 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
 }
 
 impl EventHandler<Self, PeerNewBlock> for SyncService2 {
-    fn handle_event(&mut self, _msg: PeerNewBlock, _ctx: &mut ServiceContext<SyncService2>) {}
+    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<SyncService2>) {
+        let self_ref = ctx.self_ref();
+        let connect_service = self.connector_service.clone();
+        let block = msg.get_block();
+        let id = block.id();
+        let peer_id = msg.get_peer_id();
+        let fut = async move {
+            if let Err(e) = connect_service.send(ConnectBlockRequest { block }).await? {
+                match e.downcast::<ConnectBlockError>() {
+                    Ok(connect_error) => {
+                        match connect_error {
+                            ConnectBlockError::FutureBlock(_) => {
+                                //TODO cache future block
+                                self_ref.notify(CheckSyncEvent { force: false })?;
+                            }
+                            e => {
+                                return Err(e.into());
+                            }
+                        }
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+            Ok(())
+        };
+        ctx.spawn(fut.then(move |result| async move {
+            if let Err(e) = result {
+                error!(
+                    "Connect block {:?} from peer {:?} error: {:?}",
+                    id, peer_id, e
+                );
+            }
+        }));
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -193,5 +238,18 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
                 e, target_block_header
             );
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CheckSyncEvent {
+    force: bool,
+}
+
+impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
+    fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<SyncService2>) {
+        if let Err(e) = self.check_sync(msg.force, ctx) {
+            error!("Check sync error: {:?}", e);
+        };
     }
 }

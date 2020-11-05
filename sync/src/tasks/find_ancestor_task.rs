@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(ancestor.number, info0.num_leaves - 1);
         let report = event_handle.get_reports().pop().unwrap();
         debug!("report: {}", report);
-        assert_eq!(report.item, 100 + 1);
+        assert_eq!(report.processed_items, 100 + 1);
         Ok(())
     }
 }

@@ -19,6 +19,7 @@ use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
+use types::system_events::{SyncBegin, SyncDone};
 
 pub use pool::TxStatus;
 pub use tx_pool_service_impl::TxPoolService;
@@ -33,6 +34,7 @@ mod tx_pool_service_impl;
 #[derive(Clone)]
 pub struct TxPoolActorService {
     inner: Inner,
+    process_broadcast_txn: bool,
 }
 
 impl std::fmt::Debug for TxPoolActorService {
@@ -43,7 +45,10 @@ impl std::fmt::Debug for TxPoolActorService {
 
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            process_broadcast_txn: false,
+        }
     }
 }
 
@@ -74,13 +79,29 @@ impl ServiceFactory<Self> for TxPoolActorService {
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<PeerTransactions>();
+        ctx.subscribe::<SyncBegin>();
+        ctx.subscribe::<SyncDone>();
         ctx.add_stream(self.inner.subscribe_txns());
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<SyncBegin>();
+        ctx.unsubscribe::<SyncDone>();
         ctx.unsubscribe::<PeerTransactions>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, SyncBegin> for TxPoolActorService {
+    fn handle_event(&mut self, _msg: SyncBegin, _ctx: &mut ServiceContext<TxPoolActorService>) {
+        self.process_broadcast_txn = false;
+    }
+}
+
+impl EventHandler<Self, SyncDone> for TxPoolActorService {
+    fn handle_event(&mut self, _msg: SyncDone, _ctx: &mut ServiceContext<TxPoolActorService>) {
+        self.process_broadcast_txn = true;
     }
 }
 
@@ -132,9 +153,13 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
 
 impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
-        // JUST need to keep at most once delivery.
-        let txns = msg.peer_transactions();
-        let _ = self.inner.import_txns(txns);
+        if self.process_broadcast_txn {
+            // JUST need to keep at most once delivery.
+            let txns = msg.peer_transactions();
+            let _ = self.inner.import_txns(txns);
+        } else {
+            debug!("TxPoolActorService's process_broadcast_txn is false, ignore PeerTransactions message.");
+        }
     }
 }
 

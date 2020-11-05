@@ -1,12 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{BlockFetcher, BlockIdFetcher};
+use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher};
 use anyhow::{format_err, Result};
+use async_std::task::JoinHandle;
+use futures::channel::mpsc::UnboundedReceiver;
 use futures::future::BoxFuture;
-use futures::FutureExt;
+use futures::{FutureExt, StreamExt};
 use futures_timer::Delay;
-use logger::prelude::*;
 use rand::Rng;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ChainReader;
@@ -14,11 +15,8 @@ use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::Block;
 use starcoin_vm_types::genesis_config::ChainNetwork;
-use starcoin_vm_types::on_chain_resource::GlobalTimeOnChain;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
-use stream_task::{CollectorState, TaskResultCollector};
 
 #[derive(Clone)]
 pub struct MockBlockIdFetcher {
@@ -99,6 +97,26 @@ impl SyncNodeMocker {
         }
         Ok(())
     }
+
+    pub fn select_head(&mut self, block: Block) -> Result<()> {
+        self.chain_mocker.select_head(block)
+    }
+
+    pub async fn process_block_connect_event(
+        self,
+        receiver: UnboundedReceiver<BlockConnectedEvent>,
+    ) -> JoinHandle<Self> {
+        let fut = async move {
+            let this = receiver
+                .fold(self, |mut this, event| async move {
+                    this.select_head(event.block).unwrap();
+                    this
+                })
+                .await;
+            this
+        };
+        async_std::task::spawn(fut)
+    }
 }
 
 impl BlockIdFetcher for SyncNodeMocker {
@@ -134,27 +152,5 @@ impl BlockFetcher for SyncNodeMocker {
             result
         }
         .boxed()
-    }
-}
-
-impl TaskResultCollector<Block> for SyncNodeMocker {
-    type Output = Self;
-
-    fn collect(mut self: Pin<&mut Self>, item: Block) -> Result<CollectorState> {
-        debug!("Collect block: {}", item);
-        let timestamp = item.header().timestamp();
-        if self.chain().current_header().id() != item.header().parent_hash() {
-            self.chain_mocker = self.chain_mocker.fork(Some(item.header().parent_hash()))?;
-        }
-        self.chain_mocker.apply(item)?;
-        self.chain_mocker
-            .net()
-            .time_service()
-            .adjust(GlobalTimeOnChain::new(timestamp));
-        Ok(CollectorState::Need)
-    }
-
-    fn finish(self) -> Result<Self::Output> {
-        Ok(self)
     }
 }

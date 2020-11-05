@@ -1,10 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::MINER_METRICS;
+use crate::task::MintTask;
 use anyhow::{format_err, Result};
 use chain::BlockChain;
 use consensus::Consensus;
 use crypto::HashValue;
+use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
@@ -13,6 +16,8 @@ use starcoin_service_registry::{
 use starcoin_storage::Storage;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::ChainReader;
+use types::system_events::{SyncBegin, SyncDone};
 
 mod create_block_template;
 pub mod headblock_pacemaker;
@@ -21,12 +26,10 @@ mod metrics;
 pub mod ondemand_pacemaker;
 pub mod task;
 
-use crate::metrics::MINER_METRICS;
-use crate::task::MintTask;
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
-use futures::executor::block_on;
+
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
-use traits::ChainReader;
+
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -34,6 +37,7 @@ pub struct MinerService {
     storage: Arc<Storage>,
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
+    generate_block: bool,
 }
 
 impl ServiceFactory<MinerService> for MinerService {
@@ -47,6 +51,7 @@ impl ServiceFactory<MinerService> for MinerService {
             storage,
             current_task: None,
             create_block_template_service,
+            generate_block: false,
         })
     }
 }
@@ -55,12 +60,16 @@ impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
         ctx.subscribe::<SubmitSealEvent>();
+        ctx.subscribe::<SyncBegin>();
+        ctx.subscribe::<SyncDone>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
         ctx.unsubscribe::<SubmitSealEvent>();
+        ctx.unsubscribe::<SyncBegin>();
+        ctx.unsubscribe::<SyncDone>();
         Ok(())
     }
 }
@@ -147,9 +156,13 @@ impl MinerService {
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
-        info!("Handle GenerateBlockEvent:{:?}", event);
+        if !self.generate_block {
+            debug!("Ignore generate block event, wait sync finished.");
+            return;
+        }
+        debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.is_minting() {
-            info!("Miner has mint job so just ignore this event.");
+            debug!("Miner has mint job so just ignore this event.");
             return;
         }
         if let Err(err) = self.dispatch_task(ctx) {
@@ -161,5 +174,18 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 ctx.notify(GenerateBlockEvent::new(false));
             });
         }
+    }
+}
+
+impl EventHandler<Self, SyncBegin> for MinerService {
+    fn handle_event(&mut self, _msg: SyncBegin, _ctx: &mut ServiceContext<MinerService>) {
+        self.generate_block = false;
+    }
+}
+
+impl EventHandler<Self, SyncDone> for MinerService {
+    fn handle_event(&mut self, _msg: SyncDone, ctx: &mut ServiceContext<MinerService>) {
+        self.generate_block = true;
+        ctx.notify(GenerateBlockEvent::new(false));
     }
 }
