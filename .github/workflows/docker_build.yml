@@ -25,5 +25,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GIT_PACKAGE_TOKEN }}
           registry: docker.pkg.github.com
+          repository: starcoinorg/starcoin/starcoin
           dockerfile: docker/Dockerfile
           tag_with_ref: true
