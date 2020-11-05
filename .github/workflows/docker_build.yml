@@ -7,8 +7,6 @@ on:
       - 'docker_build2'
     paths-ignore:
       - '**.md'
-  release:
-    types: [ published ]
 
 jobs:
   build-starcoin-docker:
@@ -28,4 +26,3 @@ jobs:
           repository: starcoinorg/starcoin/starcoin
           dockerfile: docker/Dockerfile
           tag_with_ref: true
-
