@@ -14,7 +14,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
-use starcoin_types::transaction::helpers::get_current_timestamp;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -256,6 +255,13 @@ impl TxnMocker {
 }
 
 impl TxnMocker {
+    fn fetch_expiration_time(&mut self) -> u64 {
+        let node_info = self
+            .client
+            .node_info()
+            .expect("node_info() should not failed");
+        node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+    }
     fn recheck_sequence_number(&mut self) -> Result<()> {
         let seq_number_in_pool = self
             .client
@@ -292,13 +298,7 @@ impl TxnMocker {
     }
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
-        let node_info = self.client.node_info()?;
-        let expiration_timestamp = if node_info.net.is_test_or_dev() {
-            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
-        } else {
-            get_current_timestamp()
-        };
-
+        let expiration_timestamp = self.fetch_expiration_time();
         let raw_txn = self
             .generator
             .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
@@ -400,14 +400,7 @@ impl TxnMocker {
 
     fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
-
-        let node_info = self.client.node_info()?;
-        let expiration_timestamp = if node_info.net.is_test_or_dev() {
-            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
-        } else {
-            get_current_timestamp()
-        };
-
+        let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
         while i < account_num {
@@ -498,13 +491,7 @@ impl TxnMocker {
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
-        let node_info = self.client.node_info()?;
-        let expiration_timestamp = if node_info.net.is_test_or_dev() {
-            node_info.now_seconds + DEFAULT_EXPIRATION_TIME
-        } else {
-            get_current_timestamp()
-        };
-
+        let expiration_timestamp = self.fetch_expiration_time();
         info!("start stress......");
         if long_term {
             // running in long term, we must deposit STC to accounts frequently
