@@ -126,8 +126,6 @@ script {
         let association = Account::create_genesis_account(
             CoreAddresses::ASSOCIATION_ROOT_ADDRESS(),
         );
-        //Grant stdlib maintainer to association
-        PackageTxnManager::grant_maintainer(&genesis_account, Signer::address_of(&association));
         // stdlib use two phase upgrade strategy.
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,

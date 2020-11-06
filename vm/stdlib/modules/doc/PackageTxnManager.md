@@ -8,7 +8,6 @@
 -  [Struct `UpgradePlan`](#0x1_PackageTxnManager_UpgradePlan)
 -  [Resource `UpgradePlanCapability`](#0x1_PackageTxnManager_UpgradePlanCapability)
 -  [Resource `ModuleUpgradeStrategy`](#0x1_PackageTxnManager_ModuleUpgradeStrategy)
--  [Resource `ModuleMaintainer`](#0x1_PackageTxnManager_ModuleMaintainer)
 -  [Resource `TwoPhaseUpgrade`](#0x1_PackageTxnManager_TwoPhaseUpgrade)
 -  [Struct `UpgradeEvent`](#0x1_PackageTxnManager_UpgradeEvent)
 -  [Constants](#@Constants_0)
@@ -16,7 +15,6 @@
 -  [Function `get_strategy_two_phase`](#0x1_PackageTxnManager_get_strategy_two_phase)
 -  [Function `get_strategy_new_module`](#0x1_PackageTxnManager_get_strategy_new_module)
 -  [Function `get_strategy_freeze`](#0x1_PackageTxnManager_get_strategy_freeze)
--  [Function `grant_maintainer`](#0x1_PackageTxnManager_grant_maintainer)
 -  [Function `update_module_upgrade_strategy`](#0x1_PackageTxnManager_update_module_upgrade_strategy)
 -  [Function `account_address`](#0x1_PackageTxnManager_account_address)
 -  [Function `destroy_upgrade_plan_cap`](#0x1_PackageTxnManager_destroy_upgrade_plan_cap)
@@ -25,7 +23,6 @@
 -  [Function `submit_upgrade_plan_with_cap`](#0x1_PackageTxnManager_submit_upgrade_plan_with_cap)
 -  [Function `cancel_upgrade_plan`](#0x1_PackageTxnManager_cancel_upgrade_plan)
 -  [Function `cancel_upgrade_plan_with_cap`](#0x1_PackageTxnManager_cancel_upgrade_plan_with_cap)
--  [Function `get_module_maintainer`](#0x1_PackageTxnManager_get_module_maintainer)
 -  [Function `get_module_upgrade_strategy`](#0x1_PackageTxnManager_get_module_upgrade_strategy)
 -  [Function `get_upgrade_plan`](#0x1_PackageTxnManager_get_upgrade_plan)
 -  [Function `check_package_txn`](#0x1_PackageTxnManager_check_package_txn)
@@ -33,7 +30,6 @@
 -  [Function `package_txn_prologue`](#0x1_PackageTxnManager_package_txn_prologue)
 -  [Function `package_txn_epilogue`](#0x1_PackageTxnManager_package_txn_epilogue)
 -  [Specification](#@Specification_1)
-    -  [Function `grant_maintainer`](#@Specification_1_grant_maintainer)
     -  [Function `update_module_upgrade_strategy`](#@Specification_1_update_module_upgrade_strategy)
     -  [Function `destroy_upgrade_plan_cap`](#@Specification_1_destroy_upgrade_plan_cap)
     -  [Function `extract_submit_upgrade_plan_cap`](#@Specification_1_extract_submit_upgrade_plan_cap)
@@ -41,7 +37,6 @@
     -  [Function `submit_upgrade_plan_with_cap`](#@Specification_1_submit_upgrade_plan_with_cap)
     -  [Function `cancel_upgrade_plan`](#@Specification_1_cancel_upgrade_plan)
     -  [Function `cancel_upgrade_plan_with_cap`](#@Specification_1_cancel_upgrade_plan_with_cap)
-    -  [Function `get_module_maintainer`](#@Specification_1_get_module_maintainer)
     -  [Function `get_module_upgrade_strategy`](#@Specification_1_get_module_upgrade_strategy)
     -  [Function `get_upgrade_plan`](#@Specification_1_get_upgrade_plan)
     -  [Function `check_package_txn`](#@Specification_1_check_package_txn)
@@ -155,33 +150,6 @@
 
 </details>
 
-<a name="0x1_PackageTxnManager_ModuleMaintainer"></a>
-
-## Resource `ModuleMaintainer`
-
-
-
-<pre><code><b>resource</b> <b>struct</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>
-</code></pre>
-
-
-
-<details>
-<summary>Fields</summary>
-
-
-<dl>
-<dt>
-<code>account_address: address</code>
-</dt>
-<dd>
-
-</dd>
-</dl>
-
-
-</details>
-
 <a name="0x1_PackageTxnManager_TwoPhaseUpgrade"></a>
 
 ## Resource `TwoPhaseUpgrade`
@@ -267,15 +235,6 @@
 
 
 <pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>: u64 = 103;
-</code></pre>
-
-
-
-<a name="0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER"></a>
-
-
-
-<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>: u64 = 101;
 </code></pre>
 
 
@@ -452,35 +411,6 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_freeze">get_strategy_freeze</a>(): u8 { <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a> }
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_PackageTxnManager_grant_maintainer"></a>
-
-## Function `grant_maintainer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_grant_maintainer">grant_maintainer</a>(account: &signer, maintainer: address)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_grant_maintainer">grant_maintainer</a>(account: &signer, maintainer: address) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>{
-   <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
-   <b>if</b> (<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(account_address)) {
-     borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(account_address).account_address = maintainer;
-   }<b>else</b>{
-     move_to(account, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>{ account_address: maintainer});
-   };
-}
 </code></pre>
 
 
@@ -718,34 +648,6 @@
 
 </details>
 
-<a name="0x1_PackageTxnManager_get_module_maintainer"></a>
-
-## Function `get_module_maintainer`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(addr: address): address
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(addr: address): address <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>{
-    <b>if</b> (<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(addr)) {
-        borrow_global&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(addr).account_address
-    }<b>else</b>{
-        addr
-    }
-}
-</code></pre>
-
-
-
-</details>
-
 <a name="0x1_PackageTxnManager_get_module_upgrade_strategy"></a>
 
 ## Function `get_module_upgrade_strategy`
@@ -808,7 +710,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(package_address: address, package_hash: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -817,9 +719,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(sender: address, package_address: address, package_hash: vector&lt;u8&gt;) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
-    <b>let</b> module_maintainer = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(package_address);
-    <b>assert</b>(module_maintainer == sender, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESENDER_IS_NOT_MAINTAINER">ESENDER_IS_NOT_MAINTAINER</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(package_address: address, package_hash: vector&lt;u8&gt;) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
     <b>let</b> strategy = <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(package_address);
     <b>if</b> (strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_ARBITRARY">STRATEGY_ARBITRARY</a>){
         //do nothing
@@ -829,6 +729,8 @@
         <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan_opt);
         <b>assert</b>(*&plan.package_hash == package_hash, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>));
         <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
+        <b>let</b> two_phase_upgrade = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
+        <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(&<b>mut</b> two_phase_upgrade.version_cap, <a href="Version.md#0x1_Version_new_version">Version::new_version</a>(plan.version));
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>){
         //do check at VM runtime.
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>){
@@ -872,7 +774,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, txn_sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, package_address: address, package_hash: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -881,10 +783,10 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, txn_sender: address, package_address: address, package_hash: vector&lt;u8&gt;) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, package_address: address, package_hash: vector&lt;u8&gt;) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>, <a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a> {
     // Can only be invoked by genesis account
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
-    <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(txn_sender, package_address, package_hash);
+    <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(package_address, package_hash);
 }
 </code></pre>
 
@@ -934,22 +836,6 @@ Package txn finished, and clean UpgradePlan
 
 <pre><code><b>pragma</b> verify = <b>true</b>;
 <b>pragma</b> aborts_if_is_strict = <b>true</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_grant_maintainer"></a>
-
-### Function `grant_maintainer`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_grant_maintainer">grant_maintainer</a>(account: &signer, maintainer: address)
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
@@ -1113,37 +999,6 @@ Package txn finished, and clean UpgradePlan
 
 
 
-<a name="@Specification_1_get_module_maintainer"></a>
-
-### Function `get_module_maintainer`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_maintainer">get_module_maintainer</a>(addr: address): address
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-
-<a name="0x1_PackageTxnManager_spec_get_module_maintainer"></a>
-
-
-<pre><code><b>define</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_maintainer">spec_get_module_maintainer</a>(addr: address): address {
-   <b>if</b> (<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(addr)) {
-       <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleMaintainer">ModuleMaintainer</a>&gt;(addr).account_address
-   }<b>else</b>{
-       addr
-   }
-}
-</code></pre>
-
-
-
 <a name="@Specification_1_get_module_upgrade_strategy"></a>
 
 ### Function `get_module_upgrade_strategy`
@@ -1211,7 +1066,7 @@ Package txn finished, and clean UpgradePlan
 ### Function `check_package_txn`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_check_package_txn">check_package_txn</a>(package_address: address, package_hash: vector&lt;u8&gt;)
 </code></pre>
 
 
@@ -1227,10 +1082,8 @@ Package txn finished, and clean UpgradePlan
 
 
 <pre><code><b>schema</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIf">CheckPackageTxnAbortsIf</a> {
-    sender: address;
     package_address: address;
     package_hash: vector&lt;u8&gt;;
-    <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_maintainer">spec_get_module_maintainer</a>(package_address) != sender;
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 3;
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address));
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).package_hash != package_hash;
@@ -1250,7 +1103,6 @@ Package txn finished, and clean UpgradePlan
     sender: address;
     package_address: address;
     package_hash: vector&lt;u8&gt;;
-    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_maintainer">spec_get_module_maintainer</a>(package_address) != sender;
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 3;
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address));
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).package_hash != package_hash;
@@ -1282,14 +1134,14 @@ Package txn finished, and clean UpgradePlan
 ### Function `package_txn_prologue`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, txn_sender: address, package_address: address, package_hash: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">package_txn_prologue</a>(account: &signer, package_address: address, package_hash: vector&lt;u8&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>();
-<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIf">CheckPackageTxnAbortsIf</a>{sender: txn_sender};
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_CheckPackageTxnAbortsIf">CheckPackageTxnAbortsIf</a>{};
 </code></pre>
 
 
