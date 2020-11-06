@@ -21,10 +21,9 @@ impl OnChainConfig for DaoConfig {
     const MODULE_IDENTIFIER: &'static str = "Dao";
     const CONF_IDENTIFIER: &'static str = "DaoConfig";
 
-    #[allow(clippy::box_vec)]
-    fn type_params() -> Box<Vec<TypeTag>> {
+    fn type_params() -> Vec<TypeTag> {
         let mut params = vec![];
         params.push(stc_type_tag());
-        Box::new(params)
+        params
     }
 }

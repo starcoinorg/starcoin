@@ -11,16 +11,19 @@ use crate::{
     language_storage::{StructTag, TypeTag},
 };
 use anyhow::{format_err, Result};
+use once_cell::sync::Lazy;
 use serde::de::DeserializeOwned;
 use std::{collections::HashMap, sync::Arc};
 
 mod consensus_config;
+mod dao_config;
 mod genesis_gas_schedule;
 mod version;
 mod vm_config;
 
 pub use self::{
     consensus_config::{consensus_config_type_tag, ConsensusConfig, CONSENSUS_CONFIG_IDENTIFIER},
+    dao_config::DaoConfig,
     genesis_gas_schedule::INITIAL_GAS_SCHEDULE,
     version::{version_config_type_tag, Version, VERSION_CONFIG_IDENTIFIER},
     vm_config::{vm_config_type_tag, VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
@@ -32,7 +35,7 @@ pub use crate::on_chain_resource::GlobalTimeOnChain;
 /// 2. Add the config's `ConfigID` to `ON_CHAIN_CONFIG_REGISTRY`
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 #[allow(clippy::box_vec)]
-pub struct ConfigID(&'static str, &'static str, &'static str, Box<Vec<TypeTag>>);
+pub struct ConfigID(&'static str, &'static str, &'static str, Vec<TypeTag>);
 
 impl ConfigID {
     pub fn access_path(self) -> AccessPath {
@@ -40,10 +43,19 @@ impl ConfigID {
             AccountAddress::from_hex_literal(self.0).expect("failed to get address"),
             Identifier::new(self.1).expect("failed to get Identifier"),
             Identifier::new(self.2).expect("failed to get Identifier"),
-            self.3.to_vec(),
+            self.3,
         )
     }
 }
+
+pub static ON_CHAIN_CONFIG_REGISTRY: Lazy<Vec<ConfigID>> = Lazy::new(|| {
+    let mut configs: Vec<ConfigID> = Vec::new();
+    configs.push(VMConfig::config_id());
+    configs.push(Version::config_id());
+    configs.push(ConsensusConfig::config_id());
+    configs.push(DaoConfig::config_id());
+    configs
+});
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct OnChainConfigPayload {
@@ -120,8 +132,9 @@ pub trait OnChainConfig: Send + Sync + DeserializeOwned {
             .transpose()
     }
 
-    #[allow(clippy::box_vec)]
-    fn type_params() -> Box<Vec<TypeTag>>;
+    fn type_params() -> Vec<TypeTag> {
+        vec![]
+    }
 
     fn config_id() -> ConfigID {
         ConfigID(

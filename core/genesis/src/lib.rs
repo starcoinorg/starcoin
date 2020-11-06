@@ -372,8 +372,8 @@ mod tests {
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
     use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
-    use starcoin_vm_types::dao_config::DaoConfig;
     use starcoin_vm_types::genesis_config::ChainId;
+    use starcoin_vm_types::on_chain_config::DaoConfig;
     use starcoin_vm_types::on_chain_config::{ConsensusConfig, VMConfig, Version};
     use starcoin_vm_types::on_chain_resource::Epoch;
 

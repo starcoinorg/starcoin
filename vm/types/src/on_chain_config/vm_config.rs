@@ -3,7 +3,7 @@
 
 use crate::{
     gas_schedule::{CostTable, GasConstants},
-    on_chain_config::{empty_type_params, OnChainConfig},
+    on_chain_config::OnChainConfig,
 };
 use anyhow::{format_err, Result};
 use move_core_types::identifier::Identifier;
@@ -102,11 +102,6 @@ impl OnChainConfig for VMConfig {
         })?;
         let gas_schedule = raw_vm_config.gas_schedule.as_cost_table()?;
         Ok(VMConfig { gas_schedule })
-    }
-
-    #[allow(clippy::box_vec)]
-    fn type_params() -> Box<Vec<TypeTag>> {
-        empty_type_params()
     }
 }
 
