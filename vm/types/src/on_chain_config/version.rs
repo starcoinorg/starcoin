@@ -18,7 +18,8 @@ pub struct Version {
 }
 
 impl OnChainConfig for Version {
-    const IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = VERSION_CONFIG_MODULE_NAME;
 }
 
 pub fn version_config_type_tag() -> TypeTag {

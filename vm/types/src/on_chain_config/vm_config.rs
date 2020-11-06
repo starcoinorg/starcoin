@@ -90,7 +90,8 @@ impl CostTableInner {
 }
 
 impl OnChainConfig for VMConfig {
-    const IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let raw_vm_config = scs::from_bytes::<VMConfigInner>(&bytes).map_err(|e| {

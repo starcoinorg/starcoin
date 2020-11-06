@@ -9,7 +9,7 @@ use starcoin_types::transaction::RawUserTransaction;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
-use starcoin_vm_types::{dao_config::DaoConfig, genesis_config::ChainNetwork};
+use starcoin_vm_types::{genesis_config::ChainNetwork, on_chain_config::DaoConfig};
 
 pub fn sign_txn_with_association_account_by_rpc_client(
     cli_state: &CliState,
@@ -60,7 +60,7 @@ fn sign_txn_by_rpc_client(
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
         .get_account_resource(account.address())?
-        .ok_or_else(|| format_err!("account must exist on chain."))?;
+        .ok_or_else(|| format_err!("account {:?} must exist on chain.", account.address()))?;
     let net = ChainNetwork::new_builtin(
         *cli_state
             .net()
@@ -87,7 +87,7 @@ pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     Ok(account_state_reader
         .get_on_chain_config::<DaoConfig>()?
-        .ok_or_else(|| format_err!("account must exist on chain."))?)
+        .ok_or_else(|| format_err!("DaoConfig not exist on chain."))?)
 }
 
 #[cfg(test)]
@@ -96,6 +96,7 @@ mod tests {
     use starcoin_config::NodeConfig;
     use starcoin_crypto::hash::PlainCryptoHash;
     use starcoin_logger::prelude::*;
+    use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
     use starcoin_rpc_client::RpcClient;
     use starcoin_transaction_builder::{
         build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
@@ -370,6 +371,23 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(package_txn_info.status(), &KeptVMStatus::Executed);
+
+        // 9. verify
+        let call = ContractCall {
+            module_address: association_address(),
+            module_name: "TestModule".to_string(),
+            func: "is_test".to_string(),
+            type_args: Vec::new(),
+            args: Vec::new(),
+        };
+        let result = cli_state.client().contract_call(call).unwrap();
+        assert!(!result.is_empty());
+        info!("result: {:?}", result);
+        if let AnnotatedMoveValue::Bool(flag) = result.get(0).unwrap() {
+            assert!(flag);
+        } else {
+            unreachable!("result err.");
+        }
 
         node_handle.stop().unwrap();
     }

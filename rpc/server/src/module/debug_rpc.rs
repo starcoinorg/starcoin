@@ -53,7 +53,7 @@ impl DebugApi for DebugRpcImpl {
     }
 
     fn sleep(&self, time: u64) -> Result<()> {
-        if !self.config.net().is_test() || self.config.net().is_dev() {
+        if !self.config.net().is_test() && !self.config.net().is_dev() {
             panic!("DebugApi.panic");
         }
 

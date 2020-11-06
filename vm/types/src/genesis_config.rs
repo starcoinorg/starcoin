@@ -1,10 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::dao_config::DaoConfig;
 use crate::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
 };
+use crate::on_chain_config::DaoConfig;
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
