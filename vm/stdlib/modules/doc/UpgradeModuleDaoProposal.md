@@ -118,6 +118,12 @@
 <dd>
 
 </dd>
+<dt>
+<code>version: u64</code>
+</dt>
+<dd>
+
+</dd>
 </dl>
 
 
@@ -240,7 +246,7 @@ check whether this gov has the ability to upgrade module in <code>moudle_address
 propose a module upgrade, called by proposer.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
 </code></pre>
 
 
@@ -253,12 +259,13 @@ propose a module upgrade, called by proposer.
     signer: &signer,
     module_address: address,
     package_hash: vector&lt;u8&gt;,
+    version: u64,
     exec_delay: u64,
 ) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a> {
     <b>assert</b>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_able_to_upgrade">able_to_upgrade</a>&lt;TokenT&gt;(module_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE">ERR_UNABLE_TO_UPGRADE</a>));
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;(
         signer,
-        <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash },
+        <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash, version },
         exec_delay,
     );
 }
@@ -287,7 +294,7 @@ propose a module upgrade, called by proposer.
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapabilities">UpgradeModuleCapabilities</a> {
-    <b>let</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash } = <a href="Dao.md#0x1_Dao_extract_proposal_action">Dao::extract_proposal_action</a>&lt;
+    <b>let</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash, version } = <a href="Dao.md#0x1_Dao_extract_proposal_action">Dao::extract_proposal_action</a>&lt;
         TokenT,
         <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>,
     &gt;(proposer_address, proposal_id);
@@ -307,6 +314,7 @@ propose a module upgrade, called by proposer.
     <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">PackageTxnManager::submit_upgrade_plan_with_cap</a>(
         &cap.cap,
         package_hash,
+        version,
         <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(),
     );
 }
@@ -453,7 +461,7 @@ propose a module upgrade, called by proposer.
 ### Function `propose_module_upgrade`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, exec_delay: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_propose_module_upgrade">propose_module_upgrade</a>&lt;TokenT: <b>copyable</b>&gt;(signer: &signer, module_address: address, package_hash: vector&lt;u8&gt;, version: u64, exec_delay: u64)
 </code></pre>
 
 

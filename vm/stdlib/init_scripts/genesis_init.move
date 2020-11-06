@@ -8,7 +8,6 @@ script {
     use 0x1::DummyToken;
     use 0x1::PackageTxnManager;
     use 0x1::ConsensusConfig;
-    use 0x1::Version;
     use 0x1::VMConfig;
     use 0x1::Vector;
     use 0x1::Block;
@@ -106,7 +105,6 @@ script {
             gas_unit_scaling_factor,
             default_account_size,
         );
-        Version::initialize(&genesis_account);
         TransactionTimeoutConfig::initialize(&genesis_account, transaction_timeout);
         ConsensusConfig::initialize(
             &genesis_account,

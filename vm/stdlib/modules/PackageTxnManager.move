@@ -5,6 +5,9 @@ address 0x1 {
         use 0x1::CoreAddresses;
         use 0x1::Block;
         use 0x1::Errors;
+        use 0x1::Version;
+        use 0x1::Event;
+        use 0x1::Config;
 
         spec module {
             pragma verify = true;
@@ -14,6 +17,7 @@ address 0x1 {
         struct UpgradePlan {
             package_hash: vector<u8>,
             active_after_number: u64,
+            version: u64,
         }
 
         // The holder of UpgradePlanCapability for account_address can submit UpgradePlan for account_address.
@@ -59,7 +63,11 @@ address 0x1 {
 
         resource struct TwoPhaseUpgrade {
             plan: Option<UpgradePlan>,
+            version_cap: Config::ModifyConfigCapability<Version::Version>,
+            upgrade_event: Event::EventHandle<Self::UpgradeEvent>,
         }
+
+        struct UpgradeEvent {}
 
         // Grant account's module maintainer to `maintainer`
         public fun grant_maintainer(account: &signer, maintainer: address) acquires ModuleMaintainer{
@@ -88,12 +96,14 @@ address 0x1 {
             };
             if (strategy == STRATEGY_TWO_PHASE){
                 move_to(account, UpgradePlanCapability{ account_address: account_address});
-                move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>()});
+                move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>(), version_cap: Config::publish_new_config_with_capability<Version::Version>(account, Version::new_version(1)), upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)});
             };
             //clean two phase upgrade resource
             if (previous_strategy == STRATEGY_TWO_PHASE){
                 let tpu = move_from<TwoPhaseUpgrade>(account_address);
-                let TwoPhaseUpgrade{plan:_} = tpu;
+                let TwoPhaseUpgrade{plan:_, version_cap, upgrade_event} = tpu;
+                Event::destroy_handle<Self::UpgradeEvent>(upgrade_event);
+                Config::destory_modify_config_capability<Version::Version>(version_cap);
                 // UpgradePlanCapability may be extracted
                 if (exists<UpgradePlanCapability>(account_address)){
                     let cap = move_from<UpgradePlanCapability>(account_address);
@@ -138,10 +148,10 @@ address 0x1 {
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
         }
 
-        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
-            submit_upgrade_plan_with_cap(cap, package_hash, active_after_number);
+            submit_upgrade_plan_with_cap(cap, package_hash, version, active_after_number);
         }
 
         spec fun submit_upgrade_plan {
@@ -150,13 +160,13 @@ address 0x1 {
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
         }
 
-        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             assert(active_after_number >= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
             assert(Option::is_none(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NOT_NONE));
-            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number});
+            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number, version});
         }
 
         spec fun submit_upgrade_plan_with_cap {
@@ -344,8 +354,9 @@ address 0x1 {
             let strategy = get_module_upgrade_strategy(package_address);
             if(strategy == STRATEGY_TWO_PHASE){
                 if (success) {
-                    finish_upgrade_plan(package_address)
-                    //TODO fire event.
+                    finish_upgrade_plan(package_address);
+                    let two_phase_upgrade = borrow_global_mut<TwoPhaseUpgrade>(package_address);
+                    Event::emit_event<Self::UpgradeEvent>(&mut two_phase_upgrade.upgrade_event, UpgradeEvent {});
                 };
             };
         }

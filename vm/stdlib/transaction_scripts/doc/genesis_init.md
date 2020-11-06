@@ -27,7 +27,6 @@
 <b>use</b> <a href="../../modules/doc/TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">0x1::TransactionTimeoutConfig</a>;
 <b>use</b> <a href="../../modules/doc/VMConfig.md#0x1_VMConfig">0x1::VMConfig</a>;
 <b>use</b> <a href="../../modules/doc/Vector.md#0x1_Vector">0x1::Vector</a>;
-<b>use</b> <a href="../../modules/doc/Version.md#0x1_Version">0x1::Version</a>;
 </code></pre>
 
 
@@ -127,7 +126,6 @@
         gas_unit_scaling_factor,
         default_account_size,
     );
-    <a href="../../modules/doc/Version.md#0x1_Version_initialize">Version::initialize</a>(&genesis_account);
     <a href="../../modules/doc/TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig_initialize">TransactionTimeoutConfig::initialize</a>(&genesis_account, transaction_timeout);
     <a href="../../modules/doc/ConsensusConfig.md#0x1_ConsensusConfig_initialize">ConsensusConfig::initialize</a>(
         &genesis_account,

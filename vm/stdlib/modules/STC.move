@@ -9,7 +9,6 @@ module STC {
     use 0x1::TransactionPublishOption;
     use 0x1::VMConfig;
     use 0x1::ConsensusConfig;
-    use 0x1::Version;
     use 0x1::RewardConfig;
     use 0x1::TransactionTimeoutConfig;
 
@@ -54,7 +53,6 @@ module STC {
         // the following configurations are gov-ed by Dao.
         OnChainConfigDao::plugin<STC, TransactionPublishOption::TransactionPublishOption>(account);
         OnChainConfigDao::plugin<STC, VMConfig::VMConfig>(account);
-        OnChainConfigDao::plugin<STC, Version::Version>(account);
         OnChainConfigDao::plugin<STC, ConsensusConfig::ConsensusConfig>(account);
         OnChainConfigDao::plugin<STC, RewardConfig::RewardConfig>(account);
         OnChainConfigDao::plugin<STC, TransactionTimeoutConfig::TransactionTimeoutConfig>(account);

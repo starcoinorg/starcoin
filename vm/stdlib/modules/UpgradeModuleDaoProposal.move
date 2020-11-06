@@ -30,6 +30,7 @@ module UpgradeModuleDaoProposal {
     struct UpgradeModule {
         module_address: address,
         package_hash: vector<u8>,
+        version: u64,
     }
 
     public fun plugin<TokenT>(signer: &signer) {
@@ -95,12 +96,13 @@ module UpgradeModuleDaoProposal {
         signer: &signer,
         module_address: address,
         package_hash: vector<u8>,
+        version: u64,
         exec_delay: u64,
     ) acquires UpgradeModuleCapabilities {
         assert(able_to_upgrade<TokenT>(module_address), Errors::requires_capability(ERR_UNABLE_TO_UPGRADE));
         Dao::propose<TokenT, UpgradeModule>(
             signer,
-            UpgradeModule { module_address, package_hash },
+            UpgradeModule { module_address, package_hash, version },
             exec_delay,
         );
     }
@@ -114,7 +116,7 @@ module UpgradeModuleDaoProposal {
         proposer_address: address,
         proposal_id: u64,
     ) acquires UpgradeModuleCapabilities {
-        let UpgradeModule { module_address, package_hash } = Dao::extract_proposal_action<
+        let UpgradeModule { module_address, package_hash, version } = Dao::extract_proposal_action<
             TokenT,
             UpgradeModule,
         >(proposer_address, proposal_id);
@@ -134,6 +136,7 @@ module UpgradeModuleDaoProposal {
         PackageTxnManager::submit_upgrade_plan_with_cap(
             &cap.cap,
             package_hash,
+            version,
             Block::get_current_block_number(),
         );
     }
