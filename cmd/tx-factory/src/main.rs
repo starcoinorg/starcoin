@@ -125,7 +125,10 @@ fn main() {
     let account_password = opts.account_password.clone();
 
     let is_stress = opts.stress;
-    let account_num = opts.account_num;
+    let mut account_num = opts.account_num;
+    if !is_stress {
+        account_num = 0;
+    }
     let long_term = opts.long_term;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
@@ -144,15 +147,11 @@ fn main() {
     });
 
     let net = client.node_info().unwrap().net;
-    let node_info = client
-        .node_info()
-        .unwrap_or_else(|_| panic!("Failed to get node info"));
     let txn_generator = MockTxnGenerator::new(
         net.chain_id(),
         account.clone(),
         receiver_address,
         public_key,
-        node_info,
     );
     let tx_mocker = TxnMocker::new(
         client,
@@ -256,6 +255,13 @@ impl TxnMocker {
 }
 
 impl TxnMocker {
+    fn fetch_expiration_time(&mut self) -> u64 {
+        let node_info = self
+            .client
+            .node_info()
+            .expect("node_info() should not failed");
+        node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+    }
     fn recheck_sequence_number(&mut self) -> Result<()> {
         let seq_number_in_pool = self
             .client
@@ -292,13 +298,10 @@ impl TxnMocker {
     }
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
-        // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
-        // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
-        // if let Some(n) = seq_number_in_pool {
-        // }
+        let expiration_timestamp = self.fetch_expiration_time();
         let raw_txn = self
             .generator
-            .generate_mock_txn(self.next_sequence_number)?;
+            .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
 
         self.unlock_account()?;
@@ -397,8 +400,7 @@ impl TxnMocker {
 
     fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
-
-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
+        let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
         while i < account_num {
@@ -425,10 +427,7 @@ impl TxnMocker {
                 info!("error: {:?}", result);
             }
         }
-        info!(
-            "{:?} accounts are created successfully.",
-            Vec::len(&account_list)
-        );
+        info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)
     }
 
@@ -492,7 +491,7 @@ impl TxnMocker {
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
+        let expiration_timestamp = self.fetch_expiration_time();
         info!("start stress......");
         if long_term {
             // running in long term, we must deposit STC to accounts frequently
@@ -524,7 +523,7 @@ impl TxnMocker {
                             }
                             Err(_) => {
                                 info!(
-                                    "Submit txn failed. error: {:?}. Try again after 500ms.",
+                                    "Submit txn failed with error: {:?}. Try again after 500ms.",
                                     result
                                 );
                                 std::thread::sleep(Duration::from_millis(500));
