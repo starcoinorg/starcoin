@@ -30,7 +30,8 @@ pub struct ConsensusConfig {
 }
 
 impl OnChainConfig for ConsensusConfig {
-    const IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
 }
 
 pub fn consensus_config_type_tag() -> TypeTag {
