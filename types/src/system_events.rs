@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{Block, BlockDetail, BlockHeader};
+use crate::node_status::NodeStatus;
 use crate::U256;
 use actix::prelude::*;
 use anyhow::Result;
@@ -23,14 +24,6 @@ pub struct NewBranch(pub Arc<Vec<BlockHeader>>);
 #[rtype(result = "()")]
 pub struct MinedBlock(pub Arc<Block>);
 
-#[derive(Clone, Debug, Message)]
-#[rtype(result = "()")]
-pub struct SyncBegin;
-
-#[derive(Clone, Debug, Message)]
-#[rtype(result = "()")]
-pub struct SyncDone;
-
 /// Try to stop a actor
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
@@ -45,6 +38,9 @@ pub struct SystemStop;
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
 pub struct SystemStarted;
+
+#[derive(Clone, Debug)]
+pub struct NodeStatusChangeEvent(pub NodeStatus);
 
 ///Fire this event for generate a new block
 #[derive(Clone, Debug, Message)]

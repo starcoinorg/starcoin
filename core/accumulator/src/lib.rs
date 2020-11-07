@@ -141,7 +141,11 @@ impl Accumulator for MerkleAccumulator {
                 .map(|idx| {
                     tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
                         .ok_or_else(|| {
-                            format_err!("Can not find accumulator leaf by index: {}", idx)
+                            format_err!(
+                                "Can not find accumulator leaf by index: {}, num_leaves:{}",
+                                idx,
+                                tree.num_leaves
+                            )
                         })
                 })
                 .collect()
@@ -154,7 +158,11 @@ impl Accumulator for MerkleAccumulator {
                 .map(|idx| {
                     tree.get_node_hash(NodeIndex::from_leaf_index(idx))?
                         .ok_or_else(|| {
-                            format_err!("Can not find accumulator leaf by index: {}", idx)
+                            format_err!(
+                                "Can not find accumulator leaf by index: {}, num_leaves: {}",
+                                idx,
+                                tree.num_leaves
+                            )
                         })
                 })
                 .collect()

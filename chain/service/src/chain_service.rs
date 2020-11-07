@@ -127,12 +127,12 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockInfoByHash(hash) => Ok(ChainResponse::BlockInfoOption(Box::new(
                 self.inner.get_block_info_by_hash(hash)?,
             ))),
-            ChainRequest::GetStartupInfo() => {
-                Ok(ChainResponse::StartupInfo(self.inner.master_startup_info()))
-            }
-            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
+            ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(Box::new(
+                self.inner.master_startup_info(),
+            ))),
+            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(Box::new(
                 self.inner.master.get_chain_info()?,
-            )),
+            ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.inner
                     .get_transaction(hash)?

@@ -17,7 +17,6 @@ use starcoin_storage::Storage;
 use std::sync::Arc;
 use std::time::Duration;
 use traits::ChainReader;
-use types::system_events::{SyncBegin, SyncDone};
 
 mod create_block_template;
 pub mod headblock_pacemaker;
@@ -30,6 +29,7 @@ pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateS
 
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
 
+use std::option::Option::Some;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -37,7 +37,6 @@ pub struct MinerService {
     storage: Arc<Storage>,
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
-    generate_block: bool,
 }
 
 impl ServiceFactory<MinerService> for MinerService {
@@ -51,7 +50,6 @@ impl ServiceFactory<MinerService> for MinerService {
             storage,
             current_task: None,
             create_block_template_service,
-            generate_block: false,
         })
     }
 }
@@ -60,16 +58,12 @@ impl ActorService for MinerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<GenerateBlockEvent>();
         ctx.subscribe::<SubmitSealEvent>();
-        ctx.subscribe::<SyncBegin>();
-        ctx.subscribe::<SyncDone>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<GenerateBlockEvent>();
         ctx.unsubscribe::<SubmitSealEvent>();
-        ctx.unsubscribe::<SyncBegin>();
-        ctx.unsubscribe::<SyncDone>();
         Ok(())
     }
 }
@@ -108,8 +102,11 @@ impl MinerService {
                 .calculate_next_difficulty(&block_chain, &epoch)?;
             let task = MintTask::new(block_template, difficulty);
             let mining_hash = task.mining_hash;
-            if self.is_minting() {
-                warn!("force set mint task, since mint task is not empty");
+            if let Some(current_task) = self.current_task.as_ref() {
+                debug!(
+                    "force set mint task, current_task: {:?}, new_task: {:?}",
+                    current_task, task
+                );
             }
             self.current_task = Some(task);
             ctx.broadcast(MintBlockEvent::new(
@@ -156,10 +153,6 @@ impl MinerService {
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
-        if !self.generate_block {
-            debug!("Ignore generate block event, wait sync finished.");
-            return;
-        }
         debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.is_minting() {
             debug!("Miner has mint job so just ignore this event.");
@@ -174,18 +167,5 @@ impl EventHandler<Self, GenerateBlockEvent> for MinerService {
                 ctx.notify(GenerateBlockEvent::new(false));
             });
         }
-    }
-}
-
-impl EventHandler<Self, SyncBegin> for MinerService {
-    fn handle_event(&mut self, _msg: SyncBegin, _ctx: &mut ServiceContext<MinerService>) {
-        self.generate_block = false;
-    }
-}
-
-impl EventHandler<Self, SyncDone> for MinerService {
-    fn handle_event(&mut self, _msg: SyncDone, ctx: &mut ServiceContext<MinerService>) {
-        self.generate_block = true;
-        ctx.notify(GenerateBlockEvent::new(false));
     }
 }
