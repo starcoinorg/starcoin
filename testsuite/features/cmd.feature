@@ -6,7 +6,6 @@ Feature: cmd integration test
 
 # chain
   Scenario Outline: [cmd] cli chain test
-    Then cmd: "chain branches"
     Then cmd: "chain epoch_info"
     Then cmd: "chain get_block_by_number"
     Then cmd: "chain list_block"

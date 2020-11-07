@@ -35,8 +35,12 @@ impl ActorService for OndemandPacemaker {
 }
 
 impl EventHandler<Self, NodeStatusChangeEvent> for OndemandPacemaker {
-    fn handle_event(&mut self, msg: NodeStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, msg: NodeStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
+        let is_synced = msg.0.is_synced();
         self.node_status = Some(msg.0);
+        if is_synced {
+            self.send_event(ctx);
+        }
     }
 }
 
