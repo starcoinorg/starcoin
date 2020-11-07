@@ -30,7 +30,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     startup_info::StartupInfo,
-    system_events::{MinedBlock, SyncDone, SystemStarted},
+    system_events::{MinedBlock, SystemStarted},
     U256,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -140,10 +140,14 @@ impl ActorService for DownloadService {
 }
 
 impl EventHandler<Self, SyncTaskType> for DownloadService {
-    fn handle_event(&mut self, task_type: SyncTaskType, ctx: &mut ServiceContext<DownloadService>) {
+    fn handle_event(
+        &mut self,
+        task_type: SyncTaskType,
+        _ctx: &mut ServiceContext<DownloadService>,
+    ) {
         self.sync_task.drop_task(&task_type);
         if self.sync_task.is_finish() {
-            ctx.broadcast(SyncDone);
+            //ctx.broadcast(SyncDone);
             self.need_sync_state.store(false, Ordering::Relaxed);
             self.syncing.store(false, Ordering::Relaxed);
             self.downloader.set_pivot(None);

@@ -6,24 +6,33 @@ use anyhow::Result;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
+use starcoin_uint::U256;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
-    head_block: HashValue,
+    head: BlockHeader,
+    total_difficulty: U256,
 }
 
 impl ChainInfo {
-    pub fn new(head_block: HashValue) -> Self {
-        Self { head_block }
+    pub fn new(head: BlockHeader, total_difficulty: U256) -> Self {
+        Self {
+            head,
+            total_difficulty,
+        }
     }
 
-    pub fn get_head(&self) -> &HashValue {
-        &self.head_block
+    pub fn head(&self) -> &BlockHeader {
+        &self.head
+    }
+
+    pub fn total_difficulty(&self) -> U256 {
+        self.total_difficulty
     }
 }
-
+//TODO save chain info to startup_info, and remove branches.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
     /// Master chain info
@@ -85,20 +94,6 @@ impl TryInto<Vec<u8>> for StartupInfo {
 
     fn try_into(self) -> Result<Vec<u8>> {
         self.encode()
-    }
-}
-
-impl Into<Vec<ChainInfo>> for StartupInfo {
-    fn into(self) -> Vec<ChainInfo> {
-        let mut branches = Vec::new();
-        branches.push(ChainInfo::new(self.master));
-        let mut chain_info_vec = self
-            .branches
-            .iter()
-            .map(|branch| ChainInfo::new(*branch))
-            .collect();
-        branches.append(&mut chain_info_vec);
-        branches
     }
 }
 

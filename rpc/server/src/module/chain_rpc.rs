@@ -156,17 +156,6 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn branches(&self) -> FutureResult<Vec<ChainInfo>> {
-        let service = self.service.clone();
-        let fut = async move { service.master_startup_info().await };
-
-        Box::new(
-            fut.boxed()
-                .map(|result| Ok(Into::<Vec<ChainInfo>>::into(result?)))
-                .map_err(map_err)
-                .compat(),
-        )
-    }
     fn current_epoch(&self) -> FutureResult<EpochInfo> {
         let service = self.service.clone();
         let fut = async move { service.epoch_info().await };

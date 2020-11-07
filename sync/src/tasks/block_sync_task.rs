@@ -10,6 +10,7 @@ use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ChainWriter;
 use starcoin_types::block::{Block, BlockNumber};
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
@@ -105,7 +106,11 @@ impl TaskResultCollector<Block> for BlockCollector {
 
     fn collect(mut self: Pin<&mut Self>, item: Block) -> Result<CollectorState> {
         let block_id = item.id();
+        let timestamp = item.header().timestamp;
         self.chain.apply(item.clone())?;
+        self.chain
+            .time_service()
+            .adjust(GlobalTimeOnChain::new(timestamp));
         if let Err(e) = self
             .event_handle
             .handle(BlockConnectedEvent { block: item })

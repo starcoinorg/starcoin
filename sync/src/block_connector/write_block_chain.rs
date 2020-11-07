@@ -19,6 +19,7 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 
@@ -80,8 +81,16 @@ where
 
     pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
         WRITE_BLOCK_CHAIN_METRICS.try_connect_count.inc();
-        let block_exist = self.block_exist(header.id());
-        let block_chain = if self.block_exist(header.parent_hash()) {
+        let block_id = header.id();
+        let block_exist = self.block_exist(block_id);
+        let block_chain = if block_exist {
+            let net = self.config.net();
+            Some(BlockChain::new(
+                net.time_service(),
+                block_id,
+                self.storage.clone(),
+            )?)
+        } else if self.block_exist(header.parent_hash()) {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
@@ -125,6 +134,10 @@ where
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();
+            self.config
+                .net()
+                .time_service()
+                .adjust(GlobalTimeOnChain::new(block.header().timestamp));
             self.broadcast_new_head(BlockDetail::new(block, branch_total_difficulty));
         } else {
             //send new branch event
@@ -255,8 +268,9 @@ where
             //block has bean processed, so just trigger a head select.
             (true, Some(branch)) => {
                 debug!(
-                    "Block {} has bean processed, trigger head select.",
-                    block_id
+                    "Block {} has bean processed, trigger head select, total_difficulty: {}",
+                    block_id,
+                    branch.get_total_difficulty()?
                 );
                 WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
                 self.select_head(branch)?;

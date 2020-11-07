@@ -18,7 +18,7 @@ use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     contract_event::ContractEvent,
-    startup_info::{ChainInfo, StartupInfo},
+    startup_info::StartupInfo,
     transaction::{Transaction, TransactionInfo},
 };
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -130,9 +130,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetStartupInfo() => {
                 Ok(ChainResponse::StartupInfo(self.inner.master_startup_info()))
             }
-            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(ChainInfo::new(
-                *self.inner.master_startup_info().get_master(),
-            ))),
+            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(
+                self.inner.master.get_chain_info()?,
+            )),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.inner
                     .get_transaction(hash)?
@@ -359,7 +359,7 @@ mod tests {
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
         let chain_info = service_ref.master_head().await?;
-        assert_eq!(*chain_info.get_head(), startup_info.master);
+        assert_eq!(chain_info.head().id(), startup_info.master);
         Ok(())
     }
 }

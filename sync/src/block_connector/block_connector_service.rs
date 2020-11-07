@@ -12,6 +12,7 @@ use starcoin_service_registry::{
 };
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::block::Block;
+use starcoin_types::system_events::MinedBlock;
 use std::sync::Arc;
 use txpool::TxPoolService;
 
@@ -41,7 +42,17 @@ impl ServiceFactory<Self> for BlockConnectorService {
     }
 }
 
-impl ActorService for BlockConnectorService {}
+impl ActorService for BlockConnectorService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<MinedBlock>();
+        Ok(())
+    }
+
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<MinedBlock>();
+        Ok(())
+    }
+}
 
 impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
     fn handle_event(
@@ -54,6 +65,21 @@ impl EventHandler<Self, BlockConnectedEvent> for BlockConnectorService {
         let block = msg.block;
         if let Err(e) = self.chain_service.try_connect(block) {
             error!("Process connected block error: {:?}", e);
+        }
+    }
+}
+
+impl EventHandler<Self, MinedBlock> for BlockConnectorService {
+    fn handle_event(&mut self, msg: MinedBlock, _ctx: &mut ServiceContext<Self>) {
+        let MinedBlock(new_block) = msg;
+        let id = new_block.header().id();
+        debug!("try connect mined block: {}", id);
+
+        match self.chain_service.try_connect(new_block.as_ref().clone()) {
+            Ok(_) => debug!("Process mined block {} success.", id),
+            Err(e) => {
+                warn!("Process mined block {} fail, error: {:?}", id, e);
+            }
         }
     }
 }
