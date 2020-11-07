@@ -18,7 +18,7 @@ module UpgradeModuleDaoProposal {
     const ERR_NOT_AUTHORIZED: u64 = 401;
     const ERR_ADDRESS_MISSMATCH: u64 = 402;
 
-    resource struct WrappedUpgradePlanCapability<TokenT> {
+    resource struct UpgradeModuleCapability<TokenT> {
         cap: PackageTxnManager::UpgradePlanCapability,
     }
 
@@ -36,7 +36,7 @@ module UpgradeModuleDaoProposal {
     ) {
         let token_issuer = Token::token_address<TokenT>();
         assert(Signer::address_of(signer) == token_issuer, Errors::requires_address(ERR_NOT_AUTHORIZED));
-        move_to(signer, WrappedUpgradePlanCapability<TokenT> { cap })
+        move_to(signer, UpgradeModuleCapability<TokenT> { cap })
     }
 
     spec fun plugin {
@@ -44,14 +44,14 @@ module UpgradeModuleDaoProposal {
 
         let sender = Signer::address_of(signer);
         aborts_if sender != Token::SPEC_TOKEN_TEST_ADDRESS();
-        aborts_if exists<WrappedUpgradePlanCapability<TokenT>>(sender);
+        aborts_if exists<UpgradeModuleCapability<TokenT>>(sender);
     }
 
     spec schema AbortIfUnableUpgrade<TokenT> {
         module_address: address;
         let token_issuer = Token::SPEC_TOKEN_TEST_ADDRESS();
-        aborts_if !exists<WrappedUpgradePlanCapability<TokenT>>(token_issuer);
-        let cap = global<WrappedUpgradePlanCapability<TokenT>>(token_issuer).cap;
+        aborts_if !exists<UpgradeModuleCapability<TokenT>>(token_issuer);
+        let cap = global<UpgradeModuleCapability<TokenT>>(token_issuer).cap;
         aborts_if PackageTxnManager::account_address(cap) != module_address;
     }
 
@@ -63,7 +63,7 @@ module UpgradeModuleDaoProposal {
         version: u64,
         exec_delay: u64,
     ) {
-        assert(exists<WrappedUpgradePlanCapability<TokenT>>(module_address), Errors::requires_capability(ERR_UNABLE_TO_UPGRADE));
+        assert(exists<UpgradeModuleCapability<TokenT>>(module_address), Errors::requires_capability(ERR_UNABLE_TO_UPGRADE));
         Dao::propose<TokenT, UpgradeModule>(
             signer,
             UpgradeModule { module_address, package_hash, version },
@@ -79,12 +79,12 @@ module UpgradeModuleDaoProposal {
     public fun submit_module_upgrade_plan<TokenT: copyable>(
         proposer_address: address,
         proposal_id: u64,
-    ) acquires WrappedUpgradePlanCapability {
+    ) acquires UpgradeModuleCapability {
         let UpgradeModule { module_address, package_hash, version } = Dao::extract_proposal_action<
             TokenT,
             UpgradeModule,
         >(proposer_address, proposal_id);
-        let cap = borrow_global<WrappedUpgradePlanCapability<TokenT>>(Token::token_address<TokenT>());
+        let cap = borrow_global<UpgradeModuleCapability<TokenT>>(Token::token_address<TokenT>());
         let account_address = PackageTxnManager::account_address(&cap.cap);
         assert(account_address == module_address, Errors::requires_capability(ERR_ADDRESS_MISSMATCH));
         PackageTxnManager::submit_upgrade_plan_with_cap(
