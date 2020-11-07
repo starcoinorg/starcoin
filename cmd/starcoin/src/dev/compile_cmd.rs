@@ -7,7 +7,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_compiler::{compile_source_string_no_report, errors};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -16,7 +16,12 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "compile")]
 pub struct CompileOpt {
-    #[structopt(short = "s", long = "sender", name = "sender address", help = "hex encoded string, like 0x0, 0x1", parse(try_from_str = parse_address))]
+    #[structopt(
+        short = "s",
+        long = "sender",
+        name = "sender address",
+        help = "hex encoded string, like 0x0, 0x1"
+    )]
     sender: Option<AccountAddress>,
 
     #[structopt(

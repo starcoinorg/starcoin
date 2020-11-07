@@ -6,7 +6,7 @@ use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::time::Duration;
 use structopt::StructOpt;
 
@@ -22,9 +22,8 @@ pub struct UnlockOpt {
     )]
     duration: u32,
     #[structopt(
-    name = "account_address",
-    parse(try_from_str = parse_address),
-    help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
+        name = "account_address",
+        help = "The wallet account address witch to unlock, if absent, unlock the default wallet."
     )]
     account_address: Option<AccountAddress>,
 }

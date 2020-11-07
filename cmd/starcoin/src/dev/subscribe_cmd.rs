@@ -5,7 +5,6 @@ use futures::{StreamExt, TryStream, TryStreamExt};
 use scmd::{CommandAction, ExecContext};
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_types::event::EventKey;
-use std::convert::TryFrom;
 use structopt::StructOpt;
 use tokio::io::AsyncBufReadExt;
 
@@ -26,8 +25,7 @@ pub struct SubscribeEventOpt {
         long = "event-key",
         name = "event_key",
         help = "event key",
-        multiple = true,
-        parse(try_from_str=parse_event_key)
+        multiple = true
     )]
     event_key: Vec<EventKey>,
     #[structopt(
@@ -37,11 +35,6 @@ pub struct SubscribeEventOpt {
         help = "limit return size"
     )]
     limit: Option<usize>,
-}
-
-fn parse_event_key(s: &str) -> Result<EventKey> {
-    let b = hex::decode(s.strip_prefix("0x").unwrap_or_else(|| s))?;
-    EventKey::try_from(b.as_slice())
 }
 
 pub struct SubscribeEventCommand;
