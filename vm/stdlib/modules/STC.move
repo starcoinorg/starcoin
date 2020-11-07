@@ -44,9 +44,8 @@ module STC {
             min_action_delay,
         );
         ModifyDaoConfigProposal::plugin<STC>(account);
-        UpgradeModuleDaoProposal::plugin<STC>(account);
         let upgrade_plan_cap = PackageTxnManager::extract_submit_upgrade_plan_cap(account);
-        UpgradeModuleDaoProposal::delegate_module_upgrade_capability<STC>(
+        UpgradeModuleDaoProposal::plugin<STC>(
             account,
             upgrade_plan_cap,
         );
