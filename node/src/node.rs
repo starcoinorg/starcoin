@@ -3,7 +3,7 @@
 
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
-use actix::{clock::delay_for, prelude::*};
+use actix::prelude::*;
 use anyhow::Result;
 use futures::channel::oneshot;
 use futures::executor::block_on;
@@ -36,10 +36,9 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
-use starcoin_sync::download::DownloadService;
+use starcoin_sync::block_connector::BlockConnectorService;
+use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_sync::SyncService;
-use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool::{TxPoolActorService, TxPoolService};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -175,8 +174,6 @@ impl NodeService {
     ) -> Result<(ServiceRef<RegistryService>, ServiceRef<NodeService>)> {
         let registry = RegistryService::launch();
 
-        let node_service = registry.register::<NodeService>().await?;
-
         registry.put_shared(config.clone()).await?;
         registry.put_shared(logger_handle).await?;
 
@@ -192,6 +189,8 @@ impl NodeService {
         info!("Start node with startup info: {}", startup_info);
         let genesis_hash = genesis.block().header().id();
         registry.put_shared(genesis).await?;
+
+        let node_service = registry.register::<NodeService>().await?;
 
         registry.register::<ChainStateService>().await?;
 
@@ -242,10 +241,11 @@ impl NodeService {
         );
 
         registry.register::<TxnSyncService>().await?;
-        registry.register::<DownloadService>().await?;
-        registry.register::<SyncService>().await?;
+        //registry.register::<DownloadService>().await?;
+        //registry.register::<SyncService>().await?;
 
-        delay_for(Duration::from_secs(1)).await;
+        registry.register::<BlockConnectorService>().await?;
+        registry.register::<SyncService2>().await?;
 
         registry.register::<CreateBlockTemplateService>().await?;
         registry.register::<MinerService>().await?;
@@ -262,11 +262,13 @@ impl NodeService {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
 
-        bus.broadcast(StartSyncTxnEvent)?;
-        bus.broadcast(SystemStarted)?;
-
         registry.register::<OndemandPacemaker>().await?;
         registry.register::<HeadBlockPacemaker>().await?;
+
+        // wait for service init.
+        Delay::new(Duration::from_millis(1000)).await;
+
+        bus.broadcast(SystemStarted)?;
 
         registry
             .register_by_factory::<RpcService, RpcServiceFactory>()

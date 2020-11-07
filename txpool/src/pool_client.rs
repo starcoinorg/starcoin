@@ -146,11 +146,7 @@ impl crate::pool::Client for PoolClient {
             .map_err(|e| TransactionError::InvalidSignature(e.to_string()))?;
         match starcoin_executor::validate_transaction(self.nonce_client.statedb.as_ref(), txn) {
             None => Ok(checked_txn),
-            Some(status) => {
-                // Ok(checked_txn)
-                warn!(target: "txpool", "validate txn {:?} failure, vm status: {:?}", checked_txn.id(), &status);
-                Err(TransactionError::CallErr(CallError::Execution(status)))
-            }
+            Some(status) => Err(TransactionError::CallErr(CallError::Execution(status))),
         }
     }
 }

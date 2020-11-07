@@ -25,7 +25,10 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::system_events::MintBlockEvent;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::node_status::{NodeStatus, SyncStatus};
+use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::system_events::{MintBlockEvent, NodeStatusChangeEvent};
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, U256};
 use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
@@ -82,11 +85,14 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     // now block is applied, we can emit events.
 
     let bus = registry.service_ref::<BusService>().await?;
-    registry
+    let notify_service = registry
         .register::<ChainNotifyHandlerService>()
         .await
         .unwrap();
 
+    let mut node_status = NodeStatus::new(ChainInfo::new(BlockHeader::random(), U256::from(1)));
+    node_status.update_sync_status(SyncStatus::Synchronized);
+    notify_service.notify(NodeStatusChangeEvent(node_status))?;
     let service = PubSubService::new(bus.clone(), txpool_service);
 
     let pubsub = PubSubImpl::new(service);

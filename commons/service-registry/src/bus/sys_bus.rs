@@ -159,6 +159,13 @@ impl SysBus {
         let type_id = &TypeId::of::<M>();
         let mut clear = false;
         if let Some(topic_subscriptions) = self.subscriptions.get_mut(type_id) {
+            if topic_subscriptions.is_empty() {
+                warn!(
+                    "[bus] There are no subscription to message type: {}",
+                    type_name::<M>()
+                );
+                return;
+            }
             for subscription in topic_subscriptions {
                 let result: Result<(), (String, M)> = match subscription
                     .downcast_mut::<SubscriptionRecord<M>>()

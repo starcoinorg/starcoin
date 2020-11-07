@@ -10,7 +10,8 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{Storage, Store};
 use starcoin_types::block::Block;
-use starcoin_types::system_events::{NewHeadBlock, SyncBegin, SyncDone};
+use starcoin_types::node_status::NodeStatus;
+use starcoin_types::system_events::{NewHeadBlock, NodeStatusChangeEvent};
 use std::sync::Arc;
 
 /// ChainNotify watch `NewHeadBlock` message from bus,
@@ -18,14 +19,14 @@ use std::sync::Arc;
 /// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerService {
     store: Arc<dyn Store>,
-    broadcast_txn: bool,
+    node_status: Option<NodeStatus>,
 }
 
 impl ChainNotifyHandlerService {
     pub fn new(store: Arc<dyn Store>) -> Self {
         Self {
             store,
-            broadcast_txn: true,
+            node_status: None,
         }
     }
 }
@@ -41,37 +42,21 @@ impl ServiceFactory<Self> for ChainNotifyHandlerService {
 
 impl ActorService for ChainNotifyHandlerService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<SyncBegin>();
-        ctx.subscribe::<SyncDone>();
+        ctx.subscribe::<NodeStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<SyncBegin>();
-        ctx.unsubscribe::<SyncDone>();
+        ctx.unsubscribe::<NodeStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
         Ok(())
     }
 }
 
-impl EventHandler<Self, SyncBegin> for ChainNotifyHandlerService {
-    fn handle_event(
-        &mut self,
-        _msg: SyncBegin,
-        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
-    ) {
-        self.broadcast_txn = false;
-    }
-}
-
-impl EventHandler<Self, SyncDone> for ChainNotifyHandlerService {
-    fn handle_event(
-        &mut self,
-        _msg: SyncDone,
-        _ctx: &mut ServiceContext<ChainNotifyHandlerService>,
-    ) {
-        self.broadcast_txn = true;
+impl EventHandler<Self, NodeStatusChangeEvent> for ChainNotifyHandlerService {
+    fn handle_event(&mut self, msg: NodeStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.node_status = Some(msg.0);
     }
 }
 
@@ -81,15 +66,17 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         item: NewHeadBlock,
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
-        if self.broadcast_txn {
-            let NewHeadBlock(block_detail) = item;
-            let block = block_detail.get_block();
-            // notify header.
-            self.notify_new_block(block, ctx);
+        if let Some(node_status) = self.node_status.as_ref() {
+            if node_status.is_nearly_synced() {
+                let NewHeadBlock(block_detail) = item;
+                let block = block_detail.get_block();
+                // notify header.
+                self.notify_new_block(block, ctx);
 
-            // notify events
-            if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
-                error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
+                // notify events
+                if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
+                    error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
+                }
             }
         }
     }

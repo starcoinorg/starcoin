@@ -19,8 +19,10 @@ use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
+use types::{node_status::NodeStatus, system_events::NodeStatusChangeEvent};
 
 pub use pool::TxStatus;
+use serde::export::Option::Some;
 pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
@@ -33,6 +35,7 @@ mod tx_pool_service_impl;
 #[derive(Clone)]
 pub struct TxPoolActorService {
     inner: Inner,
+    node_status: Option<NodeStatus>,
 }
 
 impl std::fmt::Debug for TxPoolActorService {
@@ -43,7 +46,10 @@ impl std::fmt::Debug for TxPoolActorService {
 
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            node_status: None,
+        }
     }
 }
 
@@ -73,14 +79,22 @@ impl ServiceFactory<Self> for TxPoolActorService {
 
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<NodeStatusChangeEvent>();
         ctx.subscribe::<PeerTransactions>();
         ctx.add_stream(self.inner.subscribe_txns());
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<NodeStatusChangeEvent>();
         ctx.unsubscribe::<PeerTransactions>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, NodeStatusChangeEvent> for TxPoolActorService {
+    fn handle_event(&mut self, msg: NodeStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.node_status = Some(msg.0);
     }
 }
 
@@ -132,9 +146,16 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
 
 impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
-        // JUST need to keep at most once delivery.
-        let txns = msg.peer_transactions();
-        let _ = self.inner.import_txns(txns);
+        //TODO should filter msg an NetworkService
+        if let Some(node_status) = self.node_status.as_ref() {
+            if node_status.is_nearly_synced() {
+                // JUST need to keep at most once delivery.
+                let txns = msg.peer_transactions();
+                let _ = self.inner.import_txns(txns);
+            } else {
+                debug!("TxPoolActorService's process_broadcast_txn is false, ignore PeerTransactions message.");
+            }
+        }
     }
 }
 

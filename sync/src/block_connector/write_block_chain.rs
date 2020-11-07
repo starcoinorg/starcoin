@@ -19,12 +19,13 @@ use starcoin_types::{
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 
 pub struct WriteBlockChainService<P>
 where
-    P: TxPoolSyncService + 'static,
+    P: TxPoolSyncService,
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
@@ -80,8 +81,16 @@ where
 
     pub fn find_or_fork(&self, header: &BlockHeader) -> Result<(bool, Option<BlockChain>)> {
         WRITE_BLOCK_CHAIN_METRICS.try_connect_count.inc();
-        let block_exist = self.block_exist(header.id());
-        let block_chain = if self.block_exist(header.parent_hash()) {
+        let block_id = header.id();
+        let block_exist = self.block_exist(block_id);
+        let block_chain = if block_exist {
+            let net = self.config.net();
+            Some(BlockChain::new(
+                net.time_service(),
+                block_id,
+                self.storage.clone(),
+            )?)
+        } else if self.block_exist(header.parent_hash()) {
             let net = self.config.net();
             Some(BlockChain::new(
                 net.time_service(),
@@ -106,24 +115,14 @@ where
         &self.master
     }
 
-    fn select_head(&mut self, new_branch: BlockChain, repeat_apply: bool) -> Result<()> {
+    pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header().clone();
-        let total_difficulty = new_branch.get_total_difficulty()?;
-        let broadcast_new_branch = self.is_new_branch(&block_header.parent_hash(), repeat_apply);
+        let master_total_difficulty = self.master.get_total_difficulty()?;
+        let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let mut map_be_uncles = Vec::new();
         let parent_is_master_head = self.is_master_head(&block_header.parent_hash());
-        if broadcast_new_branch
-            && self.block_exist(block_header.parent_hash())
-            && !parent_is_master_head
-        {
-            map_be_uncles.push(
-                self.get_master()
-                    .get_header_by_number(block_header.number())?
-                    .expect("block header is not exist."),
-            );
-        }
-        if total_difficulty > self.get_master().get_total_difficulty()? {
+        if branch_total_difficulty > master_total_difficulty {
             let (enacted_blocks, retracted_blocks) = if !parent_is_master_head {
                 self.find_ancestors_from_accumulator(&new_branch)?
             } else {
@@ -135,12 +134,12 @@ where
             self.update_master(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();
-            self.broadcast_new_head(BlockDetail::new(block, total_difficulty));
+            self.config
+                .net()
+                .time_service()
+                .adjust(GlobalTimeOnChain::new(block.header().timestamp));
+            self.broadcast_new_head(BlockDetail::new(block, branch_total_difficulty));
         } else {
-            self.insert_branch(&block_header, repeat_apply);
-        }
-
-        if broadcast_new_branch {
             //send new branch event
             map_be_uncles.push(block_header);
             self.broadcast_new_branch(map_be_uncles);
@@ -156,22 +155,6 @@ where
         let header = new_master.current_header();
         self.master = new_master;
         self.startup_info.update_master(&header);
-    }
-
-    fn insert_branch(&mut self, new_block_header: &BlockHeader, repeat_apply: bool) {
-        if !repeat_apply
-            || self
-                .startup_info
-                .is_branch_head_exclude_master(&new_block_header.parent_hash())
-        {
-            self.startup_info.insert_branch(new_block_header);
-        }
-    }
-
-    fn is_new_branch(&self, parent_id: &HashValue, repeat_apply: bool) -> bool {
-        !repeat_apply
-            && !self.startup_info.is_branch_head_exclude_master(parent_id)
-            && !self.is_master_head(parent_id)
     }
 
     fn is_master_head(&self, parent_id: &HashValue) -> bool {
@@ -275,34 +258,47 @@ where
         execute: bool,
         remote_chain_state: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
+        let block_id = block.id();
+        if self.master.current_header().id() == block.id() {
+            debug!("Repeat connect, current header is {} already.", block_id);
+            return Ok(());
+        }
         let (block_exist, fork) = self.find_or_fork(block.header())?;
-        if block_exist {
-            WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
-            self.select_head(fork.expect("Branch not exist."), block_exist)?;
-            Err(ConnectBlockError::DuplicateConn(Box::new(block)).into())
-        } else if let Some(mut branch) = fork {
-            let timer = WRITE_BLOCK_CHAIN_METRICS
-                .exe_block_time
-                .with_label_values(&["time"])
-                .start_timer();
-            let connected = if execute {
-                branch.apply(block.clone())
-            } else {
-                branch.apply_without_execute(
-                    block.clone(),
-                    remote_chain_state.expect("remote chain state not set"),
-                )
-            };
-            timer.observe_duration();
-            if connected.is_err() {
-                debug!("connected failed {:?}", block.header().id());
-                WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
-            } else {
-                self.select_head(branch, block_exist)?;
+        match (block_exist, fork) {
+            //block has bean processed, so just trigger a head select.
+            (true, Some(branch)) => {
+                debug!(
+                    "Block {} has bean processed, trigger head select, total_difficulty: {}",
+                    block_id,
+                    branch.get_total_difficulty()?
+                );
+                WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
+                self.select_head(branch)?;
+                Ok(())
             }
-            connected
-        } else {
-            Err(ConnectBlockError::FutureBlock(Box::new(block)).into())
+            (false, Some(mut branch)) => {
+                let timer = WRITE_BLOCK_CHAIN_METRICS
+                    .exe_block_time
+                    .with_label_values(&["time"])
+                    .start_timer();
+                let connected = if execute {
+                    branch.apply(block.clone())
+                } else {
+                    branch.apply_without_execute(
+                        block.clone(),
+                        remote_chain_state.expect("remote chain state not set"),
+                    )
+                };
+                timer.observe_duration();
+                if connected.is_err() {
+                    debug!("connected failed {:?}", block.header().id());
+                    WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
+                } else {
+                    self.select_head(branch)?;
+                }
+                connected
+            }
+            (_, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
     }
 }

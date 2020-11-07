@@ -5,9 +5,9 @@ use network::NetworkAsyncService;
 use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_sync_api::StartSyncTxnEvent;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
+use starcoin_types::system_events::NodeStatusChangeEvent;
 use std::sync::Arc;
 use txpool::TxPoolService;
 
@@ -18,12 +18,12 @@ pub struct TxnSyncService {
 
 impl ActorService for TxnSyncService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<StartSyncTxnEvent>();
+        ctx.unsubscribe::<NodeStatusChangeEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<StartSyncTxnEvent>();
+        ctx.unsubscribe::<NodeStatusChangeEvent>();
         Ok(())
     }
 }
@@ -51,14 +51,24 @@ impl TxnSyncService {
     }
 }
 
-impl EventHandler<Self, StartSyncTxnEvent> for TxnSyncService {
-    fn handle_event(&mut self, _msg: StartSyncTxnEvent, ctx: &mut ServiceContext<TxnSyncService>) {
-        let inner = self.inner.clone();
-        ctx.wait(async move {
-            if let Err(e) = inner.sync_txn().await {
-                error!("handle sync txn event fail: {:?}", e);
+impl EventHandler<Self, NodeStatusChangeEvent> for TxnSyncService {
+    fn handle_event(&mut self, msg: NodeStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
+        let node_status = msg.0;
+        if node_status.is_synced() {
+            // sync txn after block sync task done.
+            // because txn verify dependency the latest chain state, such as timestamp on chain.
+
+            // only sync txn if txpool is empty currently.
+            //TODO optimize txpool sync.
+            if self.inner.pool.status().txn_count == 0 {
+                let inner = self.inner.clone();
+                ctx.wait(async move {
+                    if let Err(e) = inner.sync_txn().await {
+                        error!("handle sync txn event fail: {:?}", e);
+                    }
+                });
             }
-        });
+        }
     }
 }
 

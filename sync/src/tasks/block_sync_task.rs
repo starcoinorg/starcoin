@@ -1,16 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::BlockFetcher;
+use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, NoOpEventHandle};
 use anyhow::Result;
 use chain::BlockChain;
 use futures::future::BoxFuture;
 use futures::FutureExt;
-use pin_utils::core_reexport::pin::Pin;
+use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ChainWriter;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
+use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -78,11 +79,25 @@ impl TaskState for BlockSyncTask {
 
 pub struct BlockCollector {
     chain: BlockChain,
+    event_handle: Box<dyn BlockConnectedEventHandle>,
 }
 
 impl BlockCollector {
     pub fn new(chain: BlockChain) -> Self {
-        Self { chain }
+        Self {
+            chain,
+            event_handle: Box::new(NoOpEventHandle),
+        }
+    }
+
+    pub fn new_with_handle<H>(chain: BlockChain, event_handle: H) -> Self
+    where
+        H: BlockConnectedEventHandle + 'static,
+    {
+        Self {
+            chain,
+            event_handle: Box::new(event_handle),
+        }
     }
 }
 
@@ -90,12 +105,21 @@ impl TaskResultCollector<Block> for BlockCollector {
     type Output = BlockChain;
 
     fn collect(mut self: Pin<&mut Self>, item: Block) -> Result<CollectorState> {
-        let timestamp = item.header().timestamp();
-        self.chain.apply(item)?;
-        //TODO should do this in chain?
+        let block_id = item.id();
+        let timestamp = item.header().timestamp;
+        self.chain.apply(item.clone())?;
         self.chain
             .time_service()
             .adjust(GlobalTimeOnChain::new(timestamp));
+        if let Err(e) = self
+            .event_handle
+            .handle(BlockConnectedEvent { block: item })
+        {
+            error!(
+                "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                e, block_id
+            );
+        }
         Ok(CollectorState::Need)
     }
 
@@ -110,7 +134,6 @@ mod tests {
     use anyhow::format_err;
     use futures::FutureExt;
     use futures_timer::Delay;
-    use logger::prelude::*;
     use starcoin_accumulator::tree_store::mock::MockAccumulatorStore;
     use starcoin_accumulator::MerkleAccumulator;
     use starcoin_crypto::HashValue;

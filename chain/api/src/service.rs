@@ -309,7 +309,7 @@ where
     async fn master_startup_info(&self) -> Result<StartupInfo> {
         let response = self.send(ChainRequest::GetStartupInfo()).await??;
         if let ChainResponse::StartupInfo(startup_info) = response {
-            Ok(startup_info)
+            Ok(*startup_info)
         } else {
             bail!("Get chain info response error.")
         }
@@ -318,7 +318,7 @@ where
     async fn master_head(&self) -> Result<ChainInfo> {
         let response = self.send(ChainRequest::GetHeadChainInfo()).await??;
         if let ChainResponse::ChainInfo(chain_info) = response {
-            Ok(chain_info)
+            Ok(*chain_info)
         } else {
             bail!("get head chain info error.")
         }

@@ -21,8 +21,20 @@ use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 /// Type for block number.
 pub type BlockNumber = u64;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
+pub struct BlockIdAndNumber {
+    pub id: HashValue,
+    pub number: BlockNumber,
+}
+
+impl BlockIdAndNumber {
+    pub fn new(id: HashValue, number: BlockNumber) -> Self {
+        Self { id, number }
+    }
+}
+
 /// block timestamp allowed future times
-pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 15000; // 15 millisecond;
+pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct BlockHeader {

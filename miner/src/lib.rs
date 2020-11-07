@@ -1,10 +1,13 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::MINER_METRICS;
+use crate::task::MintTask;
 use anyhow::{format_err, Result};
 use chain::BlockChain;
 use consensus::Consensus;
 use crypto::HashValue;
+use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
@@ -13,6 +16,7 @@ use starcoin_service_registry::{
 use starcoin_storage::Storage;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::ChainReader;
 
 mod create_block_template;
 pub mod headblock_pacemaker;
@@ -21,12 +25,11 @@ mod metrics;
 pub mod ondemand_pacemaker;
 pub mod task;
 
-use crate::metrics::MINER_METRICS;
-use crate::task::MintTask;
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
-use futures::executor::block_on;
+
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
-use traits::ChainReader;
+
+use std::option::Option::Some;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -99,8 +102,11 @@ impl MinerService {
                 .calculate_next_difficulty(&block_chain, &epoch)?;
             let task = MintTask::new(block_template, difficulty);
             let mining_hash = task.mining_hash;
-            if self.is_minting() {
-                warn!("force set mint task, since mint task is not empty");
+            if let Some(current_task) = self.current_task.as_ref() {
+                debug!(
+                    "force set mint task, current_task: {:?}, new_task: {:?}",
+                    current_task, task
+                );
             }
             self.current_task = Some(task);
             ctx.broadcast(MintBlockEvent::new(
@@ -147,9 +153,9 @@ impl MinerService {
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
-        info!("Handle GenerateBlockEvent:{:?}", event);
+        debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.is_minting() {
-            info!("Miner has mint job so just ignore this event.");
+            debug!("Miner has mint job so just ignore this event.");
             return;
         }
         if let Err(err) = self.dispatch_task(ctx) {

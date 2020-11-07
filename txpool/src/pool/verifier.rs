@@ -77,7 +77,7 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
                 match self.client.verify_transaction(unverified) {
                     Ok(txn) => transaction::PendingTransaction::from(txn.into_inner()),
                     Err(err) => {
-                        debug!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
+                        warn!(target: "txqueue", "[{:?}] Rejected tx {:?}", hash, err);
                         return Err(err);
                     }
                 }

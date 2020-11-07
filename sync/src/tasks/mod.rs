@@ -9,12 +9,13 @@ use logger::prelude::*;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::MerkleAccumulator;
 use starcoin_crypto::HashValue;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::PeerInfo;
+use std::sync::mpsc::Sender;
 use std::sync::Arc;
-use stream_task::{
-    Generator, TaskError, TaskEventCounterHandle, TaskGenerator, TaskHandle, TaskResultCollector,
-};
+use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator, TaskHandle};
 
 pub trait BlockIdFetcher: Send + Sync {
     fn fetch_block_ids(
@@ -105,6 +106,48 @@ pub struct SyncTarget {
     pub peers: Vec<PeerInfo>,
 }
 
+#[derive(Clone, Debug)]
+pub struct BlockConnectedEvent {
+    pub block: Block,
+}
+
+pub trait BlockConnectedEventHandle: Send {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
+}
+
+impl<S> BlockConnectedEventHandle for ServiceRef<S>
+where
+    S: ActorService + EventHandler<S, BlockConnectedEvent>,
+{
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.notify(event)?;
+        Ok(())
+    }
+}
+
+pub struct NoOpEventHandle;
+
+impl BlockConnectedEventHandle for NoOpEventHandle {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        debug!("Handle BlockConnectedEvent {:?}", event);
+        Ok(())
+    }
+}
+
+impl BlockConnectedEventHandle for Sender<BlockConnectedEvent> {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.send(event)?;
+        Ok(())
+    }
+}
+
+impl BlockConnectedEventHandle for UnboundedSender<BlockConnectedEvent> {
+    fn handle(&mut self, event: BlockConnectedEvent) -> Result<()> {
+        self.start_send(event)?;
+        Ok(())
+    }
+}
+
 mod accumulator_sync_task;
 mod block_sync_task;
 mod find_ancestor_task;
@@ -115,22 +158,25 @@ mod tests;
 
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
+use chain::BlockChain;
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
-use starcoin_types::peer_info::PeerInfo;
+use futures::channel::mpsc::UnboundedSender;
+use starcoin_vm_types::time::TimeService;
 
-pub fn full_sync_task<C, F>(
+pub fn full_sync_task<H, F>(
     current_block_id: HashValue,
     target: BlockInfo,
+    time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
-    block_collector: C,
+    block_event_handle: H,
     fetcher: F,
 ) -> Result<(
-    BoxFuture<'static, Result<C::Output, TaskError>>,
+    BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
     Arc<TaskEventCounterHandle>,
 )>
 where
-    C: TaskResultCollector<Block> + 'static,
+    H: BlockConnectedEventHandle + 'static,
     F: BlockIdFetcher + BlockFetcher + 'static,
 {
     let fetcher = Arc::new(fetcher);
@@ -150,7 +196,7 @@ where
 
     let accumulator_task_fetcher = fetcher.clone();
     let block_task_fetcher = fetcher.clone();
-
+    let chain_storage = storage.clone();
     let max_retry_times = 15;
     let delay_milliseconds_on_error = 100;
     let sync_task = TaskGenerator::new(
@@ -165,7 +211,7 @@ where
         event_handle.clone(),
     )
     .and_then(move |ancestor, event_handle| {
-        debug!("find ancestor: {:?}", ancestor);
+        info!("[sync] Find ancestor: {:?}", ancestor);
         let ancestor_block_info = storage.get_block_info(ancestor.id)?.ok_or_else(|| {
             format_err!("Can not find ancestor block info by id: {}", ancestor.id)
         })?;
@@ -179,24 +225,27 @@ where
         );
         Ok(TaskGenerator::new(
             accumulator_sync_task,
-            3,
+            5,
             max_retry_times,
             delay_milliseconds_on_error,
             AccumulatorCollector::new(
                 storage.get_accumulator_store(AccumulatorStoreType::Block),
+                ancestor,
                 ancestor_block_info.block_accumulator_info,
                 target_block_accumulator,
             ),
             event_handle,
         ))
     })
-    .and_then(move |accumulator, event_handle| {
-        //start_number is include, so start from current_number + 1
-        let block_sync_task =
-            BlockSyncTask::new(accumulator, current_block_number + 1, block_task_fetcher, 3);
+    .and_then(move |(ancestor, accumulator), event_handle| {
+        //start_number is include, so start from ancestor.number + 1
+        let start_number = ancestor.number + 1;
+        let block_sync_task = BlockSyncTask::new(accumulator, start_number, block_task_fetcher, 3);
+        let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
+        let block_collector = BlockCollector::new_with_handle(chain, block_event_handle);
         Ok(TaskGenerator::new(
             block_sync_task,
-            2,
+            3,
             max_retry_times,
             delay_milliseconds_on_error,
             block_collector,

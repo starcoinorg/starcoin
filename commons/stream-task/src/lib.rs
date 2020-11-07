@@ -313,8 +313,8 @@ mod tests {
 
         let report = event_handle.get_reports().pop().unwrap();
         debug!("{}", report);
-        assert!(report.item > 0);
-        assert!(report.item < max);
+        assert!(report.processed_items > 0);
+        assert!(report.processed_items < max);
     }
 
     #[stest::test]
@@ -337,7 +337,7 @@ mod tests {
         assert_eq!(counter, max);
         let report = event_handle.get_reports().pop().unwrap();
         debug!("{}", report);
-        assert_eq!(report.item, max);
+        assert_eq!(report.processed_items, max);
     }
 
     #[stest::test]
@@ -366,7 +366,7 @@ mod tests {
         let report = event_handle.get_reports().pop().unwrap();
         debug!("{}", report);
         assert_eq!(report.ok, 0);
-        assert_eq!(report.item, 0);
+        assert_eq!(report.processed_items, 0);
     }
 
     #[stest::test]
@@ -420,7 +420,7 @@ mod tests {
 
         let report = event_handle.get_reports().pop().unwrap();
         debug!("{}", report);
-        assert!(report.item > 0);
-        assert!(report.item < max);
+        assert!(report.processed_items > 0);
+        assert!(report.processed_items < max);
     }
 }

@@ -17,6 +17,7 @@ use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, Chain
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{
@@ -309,15 +310,28 @@ impl BlockChain {
             Err(format_err!("Block is none when query epoch resource."))
         }
     }
+
+    pub fn get_chain_info(&self) -> Result<ChainInfo> {
+        //TODO cache the chain info.
+        let header = self.current_header();
+        let total_difficulty = self.get_total_difficulty()?;
+        Ok(ChainInfo::new(header, total_difficulty))
+    }
+
+    fn ensure_head(&self) -> &Block {
+        self.head
+            .as_ref()
+            .expect("head block must some after chain init.")
+    }
 }
 
 impl ChainReader for BlockChain {
     fn head_block(&self) -> Block {
-        self.head.clone().expect("head block is none.")
+        self.ensure_head().clone()
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.head_block().header().clone()
+        self.ensure_head().header().clone()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -442,7 +456,7 @@ impl ChainReader for BlockChain {
         let id = self.head_block().id();
         let block_info = self
             .storage
-            .get_block_info(self.head_block().id())?
+            .get_block_info(id)?
             .ok_or_else(|| format_err!("Can not find block info by id {}", id))?;
         Ok(block_info.total_difficulty)
     }
@@ -670,9 +684,10 @@ impl BlockChain {
             verify_block!(
                 VerifyBlockField::Header,
                 current_head_id == parent_hash,
-                "Invalid block: Parent id mismatch, expect:{}, got: {}.",
-                current_head_id,
-                parent_hash
+                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                current_head_id.to_hex(),
+                parent_hash.to_hex(),
+                header.number
             );
         }
         // do not check genesis block timestamp check

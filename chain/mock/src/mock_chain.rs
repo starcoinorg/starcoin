@@ -4,6 +4,7 @@
 use crate::BlockChain;
 use anyhow::Result;
 use crypto::HashValue;
+use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
@@ -11,6 +12,7 @@ use starcoin_storage::Storage;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::block::{Block, BlockHeader};
 use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 
 pub struct MockChain {
@@ -71,6 +73,32 @@ impl MockChain {
             net: self.net.clone(),
             miner: AccountInfo::random(),
         })
+    }
+
+    pub fn select_head(&mut self, new_block: Block) -> Result<()> {
+        //TODO reuse WriteChainService's select_head logic.
+        // new block should be execute and save to storage.
+        let new_block_id = new_block.id();
+        let branch = BlockChain::new(
+            self.net.time_service(),
+            new_block_id,
+            self.head.get_storage(),
+        )?;
+        let branch_total_difficulty = branch.get_total_difficulty()?;
+        let head_total_difficulty = self.head.get_total_difficulty()?;
+        if branch_total_difficulty > head_total_difficulty {
+            self.head = branch;
+            debug!("Change to new head: {:?}", self.head.current_header());
+            self.net
+                .time_service()
+                .adjust(GlobalTimeOnChain::new(new_block.header().timestamp));
+        } else {
+            debug!(
+                "New block({:?})'s total_difficulty({:?}) <= head's total_difficulty({:?})",
+                new_block_id, branch_total_difficulty, head_total_difficulty
+            );
+        }
+        Ok(())
     }
 
     pub fn produce(&self) -> Result<Block> {

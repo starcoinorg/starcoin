@@ -5,6 +5,14 @@ use log::info;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::time::SystemTime;
+
+fn now_seconds() -> u64 {
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("System time is before the UNIX_EPOCH")
+        .as_secs()
+}
 
 pub trait TaskEventHandle: Send + Sync {
     fn on_start(&self, task_name: String, total_items: Option<u64>);
@@ -24,6 +32,7 @@ pub trait TaskEventHandle: Send + Sync {
 
 #[derive(Debug)]
 pub struct TaskEventCounter {
+    start_seconds: u64,
     task_name: String,
     total_items: Option<u64>,
     sub_task_counter: AtomicU64,
@@ -36,6 +45,7 @@ pub struct TaskEventCounter {
 impl TaskEventCounter {
     pub fn new(task_name: String, total_items: Option<u64>) -> Self {
         Self {
+            start_seconds: now_seconds(),
             task_name,
             total_items,
             sub_task_counter: AtomicU64::new(0),
@@ -62,25 +72,25 @@ impl TaskEventCounter {
         self.retry_counter.load(Ordering::Relaxed)
     }
 
-    pub fn item(&self) -> u64 {
+    pub fn processed_items(&self) -> u64 {
         self.item_counter.load(Ordering::Relaxed)
     }
 
-    pub fn percent(&self) -> Option<f64> {
-        self.total_items
-            .map(|total_items| (self.item() as f64 / total_items as f64) * 100f64)
+    pub fn use_seconds(&self) -> u64 {
+        now_seconds() - self.start_seconds
     }
 
     pub fn get_report(&self) -> CounterReport {
-        CounterReport {
-            task_name: self.task_name.clone(),
-            sub_task: self.sub_task(),
-            error: self.error(),
-            ok: self.ok(),
-            retry: self.retry(),
-            item: self.item(),
-            percent: self.percent(),
-        }
+        CounterReport::new(
+            self.task_name.clone(),
+            self.sub_task(),
+            self.error(),
+            self.ok(),
+            self.retry(),
+            self.total_items,
+            self.processed_items(),
+            self.use_seconds(),
+        )
     }
 }
 
@@ -91,19 +101,56 @@ pub struct CounterReport {
     pub error: u64,
     pub ok: u64,
     pub retry: u64,
-    pub item: u64,
+    pub total_items: Option<u64>,
+    pub processed_items: u64,
+    pub use_seconds: u64,
     pub percent: Option<f64>,
 }
 
+impl CounterReport {
+    pub fn new(
+        task_name: String,
+        sub_task: u64,
+        error: u64,
+        ok: u64,
+        retry: u64,
+        total_items: Option<u64>,
+        processed_items: u64,
+        use_seconds: u64,
+    ) -> Self {
+        Self {
+            task_name,
+            sub_task,
+            error,
+            ok,
+            retry,
+            total_items,
+            processed_items,
+            use_seconds,
+            percent: total_items
+                .map(|total_items| (processed_items as f64 / total_items as f64) * 100f64),
+        }
+    }
+}
 impl std::fmt::Display for CounterReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Task {} sub_task:{}, error:{}, ok:{}, retry:{}, processed items:{}",
-            self.task_name, self.sub_task, self.error, self.ok, self.retry, self.item
+            "Task {} sub_task:{}, error:{}, ok:{}, retry:{}, processed items:{}, use_seconds: {}",
+            self.task_name,
+            self.sub_task,
+            self.error,
+            self.ok,
+            self.retry,
+            self.processed_items,
+            self.use_seconds,
         )?;
-        if let Some(percent) = self.percent {
-            write!(f, ", percent: {:.2}%", percent)?;
+        if let (Some(total_items), Some(percent)) = (self.total_items, self.percent) {
+            write!(
+                f,
+                ", total_items: {}, percent: {:.2}%",
+                total_items, percent
+            )?;
         }
         writeln!(f)
     }
