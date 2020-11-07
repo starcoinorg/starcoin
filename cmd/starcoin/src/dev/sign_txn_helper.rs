@@ -11,7 +11,25 @@ use starcoin_vm_types::account_config::association_address;
 use starcoin_vm_types::transaction::{SignedUserTransaction, TransactionPayload};
 use starcoin_vm_types::{genesis_config::ChainNetwork, on_chain_config::DaoConfig};
 
-pub fn sign_txn_with_association_account_by_rpc_client(
+pub fn sign_txn_with_account_by_rpc_client(
+    cli_state: &CliState,
+    addr: AccountAddress,
+    max_gas_amount: u64,
+    gas_price: u64,
+    expiration_time: u64,
+    payload: TransactionPayload,
+) -> Result<SignedUserTransaction> {
+    sign_txn_by_rpc_client(
+        cli_state,
+        max_gas_amount,
+        gas_price,
+        expiration_time,
+        payload,
+        Some(addr),
+    )
+}
+
+pub fn _sign_txn_with_association_account_by_rpc_client(
     cli_state: &CliState,
     max_gas_amount: u64,
     gas_price: u64,
@@ -28,7 +46,7 @@ pub fn sign_txn_with_association_account_by_rpc_client(
     )
 }
 
-pub fn sign_txn_with_default_account_by_rpc_client(
+pub fn _sign_txn_with_default_account_by_rpc_client(
     cli_state: &CliState,
     max_gas_amount: u64,
     gas_price: u64,
@@ -103,7 +121,9 @@ mod tests {
     };
     use starcoin_types::transaction::{parse_transaction_argument, Script, TransactionArgument};
     use starcoin_vm_types::{
-        account_config::AccountResource, genesis_config::StdlibVersion, transaction::Package,
+        account_config::{association_address, genesis_address, AccountResource},
+        genesis_config::StdlibVersion,
+        transaction::Package,
         vm_status::KeptVMStatus,
     };
     use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
@@ -158,16 +178,17 @@ mod tests {
         }
         "#;
         let test_upgrade_module =
-            compile_module_with_address(association_address(), test_upgrade_module_source);
+            compile_module_with_address(genesis_address(), test_upgrade_module_source);
         let test_upgrade_module_package = Package::new_with_module(test_upgrade_module).unwrap();
 
         let dao_config = config.net().genesis_config().dao_config;
         let (module_upgrade_proposal, _) = build_module_upgrade_proposal(
             &test_upgrade_module_package,
+            2,
             dao_config.min_action_delay,
         );
 
-        let proposal_txn = sign_txn_with_association_account_by_rpc_client(
+        let proposal_txn = _sign_txn_with_association_account_by_rpc_client(
             &cli_state,
             1_000_000,
             1,
@@ -188,6 +209,7 @@ mod tests {
             .chain_get_transaction_info(proposal_txn_id)
             .unwrap()
             .unwrap();
+        info!("txn status : {:?}", proposal_txn_info);
         assert_eq!(proposal_txn_info.status(), &KeptVMStatus::Executed);
 
         // 2. transfer
@@ -195,7 +217,6 @@ mod tests {
             .client()
             .sleep(dao_config.voting_period / 2 * 1000)
             .unwrap();
-        // cli_state.client().sleep(3_600_1000).unwrap();
         let default_account = cli_state.default_account().unwrap();
         // unlock default account
         cli_state
@@ -245,6 +266,7 @@ mod tests {
         assert_eq!(transfer_txn_info.status(), &KeptVMStatus::Executed);
 
         // 3. vote
+        let proposal_id = 0;
         let vote_code =
             compiled_transaction_script(StdlibVersion::Latest, StdlibScript::CastVote).into_vec();
         let mut type_tags: Vec<TypeTag> = Vec::new();
@@ -254,7 +276,7 @@ mod tests {
         type_tags.push(module);
         let mut args: Vec<TransactionArgument> = Vec::new();
         let arg_1 = parse_transaction_argument("0x0000000000000000000000000a550c18").unwrap();
-        let arg_2 = parse_transaction_argument("0").unwrap();
+        let arg_2 = parse_transaction_argument(&format!("{}", proposal_id)).unwrap();
         let arg_3 = parse_transaction_argument("true").unwrap();
         let arg_4 =
             parse_transaction_argument(&format!("{}u128", transfer_amount * 90 / 100)).unwrap();
@@ -294,10 +316,10 @@ mod tests {
         node_handle.generate_block().unwrap();
 
         // 5. queue
-        let proposal_id = 0;
-        let module_upgrade_queue = build_module_upgrade_queue(proposal_id);
-        let queue_txn = sign_txn_with_default_account_by_rpc_client(
+        let module_upgrade_queue = build_module_upgrade_queue(association_address(), proposal_id);
+        let queue_txn = sign_txn_with_account_by_rpc_client(
             &cli_state,
+            default_account.address,
             1_000_000,
             1,
             3_000,
@@ -316,6 +338,7 @@ mod tests {
             .chain_get_transaction_info(queue_txn_id)
             .unwrap()
             .unwrap();
+        info!("queue txn info : {:?}", queue_txn_info);
         assert_eq!(queue_txn_info.status(), &KeptVMStatus::Executed);
 
         // 6. sleep
@@ -326,9 +349,10 @@ mod tests {
         node_handle.generate_block().unwrap();
 
         // 7. plan
-        let module_upgrade_plan = build_module_upgrade_plan(proposal_id);
-        let plan_txn = sign_txn_with_default_account_by_rpc_client(
+        let module_upgrade_plan = build_module_upgrade_plan(association_address(), proposal_id);
+        let plan_txn = sign_txn_with_account_by_rpc_client(
             &cli_state,
+            default_account.address,
             1_000_000,
             1,
             3_000,
@@ -350,7 +374,7 @@ mod tests {
         assert_eq!(plan_txn_info.status(), &KeptVMStatus::Executed);
 
         // 8. exe package
-        let package_txn = sign_txn_with_association_account_by_rpc_client(
+        let package_txn = _sign_txn_with_association_account_by_rpc_client(
             &cli_state,
             1_000_000,
             1,
@@ -374,7 +398,7 @@ mod tests {
 
         // 9. verify
         let call = ContractCall {
-            module_address: association_address(),
+            module_address: genesis_address(),
             module_name: "TestModule".to_string(),
             func: "is_test".to_string(),
             type_args: Vec::new(),

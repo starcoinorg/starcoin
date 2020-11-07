@@ -9,7 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
-use starcoin_vm_types::account_config::{association_address, genesis_address};
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
 use starcoin_vm_types::identifier::Identifier;
@@ -411,7 +411,11 @@ pub fn build_stdlib_package(
     Ok(package)
 }
 
-pub fn build_module_upgrade_proposal(package: &Package, day: u64) -> (Script, HashValue) {
+pub fn build_module_upgrade_proposal(
+    package: &Package,
+    version: u64,
+    day: u64,
+) -> (Script, HashValue) {
     let module_upgrade_proposal_script =
         compiled_transaction_script(StdlibVersion::Latest, StdlibScript::ProposeModuleUpgrade)
             .into_vec();
@@ -421,8 +425,9 @@ pub fn build_module_upgrade_proposal(package: &Package, day: u64) -> (Script, Ha
             module_upgrade_proposal_script,
             vec![stc_type_tag()],
             vec![
-                TransactionArgument::Address(genesis_address()),
+                TransactionArgument::Address(package.package_address()),
                 TransactionArgument::U8Vector(package_hash.clone().to_vec()),
+                TransactionArgument::U64(version),
                 TransactionArgument::U64(day),
             ],
         ),
@@ -430,7 +435,7 @@ pub fn build_module_upgrade_proposal(package: &Package, day: u64) -> (Script, Ha
     )
 }
 
-pub fn build_module_upgrade_plan(proposal_id: u64) -> Script {
+pub fn build_module_upgrade_plan(proposer_address: AccountAddress, proposal_id: u64) -> Script {
     let module_upgrade_plan_script =
         compiled_transaction_script(StdlibVersion::Latest, StdlibScript::SubmitModuleUpgradePlan)
             .into_vec();
@@ -438,13 +443,13 @@ pub fn build_module_upgrade_plan(proposal_id: u64) -> Script {
         module_upgrade_plan_script,
         vec![stc_type_tag()],
         vec![
-            TransactionArgument::Address(association_address()),
+            TransactionArgument::Address(proposer_address),
             TransactionArgument::U64(proposal_id),
         ],
     )
 }
 
-pub fn build_module_upgrade_queue(proposal_id: u64) -> Script {
+pub fn build_module_upgrade_queue(proposal_address: AccountAddress, proposal_id: u64) -> Script {
     let upgrade_module = TypeTag::Struct(StructTag {
         address: genesis_address(),
         module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
@@ -458,7 +463,7 @@ pub fn build_module_upgrade_queue(proposal_id: u64) -> Script {
         module_upgrade_queue_script,
         vec![stc_type_tag(), upgrade_module],
         vec![
-            TransactionArgument::Address(association_address()),
+            TransactionArgument::Address(proposal_address),
             TransactionArgument::U64(proposal_id),
         ],
     )

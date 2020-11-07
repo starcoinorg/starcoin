@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_helper::sign_txn_with_association_account_by_rpc_client;
+use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -16,6 +17,10 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_exe")]
 pub struct UpgradeModuleExeOpt {
+    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    /// hex encoded string, like 0x1, 0x12
+    sender: Option<AccountAddress>,
+
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -71,13 +76,19 @@ impl CommandAction for UpgradeModuleExeCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
+        let sender = if let Some(sender) = ctx.opt().sender {
+            sender
+        } else {
+            ctx.state().default_account()?.address
+        };
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
             let upgrade_package = scs::from_bytes(&bytes)?;
 
-            let signed_txn = sign_txn_with_association_account_by_rpc_client(
+            let signed_txn = sign_txn_with_account_by_rpc_client(
                 cli_state,
+                sender,
                 opt.max_gas_amount,
                 opt.gas_price,
                 opt.expiration_time,

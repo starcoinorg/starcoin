@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::dev::sign_txn_helper::{
-    get_dao_config, sign_txn_with_association_account_by_rpc_client,
-};
+use crate::dev::sign_txn_helper::{get_dao_config, sign_txn_with_account_by_rpc_client};
 use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_transaction_builder::build_module_upgrade_proposal;
+use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -19,6 +18,10 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {
+    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    /// hex encoded string, like 0x1, 0x12
+    sender: Option<AccountAddress>,
+
     #[structopt(
         short = "g",
         name = "max-gas-amount",
@@ -42,6 +45,7 @@ pub struct UpgradeModuleProposalOpt {
         help = "how long(in seconds) the txn stay alive"
     )]
     expiration_time: u64,
+
     #[structopt(
         short = "b",
         name = "blocking-mode",
@@ -58,6 +62,15 @@ pub struct UpgradeModuleProposalOpt {
         parse(from_os_str)
     )]
     module_file: Option<PathBuf>,
+
+    #[structopt(
+        short = "v",
+        name = "module-version",
+        long = "module_version",
+        default_value = "1",
+        help = "how long(in seconds) the txn stay alive"
+    )]
+    version: u64,
 }
 
 pub struct UpgradeModuleProposalCommand;
@@ -74,6 +87,11 @@ impl CommandAction for UpgradeModuleProposalCommand {
     ) -> Result<Self::ReturnItem> {
         let opt = ctx.opt();
         let cli_state = ctx.state();
+        let sender = if let Some(sender) = ctx.opt().sender {
+            sender
+        } else {
+            ctx.state().default_account()?.address
+        };
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
@@ -81,9 +99,10 @@ impl CommandAction for UpgradeModuleProposalCommand {
 
             let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
             let (module_upgrade_proposal, package_hash) =
-                build_module_upgrade_proposal(&upgrade_package, min_action_delay);
-            let signed_txn = sign_txn_with_association_account_by_rpc_client(
+                build_module_upgrade_proposal(&upgrade_package, opt.version, min_action_delay);
+            let signed_txn = sign_txn_with_account_by_rpc_client(
                 cli_state,
+                sender,
                 opt.max_gas_amount,
                 opt.gas_price,
                 opt.expiration_time,
