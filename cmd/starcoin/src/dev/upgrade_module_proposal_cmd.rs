@@ -7,7 +7,9 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
+use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
+use starcoin_types::transaction::Package;
 use starcoin_vm_types::account_address::{parse_address, AccountAddress};
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
@@ -95,7 +97,11 @@ impl CommandAction for UpgradeModuleProposalCommand {
         if let Some(module_file) = &opt.module_file {
             let mut bytes = vec![];
             File::open(module_file)?.read_to_end(&mut bytes)?;
-            let upgrade_package = scs::from_bytes(&bytes)?;
+            let upgrade_package: Package = scs::from_bytes(&bytes)?;
+            info!(
+                "upgrade package address : {:?}",
+                upgrade_package.package_address()
+            );
 
             let min_action_delay = get_dao_config(cli_state)?.min_action_delay;
             let (module_upgrade_proposal, package_hash) =

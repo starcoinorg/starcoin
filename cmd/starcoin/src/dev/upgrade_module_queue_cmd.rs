@@ -50,7 +50,7 @@ pub struct UpgradeModuleQueueOpt {
     )]
     blocking: bool,
 
-    #[structopt(short = "s", name = "proposer-address", long="proposer_address", parse(try_from_str = parse_address))]
+    #[structopt(short = "a", name = "proposer-address", long="proposer_address", parse(try_from_str = parse_address))]
     /// hex encoded string, like 0x1, 0x12
     proposer_address: Option<AccountAddress>,
 
