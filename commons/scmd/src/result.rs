@@ -61,30 +61,35 @@ pub fn print_json(value: Value) -> Result<()> {
     Ok(())
 }
 
-fn head_row(first_value: &Value) -> Result<(Row, Box<dyn RowBuilder>)> {
+fn build_rows(values: &[Value]) -> Result<(Vec<Row>, Box<dyn RowBuilder>)> {
     let bold = CellFormat::builder().bold(true).build();
-    let simple_value = first_value.is_number()
-        || first_value.is_boolean()
-        || first_value.is_boolean()
-        || first_value.is_string();
-    if simple_value {
-        let row = Row::new(vec![Cell::new("Result", bold)]);
-        Ok((row, Box::new(SimpleRowBuilder)))
+    let mut rows = vec![];
+    let mut field_names = Vec::new();
+    let is_simple = |value: &Value| value.is_number() || value.is_boolean() || value.is_string();
+    let mut exist_not_simple = false;
+    for value in values {
+        if is_simple(value) {
+            rows.push(Row::new(vec![Cell::new("Result", bold)]));
+        } else {
+            exist_not_simple = true;
+            let mut flat = json!({});
+            flatten(value, &mut flat, None, true, None)
+                .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
+            let obj = flat.as_object().expect("must be a object");
+            let mut cells = vec![];
+            obj.keys().for_each(|key| {
+                cells.push(Cell::new(key, bold));
+                if !field_names.contains(key) {
+                    field_names.push(key.to_string());
+                }
+            });
+            rows.push(Row::new(cells));
+        }
+    }
+    if exist_not_simple {
+        Ok((rows, Box::new(ObjectRowBuilder { field_names })))
     } else {
-        let mut flat = json!({});
-        flatten(first_value, &mut flat, None, true)
-            .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
-        let obj = flat.as_object().expect("must be a object");
-        let mut cells = vec![];
-        let mut field_names = vec![];
-        for (k, _v) in obj {
-            field_names.push(k.to_string());
-        }
-        for field_name in &field_names {
-            cells.push(Cell::new(field_name, bold));
-        }
-        let row = Row::new(cells);
-        Ok((row, Box::new(ObjectRowBuilder { field_names })))
+        Ok((rows, Box::new(SimpleRowBuilder)))
     }
 }
 
@@ -110,14 +115,15 @@ fn print_vec_table(values: Vec<Value>) -> Result<()> {
     if first_value.is_array() {
         bail!("Not support embed array in Action Result.")
     }
-    let (head_row, row_builder) = head_row(&first_value)?;
-    let mut rows = vec![];
-    rows.push(head_row);
-    rows.push(row_builder.build_row(&first_value)?);
-    for value in values[1..].iter() {
-        rows.push(row_builder.build_row(&value)?);
+    let mut print_rows = vec![];
+    let (rows, row_builder) = build_rows(&values)?;
+    let mut i = 0;
+    for row in rows {
+        print_rows.push(row);
+        print_rows.push(row_builder.build_row(&values[i])?);
+        i += 1;
     }
-    let table = Table::new(rows, Default::default())?;
+    let table = Table::new(print_rows, Default::default())?;
     table.print_stdout()?;
     Ok(())
 }
@@ -131,7 +137,7 @@ fn print_value_table(value: Value) -> Result<()> {
         // value must be a object at here.
         let bold = CellFormat::builder().bold(true).build();
         let mut flat = json!({});
-        flatten(&value, &mut flat, None, true)
+        flatten(&value, &mut flat, None, true, None)
             .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
         let obj = flat.as_object().expect("must be a object");
         let mut rows = vec![];
@@ -180,13 +186,14 @@ struct ObjectRowBuilder {
 impl RowBuilder for ObjectRowBuilder {
     fn build_row(&self, value: &Value) -> Result<Row> {
         let mut flat = json!({});
-        flatten(value, &mut flat, None, true)
+        flatten(value, &mut flat, None, true, None)
             .map_err(|e| anyhow::Error::msg(e.description().to_string()))?;
         let obj = flat.as_object().expect("must be a object");
         let mut cells = vec![];
         for field in &self.field_names {
-            let v = obj.get(field).unwrap_or(&Value::Null);
-            cells.push(Cell::new(value_to_string(v).as_str(), Default::default()));
+            if let Some(v) = obj.get(field) {
+                cells.push(Cell::new(value_to_string(v).as_str(), Default::default()));
+            }
         }
         Ok(Row::new(cells))
     }
