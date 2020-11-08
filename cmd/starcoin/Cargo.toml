@@ -43,7 +43,7 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-errmapgen = { git = "https://github.com/starcoinorg/libra", rev="baf3f9f0c3d3a0c99b82558ad705f56a632d407c" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="454588c5896be8c1106905c9e8bfd1c7e902290c" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

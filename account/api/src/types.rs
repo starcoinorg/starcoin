@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::ed25519::{
     Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature, ED25519_PRIVATE_KEY_LENGTH,
     ED25519_PUBLIC_KEY_LENGTH,
@@ -13,7 +13,10 @@ use starcoin_crypto::multi_ed25519::multi_shard::{
     MultiEd25519KeyShard, MultiEd25519SignatureShard,
 };
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
-use starcoin_crypto::{PrivateKey, SigningKey, ValidCryptoMaterialStringExt};
+use starcoin_crypto::{
+    derive::{DeserializeKey, SerializeKey},
+    CryptoMaterialError, PrivateKey, SigningKey, ValidCryptoMaterial, ValidCryptoMaterialStringExt,
+};
 use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_types::{
     account_address::{self, AccountAddress},
@@ -21,13 +24,13 @@ use starcoin_types::{
 };
 use std::convert::TryFrom;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, DeserializeKey, SerializeKey)]
 pub enum AccountPublicKey {
     Single(Ed25519PublicKey),
     Multi(MultiEd25519PublicKey),
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, DeserializeKey, SerializeKey)]
 pub enum AccountPrivateKey {
     Single(Ed25519PrivateKey),
     Multi(MultiEd25519KeyShard),
@@ -50,6 +53,15 @@ pub struct AccountInfo {
     pub public_key: AccountPublicKey,
 }
 
+impl ValidCryptoMaterial for AccountPublicKey {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Single(key) => key.to_bytes().to_vec(),
+            Self::Multi(key) => key.to_bytes(),
+        }
+    }
+}
+
 impl AccountPublicKey {
     pub fn derived_address(&self) -> AccountAddress {
         self.auth_key().derived_address()
@@ -60,25 +72,6 @@ impl AccountPublicKey {
             Self::Single(key) => AuthenticationKey::ed25519(key),
             Self::Multi(key) => AuthenticationKey::multi_ed25519(key),
         }
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        match self {
-            Self::Single(key) => key.to_bytes().to_vec(),
-            Self::Multi(key) => key.to_bytes(),
-        }
-    }
-
-    pub fn to_encoded_string(&self) -> Result<String> {
-        match self {
-            Self::Single(key) => key.to_encoded_string(),
-            Self::Multi(key) => key.to_encoded_string(),
-        }
-    }
-
-    fn from_encoded_string(encoded_str: &str) -> Result<Self> {
-        let bytes = ::hex::decode(encoded_str)?;
-        Self::try_from(bytes.as_slice())
     }
 
     pub fn as_single(&self) -> Option<Ed25519PublicKey> {
@@ -96,58 +89,15 @@ impl AccountPublicKey {
     }
 }
 
-impl Serialize for AccountPublicKey {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            self.to_encoded_string()
-                .map_err(<S::Error as ::serde::ser::Error>::custom)
-                .and_then(|str| serializer.serialize_str(&str[..]))
-        } else {
-            serializer.serialize_bytes(self.to_bytes().as_slice())
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for AccountPublicKey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let encoded_key = <String>::deserialize(deserializer)?;
-            Self::from_encoded_string(encoded_key.as_str())
-                .map_err(<D::Error as ::serde::de::Error>::custom)
-        } else {
-            // In order to preserve the Serde data model and help analysis tools,
-            // make sure to wrap our value in a container with the same name
-            // as the original type.
-            #[derive(::serde::Deserialize)]
-            #[serde(rename = "AccountPublicKey")]
-            struct Value<'a>(&'a [u8]);
-
-            let value = Value::deserialize(deserializer)?;
-            AccountPublicKey::try_from(value.0).map_err(|s| {
-                <D::Error as ::serde::de::Error>::custom(format!(
-                    "{} with {}",
-                    s, "AccountPublicKey"
-                ))
-            })
-        }
-    }
-}
-
 impl TryFrom<&[u8]> for AccountPublicKey {
-    type Error = anyhow::Error;
+    type Error = CryptoMaterialError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(if value.len() == ED25519_PUBLIC_KEY_LENGTH {
-            Self::Single(Ed25519PublicKey::try_from(value)?)
+        if value.len() == ED25519_PUBLIC_KEY_LENGTH {
+            Ed25519PublicKey::try_from(value).map(Self::Single)
         } else {
-            Self::Multi(MultiEd25519PublicKey::try_from(value)?)
-        })
+            MultiEd25519PublicKey::try_from(value).map(Self::Multi)
+        }
     }
 }
 
@@ -163,19 +113,16 @@ impl Into<AccountPublicKey> for MultiEd25519PublicKey {
     }
 }
 
-impl AccountPrivateKey {
-    pub fn to_bytes(&self) -> Vec<u8> {
+impl ValidCryptoMaterial for AccountPrivateKey {
+    fn to_bytes(&self) -> Vec<u8> {
         match self {
             Self::Single(key) => key.to_bytes().to_vec(),
             Self::Multi(key) => key.to_bytes(),
         }
     }
+}
 
-    pub fn from_encoded_string(encoded_str: &str) -> Result<Self> {
-        let bytes = ::hex::decode(encoded_str)?;
-        Self::try_from(bytes.as_slice())
-    }
-
+impl AccountPrivateKey {
     pub fn public_key(&self) -> AccountPublicKey {
         match self {
             Self::Single(key) => AccountPublicKey::Single(key.public_key()),
@@ -204,14 +151,14 @@ impl Into<AccountPrivateKey> for MultiEd25519KeyShard {
 }
 
 impl TryFrom<&[u8]> for AccountPrivateKey {
-    type Error = anyhow::Error;
+    type Error = CryptoMaterialError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(if value.len() == ED25519_PRIVATE_KEY_LENGTH {
-            Self::Single(Ed25519PrivateKey::try_from(value)?)
+        if value.len() == ED25519_PRIVATE_KEY_LENGTH {
+            Ed25519PrivateKey::try_from(value).map(Self::Single)
         } else {
-            Self::Multi(MultiEd25519KeyShard::try_from(value)?)
-        })
+            MultiEd25519KeyShard::try_from(value).map(Self::Multi)
+        }
     }
 }
 

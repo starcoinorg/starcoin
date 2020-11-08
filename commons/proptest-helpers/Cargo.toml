@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 crossbeam = "0.7.3"
-libra-proptest-helpers = { package="libra-proptest-helpers",  git = "https://github.com/starcoinorg/libra", rev="baf3f9f0c3d3a0c99b82558ad705f56a632d407c" }
+libra-proptest-helpers = { package="libra-proptest-helpers",  git = "https://github.com/starcoinorg/libra", rev="454588c5896be8c1106905c9e8bfd1c7e902290c" }
 
 proptest = "0.10.1"
 proptest-derive = "0.2.0"

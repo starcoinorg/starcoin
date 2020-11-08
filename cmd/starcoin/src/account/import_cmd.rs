@@ -6,6 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
+use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
 use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
 use structopt::StructOpt;
