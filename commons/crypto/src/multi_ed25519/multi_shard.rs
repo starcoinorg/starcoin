@@ -99,7 +99,7 @@ impl MultiEd25519KeyShard {
             .enumerate()
             .map(|(idx, private_key)| {
                 Self::new(public_keys.clone(), threshold, private_key, idx as u8)
-                    .map_err(|e| anyhow::Error::new(e))
+                    .map_err(anyhow::Error::new)
             })
             .collect()
     }
@@ -188,7 +188,7 @@ impl TryFrom<&[u8]> for MultiEd25519KeyShard {
     fn try_from(bytes: &[u8]) -> Result<MultiEd25519KeyShard, Self::Error> {
         let bytes_len = bytes.len();
         if bytes_len < 4 {
-            return Err(CryptoMaterialError::WrongLengthError.into());
+            return Err(CryptoMaterialError::WrongLengthError);
         }
         let public_key_len = bytes[0];
         let threshold = bytes[1];
@@ -198,7 +198,7 @@ impl TryFrom<&[u8]> for MultiEd25519KeyShard {
         let public_key_bytes_len = public_key_len as usize * ED25519_PUBLIC_KEY_LENGTH;
         let private_key_bytes_len = private_key_len as usize * ED25519_PRIVATE_KEY_LENGTH;
         if bytes_len < 4 + public_key_bytes_len + private_key_bytes_len {
-            return Err(CryptoMaterialError::WrongLengthError.into());
+            return Err(CryptoMaterialError::WrongLengthError);
         }
         let public_key_bytes = &bytes[4..4 + public_key_bytes_len];
 
