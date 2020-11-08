@@ -6,7 +6,7 @@ use crate::view::StringView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
@@ -14,8 +14,7 @@ use structopt::StructOpt;
 pub struct DefaultOpt {
     #[structopt(
         name = "account_address",
-        help = "set default address to this, if not provided, display current default address",
-        parse(try_from_str = parse_address),
+        help = "set default address to this, if not provided, display current default address"
     )]
     account_address: Option<AccountAddress>,
 }

@@ -33,19 +33,6 @@ pub mod test_utils {
 
 pub mod traits {
     pub use libra_crypto::traits::*;
-    pub trait ValidCryptoMaterialHexStringExt: ValidCryptoMaterialStringExt {
-        fn from_hex_string(encoded_str: &str) -> std::result::Result<Self, CryptoMaterialError> {
-            ValidCryptoMaterialStringExt::from_encoded_string(
-                encoded_str
-                    .strip_prefix("0x")
-                    .unwrap_or_else(|| encoded_str),
-            )
-        }
-        fn to_hex_string(&self) -> anyhow::Result<String> {
-            ValidCryptoMaterialStringExt::to_encoded_string(self).map(|d| format!("0x{}", d))
-        }
-    }
-    impl<T: ValidCryptoMaterialStringExt> ValidCryptoMaterialHexStringExt for T {}
 }
 
 pub use crate::hash::HashValue;

@@ -6,7 +6,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::{ed25519, ValidCryptoMaterialStringExt};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -14,7 +14,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "export")]
 pub struct ExportOpt {
-    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
+    #[structopt(name = "account_address")]
     account_address: AccountAddress,
     #[structopt(short = "p", default_value = "")]
     password: String,

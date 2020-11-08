@@ -9,7 +9,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::multi_ed25519::MultiEd25519PublicKey;
-use starcoin_crypto::ValidCryptoMaterialHexStringExt;
+use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
@@ -17,7 +17,7 @@ use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
@@ -31,11 +31,11 @@ use structopt::StructOpt;
 /// Generate multisig txn running stdlib script or custom script.
 /// And output the txn to file, waiting for other signers to sign the txn.
 pub struct GenerateMultisigTxnOpt {
-    #[structopt(short = "s", parse(try_from_str = parse_address))]
+    #[structopt(short = "s")]
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 
-    #[structopt(short = "p", required = true, min_values = 1, max_values = 32, parse(try_from_str = Ed25519PublicKey::from_hex_string))]
+    #[structopt(short = "p", required = true, min_values = 1, max_values = 32, parse(try_from_str = Ed25519PublicKey::from_encoded_string))]
     /// public keys of the mutli-sig account.
     public_key: Vec<Ed25519PublicKey>,
 

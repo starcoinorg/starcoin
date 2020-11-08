@@ -6,7 +6,7 @@ use crate::Account;
 use crate::AccountManager;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
-use starcoin_crypto::SigningKey;
+use starcoin_crypto::{SigningKey, ValidCryptoMaterial};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
