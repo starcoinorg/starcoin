@@ -6,7 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_account_api::{AccountInfo, AccountPrivateKey};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_crypto::{ValidCryptoMaterial, ValidCryptoMaterialStringExt};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -28,7 +29,7 @@ pub struct ImportOpt {
     from_file: Option<PathBuf>,
 
     /// if account_address is absent, generate address by public_key.
-    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
+    #[structopt(name = "account_address")]
     account_address: Option<AccountAddress>,
 }
 

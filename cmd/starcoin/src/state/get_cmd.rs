@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, MoveValueAnnotator};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_types::access_path::AccessPath;
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::account_struct_tag;
 use starcoin_vm_types::language_storage::{StructTag, TypeTag};
 use starcoin_vm_types::parser::parse_type_tag;
@@ -26,7 +26,7 @@ fn parse_struct_tag(s: &str) -> Result<StructTag> {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get")]
 pub struct GetOpt {
-    #[structopt(short="a",long="addr", parse(try_from_str = parse_address))]
+    #[structopt(short = "a", long = "addr")]
     /// address which the resource is under of. Default to default account address.
     account_address: Option<AccountAddress>,
     #[structopt(name = "struct-tag", parse(try_from_str = parse_struct_tag))]

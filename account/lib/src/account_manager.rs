@@ -9,7 +9,7 @@ use rand::prelude::*;
 use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountResult};
 use starcoin_crypto::ed25519::Ed25519PrivateKey;
-use starcoin_crypto::Uniform;
+use starcoin_crypto::{Uniform, ValidCryptoMaterial};
 use starcoin_types::{
     account_address::AccountAddress,
     account_config::token_code::TokenCode,

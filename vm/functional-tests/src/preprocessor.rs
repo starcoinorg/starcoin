@@ -23,7 +23,11 @@ pub fn substitute_addresses(config: &GlobalConfig, text: &str) -> String {
     PAT.replace_all(text, |caps: &Captures| {
         let name = &caps[1];
 
-        format!("0x{}", config.get_account_for_name(name).unwrap().address())
+        config
+            .get_account_for_name(name)
+            .unwrap()
+            .address()
+            .to_string()
     })
     .to_string()
 }
