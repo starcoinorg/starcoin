@@ -667,7 +667,7 @@ pub struct GenesisConfig {
     /// Genesis difficulty, should match consensus in different ChainNetwork.
     pub difficulty: U256,
     /// Genesis consensus nonce.
-    pub nonce: u64,
+    pub nonce: u32,
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
     /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account

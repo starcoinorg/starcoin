@@ -1,6 +1,5 @@
 use crate::JobClient;
 use anyhow::Result;
-use crypto::HashValue;
 use futures::stream::BoxStream;
 use futures::{stream::StreamExt, TryStreamExt};
 use logger::prelude::*;
@@ -32,7 +31,7 @@ impl JobClient for JobRpcClient {
                 match r {
                     Ok(b) => Some(MintBlockEvent::new(
                         b.strategy,
-                        b.minting_hash,
+                        b.minting_blob,
                         b.difficulty,
                     )),
                     Err(e) => {
@@ -44,8 +43,8 @@ impl JobClient for JobRpcClient {
             .boxed())
     }
 
-    fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
-        self.rpc_client.miner_submit(pow_hash, nonce)
+    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
+        self.rpc_client.miner_submit(minting_blob, nonce)
     }
 
     fn time_service(&self) -> Arc<dyn TimeService> {

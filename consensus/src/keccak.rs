@@ -41,8 +41,8 @@ impl Consensus for KeccakConsensus {
     }
 
     /// Double keccak256 for pow hash
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
-        let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
+    fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
+        let mix_hash = set_header_nonce(mining_hash, nonce);
         let pow_hash = Keccak256::digest(Keccak256::digest(&mix_hash).as_slice());
         HashValue::from_slice(pow_hash.as_slice())
     }
