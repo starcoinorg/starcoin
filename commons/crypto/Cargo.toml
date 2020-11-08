@@ -11,8 +11,8 @@ serde = { version = "1.0" }
 serde_bytes = "0.11.5"
 hex = "0.4.2"
 anyhow = "1.0"
-libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/libra", rev="454588c5896be8c1106905c9e8bfd1c7e902290c" }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/starcoinorg/libra", rev="454588c5896be8c1106905c9e8bfd1c7e902290c" }
+libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
 scs = { package="starcoin-canonical-serialization", path = "../scs"}
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.7.3"
