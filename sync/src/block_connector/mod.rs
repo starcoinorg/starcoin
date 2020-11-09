@@ -30,7 +30,7 @@ mod test_illegal_block;
 mod test_write_block_chain;
 mod write_block_chain;
 
-pub use block_connector_service::{BlockConnectorService, ConnectBlockRequest};
+pub use block_connector_service::BlockConnectorService;
 use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::ServiceRef;

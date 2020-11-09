@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::{Block, BlockDetail, BlockHeader};
-use crate::node_status::NodeStatus;
+use crate::sync_status::SyncStatus;
 use crate::U256;
 use actix::prelude::*;
 use anyhow::Result;
@@ -40,7 +40,7 @@ pub struct SystemStop;
 pub struct SystemStarted;
 
 #[derive(Clone, Debug)]
-pub struct NodeStatusChangeEvent(pub NodeStatus);
+pub struct SyncStatusChangeEvent(pub SyncStatus);
 
 ///Fire this event for generate a new block
 #[derive(Clone, Debug, Message)]

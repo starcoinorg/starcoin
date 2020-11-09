@@ -56,6 +56,15 @@ pub fn add_command(
                         .subcommand(node::service::StopCommand)
                     //TODO support shutdown by command    
                     //.subcommand(node::service::ShutdownSystemCommand),
+                )
+                .subcommand(
+                    Command::with_name("sync")
+                        .subcommand(node::sync::StartCommand)
+                        .subcommand(node::sync::StatusCommand)
+                        .subcommand(node::sync::ProgressCommand)
+                        .subcommand(node::sync::CancelCommand)
+                    //TODO support shutdown by command    
+                    //.subcommand(node::service::ShutdownSystemCommand),
                 ),
         )
         .command(

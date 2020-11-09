@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) The Starcoin Core Contributors
 
-mod list_cmd;
-mod shutdown_cmd;
+mod cancel_cmd;
+mod progress_cmd;
 mod start_cmd;
-mod stop_cmd;
+mod status_cmd;
 
-pub use list_cmd::*;
-pub use shutdown_cmd::*;
+pub use cancel_cmd::*;
+pub use progress_cmd::*;
 pub use start_cmd::*;
-pub use stop_cmd::*;
+pub use status_cmd::*;

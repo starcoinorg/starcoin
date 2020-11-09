@@ -27,6 +27,7 @@ starcoin-types = { path = "../../types"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-state-api = { path = "../../state/api"}
+starcoin-sync-api = { path = "../../sync/api"}
 starcoin-config = { path = "../../config"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-logger = { path = "../../commons/logger"}

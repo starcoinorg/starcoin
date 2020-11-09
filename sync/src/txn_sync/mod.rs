@@ -7,7 +7,7 @@ use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::system_events::NodeStatusChangeEvent;
+use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::sync::Arc;
 use txpool::TxPoolService;
 
@@ -18,12 +18,12 @@ pub struct TxnSyncService {
 
 impl ActorService for TxnSyncService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<NodeStatusChangeEvent>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<NodeStatusChangeEvent>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         Ok(())
     }
 }
@@ -51,10 +51,10 @@ impl TxnSyncService {
     }
 }
 
-impl EventHandler<Self, NodeStatusChangeEvent> for TxnSyncService {
-    fn handle_event(&mut self, msg: NodeStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
-        let node_status = msg.0;
-        if node_status.is_synced() {
+impl EventHandler<Self, SyncStatusChangeEvent> for TxnSyncService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, ctx: &mut ServiceContext<Self>) {
+        let sync_status = msg.0;
+        if sync_status.is_synced() {
             // sync txn after block sync task done.
             // because txn verify dependency the latest chain state, such as timestamp on chain.
 
