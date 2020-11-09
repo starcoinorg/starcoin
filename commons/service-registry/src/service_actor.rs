@@ -14,7 +14,7 @@ use anyhow::{format_err, Result};
 use log::{debug, error, info};
 use std::fmt::Debug;
 
-const DEFAULT_MAIL_BOX_CAP: usize = 64;
+const DEFAULT_MAIL_BOX_CAP: usize = 128;
 
 pub struct ServiceActor<S>
 where

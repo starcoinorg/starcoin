@@ -156,65 +156,69 @@ impl SysBus {
         M: Send + Clone + Debug + 'static,
     {
         debug!("Broadcast {:?}", msg);
-        let type_id = &TypeId::of::<M>();
-        let mut clear = false;
-        if let Some(topic_subscriptions) = self.subscriptions.get_mut(type_id) {
+        let msg_type_id = &TypeId::of::<M>();
+        let mut do_clear = false;
+        let msg_type_name = type_name::<M>();
+        if let Some(topic_subscriptions) = self.subscriptions.get_mut(msg_type_id) {
             if topic_subscriptions.is_empty() {
                 warn!(
                     "[bus] There are no subscription to message type: {}",
-                    type_name::<M>()
+                    msg_type_name
                 );
                 return;
             }
             for subscription in topic_subscriptions {
-                let result: Result<(), (String, M)> = match subscription
+                let subscription = subscription
                     .downcast_mut::<SubscriptionRecord<M>>()
-                {
-                    Some(subscription) => {
-                        debug!("send message to {:?}", subscription);
-                        match subscription {
-                            SubscriptionRecord::Notifier(notifier) => {
-                                notifier.notify(msg.clone()).map_err(|e| match e {
-                                    TrySendError::Full(m) => {
-                                        warn!("Send message to notifier error: TrySendError::Full");
-                                        (subscription.get_subscription_id(), m)
-                                    }
-                                    TrySendError::Disconnected(m) => {
-                                        clear = true;
-                                        warn!("Send message to notifier error TrySendError::Disconnected");
-                                        (subscription.get_subscription_id(), m)
-                                    }
-                                })
+                    .unwrap_or_else(|| panic!("downcast_ref fail, should not happen."));
+                let sub_id = subscription.get_subscription_id();
+                debug!("send message {} to {:?}", msg_type_name, sub_id);
+                let result: Result<(), TrySendError<M>> = match subscription {
+                    SubscriptionRecord::Notifier(notifier) => notifier.notify(msg.clone()),
+                    SubscriptionRecord::Channel(sender) => {
+                        sender.unbounded_send(msg.clone()).map_err(|e| {
+                            if e.is_full() {
+                                TrySendError::Full(e.into_inner())
+                            } else {
+                                TrySendError::Disconnected(e.into_inner())
                             }
-                            SubscriptionRecord::Channel(sender) => {
-                                sender.unbounded_send(msg.clone()).map_err(|e| {
-                                    clear = true;
-                                    warn!("Send message to channel error:{:?}", e);
-                                    (subscription.get_subscription_id(), e.into_inner())
-                                })
+                        })
+                    }
+                    SubscriptionRecord::Oneshot(sender) => {
+                        let sender = sender.take();
+                        do_clear = true;
+                        match sender {
+                            Some(sender) => {
+                                sender.send(msg.clone()).map_err(TrySendError::Disconnected)
                             }
-                            SubscriptionRecord::Oneshot(sender) => {
-                                let sender = sender.take();
-                                clear = true;
-                                match sender {
-                                    Some(sender) => sender
-                                        .send(msg.clone())
-                                        .map_err(|e| (subscription.get_subscription_id(), e)),
-                                    None => Err((subscription.get_subscription_id(), msg.clone())),
-                                }
-                            }
+                            None => Err(TrySendError::Disconnected(msg.clone())),
                         }
                     }
-                    None => panic!("downcast_ref fail, should not happen."),
                 };
-                if let Err((id, msg)) = result {
-                    error!("Send message {:?} to {:?} fail.", msg, id);
+
+                //TODO buffer and retry.
+                if let Err(e) = result {
+                    match e {
+                        TrySendError::Full(_msg) => {
+                            error!(
+                                "Send message {:?} to {:?} failed, target is Full.",
+                                msg_type_name, sub_id
+                            );
+                        }
+                        TrySendError::Disconnected(_msg) => {
+                            error!(
+                                "Send message {:?} to {:?} failed, target is Disconnected.",
+                                msg_type_name, sub_id
+                            );
+                            do_clear = true;
+                        }
+                    }
                 }
             }
         }
         //TODO buffer SendError full message and retry.
         // clear used oneshot or closed subscription.
-        if clear {
+        if do_clear {
             self.remove_subscription(|record: &SubscriptionRecord<M>| {
                 let result = match record {
                     SubscriptionRecord::Oneshot(sender) => sender.is_none(),
