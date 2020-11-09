@@ -56,7 +56,7 @@ module RewardPool {
         rewards: Token::Token<RewardToken>,
     ) acquires T {
         let pool = borrow_global_mut<T<StakeToken, RewardToken>>(pool_address);
-        let reward_share = Token::share<RewardToken>(&rewards);
+        let reward_share = Token::value<RewardToken>(&rewards);
         let block_number = Block::get_current_block_number();
         let new_reward_rate = if (block_number >= pool.period_finish) {
             reward_share / (pool.duration as u128)
@@ -72,7 +72,7 @@ module RewardPool {
 
     public fun total_staked_shares<StakeToken, RewardToken>(pool: address): u128 acquires T {
         let pool = borrow_global<T<StakeToken, RewardToken>>(pool);
-        Token::share(&pool.stakes)
+        Token::value(&pool.stakes)
     }
 
     public fun duration<StakeToken, RewardToken>(pool: address): u64 acquires T {
@@ -108,7 +108,7 @@ module RewardPool {
         reward_pool: address,
         to_stake: Token::Token<StakeToken>,
     ) acquires T, Stakings {
-        assert(Token::share(&to_stake) > 0, 1000);
+        assert(Token::value(&to_stake) > 0, 1000);
         if (!exists<Stakings<StakeToken, RewardToken>>(Signer::address_of(signer))) {
             enter_pool<StakeToken, RewardToken>(signer);
         };
@@ -231,7 +231,7 @@ module RewardPool {
         to_stake: Token::Token<StakeToken>,
     ) {
         // update user's stake info and move the staking token to pool.
-        staking.stake = staking.stake + Token::share(&to_stake);
+        staking.stake = staking.stake + Token::value(&to_stake);
         Token::deposit(&mut pool.stakes, to_stake);
     }
 
@@ -242,7 +242,7 @@ module RewardPool {
         share: u128,
     ): Token::Token<StakeToken> {
         staking.stake = staking.stake - share;
-        Token::withdraw_share(&mut pool.stakes, share)
+        Token::withdraw(&mut pool.stakes, share)
     }
 
     /// internal function of WithdrawReward action, caller should update_reward first.
@@ -255,7 +255,7 @@ module RewardPool {
             return Token::zero()
         };
         staking.rewards = 0;
-        Token::withdraw_share(&mut pool.remaining_rewards, my_share)
+        Token::withdraw(&mut pool.remaining_rewards, my_share)
     }
 
     fun _exit<StakeToken, RewardToken>(
@@ -309,7 +309,7 @@ module RewardPool {
     }
 
     fun _reward_per_token<StakeToken, RewardToken>(pool: &T<StakeToken, RewardToken>): u128 {
-        let total_staked = Token::share(&pool.stakes);
+        let total_staked = Token::value(&pool.stakes);
         if (total_staked == 0) {
             pool.reward_per_token_stored
         } else {

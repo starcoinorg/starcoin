@@ -12,7 +12,6 @@ module TokenSwap {
     use 0x1::Math;
     use 0x1::LiquidityToken::LiquidityToken;
     use 0x1::Compare;
-    use 0x1::LCS;
 
     resource struct LiquidityTokenCapability<X, Y> {
         mint: Token::MintCapability<LiquidityToken<X, Y>>,
@@ -43,7 +42,7 @@ module TokenSwap {
 
     fun register_liquidity_token<X, Y>(signer: &signer) {
         assert_admin(signer);
-        Token::register_token<LiquidityToken<X, Y>>(signer, 1000000, 1000);
+        Token::register_token<LiquidityToken<X, Y>>(signer, 18);
         let mint_capability = Token::remove_mint_capability<LiquidityToken<X, Y>>(signer);
         let burn_capability = Token::remove_burn_capability<LiquidityToken<X, Y>>(signer);
         move_to(signer, LiquidityTokenCapability { mint: mint_capability, burn: burn_capability });
@@ -157,8 +156,10 @@ module TokenSwap {
 
     /// Caller should call this function to determine the order of A, B
     public fun compare_token<A, B>(): u8 {
-        let a_bytes = LCS::to_bytes(&Token::token_id<A>());
-        let b_bytes = LCS::to_bytes(&Token::token_id<B>());
+        // let a_bytes = LCS::to_bytes(&Token::token_id<A>());
+        // let b_bytes = LCS::to_bytes(&Token::token_id<B>());
+        let a_bytes = Token::token_code<A>();
+        let b_bytes = Token::token_code<B>();
         Compare::cmp_lcs_bytes(&a_bytes, &b_bytes)
     }
 

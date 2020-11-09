@@ -6,6 +6,7 @@ module TokenSwapGateway {
     use 0x1::Signer;
     use 0x1::Token;
 
+
     // use 0x1::Debug;
     const INSUFFICIENT_X_AMOUNT: u64 = 1010;
     const INSUFFICIENT_Y_AMOUNT: u64 = 1011;
@@ -78,7 +79,7 @@ module TokenSwapGateway {
         if (!Account::is_accepts_token<LiquidityToken<X, Y>>(Signer::address_of(signer))) {
             Account::accept_token<LiquidityToken<X, Y>>(signer);
         };
-        Account::deposit(signer, liquidity_token);
+        Account::deposit(Signer::address_of(signer), liquidity_token);
     }
 
     fun _calculate_amount_for_liquidity<X, Y>(
@@ -129,8 +130,8 @@ module TokenSwapGateway {
         let (token_x, token_y) = TokenSwap::burn(liquidity_token);
         assert(Token::value(&token_x) >= amount_x_min, 1000);
         assert(Token::value(&token_y) >= amount_y_min, 1000);
-        Account::deposit(signer, token_x);
-        Account::deposit(signer, token_y);
+        Account::deposit(Signer::address_of(signer), token_x);
+        Account::deposit(Signer::address_of(signer), token_y);
     }
 
     public fun swap_exact_token_for_token<X, Y>(
@@ -153,7 +154,7 @@ module TokenSwapGateway {
             (token_y_out, token_x_out) = TokenSwap::swap<Y, X>(Token::zero(), 0, token_x, y_out);
         };
         Token::destroy_zero(token_x_out);
-        Account::deposit(signer, token_y_out);
+        Account::deposit(Signer::address_of(signer), token_y_out);
     }
 
     public fun swap_token_for_exact_token<X, Y>(
@@ -178,7 +179,7 @@ module TokenSwapGateway {
                 TokenSwap::swap<Y, X>(Token::zero(), 0, token_x, amount_y_out);
         };
         Token::destroy_zero(token_x_out);
-        Account::deposit(signer, token_y_out);
+        Account::deposit(Signer::address_of(signer), token_y_out);
     }
 
     /// Get reserves of a token pair.
