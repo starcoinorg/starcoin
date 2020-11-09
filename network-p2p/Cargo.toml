@@ -49,7 +49,7 @@ starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
 types = {path = "../types", package="starcoin-types"}
 prometheus = "0.10"
 ip_network = "0.3.4"
-bs58 = "0.3.1"
+bs58 = "0.4.0"
 
 
 [dependencies.libp2p]
