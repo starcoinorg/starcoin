@@ -14,6 +14,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use std::cmp::min;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -505,7 +506,7 @@ impl TxnMocker {
             let seq = self.sequence_number(accounts[i].address)?;
             if let Some(seq) = seq {
                 let mut seq_num = seq;
-                while j < TXN_LIMIT {
+                while j < min(length, TXN_LIMIT) {
                     if i != j {
                         let result = self.gen_and_submit_transfer_txn(
                             accounts[i].address,
