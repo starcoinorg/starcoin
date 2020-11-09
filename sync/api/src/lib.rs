@@ -34,8 +34,8 @@ impl PeerNewBlock {
         self.peer_id.clone()
     }
 
-    pub fn get_block(&self) -> Block {
-        self.new_block.clone()
+    pub fn get_block(&self) -> &Block {
+        &self.new_block
     }
 }
 

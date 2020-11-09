@@ -191,7 +191,9 @@ where
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
+    let target_block_number = target.block_accumulator_info.num_leaves - 1;
     let target_block_accumulator = target.block_accumulator_info;
+
     let current_block_accumulator_info = current_block_info.block_accumulator_info;
 
     let accumulator_task_fetcher = fetcher.clone();
@@ -200,7 +202,7 @@ where
     let max_retry_times = 15;
     let delay_milliseconds_on_error = 100;
     let sync_task = TaskGenerator::new(
-        FindAncestorTask::new(current_block_number, 10, fetcher),
+        FindAncestorTask::new(current_block_number, target_block_number, 10, fetcher),
         3,
         max_retry_times,
         delay_milliseconds_on_error,

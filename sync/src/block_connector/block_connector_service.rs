@@ -6,23 +6,33 @@ use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
-use starcoin_chain_api::WriteableChainService;
-use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRequest,
-};
+use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_types::block::Block;
-use starcoin_types::system_events::MinedBlock;
+use starcoin_sync_api::PeerNewBlock;
+use starcoin_types::node_status::NodeStatus;
+use starcoin_types::system_events::{MinedBlock, NodeStatusChangeEvent};
 use std::sync::Arc;
 use txpool::TxPoolService;
 
 pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
+    node_status: Option<NodeStatus>,
 }
 
 impl BlockConnectorService {
     pub fn new(chain_service: WriteBlockChainService<TxPoolService>) -> Self {
-        Self { chain_service }
+        Self {
+            chain_service,
+            node_status: None,
+        }
+    }
+
+    pub fn is_synced(&self) -> bool {
+        match self.node_status.as_ref() {
+            Some(node_status) => node_status.is_synced(),
+            None => false,
+        }
     }
 }
 
@@ -44,11 +54,15 @@ impl ServiceFactory<Self> for BlockConnectorService {
 
 impl ActorService for BlockConnectorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        //TODO figure out a more suitable value.
+        ctx.set_mailbox_capacity(1024);
+        ctx.subscribe::<NodeStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<NodeStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
         Ok(())
     }
@@ -84,17 +98,37 @@ impl EventHandler<Self, MinedBlock> for BlockConnectorService {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct ConnectBlockRequest {
-    pub block: Block,
+impl EventHandler<Self, NodeStatusChangeEvent> for BlockConnectorService {
+    fn handle_event(&mut self, msg: NodeStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.node_status = Some(msg.0);
+    }
 }
 
-impl ServiceRequest for ConnectBlockRequest {
-    type Response = Result<()>;
-}
-
-impl ServiceHandler<Self, ConnectBlockRequest> for BlockConnectorService {
-    fn handle(&mut self, msg: ConnectBlockRequest, _ctx: &mut ServiceContext<Self>) -> Result<()> {
-        self.chain_service.try_connect(msg.block)
+impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
+    fn handle_event(&mut self, msg: PeerNewBlock, _ctx: &mut ServiceContext<Self>) {
+        if !self.is_synced() {
+            debug!("Ignore PeerNewBlock event, because node is not synced.");
+            return;
+        }
+        let peer_id = msg.get_peer_id();
+        if let Err(e) = self.chain_service.try_connect(msg.get_block().clone()) {
+            match e.downcast::<ConnectBlockError>() {
+                Ok(connect_error) => {
+                    match connect_error {
+                        ConnectBlockError::FutureBlock(block) => {
+                            //TODO cache future block
+                            info!(
+                                "BlockConnector try connect future block ({:?},{}), peer_id:{:?}",
+                                block.id(),
+                                block.header().number,
+                                peer_id
+                            );
+                        }
+                        e => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
+                    }
+                }
+                Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
+            }
+        }
     }
 }
