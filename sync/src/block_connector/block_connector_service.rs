@@ -10,27 +10,27 @@ use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::PeerNewBlock;
-use starcoin_types::node_status::NodeStatus;
-use starcoin_types::system_events::{MinedBlock, NodeStatusChangeEvent};
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::{MinedBlock, SyncStatusChangeEvent};
 use std::sync::Arc;
 use txpool::TxPoolService;
 
 pub struct BlockConnectorService {
     chain_service: WriteBlockChainService<TxPoolService>,
-    node_status: Option<NodeStatus>,
+    sync_status: Option<SyncStatus>,
 }
 
 impl BlockConnectorService {
     pub fn new(chain_service: WriteBlockChainService<TxPoolService>) -> Self {
         Self {
             chain_service,
-            node_status: None,
+            sync_status: None,
         }
     }
 
     pub fn is_synced(&self) -> bool {
-        match self.node_status.as_ref() {
-            Some(node_status) => node_status.is_synced(),
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
             None => false,
         }
     }
@@ -56,14 +56,16 @@ impl ActorService for BlockConnectorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         //TODO figure out a more suitable value.
         ctx.set_mailbox_capacity(1024);
-        ctx.subscribe::<NodeStatusChangeEvent>();
+        ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
+        ctx.subscribe::<PeerNewBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<NodeStatusChangeEvent>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
+        ctx.unsubscribe::<PeerNewBlock>();
         Ok(())
     }
 }
@@ -98,9 +100,9 @@ impl EventHandler<Self, MinedBlock> for BlockConnectorService {
     }
 }
 
-impl EventHandler<Self, NodeStatusChangeEvent> for BlockConnectorService {
-    fn handle_event(&mut self, msg: NodeStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
-        self.node_status = Some(msg.0);
+impl EventHandler<Self, SyncStatusChangeEvent> for BlockConnectorService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.sync_status = Some(msg.0);
     }
 }
 

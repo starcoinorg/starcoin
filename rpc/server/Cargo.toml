@@ -61,6 +61,7 @@ starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-api = { path = "../../network/api" }
 starcoin-node-api = { path = "../../node/api"}
+starcoin-sync-api = { path = "../../sync/api"}
 
 [dev-dependencies]
 stest = { path = "../../commons/stest"}

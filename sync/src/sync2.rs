@@ -13,17 +13,20 @@ use network::PeerEvent;
 use network_api::{PeerProvider, PeerSelector};
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
-use starcoin_sync_api::PeerNewBlock;
+use starcoin_sync_api::{
+    PeerNewBlock, SyncCancelRequest, SyncProgressRequest, SyncServiceHandler, SyncStartRequest,
+    SyncStatusRequest,
+};
 use starcoin_types::block::BlockIdAndNumber;
-use starcoin_types::node_status::{NodeStatus, SyncStatus};
 use starcoin_types::startup_info::ChainInfo;
-use starcoin_types::system_events::{NewHeadBlock, NodeStatusChangeEvent, SystemStarted};
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
-use stream_task::{TaskEventCounterHandle, TaskHandle};
+use stream_task::{TaskEventCounterHandle, TaskHandle, TaskProgressReport};
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -33,7 +36,7 @@ pub struct SyncTaskHandle {
 }
 
 pub struct SyncService2 {
-    node_status: NodeStatus,
+    sync_status: SyncStatus,
     config: Arc<NodeConfig>,
     network: NetworkAsyncService,
     storage: Arc<Storage>,
@@ -60,7 +63,7 @@ impl SyncService2 {
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
 
         Ok(Self {
-            node_status: NodeStatus::new(ChainInfo::new(
+            sync_status: SyncStatus::new(ChainInfo::new(
                 head_block.header,
                 head_block_info.total_difficulty,
             )),
@@ -130,12 +133,17 @@ impl SyncService2 {
         )?;
         let target_id_number =
             BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);
+        self.sync_status
+            .sync_begin(target_id_number, target.block_info.total_difficulty);
+
         self.task_handle = Some(SyncTaskHandle {
             target,
             task_handle,
             task_event_handle,
         });
-        ctx.notify(SyncBegin(target_id_number));
+
+        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+
         let self_ref = ctx.self_ref();
         ctx.spawn(fut.then(|result| async move {
             match result {
@@ -182,7 +190,7 @@ impl ActorService for SyncService2 {
 
 impl EventHandler<Self, PeerEvent> for SyncService2 {
     fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<Self>) {
-        if self.node_status.is_prepare() {
+        if self.sync_status.is_prepare() {
             return;
         }
         match msg {
@@ -212,10 +220,10 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
 
 impl EventHandler<Self, PeerNewBlock> for SyncService2 {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        if self.node_status.is_prepare() {
+        if self.sync_status.is_prepare() {
             return;
         }
-        if self.node_status.chain_info().head().number < msg.get_block().header().number() {
+        if self.sync_status.chain_info().head().number < msg.get_block().header().number() {
             debug!(
                 "[sync] Check sync by PeerNewBlock {}",
                 msg.get_block().header().number()
@@ -234,7 +242,7 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: StartSyncEvent, ctx: &mut ServiceContext<Self>) {
         let target_block_header = msg.target.block_header.clone();
         let target_total_difficulty = msg.target.block_info.total_difficulty;
-        let current_total_difficulty = self.node_status.chain_info().total_difficulty();
+        let current_total_difficulty = self.sync_status.chain_info().total_difficulty();
         if target_total_difficulty <= current_total_difficulty {
             debug!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), ignore StartSyncEvent.", target_block_header.number, target_total_difficulty, current_total_difficulty);
             return;
@@ -264,55 +272,78 @@ impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
 impl EventHandler<Self, SystemStarted> for SyncService2 {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
         // change from prepare to Synchronized
-        self.node_status
-            .update_sync_status(SyncStatus::Synchronized);
+        self.sync_status.sync_done();
         ctx.notify(CheckSyncEvent { force: false });
-        ctx.broadcast(NodeStatusChangeEvent(self.node_status.clone()));
+        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
     }
 }
-
-#[derive(Clone, Debug)]
-pub struct SyncBegin(pub BlockIdAndNumber);
 
 #[derive(Clone, Debug)]
 pub struct SyncDone;
 
-impl EventHandler<Self, SyncBegin> for SyncService2 {
-    fn handle_event(&mut self, msg: SyncBegin, ctx: &mut ServiceContext<Self>) {
-        if !self.node_status.is_synced() {
-            warn!(
-                "[sync] Current SyncStatus is invalid, expect Synchronized, but got: {:?}",
-                self.node_status.sync_status()
-            )
-        }
-        self.node_status
-            .update_sync_status(SyncStatus::Synchronizing(msg.0));
-        ctx.broadcast(NodeStatusChangeEvent(self.node_status.clone()));
-    }
-}
-
 impl EventHandler<Self, SyncDone> for SyncService2 {
     fn handle_event(&mut self, _msg: SyncDone, ctx: &mut ServiceContext<Self>) {
-        if !self.node_status.is_syncing() {
+        if !self.sync_status.is_syncing() {
             warn!(
                 "[sync] Current SyncStatus is invalid, expect Synchronizing, but got: {:?}",
-                self.node_status.sync_status()
+                self.sync_status.sync_status()
             )
         }
-        self.node_status
-            .update_sync_status(SyncStatus::Synchronized);
-        ctx.broadcast(NodeStatusChangeEvent(self.node_status.clone()));
+        self.sync_status.sync_done();
+        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
     }
 }
 
 impl EventHandler<Self, NewHeadBlock> for SyncService2 {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         let NewHeadBlock(block) = msg;
-        if self.node_status.update_chain_info(ChainInfo::new(
+        if self.sync_status.update_chain_info(ChainInfo::new(
             block.header().clone(),
             block.get_total_difficulty(),
         )) {
-            ctx.broadcast(NodeStatusChangeEvent(self.node_status.clone()));
+            ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }
     }
 }
+
+impl ServiceHandler<Self, SyncStatusRequest> for SyncService2 {
+    fn handle(
+        &mut self,
+        _msg: SyncStatusRequest,
+        _ctx: &mut ServiceContext<SyncService2>,
+    ) -> SyncStatus {
+        self.sync_status.clone()
+    }
+}
+
+impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
+    fn handle(
+        &mut self,
+        _msg: SyncProgressRequest,
+        _ctx: &mut ServiceContext<SyncService2>,
+    ) -> Option<TaskProgressReport> {
+        self.task_handle
+            .as_ref()
+            .and_then(|handle| handle.task_event_handle.get_report())
+    }
+}
+
+impl ServiceHandler<Self, SyncCancelRequest> for SyncService2 {
+    fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService2>) {
+        if let Some(handle) = self.task_handle.as_ref() {
+            handle.task_handle.cancel()
+        }
+    }
+}
+
+impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
+    fn handle(
+        &mut self,
+        msg: SyncStartRequest,
+        ctx: &mut ServiceContext<SyncService2>,
+    ) -> Result<()> {
+        self.check_sync(msg.force, ctx)
+    }
+}
+
+impl SyncServiceHandler for SyncService2 {}

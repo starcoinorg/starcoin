@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use log::info;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
@@ -80,8 +81,8 @@ impl TaskEventCounter {
         now_seconds() - self.start_seconds
     }
 
-    pub fn get_report(&self) -> CounterReport {
-        CounterReport::new(
+    pub fn get_report(&self) -> TaskProgressReport {
+        TaskProgressReport::new(
             self.task_name.clone(),
             self.sub_task(),
             self.error(),
@@ -94,8 +95,8 @@ impl TaskEventCounter {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct CounterReport {
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TaskProgressReport {
     pub task_name: String,
     pub sub_task: u64,
     pub error: u64,
@@ -107,7 +108,7 @@ pub struct CounterReport {
     pub percent: Option<f64>,
 }
 
-impl CounterReport {
+impl TaskProgressReport {
     pub fn new(
         task_name: String,
         sub_task: u64,
@@ -132,7 +133,7 @@ impl CounterReport {
         }
     }
 }
-impl std::fmt::Display for CounterReport {
+impl std::fmt::Display for TaskProgressReport {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -167,7 +168,7 @@ impl TaskEventCounterHandle {
         Self::default()
     }
 
-    pub fn get_reports(&self) -> Vec<CounterReport> {
+    pub fn get_reports(&self) -> Vec<TaskProgressReport> {
         let mut reports = self
             .previous_counters
             .lock()
@@ -181,7 +182,7 @@ impl TaskEventCounterHandle {
         reports
     }
 
-    pub fn get_report(&self) -> Option<CounterReport> {
+    pub fn get_report(&self) -> Option<TaskProgressReport> {
         self.current_counter
             .lock()
             .unwrap()
@@ -234,9 +235,12 @@ impl TaskEventHandle for TaskEventCounterHandle {
     }
 
     fn on_finish(&self, task_name: String) {
-        info!("{} finished.", task_name);
         if let Some(current_counter) = self.current_counter.lock().unwrap().as_ref() {
-            info!("{} ", current_counter.get_report());
+            info!(
+                "{} finished, report: {}",
+                task_name,
+                current_counter.get_report()
+            );
         }
     }
 }

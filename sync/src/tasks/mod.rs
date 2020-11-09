@@ -215,7 +215,10 @@ where
     .and_then(move |ancestor, event_handle| {
         info!("[sync] Find ancestor: {:?}", ancestor);
         let ancestor_block_info = storage.get_block_info(ancestor.id)?.ok_or_else(|| {
-            format_err!("Can not find ancestor block info by id: {}", ancestor.id)
+            format_err!(
+                "[sync] Can not find ancestor block info by id: {}",
+                ancestor.id
+            )
         })?;
 
         let accumulator_sync_task = BlockAccumulatorSyncTask::new(

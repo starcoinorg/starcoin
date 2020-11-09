@@ -17,5 +17,6 @@ pub mod node_manager;
 pub mod pubsub;
 pub mod service;
 pub mod state;
+pub mod sync_manager;
 pub mod txpool;
 pub mod types;

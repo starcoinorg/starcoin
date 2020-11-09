@@ -20,7 +20,7 @@ use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
     miner::MinerClient, node::NodeClient, node_manager::NodeManagerClient, state::StateClient,
-    txpool::TxPoolClient,
+    sync_manager::SyncManagerClient, txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -49,7 +49,9 @@ pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
 use starcoin_service_registry::ServiceInfo;
+use starcoin_sync_api::TaskProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
+use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -680,6 +682,26 @@ impl RpcClient {
         result
     }
 
+    pub fn sync_status(&self) -> anyhow::Result<SyncStatus> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.status().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_progress(&self) -> anyhow::Result<Option<TaskProgressReport>> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.progress().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_start(&self, force: bool) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.start(force).compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_cancel(&self) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.cancel().compat().await })
+            .map_err(map_err)
+    }
+
     async fn get_rpc_channel(
         conn_source: ConnSource,
     ) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -715,6 +737,7 @@ pub(crate) struct RpcClientInner {
     pubsub_client: PubSubClient,
     dev_client: DevClient,
     miner_client: MinerClient,
+    sync_client: SyncManagerClient,
 }
 
 impl RpcClientInner {
@@ -729,7 +752,8 @@ impl RpcClientInner {
             chain_client: channel.clone().into(),
             dev_client: channel.clone().into(),
             pubsub_client: channel.clone().into(),
-            miner_client: channel.into(),
+            miner_client: channel.clone().into(),
+            sync_client: channel.into(),
         }
     }
 }
