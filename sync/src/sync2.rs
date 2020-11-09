@@ -13,13 +13,12 @@ use network::PeerEvent;
 use network_api::{PeerProvider, PeerSelector};
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler, ServiceRef,
+    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    PeerNewBlock, SyncCancelRequest, SyncProgressRequest, SyncServiceHandler, SyncStartRequest,
-    SyncStatusRequest,
+    SyncCancelRequest, SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest,
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainInfo;
@@ -40,7 +39,6 @@ pub struct SyncService2 {
     config: Arc<NodeConfig>,
     network: NetworkAsyncService,
     storage: Arc<Storage>,
-    connector_service: ServiceRef<BlockConnectorService>,
     task_handle: Option<SyncTaskHandle>,
 }
 
@@ -49,7 +47,6 @@ impl SyncService2 {
         config: Arc<NodeConfig>,
         network: NetworkAsyncService,
         storage: Arc<Storage>,
-        connector_service: ServiceRef<BlockConnectorService>,
     ) -> Result<Self> {
         let startup_info = storage
             .get_startup_info()?
@@ -70,7 +67,6 @@ impl SyncService2 {
             config,
             network,
             storage,
-            connector_service,
             task_handle: None,
         })
     }
@@ -123,12 +119,13 @@ impl SyncService2 {
         let network = self.network.clone();
         let peer_selector = PeerSelector::new(target.peers.clone());
         let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+        let connector_service = ctx.service_ref::<BlockConnectorService>()?;
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
             target.block_info.clone(),
             self.config.net().time_service(),
             self.storage.clone(),
-            self.connector_service.clone(),
+            connector_service.clone(),
             rpc_client,
         )?;
         let target_id_number =
@@ -165,8 +162,7 @@ impl ServiceFactory<Self> for SyncService2 {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let network = ctx.get_shared::<NetworkAsyncService>()?;
-        let connect_service = ctx.service_ref::<BlockConnectorService>()?;
-        Self::new(config, network, storage, connect_service.clone())
+        Self::new(config, network, storage)
     }
 }
 
@@ -174,7 +170,6 @@ impl ActorService for SyncService2 {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SystemStarted>();
         ctx.subscribe::<PeerEvent>();
-        ctx.subscribe::<PeerNewBlock>();
         ctx.subscribe::<NewHeadBlock>();
         Ok(())
     }
@@ -182,7 +177,6 @@ impl ActorService for SyncService2 {
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SystemStarted>();
         ctx.unsubscribe::<PeerEvent>();
-        ctx.unsubscribe::<PeerNewBlock>();
         ctx.unsubscribe::<NewHeadBlock>();
         Ok(())
     }
@@ -218,21 +212,6 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
     }
 }
 
-impl EventHandler<Self, PeerNewBlock> for SyncService2 {
-    fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
-        if self.sync_status.is_prepare() {
-            return;
-        }
-        if self.sync_status.chain_info().head().number < msg.get_block().header().number() {
-            debug!(
-                "[sync] Check sync by PeerNewBlock {}",
-                msg.get_block().header().number()
-            );
-            ctx.notify(CheckSyncEvent { force: false });
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct StartSyncEvent {
     target: SyncTarget,
@@ -256,9 +235,15 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct CheckSyncEvent {
     force: bool,
+}
+
+impl CheckSyncEvent {
+    pub fn new() -> Self {
+        Self::default()
+    }
 }
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
