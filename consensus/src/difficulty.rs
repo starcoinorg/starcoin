@@ -31,7 +31,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
                 .map(|header| header.into())
         })
         .collect();
-    let target = get_next_target_helper(blocks?, epoch.block_time_target() * 1000)?;
+    let target = get_next_target_helper(blocks?, epoch.block_time_target())?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number, epoch, target

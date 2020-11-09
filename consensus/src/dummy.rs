@@ -28,7 +28,7 @@ impl Consensus for DummyConsensus {
         epoch: &EpochInfo,
     ) -> Result<U256> {
         info!("epoch: {:?}", epoch);
-        let target = epoch.block_time_target() * 1000;
+        let target = epoch.block_time_target();
         Ok(target.into())
     }
 
