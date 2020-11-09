@@ -61,7 +61,11 @@ address 0x1 {
             upgrade_event: Event::EventHandle<Self::UpgradeEvent>,
         }
 
-        struct UpgradeEvent {}
+        struct UpgradeEvent {
+            package_address: address,
+            package_hash: vector<u8>,
+            version: u64,
+        }
 
         // Update account's ModuleUpgradeStrategy
         public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
@@ -248,8 +252,6 @@ address 0x1 {
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
                 assert(plan.active_after_number <= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
-                let two_phase_upgrade = borrow_global_mut<TwoPhaseUpgrade>(package_address);
-                Config::set_with_capability<Version::Version>(&mut two_phase_upgrade.version_cap, Version::new_version(plan.version));
             }else if(strategy == STRATEGY_NEW_MODULE){
                 //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE){
@@ -285,6 +287,13 @@ address 0x1 {
 
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(package_address);
+            assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
+            let plan = Option::borrow(&tpu.plan);
+            Config::set_with_capability<Version::Version>(&mut tpu.version_cap, Version::new_version(plan.version));
+            Event::emit_event<Self::UpgradeEvent>(&mut tpu.upgrade_event, UpgradeEvent {
+                package_address: package_address,
+                package_hash: *&plan.package_hash,
+                version: plan.version});
             tpu.plan = Option::none<UpgradePlan>();
         }
 
@@ -311,8 +320,6 @@ address 0x1 {
             if(strategy == STRATEGY_TWO_PHASE){
                 if (success) {
                     finish_upgrade_plan(package_address);
-                    let two_phase_upgrade = borrow_global_mut<TwoPhaseUpgrade>(package_address);
-                    Event::emit_event<Self::UpgradeEvent>(&mut two_phase_upgrade.upgrade_event, UpgradeEvent {});
                 };
             };
         }

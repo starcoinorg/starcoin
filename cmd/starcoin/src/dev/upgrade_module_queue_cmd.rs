@@ -8,14 +8,14 @@ use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_transaction_builder::build_module_upgrade_queue;
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::TransactionPayload;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_queue")]
 pub struct UpgradeModuleQueueOpt {
-    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
     sender: Option<AccountAddress>,
 
@@ -50,7 +50,7 @@ pub struct UpgradeModuleQueueOpt {
     )]
     blocking: bool,
 
-    #[structopt(short = "a", name = "proposer-address", long="proposer_address", parse(try_from_str = parse_address))]
+    #[structopt(short = "a", name = "proposer-address", long = "proposer_address")]
     /// hex encoded string, like 0x1, 0x12
     proposer_address: Option<AccountAddress>,
 

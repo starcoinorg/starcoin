@@ -7,7 +7,7 @@ use crate::StarcoinOpt;
 use anyhow::{bail, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -17,7 +17,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_exe")]
 pub struct UpgradeModuleExeOpt {
-    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
     sender: Option<AccountAddress>,
 

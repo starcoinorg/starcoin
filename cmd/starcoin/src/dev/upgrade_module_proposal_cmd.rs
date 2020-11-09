@@ -10,7 +10,7 @@ use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_logger::prelude::*;
 use starcoin_transaction_builder::build_module_upgrade_proposal;
 use starcoin_types::transaction::Package;
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::transaction::TransactionPayload;
 use std::fs::File;
 use std::io::Read;
@@ -20,7 +20,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "module_proposal")]
 pub struct UpgradeModuleProposalOpt {
-    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
     sender: Option<AccountAddress>,
 
@@ -70,7 +70,7 @@ pub struct UpgradeModuleProposalOpt {
         name = "module-version",
         long = "module_version",
         default_value = "1",
-        help = "how long(in seconds) the txn stay alive"
+        help = "module version"
     )]
     version: u64,
 }

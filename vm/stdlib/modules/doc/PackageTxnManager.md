@@ -206,7 +206,19 @@
 
 <dl>
 <dt>
-<code>dummy_field: bool</code>
+<code>package_address: address</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>package_hash: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+
+</dd>
+<dt>
+<code>version: u64</code>
 </dt>
 <dd>
 
@@ -729,8 +741,6 @@
         <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan_opt);
         <b>assert</b>(*&plan.package_hash == package_hash, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>));
         <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
-        <b>let</b> two_phase_upgrade = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
-        <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(&<b>mut</b> two_phase_upgrade.version_cap, <a href="Version.md#0x1_Version_new_version">Version::new_version</a>(plan.version));
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>){
         //do check at VM runtime.
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>){
@@ -760,6 +770,13 @@
 
 <pre><code><b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_finish_upgrade_plan">finish_upgrade_plan</a>(package_address: address) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a> {
     <b>let</b> tpu = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
+    <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&tpu.plan), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>));
+    <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&tpu.plan);
+    <a href="Config.md#0x1_Config_set_with_capability">Config::set_with_capability</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;(&<b>mut</b> tpu.version_cap, <a href="Version.md#0x1_Version_new_version">Version::new_version</a>(plan.version));
+    <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradeEvent">Self::UpgradeEvent</a>&gt;(&<b>mut</b> tpu.upgrade_event, <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradeEvent">UpgradeEvent</a> {
+        package_address: package_address,
+        package_hash: *&plan.package_hash,
+        version: plan.version});
     tpu.plan = <a href="Option.md#0x1_Option_none">Option::none</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>&gt;();
 }
 </code></pre>
@@ -817,8 +834,6 @@ Package txn finished, and clean UpgradePlan
     <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>){
         <b>if</b> (success) {
             <a href="PackageTxnManager.md#0x1_PackageTxnManager_finish_upgrade_plan">finish_upgrade_plan</a>(package_address);
-            <b>let</b> two_phase_upgrade = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
-            <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradeEvent">Self::UpgradeEvent</a>&gt;(&<b>mut</b> two_phase_upgrade.upgrade_event, <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradeEvent">UpgradeEvent</a> {});
         };
     };
 }
