@@ -12,6 +12,7 @@
 <b>use</b> <a href="../../modules/doc/BlockReward.md#0x1_BlockReward">0x1::BlockReward</a>;
 <b>use</b> <a href="../../modules/doc/Box.md#0x1_Box">0x1::Box</a>;
 <b>use</b> <a href="../../modules/doc/ChainId.md#0x1_ChainId">0x1::ChainId</a>;
+<b>use</b> <a href="../../modules/doc/Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="../../modules/doc/ConsensusConfig.md#0x1_ConsensusConfig">0x1::ConsensusConfig</a>;
 <b>use</b> <a href="../../modules/doc/ConsensusStrategy.md#0x1_ConsensusStrategy">0x1::ConsensusStrategy</a>;
 <b>use</b> <a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
@@ -27,12 +28,13 @@
 <b>use</b> <a href="../../modules/doc/TransactionTimeoutConfig.md#0x1_TransactionTimeoutConfig">0x1::TransactionTimeoutConfig</a>;
 <b>use</b> <a href="../../modules/doc/VMConfig.md#0x1_VMConfig">0x1::VMConfig</a>;
 <b>use</b> <a href="../../modules/doc/Vector.md#0x1_Vector">0x1::Vector</a>;
+<b>use</b> <a href="../../modules/doc/Version.md#0x1_Version">0x1::Version</a>;
 </code></pre>
 
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="genesis_init.md#genesis_init">genesis_init</a>(reward_delay: u64, pre_mine_amount: u128, time_mint_amount: u128, time_mint_period: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="genesis_init.md#genesis_init">genesis_init</a>(stdlib_version: u64, reward_delay: u64, pre_mine_amount: u128, time_mint_amount: u128, time_mint_period: u64, parent_hash: vector&lt;u8&gt;, association_auth_key: vector&lt;u8&gt;, genesis_auth_key: vector&lt;u8&gt;, chain_id: u8, genesis_timestamp: u64, uncle_rate_target: u64, epoch_block_count: u64, base_block_time_target: u64, base_block_difficulty_window: u64, base_reward_per_block: u128, base_reward_per_uncle_percent: u64, min_block_time_target: u64, max_block_time_target: u64, base_max_uncles_per_block: u64, base_block_gas_limit: u64, strategy: u8, merged_script_allow_list: vector&lt;u8&gt;, is_open_module: bool, instruction_schedule: vector&lt;u8&gt;, native_schedule: vector&lt;u8&gt;, global_memory_per_byte_cost: u64, global_memory_per_byte_write_cost: u64, min_transaction_gas_units: u64, large_transaction_cutoff: u64, instrinsic_gas_per_byte: u64, maximum_number_of_gas_units: u64, min_price_per_gas_unit: u64, max_price_per_gas_unit: u64, max_transaction_size_in_bytes: u64, gas_unit_scaling_factor: u64, default_account_size: u64, voting_delay: u64, voting_period: u64, voting_quorum_rate: u8, min_action_delay: u64, transaction_timeout: u64)
 </code></pre>
 
 
@@ -42,6 +44,7 @@
 
 
 <pre><code><b>fun</b> <a href="genesis_init.md#genesis_init">genesis_init</a>(
+    stdlib_version: u64,
 
     // block reward config
     reward_delay: u64,
@@ -147,6 +150,7 @@
     <b>let</b> association = <a href="../../modules/doc/Account.md#0x1_Account_create_genesis_account">Account::create_genesis_account</a>(
         <a href="../../modules/doc/CoreAddresses.md#0x1_CoreAddresses_ASSOCIATION_ROOT_ADDRESS">CoreAddresses::ASSOCIATION_ROOT_ADDRESS</a>(),
     );
+    <a href="../../modules/doc/Config.md#0x1_Config_publish_new_config">Config::publish_new_config</a>&lt;<a href="../../modules/doc/Version.md#0x1_Version_Version">Version::Version</a>&gt;(&genesis_account, <a href="../../modules/doc/Version.md#0x1_Version_new_version">Version::new_version</a>(stdlib_version));
     // stdlib <b>use</b> two phase upgrade strategy.
     <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         &genesis_account,

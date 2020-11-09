@@ -177,8 +177,10 @@ propose a module upgrade, called by proposer.
     package_hash: vector&lt;u8&gt;,
     version: u64,
     exec_delay: u64,
-) {
-    <b>assert</b>(<b>exists</b>&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(module_address), <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_UNABLE_TO_UPGRADE">ERR_UNABLE_TO_UPGRADE</a>));
+) <b>acquires</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a> {
+    <b>let</b> cap = borrow_global&lt;<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModuleCapability">UpgradeModuleCapability</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_token_address">Token::token_address</a>&lt;TokenT&gt;());
+    <b>let</b> account_address = <a href="PackageTxnManager.md#0x1_PackageTxnManager_account_address">PackageTxnManager::account_address</a>(&cap.cap);
+    <b>assert</b>(account_address == module_address, <a href="Errors.md#0x1_Errors_requires_capability">Errors::requires_capability</a>(<a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_ERR_ADDRESS_MISSMATCH">ERR_ADDRESS_MISSMATCH</a>));
     <a href="Dao.md#0x1_Dao_propose">Dao::propose</a>&lt;TokenT, <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a>&gt;(
         signer,
         <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_UpgradeModule">UpgradeModule</a> { module_address, package_hash, version },

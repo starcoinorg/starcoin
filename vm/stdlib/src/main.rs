@@ -245,6 +245,7 @@ fn main() {
         )
         .arg(
             Arg::with_name("no-check-compatibility")
+                .short("n")
                 .long("no-check-compatibility")
                 .help("don't check compatibility between the old and new standard library"),
         );

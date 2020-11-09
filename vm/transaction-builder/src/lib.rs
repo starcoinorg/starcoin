@@ -333,6 +333,7 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
+                TransactionArgument::U64(net.stdlib_version().version()),
                 TransactionArgument::U64(genesis_config.reward_delay),
                 TransactionArgument::U128(genesis_config.pre_mine_amount),
                 TransactionArgument::U128(genesis_config.time_mint_amount),

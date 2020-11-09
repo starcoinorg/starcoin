@@ -79,8 +79,11 @@ address 0x1 {
                 move_to(account, ModuleUpgradeStrategy{ strategy: strategy});
             };
             if (strategy == STRATEGY_TWO_PHASE){
+                let version_cap = Config::extract_modify_config_capability<Version::Version>(account);
                 move_to(account, UpgradePlanCapability{ account_address: account_address});
-                move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>(), version_cap: Config::publish_new_config_with_capability<Version::Version>(account, Version::new_version(1)), upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)});
+                move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>(),
+                    version_cap: version_cap,
+                    upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)});
             };
             //clean two phase upgrade resource
             if (previous_strategy == STRATEGY_TWO_PHASE){
@@ -287,13 +290,14 @@ address 0x1 {
 
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(package_address);
-            assert(Option::is_some(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NONE));
-            let plan = Option::borrow(&tpu.plan);
-            Config::set_with_capability<Version::Version>(&mut tpu.version_cap, Version::new_version(plan.version));
-            Event::emit_event<Self::UpgradeEvent>(&mut tpu.upgrade_event, UpgradeEvent {
-                package_address: package_address,
-                package_hash: *&plan.package_hash,
-                version: plan.version});
+            if (Option::is_some(&tpu.plan)) {
+                let plan = Option::borrow(&tpu.plan);
+                Config::set_with_capability<Version::Version>(&mut tpu.version_cap, Version::new_version(plan.version));
+                Event::emit_event<Self::UpgradeEvent>(&mut tpu.upgrade_event, UpgradeEvent {
+                    package_address: package_address,
+                    package_hash: *&plan.package_hash,
+                    version: plan.version});
+            };
             tpu.plan = Option::none<UpgradePlan>();
         }
 

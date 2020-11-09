@@ -19,8 +19,11 @@ script {
     use 0x1::Box;
     use 0x1::TransactionTimeoutConfig;
     use 0x1::Epoch;
+    use 0x1::Version;
+    use 0x1::Config;
 
     fun genesis_init(
+        stdlib_version: u64,
 
         // block reward config
         reward_delay: u64,
@@ -126,6 +129,7 @@ script {
         let association = Account::create_genesis_account(
             CoreAddresses::ASSOCIATION_ROOT_ADDRESS(),
         );
+        Config::publish_new_config<Version::Version>(&genesis_account, Version::new_version(stdlib_version));
         // stdlib use two phase upgrade strategy.
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,

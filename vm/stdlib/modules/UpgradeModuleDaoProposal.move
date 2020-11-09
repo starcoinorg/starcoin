@@ -62,8 +62,10 @@ module UpgradeModuleDaoProposal {
         package_hash: vector<u8>,
         version: u64,
         exec_delay: u64,
-    ) {
-        assert(exists<UpgradeModuleCapability<TokenT>>(module_address), Errors::requires_capability(ERR_UNABLE_TO_UPGRADE));
+    ) acquires UpgradeModuleCapability {
+        let cap = borrow_global<UpgradeModuleCapability<TokenT>>(Token::token_address<TokenT>());
+        let account_address = PackageTxnManager::account_address(&cap.cap);
+        assert(account_address == module_address, Errors::requires_capability(ERR_ADDRESS_MISSMATCH));
         Dao::propose<TokenT, UpgradeModule>(
             signer,
             UpgradeModule { module_address, package_hash, version },
