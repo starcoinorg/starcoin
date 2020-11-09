@@ -117,11 +117,9 @@ fn print_vec_table(values: Vec<Value>) -> Result<()> {
     }
     let mut print_rows = vec![];
     let (rows, row_builder) = build_rows(&values)?;
-    let mut i = 0;
-    for row in rows {
+    for (i, row) in rows.into_iter().enumerate() {
         print_rows.push(row);
         print_rows.push(row_builder.build_row(&values[i])?);
-        i += 1;
     }
     let table = Table::new(print_rows, Default::default())?;
     table.print_stdout()?;
