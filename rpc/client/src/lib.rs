@@ -488,6 +488,13 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn get_tps(&self, number: BlockNumber) -> anyhow::Result<u64> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.chain_client.get_tps(number).compat().await },
+        )
+        .map_err(map_err)
+    }
+
     pub fn get_global_time_by_number(
         &self,
         number: BlockNumber,

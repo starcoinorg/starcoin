@@ -58,6 +58,7 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
+    fn get_tps(&self, number: BlockNumber) -> Result<u64>;
 }
 
 /// Writeable block chain service trait
@@ -115,6 +116,7 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
+    async fn get_tps(&self, number: BlockNumber) -> Result<u64>;
 }
 
 #[async_trait::async_trait]
@@ -380,6 +382,15 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
+        }
+    }
+
+    async fn get_tps(&self, number: BlockNumber) -> Result<u64> {
+        let response = self.send(ChainRequest::GetTPS(number)).await??;
+        if let ChainResponse::TPS(tps) = response {
+            Ok(tps)
+        } else {
+            bail!("get tps error.")
         }
     }
 }

@@ -79,7 +79,8 @@ pub fn add_command(
                 .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::EpochInfoCommand)
-                .subcommand(chain::GetEpochInfoByNumberCommand),
+                .subcommand(chain::GetEpochInfoByNumberCommand)
+                .subcommand(chain::GetTPSCommand),
         )
         .command(
             Command::with_name("dev")
