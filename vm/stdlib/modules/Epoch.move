@@ -46,6 +46,8 @@ module Epoch {
         total_gas: u128,
     }
 
+    const THOUSAND: u64 = 1000;
+    const THOUSAND_U128: u128 = 1000;
     const HUNDRED: u64 = 100;
 
     const EUNREACHABLE: u64 = 19;
@@ -92,9 +94,9 @@ module Epoch {
         let total_time = now_milli_second - epoch_start_time;
         let blocks = end_block_number - start_block_number;
         let avg_block_time = total_time / blocks;
-        let uncles_rate = total_uncles / blocks;
-        let new_epoch_block_time_target = (1 + uncles_rate )* avg_block_time /
-                (1+ ConsensusConfig::uncle_rate_target(config));
+        let uncles_rate = total_uncles * THOUSAND / blocks;
+        let new_epoch_block_time_target = (THOUSAND + uncles_rate) * avg_block_time /
+                (ConsensusConfig::uncle_rate_target(config) + THOUSAND);
         if (new_epoch_block_time_target > last_epoch_time_target * 2) {
             new_epoch_block_time_target = last_epoch_time_target * 2;
         };
