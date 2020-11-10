@@ -965,7 +965,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
     timestamp: 1603766401000,
     reward_delay: 7,
-    difficulty: 10.into(),
+    difficulty: 100.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
     time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
