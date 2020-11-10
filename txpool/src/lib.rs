@@ -51,6 +51,13 @@ impl TxPoolActorService {
             sync_status: None,
         }
     }
+
+    pub fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
+            None => false,
+        }
+    }
 }
 
 impl ServiceFactory<Self> for TxPoolActorService {
@@ -147,14 +154,12 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
 impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
         //TODO should filter msg an NetworkService
-        if let Some(sync_status) = self.sync_status.as_ref() {
-            if sync_status.is_nearly_synced() {
-                // JUST need to keep at most once delivery.
-                let txns = msg.peer_transactions();
-                let _ = self.inner.import_txns(txns);
-            } else {
-                debug!("TxPoolActorService's process_broadcast_txn is false, ignore PeerTransactions message.");
-            }
+        if self.is_synced() {
+            // JUST need to keep at most once delivery.
+            let txns = msg.peer_transactions();
+            let _ = self.inner.import_txns(txns);
+        } else {
+            debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
         }
     }
 }

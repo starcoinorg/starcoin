@@ -16,9 +16,8 @@ use starcoin_config::NodeConfig;
 use starcoin_genesis::{Genesis, GenesisError};
 use starcoin_logger::prelude::*;
 use starcoin_logger::LoggerHandle;
-use starcoin_miner::headblock_pacemaker::HeadBlockPacemaker;
+use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
-use starcoin_miner::ondemand_pacemaker::OndemandPacemaker;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
 use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
 use starcoin_network_rpc::NetworkRpcService;
@@ -90,19 +89,11 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
             }
             NodeRequest::StopPacemaker => NodeResponse::Result(
                 self.registry
-                    .stop_service_sync(HeadBlockPacemaker::service_name())
-                    .and_then(|_| {
-                        self.registry
-                            .stop_service_sync(OndemandPacemaker::service_name())
-                    }),
+                    .stop_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
             NodeRequest::StartPacemaker => NodeResponse::Result(
                 self.registry
-                    .start_service_sync(HeadBlockPacemaker::service_name())
-                    .and_then(|_| {
-                        self.registry
-                            .start_service_sync(OndemandPacemaker::service_name())
-                    }),
+                    .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
         }
     }
@@ -262,8 +253,7 @@ impl NodeService {
             info!("Config.miner.enable_miner_client is false, No in process MinerClient.");
         }
 
-        registry.register::<OndemandPacemaker>().await?;
-        registry.register::<HeadBlockPacemaker>().await?;
+        registry.register::<GenerateBlockEventPacemaker>().await?;
 
         // wait for service init.
         Delay::new(Duration::from_millis(1000)).await;
