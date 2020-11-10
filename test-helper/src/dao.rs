@@ -468,8 +468,7 @@ pub fn dao_vote_test(
 
     // block 3
     let block_number = 3;
-    let block_timestamp =
-        block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
+    let block_timestamp = block_timestamp + voting_delay(&chain_state, stc_type_tag()) + 10000;
     execute_cast_vote(
         &net,
         &chain_state,
@@ -481,8 +480,7 @@ pub fn dao_vote_test(
 
     // block 4
     let block_number = 4;
-    let block_timestamp =
-        block_timestamp + voting_period(&chain_state, stc_type_tag()) * 1000 - 10 * 1000;
+    let block_timestamp = block_timestamp + voting_period(&chain_state, stc_type_tag()) - 10 * 1000;
     {
         blockmeta_execute(
             &chain_state,
@@ -557,7 +555,7 @@ pub fn dao_vote_test(
 
     // block 6
     let block_number = 6;
-    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag()) * 1000;
+    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag());
     {
         blockmeta_execute(
             &chain_state,

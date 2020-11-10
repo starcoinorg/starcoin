@@ -837,10 +837,10 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,          // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -887,10 +887,10 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,          // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -940,10 +940,10 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,       // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -993,10 +993,10 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     time_service_type: TimeServiceType::RealTimeService,
     stdlib_version: StdlibVersion::new(0, 6),
     dao_config: DaoConfig {
-        voting_delay: 60 * 60,           // 1h
-        voting_period: 60 * 60 * 24 * 2, // 2d
+        voting_delay: 60 * 60 * 1000,           // 1h
+        voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
         voting_quorum_rate: 4,
-        min_action_delay: 60 * 60 * 24, // 1d
+        min_action_delay: 60 * 60 * 24 * 1000, // 1d
     },
     transaction_timeout: ONE_DAY,
 }
@@ -1041,10 +1041,10 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::new(0, 6),
         dao_config: DaoConfig {
-            voting_delay: 60 * 60,           // 1h
-            voting_period: 60 * 60 * 24 * 2, // 2d
+            voting_delay: 60 * 60 * 1000,           // 1h
+            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60 * 24, // 1d
+            min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
     }

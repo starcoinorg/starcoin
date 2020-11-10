@@ -15,13 +15,13 @@ module Dao {
     }
 
     /// default voting_delay: 1hour
-    const DEFAULT_VOTING_DELAY: u64 = 60 * 60;
+    const DEFAULT_VOTING_DELAY: u64 = 60 * 60 * 1000;
     /// default voting_period: 2days
-    const DEFAULT_VOTING_PERIOD: u64 = 60 * 60 * 24 * 2;
+    const DEFAULT_VOTING_PERIOD: u64 = 60 * 60 * 24 * 2 * 1000;
     /// default quorum rate: 4% of toal token supply.
     const DEFAULT_VOTEING_QUORUM_RATE: u8 = 4;
     /// default action_delay: 1days
-    const DEFAULT_MIN_ACTION_DELAY: u64 = 60 * 60 * 24;
+    const DEFAULT_MIN_ACTION_DELAY: u64 = 60 * 60 * 24 * 1000;
 
     /// default min_action_delay
     public fun default_min_action_delay(): u64 {
@@ -246,7 +246,7 @@ module Dao {
         };
         let proposal_id = generate_next_proposal_id<TokenT>();
         let proposer = Signer::address_of(signer);
-        let start_time = Timestamp::now_seconds() + voting_delay<TokenT>();
+        let start_time = Timestamp::now_milliseconds() + voting_delay<TokenT>();
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
             proposer,
@@ -631,15 +631,15 @@ module Dao {
             Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID)
         );
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
-        proposal.eta = Timestamp::now_seconds() + proposal.action_delay;
+        proposal.eta = Timestamp::now_milliseconds() + proposal.action_delay;
     }
     spec fun queue_proposal_action {
         let expected_states = singleton_vector(AGREED);
         include CheckProposalStates<TokenT, ActionT>{expected_states};
 
         let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
-        aborts_if Timestamp::spec_now_seconds() + proposal.action_delay > MAX_U64;
-        ensures proposal.eta >= Timestamp::spec_now_seconds();
+        aborts_if Timestamp::spec_now_millseconds() + proposal.action_delay > MAX_U64;
+        ensures proposal.eta >= Timestamp::spec_now_millseconds();
     }
 
     /// extract proposal action to execute.
@@ -734,7 +734,7 @@ module Dao {
     ): u8 acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
-        let current_time = Timestamp::now_seconds();
+        let current_time = Timestamp::now_milliseconds();
         let quorum_votes = quorum_votes<TokenT>();
         _proposal_state(proposal, current_time, quorum_votes)
     }
@@ -752,7 +752,7 @@ module Dao {
         include AbortIfTimestampNotExist;
         include CheckQuorumVotes<TokenT>;
         let quorum_votes = spec_quorum_votes<TokenT>();
-        let current_time = Timestamp::spec_now_seconds();
+        let current_time = Timestamp::spec_now_millseconds();
         let state = _proposal_state(proposal, current_time, quorum_votes);
         aborts_if (forall s in expected_states : s != state);
     }
@@ -774,8 +774,6 @@ module Dao {
         current_time: u64,
         quorum_votes: u128,
     ): u8 {
-        // let current_time = Timestamp::now_seconds();
-        // let quorum_votes = quorum_votes<TokenT>();
         if (current_time < proposal.start_time) {
             // Pending
             PENDING
