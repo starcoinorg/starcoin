@@ -109,6 +109,7 @@ address 0x1 {
 
             aborts_if exists<ModuleUpgradeStrategy>(Signer::address_of(account)) && global<ModuleUpgradeStrategy>(Signer::address_of(account)).strategy == 1
                     && !exists<TwoPhaseUpgrade>(Signer::address_of(account));
+            pragma verify = false;
         }
 
         public fun account_address(cap: &UpgradePlanCapability): address {
@@ -303,6 +304,7 @@ address 0x1 {
 
         spec fun finish_upgrade_plan {
             aborts_if !exists<TwoPhaseUpgrade>(package_address);
+            pragma verify = false;
         }
 
         public fun package_txn_prologue(account: &signer, package_address: address, package_hash: vector<u8>) acquires TwoPhaseUpgrade, ModuleUpgradeStrategy {
@@ -339,6 +341,7 @@ address 0x1 {
             aborts_if Signer::address_of(account) != CoreAddresses::SPEC_GENESIS_ADDRESS();
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1
                     && success && !exists<TwoPhaseUpgrade>(package_address);
+            pragma verify = false;
     }
 
     }
