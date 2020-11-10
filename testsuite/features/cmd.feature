@@ -43,8 +43,8 @@ Feature: cmd integration test
 # node service
   Scenario Outline: [cmd] node service test
     Then cmd: "node service list"
-    Then cmd: "node service stop starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
-    Then cmd: "node service start starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
+    Then cmd: "node service stop starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then cmd: "node service start starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
     Then stop
 
     Examples:

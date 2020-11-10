@@ -42,8 +42,6 @@ impl SyncState {
     }
 }
 
-pub const NEARLY_SYNCED_BLOCKS: u64 = 24;
-
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub struct SyncStatus {
     chain_info: ChainInfo,
@@ -89,32 +87,8 @@ impl SyncStatus {
         self.state.is_syncing()
     }
 
-    pub fn is_nearly_synced(&self) -> bool {
-        match &self.state {
-            SyncState::Prepare => false,
-            SyncState::Synchronized => true,
-            SyncState::Synchronizing {
-                target,
-                total_difficulty,
-            } => {
-                target.number.saturating_sub(self.chain_info.head().number) <= NEARLY_SYNCED_BLOCKS
-                    || self.chain_info.total_difficulty() >= *total_difficulty
-            }
-        }
-    }
-
     pub fn is_synced(&self) -> bool {
-        match &self.state {
-            SyncState::Prepare => false,
-            SyncState::Synchronized => true,
-            SyncState::Synchronizing {
-                target,
-                total_difficulty,
-            } => {
-                self.chain_info.head().number >= target.number
-                    || self.chain_info.total_difficulty() >= *total_difficulty
-            }
-        }
+        self.state.is_synced()
     }
 
     pub fn is_prepare(&self) -> bool {

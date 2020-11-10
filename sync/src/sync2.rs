@@ -202,7 +202,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
                         .any(|peer| peer.peer_id == close_peer_id)
                     {
                         warn!(
-                            "[sync] Current task handle may be failed because peer {} closed",
+                            "[sync] Current sync task may be failed because peer {} closed",
                             close_peer_id
                         );
                     }
