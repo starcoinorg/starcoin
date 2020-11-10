@@ -20,7 +20,7 @@ fn test_get_leaves() {
         0,
         Arc::new(mock_store),
     );
-    let root_hash = accumulator.append(leaves.as_slice()).unwrap();
+    let _root_hash = accumulator.append(leaves.as_slice()).unwrap();
     let new_num_leaves = accumulator.num_leaves();
     let begin = SystemTime::now();
     (0..new_num_leaves).for_each(|idx| {
