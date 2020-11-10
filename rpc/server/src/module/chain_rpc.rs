@@ -187,4 +187,11 @@ where
 
         Box::new(fut.boxed().compat())
     }
+
+    fn get_tps(&self, number: BlockNumber) -> FutureResult<u64> {
+        let service = self.service.clone();
+        let fut = async move { service.get_tps(number).await };
+
+        Box::new(fut.boxed().map_err(map_err).compat())
+    }
 }

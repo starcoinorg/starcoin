@@ -511,6 +511,58 @@ impl ChainReader for BlockChain {
         self.block_accumulator
             .get_leaves(start_number, reverse, max_size)
     }
+
+    fn total_txns_by_block_number(&self, start_number: BlockNumber, count: u64) -> Result<u64> {
+        let mut num = 0;
+        let block_ids = self.get_block_ids(start_number, false, count as usize)?;
+        for id in block_ids {
+            let block_info = self
+                .get_block_info(Some(id))?
+                .ok_or_else(|| format_err!("Can not find block info by id {}", id))?;
+            num += block_info.get_txn_accumulator_info().get_num_leaves();
+        }
+        Ok(num)
+    }
+
+    /// Get tps for an epoch, the epoch includes the block given by `number`.
+    /// If `number` is absent, return tps for the latest epoch
+    fn get_tps(&self, number: Option<BlockNumber>) -> Result<u64> {
+        let epoch_info = self.get_epoch_info_by_number(number)?;
+        let start_block_number = epoch_info.start_block_number();
+        let end_block_number = epoch_info.end_block_number();
+        let current_block_number = self.current_header().number();
+
+        let count = if end_block_number < current_block_number {
+            end_block_number - start_block_number
+        } else {
+            current_block_number - start_block_number
+        };
+
+        let start_block_time = self
+            .get_header_by_number(start_block_number)?
+            .ok_or_else(|| {
+                format_err!("Can not find block header by number {}", start_block_number)
+            })?
+            .timestamp();
+        let duration = if end_block_number < current_block_number {
+            let end_block_time = self
+                .get_header_by_number(end_block_number)?
+                .ok_or_else(|| {
+                    format_err!("Can not find block header by number {}", end_block_number)
+                })?
+                .timestamp();
+            (end_block_time - start_block_time) / 1000
+        } else {
+            (self.current_header().timestamp() - start_block_time) / 1000
+        };
+
+        let total_txns = self.total_txns_by_block_number(start_block_number, count)?;
+        info!(
+            "total_txns = {}, duration = {}, start_block_time = {}",
+            total_txns, duration, start_block_time
+        );
+        Ok(total_txns / duration)
+    }
 }
 
 impl BlockChain {

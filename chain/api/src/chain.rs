@@ -42,6 +42,10 @@ pub trait ChainReader {
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
+    /// Get latest `count` blocks before `number`. if `number` is absent, use head block number
+    fn total_txns_by_block_number(&self, start_number: BlockNumber, count: u64) -> Result<u64>;
+    /// Get tps for an epoch. The epoch includes the block given by `number`. If `number` is absent, return tps for the latest epoch
+    fn get_tps(&self, number: Option<BlockNumber>) -> Result<u64>;
 }
 
 pub trait ChainWriter {

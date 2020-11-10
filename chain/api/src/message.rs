@@ -49,6 +49,7 @@ pub enum ChainRequest {
         max_size: usize,
     },
     GetBlocks(Vec<HashValue>),
+    GetTPS(u64),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -78,4 +79,5 @@ pub enum ChainResponse {
     EpochInfo(EpochInfo),
     GlobalTime(GlobalTimeOnChain),
     HashVec(Vec<HashValue>),
+    TPS(u64),
 }
