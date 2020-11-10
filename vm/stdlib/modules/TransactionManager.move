@@ -77,7 +77,6 @@ module TransactionManager {
             );
             PackageTxnManager::package_txn_prologue(
                 account,
-                txn_sender,
                 txn_package_address,
                 txn_script_or_package_hash,
             );

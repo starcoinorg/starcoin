@@ -38,6 +38,7 @@ fn test_dao_upgrade_module() -> Result<()> {
         vec![
             TransactionArgument::Address(genesis_address()),
             TransactionArgument::U8Vector(package_hash.to_vec()),
+            TransactionArgument::U64(1),
             TransactionArgument::U64(0),
         ],
     );
