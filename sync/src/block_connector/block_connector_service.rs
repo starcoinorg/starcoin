@@ -110,7 +110,7 @@ impl EventHandler<Self, SyncStatusChangeEvent> for BlockConnectorService {
 impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
     fn handle_event(&mut self, msg: PeerNewBlock, ctx: &mut ServiceContext<Self>) {
         if !self.is_synced() {
-            debug!("Ignore PeerNewBlock event, because node is not synced.");
+            debug!("[connector] Ignore PeerNewBlock event because the node has not been synchronized yet.");
             return;
         }
         let peer_id = msg.get_peer_id();

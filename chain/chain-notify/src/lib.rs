@@ -29,6 +29,13 @@ impl ChainNotifyHandlerService {
             sync_status: None,
         }
     }
+
+    pub fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
+            None => false,
+        }
+    }
 }
 
 impl ServiceFactory<Self> for ChainNotifyHandlerService {
@@ -66,18 +73,18 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
         item: NewHeadBlock,
         ctx: &mut ServiceContext<ChainNotifyHandlerService>,
     ) {
-        if let Some(sync_status) = self.sync_status.as_ref() {
-            if sync_status.is_nearly_synced() {
-                let NewHeadBlock(block_detail) = item;
-                let block = block_detail.get_block();
-                // notify header.
-                self.notify_new_block(block, ctx);
+        if self.is_synced() {
+            let NewHeadBlock(block_detail) = item;
+            let block = block_detail.get_block();
+            // notify header.
+            self.notify_new_block(block, ctx);
 
-                // notify events
-                if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
-                    error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
-                }
+            // notify events
+            if let Err(e) = self.notify_events(block, self.store.clone(), ctx) {
+                error!(target: "pubsub", "fail to notify events to client, err: {}", &e);
             }
+        } else {
+            debug!("[chain-notify] Ignore NewHeadBlock event because the node has not been synchronized yet.")
         }
     }
 }

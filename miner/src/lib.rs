@@ -19,10 +19,9 @@ use std::time::Duration;
 use traits::ChainReader;
 
 mod create_block_template;
-pub mod headblock_pacemaker;
+pub mod generate_block_event_pacemaker;
 pub mod job_bus_client;
 mod metrics;
-pub mod ondemand_pacemaker;
 pub mod task;
 
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};

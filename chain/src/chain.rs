@@ -1048,6 +1048,15 @@ impl BlockChain {
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
+        self.update_chain_head_with_info(block, block_info)
+    }
+
+    //TODO refactor update_chain_head and update_chain_head_with_info
+    pub fn update_chain_head_with_info(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+    ) -> Result<()> {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
