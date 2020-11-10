@@ -41,20 +41,24 @@ pub enum StdlibVersion {
     Version(VersionNumber),
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub struct VersionNumber {
-    major: u32,
-    minor: u32,
-}
+type VersionNumber = u64;
 
 impl StdlibVersion {
-    pub fn new(major: u32, minor: u32) -> Self {
-        StdlibVersion::Version(VersionNumber { major, minor })
+    pub fn new(version: u64) -> Self {
+        StdlibVersion::Version(version)
     }
-    pub fn as_string(self) -> String {
+
+    pub fn as_string(&self) -> String {
         match self {
             StdlibVersion::Latest => "latest".to_string(),
-            StdlibVersion::Version(version) => format!("{}.{}", version.major, version.minor),
+            StdlibVersion::Version(version) => format!("{}", version),
+        }
+    }
+
+    pub fn version(&self) -> u64 {
+        match self {
+            StdlibVersion::Latest => 0,
+            StdlibVersion::Version(version) => *version,
         }
     }
 }
@@ -991,7 +995,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::new(0, 6),
+    stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
         voting_period: 60 * 60 * 24 * 2, // 2d
@@ -1039,7 +1043,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (None, association_public_key),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::new(0, 6),
+        stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60 * 60,           // 1h
             voting_period: 60 * 60 * 24 * 2, // 2d

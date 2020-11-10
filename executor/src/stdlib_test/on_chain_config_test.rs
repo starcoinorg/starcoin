@@ -13,15 +13,15 @@ use starcoin_types::transaction::TransactionPayload;
 use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::{GasAlgebra, GasUnits};
 use starcoin_vm_types::on_chain_config::{
-    consensus_config_type_tag, version_config_type_tag, vm_config_type_tag, ConsensusConfig,
-    OnChainConfig, VMConfig, CONSENSUS_CONFIG_IDENTIFIER, VERSION_CONFIG_IDENTIFIER,
+    consensus_config_type_tag, vm_config_type_tag, ConsensusConfig, OnChainConfig, VMConfig,
+    CONSENSUS_CONFIG_IDENTIFIER,
 };
 use starcoin_vm_types::values::{VMValueCast, Value};
 use test_helper::dao::{
     dao_vote_test, empty_txn_payload, execute_script_on_chain_config, on_chain_config_type_tag,
     reward_config_type_tag, transasction_timeout_type_tag, txn_publish_config_type_tag,
     vote_reward_scripts, vote_script_consensus, vote_txn_publish_option_script,
-    vote_txn_timeout_script, vote_version_script, vote_vm_config_script,
+    vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
     account_execute, account_execute_with_output, association_execute, prepare_genesis,
@@ -204,34 +204,5 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     // get gas used of modified gas schedule
     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
     assert!(output.gas_used() > old_gas_used);
-    Ok(())
-}
-
-#[stest::test]
-fn test_modify_on_chain_version() -> Result<()> {
-    let alice = Account::new();
-    let (chain_state, net) = prepare_genesis();
-    let action_type_tag = version_config_type_tag();
-
-    let major: u64 = 8;
-    let chain_state = dao_vote_test(
-        alice,
-        chain_state,
-        &net,
-        vote_version_script(&net, major),
-        on_chain_config_type_tag(action_type_tag.clone()),
-        execute_script_on_chain_config(&net, action_type_tag, 0u64),
-    )?;
-    // get version on chain
-    let module_id = ModuleId::new(genesis_address(), VERSION_CONFIG_IDENTIFIER.clone());
-    let mut read_config = execute_readonly_function(
-        &chain_state,
-        &module_id,
-        &Identifier::new("get")?,
-        vec![],
-        vec![],
-    )?;
-    let on_chain_version: u64 = read_config.pop().unwrap().1.cast().unwrap();
-    assert_eq!(on_chain_version, major);
     Ok(())
 }

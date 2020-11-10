@@ -23,7 +23,7 @@ use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{transaction::Package, values::Value, vm_status::StatusCode};
 use stdlib::transaction_scripts::compiled_transaction_script;
 use test_helper::executor::{
     account_execute, association_execute, build_raw_txn, TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
@@ -64,7 +64,7 @@ fn test_vm_version() {
             &version_module_id,
             &Identifier::new("get").unwrap(),
             vec![],
-            vec![],
+            vec![Value::address(genesis_address())],
         )
         .unwrap();
     let readed_version: u64 = read_version.pop().unwrap().1.cast().unwrap();
@@ -166,28 +166,6 @@ fn test_package_txn() -> Result<()> {
             &chain_state,
             TransactionPayload::Script(script),
         )?;
-    }
-
-    // test on invalid sender on package txn
-    {
-        let module = compile_module_with_address(*bob.address(), TEST_MODULE);
-        let package = Package::new_with_module(module)?;
-        // let package_hash = package.crypto_hash();
-
-        let mut vm = StarcoinVM::new();
-        let txn = alice.sign_txn(build_raw_txn(
-            *alice.address(),
-            &chain_state,
-            TransactionPayload::Package(package),
-            net.chain_id(),
-        ));
-        let verify_result = vm.verify_transaction(&chain_state, txn);
-        assert!(verify_result.is_some());
-        let vm_status = verify_result.unwrap();
-        assert_eq!(
-            vm_status.status_code(),
-            StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-        );
     }
 
     // verify package txn

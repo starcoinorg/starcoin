@@ -340,17 +340,6 @@ pub fn vote_txn_publish_option_script(
     )
 }
 
-/// vote txn publish option scripts
-pub fn vote_version_script(net: &ChainNetwork, major: u64) -> Script {
-    let script1 =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeUpdateVersion)
-            .into_vec();
-    Script::new(
-        script1,
-        vec![],
-        vec![TransactionArgument::U64(major), TransactionArgument::U64(0)],
-    )
-}
 /// vote vm config scripts
 pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script {
     let script1 =
