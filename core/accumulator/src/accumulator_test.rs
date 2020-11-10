@@ -22,7 +22,6 @@ fn test_get_leaves() {
     );
     let root_hash = accumulator.append(leaves.as_slice()).unwrap();
     let new_num_leaves = accumulator.num_leaves();
-    dbg!(root_hash);
     let begin = SystemTime::now();
     (0..new_num_leaves).for_each(|idx| {
         let _leaf = accumulator.get_leaf(idx).unwrap().unwrap();

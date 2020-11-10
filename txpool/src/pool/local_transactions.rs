@@ -235,8 +235,6 @@ impl tx_pool::Listener<Transaction> for LocalTransactionsList {
             self.insert(*tx.hash(), Status::Mined(tx.clone()));
             return;
         }
-
-        dbg!(tx.transaction.transaction.expiration_timestamp_secs());
         info!(target: "own_tx", "Transaction culled (hash {:?})", tx.hash());
         self.insert(*tx.hash(), Status::Culled(tx.clone()));
     }
