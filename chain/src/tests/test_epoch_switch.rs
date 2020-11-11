@@ -473,7 +473,6 @@ fn test_modify_on_chain_config_consensus_by_dao() -> Result<()> {
     let mut number = epoch.end_block_number()
         - epoch.start_block_number()
         - modified_chain.current_header().number;
-    dbg!(number);
     while number > 0 {
         modified_chain.apply(create_new_block(&modified_chain, &bob, vec![])?)?;
         number -= 1;

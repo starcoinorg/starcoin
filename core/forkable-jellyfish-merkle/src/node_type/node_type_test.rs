@@ -451,7 +451,6 @@ fn test_internal_hash_and_proof() {
 
         for i in 0..4 {
             let result = internal_node.get_child_with_siblings(i.into());
-            // dbg!(result.clone());
             assert_eq!(result, (None, vec![hash_x6, hash_x2]));
         }
 

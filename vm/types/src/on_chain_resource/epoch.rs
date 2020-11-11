@@ -12,11 +12,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Epoch {
     number: u64,
-    //seconds
+    //milli_seconds
     start_time: u64,
     start_block_number: u64,
     end_block_number: u64,
-    //seconds
+    //milli_seconds
     block_time_target: u64,
     reward_per_block: u128,
     reward_per_uncle_percent: u64,

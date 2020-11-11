@@ -40,8 +40,8 @@ impl Consensus for ArgonConsensus {
         self.verify_header_difficulty(difficulty, header)
     }
 
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue> {
-        let mix_hash = set_header_nonce(&mining_hash.to_vec(), nonce);
+    fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
+        let mix_hash = set_header_nonce(mining_hash, nonce);
         let mut config = Config::default();
         config.mem_cost = 1024;
         let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;

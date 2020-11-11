@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use consensus::Consensus;
-use crypto::hash::PlainCryptoHash;
-use crypto::HashValue;
 use futures::executor::block_on;
 use starcoin_account_service::AccountService;
 use starcoin_config::NodeConfig;
@@ -41,21 +39,21 @@ fn test_miner() {
             .await
             .unwrap();
         let nonce = mint_block_event.strategy.solve_consensus_nonce(
-            mint_block_event.minting_hash,
+            &mint_block_event.minting_blob,
             mint_block_event.difficulty,
             time_service.as_ref(),
         );
         // mint client submit seal
         bus.broadcast(SubmitSealEvent {
             nonce,
-            header_hash: mint_block_event.minting_hash,
+            minting_blob: mint_block_event.minting_blob.clone(),
         })
         .unwrap();
         let mined_block = new_block_receiver.await.unwrap().0.get_block().clone();
         assert_eq!(mined_block.header.nonce, nonce);
-        let raw_header =
-            BlockTemplate::from_block(mined_block).as_raw_block_header(mint_block_event.difficulty);
-        assert_eq!(mint_block_event.minting_hash, raw_header.crypto_hash());
+        let minting_blob =
+            BlockTemplate::from_block(mined_block).as_pow_header_blob(mint_block_event.difficulty);
+        assert_eq!(mint_block_event.minting_blob, minting_blob);
         handle.stop().unwrap();
     };
     block_on(fut);
@@ -106,15 +104,15 @@ async fn test_miner_service() {
     delay_for(Duration::from_millis(200)).await;
     // Generate a event
     let diff = U256::from(1024);
-    let header_hash = HashValue::random();
+    let minting_blob = vec![0u8; 76];
 
     let nonce = config
         .net()
         .genesis_config()
         .consensus()
-        .solve_consensus_nonce(header_hash, diff, config.net().time_service().as_ref());
+        .solve_consensus_nonce(&minting_blob, diff, config.net().time_service().as_ref());
     miner
-        .notify(SubmitSealEvent::new(header_hash, nonce))
+        .notify(SubmitSealEvent::new(minting_blob, nonce))
         .unwrap();
 
     registry.shutdown_system().await.unwrap();

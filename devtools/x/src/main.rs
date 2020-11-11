@@ -130,9 +130,6 @@ fn main() -> Result<()> {
 
     let args = Args::from_args();
     let xctx = context::XContext::new()?;
-    // let config = libra_x::config::Config::from_file("./x.toml")?;
-    // let xctx = context::XContext::with_config(config);
-    // dbg!(xctx.config());
     match args.cmd {
         Command::Tools(args) => tools::run(args, xctx),
         Command::Test(args) => test::run(args, xctx),

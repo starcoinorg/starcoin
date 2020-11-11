@@ -8,7 +8,7 @@ use 0x1::Epoch;
 
 fun main(genesis_account: &signer) {
     let block_number = 1;
-    let block_time_milliseonds = 1;
+    let block_time_milliseonds = 1000;
     let times = 0;
     let config = ConsensusConfig::get_config();
     let base_block_time_target = ConsensusConfig::base_block_time_target(&config);
@@ -25,7 +25,7 @@ fun main(genesis_account: &signer) {
         assert(block_time_target <= base_block_time_target, 103);
         times = times + 1;
         block_number = block_number + 1;
-        block_time_milliseonds = block_time_milliseonds + block_time_target*1000;
+        block_time_milliseonds = block_time_milliseonds + block_time_target;
     };
 }
 }
