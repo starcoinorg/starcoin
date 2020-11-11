@@ -12,10 +12,6 @@
 -  [Resource `Proposal`](#0x1_Dao_Proposal)
 -  [Resource `Vote`](#0x1_Dao_Vote)
 -  [Constants](#@Constants_0)
--  [Function `default_min_action_delay`](#0x1_Dao_default_min_action_delay)
--  [Function `default_voting_delay`](#0x1_Dao_default_voting_delay)
--  [Function `default_voting_period`](#0x1_Dao_default_voting_period)
--  [Function `default_voting_quorum_rate`](#0x1_Dao_default_voting_quorum_rate)
 -  [Function `plugin`](#0x1_Dao_plugin)
 -  [Function `new_dao_config`](#0x1_Dao_new_dao_config)
 -  [Function `propose`](#0x1_Dao_propose)
@@ -48,10 +44,6 @@
 -  [Function `set_min_action_delay`](#0x1_Dao_set_min_action_delay)
 -  [Specification](#@Specification_1)
     -  [Struct `DaoConfig`](#@Specification_1_DaoConfig)
-    -  [Function `default_min_action_delay`](#@Specification_1_default_min_action_delay)
-    -  [Function `default_voting_delay`](#@Specification_1_default_voting_delay)
-    -  [Function `default_voting_period`](#@Specification_1_default_voting_period)
-    -  [Function `default_voting_quorum_rate`](#@Specification_1_default_voting_quorum_rate)
     -  [Function `plugin`](#@Specification_1_plugin)
     -  [Function `new_dao_config`](#@Specification_1_new_dao_config)
     -  [Function `propose`](#@Specification_1_propose)
@@ -238,13 +230,13 @@ emitted when user vote/revoke_vote.
 
 </dd>
 <dt>
-<code>proposer: address</code>
+<code>voter: address</code>
 </dt>
 <dd>
 
 </dd>
 <dt>
-<code>voter: address</code>
+<code>proposer: address</code>
 </dt>
 <dd>
 
@@ -411,46 +403,6 @@ User vote info.
 
 
 
-<a name="0x1_Dao_DEFAULT_MIN_ACTION_DELAY"></a>
-
-default action_delay: 1days
-
-
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>: u64 = 86400;
-</code></pre>
-
-
-
-<a name="0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE"></a>
-
-default quorum rate: 4% of toal token supply.
-
-
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>: u8 = 4;
-</code></pre>
-
-
-
-<a name="0x1_Dao_DEFAULT_VOTING_DELAY"></a>
-
-default voting_delay: 1hour
-
-
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>: u64 = 3600;
-</code></pre>
-
-
-
-<a name="0x1_Dao_DEFAULT_VOTING_PERIOD"></a>
-
-default voting_period: 2days
-
-
-<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>: u64 = 172800;
-</code></pre>
-
-
-
 <a name="0x1_Dao_DEFEATED"></a>
 
 
@@ -568,103 +520,6 @@ Proposal state
 </code></pre>
 
 
-
-<a name="0x1_Dao_default_min_action_delay"></a>
-
-## Function `default_min_action_delay`
-
-default min_action_delay
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64 {
-    <a href="Dao.md#0x1_Dao_DEFAULT_MIN_ACTION_DELAY">DEFAULT_MIN_ACTION_DELAY</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Dao_default_voting_delay"></a>
-
-## Function `default_voting_delay`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64 {
-    <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_DELAY">DEFAULT_VOTING_DELAY</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Dao_default_voting_period"></a>
-
-## Function `default_voting_period`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_period">default_voting_period</a>(): u64
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_period">default_voting_period</a>(): u64 {
-    <a href="Dao.md#0x1_Dao_DEFAULT_VOTING_PERIOD">DEFAULT_VOTING_PERIOD</a>
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Dao_default_voting_quorum_rate"></a>
-
-## Function `default_voting_quorum_rate`
-
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8 {
-    <a href="Dao.md#0x1_Dao_DEFAULT_VOTEING_QUORUM_RATE">DEFAULT_VOTEING_QUORUM_RATE</a>
-}
-</code></pre>
-
-
-
-</details>
 
 <a name="0x1_Dao_plugin"></a>
 
@@ -1836,70 +1691,6 @@ set min action delay
 
 
 
-<a name="@Specification_1_default_min_action_delay"></a>
-
-### Function `default_min_action_delay`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_min_action_delay">default_min_action_delay</a>(): u64
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_default_voting_delay"></a>
-
-### Function `default_voting_delay`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_delay">default_voting_delay</a>(): u64
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_default_voting_period"></a>
-
-### Function `default_voting_period`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_period">default_voting_period</a>(): u64
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_default_voting_quorum_rate"></a>
-
-### Function `default_voting_quorum_rate`
-
-
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_default_voting_quorum_rate">default_voting_quorum_rate</a>(): u8
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
-</code></pre>
-
-
-
 <a name="@Specification_1_plugin"></a>
 
 ### Function `plugin`
@@ -1915,7 +1706,7 @@ set min action delay
 <b>aborts_if</b> voting_period == 0;
 <b>aborts_if</b> voting_quorum_rate == 0 || voting_quorum_rate &gt; 100;
 <b>aborts_if</b> min_action_delay == 0;
-<a name="0x1_Dao_sender$46"></a>
+<a name="0x1_Dao_sender$42"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> sender != <a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>();
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(sender);
@@ -1929,7 +1720,7 @@ set min action delay
 <a name="0x1_Dao_RequirePluginDao"></a>
 
 
-<a name="0x1_Dao_token_addr$37"></a>
+<a name="0x1_Dao_token_addr$33"></a>
 
 
 <pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_RequirePluginDao">RequirePluginDao</a>&lt;TokenT&gt; {
@@ -1945,7 +1736,7 @@ set min action delay
 <a name="0x1_Dao_AbortIfDaoInfoNotExist"></a>
 
 
-<a name="0x1_Dao_token_addr$38"></a>
+<a name="0x1_Dao_token_addr$34"></a>
 
 
 <pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt; {
@@ -1960,7 +1751,7 @@ set min action delay
 <a name="0x1_Dao_AbortIfDaoConfigNotExist"></a>
 
 
-<a name="0x1_Dao_token_addr$39"></a>
+<a name="0x1_Dao_token_addr$35"></a>
 
 
 <pre><code><b>schema</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt; {
@@ -2035,7 +1826,7 @@ set min action delay
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> action_delay &gt; 0 && action_delay &lt; <a href="Dao.md#0x1_Dao_spec_dao_config">spec_dao_config</a>&lt;TokenT&gt;().min_action_delay;
-<a name="0x1_Dao_sender$47"></a>
+<a name="0x1_Dao_sender$43"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(sender);
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>&lt;TokenT&gt;&gt;(<a href="Token.md#0x1_Token_SPEC_TOKEN_TEST_ADDRESS">Token::SPEC_TOKEN_TEST_ADDRESS</a>());
@@ -2059,12 +1850,12 @@ set min action delay
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
-<a name="0x1_Dao_expected_states$48"></a>
+<a name="0x1_Dao_expected_states$44"></a>
 <b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
-<a name="0x1_Dao_sender$49"></a>
+<a name="0x1_Dao_sender$45"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
-<a name="0x1_Dao_vote_exists$50"></a>
+<a name="0x1_Dao_vote_exists$46"></a>
 <b>let</b> vote_exists = <b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> vote_exists ==&gt; <a href="Dao.md#0x1_Dao_CheckVoteOnCast">CheckVoteOnCast</a>&lt;TokenT, ActionT&gt; {
     voter: sender,
@@ -2111,15 +1902,15 @@ set min action delay
 
 
 
-<a name="0x1_Dao_expected_states$51"></a>
+<a name="0x1_Dao_expected_states$47"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<a name="0x1_Dao_sender$52"></a>
+<a name="0x1_Dao_sender$48"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$53"></a>
+<a name="0x1_Dao_vote$49"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 <b>include</b> vote.agree != agree ==&gt; <a href="Dao.md#0x1_Dao_CheckChangeVote">CheckChangeVote</a>&lt;TokenT, ActionT&gt;{vote, proposer_address};
@@ -2158,13 +1949,13 @@ set min action delay
 
 <pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoConfigNotExist">AbortIfDaoConfigNotExist</a>&lt;TokenT&gt;;
 <b>include</b> <a href="Dao.md#0x1_Dao_AbortIfDaoInfoNotExist">AbortIfDaoInfoNotExist</a>&lt;TokenT&gt;;
-<a name="0x1_Dao_expected_states$54"></a>
+<a name="0x1_Dao_expected_states$50"></a>
 <b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt; {expected_states};
-<a name="0x1_Dao_sender$55"></a>
+<a name="0x1_Dao_sender$51"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_spec_address_of">Signer::spec_address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$56"></a>
+<a name="0x1_Dao_vote$52"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt; {vote, proposer_address, proposal_id};
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckRevokeVote">CheckRevokeVote</a>&lt;TokenT, ActionT&gt; {
@@ -2211,17 +2002,17 @@ set min action delay
 
 
 
-<a name="0x1_Dao_expected_states$57"></a>
+<a name="0x1_Dao_expected_states$53"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>);
-<a name="0x1_Dao_expected_states1$58"></a>
+<a name="0x1_Dao_expected_states1$54"></a>
 <b>let</b> expected_states1 = concat_vector(expected_states,singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>));
-<a name="0x1_Dao_expected_states2$59"></a>
+<a name="0x1_Dao_expected_states2$55"></a>
 <b>let</b> expected_states2 = concat_vector(expected_states1,singleton_vector(<a href="Dao.md#0x1_Dao_QUEUED">QUEUED</a>));
-<a name="0x1_Dao_expected_states3$60"></a>
+<a name="0x1_Dao_expected_states3$56"></a>
 <b>let</b> expected_states3 = concat_vector(expected_states2,singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>));
-<a name="0x1_Dao_expected_states4$61"></a>
+<a name="0x1_Dao_expected_states4$57"></a>
 <b>let</b> expected_states4 = concat_vector(expected_states3,singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
 <b>aborts_if</b> expected_states4[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
 <b>aborts_if</b> expected_states4[1] != <a href="Dao.md#0x1_Dao_AGREED">AGREED</a>;
@@ -2230,10 +2021,10 @@ set min action delay
 <b>aborts_if</b> expected_states4[4] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
 <b>include</b> <a href="Dao.md#0x1_Dao_spec_proposal_exists">spec_proposal_exists</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id) ==&gt;
             <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states: expected_states4};
-<a name="0x1_Dao_sender$62"></a>
+<a name="0x1_Dao_sender$58"></a>
 <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-<a name="0x1_Dao_vote$63"></a>
+<a name="0x1_Dao_vote$59"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 <b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
@@ -2253,12 +2044,12 @@ set min action delay
 
 
 
-<a name="0x1_Dao_expected_states$64"></a>
+<a name="0x1_Dao_expected_states$60"></a>
 
 
 <pre><code><b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_AGREED">AGREED</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<a name="0x1_Dao_proposal$65"></a>
+<a name="0x1_Dao_proposal$61"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>() + proposal.action_delay &gt; MAX_U64;
 <b>ensures</b> proposal.eta &gt;= <a href="Timestamp.md#0x1_Timestamp_spec_now_seconds">Timestamp::spec_now_seconds</a>();
@@ -2278,7 +2069,7 @@ set min action delay
 
 
 <pre><code><b>pragma</b> aborts_if_is_partial = <b>false</b>;
-<a name="0x1_Dao_expected_states$66"></a>
+<a name="0x1_Dao_expected_states$62"></a>
 <b>let</b> expected_states = singleton_vector(<a href="Dao.md#0x1_Dao_EXECUTABLE">EXECUTABLE</a>);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
 <b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
@@ -2298,7 +2089,7 @@ set min action delay
 
 
 
-<a name="0x1_Dao_expected_states$67"></a>
+<a name="0x1_Dao_expected_states$63"></a>
 
 
 <pre><code><b>let</b> expected_states = concat_vector(singleton_vector(<a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>), singleton_vector(<a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>));
@@ -2365,7 +2156,7 @@ set min action delay
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckQuorumVotes">CheckQuorumVotes</a>&lt;TokenT&gt;;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$68"></a>
+<a name="0x1_Dao_proposal$64"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2384,7 +2175,7 @@ set min action delay
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$69"></a>
+<a name="0x1_Dao_proposal$65"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2403,7 +2194,7 @@ set min action delay
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-<a name="0x1_Dao_vote$70"></a>
+<a name="0x1_Dao_vote$66"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 </code></pre>

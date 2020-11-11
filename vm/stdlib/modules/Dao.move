@@ -14,44 +14,6 @@ module Dao {
         pragma aborts_if_is_strict = true;
     }
 
-    /// default voting_delay: 1hour
-    const DEFAULT_VOTING_DELAY: u64 = 60 * 60 * 1000;
-    /// default voting_period: 2days
-    const DEFAULT_VOTING_PERIOD: u64 = 60 * 60 * 24 * 2 * 1000;
-    /// default quorum rate: 4% of toal token supply.
-    const DEFAULT_VOTEING_QUORUM_RATE: u8 = 4;
-    /// default action_delay: 1days
-    const DEFAULT_MIN_ACTION_DELAY: u64 = 60 * 60 * 24 * 1000;
-
-    /// default min_action_delay
-    public fun default_min_action_delay(): u64 {
-        DEFAULT_MIN_ACTION_DELAY
-    }
-    spec fun default_min_action_delay {
-        aborts_if false;
-    }
-
-    public fun default_voting_delay(): u64 {
-        DEFAULT_VOTING_DELAY
-    }
-    spec fun default_voting_delay {
-        aborts_if false;
-    }
-
-    public fun default_voting_period(): u64 {
-        DEFAULT_VOTING_PERIOD
-    }
-    spec fun default_voting_period {
-        aborts_if false;
-    }
-
-    public fun default_voting_quorum_rate(): u8 {
-        DEFAULT_VOTEING_QUORUM_RATE
-    }
-    spec fun default_voting_quorum_rate {
-        aborts_if false;
-    }
-
     /// Proposal state
     const PENDING: u8 = 1;
     const ACTIVE: u8 = 2;
@@ -96,8 +58,8 @@ module Dao {
     /// emitted when user vote/revoke_vote.
     struct VoteChangedEvent {
         proposal_id: u64,
-        proposer: address,
         voter: address,
+        proposer: address,
         agree: bool,
         /// latest vote of the voter.
         vote: u128,
