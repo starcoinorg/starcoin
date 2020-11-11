@@ -240,6 +240,7 @@ module Dao {
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
 
         aborts_if action_delay > 0 && action_delay < spec_dao_config<TokenT>().min_action_delay;
+        include CheckQuorumVotes<TokenT>;
 
         let sender = Signer::spec_address_of(signer);
         aborts_if exists<Proposal<TokenT, ActionT>>(sender);
@@ -302,7 +303,6 @@ module Dao {
     }
 
     spec schema CheckVoteOnCast<TokenT, ActionT> {
-
         proposal_id: u64;
         agree: bool;
         voter: address;
@@ -316,9 +316,7 @@ module Dao {
     spec fun cast_vote {
         pragma addition_overflow_unchecked = true;
 
-        include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfDaoInfoNotExist<TokenT>;
-        include CheckQuorumVotes<TokenT>;
 
         let expected_states = singleton_vector(ACTIVE);
         include CheckProposalStates<TokenT, ActionT> {expected_states};
@@ -486,8 +484,6 @@ module Dao {
     }
 
     spec fun revoke_vote {
-
-        include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfDaoInfoNotExist<TokenT>;
         let expected_states = singleton_vector(ACTIVE);
         include CheckProposalStates<TokenT, ActionT> {expected_states};
@@ -713,9 +709,7 @@ module Dao {
         let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
         aborts_if proposal.id != proposal_id;
 
-        include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfTimestampNotExist;
-        include CheckQuorumVotes<TokenT>;
         let current_time = Timestamp::spec_now_millseconds();
         let state = _proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
@@ -723,9 +717,7 @@ module Dao {
 
     spec fun proposal_state {
         use 0x1::CoreAddresses;
-        include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfTimestampNotExist;
-        include CheckQuorumVotes<TokenT>;
         aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS());
         aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
 
@@ -795,7 +787,6 @@ module Dao {
         let vote = global<Vote<TokenT>>(voter);
         include CheckVoteOnProposal<TokenT>{vote, proposer_address, proposal_id};
     }
-
 
     fun generate_next_proposal_id<TokenT>(): u64 acquires DaoGlobalInfo {
         let gov_info = borrow_global_mut<DaoGlobalInfo<TokenT>>(Token::token_address<TokenT>());
