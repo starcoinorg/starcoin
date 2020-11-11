@@ -188,7 +188,7 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn tps(&self, number: BlockNumber) -> FutureResult<u64> {
+    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<u64> {
         let service = self.service.clone();
         let fut = async move { service.tps(number).await };
 

@@ -543,14 +543,12 @@ impl ChainReader for BlockChain {
         let start_block_number = epoch_info.start_block_number();
         let end_block_number = epoch_info.end_block_number();
         let current_block_number = self.current_header().number();
-        info!("start_block_number {}, end_block_number {}, current_block_number {}", start_block_number, end_block_number, current_block_number);
         let start_block_time = self
             .get_header_by_number(start_block_number)?
             .ok_or_else(|| {
                 format_err!("Can not find block header by number {}", start_block_number)
             })?
             .timestamp();
-        info!("start_block_time {}, start_block_header {:?}", start_block_time, self.get_header_by_number(start_block_number));
         let tps = if end_block_number < current_block_number {
             let end_block_time = self
                 .get_header_by_number(end_block_number)?

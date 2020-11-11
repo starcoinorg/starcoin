@@ -78,5 +78,5 @@ pub trait ChainApi {
 
     /// Get tps by number.
     #[rpc(name = "chain.tps")]
-    fn tps(&self, number: BlockNumber) -> FutureResult<u64>;
+    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<u64>;
 }

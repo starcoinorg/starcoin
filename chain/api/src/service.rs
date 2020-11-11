@@ -58,7 +58,7 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
-    fn tps(&self, number: BlockNumber) -> Result<u64>;
+    fn tps(&self, number: Option<BlockNumber>) -> Result<u64>;
 }
 
 /// Writeable block chain service trait
@@ -116,7 +116,7 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: usize,
     ) -> Result<Vec<HashValue>>;
-    async fn tps(&self, number: BlockNumber) -> Result<u64>;
+    async fn tps(&self, number: Option<BlockNumber>) -> Result<u64>;
 }
 
 #[async_trait::async_trait]
@@ -385,7 +385,7 @@ where
         }
     }
 
-    async fn tps(&self, number: BlockNumber) -> Result<u64> {
+    async fn tps(&self, number: Option<BlockNumber>) -> Result<u64> {
         let response = self.send(ChainRequest::TPS(number)).await??;
         if let ChainResponse::TPS(tps) = response {
             Ok(tps)
