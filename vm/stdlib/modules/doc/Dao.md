@@ -1210,7 +1210,7 @@ extract proposal action to execute.
 remove terminated proposal from proposer
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -1219,7 +1219,7 @@ remove terminated proposal from proposer
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(
     proposer_address: address,
     proposal_id: u64,
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
@@ -1239,6 +1239,9 @@ remove terminated proposal from proposer
         action_delay: _,
         action,
     } = move_from&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+    <b>if</b> (proposal_state == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a> && <a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&action)) {
+        <b>let</b> _ = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> action);
+    };
     <a href="Option.md#0x1_Option_destroy_none">Option::destroy_none</a>(action);
 }
 </code></pre>
@@ -2292,7 +2295,7 @@ set min action delay
 ### Function `destroy_terminated_proposal`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT&gt;(proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_destroy_terminated_proposal">destroy_terminated_proposal</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64)
 </code></pre>
 
 

@@ -666,7 +666,7 @@ module Dao {
 
 
     /// remove terminated proposal from proposer
-    public fun destroy_terminated_proposal<TokenT: copyable, ActionT>(
+    public fun destroy_terminated_proposal<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -686,6 +686,9 @@ module Dao {
             action_delay: _,
             action,
         } = move_from<Proposal<TokenT, ActionT>>(proposer_address);
+        if (proposal_state == DEFEATED && Option::is_some(&action)) {
+            let _ = Option::extract(&mut action);
+        };
         Option::destroy_none(action);
     }
 
