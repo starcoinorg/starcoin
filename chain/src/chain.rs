@@ -522,14 +522,14 @@ impl ChainReader for BlockChain {
     }
 
     fn total_txns_in_blocks(&self, start_number: BlockNumber, end_number: BlockNumber) -> Result<u64> {
-        let txn_num_in_start_block = self.get_block_info_by_number(end_number)?
-            .ok_or_else(|| {
-                format_err!("Can not find block info by number {}", end_number)
-            })?
-            .get_txn_accumulator_info().num_leaves;
-        let txn_num_in_end_block = self.get_block_info_by_number(start_number)?
+        let txn_num_in_start_block = self.get_block_info_by_number(start_number)?
             .ok_or_else(|| {
                 format_err!("Can not find block info by number {}", start_number)
+            })?
+            .get_txn_accumulator_info().num_leaves;
+        let txn_num_in_end_block = self.get_block_info_by_number(end_number)?
+            .ok_or_else(|| {
+                format_err!("Can not find block info by number {}", end_number)
             })?
             .get_txn_accumulator_info().num_leaves;
 
@@ -538,18 +538,19 @@ impl ChainReader for BlockChain {
 
     /// Get tps for an epoch, the epoch includes the block given by `number`.
     /// If `number` is absent, return tps for the latest epoch
-    fn get_tps(&self, number: Option<BlockNumber>) -> Result<u64> {
+    fn tps(&self, number: Option<BlockNumber>) -> Result<u64> {
         let epoch_info = self.get_epoch_info_by_number(number)?;
         let start_block_number = epoch_info.start_block_number();
         let end_block_number = epoch_info.end_block_number();
         let current_block_number = self.current_header().number();
+        info!("start_block_number {}, end_block_number {}, current_block_number {}", start_block_number, end_block_number, current_block_number);
         let start_block_time = self
             .get_header_by_number(start_block_number)?
             .ok_or_else(|| {
                 format_err!("Can not find block header by number {}", start_block_number)
             })?
             .timestamp();
-        
+        info!("start_block_time {}, start_block_header {:?}", start_block_time, self.get_header_by_number(start_block_number));
         let tps = if end_block_number < current_block_number {
             let end_block_time = self
                 .get_header_by_number(end_block_number)?

@@ -45,7 +45,7 @@ pub trait ChainReader {
     fn get_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn total_txns_in_blocks(&self, start_number: BlockNumber, end_number: BlockNumber) -> Result<u64>;
     /// Get tps for an epoch. The epoch includes the block given by `number`. If `number` is absent, return tps for the latest epoch
-    fn get_tps(&self, number: Option<BlockNumber>) -> Result<u64>;
+    fn tps(&self, number: Option<BlockNumber>) -> Result<u64>;
 }
 
 pub trait ChainWriter {

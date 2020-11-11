@@ -7,20 +7,20 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
 
-/// Get tps of master.
+/// Get tps for an epoch.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_tps")]
-pub struct GetTPSOpt {
-    #[structopt(name = "number", long, short = "n", default_value = "0")]
+#[structopt(name = "tps")]
+pub struct TPSOpt {
+    #[structopt(name = "number", long, short = "n", default_value = "0", help = "block number, if absent return tps for the latest epoch")]
     number: u64,
 }
 
-pub struct GetTPSCommand;
+pub struct TPSCommand;
 
-impl CommandAction for GetTPSCommand {
+impl CommandAction for TPSCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetTPSOpt;
+    type Opt = TPSOpt;
     type ReturnItem = u64;
 
     fn run(
@@ -28,6 +28,6 @@ impl CommandAction for GetTPSCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        client.get_tps(ctx.opt().number)
+        client.tps(ctx.opt().number)
     }
 }

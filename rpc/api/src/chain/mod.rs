@@ -77,6 +77,6 @@ pub trait ChainApi {
     fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
 
     /// Get tps by number.
-    #[rpc(name = "chain.get_tps")]
-    fn get_tps(&self, number: BlockNumber) -> FutureResult<u64>;
+    #[rpc(name = "chain.tps")]
+    fn tps(&self, number: BlockNumber) -> FutureResult<u64>;
 }
