@@ -3,7 +3,7 @@
 
 use starcoin_types::{U256, U512};
 
-use crate::{difficult_1_target, difficult_to_target};
+use crate::difficult_to_target;
 use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
@@ -84,7 +84,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
         }
     } else {
         debug!("target large than max value, set to 1_difficulty");
-        difficult_1_target()
+        U256::max_value()
     };
     debug!(
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",

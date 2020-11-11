@@ -667,7 +667,7 @@ pub struct GenesisConfig {
     /// Genesis difficulty, should match consensus in different ChainNetwork.
     pub difficulty: U256,
     /// Genesis consensus nonce.
-    pub nonce: u64,
+    pub nonce: u32,
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
     /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account
@@ -965,7 +965,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
     timestamp: 1603766401000,
     reward_delay: 7,
-    difficulty: 10.into(),
+    difficulty: 100.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
     time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),

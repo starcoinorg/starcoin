@@ -34,20 +34,20 @@ impl Consensus for DummyConsensus {
 
     fn solve_consensus_nonce(
         &self,
-        _mining_hash: HashValue,
+        _mining_hash: &[u8],
         difficulty: U256,
         time_service: &dyn TimeService,
-    ) -> u64 {
+    ) -> u32 {
         let mut rng = rand::thread_rng();
-        let low = difficulty.as_u64() / 2;
-        let high = difficulty.as_u64() + low;
-        let time: u64 = rng.gen_range(low, high);
+        let low = difficulty.as_u32() / 2;
+        let high = difficulty.as_u32() + low;
+        let time: u32 = rng.gen_range(low, high);
         info!(
             "DummyConsensus rand sleep time in millis second : {}, difficulty : {}",
             time,
-            difficulty.as_u64()
+            difficulty.as_u32()
         );
-        time_service.sleep(time);
+        time_service.sleep(time as u64);
         time
     }
 
@@ -60,7 +60,7 @@ impl Consensus for DummyConsensus {
         Ok(())
     }
 
-    fn calculate_pow_hash(&self, _mining_hash: HashValue, _nonce: u64) -> Result<HashValue> {
+    fn calculate_pow_hash(&self, _mining_hash: &[u8], _nonce: u32) -> Result<HashValue> {
         unreachable!()
     }
 }

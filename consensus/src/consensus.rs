@@ -3,9 +3,7 @@
 
 use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::{anyhow, Result};
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::RawBlockHeader;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
@@ -23,10 +21,10 @@ pub trait Consensus {
     /// Calculate new block consensus header
     fn solve_consensus_nonce(
         &self,
-        mining_hash: HashValue,
+        mining_hash: &[u8],
         difficulty: U256,
         _time_service: &dyn TimeService,
-    ) -> u64 {
+    ) -> u32 {
         let mut nonce = generate_nonce();
         loop {
             let pow_hash: U256 = self
@@ -51,7 +49,7 @@ pub trait Consensus {
     ) -> Result<()>;
 
     /// Calculate the Pow hash for header
-    fn calculate_pow_hash(&self, mining_hash: HashValue, nonce: u64) -> Result<HashValue>;
+    fn calculate_pow_hash(&self, pow_header_blob: &[u8], nonce: u32) -> Result<HashValue>;
 
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
     fn create_block(
@@ -62,8 +60,8 @@ pub trait Consensus {
     ) -> Result<Block> {
         let epoch = reader.epoch_info()?;
         let difficulty = self.calculate_next_difficulty(reader, &epoch)?;
-        let mining_hash = block_template.as_raw_block_header(difficulty).crypto_hash();
-        let consensus_nonce = self.solve_consensus_nonce(mining_hash, difficulty, time_service);
+        let mining_hash = block_template.as_pow_header_blob(difficulty);
+        let consensus_nonce = self.solve_consensus_nonce(&mining_hash, difficulty, time_service);
         Ok(block_template.into_block(consensus_nonce, difficulty))
     }
     /// Inner helper for verify and unit testing
@@ -76,10 +74,8 @@ pub trait Consensus {
             ));
         }
         let nonce = header.nonce;
-        let raw_block_header: RawBlockHeader = header.to_owned().into();
-        let pow_hash: U256 = self
-            .calculate_pow_hash(raw_block_header.crypto_hash(), nonce)?
-            .into();
+        let pow_header_blob = header.as_pow_header_blob();
+        let pow_hash: U256 = self.calculate_pow_hash(&pow_header_blob, nonce)?.into();
         let target = difficult_to_target(difficulty);
         if pow_hash > target {
             anyhow::bail!("Invalid header:{:?}", header);

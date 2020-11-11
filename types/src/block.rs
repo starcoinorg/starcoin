@@ -59,7 +59,7 @@ pub struct BlockHeader {
     /// Block difficulty
     pub difficulty: U256,
     /// Consensus nonce field.
-    pub nonce: u64,
+    pub nonce: u32,
     /// hash for block body
     pub body_hash: HashValue,
     /// The chain id
@@ -77,7 +77,7 @@ impl BlockHeader {
         state_root: HashValue,
         gas_used: u64,
         difficulty: U256,
-        nonce: u64,
+        nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
     ) -> BlockHeader {
@@ -109,7 +109,7 @@ impl BlockHeader {
         state_root: HashValue,
         gas_used: u64,
         difficulty: U256,
-        nonce: u64,
+        nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
     ) -> BlockHeader {
@@ -128,6 +128,19 @@ impl BlockHeader {
             body_hash,
             chain_id,
         }
+    }
+
+    pub fn as_pow_header_blob(&self) -> Vec<u8> {
+        let mut blob = Vec::new();
+        let raw_header: RawBlockHeader = self.to_owned().into();
+        let raw_header_hash = raw_header.crypto_hash();
+        let mut diff_bytes = [0u8; 32];
+        raw_header.difficulty.to_big_endian(&mut diff_bytes);
+        let extend_and_nonce = [0u8; 12];
+        blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
+        blob.extend_from_slice(&extend_and_nonce);
+        blob.extend_from_slice(&diff_bytes);
+        blob
     }
 
     pub fn id(&self) -> HashValue {
@@ -162,7 +175,7 @@ impl BlockHeader {
         self.gas_used
     }
 
-    pub fn nonce(&self) -> u64 {
+    pub fn nonce(&self) -> u32 {
         self.nonce
     }
 
@@ -190,7 +203,7 @@ impl BlockHeader {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        nonce: u64,
+        nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
     ) -> Self {
@@ -372,7 +385,7 @@ impl Block {
         accumulator_root: HashValue,
         state_root: HashValue,
         difficulty: U256,
-        nonce: u64,
+        nonce: u32,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
@@ -575,7 +588,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block(self, nonce: u64, difficulty: U256) -> Block {
+    pub fn into_block(self, nonce: u32, difficulty: U256) -> Block {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -614,7 +627,21 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block_header(self, nonce: u64, difficulty: U256) -> BlockHeader {
+    pub fn as_pow_header_blob(&self, difficulty: U256) -> Vec<u8> {
+        let mut blob = Vec::new();
+        let raw_header = self.as_raw_block_header(difficulty);
+        let raw_header_hash = raw_header.crypto_hash();
+        let mut dh = [0u8; 32];
+        difficulty.to_big_endian(&mut dh);
+        let extend_and_nonce = [0u8; 12];
+
+        blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
+        blob.extend_from_slice(&extend_and_nonce);
+        blob.extend_from_slice(&dh);
+        blob
+    }
+
+    pub fn into_block_header(self, nonce: u32, difficulty: U256) -> BlockHeader {
         BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
