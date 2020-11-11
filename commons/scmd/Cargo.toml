@@ -17,7 +17,7 @@ git-version = "0.3.4"
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
 rust-flatten-json = "0.2.0"
 cli-table = "0.3.1"
-once_cell = "1.4.1"
+once_cell = "1.5.1"
 
 [dev-dependencies]
 ctrlc = "3.1.7"

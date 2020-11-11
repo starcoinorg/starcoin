@@ -15,7 +15,7 @@ starcoin-vm-types = { path = "../types"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-move-compiler = { path = "../../vm/compiler"}
 move-prover = { path = "../move-prover" }
-once_cell = "1.4.1"
+once_cell = "1.5.1"
 include_dir = "0.6.0"
 sha2 = "0.9.1"
 log = "0.4.11"

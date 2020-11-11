@@ -20,7 +20,7 @@ parking_lot = "0.11.0"
 paste = "1.0.2"
 proptest = { version = "0.10.1", optional = true }
 proptest-derive = { version = "0.2.0", optional = true }
-once_cell = "1.4.1"
+once_cell = "1.5.1"
 #state-tree = { package="starcoin-state-tree", path = "../state/state-tree"}
 starcoin-state-store-api = {path = "../state/state-store-api"}
 starcoin-accumulator = { package="starcoin-accumulator", path = "../core/accumulator"}

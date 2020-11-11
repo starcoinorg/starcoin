@@ -11,7 +11,7 @@ edition = "2018"
 anyhow = "1.0.34"
 thiserror = "1.0"
 structopt = "0.3.20"
-once_cell = "1.4.1"
+once_cell = "1.5.1"
 starcoin-types = {path = "../../types", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0" }

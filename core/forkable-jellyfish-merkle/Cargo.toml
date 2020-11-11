@@ -21,7 +21,7 @@ starcoin-crypto = { path = "../../commons/crypto"}
 thiserror = "1.0"
 tiny-keccak = "1.5"
 hex= "0.4.2"
-once_cell = "1.4.1"
+once_cell = "1.5.1"
 scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization" }
 
 [dev-dependencies]
