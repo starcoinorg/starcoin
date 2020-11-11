@@ -3,16 +3,19 @@
 
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
+use chain::BlockChain;
+use futures::channel::mpsc::UnboundedSender;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::MerkleAccumulator;
+use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_vm_types::time::TimeService;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
 use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator, TaskHandle};
@@ -99,6 +102,44 @@ where
     }
 }
 
+pub trait BlockLocalStore: Send + Sync {
+    fn get_block_with_info(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>>;
+}
+
+// impl<T> BlockLocalStore for Arc<T>
+// where
+//     T: BlockLocalStore,
+// {
+//     fn get_block_with_info(
+//         &self,
+//         block_ids: Vec<HashValue>,
+//     ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>> {
+//         BlockLocalStore::get_block_with_info(self.as_ref(), block_ids)
+//     }
+// }
+
+impl BlockLocalStore for Arc<dyn Store> {
+    fn get_block_with_info(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>> {
+        self.get_blocks(block_ids)?
+            .into_iter()
+            .map(|block| match block {
+                Some(block) => {
+                    let id = block.id();
+                    let block_info = self.get_block_info(id)?;
+                    Ok(Some((block, block_info)))
+                }
+                None => Ok(None),
+            })
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct SyncTarget {
     pub block_header: BlockHeader,
@@ -158,10 +199,7 @@ mod tests;
 
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
-use chain::BlockChain;
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
-use futures::channel::mpsc::UnboundedSender;
-use starcoin_vm_types::time::TimeService;
 
 pub fn full_sync_task<H, F>(
     current_block_id: HashValue,
@@ -188,10 +226,13 @@ where
     let current_block_info = storage
         .get_block_info(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block info by id: {}", current_block_id))?;
+    let current_block_id_number = BlockIdAndNumber::new(current_block_id, current_block_number);
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
+    let target_block_number = target.block_accumulator_info.num_leaves - 1;
     let target_block_accumulator = target.block_accumulator_info;
+
     let current_block_accumulator_info = current_block_info.block_accumulator_info;
 
     let accumulator_task_fetcher = fetcher.clone();
@@ -199,60 +240,77 @@ where
     let chain_storage = storage.clone();
     let max_retry_times = 15;
     let delay_milliseconds_on_error = 100;
-    let sync_task = TaskGenerator::new(
-        FindAncestorTask::new(current_block_number, 10, fetcher),
-        3,
-        max_retry_times,
-        delay_milliseconds_on_error,
-        AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
-            current_block_accumulator_info,
-            storage.get_accumulator_store(AccumulatorStoreType::Block),
-        ))),
-        event_handle.clone(),
-    )
-    .and_then(move |ancestor, event_handle| {
-        info!("[sync] Find ancestor: {:?}", ancestor);
-        let ancestor_block_info = storage.get_block_info(ancestor.id)?.ok_or_else(|| {
-            format_err!("Can not find ancestor block info by id: {}", ancestor.id)
-        })?;
-
-        let accumulator_sync_task = BlockAccumulatorSyncTask::new(
-            // start_number is include, so start from ancestor.number + 1
-            ancestor.number + 1,
-            target_block_accumulator.clone(),
-            accumulator_task_fetcher,
-            5,
-        );
-        Ok(TaskGenerator::new(
-            accumulator_sync_task,
-            5,
-            max_retry_times,
-            delay_milliseconds_on_error,
-            AccumulatorCollector::new(
-                storage.get_accumulator_store(AccumulatorStoreType::Block),
-                ancestor,
-                ancestor_block_info.block_accumulator_info,
-                target_block_accumulator,
-            ),
-            event_handle,
-        ))
-    })
-    .and_then(move |(ancestor, accumulator), event_handle| {
-        //start_number is include, so start from ancestor.number + 1
-        let start_number = ancestor.number + 1;
-        let block_sync_task = BlockSyncTask::new(accumulator, start_number, block_task_fetcher, 3);
-        let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
-        let block_collector = BlockCollector::new_with_handle(chain, block_event_handle);
-        Ok(TaskGenerator::new(
-            block_sync_task,
+    let sync_task =
+        TaskGenerator::new(
+            FindAncestorTask::new(current_block_number, target_block_number, 10, fetcher),
             3,
             max_retry_times,
             delay_milliseconds_on_error,
-            block_collector,
-            event_handle,
-        ))
-    })
-    .generate();
+            AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
+                current_block_accumulator_info,
+                storage.get_accumulator_store(AccumulatorStoreType::Block),
+            ))),
+            event_handle.clone(),
+        )
+        .and_then(move |ancestor, event_handle| {
+            info!("[sync] Find ancestor: {:?}", ancestor);
+            let ancestor_block_info = storage.get_block_info(ancestor.id)?.ok_or_else(|| {
+                format_err!(
+                    "[sync] Can not find ancestor block info by id: {}",
+                    ancestor.id
+                )
+            })?;
+
+            let accumulator_sync_task = BlockAccumulatorSyncTask::new(
+                // start_number is include, so start from ancestor.number + 1
+                ancestor.number + 1,
+                target_block_accumulator.clone(),
+                accumulator_task_fetcher,
+                5,
+            );
+            Ok(TaskGenerator::new(
+                accumulator_sync_task,
+                5,
+                max_retry_times,
+                delay_milliseconds_on_error,
+                AccumulatorCollector::new(
+                    storage.get_accumulator_store(AccumulatorStoreType::Block),
+                    ancestor,
+                    ancestor_block_info.block_accumulator_info,
+                    target_block_accumulator,
+                ),
+                event_handle,
+            ))
+        })
+        .and_then(move |(ancestor, accumulator), event_handle| {
+            //start_number is include, so start from ancestor.number + 1
+            let start_number = ancestor.number + 1;
+            // if current block == ancestor, it means target is at current main chain's future, so do not check local store.
+            // otherwise, we need to check if the block has already been executed to avoid wasting the results of previously interrupted task execution.
+            let check_local_store = ancestor != current_block_id_number;
+            info!(
+            "[sync] Start sync block, ancestor: {:?}, start_number: {}, check_local_store: {:?}, target_number: {}", 
+            ancestor, start_number, check_local_store, accumulator.num_leaves() -1 );
+            let block_sync_task = BlockSyncTask::new(
+                accumulator,
+                start_number,
+                block_task_fetcher,
+                check_local_store,
+                chain_storage.clone(),
+                3,
+            );
+            let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
+            let block_collector = BlockCollector::new_with_handle(chain, block_event_handle);
+            Ok(TaskGenerator::new(
+                block_sync_task,
+                3,
+                max_retry_times,
+                delay_milliseconds_on_error,
+                block_collector,
+                event_handle,
+            ))
+        })
+        .generate();
     let (fut, handle) = sync_task.with_handle();
     Ok((fut, handle, event_handle))
 }

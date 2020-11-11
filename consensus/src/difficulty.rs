@@ -3,7 +3,7 @@
 
 use starcoin_types::{U256, U512};
 
-use crate::{difficult_1_target, difficult_to_target};
+use crate::difficult_to_target;
 use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
@@ -31,7 +31,7 @@ pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Res
                 .map(|header| header.into())
         })
         .collect();
-    let target = get_next_target_helper(blocks?, epoch.block_time_target() * 1000)?;
+    let target = get_next_target_helper(blocks?, epoch.block_time_target())?;
     debug!(
         "get_next_work_required current_number: {}, epoch: {:?}, target: {}",
         current_header.number, epoch, target
@@ -84,7 +84,7 @@ pub fn get_next_target_helper(blocks: Vec<BlockDiffInfo>, time_plan: u64) -> Res
         }
     } else {
         debug!("target large than max value, set to 1_difficulty");
-        difficult_1_target()
+        U256::max_value()
     };
     debug!(
         "avg_time:{:?}s, time_plan:{:?}s, target: {:?}",

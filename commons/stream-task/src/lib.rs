@@ -13,7 +13,7 @@ mod generator;
 mod task_stream;
 
 pub use collector::{CollectorState, CounterCollector, TaskResultCollector};
-pub use event::{CounterReport, TaskEventCounter, TaskEventCounterHandle, TaskEventHandle};
+pub use event::{TaskEventCounter, TaskEventCounterHandle, TaskEventHandle, TaskProgressReport};
 pub use generator::{AndThenGenerator, Generator, TaskFuture, TaskGenerator, TaskHandle};
 
 #[derive(Error, Debug)]

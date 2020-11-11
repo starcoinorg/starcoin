@@ -1,34 +1,25 @@
+//! account: alice
+
 //! new-transaction
-//! sender: genesis
+//! sender: alice
 script{
 use 0x1::Version;
+use 0x1::Config;
 fun main(account: &signer) {
-    Version::initialize(account);
+    Config::publish_new_config<Version::Version>(account, Version::new_version(1));
 }
 }
-// check: EXECUTION_FAILURE
-// check: RESOURCE_ALREADY_EXISTS 
+// check: EXECUTED
 
 //! new-transaction
+//! sender: alice
 script{
 use 0x1::Version;
+use 0x1::Signer;
 fun main(account: &signer) {
-    Version::set(account, 0);
-}
-}
-
-// check: ABORTED
-// check: 1
-
-
-//! new-transaction
-//! sender: genesis
-script{
-use 0x1::Version;
-fun main(_account: &signer) {
-    let version = Version::get();
-    let _ = version;
+    let version = Version::get(Signer::address_of(account));
     assert(version == 1, 100);
+    let _ = version;
 }
 }
 

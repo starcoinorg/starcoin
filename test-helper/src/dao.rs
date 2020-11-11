@@ -269,13 +269,13 @@ pub fn vote_script_consensus(net: &ChainNetwork, strategy: u8) -> Script {
         vec![],
         vec![
             TransactionArgument::U64(80),
-            TransactionArgument::U64(10),
+            TransactionArgument::U64(10000),
             TransactionArgument::U128(64000000000),
             TransactionArgument::U64(10),
             TransactionArgument::U64(48),
             TransactionArgument::U64(24),
-            TransactionArgument::U64(1),
-            TransactionArgument::U64(60),
+            TransactionArgument::U64(1000),
+            TransactionArgument::U64(60000),
             TransactionArgument::U64(2),
             TransactionArgument::U64(1000000),
             TransactionArgument::U8(strategy),
@@ -340,17 +340,6 @@ pub fn vote_txn_publish_option_script(
     )
 }
 
-/// vote txn publish option scripts
-pub fn vote_version_script(net: &ChainNetwork, major: u64) -> Script {
-    let script1 =
-        compiled_transaction_script(net.stdlib_version(), StdlibScript::ProposeUpdateVersion)
-            .into_vec();
-    Script::new(
-        script1,
-        vec![],
-        vec![TransactionArgument::U64(major), TransactionArgument::U64(0)],
-    )
-}
 /// vote vm config scripts
 pub fn vote_vm_config_script(net: &ChainNetwork, vm_config: VMConfig) -> Script {
     let script1 =
@@ -468,8 +457,7 @@ pub fn dao_vote_test(
 
     // block 3
     let block_number = 3;
-    let block_timestamp =
-        block_timestamp + voting_delay(&chain_state, stc_type_tag()) * 1000 + 10000;
+    let block_timestamp = block_timestamp + voting_delay(&chain_state, stc_type_tag()) + 10000;
     execute_cast_vote(
         &net,
         &chain_state,
@@ -481,8 +469,7 @@ pub fn dao_vote_test(
 
     // block 4
     let block_number = 4;
-    let block_timestamp =
-        block_timestamp + voting_period(&chain_state, stc_type_tag()) * 1000 - 10 * 1000;
+    let block_timestamp = block_timestamp + voting_period(&chain_state, stc_type_tag()) - 10 * 1000;
     {
         blockmeta_execute(
             &chain_state,
@@ -557,7 +544,7 @@ pub fn dao_vote_test(
 
     // block 6
     let block_number = 6;
-    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag()) * 1000;
+    let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag());
     {
         blockmeta_execute(
             &chain_state,

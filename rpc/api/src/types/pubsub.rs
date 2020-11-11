@@ -206,6 +206,6 @@ impl ThinHeadBlock {
 #[serde(deny_unknown_fields)]
 pub struct MintBlock {
     pub strategy: ConsensusStrategy,
-    pub minting_hash: HashValue,
+    pub minting_blob: Vec<u8>,
     pub difficulty: U256,
 }

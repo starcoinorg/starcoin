@@ -27,6 +27,7 @@ starcoin-node = { path = "../../node" }
 starcoin-consensus = {path = "../../consensus"}
 starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
+starcoin-sync-api = {path = "../../sync/api"}
 starcoin-account-api = {path = "../../account/api"}
 scmd = { path = "../../commons/scmd" }
 stdlib = {path = "../../vm/stdlib"}

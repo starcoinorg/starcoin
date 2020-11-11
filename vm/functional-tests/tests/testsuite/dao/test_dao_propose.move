@@ -27,7 +27,7 @@ script {
     use 0x1::ModifyDaoConfigProposal;
     use 0x1::STC::STC;
     fun propose(signer: &signer) {
-        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 50, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24 * 1000, 0, 50, 0, 0);
     }
 }
 // check: EXECUTED
@@ -202,7 +202,7 @@ script {
         let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
         assert(state == 6, (state as u64));
         ModifyDaoConfigProposal::execute<STC>({{alice}}, 0);
-        assert(Dao::voting_delay<STC>()==3600 * 24, Dao::voting_delay<STC>());
+        assert(Dao::voting_delay<STC>()==3600 * 24 * 1000, Dao::voting_delay<STC>());
         assert(Dao::voting_quorum_rate<STC>() == 50, 1000);
     }
 }
@@ -223,7 +223,7 @@ script {
     use 0x1::STC::STC;
 
     fun re_propose(signer: &signer) {
-        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24, 0, 0, 0, 0);
+        ModifyDaoConfigProposal::propose<STC>(signer, 60 * 60 * 24* 1000, 0, 0, 0, 0);
     }
 }
 // check: RESOURCE_ALREADY_EXISTS

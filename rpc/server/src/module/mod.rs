@@ -12,6 +12,7 @@ mod node_manager_rpc;
 mod node_rpc;
 mod pubsub;
 mod state_rpc;
+mod sync_manager_rpc;
 mod txpool_rpc;
 
 pub use self::account_rpc::AccountRpcImpl;
@@ -23,7 +24,9 @@ pub use self::node_manager_rpc::NodeManagerRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
 pub use self::pubsub::{PubSubImpl, PubSubService};
 pub use self::state_rpc::StateRpcImpl;
+pub use self::sync_manager_rpc::SyncManagerRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
+
 use starcoin_account_api::error::AccountError;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {

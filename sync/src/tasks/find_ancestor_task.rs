@@ -14,18 +14,23 @@ use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
 #[derive(Clone)]
 pub struct FindAncestorTask {
-    current_number: BlockNumber,
+    start_number: BlockNumber,
     batch_size: u64,
     fetcher: Arc<dyn BlockIdFetcher>,
 }
 
 impl FindAncestorTask {
-    pub fn new<F>(current_number: BlockNumber, batch_size: u64, fetcher: F) -> Self
+    pub fn new<F>(
+        current_number: BlockNumber,
+        target_block_number: BlockNumber,
+        batch_size: u64,
+        fetcher: F,
+    ) -> Self
     where
         F: BlockIdFetcher + 'static,
     {
         Self {
-            current_number,
+            start_number: std::cmp::min(current_number, target_block_number),
             batch_size,
             fetcher: Arc::new(fetcher),
         }
@@ -37,7 +42,7 @@ impl TaskState for FindAncestorTask {
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
-            let current_number = self.current_number;
+            let current_number = self.start_number;
             let block_ids = self
                 .fetcher
                 .fetch_block_ids(current_number, true, self.batch_size as usize)
@@ -56,14 +61,14 @@ impl TaskState for FindAncestorTask {
     }
 
     fn next(&self) -> Option<Self> {
-        let next_number = self.current_number.saturating_sub(self.batch_size);
+        let next_number = self.start_number.saturating_sub(self.batch_size);
 
         //this should never happen, because all node's genesis block should same.
         if next_number == 0 {
             return None;
         }
         Some(Self {
-            current_number: next_number,
+            start_number: next_number,
             batch_size: self.batch_size,
             fetcher: self.fetcher.clone(),
         })
@@ -132,7 +137,12 @@ mod tests {
 
         let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
         let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
-        let task_state = FindAncestorTask::new(accumulator2.num_leaves() - 1, 7, fetcher.clone());
+        let task_state = FindAncestorTask::new(
+            accumulator2.num_leaves() - 1,
+            accumulator.num_leaves() - 1,
+            7,
+            fetcher.clone(),
+        );
         let event_handle = Arc::new(TaskEventCounterHandle::new());
         let collector = AncestorCollector::new(accumulator2.clone());
         let task =
@@ -159,7 +169,12 @@ mod tests {
 
         let store2 = Arc::new(MockAccumulatorStore::copy_from(store.as_ref()));
         let accumulator2 = Arc::new(MerkleAccumulator::new_with_info(info0.clone(), store2));
-        let task_state = FindAncestorTask::new(accumulator2.num_leaves() - 1, 7, fetcher.clone());
+        let task_state = FindAncestorTask::new(
+            accumulator2.num_leaves() - 1,
+            accumulator.num_leaves() - 1,
+            7,
+            fetcher.clone(),
+        );
         let event_handle = Arc::new(TaskEventCounterHandle::new());
         let collector = AncestorCollector::new(accumulator2.clone());
         let task =
@@ -195,7 +210,12 @@ mod tests {
 
         assert_ne!(accumulator.get_info(), accumulator2.get_info());
 
-        let task_state = FindAncestorTask::new(accumulator2.num_leaves() - 1, 7, fetcher.clone());
+        let task_state = FindAncestorTask::new(
+            accumulator2.num_leaves() - 1,
+            accumulator.num_leaves() - 1,
+            7,
+            fetcher.clone(),
+        );
         let event_handle = Arc::new(TaskEventCounterHandle::new());
         let collector = AncestorCollector::new(accumulator2.clone());
         let task =

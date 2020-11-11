@@ -59,7 +59,8 @@ impl EventHandler<Self, PeerEvent> for SyncService {
 
 impl EventHandler<Self, PeerNewBlock> for SyncService {
     fn handle_event(&mut self, msg: PeerNewBlock, _ctx: &mut ServiceContext<SyncService>) {
-        let new_block = SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block()));
+        let new_block =
+            SyncNotify::NewHeadBlock(msg.get_peer_id(), Box::new(msg.get_block().clone()));
         if let Err(e) = self.download_service.notify(new_block) {
             error!("Notify to download error: {:?}", e);
         }

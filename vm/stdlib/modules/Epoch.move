@@ -64,7 +64,7 @@ module Epoch {
             account,
             Epoch {
                 number: 0,
-                start_time: Timestamp::now_seconds(),
+                start_time: Timestamp::now_milliseconds(),
                 start_block_number: 0,
                 end_block_number: ConsensusConfig::epoch_block_count(&config),
                 block_time_target: ConsensusConfig::base_block_time_target(&config),
@@ -90,8 +90,8 @@ module Epoch {
         aborts_if exists<EpochData>(Signer::spec_address_of(account));
     }
 
-    public fun compute_next_block_time_target(config: &ConsensusConfig, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
-        let total_time = now_seconds - epoch_start_time;
+    public fun compute_next_block_time_target(config: &ConsensusConfig, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
+        let total_time = now_milli_second - epoch_start_time;
         let blocks = end_block_number - start_block_number;
         let avg_block_time = total_time / blocks;
         let uncles_rate = total_uncles * THOUSAND / blocks;
@@ -131,17 +131,17 @@ module Epoch {
         } else if (block_number == epoch_ref.end_block_number) {
             //start a new epoch
             assert(uncles == 0, Errors::invalid_argument(EINVALID_UNCLES_COUNT));
-            // block time target unit is seconds.
-            let now_seconds = timestamp/1000;
+            // block time target unit is milli_seconds.
+            let now_milli_seconds = timestamp;
 
             let config = ConsensusConfig::get_config();
             let last_epoch_time_target = epoch_ref.block_time_target;
-            let new_epoch_block_time_target = compute_next_block_time_target(&config, last_epoch_time_target, epoch_ref.start_time, now_seconds, epoch_ref.start_block_number, epoch_ref.end_block_number, epoch_data.uncles);
+            let new_epoch_block_time_target = compute_next_block_time_target(&config, last_epoch_time_target, epoch_ref.start_time, now_milli_seconds, epoch_ref.start_block_number, epoch_ref.end_block_number, epoch_data.uncles);
             let new_reward_per_block = ConsensusConfig::do_compute_reward_per_block(&config, new_epoch_block_time_target);
 
             //update epoch by adjust result or config, because ConsensusConfig may be updated.
             epoch_ref.number = epoch_ref.number + 1;
-            epoch_ref.start_time = now_seconds;
+            epoch_ref.start_time = now_milli_seconds;
             epoch_ref.start_block_number = block_number;
             epoch_ref.end_block_number = block_number + ConsensusConfig::epoch_block_count(&config);
             epoch_ref.block_time_target = new_epoch_block_time_target;

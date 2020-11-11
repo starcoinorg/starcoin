@@ -34,6 +34,8 @@ starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }
 tokio-compat = "0.1.5"
 starcoin-service-registry = { path = "../../commons/service-registry" }
+libloading = "0.6.5"
+dyn-clone = "1.0.3"
 
 [[bin]]
 name = "starcoin_miner"
