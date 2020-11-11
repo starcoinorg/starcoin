@@ -32,6 +32,7 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
+use starcoin_types::stress_test::TPS;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -475,11 +476,9 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<u64> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.chain_client.tps(number).compat().await },
-        )
-        .map_err(map_err)
+    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<TPS> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.tps(number).compat().await })
+            .map_err(map_err)
     }
 
     pub fn get_global_time_by_number(

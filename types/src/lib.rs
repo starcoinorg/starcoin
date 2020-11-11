@@ -92,3 +92,5 @@ pub static PROTOCOLS: Lazy<Vec<Cow<'static, [u8]>>> = Lazy::new(|| {
         BLOCK_PROTOCOL_NAME.into(),
     ]
 });
+
+pub mod stress_test;

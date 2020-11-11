@@ -9,6 +9,7 @@ use starcoin_crypto::HashValue;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
@@ -76,7 +77,7 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_block_by_uncle")]
     fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
 
-    /// Get tps by number.
+    /// Get tps by block number.
     #[rpc(name = "chain.tps")]
-    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<u64>;
+    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<TPS>;
 }
