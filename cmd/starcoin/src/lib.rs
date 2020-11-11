@@ -80,7 +80,7 @@ pub fn add_command(
                 .subcommand(chain::GetBlockCommand)
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetEpochInfoByNumberCommand)
-                .subcommand(chain::GetTPSCommand),
+                .subcommand(chain::TPSCommand),
         )
         .command(
             Command::with_name("dev")

@@ -488,9 +488,9 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn get_tps(&self, number: BlockNumber) -> anyhow::Result<u64> {
+    pub fn tps(&self, number: BlockNumber) -> anyhow::Result<u64> {
         self.call_rpc_blocking(
-            |inner| async move { inner.chain_client.get_tps(number).compat().await },
+            |inner| async move { inner.chain_client.tps(number).compat().await },
         )
         .map_err(map_err)
     }

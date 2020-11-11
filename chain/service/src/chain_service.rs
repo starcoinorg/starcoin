@@ -178,7 +178,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlocks(ids) => {
                 Ok(ChainResponse::BlockOptionVec(self.inner.get_blocks(ids)?))
             }
-            ChainRequest::GetTPS(number) => Ok(ChainResponse::TPS(self.inner.get_tps(number)?)),
+            ChainRequest::TPS(number) => Ok(ChainResponse::TPS(self.inner.tps(number)?)),
         }
     }
 }
@@ -343,8 +343,8 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.master.get_block_ids(start_number, reverse, max_size)
     }
 
-    fn get_tps(&self, number: BlockNumber) -> Result<u64> {
-        self.master.get_tps(Some(number))
+    fn tps(&self, number: BlockNumber) -> Result<u64> {
+        self.master.tps(Some(number))
     }
 }
 
