@@ -343,8 +343,8 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.master.get_block_ids(start_number, reverse, max_size)
     }
 
-    fn tps(&self, number: BlockNumber) -> Result<u64> {
-        self.master.tps(Some(number))
+    fn tps(&self, number: Option<BlockNumber>) -> Result<u64> {
+        self.master.tps(number)
     }
 }
 

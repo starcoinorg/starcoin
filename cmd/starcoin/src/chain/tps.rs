@@ -6,13 +6,14 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use structopt::StructOpt;
+use starcoin_types::block::BlockNumber;
 
 /// Get tps for an epoch.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tps")]
 pub struct TPSOpt {
-    #[structopt(name = "number", long, short = "n", default_value = "0", help = "block number, if absent return tps for the latest epoch")]
-    number: u64,
+    #[structopt(name = "number", long, short = "n", help = "block number, if absent return tps for the latest epoch")]
+    number: Option<BlockNumber>,
 }
 
 pub struct TPSCommand;

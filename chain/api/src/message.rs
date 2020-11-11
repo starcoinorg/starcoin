@@ -49,7 +49,7 @@ pub enum ChainRequest {
         max_size: usize,
     },
     GetBlocks(Vec<HashValue>),
-    TPS(u64),
+    TPS(Option<BlockNumber>),
 }
 
 impl ServiceRequest for ChainRequest {
