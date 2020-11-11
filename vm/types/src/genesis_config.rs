@@ -667,7 +667,7 @@ pub struct GenesisConfig {
     /// Genesis difficulty, should match consensus in different ChainNetwork.
     pub difficulty: U256,
     /// Genesis consensus nonce.
-    pub nonce: u64,
+    pub nonce: u32,
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
     /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account
@@ -841,10 +841,10 @@ pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,          // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -891,10 +891,10 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::MockTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,          // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -944,10 +944,10 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60,       // 1min
-            voting_period: 60 * 60, // 1h
+            voting_delay: 60_000,       // 1min
+            voting_period: 60 * 60 * 1000, // 1h
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60, // 1h
+            min_action_delay: 60 * 60 * 1000, // 1h
         },
         transaction_timeout: ONE_DAY,
     }
@@ -965,7 +965,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
     timestamp: 1603766401000,
     reward_delay: 7,
-    difficulty: 10.into(),
+    difficulty: 100.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
     time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
@@ -997,10 +997,10 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     time_service_type: TimeServiceType::RealTimeService,
     stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
-        voting_delay: 60 * 60,           // 1h
-        voting_period: 60 * 60 * 24 * 2, // 2d
+        voting_delay: 60 * 60 * 1000,           // 1h
+        voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
         voting_quorum_rate: 4,
-        min_action_delay: 60 * 60 * 24, // 1d
+        min_action_delay: 60 * 60 * 24 * 1000, // 1d
     },
     transaction_timeout: ONE_DAY,
 }
@@ -1045,10 +1045,10 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         time_service_type: TimeServiceType::RealTimeService,
         stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
-            voting_delay: 60 * 60,           // 1h
-            voting_period: 60 * 60 * 24 * 2, // 2d
+            voting_delay: 60 * 60 * 1000,           // 1h
+            voting_period: 60 * 60 * 24 * 2 * 1000, // 2d
             voting_quorum_rate: 4,
-            min_action_delay: 60 * 60 * 24, // 1d
+            min_action_delay: 60 * 60 * 24 * 1000, // 1d
         },
         transaction_timeout: ONE_DAY,
     }
