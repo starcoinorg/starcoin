@@ -76,6 +76,7 @@ module Dao {
         // executable after this time.
         eta: u64,
         action_delay: u64,
+        quorum_votes: u128,
         action: Option::Option<Action>,
     }
 
@@ -209,6 +210,7 @@ module Dao {
         let proposal_id = generate_next_proposal_id<TokenT>();
         let proposer = Signer::address_of(signer);
         let start_time = Timestamp::now_milliseconds() + voting_delay<TokenT>();
+        let quorum_votes = quorum_votes<TokenT>();
         let proposal = Proposal<TokenT, ActionT> {
             id: proposal_id,
             proposer,
@@ -218,6 +220,7 @@ module Dao {
             against_votes: 0,
             eta: 0,
             action_delay,
+            quorum_votes: quorum_votes,
             action: Option::some(action),
         };
         move_to(signer, proposal);
@@ -646,6 +649,7 @@ module Dao {
             against_votes: _,
             eta: _,
             action_delay: _,
+            quorum_votes: _,
             action,
         } = move_from<Proposal<TokenT, ActionT>>(proposer_address);
         Option::destroy_none(action);
@@ -697,8 +701,7 @@ module Dao {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
         assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
         let current_time = Timestamp::now_milliseconds();
-        let quorum_votes = quorum_votes<TokenT>();
-        _proposal_state(proposal, current_time, quorum_votes)
+        _proposal_state(proposal, current_time)
     }
 
     spec schema CheckProposalStates<TokenT, ActionT> {
@@ -713,9 +716,8 @@ module Dao {
         include AbortIfDaoConfigNotExist<TokenT>;
         include AbortIfTimestampNotExist;
         include CheckQuorumVotes<TokenT>;
-        let quorum_votes = spec_quorum_votes<TokenT>();
         let current_time = Timestamp::spec_now_millseconds();
-        let state = _proposal_state(proposal, current_time, quorum_votes);
+        let state = _proposal_state(proposal, current_time);
         aborts_if (forall s in expected_states : s != state);
     }
 
@@ -734,7 +736,6 @@ module Dao {
     fun _proposal_state<TokenT: copyable, ActionT>(
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
-        quorum_votes: u128,
     ): u8 {
         if (current_time < proposal.start_time) {
             // Pending
@@ -743,7 +744,7 @@ module Dao {
             // Active
             ACTIVE
         } else if (proposal.for_votes <= proposal.against_votes ||
-            proposal.for_votes < quorum_votes) {
+            proposal.for_votes < proposal.quorum_votes) {
             // Defeated
             DEFEATED
         } else if (proposal.eta == 0) {
