@@ -103,6 +103,8 @@ where
     }
 }
 
+pub const DEFAULT_TIMEOUT_MILLIS: u64 = 5000;
+
 impl<S> ServiceRef<S>
 where
     S: ActorService,
@@ -127,7 +129,12 @@ where
         self.exec_service_cmd(ServiceCmd::Restart)
     }
 
-    /// Send a request to target service and wait response.
+    /// Returns whether the actor is still alive.
+    pub fn connected(&self) -> bool {
+        self.addr.connected()
+    }
+
+    /// Send a request to target service and wait response by default timeout.
     pub fn send<R>(&self, request: R) -> BoxFuture<Result<<R as ServiceRequest>::Response>>
     where
         R: ServiceRequest + 'static,
