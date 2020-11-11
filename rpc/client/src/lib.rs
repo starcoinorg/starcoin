@@ -51,6 +51,7 @@ use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::TaskProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -488,11 +489,9 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<u64> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.chain_client.tps(number).compat().await },
-        )
-        .map_err(map_err)
+    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<TPS> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.tps(number).compat().await })
+            .map_err(map_err)
     }
 
     pub fn get_global_time_by_number(

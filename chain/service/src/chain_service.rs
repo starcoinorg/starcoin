@@ -14,6 +14,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
@@ -343,7 +344,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.master.get_block_ids(start_number, reverse, max_size)
     }
 
-    fn tps(&self, number: Option<BlockNumber>) -> Result<u64> {
+    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
         self.master.tps(number)
     }
 }
