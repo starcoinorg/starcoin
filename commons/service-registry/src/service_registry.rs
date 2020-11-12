@@ -6,27 +6,26 @@ use crate::mocker::MockHandler;
 use crate::service::{ActorService, ServiceFactory};
 use crate::service_actor::ServiceActor;
 use crate::{
-    EventHandler, ServiceCmd, ServiceContext, ServiceHandler, ServiceInfo, ServiceRef,
+    EventHandler, ServiceCmd, ServiceContext, ServiceHandler, ServiceInfo, ServicePing, ServiceRef,
     ServiceRequest, ServiceStatus,
 };
+use actix::prelude::SendError;
 use actix::{Actor, AsyncContext};
 use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
-use futures::future::BoxFuture;
-use futures::FutureExt;
 use log::info;
 use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::time::Duration;
 
 trait ServiceRefProxy: Send + Sync {
     fn service_name(&self) -> &'static str;
     fn service_info(&self) -> ServiceInfo;
     fn status(&self) -> ServiceStatus;
-    fn check_status(&mut self) -> BoxFuture<ServiceStatus>;
+    fn check_status(&self) -> ServiceStatus;
+    fn update_status(&mut self, status: ServiceStatus);
     fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()>;
     fn shutdown(&self) -> Result<()>;
     fn as_any(&self) -> &dyn Any;
@@ -70,17 +69,30 @@ where
     }
 
     fn status(&self) -> ServiceStatus {
-        self.status
+        if self.service_ref.addr.connected() {
+            self.status
+        } else {
+            ServiceStatus::Shutdown
+        }
     }
 
-    fn check_status(&mut self) -> BoxFuture<ServiceStatus> {
-        let service_ref = self.service_ref.clone();
-        async move {
-            let status = service_ref.self_status().await;
-            self.status = status;
-            status
+    fn check_status(&self) -> ServiceStatus {
+        if self.status.is_started() {
+            if let Err(e) = self.service_ref.addr.try_send(ServicePing) {
+                match e {
+                    SendError::Full(_) => ServiceStatus::Unavailable,
+                    SendError::Closed(_) => ServiceStatus::Shutdown,
+                }
+            } else {
+                ServiceStatus::Started
+            }
+        } else {
+            self.status
         }
-        .boxed()
+    }
+
+    fn update_status(&mut self, status: ServiceStatus) {
+        self.status = status;
     }
 
     fn exec_service_cmd(&self, service_cmd: ServiceCmd) -> Result<()> {
@@ -162,6 +174,13 @@ impl Registry {
             .iter()
             .find(|handle| handle.service_name() == service_name)
             .map(|handle| handle.status())
+    }
+
+    pub fn check_service_status(&self, service_name: &str) -> Option<ServiceStatus> {
+        self.services
+            .iter()
+            .find(|handle| handle.service_name() == service_name)
+            .map(|handle| handle.check_status())
     }
 
     fn do_register<S, F>(&mut self, f: F) -> Result<ServiceRef<S>>
@@ -267,14 +286,14 @@ impl Registry {
         Ok(())
     }
 
-    // Check service status and removed shutdown status service ref.
-    async fn check_service(&mut self) {
-        let status_futs: Vec<BoxFuture<ServiceStatus>> = self
+    fn update_service_status(&mut self, service_name: &str, status: ServiceStatus) {
+        if let Some(handle) = self
             .services
             .iter_mut()
-            .map(|proxy| proxy.check_status())
-            .collect();
-        futures::future::join_all(status_futs).await;
+            .find(|proxy| proxy.service_name() == service_name)
+        {
+            handle.update_status(status)
+        }
     }
 }
 
@@ -302,10 +321,7 @@ impl RegistryService {
 }
 
 impl ActorService for RegistryService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.run_interval(Duration::from_millis(2000), |ctx| {
-            ctx.notify(CheckServiceEvent)
-        });
+    fn started(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
         Ok(())
     }
 }
@@ -609,27 +625,29 @@ where
 }
 
 #[derive(Debug)]
-pub struct ServiceStatusRequest {
+pub struct CheckServiceStatusRequest {
     service_name: String,
 }
 
-impl ServiceStatusRequest {
+impl CheckServiceStatusRequest {
     pub fn new(service_name: String) -> Self {
         Self { service_name }
     }
 }
 
-impl ServiceRequest for ServiceStatusRequest {
-    type Response = Option<ServiceStatus>;
+impl ServiceRequest for CheckServiceStatusRequest {
+    type Response = Result<ServiceStatus>;
 }
 
-impl ServiceHandler<Self, ServiceStatusRequest> for RegistryService {
+impl ServiceHandler<Self, CheckServiceStatusRequest> for RegistryService {
     fn handle(
         &mut self,
-        msg: ServiceStatusRequest,
+        msg: CheckServiceStatusRequest,
         _ctx: &mut ServiceContext<RegistryService>,
-    ) -> Option<ServiceStatus> {
-        self.registry.get_service_status(msg.service_name.as_str())
+    ) -> Result<ServiceStatus> {
+        self.registry
+            .get_service_status(msg.service_name.as_str())
+            .ok_or_else(|| format_err!("Can not find service by name: {}", msg.service_name))
     }
 }
 
@@ -692,18 +710,28 @@ impl ServiceHandler<Self, SystemCmdRequest> for RegistryService {
 }
 
 #[derive(Clone, Debug)]
-struct CheckServiceEvent;
+pub(crate) struct ServiceStatusChangeEvent {
+    service_name: String,
+    status: ServiceStatus,
+}
 
-impl EventHandler<Self, CheckServiceEvent> for RegistryService {
+impl ServiceStatusChangeEvent {
+    pub fn new(service_name: String, status: ServiceStatus) -> Self {
+        Self {
+            service_name,
+            status,
+        }
+    }
+}
+
+impl EventHandler<Self, ServiceStatusChangeEvent> for RegistryService {
     fn handle_event(
         &mut self,
-        _msg: CheckServiceEvent,
+        msg: ServiceStatusChangeEvent,
         _ctx: &mut ServiceContext<RegistryService>,
     ) {
-        //TODO avoid block_on
-        block_on(async {
-            self.registry.check_service().await;
-        });
+        self.registry
+            .update_service_status(msg.service_name.as_str(), msg.status);
     }
 }
 
@@ -765,10 +793,10 @@ pub trait RegistryAsyncService {
     fn restart_service_sync(&self, service_name: &str) -> Result<()> {
         block_on(async move { self.restart_service(service_name).await })
     }
-    async fn get_service_status(&self, service_name: &str) -> Result<Option<ServiceStatus>>;
+    async fn check_service_status(&self, service_name: &str) -> Result<ServiceStatus>;
 
-    fn get_service_status_sync(&self, service_name: &str) -> Result<Option<ServiceStatus>> {
-        block_on(async move { self.get_service_status(service_name).await })
+    fn check_service_status_sync(&self, service_name: &str) -> Result<ServiceStatus> {
+        block_on(async move { self.check_service_status(service_name).await })
     }
 
     async fn put_shared<T>(&self, t: T) -> Result<()>
@@ -896,9 +924,9 @@ impl RegistryAsyncService for ServiceRef<RegistryService> {
         .await?
     }
 
-    async fn get_service_status(&self, service_name: &str) -> Result<Option<ServiceStatus>> {
-        self.send(ServiceStatusRequest::new(service_name.to_string()))
-            .await
+    async fn check_service_status(&self, service_name: &str) -> Result<ServiceStatus> {
+        self.send(CheckServiceStatusRequest::new(service_name.to_string()))
+            .await?
     }
 
     async fn put_shared<T>(&self, value: T) -> Result<()>

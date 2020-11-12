@@ -52,7 +52,7 @@ impl Message for ServiceCmd {
 }
 
 #[derive(Clone, Debug)]
-pub enum ServiceQuery {
+pub(crate) enum ServiceQuery {
     Status,
 }
 
@@ -63,6 +63,13 @@ pub enum ServiceQueryResult {
 
 impl Message for ServiceQuery {
     type Result = ServiceQueryResult;
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ServicePing;
+
+impl Message for ServicePing {
+    type Result = ();
 }
 
 pub trait ServiceRequest: Send + Debug {

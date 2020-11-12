@@ -58,11 +58,13 @@ impl ServiceFactory<Self> for NodeService {
 impl ActorService for NodeService {}
 
 impl ServiceHandler<Self, NodeRequest> for NodeService {
-    fn handle(&mut self, msg: NodeRequest, _ctx: &mut ServiceContext<NodeService>) -> NodeResponse {
-        match msg {
-            NodeRequest::ListService => {
-                NodeResponse::Services(self.registry.list_service_sync().unwrap_or_default())
-            }
+    fn handle(
+        &mut self,
+        msg: NodeRequest,
+        _ctx: &mut ServiceContext<NodeService>,
+    ) -> Result<NodeResponse> {
+        Ok(match msg {
+            NodeRequest::ListService => NodeResponse::Services(self.registry.list_service_sync()?),
             NodeRequest::StopService(service_name) => {
                 info!(
                     "Receive StopService request, try to stop service {:?}",
@@ -76,6 +78,16 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     service_name
                 );
                 NodeResponse::Result(self.registry.start_service_sync(service_name.as_str()))
+            }
+            NodeRequest::CheckService(service_name) => {
+                info!(
+                    "Receive StartService request, try to start service {:?}",
+                    service_name
+                );
+                NodeResponse::ServiceStatus(
+                    self.registry
+                        .check_service_status_sync(service_name.as_str())?,
+                )
             }
             NodeRequest::ShutdownSystem => {
                 info!("Receive StopSystem request, try to stop system.");
@@ -95,7 +107,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 self.registry
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
-        }
+        })
     }
 }
 

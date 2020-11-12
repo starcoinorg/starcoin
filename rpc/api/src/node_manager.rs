@@ -4,7 +4,7 @@
 pub use self::gen_client::Client as NodeManagerClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 
 #[rpc]
 pub trait NodeManagerApi {
@@ -16,6 +16,9 @@ pub trait NodeManagerApi {
 
     #[rpc(name = "node_manager.start_service")]
     fn start_service(&self, service_name: String) -> FutureResult<()>;
+
+    #[rpc(name = "node_manager.check_service")]
+    fn check_service(&self, service_name: String) -> FutureResult<ServiceStatus>;
 
     #[rpc(name = "node_manager.shutdown_system")]
     fn shutdown_system(&self) -> FutureResult<()>;

@@ -9,7 +9,7 @@ use std::time::Duration;
 use test_helper::run_node_by_config;
 use traits::ChainAsyncService;
 
-#[stest::test]
+#[stest::test(timeout = 120)]
 fn test_full_sync() {
     test_sync::test_sync(SyncMode::FULL)
 }
