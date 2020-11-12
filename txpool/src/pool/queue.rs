@@ -75,6 +75,9 @@ impl Into<TxPoolStatus> for Status {
     fn into(self) -> TxPoolStatus {
         TxPoolStatus {
             txn_count: self.status.transaction_count,
+            txn_max_count: self.limits.max_count,
+            mem: self.status.mem_usage / 1024,
+            mem_max: self.limits.max_mem_usage / 1024,
             senders: self.status.senders,
         }
     }
