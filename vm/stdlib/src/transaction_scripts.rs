@@ -144,6 +144,7 @@ pub enum StdlibScript {
     ProposeUpdateTxnPublishOption,
     ProposeUpdateTxnTimeoutConfig,
     ProposeUpdateVmConfig,
+    UpdateModuleUpgradeStrategy,
     // ...add new scripts here
 }
 
@@ -175,6 +176,7 @@ impl StdlibScript {
             ProposeUpdateTxnPublishOption,
             ProposeUpdateTxnTimeoutConfig,
             ProposeUpdateVmConfig,
+            UpdateModuleUpgradeStrategy,
             // ...add new scripts here
         ]
     }
@@ -234,6 +236,7 @@ impl fmt::Display for StdlibScript {
                 ProposeUpdateTxnPublishOption => "propose_update_txn_publish_option",
                 ProposeUpdateTxnTimeoutConfig => "propose_update_txn_timeout_config",
                 ProposeUpdateVmConfig => "propose_update_vm_config",
+                UpdateModuleUpgradeStrategy => "update_module_upgrade_strategy",
             }
         )
     }
