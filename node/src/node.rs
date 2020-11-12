@@ -216,7 +216,6 @@ impl NodeService {
         registry.register::<ChainReaderService>().await?;
 
         registry.register::<ChainNotifyHandlerService>().await?;
-        registry.register::<TxnSyncService>().await?;
         //registry.register::<DownloadService>().await?;
         //registry.register::<SyncService>().await?;
 
@@ -238,6 +237,7 @@ impl NodeService {
         registry.put_shared(network.clone()).await?;
 
         registry.register::<PeerMsgBroadcasterService>().await?;
+        registry.register::<TxnSyncService>().await?;
 
         let peer_id = config.network.self_peer_id()?;
 
