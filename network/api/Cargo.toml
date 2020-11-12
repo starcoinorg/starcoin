@@ -18,3 +18,5 @@ async-trait = "0.1.41"
 libp2p = "0.22.0"
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-rpc-core = { path = "../../network-rpc/core" }
+starcoin-tx-relay= { path="../../txpool/tx-relay"}
+starcoin-block-relayer-api = { path = "../../block-relayer/api/" }

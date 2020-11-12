@@ -59,14 +59,12 @@ impl ActorService for BlockConnectorService {
         ctx.set_mailbox_capacity(1024);
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<MinedBlock>();
-        ctx.subscribe::<PeerNewBlock>();
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<MinedBlock>();
-        ctx.unsubscribe::<PeerNewBlock>();
         Ok(())
     }
 }
