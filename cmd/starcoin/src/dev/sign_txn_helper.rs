@@ -215,7 +215,7 @@ mod tests {
         // 2. transfer
         cli_state
             .client()
-            .sleep(dao_config.voting_period / 2 * 1000)
+            .sleep(dao_config.voting_period / 2)
             .unwrap();
         let default_account = cli_state.default_account().unwrap();
         // unlock default account
@@ -309,10 +309,7 @@ mod tests {
         assert_eq!(vote_txn_info.status(), &KeptVMStatus::Executed);
 
         // 4. sleep
-        cli_state
-            .client()
-            .sleep(dao_config.voting_period * 1000)
-            .unwrap();
+        cli_state.client().sleep(dao_config.voting_period).unwrap();
         node_handle.generate_block().unwrap();
 
         // 5. queue
@@ -342,10 +339,7 @@ mod tests {
         assert_eq!(queue_txn_info.status(), &KeptVMStatus::Executed);
 
         // 6. sleep
-        cli_state
-            .client()
-            .sleep(dao_config.voting_period * 1000)
-            .unwrap();
+        cli_state.client().sleep(dao_config.voting_period).unwrap();
         node_handle.generate_block().unwrap();
 
         // 7. plan

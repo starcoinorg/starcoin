@@ -145,9 +145,6 @@ where
             self.broadcast_new_branch(map_be_uncles);
         }
 
-        WRITE_BLOCK_CHAIN_METRICS
-            .branch_total_count
-            .set(self.startup_info.branches.len() as i64);
         self.save_startup()
     }
 

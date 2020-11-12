@@ -32,52 +32,33 @@ impl ChainInfo {
         self.total_difficulty
     }
 }
-//TODO save chain info to startup_info, and remove branches.
+//TODO save more info to StartupInfo and simple chain init.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
     /// Master chain info
     pub master: HashValue,
-    /// Other branch chain
-    pub branches: Vec<HashValue>,
 }
 
 impl fmt::Display for StartupInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "StartupInfo {{")?;
         write!(f, "master: {:?},", self.master)?;
-        write!(f, "branches size: {},", self.branches.len())?;
         write!(f, "}}")?;
         Ok(())
     }
 }
 
 impl StartupInfo {
-    pub fn new(master: HashValue, branches: Vec<HashValue>) -> Self {
-        Self { master, branches }
-    }
-
-    pub fn insert_branch(&mut self, new_block_header: &BlockHeader) {
-        self.branches
-            .retain(|head| head != &new_block_header.parent_hash());
-        self.branches.retain(|head| head != &new_block_header.id());
-        self.branches.push(new_block_header.id())
+    pub fn new(master: HashValue) -> Self {
+        Self { master }
     }
 
     pub fn update_master(&mut self, new_block_header: &BlockHeader) {
-        if self.master != new_block_header.parent_hash() {
-            let old_master = self.master;
-            self.branches.retain(|head| head != &old_master);
-            self.branches.push(old_master)
-        }
         self.master = new_block_header.id();
     }
 
     pub fn get_master(&self) -> &HashValue {
         &self.master
-    }
-
-    pub fn is_branch_head_exclude_master(&self, branch_id: &HashValue) -> bool {
-        self.branches.contains(branch_id)
     }
 }
 
@@ -94,73 +75,5 @@ impl TryInto<Vec<u8>> for StartupInfo {
 
     fn try_into(self) -> Result<Vec<u8>> {
         self.encode()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_startup_head() {
-        let head = BlockHeader::random();
-        let startup = StartupInfo::new(head.id(), Vec::new());
-        assert_eq!(head.id(), *startup.get_master());
-    }
-
-    #[test]
-    fn test_startup_head_parent() {
-        let parent = BlockHeader::random();
-        let mut startup = StartupInfo::new(parent.id(), Vec::new());
-        assert_eq!(parent.id(), *startup.get_master());
-        let mut son = BlockHeader::random();
-        son.parent_hash = parent.id();
-        startup.update_master(&son);
-        assert_eq!(son.id(), *startup.get_master());
-        assert!(!startup.is_branch_head_exclude_master(&parent.id()));
-    }
-
-    #[test]
-    fn test_startup_head_not_parent() {
-        let parent = BlockHeader::random();
-        let mut startup = StartupInfo::new(parent.id(), Vec::new());
-        assert_eq!(parent.id(), *startup.get_master());
-        let son = BlockHeader::random();
-        startup.update_master(&son);
-        assert_eq!(son.id(), *startup.get_master());
-        assert!(startup.is_branch_head_exclude_master(&parent.id()));
-    }
-
-    #[test]
-    fn test_startup_branch_parent() {
-        let head = BlockHeader::random();
-        let mut startup = StartupInfo::new(head.id(), Vec::new());
-        assert_eq!(head.id(), *startup.get_master());
-
-        let parent = BlockHeader::random();
-        startup.insert_branch(&parent);
-        assert!(startup.is_branch_head_exclude_master(&parent.id()));
-
-        let mut son = BlockHeader::random();
-        son.parent_hash = parent.id();
-        startup.insert_branch(&son);
-        assert!(!startup.is_branch_head_exclude_master(&parent.id()));
-        assert!(startup.is_branch_head_exclude_master(&son.id()));
-    }
-
-    #[test]
-    fn test_startup_branch_not_parent() {
-        let head = BlockHeader::random();
-        let mut startup = StartupInfo::new(head.id(), Vec::new());
-        assert_eq!(head.id(), *startup.get_master());
-
-        let branch1 = BlockHeader::random();
-        startup.insert_branch(&branch1);
-        assert!(startup.is_branch_head_exclude_master(&branch1.id()));
-
-        let branch2 = BlockHeader::random();
-        startup.insert_branch(&branch2);
-        assert!(startup.is_branch_head_exclude_master(&branch2.id()));
-        assert!(startup.is_branch_head_exclude_master(&branch1.id()));
     }
 }
