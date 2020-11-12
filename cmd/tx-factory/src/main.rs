@@ -512,7 +512,7 @@ impl TxnMocker {
                             accounts[i].address,
                             accounts[j].address,
                             accounts[j].public_key.as_single(),
-                            10,
+                            1,
                             seq_num,
                             false,
                             expiration_timestamp,

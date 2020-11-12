@@ -26,6 +26,7 @@ use starcoin_types::{
     },
     contract_event::ContractEvent,
     error::BlockExecutorError,
+    stress_test::TPS,
     transaction::{SignedUserTransaction, Transaction, TransactionInfo},
     U256,
 };
@@ -510,6 +511,64 @@ impl ChainReader for BlockChain {
     ) -> Result<Vec<HashValue>> {
         self.block_accumulator
             .get_leaves(start_number, reverse, max_size)
+    }
+
+    fn get_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>> {
+        let block = self
+            .get_block_by_number(number)?
+            .ok_or_else(|| format_err!("Can not find block by number {}", number))?;
+
+        self.get_block_info(Some(block.id()))
+    }
+
+    fn total_txns_in_blocks(
+        &self,
+        start_number: BlockNumber,
+        end_number: BlockNumber,
+    ) -> Result<u64> {
+        let txn_num_in_start_block = self
+            .get_block_info_by_number(start_number)?
+            .ok_or_else(|| format_err!("Can not find block info by number {}", start_number))?
+            .get_txn_accumulator_info()
+            .num_leaves;
+        let txn_num_in_end_block = self
+            .get_block_info_by_number(end_number)?
+            .ok_or_else(|| format_err!("Can not find block info by number {}", end_number))?
+            .get_txn_accumulator_info()
+            .num_leaves;
+
+        Ok(txn_num_in_end_block - txn_num_in_start_block)
+    }
+
+    /// Get tps for an epoch, the epoch includes the block given by `number`.
+    /// If `number` is absent, return tps for the latest epoch
+    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
+        let epoch_info = self.get_epoch_info_by_number(number)?;
+        let start_block_number = epoch_info.start_block_number();
+        let end_block_number = epoch_info.end_block_number();
+        let current_block_number = self.current_header().number();
+        let start_block_time = self
+            .get_header_by_number(start_block_number)?
+            .ok_or_else(|| {
+                format_err!("Can not find block header by number {}", start_block_number)
+            })?
+            .timestamp();
+        let result = if end_block_number < current_block_number {
+            let end_block_time = self
+                .get_header_by_number(end_block_number)?
+                .ok_or_else(|| {
+                    format_err!("Can not find block header by number {}", end_block_number)
+                })?
+                .timestamp();
+            let duration = (end_block_time - start_block_time) / 1000;
+            let total_txns = self.total_txns_in_blocks(start_block_number, end_block_number)?;
+            TPS::new(total_txns, duration, total_txns / duration)
+        } else {
+            let duration = (self.current_header().timestamp() - start_block_time) / 1000;
+            let total_txns = self.total_txns_in_blocks(start_block_number, current_block_number)?;
+            TPS::new(total_txns, duration, total_txns / duration)
+        };
+        Ok(result)
     }
 }
 

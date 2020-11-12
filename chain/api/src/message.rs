@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
@@ -49,6 +50,7 @@ pub enum ChainRequest {
         max_size: usize,
     },
     GetBlocks(Vec<HashValue>),
+    TPS(Option<BlockNumber>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -78,4 +80,5 @@ pub enum ChainResponse {
     EpochInfo(EpochInfo),
     GlobalTime(GlobalTimeOnChain),
     HashVec(Vec<HashValue>),
+    TPS(TPS),
 }
