@@ -6,7 +6,6 @@ use crate::sync_status::SyncStatus;
 use crate::U256;
 use actix::prelude::*;
 use anyhow::Result;
-use starcoin_crypto::HashValue;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 
@@ -60,15 +59,15 @@ impl GenerateBlockEvent {
 #[rtype(result = "Result<()>")]
 pub struct MintBlockEvent {
     pub strategy: ConsensusStrategy,
-    pub minting_hash: HashValue,
+    pub minting_blob: Vec<u8>,
     pub difficulty: U256,
 }
 
 impl MintBlockEvent {
-    pub fn new(strategy: ConsensusStrategy, minting_hash: HashValue, difficulty: U256) -> Self {
+    pub fn new(strategy: ConsensusStrategy, minting_blob: Vec<u8>, difficulty: U256) -> Self {
         Self {
             strategy,
-            minting_hash,
+            minting_blob,
             difficulty,
         }
     }
@@ -77,13 +76,15 @@ impl MintBlockEvent {
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "Result<()>")]
 pub struct SubmitSealEvent {
-    //TODO: header_hash to minting_hash
-    pub nonce: u64,
-    pub header_hash: HashValue,
+    pub nonce: u32,
+    pub minting_blob: Vec<u8>,
 }
 
 impl SubmitSealEvent {
-    pub fn new(header_hash: HashValue, nonce: u64) -> Self {
-        Self { header_hash, nonce }
+    pub fn new(minting_blob: Vec<u8>, nonce: u32) -> Self {
+        Self {
+            minting_blob,
+            nonce,
+        }
     }
 }

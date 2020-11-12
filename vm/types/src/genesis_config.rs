@@ -41,20 +41,24 @@ pub enum StdlibVersion {
     Version(VersionNumber),
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, PartialEq, PartialOrd, Ord, Serialize)]
-pub struct VersionNumber {
-    major: u32,
-    minor: u32,
-}
+type VersionNumber = u64;
 
 impl StdlibVersion {
-    pub fn new(major: u32, minor: u32) -> Self {
-        StdlibVersion::Version(VersionNumber { major, minor })
+    pub fn new(version: u64) -> Self {
+        StdlibVersion::Version(version)
     }
-    pub fn as_string(self) -> String {
+
+    pub fn as_string(&self) -> String {
         match self {
             StdlibVersion::Latest => "latest".to_string(),
-            StdlibVersion::Version(version) => format!("{}.{}", version.major, version.minor),
+            StdlibVersion::Version(version) => format!("{}", version),
+        }
+    }
+
+    pub fn version(&self) -> u64 {
+        match self {
+            StdlibVersion::Latest => 0,
+            StdlibVersion::Version(version) => *version,
         }
     }
 }
@@ -663,7 +667,7 @@ pub struct GenesisConfig {
     /// Genesis difficulty, should match consensus in different ChainNetwork.
     pub difficulty: U256,
     /// Genesis consensus nonce.
-    pub nonce: u64,
+    pub nonce: u32,
     /// Pre mine STC amount to Association account.
     pub pre_mine_amount: u128,
     /// If time_mint_amount >0, Issue a LinearTimeMintKey to Association account
@@ -744,11 +748,11 @@ impl GenesisConfig {
 }
 
 static UNCLE_RATE_TARGET: u64 = 80;
-static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10;
+static DEFAULT_BASE_BLOCK_TIME_TARGET: u64 = 10000;
 static DEFAULT_BASE_BLOCK_DIFF_WINDOW: u64 = 24;
 static BASE_REWARD_PER_UNCLE_PERCENT: u64 = 10;
-static MIN_BLOCK_TIME_TARGET: u64 = 10;
-static MAX_BLOCK_TIME_TARGET: u64 = 60;
+static MIN_BLOCK_TIME_TARGET: u64 = 10000;
+static MAX_BLOCK_TIME_TARGET: u64 = 60000;
 static BASE_MAX_UNCLES_PER_BLOCK: u64 = 2;
 
 //for Private funding
@@ -961,7 +965,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
     timestamp: 1603766401000,
     reward_delay: 7,
-    difficulty: 10.into(),
+    difficulty: 100.into(),
     nonce: 0,
     pre_mine_amount: DEFAULT_PRE_MINT_AMOUNT.scaling(),
     time_mint_amount: DEFAULT_TIME_LOCKED_AMOUNT.scaling(),
@@ -991,7 +995,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::new(0, 6),
+    stdlib_version: StdlibVersion::Latest,
     dao_config: DaoConfig {
         voting_delay: 60 * 60,           // 1h
         voting_period: 60 * 60 * 24 * 2, // 2d
@@ -1039,7 +1043,7 @@ pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
         association_key_pair: (None, association_public_key),
         genesis_key_pair: None,
         time_service_type: TimeServiceType::RealTimeService,
-        stdlib_version: StdlibVersion::new(0, 6),
+        stdlib_version: StdlibVersion::Latest,
         dao_config: DaoConfig {
             voting_delay: 60 * 60,           // 1h
             voting_period: 60 * 60 * 24 * 2, // 2d

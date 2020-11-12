@@ -1,6 +1,5 @@
 use crate::{MintBlockEvent, SubmitSealEvent};
 use anyhow::Result;
-use crypto::HashValue;
 use futures::executor::block_on;
 use futures::stream::BoxStream;
 use futures::stream::StreamExt;
@@ -28,8 +27,9 @@ impl JobClient for JobBusClient {
         block_on(async move { bus.channel::<MintBlockEvent>().await.map(|s| s.boxed()) })
     }
 
-    fn submit_seal(&self, pow_hash: HashValue, nonce: u64) -> Result<()> {
-        self.bus.broadcast(SubmitSealEvent::new(pow_hash, nonce))?;
+    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
+        self.bus
+            .broadcast(SubmitSealEvent::new(minting_blob, nonce))?;
         Ok(())
     }
 

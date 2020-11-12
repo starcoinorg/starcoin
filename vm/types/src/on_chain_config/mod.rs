@@ -85,11 +85,6 @@ impl OnChainConfigPayload {
     }
 }
 
-#[allow(clippy::box_vec)]
-pub fn empty_type_params() -> Box<Vec<TypeTag>> {
-    Box::new(vec![])
-}
-
 /// Trait to be implemented by a storage type from which to read on-chain configs
 pub trait ConfigStorage {
     fn fetch_config(&self, access_path: AccessPath) -> Option<Vec<u8>>;

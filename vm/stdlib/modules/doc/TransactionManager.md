@@ -159,7 +159,6 @@
         );
         <a href="PackageTxnManager.md#0x1_PackageTxnManager_package_txn_prologue">PackageTxnManager::package_txn_prologue</a>(
             account,
-            txn_sender,
             txn_package_address,
             txn_script_or_package_hash,
         );

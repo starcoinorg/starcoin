@@ -601,9 +601,13 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
             .map_err(map_err)
     }
-    pub fn miner_submit(&self, header_hash: HashValue, nonce: u64) -> anyhow::Result<()> {
+    pub fn miner_submit(&self, minting_blob: Vec<u8>, nonce: u32) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
-            inner.miner_client.submit(header_hash, nonce).compat().await
+            inner
+                .miner_client
+                .submit(minting_blob, nonce)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
