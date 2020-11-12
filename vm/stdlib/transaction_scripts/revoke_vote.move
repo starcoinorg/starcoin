@@ -2,7 +2,7 @@ script {
     use 0x1::Dao;
     use 0x1::Signer;
     use 0x1::Account;
-    fun revoke_vote<Token: copyable, Action>(
+    fun revoke_vote<Token: copyable, Action: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,

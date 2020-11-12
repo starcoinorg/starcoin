@@ -2,7 +2,7 @@ script {
     use 0x1::Dao;
     use 0x1::Account;
     use 0x1::Signer;
-    fun unstake_vote<Token: copyable, Action>(
+    fun unstake_vote<Token: copyable, Action: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
