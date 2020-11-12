@@ -29,10 +29,10 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
-use starcoin_types::stress_test::TPS;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
