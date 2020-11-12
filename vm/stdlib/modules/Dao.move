@@ -662,7 +662,8 @@ module Dao {
         aborts_if expected_states[0] != DEFEATED;
         aborts_if expected_states[1] != EXTRACTED;
         include CheckProposalStates<TokenT, ActionT>{expected_states};
-        aborts_if Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if expected_states[0] == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if expected_states[1] == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
         ensures !exists<Proposal<TokenT, ActionT>>(proposer_address);
     }
 

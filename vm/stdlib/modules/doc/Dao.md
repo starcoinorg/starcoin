@@ -2113,7 +2113,8 @@ set min action delay
 <b>aborts_if</b> expected_states[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
 <b>aborts_if</b> expected_states[1] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+<b>aborts_if</b> expected_states[0] == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a> && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+<b>aborts_if</b> expected_states[1] == <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a> && <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
 <b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 </code></pre>
 
