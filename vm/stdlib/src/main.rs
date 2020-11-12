@@ -144,7 +144,7 @@ fn incremental_update_with_version(
     }
 }
 
-fn full_update_with_version(version_number: &str) -> PathBuf {
+fn full_update_with_version(version_number: u64) -> PathBuf {
     let options = fs_extra::dir::CopyOptions::new();
 
     let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
@@ -157,7 +157,7 @@ fn full_update_with_version(version_number: &str) -> PathBuf {
     txn_scripts_src.push(TRANSACTION_SCRIPTS);
 
     let mut dest = PathBuf::from(COMPILED_OUTPUT_PATH);
-    dest.push(version_number);
+    dest.push(format!("{}", version_number));
     if dest.exists() {
         std::fs::remove_dir_all(&dest).unwrap();
     }
@@ -212,20 +212,6 @@ fn replace_stdlib_by_path(
     build_stdlib_error_code_map();
 }
 
-fn pre_version(version: &str) -> Option<String> {
-    let tmp: Vec<&str> = <&str>::clone(&version).rsplit('.').collect();
-    let num = tmp.get(0).unwrap().parse::<u64>().unwrap();
-    if num > 0 {
-        let append_whitespace = format!("{} ", <&str>::clone(&version));
-        let pre_version = append_whitespace.replace(
-            format!(".{} ", num).as_str(),
-            format!(".{}", num - 1).as_str(),
-        );
-        return Some(pre_version);
-    }
-    None
-}
-
 // Generates the compiled stdlib and transaction scripts. Until this is run changes to the source
 // modules/scripts, and changes in the Move compiler will not be reflected in the stdlib used for
 // genesis, and everywhere else across the code-base unless otherwise specified.
@@ -252,11 +238,14 @@ fn main() {
 
     let matches = cli.get_matches();
     let mut generate_new_version = false;
-    let mut version_number = "0.0".to_string();
-    let pre_version = if matches.is_present("version") {
+    let mut version_number: u64 = 0;
+    if matches.is_present("version") {
         generate_new_version = true;
-        version_number = matches.value_of("version").unwrap().to_string();
-        pre_version(&version_number)
+        version_number = matches.value_of("version").unwrap().parse::<u64>().unwrap();
+    }
+
+    let pre_version = if version_number > 0 {
+        Some(version_number - 1)
     } else {
         None
     };
@@ -300,11 +289,11 @@ fn main() {
         let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
 
         if generate_new_version {
-            let dest_dir = full_update_with_version(&version_number);
+            let dest_dir = full_update_with_version(version_number);
 
             if let Some(pre_version) = pre_version {
                 let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
-                pre_version_dir.push(pre_version.clone());
+                pre_version_dir.push(format!("{}", pre_version));
                 let sub_dir = format!("{}-{}", pre_version, version_number);
                 incremental_update_with_version(
                     &mut pre_version_dir,
