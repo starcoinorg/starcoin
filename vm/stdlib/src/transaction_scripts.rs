@@ -145,6 +145,7 @@ pub enum StdlibScript {
     ProposeUpdateTxnTimeoutConfig,
     ProposeUpdateVmConfig,
     UpdateModuleUpgradeStrategy,
+    RotateAuthenticationKey,
     // ...add new scripts here
 }
 
@@ -177,6 +178,7 @@ impl StdlibScript {
             ProposeUpdateTxnTimeoutConfig,
             ProposeUpdateVmConfig,
             UpdateModuleUpgradeStrategy,
+            RotateAuthenticationKey,
             // ...add new scripts here
         ]
     }
@@ -237,6 +239,7 @@ impl fmt::Display for StdlibScript {
                 ProposeUpdateTxnTimeoutConfig => "propose_update_txn_timeout_config",
                 ProposeUpdateVmConfig => "propose_update_vm_config",
                 UpdateModuleUpgradeStrategy => "update_module_upgrade_strategy",
+                RotateAuthenticationKey => "rotate_authentication_key",
             }
         )
     }
