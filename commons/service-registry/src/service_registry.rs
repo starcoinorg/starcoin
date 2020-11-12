@@ -14,7 +14,7 @@ use actix::{Actor, AsyncContext};
 use actix_rt::Arbiter;
 use anyhow::{bail, format_err, Result};
 use futures::executor::block_on;
-use log::{error, info};
+use log::info;
 use serde::export::{Formatter, PhantomData};
 use std::any::{type_name, Any, TypeId};
 use std::collections::HashMap;
