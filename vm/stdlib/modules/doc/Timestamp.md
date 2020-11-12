@@ -408,6 +408,17 @@ Helper function to assert genesis state.
 
 
 
+
+<a name="0x1_Timestamp_spec_now_millseconds"></a>
+
+
+<pre><code><b>define</b> <a href="Timestamp.md#0x1_Timestamp_spec_now_millseconds">spec_now_millseconds</a>(): u64 {
+   <b>global</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>()).milliseconds
+}
+</code></pre>
+
+
+
 <a name="@Specification_1_set_time_has_started"></a>
 
 ### Function `set_time_has_started`
