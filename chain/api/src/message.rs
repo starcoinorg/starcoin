@@ -46,7 +46,7 @@ pub enum ChainRequest {
     GetBlockIds {
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     },
     GetBlocks(Vec<HashValue>),
 }

@@ -368,7 +368,7 @@ impl DownloadService {
                     &rpc_client,
                     best_peer.get_peer_id(),
                     (latest_block_id, latest_number),
-                    min_behind as usize,
+                    min_behind,
                 )
                 .await?;
                 let peer_selector = network
@@ -661,7 +661,7 @@ impl Downloader {
         rpc_client: &NetworkRpcClient,
         peer_id: PeerId,
         latest_block: (HashValue, BlockNumber),
-        step: usize,
+        step: u64,
     ) -> Result<(BlockHeader, BlockInfo)> {
         let get_headers_req = GetBlockHeaders::new(latest_block.0, step, true, 1);
         let mut headers = get_headers_with_peer(

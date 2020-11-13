@@ -119,8 +119,8 @@ impl BlockChain {
         Ok(chain)
     }
 
-    pub fn current_epoch_uncles_size(&self) -> usize {
-        self.uncles.len()
+    pub fn current_epoch_uncles_size(&self) -> u64 {
+        self.uncles.len() as u64
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
@@ -506,7 +506,7 @@ impl ChainReader for BlockChain {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>> {
         self.block_accumulator
             .get_leaves(start_number, reverse, max_size)

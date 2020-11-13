@@ -40,7 +40,7 @@ pub trait ChainReader {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>>;
 }
 

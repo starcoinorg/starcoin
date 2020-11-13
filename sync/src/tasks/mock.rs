@@ -37,7 +37,7 @@ impl MockBlockIdFetcher {
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>> {
         Delay::new(Duration::from_millis(100)).await;
         self.accumulator.get_leaves(start_number, reverse, max_size)
@@ -49,7 +49,7 @@ impl BlockIdFetcher for MockBlockIdFetcher {
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
@@ -124,7 +124,7 @@ impl BlockIdFetcher for SyncNodeMocker {
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         let result = self.chain().get_block_ids(start_number, reverse, max_size);
         async move {

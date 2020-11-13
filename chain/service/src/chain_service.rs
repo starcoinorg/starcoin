@@ -337,7 +337,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>> {
         self.master.get_block_ids(start_number, reverse, max_size)
     }
