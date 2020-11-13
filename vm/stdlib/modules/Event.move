@@ -83,12 +83,12 @@ module Event {
         /// mocking out functions of this module does not have effect on other
         /// verification result.
         ///
-        /// A specification of the functions is neverthelesse  included in the
+        /// A specification of the functions is nevertheless included in the
         /// comments of this module and it has been verified.
         ///
         /// > TODO(wrwg): We may want to have support by the Move prover to
         /// > mock out functions for callers but still have them verified
-        /// > standlone.
+        /// > standalone.
         pragma intrinsic = true;
     }
 }

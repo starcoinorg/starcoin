@@ -29,6 +29,7 @@ use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{
     RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
 };
@@ -486,6 +487,11 @@ impl RpcClient {
                 .await
         })
         .map_err(map_err)
+    }
+
+    pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<TPS> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.tps(number).compat().await })
+            .map_err(map_err)
     }
 
     pub fn get_global_time_by_number(

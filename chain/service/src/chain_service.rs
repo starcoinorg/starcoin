@@ -14,6 +14,7 @@ use starcoin_service_registry::{
 use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
@@ -178,6 +179,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlocks(ids) => {
                 Ok(ChainResponse::BlockOptionVec(self.inner.get_blocks(ids)?))
             }
+            ChainRequest::TPS(number) => Ok(ChainResponse::TPS(self.inner.tps(number)?)),
         }
     }
 }
@@ -340,6 +342,10 @@ impl ReadableChainService for ChainReaderServiceInner {
         max_size: usize,
     ) -> Result<Vec<HashValue>> {
         self.master.get_block_ids(start_number, reverse, max_size)
+    }
+
+    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
+        self.master.tps(number)
     }
 }
 

@@ -70,8 +70,8 @@ Publish the chain ID under the genesis account
         account,
         <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a> { value:consensus_strategy }
     );
-    //destory the cap, so <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a> can not been change.
-    <a href="Config.md#0x1_Config_destory_modify_config_capability">Config::destory_modify_config_capability</a>(cap);
+    //destroy the cap, so <a href="ConsensusStrategy.md#0x1_ConsensusStrategy">ConsensusStrategy</a> can not been change.
+    <a href="Config.md#0x1_Config_destroy_modify_config_capability">Config::destroy_modify_config_capability</a>(cap);
 }
 </code></pre>
 
