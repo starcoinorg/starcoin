@@ -57,7 +57,7 @@ pub trait ReadableChainService {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>>;
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
 }
@@ -115,7 +115,7 @@ pub trait ChainAsyncService:
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>>;
     async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
 }
@@ -370,7 +370,7 @@ where
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>> {
         let response = self
             .send(ChainRequest::GetBlockIds {
