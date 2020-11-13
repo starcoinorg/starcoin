@@ -11,6 +11,7 @@ use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
@@ -186,5 +187,12 @@ where
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
+    }
+
+    fn tps(&self, number: Option<BlockNumber>) -> FutureResult<TPS> {
+        let service = self.service.clone();
+        let fut = async move { service.tps(number).await };
+
+        Box::new(fut.boxed().map_err(map_err).compat())
     }
 }
