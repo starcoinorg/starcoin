@@ -97,6 +97,7 @@ module Dao {
     const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
     const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
     const ERR_ACTION_MUST_EXIST: u64 = 1409;
+    const ERR_VOTED_OTHERS_ALREADY: u64 = 1410;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
@@ -271,7 +272,7 @@ module Dao {
         let sender = Signer::address_of(signer);
         let total_voted = if (exists<Vote<TokenT>>(sender)) {
             let my_vote = borrow_global_mut<Vote<TokenT>>(sender);
-            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
             assert(my_vote.agree == agree, Errors::invalid_state(ERR_VOTE_STATE_MISMATCH));
 
             _cast_vote(proposal, my_vote, stake);
@@ -372,7 +373,7 @@ module Dao {
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
         {
             assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
-            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         };
 
         // flip the vote
@@ -465,7 +466,7 @@ module Dao {
         let my_vote = borrow_global_mut<Vote<TokenT>>(Signer::address_of(signer));
         {
             assert(my_vote.proposer == proposer_address, Errors::invalid_argument(ERR_PROPOSER_MISMATCH));
-            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+            assert(my_vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         };
         // revoke vote on proposal
         let reverted_stake =_revoke_vote(proposal, my_vote, voting_power);
@@ -556,7 +557,7 @@ module Dao {
         );
         // these checks are still required.
         assert(proposer == proposer_address, Errors::requires_address(ERR_PROPOSER_MISMATCH));
-        assert(id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+        assert(id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         stake
     }
 
@@ -791,7 +792,7 @@ module Dao {
     ): (bool, u128) acquires Vote {
         let vote = borrow_global<Vote<TokenT>>(voter);
         assert(vote.proposer == proposer_address, Errors::requires_address(ERR_PROPOSER_MISMATCH));
-        assert(vote.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
+        assert(vote.id == proposal_id, Errors::invalid_argument(ERR_VOTED_OTHERS_ALREADY));
         (vote.agree, Token::value(&vote.stake))
     }
 
