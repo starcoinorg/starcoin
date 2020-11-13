@@ -51,7 +51,7 @@ mod tests {
             to_peer_id.to_base58()
         );
         debug!("to peer : {:?}", to_peer_id_str);
-        service1.0.add_peer_for_test(to_peer_id_str).unwrap();
+        service1.0.add_peer(to_peer_id_str).unwrap();
         (service1, service2)
     }
 

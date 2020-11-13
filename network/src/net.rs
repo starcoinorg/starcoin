@@ -9,6 +9,7 @@ use config::NetworkConfig;
 use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use libp2p::PeerId;
+use network_p2p::config::TransportConfig;
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
     Params, Secret, PROTOCOL_NAME,
@@ -130,8 +131,7 @@ impl SNetworkService {
         self.service.broadcast_message(protocol_name, message).await;
     }
 
-    #[cfg(test)]
-    pub fn add_peer_for_test(&mut self, peer: String) -> Result<()> {
+    pub fn add_peer(&self, peer: String) -> Result<()> {
         self.service
             .add_reserved_peer(peer)
             .map_err(|e| format_err!("{:?}", e))
@@ -241,6 +241,12 @@ pub fn build_network_service(
     mpsc::UnboundedReceiver<PeerEvent>,
     mpsc::UnboundedSender<()>,
 ) {
+    let transport_config = TransportConfig::Normal {
+        enable_mdns: true,
+        allow_private_ipv4: true,
+        wasm_external_transport: None,
+        use_yamux_flow_control: false,
+    };
     let config = NetworkConfiguration {
         listen_addresses: vec![cfg.listen.clone()],
         boot_nodes: cfg.seeds.clone(),
@@ -252,6 +258,7 @@ pub fn build_network_service(
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
         protocols: PROTOCOLS.clone(),
+        transport: transport_config,
         genesis_hash,
         self_info,
         ..NetworkConfiguration::default()

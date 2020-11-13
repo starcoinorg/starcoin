@@ -20,6 +20,7 @@ use jsonrpc_server_utils::hosts::DomainsValidation;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
+use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::node_manager::NodeManagerApi;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::types::ConnectLocal;
@@ -67,11 +68,12 @@ impl RpcService {
         }
     }
 
-    pub fn new_with_api<C, N, NM, SM, T, A, S, D, P, M, DEV>(
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, DEV>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
         sync_manager_api: Option<SM>,
+        network_manager_api: Option<NWM>,
         chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
@@ -85,6 +87,7 @@ impl RpcService {
         N: NodeApi,
         NM: NodeManagerApi,
         SM: SyncManagerApi,
+        NWM: NetworkManagerApi,
         C: ChainApi,
         T: TxPoolApi,
         A: AccountApi,
@@ -107,6 +110,12 @@ impl RpcService {
             api_registry.register(
                 APIType::Admin,
                 SyncManagerApi::to_delegate(sync_manager_api),
+            )
+        }
+        if let Some(network_manager_api) = network_manager_api {
+            api_registry.register(
+                APIType::Admin,
+                NetworkManagerApi::to_delegate(network_manager_api),
             )
         }
         if let Some(chain_api) = chain_api {
