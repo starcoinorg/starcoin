@@ -342,7 +342,7 @@ address 0x1 {
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1
                     && success && !exists<TwoPhaseUpgrade>(package_address);
             pragma verify = false;
-    }
+        }
 
     }
 }
