@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
 use actix::prelude::*;
@@ -38,7 +39,7 @@ use starcoin_storage::Storage;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
-use starcoin_txpool::{TxPoolActorService, TxPoolService};
+use starcoin_txpool::TxPoolActorService;
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -58,11 +59,13 @@ impl ServiceFactory<Self> for NodeService {
 impl ActorService for NodeService {}
 
 impl ServiceHandler<Self, NodeRequest> for NodeService {
-    fn handle(&mut self, msg: NodeRequest, _ctx: &mut ServiceContext<NodeService>) -> NodeResponse {
-        match msg {
-            NodeRequest::ListService => {
-                NodeResponse::Services(self.registry.list_service_sync().unwrap_or_default())
-            }
+    fn handle(
+        &mut self,
+        msg: NodeRequest,
+        _ctx: &mut ServiceContext<NodeService>,
+    ) -> Result<NodeResponse> {
+        Ok(match msg {
+            NodeRequest::ListService => NodeResponse::Services(self.registry.list_service_sync()?),
             NodeRequest::StopService(service_name) => {
                 info!(
                     "Receive StopService request, try to stop service {:?}",
@@ -76,6 +79,16 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                     service_name
                 );
                 NodeResponse::Result(self.registry.start_service_sync(service_name.as_str()))
+            }
+            NodeRequest::CheckService(service_name) => {
+                info!(
+                    "Receive StartService request, try to start service {:?}",
+                    service_name
+                );
+                NodeResponse::ServiceStatus(
+                    self.registry
+                        .check_service_status_sync(service_name.as_str())?,
+                )
             }
             NodeRequest::ShutdownSystem => {
                 info!("Receive StopSystem request, try to stop system.");
@@ -95,7 +108,7 @@ impl ServiceHandler<Self, NodeRequest> for NodeService {
                 self.registry
                     .start_service_sync(GenerateBlockEventPacemaker::service_name()),
             ),
-        }
+        })
     }
 }
 
@@ -194,30 +207,37 @@ impl NodeService {
         registry.register::<AccountService>().await?;
         registry.register::<AccountEventService>().await?;
 
-        registry.register::<TxPoolActorService>().await?;
+        let txpool_service = registry.register::<TxPoolActorService>().await?;
 
         //wait TxPoolService put shared..
         Delay::new(Duration::from_millis(200)).await;
         // TxPoolActorService auto put shared TxPoolService,
-        registry.get_shared::<TxPoolService>().await?;
 
         registry.register::<ChainReaderService>().await?;
 
         registry.register::<ChainNotifyHandlerService>().await?;
+        //registry.register::<DownloadService>().await?;
+        //registry.register::<SyncService>().await?;
+
+        registry.register::<BlockConnectorService>().await?;
+        registry.register::<SyncService2>().await?;
+
+        let block_relayer = registry.register::<BlockRelayer>().await?;
 
         let network_rpc_service = registry.register::<NetworkRpcService>().await?;
-
+        let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
         let network = NetworkAsyncService::start(
             config.clone(),
             genesis_hash,
             bus.clone(),
             storage.clone(),
             network_rpc_service,
+            peer_message_handle,
         )?;
         registry.put_shared(network.clone()).await?;
 
         registry.register::<PeerMsgBroadcasterService>().await?;
-        registry.register::<BlockRelayer>().await?;
+        registry.register::<TxnSyncService>().await?;
 
         let peer_id = config.network.self_peer_id()?;
 
@@ -230,13 +250,6 @@ impl NodeService {
                 .as_ref()
                 .expect("Self connect address must has been set.")
         );
-
-        registry.register::<TxnSyncService>().await?;
-        //registry.register::<DownloadService>().await?;
-        //registry.register::<SyncService>().await?;
-
-        registry.register::<BlockConnectorService>().await?;
-        registry.register::<SyncService2>().await?;
 
         registry.register::<CreateBlockTemplateService>().await?;
         registry.register::<MinerService>().await?;

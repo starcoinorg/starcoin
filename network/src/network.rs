@@ -20,7 +20,9 @@ use futures_timer::Delay;
 use libp2p::multiaddr::Protocol;
 use libp2p::PeerId;
 use lru::LruCache;
-use network_api::{messages::RawRpcRequestMessage, NetworkService, PeerProvider};
+use network_api::{
+    messages::RawRpcRequestMessage, NetworkService, PeerMessageHandler, PeerProvider,
+};
 use network_p2p::Multiaddr;
 use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
@@ -79,6 +81,7 @@ struct Inner {
     node_config: Arc<NodeConfig>,
     peer_id: PeerId,
     network_rpc_service: ServiceRef<NetworkRpcService>,
+    peer_message_handler: Arc<dyn PeerMessageHandler>,
 }
 
 #[derive(Debug)]
@@ -255,13 +258,17 @@ impl NetworkAsyncService {
         response
     }
 
-    pub fn start(
+    pub fn start<H>(
         node_config: Arc<NodeConfig>,
         genesis_hash: HashValue,
         bus: ServiceRef<BusService>,
         storage: Arc<Storage>,
         network_rpc_service: ServiceRef<NetworkRpcService>,
-    ) -> Result<NetworkAsyncService> {
+        peer_message_handler: H,
+    ) -> Result<NetworkAsyncService>
+    where
+        H: PeerMessageHandler + 'static,
+    {
         let peer_id = node_config.network.self_peer_id()?;
         let startup_info = storage
             .get_startup_info()?
@@ -336,6 +343,7 @@ impl NetworkAsyncService {
             node_config,
             peer_id: peer_id.clone(),
             network_rpc_service,
+            peer_message_handler: Arc::new(peer_message_handler),
         };
         let inner = Arc::new(inner);
 
@@ -378,11 +386,9 @@ impl Inner {
             futures::select! {
                 message = net_rx.select_next_some()=>{
                     async_std::task::spawn(Inner::handle_network_receive(inner.clone(),message));
-                    debug!("receive net message");
                 },
                 event = event_rx.select_next_some()=>{
                     async_std::task::spawn(Inner::handle_event_receive(inner.clone(),event));
-                    debug!("receive net event");
                 },
                 complete => {
                     close_tx.unbounded_send(()).unwrap();
@@ -393,24 +399,25 @@ impl Inner {
         }
     }
 
-    async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) -> Result<()> {
-        debug!("receive network_message ");
+    async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) {
+        debug!(
+            "Receive network_message from peer: {:?}",
+            network_msg.peer_id,
+        );
         // TODO: we should decode msg based on protocol name.
         // when protocol upgrade, we can decoded data based on the new protocol.
 
         let message = PeerMessage::decode(&network_msg.data);
         match message {
             Ok(msg) => {
-                inner
-                    .handle_network_message(network_msg.peer_id, msg)
-                    .await?;
+                if let Err(e) = inner.handle_network_message(network_msg.peer_id, msg).await {
+                    warn!("Handle_network_message error: {:?}", e);
+                }
             }
             Err(e) => {
-                debug!("get error {:?}", e);
+                warn!("Decode network message {:?} error {:?}", network_msg, e);
             }
         }
-
-        Ok(())
     }
 
     async fn handle_network_message(&self, peer_id: PeerId, msg: PeerMessage) -> Result<()> {
@@ -427,7 +434,8 @@ impl Inner {
                         }
                     }
                 }
-                self.bus.broadcast(PeerTransactions::new(txns))?;
+                self.peer_message_handler
+                    .handle_transaction(PeerTransactions::new(txns));
             }
             PeerMessage::CompactBlock(compact_block, total_diff) => {
                 //TODO: Check total difficulty
@@ -448,10 +456,10 @@ impl Inner {
                         peer_info.peer_info.total_difficulty = total_diff;
                     }
                 }
-                self.bus.broadcast(PeerCmpctBlockEvent {
+                self.peer_message_handler.handle_block(PeerCmpctBlockEvent {
                     peer_id: peer_id.into(),
                     compact_block,
-                })?;
+                });
             }
 
             PeerMessage::RawRPCRequest(id, rpc_path, request) => {
@@ -498,22 +506,28 @@ impl Inner {
         }
     }
 
-    async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) -> Result<()> {
+    async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) {
+        if let Err(e) = inner.do_handle_event_receive(event).await {
+            warn!("Handle peer event error: {}", e);
+        }
+    }
+
+    async fn do_handle_event_receive(&self, event: PeerEvent) -> Result<()> {
         debug!("handle_event_receive {:?}", event);
         match event.clone() {
             PeerEvent::Open(peer_id, peer_info) => {
-                inner.on_peer_connected(peer_id.into(), *peer_info).await?;
-                if inner.need_send_event.load(Ordering::Acquire) {
-                    let mut connected_tx = inner.connected_tx.clone();
+                self.on_peer_connected(peer_id.into(), *peer_info).await?;
+                if self.need_send_event.load(Ordering::Acquire) {
+                    let mut connected_tx = self.connected_tx.clone();
                     connected_tx.send(event.clone()).await?;
-                    inner.need_send_event.swap(false, Ordering::Acquire);
+                    self.need_send_event.swap(false, Ordering::Acquire);
                 }
             }
             PeerEvent::Close(peer_id) => {
-                inner.on_peer_disconnected(peer_id.into()).await;
+                self.on_peer_disconnected(peer_id.into()).await;
             }
         }
-        inner.bus.broadcast(event)?;
+        self.bus.broadcast(event)?;
         Ok(())
     }
 
@@ -636,7 +650,7 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
             let peers = network.peers();
             if let Some(peer_info) = peers.lock().await.get_mut(&self_id) {
                 debug!(
-                    "total_difficulty is {},peer_info is {:?}",
+                    "total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, peer_info
                 );
                 if total_difficulty > peer_info.peer_info.total_difficulty {
@@ -658,6 +672,7 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
                 if peer_info.known_blocks.contains(&id)
                     || peer_info.peer_info.get_total_difficulty() >= total_difficulty
                 {
+                    debug!("peer({:?})'s total_difficulty is > block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
                     continue;
                 }
 
@@ -668,10 +683,14 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
                         peer_id.clone().into(),
                         msg.clone(),
                     )
-                    .await
-                    .expect("send message failed ,check network service please");
+                    .await?;
             }
-        })
+            Ok(())
+        }.then(|result: Result<()>| async move{
+            if let Err(e) = result{
+                error!("[peer-message-broadcaster] Handle NetCmpctBlockMessage error: {:?}", e);
+            }
+        }))
     }
 }
 
@@ -698,28 +717,38 @@ impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService 
             txn_map.insert(txn.crypto_hash(), txn);
         }
         let self_peer_id: PeerId = self.network.identify().into();
-        ctx.spawn(async move {
-            let peers = network_service.peers();
-            for (peer_id, peer_info) in peers.lock().await.iter_mut() {
-                let mut txns_unhandled = Vec::new();
-                for (id, txn) in &txn_map {
-                    if !peer_info.known_transactions.contains(id)
-                        && !peer_id.eq(&self_peer_id.clone())
-                    {
-                        peer_info.known_transactions.put(*id, ());
-                        txns_unhandled.push(txn.clone());
+        ctx.spawn(
+            async move {
+                let peers = network_service.peers();
+                for (peer_id, peer_info) in peers.lock().await.iter_mut() {
+                    let mut txns_unhandled = Vec::new();
+                    for (id, txn) in &txn_map {
+                        if !peer_info.known_transactions.contains(id)
+                            && !peer_id.eq(&self_peer_id.clone())
+                        {
+                            peer_info.known_transactions.put(*id, ());
+                            txns_unhandled.push(txn.clone());
+                        }
                     }
+                    network_service
+                        .send_peer_message(
+                            Cow::Borrowed(protocol_name),
+                            peer_id.clone().into(),
+                            PeerMessage::NewTransactions(txns_unhandled),
+                        )
+                        .await?;
                 }
-                network_service
-                    .send_peer_message(
-                        Cow::Borrowed(protocol_name),
-                        peer_id.clone().into(),
-                        PeerMessage::NewTransactions(txns_unhandled),
-                    )
-                    .await
-                    .expect("check network service");
+                Ok(())
             }
-        });
+            .then(|result: Result<()>| async move {
+                if let Err(e) = result {
+                    error!(
+                        "[peer-message-broadcaster] Handle PropagateNewTransactions error: {:?}",
+                        e
+                    );
+                }
+            }),
+        );
     }
 }
 

@@ -26,6 +26,7 @@ use tokio::runtime::Runtime;
 
 pub mod crash_handler;
 pub mod node;
+pub mod peer_message_handler;
 pub mod rpc_service_factory;
 
 pub struct NodeHandle {

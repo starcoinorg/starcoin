@@ -27,7 +27,7 @@ pub struct SubscribeEventOpt {
         help = "event key",
         multiple = true
     )]
-    event_key: Vec<EventKey>,
+    event_key: Option<Vec<EventKey>>,
     #[structopt(
         short = "l",
         long = "limit",
@@ -50,7 +50,7 @@ impl CommandAction for SubscribeEventCommand {
         let filter = EventFilter {
             from_block: ctx.opt().from_block,
             to_block: ctx.opt().to_block,
-            event_keys: ctx.opt().event_key.clone(),
+            event_keys: ctx.opt().event_key.clone().unwrap_or_default(),
             limit: ctx.opt().limit,
         };
 
