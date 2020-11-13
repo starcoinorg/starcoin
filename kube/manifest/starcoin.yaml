@@ -100,4 +100,3 @@ spec:
       resources:
         requests:
           storage: 50Gi
-      storageClassName: "alicloud-disk-available"
