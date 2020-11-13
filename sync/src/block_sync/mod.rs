@@ -42,11 +42,7 @@ enum DataType {
     Body,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-struct BlockIdAndNumber {
-    pub id: HashValue,
-    pub number: BlockNumber,
-}
+pub use starcoin_types::block::BlockIdAndNumber;
 
 #[derive(Debug, Message)]
 #[rtype(result = "()")]

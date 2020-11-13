@@ -1,18 +1,18 @@
 [package]
 name = "starcoin-chain"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 starcoin-types = { path = "../types", package = "starcoin-types" }
 starcoin-config = { path = "../config" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
-executor = {path = "../executor", package="starcoin-executor"}
+starcoin-executor = {path = "../executor", package="starcoin-executor"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 consensus = { package="starcoin-consensus", path = "../consensus"}
 scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
@@ -42,6 +42,9 @@ proptest-derive = { version = "0.2.0" }
 test-helper = { path = "../test-helper" }
 starcoin-chain-mock = { path = "./mock" }
 starcoin-types = { path = "../types", package = "starcoin-types", features = ["fuzzing"]}
+starcoin-functional-tests = { path = "../vm/functional-tests"}
+starcoin-resource-viewer = {path = "../vm/resource-viewer"}
+starcoin-transaction-builder = { path = "../vm/transaction-builder"}
 
 [features]
 default = []

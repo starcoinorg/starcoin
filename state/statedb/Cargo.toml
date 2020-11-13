@@ -1,17 +1,17 @@
 [package]
 name = "starcoin-statedb"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 actix-rt = "1.1"
 parking_lot = "0.11.0"
-lru = "0.6.0"
+lru = "0.6.1"
 starcoin-types = {path = "../../types"}
 starcoin-vm-types = {path = "../../vm/types"}
 starcoin-state-api = {path = "../api"}

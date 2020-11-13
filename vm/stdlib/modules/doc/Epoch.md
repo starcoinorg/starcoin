@@ -326,7 +326,7 @@
         account,
         <a href="Epoch.md#0x1_Epoch">Epoch</a> {
             number: 0,
-            start_time: <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>(),
+            start_time: <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>(),
             start_block_number: 0,
             end_block_number: <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_block_count">ConsensusConfig::epoch_block_count</a>(&config),
             block_time_target: <a href="ConsensusConfig.md#0x1_ConsensusConfig_base_block_time_target">ConsensusConfig::base_block_time_target</a>(&config),
@@ -353,7 +353,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
 </code></pre>
 
 
@@ -362,8 +362,8 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
-    <b>let</b> total_time = now_seconds - epoch_start_time;
+<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64 {
+    <b>let</b> total_time = now_milli_second - epoch_start_time;
     <b>let</b> blocks = end_block_number - start_block_number;
     <b>let</b> avg_block_time = total_time / blocks;
     <b>let</b> uncles_rate = total_uncles * <a href="Epoch.md#0x1_Epoch_THOUSAND">THOUSAND</a> / blocks;
@@ -419,17 +419,17 @@
     } <b>else</b> <b>if</b> (block_number == epoch_ref.end_block_number) {
         //start a new epoch
         <b>assert</b>(uncles == 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Epoch.md#0x1_Epoch_EINVALID_UNCLES_COUNT">EINVALID_UNCLES_COUNT</a>));
-        // block time target unit is seconds.
-        <b>let</b> now_seconds = timestamp/1000;
+        // block time target unit is milli_seconds.
+        <b>let</b> now_milli_seconds = timestamp;
 
         <b>let</b> config = <a href="ConsensusConfig.md#0x1_ConsensusConfig_get_config">ConsensusConfig::get_config</a>();
         <b>let</b> last_epoch_time_target = epoch_ref.block_time_target;
-        <b>let</b> new_epoch_block_time_target = <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(&config, last_epoch_time_target, epoch_ref.start_time, now_seconds, epoch_ref.start_block_number, epoch_ref.end_block_number, epoch_data.uncles);
+        <b>let</b> new_epoch_block_time_target = <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(&config, last_epoch_time_target, epoch_ref.start_time, now_milli_seconds, epoch_ref.start_block_number, epoch_ref.end_block_number, epoch_data.uncles);
         <b>let</b> new_reward_per_block = <a href="ConsensusConfig.md#0x1_ConsensusConfig_do_compute_reward_per_block">ConsensusConfig::do_compute_reward_per_block</a>(&config, new_epoch_block_time_target);
 
         //<b>update</b> epoch by adjust result or config, because <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> may be updated.
         epoch_ref.number = epoch_ref.number + 1;
-        epoch_ref.start_time = now_seconds;
+        epoch_ref.start_time = now_milli_seconds;
         epoch_ref.start_block_number = block_number;
         epoch_ref.end_block_number = block_number + <a href="ConsensusConfig.md#0x1_ConsensusConfig_epoch_block_count">ConsensusConfig::epoch_block_count</a>(&config);
         epoch_ref.block_time_target = new_epoch_block_time_target;
@@ -863,7 +863,7 @@
 ### Function `compute_next_block_time_target`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_seconds: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
+<pre><code><b>public</b> <b>fun</b> <a href="Epoch.md#0x1_Epoch_compute_next_block_time_target">compute_next_block_time_target</a>(config: &<a href="ConsensusConfig.md#0x1_ConsensusConfig_ConsensusConfig">ConsensusConfig::ConsensusConfig</a>, last_epoch_time_target: u64, epoch_start_time: u64, now_milli_second: u64, start_block_number: u64, end_block_number: u64, total_uncles: u64): u64
 </code></pre>
 
 

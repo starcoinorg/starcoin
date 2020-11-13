@@ -1,17 +1,17 @@
 [package]
 name = "starcoin-vm-runtime"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 once_cell = "1.4.1"
 prometheus = "0.10"
 starcoin-types = { path = "../../types"}
-move-vm-runtime = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+move-vm-runtime = { git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
 starcoin-state-api = {path="../../state/api"}
 starcoin-config = { path = "../../config"}
 starcoin-logger = {path = "../../commons/logger"}

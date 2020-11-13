@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-state-tree"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,7 +8,7 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 starcoin-types = {path = "../../types"}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0" }

@@ -1,45 +1,45 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{execute_readonly_function, DEFAULT_MAX_GAS_AMOUNT};
+use crate::Account;
+use crate::Genesis;
 use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::{ChainNetwork, GenesisConfig};
-use starcoin_functional_tests::account::Account;
-use starcoin_genesis::Genesis;
-use starcoin_state_api::{AccountStateReader, ChainState, ChainStateWriter};
-use starcoin_types::account_config::association_address;
+use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
+use starcoin_state_api::{AccountStateReader, ChainState};
+use starcoin_statedb::{ChainStateDB, ChainStateWriter};
+use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::{RawUserTransaction, TransactionOutput, TransactionPayload};
+use starcoin_types::transaction::{
+    RawUserTransaction, SignedUserTransaction, TransactionOutput, TransactionPayload,
+};
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
     account_address::AccountAddress, transaction::Module, transaction::Transaction,
     transaction::TransactionStatus,
 };
-use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::transaction::SignedUserTransaction;
 use starcoin_vm_types::values::VMValueCast;
-use statedb::ChainStateDB;
 use stdlib::stdlib_files;
 
 //TODO warp to A MockTxnExecutor
 
-pub(crate) const TEST_MODULE: &str = r#"
+pub const TEST_MODULE: &str = r#"
     module M {
         struct Foo { a: u8 }
         public fun foo(): u8 { 1 }
     }
     "#;
-pub(crate) const TEST_MODULE_1: &str = r#"
+pub const TEST_MODULE_1: &str = r#"
     module M {
         struct Foo { a: address }
         public fun foo(): u8 { 1 }
     }
     "#;
-pub(crate) const TEST_MODULE_2: &str = r#"
+pub const TEST_MODULE_2: &str = r#"
     module M {
         struct Foo { a: u8 }
         public fun foo(): u8 { 1 }
@@ -56,7 +56,7 @@ pub fn prepare_genesis() -> (ChainStateDB, ChainNetwork) {
 }
 
 pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> TransactionOutput {
-    let output = crate::execute_transactions(chain_state, vec![txn])
+    let output = execute_transactions(chain_state, vec![txn])
         .unwrap()
         .pop()
         .expect("Output must exist.");
@@ -125,6 +125,16 @@ pub fn account_execute(
 ) -> Result<()> {
     user_execute(*account.address(), account.private_key(), state, payload)
 }
+
+pub fn account_execute_with_output(
+    account: &Account,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> TransactionOutput {
+    let txn = build_signed_txn(*account.address(), account.private_key(), state, payload);
+    execute_and_apply(state, Transaction::UserTransaction(txn))
+}
+
 pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()> {
     let txn = Transaction::BlockMetadata(meta);
     let output = execute_and_apply(state, txn);
@@ -135,7 +145,7 @@ pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()
     Ok(())
 }
 
-pub(crate) fn build_raw_txn(
+pub fn build_raw_txn(
     user_address: AccountAddress,
     state: &ChainStateDB,
     payload: TransactionPayload,
@@ -174,10 +184,19 @@ fn user_execute(
     state: &ChainStateDB,
     payload: TransactionPayload,
 ) -> Result<()> {
+    let txn = build_signed_txn(user_address, prikey, state, payload);
+    execute_signed_txn(state, txn)
+}
+
+fn build_signed_txn(
+    user_address: AccountAddress,
+    prikey: &AccountPrivateKey,
+    state: &ChainStateDB,
+    payload: TransactionPayload,
+) -> SignedUserTransaction {
     let txn = build_raw_txn(user_address, state, payload, ChainId::test());
     let signature = prikey.sign(&txn);
-    let txn = signature.build_transaction(txn)?;
-    execute_signed_txn(state, txn)
+    signature.build_transaction(txn).unwrap()
 }
 
 fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Result<()> {

@@ -11,6 +11,7 @@
 -  [Struct `ConfigChangeEvent`](#0x1_Config_ConfigChangeEvent)
 -  [Constants](#@Constants_0)
 -  [Function `get_by_address`](#0x1_Config_get_by_address)
+-  [Function `config_exist_by_address`](#0x1_Config_config_exist_by_address)
 -  [Function `set`](#0x1_Config_set)
 -  [Function `set_with_capability`](#0x1_Config_set_with_capability)
 -  [Function `publish_new_config_with_capability`](#0x1_Config_publish_new_config_with_capability)
@@ -22,6 +23,7 @@
 -  [Function `emit_config_change_event`](#0x1_Config_emit_config_change_event)
 -  [Specification](#@Specification_1)
     -  [Function `get_by_address`](#@Specification_1_get_by_address)
+    -  [Function `config_exist_by_address`](#@Specification_1_config_exist_by_address)
     -  [Function `set`](#@Specification_1_set)
     -  [Function `set_with_capability`](#@Specification_1_set_with_capability)
     -  [Function `publish_new_config_with_capability`](#@Specification_1_publish_new_config_with_capability)
@@ -202,6 +204,30 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_get_by_address">get_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): ConfigValue <b>acquires</b> <a href="Config.md#0x1_Config">Config</a> {
     <b>assert</b>(<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Config.md#0x1_Config_ECONFIG_VALUE_DOES_NOT_EXIST">ECONFIG_VALUE_DOES_NOT_EXIST</a>));
     *&borrow_global&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr).payload
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Config_config_exist_by_address"></a>
+
+## Function `config_exist_by_address`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_config_exist_by_address">config_exist_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_config_exist_by_address">config_exist_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): bool {
+    <b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr)
 }
 </code></pre>
 
@@ -486,6 +512,22 @@
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
 <b>ensures</b> <b>exists</b>&lt;<a href="Config.md#0x1_Config">Config</a>&lt;ConfigValue&gt;&gt;(addr);
+</code></pre>
+
+
+
+<a name="@Specification_1_config_exist_by_address"></a>
+
+### Function `config_exist_by_address`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Config.md#0x1_Config_config_exist_by_address">config_exist_by_address</a>&lt;ConfigValue: <b>copyable</b>&gt;(addr: address): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 

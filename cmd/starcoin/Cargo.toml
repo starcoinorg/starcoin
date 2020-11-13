@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-cmd"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 rand = "0.7.3"
 serde = { version = "1.0" }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -27,6 +27,7 @@ starcoin-node = { path = "../../node" }
 starcoin-consensus = {path = "../../consensus"}
 starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
+starcoin-sync-api = {path = "../../sync/api"}
 starcoin-account-api = {path = "../../account/api"}
 scmd = { path = "../../commons/scmd" }
 stdlib = {path = "../../vm/stdlib"}
@@ -43,7 +44,11 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-errmapgen = { git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+
+[dev-dependencies]
+test-helper= {path = "../../test-helper"}
+stest = { path = "../../commons/stest" }
 
 [[bin]]
 name = "starcoin"

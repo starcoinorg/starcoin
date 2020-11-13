@@ -15,7 +15,12 @@ pub struct BusService {
     bus: SysBus,
 }
 
-impl ActorService for BusService {}
+impl ActorService for BusService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.set_mailbox_capacity(1024);
+        Ok(())
+    }
+}
 
 impl<M> ServiceHandler<Self, SubscribeRequest<M>> for BusService
 where

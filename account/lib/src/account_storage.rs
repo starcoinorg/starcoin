@@ -6,6 +6,7 @@ use scs::SCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
+use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;

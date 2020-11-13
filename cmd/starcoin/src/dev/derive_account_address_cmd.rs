@@ -13,7 +13,6 @@ use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::transaction;
 use structopt::StructOpt;
-
 #[derive(Debug, StructOpt)]
 #[structopt(name = "derive-address")]
 pub struct DeriveAddressOpt {

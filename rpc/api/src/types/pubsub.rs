@@ -14,7 +14,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 
 /// Subscription kind.
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
@@ -140,10 +140,6 @@ pub struct Event {
 
     pub data: Vec<u8>,
     pub type_tags: TypeTag,
-    #[serde(
-        deserialize_with = "deserialize_event_key",
-        serialize_with = "serialize_event_key"
-    )]
     pub event_key: EventKey,
     pub event_seq_number: u64,
 }
@@ -184,68 +180,32 @@ impl Event {
     }
 }
 
-pub fn serialize_event_key<S>(key: &EventKey, s: S) -> std::result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    s.serialize_str(format!("{:#x}", key).as_str())
-}
-
-pub fn deserialize_event_key<'de, D>(d: D) -> std::result::Result<EventKey, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    struct EventKeyVisitor;
-
-    impl<'de> serde::de::Visitor<'de> for EventKeyVisitor {
-        type Value = EventKey;
-
-        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            formatter.write_str("EventKey in hex string")
-        }
-        fn visit_str<E>(self, v: &str) -> std::result::Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            let b = hex::decode(v.as_bytes()).map_err(E::custom)?;
-            EventKey::try_from(b.as_slice()).map_err(E::custom)
-        }
-    }
-    d.deserialize_str(EventKeyVisitor)
-}
-
 /// Block with only txn hashes.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
 pub struct ThinHeadBlock {
     #[serde(flatten)]
     header: BlockHeader,
-    #[serde(rename = "txn_hashes")]
-    body: Vec<HashValue>,
+    txn_hashes: Vec<HashValue>,
 }
 
 impl ThinHeadBlock {
     pub fn new(header: BlockHeader, txn_hashes: Vec<HashValue>) -> Self {
-        Self {
-            header,
-            body: txn_hashes,
-        }
+        Self { header, txn_hashes }
     }
     pub fn header(&self) -> &BlockHeader {
         &self.header
     }
     pub fn body(&self) -> &[HashValue] {
-        &self.body
+        &self.txn_hashes
     }
 }
 
 /// Block for minting
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
 pub struct MintBlock {
     pub strategy: ConsensusStrategy,
-    pub minting_hash: HashValue,
+    pub minting_blob: Vec<u8>,
     pub difficulty: U256,
 }

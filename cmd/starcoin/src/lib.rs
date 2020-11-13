@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::debug::TxPoolStatusCommand;
+use crate::debug::{SleepCommand, TxPoolStatusCommand};
 use scmd::{CmdContext, Command};
 
 pub mod account;
@@ -53,7 +53,17 @@ pub fn add_command(
                     Command::with_name("service")
                         .subcommand(node::service::ListCommand)
                         .subcommand(node::service::StartCommand)
+                        .subcommand(node::service::CheckCommand)
                         .subcommand(node::service::StopCommand)
+                    //TODO support shutdown by command    
+                    //.subcommand(node::service::ShutdownSystemCommand),
+                )
+                .subcommand(
+                    Command::with_name("sync")
+                        .subcommand(node::sync::StartCommand)
+                        .subcommand(node::sync::StatusCommand)
+                        .subcommand(node::sync::ProgressCommand)
+                        .subcommand(node::sync::CancelCommand)
                     //TODO support shutdown by command    
                     //.subcommand(node::service::ShutdownSystemCommand),
                 ),
@@ -68,7 +78,6 @@ pub fn add_command(
                 .subcommand(chain::GetTransactionInfoCommand)
                 .subcommand(chain::GetEventsCommand)
                 .subcommand(chain::GetBlockCommand)
-                .subcommand(chain::BranchesCommand)
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetEpochInfoByNumberCommand),
         )
@@ -81,7 +90,10 @@ pub fn add_command(
                 .subcommand(dev::DeriveAddressCommand)
                 .subcommand(dev::GenerateMultisigTxnCommand)
                 .subcommand(dev::ExecuteMultiSignedTxnCommand)
-                .subcommand(dev::UpgradeStdlibCommand)
+                .subcommand(dev::UpgradeModuleProposalCommand)
+                .subcommand(dev::UpgradeModulePlanCommand)
+                .subcommand(dev::UpgradeModuleQueueCommand)
+                .subcommand(dev::UpgradeModuleExeCommand)
                 .subcommand(dev::CallContractCommand)
                 .subcommand(
                     Command::with_name("subscribe")
@@ -100,6 +112,7 @@ pub fn add_command(
                 .subcommand(debug::PanicCommand)
                 .subcommand(debug::GetBlockByUncleCommand)
                 .subcommand(TxPoolStatusCommand)
+                .subcommand(SleepCommand)
                 .subcommand(debug::MoveExplain),
         )
 }

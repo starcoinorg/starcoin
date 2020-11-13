@@ -11,11 +11,13 @@ use starcoin_accumulator::{
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
 };
+use starcoin_executor::BlockExecutedData;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{
@@ -308,15 +310,28 @@ impl BlockChain {
             Err(format_err!("Block is none when query epoch resource."))
         }
     }
+
+    pub fn get_chain_info(&self) -> Result<ChainInfo> {
+        //TODO cache the chain info.
+        let header = self.current_header();
+        let total_difficulty = self.get_total_difficulty()?;
+        Ok(ChainInfo::new(header, total_difficulty))
+    }
+
+    fn ensure_head(&self) -> &Block {
+        self.head
+            .as_ref()
+            .expect("head block must some after chain init.")
+    }
 }
 
 impl ChainReader for BlockChain {
     fn head_block(&self) -> Block {
-        self.head.clone().expect("head block is none.")
+        self.ensure_head().clone()
     }
 
     fn current_header(&self) -> BlockHeader {
-        self.head_block().header().clone()
+        self.ensure_head().header().clone()
     }
 
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>> {
@@ -441,7 +456,7 @@ impl ChainReader for BlockChain {
         let id = self.head_block().id();
         let block_info = self
             .storage
-            .get_block_info(self.head_block().id())?
+            .get_block_info(id)?
             .ok_or_else(|| format_err!("Can not find block info by id {}", id))?;
         Ok(block_info.total_difficulty)
     }
@@ -654,10 +669,25 @@ impl BlockChain {
     fn verify_header(&self, header: &BlockHeader, is_uncle: bool, epoch: &EpochInfo) -> Result<()> {
         let parent_hash = header.parent_hash();
         if !is_uncle {
+            let current_head_id = self.head_block().id();
+            let current_number = self.head_block().header().number();
+            let expect_number = current_number + 1;
+
             verify_block!(
                 VerifyBlockField::Header,
-                self.head_block().id() == parent_hash,
-                "Invalid block: Parent id mismatch."
+                expect_number == header.number,
+                "Invalid block: Unexpect block number, expect:{}, got: {}.",
+                expect_number,
+                header.number
+            );
+
+            verify_block!(
+                VerifyBlockField::Header,
+                current_head_id == parent_hash,
+                "Invalid block: Parent id mismatch, expect:{}, got: {}, number:{}.",
+                current_head_id.to_hex(),
+                parent_hash.to_hex(),
+                header.number
             );
         }
         // do not check genesis block timestamp check
@@ -913,7 +943,7 @@ impl BlockChain {
         };
 
         let executed_data = if execute {
-            executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
+            starcoin_executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
         } else {
             self.verify_txns(block_id, txns.as_slice())?
         };
@@ -944,9 +974,7 @@ impl BlockChain {
         let executed_accumulator_root = {
             let included_txn_info_hashes: Vec<_> =
                 vec_transaction_info.iter().map(|info| info.id()).collect();
-            let (accumulator_root, _first_leaf_idx) =
-                self.txn_accumulator.append(&included_txn_info_hashes)?;
-            accumulator_root
+            self.txn_accumulator.append(&included_txn_info_hashes)?
         };
 
         verify_block!(
@@ -1020,6 +1048,15 @@ impl BlockChain {
             .storage
             .get_block_info(block.id())?
             .ok_or_else(|| format_err!("Can not find block info by hash {:?}", block.id()))?;
+        self.update_chain_head_with_info(block, block_info)
+    }
+
+    //TODO refactor update_chain_head and update_chain_head_with_info
+    pub fn update_chain_head_with_info(
+        &mut self,
+        block: Block,
+        block_info: BlockInfo,
+    ) -> Result<()> {
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let state_root = block.header().state_root();
@@ -1061,16 +1098,12 @@ impl BlockChain {
         &self,
         block_id: HashValue,
         txns: &[Transaction],
-    ) -> Result<executor::BlockExecutedData> {
+    ) -> Result<BlockExecutedData> {
         self.verify_txns(block_id, txns)
     }
 
-    fn verify_txns(
-        &self,
-        block_id: HashValue,
-        txns: &[Transaction],
-    ) -> Result<executor::BlockExecutedData> {
-        let mut block_executed_data = executor::BlockExecutedData::default();
+    fn verify_txns(&self, block_id: HashValue, txns: &[Transaction]) -> Result<BlockExecutedData> {
+        let mut block_executed_data = BlockExecutedData::default();
 
         let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
 

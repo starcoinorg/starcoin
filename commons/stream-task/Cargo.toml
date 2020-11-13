@@ -1,0 +1,22 @@
+[package]
+name = "stream-task"
+version = "0.7.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.33"
+thiserror = "1.0"
+rand = "0.7.3"
+pin-utils = "0.1.0"
+async-std = "1.6"
+futures = "0.3"
+futures-timer = "3.0"
+futures-retry = "0.5.0"
+pin-project = "0.4.8"
+log = "0.4.11"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+stest = { path = "../stest" }
+starcoin-logger = { path = "../logger"}

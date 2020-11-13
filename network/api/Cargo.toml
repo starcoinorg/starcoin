@@ -1,19 +1,22 @@
 [package]
 name = "network-api"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
 starcoin-types = { path = "../../types" }
 actix = "0.10.0"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 futures = "0.3"
 serde = { version = "1.0", default-features = false }
 rand = "0.7.3"
+itertools = "0.9.0"
 starcoin-crypto = { path = "../../commons/crypto" }
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 async-trait = "0.1.41"
 libp2p = "0.22.0"
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-rpc-core = { path = "../../network-rpc/core" }
+starcoin-tx-relay= { path="../../txpool/tx-relay"}
+starcoin-block-relayer-api = { path = "../../block-relayer/api/" }

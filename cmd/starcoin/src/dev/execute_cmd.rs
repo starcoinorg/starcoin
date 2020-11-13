@@ -17,7 +17,7 @@ use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
 use starcoin_types::transaction::{
     parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::transaction::Transaction;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -28,7 +28,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute")]
 pub struct ExecuteOpt {
-    #[structopt(short = "s", long, parse(try_from_str = parse_address))]
+    #[structopt(short = "s", long)]
     /// hex encoded string, like 0x1, 0x12
     sender: Option<AccountAddress>,
 
@@ -39,10 +39,10 @@ pub struct ExecuteOpt {
     help = "can specify multi type_tag",
     parse(try_from_str = parse_type_tag)
     )]
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 
     #[structopt(
         name = "expiration_time",
@@ -97,7 +97,7 @@ pub struct ExecuteOpt {
 
     #[structopt(name = "dependency_path", long = "dep")]
     /// path of dependency used to build, only used when using move source file
-    deps: Vec<String>,
+    deps: Option<Vec<String>>,
 }
 
 pub struct ExecuteCommand;
@@ -137,7 +137,7 @@ impl CommandAction for ExecuteCommand {
             if ext == MOVE_EXTENSION {
                 let mut deps = stdlib::stdlib_files();
                 // add extra deps
-                deps.append(&mut ctx.opt().deps.clone());
+                deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
                 let (sources, compile_result) = compile_source_string_no_report(
                     std::fs::read_to_string(move_file_path.as_path())?.as_str(),
                     &deps,
@@ -180,12 +180,16 @@ impl CommandAction for ExecuteCommand {
         }
         let account_resource = account_resource.unwrap();
 
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
         let script_txn = if is_script {
             RawUserTransaction::new_script(
                 sender,
                 account_resource.sequence_number(),
-                Script::new(bytecode, type_tags, args),
+                Script::new(
+                    bytecode,
+                    type_tags.unwrap_or_default(),
+                    args.unwrap_or_default(),
+                ),
                 opt.max_gas_amount,
                 opt.gas_price,
                 expiration_time,

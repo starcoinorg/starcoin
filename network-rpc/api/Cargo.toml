@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-network-rpc-api"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -22,5 +22,5 @@ scs = { path = "../../commons/scs", package = "starcoin-canonical-serialization"
 starcoin-logger = {path = "../../commons/logger"}
 serde = { version = "1.0", features = ["derive"] }
 actix = "0.10.0"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 futures = "0.3"

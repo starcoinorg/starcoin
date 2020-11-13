@@ -4,9 +4,15 @@
 #![forbid(unsafe_code)]
 
 use clap::{App, Arg};
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_move_compiler::check_compiled_module_compat;
 use starcoin_vm_types::file_format::CompiledModule;
-use starcoin_vm_types::language_storage::ModuleId;
+use starcoin_vm_types::{
+    language_storage::ModuleId,
+    transaction::{Module, Package},
+};
+use std::collections::HashMap;
 use std::{
     collections::BTreeMap,
     fs::File,
@@ -15,32 +21,51 @@ use std::{
 };
 use stdlib::{
     build_stdlib, build_stdlib_doc, build_stdlib_error_code_map, build_transaction_script_abi,
-    build_transaction_script_doc, compile_script, filter_move_files, save_binary,
-    COMPILED_EXTENSION, COMPILED_OUTPUT_PATH, COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS,
-    LATEST_COMPILED_OUTPUT_PATH, STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS,
-    TRANSACTION_SCRIPTS_DOC_DIR,
+    build_transaction_script_doc, compile_scripts, compile_scripts_to_bytes, compiled_scripts,
+    save_binary, save_scripts, COMPILED_EXTENSION, COMPILED_OUTPUT_PATH,
+    COMPILED_TRANSACTION_SCRIPTS_ABI_DIR, INIT_SCRIPTS, LATEST_COMPILED_OUTPUT_PATH,
+    STDLIB_DIR_NAME, STD_LIB_DOC_DIR, TRANSACTION_SCRIPTS, TRANSACTION_SCRIPTS_DOC_DIR,
 };
 
-fn compile_scripts(script_dir: &Path) {
-    let script_source_files = datatest_stable::utils::iterate_directory(script_dir);
-    let script_files = filter_move_files(script_source_files);
-    for script_file in script_files {
-        let compiled_script = compile_script(script_file.clone());
-        let mut output_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-        output_path.push(script_file.clone());
-        output_path.set_extension(COMPILED_EXTENSION);
-        File::create(output_path)
-            .unwrap()
-            .write_all(&compiled_script)
-            .unwrap();
+fn incremental_update_scripts_with_version(
+    pre_script_dir: &PathBuf,
+    new_script: &HashMap<String, (HashValue, Vec<u8>)>,
+    dest_dir: PathBuf,
+) {
+    let pre_scripts = compiled_scripts(pre_script_dir.as_path());
+
+    for (script_file, (new_hash, new_script)) in new_script {
+        let write = if let Some(pre_hash) = pre_scripts.get(script_file) {
+            new_hash != pre_hash
+        } else {
+            true
+        };
+        if write {
+            let mut script_path = dest_dir.clone();
+            script_path.push(TRANSACTION_SCRIPTS);
+            if !script_path.exists() {
+                std::fs::create_dir_all(&script_path).unwrap();
+            }
+
+            script_path.push(script_file.clone());
+            script_path.set_extension(COMPILED_EXTENSION);
+            File::create(script_path)
+                .unwrap()
+                .write_all(&new_script)
+                .unwrap();
+        }
     }
 }
 
 fn latest_compiled_modules() -> BTreeMap<ModuleId, CompiledModule> {
-    let mut compiled_modules = BTreeMap::new();
     let mut module_path = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-    module_path.push(STDLIB_DIR_NAME);
-    for f in datatest_stable::utils::iterate_directory(&module_path) {
+    compiled_modules(&mut module_path)
+}
+
+fn compiled_modules(stdlib_path: &mut PathBuf) -> BTreeMap<ModuleId, CompiledModule> {
+    let mut compiled_modules = BTreeMap::new();
+    stdlib_path.push(STDLIB_DIR_NAME);
+    for f in datatest_stable::utils::iterate_directory(&stdlib_path) {
         let mut bytes = Vec::new();
         File::open(f)
             .expect("Failed to open module bytecode file")
@@ -50,6 +75,141 @@ fn latest_compiled_modules() -> BTreeMap<ModuleId, CompiledModule> {
         compiled_modules.insert(m.self_id(), m);
     }
     compiled_modules
+}
+
+fn incremental_update_with_version(
+    pre_dir: &mut PathBuf,
+    dest_dir: PathBuf,
+    sub_dir: String,
+    new_modules: &BTreeMap<String, CompiledModule>,
+    new_script: &HashMap<String, (HashValue, Vec<u8>)>,
+) {
+    if pre_dir.exists() {
+        let pre_compiled_modules = compiled_modules(pre_dir);
+        let mut update_modules: BTreeMap<String, CompiledModule> = BTreeMap::new();
+        for (key, module) in new_modules {
+            let module_id = module.self_id();
+            let is_new = if let Some(old_module) = pre_compiled_modules.get(&module_id) {
+                old_module != module
+            } else {
+                true
+            };
+
+            if is_new {
+                update_modules.insert(key.clone(), module.clone());
+            }
+        }
+
+        let mut base_path = dest_dir;
+        base_path.push(sub_dir);
+
+        println!(
+            "update modules : {} write to path : {:?}, pre version path : {:?}",
+            update_modules.len(),
+            base_path,
+            pre_dir
+        );
+        if base_path.exists() {
+            std::fs::remove_dir_all(&base_path).unwrap();
+        }
+        std::fs::create_dir_all(&base_path).unwrap();
+        if !update_modules.is_empty() {
+            let mut std_path = base_path.clone();
+            std_path.push(STDLIB_DIR_NAME);
+            std::fs::create_dir_all(&std_path).unwrap();
+            let mut modules = Vec::new();
+            for (name, module) in update_modules {
+                let mut bytes = Vec::new();
+                module.serialize(&mut bytes).unwrap();
+                std_path.push(name);
+                std_path.set_extension(COMPILED_EXTENSION);
+                save_binary(std_path.as_path(), &bytes);
+                modules.push(Module::new(bytes));
+                std_path.pop();
+            }
+            let package = Package::new_with_modules(modules).unwrap();
+            let package_hash = package.crypto_hash();
+            let mut package_path = base_path.clone();
+            package_path.push("stdlib");
+            package_path.set_extension("blob");
+            let blob = scs::to_bytes(&package).unwrap();
+            save_binary(package_path.as_path(), &blob);
+            println!("new package hash : {:?}", package_hash);
+        }
+
+        let mut pre_script_dir = pre_dir.clone();
+        pre_script_dir.pop();
+        pre_script_dir.push(TRANSACTION_SCRIPTS);
+        incremental_update_scripts_with_version(&pre_script_dir, new_script, base_path);
+    }
+}
+
+fn full_update_with_version(version_number: u64) -> PathBuf {
+    let options = fs_extra::dir::CopyOptions::new();
+
+    let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
+    stdlib_src.push(STDLIB_DIR_NAME);
+
+    let mut init_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
+    init_scripts_src.push(INIT_SCRIPTS);
+
+    let mut txn_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
+    txn_scripts_src.push(TRANSACTION_SCRIPTS);
+
+    let mut dest = PathBuf::from(COMPILED_OUTPUT_PATH);
+    dest.push(format!("{}", version_number));
+    if dest.exists() {
+        std::fs::remove_dir_all(&dest).unwrap();
+    }
+    std::fs::create_dir_all(&dest).unwrap();
+    fs_extra::dir::copy(stdlib_src, &dest, &options).unwrap();
+    fs_extra::dir::copy(init_scripts_src, &dest, &options).unwrap();
+    fs_extra::dir::copy(txn_scripts_src, &dest, &options).unwrap();
+    dest
+}
+
+fn replace_stdlib_by_path(
+    module_path: &mut PathBuf,
+    new_modules: BTreeMap<String, CompiledModule>,
+    new_script: HashMap<String, (HashValue, Vec<u8>)>,
+) {
+    if module_path.exists() {
+        std::fs::remove_dir_all(&module_path).unwrap();
+    }
+    std::fs::create_dir_all(&module_path).unwrap();
+    for (name, module) in new_modules {
+        let mut bytes = Vec::new();
+        module.serialize(&mut bytes).unwrap();
+        module_path.push(name);
+        module_path.set_extension(COMPILED_EXTENSION);
+        save_binary(module_path.as_path(), &bytes);
+        module_path.pop();
+    }
+
+    compile_scripts(
+        Path::new(INIT_SCRIPTS),
+        PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(INIT_SCRIPTS),
+    );
+    save_scripts(
+        new_script,
+        PathBuf::from(LATEST_COMPILED_OUTPUT_PATH).join(TRANSACTION_SCRIPTS),
+    );
+
+    // Generate documentation
+    std::fs::remove_dir_all(&STD_LIB_DOC_DIR).unwrap_or(());
+    std::fs::create_dir_all(&STD_LIB_DOC_DIR).unwrap();
+    build_stdlib_doc();
+
+    // Generate script ABIs
+    std::fs::remove_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap_or(());
+    std::fs::create_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap();
+    build_transaction_script_abi();
+
+    std::fs::remove_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap_or(());
+    std::fs::create_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap();
+    build_transaction_script_doc();
+
+    build_stdlib_error_code_map();
 }
 
 // Generates the compiled stdlib and transaction scripts. Until this is run changes to the source
@@ -71,17 +231,24 @@ fn main() {
         )
         .arg(
             Arg::with_name("no-check-compatibility")
+                .short("n")
                 .long("no-check-compatibility")
                 .help("don't check compatibility between the old and new standard library"),
         );
 
     let matches = cli.get_matches();
     let mut generate_new_version = false;
-    let mut version_number = "0.0".to_string();
+    let mut version_number: u64 = 0;
     if matches.is_present("version") {
         generate_new_version = true;
-        version_number = matches.value_of("version").unwrap().to_string();
+        version_number = matches.value_of("version").unwrap().parse::<u64>().unwrap();
     }
+
+    let pre_version = if version_number > 0 {
+        Some(version_number - 1)
+    } else {
+        None
+    };
 
     let no_check_compatibility = matches.is_present("no-check-compatibility");
 
@@ -106,7 +273,6 @@ fn main() {
     module_path.push(STDLIB_DIR_NAME);
     let new_modules = build_stdlib();
 
-    let mut is_compatible = true;
     if !no_check_compatibility {
         let old_compiled_modules = latest_compiled_modules();
         for module in new_modules.values() {
@@ -114,63 +280,31 @@ fn main() {
             let new_module_id = module.self_id();
             if let Some(old_module) = old_compiled_modules.get(&new_module_id) {
                 let compatibility = check_compiled_module_compat(old_module, module);
-                if is_compatible && !compatibility {
-                    println!("Stdlib {:?} is incompatible!", new_module_id);
-                    is_compatible = false
-                }
+                assert!(compatibility, "Stdlib {:?} is incompatible!", new_module_id);
             }
         }
     }
 
-    if no_check_compatibility || is_compatible {
-        std::fs::remove_dir_all(&module_path).unwrap();
-        std::fs::create_dir_all(&module_path).unwrap();
-        for (name, module) in new_modules {
-            let mut bytes = Vec::new();
-            module.serialize(&mut bytes).unwrap();
-            module_path.push(name);
-            module_path.set_extension(COMPILED_EXTENSION);
-            save_binary(module_path.as_path(), &bytes);
-            module_path.pop();
-        }
-
-        compile_scripts(Path::new(INIT_SCRIPTS));
-        compile_scripts(Path::new(TRANSACTION_SCRIPTS));
-
-        // Generate documentation
-        std::fs::remove_dir_all(&STD_LIB_DOC_DIR).unwrap_or(());
-        std::fs::create_dir_all(&STD_LIB_DOC_DIR).unwrap();
-        build_stdlib_doc();
-
-        // Generate script ABIs
-        std::fs::remove_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap_or(());
-        std::fs::create_dir_all(&COMPILED_TRANSACTION_SCRIPTS_ABI_DIR).unwrap();
-        build_transaction_script_abi();
-
-        std::fs::remove_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap_or(());
-        std::fs::create_dir_all(&TRANSACTION_SCRIPTS_DOC_DIR).unwrap();
-        build_transaction_script_doc();
-
-        build_stdlib_error_code_map();
+    if no_check_compatibility {
+        let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
 
         if generate_new_version {
-            let options = fs_extra::dir::CopyOptions::new();
+            let dest_dir = full_update_with_version(version_number);
 
-            let mut stdlib_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-            stdlib_src.push(STDLIB_DIR_NAME);
-
-            let mut init_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-            init_scripts_src.push(INIT_SCRIPTS);
-
-            let mut txn_scripts_src = PathBuf::from(LATEST_COMPILED_OUTPUT_PATH);
-            txn_scripts_src.push(TRANSACTION_SCRIPTS);
-
-            let mut dest = PathBuf::from(COMPILED_OUTPUT_PATH);
-            dest.push(&version_number);
-            std::fs::create_dir_all(&dest).unwrap();
-            fs_extra::dir::copy(stdlib_src, &dest, &options).unwrap();
-            fs_extra::dir::copy(init_scripts_src, &dest, &options).unwrap();
-            fs_extra::dir::copy(txn_scripts_src, &dest, &options).unwrap();
+            if let Some(pre_version) = pre_version {
+                let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
+                pre_version_dir.push(format!("{}", pre_version));
+                let sub_dir = format!("{}-{}", pre_version, version_number);
+                incremental_update_with_version(
+                    &mut pre_version_dir,
+                    dest_dir,
+                    sub_dir,
+                    &new_modules,
+                    &new_scripts,
+                );
+            }
         }
+
+        replace_stdlib_by_path(&mut module_path, new_modules, new_scripts);
     }
 }

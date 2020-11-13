@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Support for running the VM to execute and verify transactions.
-use crate::account::{Account, AccountData};
 use anyhow::Result;
+use executor::account::{Account, AccountData};
 use starcoin_config::ChainNetwork;
 use starcoin_crypto::HashValue;
 use starcoin_genesis::Genesis;
@@ -240,8 +240,8 @@ impl FakeExecutor {
 
 #[cfg(test)]
 mod tests {
-    use crate::account::AccountData;
     use crate::executor::FakeExecutor;
+    use executor::account::AccountData;
 
     #[test]
     fn test_executor() {

@@ -6,11 +6,11 @@ use anyhow::Result;
 use consensus::Consensus;
 use crypto::HashValue;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
-use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_config::NodeConfig;
+use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME};
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
@@ -350,7 +350,7 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     let public_key = pri_key.public_key();
     let account_address = account_address::from_public_key(&public_key);
     let signed_txn_t2 = {
-        let txn = executor::build_transfer_from_association(
+        let txn = build_transfer_from_association(
             account_address,
             Some(AuthenticationKey::ed25519(&public_key)),
             0,

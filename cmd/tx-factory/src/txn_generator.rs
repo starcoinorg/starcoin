@@ -4,11 +4,9 @@
 use anyhow::Result;
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::genesis_config::ChainId;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::transaction::helpers::get_current_timestamp;
 use starcoin_types::transaction::RawUserTransaction;
 
 pub struct MockTxnGenerator {
@@ -33,7 +31,11 @@ impl MockTxnGenerator {
         }
     }
 
-    pub fn generate_mock_txn(&self, sequence_number: u64) -> Result<RawUserTransaction> {
+    pub fn generate_mock_txn(
+        &self,
+        sequence_number: u64,
+        expiration_timestamp: u64,
+    ) -> Result<RawUserTransaction> {
         let amount_to_transfer = 1000;
 
         let transfer_txn = starcoin_executor::build_transfer_txn(
@@ -46,7 +48,32 @@ impl MockTxnGenerator {
             amount_to_transfer,
             1,
             10000,
-            get_current_timestamp() + DEFAULT_EXPIRATION_TIME,
+            expiration_timestamp,
+            self.chain_id,
+        );
+        Ok(transfer_txn)
+    }
+
+    pub fn generate_transfer_txn(
+        &self,
+        sequence_number: u64,
+        sender: AccountAddress,
+        receiver_address: AccountAddress,
+        receiver_public_key: Option<Ed25519PublicKey>,
+        amount: u128,
+        expiration_timestamp: u64,
+    ) -> Result<RawUserTransaction> {
+        let transfer_txn = starcoin_executor::build_transfer_txn(
+            sender,
+            receiver_address,
+            receiver_public_key
+                .as_ref()
+                .map(|k| AuthenticationKey::ed25519(k)),
+            sequence_number,
+            amount,
+            1,
+            5000,
+            expiration_timestamp,
             self.chain_id,
         );
         Ok(transfer_txn)

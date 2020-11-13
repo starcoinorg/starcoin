@@ -179,16 +179,20 @@ impl Inner {
     }
 
     pub fn update_chain(&mut self, block: Block) -> Result<()> {
-        if block.header().parent_hash() != self.chain.current_header().id() {
+        let current_header = self.chain.current_header();
+        let current_id = current_header.id();
+        if block.header().parent_hash() != current_id {
             self.chain =
                 BlockChain::new(self.chain.time_service(), block.id(), self.storage.clone())?;
+            //current block possible bean uncle.
+            self.uncles.insert(current_id, current_header);
         } else {
             self.chain.update_chain_head(block)?;
         }
         Ok(())
     }
 
-    pub fn do_uncles(&self) -> Vec<BlockHeader> {
+    pub fn find_uncles(&self) -> Vec<BlockHeader> {
         let mut new_uncle = Vec::new();
         if let Ok(epoch) = self.chain.epoch_info() {
             if epoch.end_block_number() != (self.chain.current_header().number() + 1) {
@@ -227,7 +231,7 @@ impl Inner {
 
         //TODO use a GasConstant value to replace 600.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = block_gas_limit / 600;
+        let max_txns = (block_gas_limit / 600) * 2;
 
         let txns = self.txpool.get_pending_txns(Some(max_txns), None);
 
@@ -240,7 +244,7 @@ impl Inner {
         };
 
         let previous_header = self.chain.current_header();
-        let uncles = self.do_uncles();
+        let uncles = self.find_uncles();
 
         debug!(
             "CreateBlockTemplate, previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",

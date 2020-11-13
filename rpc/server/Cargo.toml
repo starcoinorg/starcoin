@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-server"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,7 +10,7 @@ edition = "2018"
 log = "0.4"
 parking_lot = "0.11"
 futures-channel = "0.3"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 failure = "0.1"
 dashmap = "3.11"
@@ -61,6 +61,7 @@ starcoin-miner = { path = "../../miner" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-api = { path = "../../network/api" }
 starcoin-node-api = { path = "../../node/api"}
+starcoin-sync-api = { path = "../../sync/api"}
 
 [dev-dependencies]
 stest = { path = "../../commons/stest"}

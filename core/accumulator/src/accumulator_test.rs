@@ -20,25 +20,18 @@ fn test_get_leaves() {
         0,
         Arc::new(mock_store),
     );
-    let (root_hash, index) = accumulator.append(leaves.as_slice()).unwrap();
-    dbg!(root_hash);
-    let mut i = index;
-    let len = leaves.len() as u64;
+    let _root_hash = accumulator.append(leaves.as_slice()).unwrap();
+    let new_num_leaves = accumulator.num_leaves();
     let begin = SystemTime::now();
-    loop {
-        if i < len {
-            let _leaf = accumulator.get_leaf(i).unwrap().unwrap();
-        } else {
-            break;
-        }
-        i += 1;
-    }
+    (0..new_num_leaves).for_each(|idx| {
+        let _leaf = accumulator.get_leaf(idx).unwrap().unwrap();
+    });
     let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!(
         "test accumulator get leaves, leaves count: {:?} use time: {:?} average time:{:?}",
-        len,
+        new_num_leaves,
         use_time,
-        use_time.as_nanos() / len as u128,
+        use_time.as_nanos() / new_num_leaves as u128,
     );
 }
 
@@ -102,7 +95,7 @@ fn test_multiple_chain() {
         0,
         mock_store.clone(),
     );
-    let (root_hash, _index1) = accumulator.append(&leaves).unwrap();
+    let root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
     let frozen_node = accumulator.get_frozen_subtree_roots();
@@ -123,9 +116,9 @@ fn test_multiple_chain() {
     let leaves2 = create_leaves(54..58);
     let leaves3 = create_leaves(60..64);
 
-    let (_root_hash2, _) = accumulator.append(&leaves2).unwrap();
+    let _root_hash2 = accumulator.append(&leaves2).unwrap();
     accumulator.flush().unwrap();
-    let (_root_hash3, _) = accumulator2.append(&leaves3).unwrap();
+    let _root_hash3 = accumulator2.append(&leaves3).unwrap();
     accumulator2.flush().unwrap();
     assert_eq!(
         accumulator.get_node_by_position(1).unwrap().unwrap(),
@@ -150,11 +143,11 @@ fn test_one_leaf() {
         0,
         Arc::new(mock_store),
     );
-    let (root_hash, _) = accumulator.append(&[hash]).unwrap();
+    let root_hash = accumulator.append(&[hash]).unwrap();
     assert_eq!(hash, root_hash);
     proof_verify(&accumulator, root_hash, &[hash], 0);
     let new_hash = HashValue::random();
-    let (new_root_hash, _) = accumulator.append(&[new_hash]).unwrap();
+    let new_root_hash = accumulator.append(&[new_hash]).unwrap();
     proof_verify(&accumulator, new_root_hash, &[new_hash], 1);
     let vec = vec![hash, new_hash];
     proof_verify(&accumulator, new_root_hash, &vec, 0);
@@ -171,7 +164,7 @@ fn test_proof() {
         Arc::new(mock_store),
     );
     let batch1 = create_leaves(500..600);
-    let (root_hash1, _) = accumulator.append(&batch1).unwrap();
+    let root_hash1 = accumulator.append(&batch1).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
 }
@@ -187,10 +180,10 @@ fn test_multiple_leaves() {
         0,
         Arc::new(mock_store),
     );
-    let (root_hash1, _) = accumulator.append(&batch1).unwrap();
+    let root_hash1 = accumulator.append(&batch1).unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let batch2 = create_leaves(609..613);
-    let (root_hash2, _) = accumulator.append(&batch2).unwrap();
+    let root_hash2 = accumulator.append(&batch2).unwrap();
     batch1.extend_from_slice(&batch2);
     proof_verify(&accumulator, root_hash2, &batch1, 0);
 }
@@ -207,7 +200,7 @@ fn test_multiple_tree() {
         0,
         arc_store.clone(),
     );
-    let (root_hash1, _) = accumulator.append(&batch1).unwrap();
+    let root_hash1 = accumulator.append(&batch1).unwrap();
     accumulator.flush().unwrap();
     proof_verify(&accumulator, root_hash1, &batch1, 0);
     let frozen_hash = accumulator.get_frozen_subtree_roots();
@@ -229,7 +222,7 @@ fn test_update_left_leaf() {
         0,
         Arc::new(mock_store),
     );
-    let (root_hash, _) = accumulator.append(&leaves).unwrap();
+    let root_hash = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
 }
 #[test]
@@ -244,7 +237,7 @@ fn test_update_right_leaf() {
         0,
         Arc::new(mock_store),
     );
-    let (root_hash, _) = accumulator.append(&leaves).unwrap();
+    let root_hash = accumulator.append(&leaves).unwrap();
     proof_verify(&accumulator, root_hash, &leaves, 0);
 }
 #[test]
@@ -258,7 +251,7 @@ fn test_flush() {
         0,
         Arc::new(mock_store),
     );
-    let (_root_hash, _) = accumulator.append(&leaves).unwrap();
+    let _root_hash = accumulator.append(&leaves).unwrap();
     accumulator.flush().unwrap();
     //get from storage
     for node_hash in leaves.clone() {
@@ -278,7 +271,7 @@ fn test_get_leaves_batch() {
         Arc::new(mock_store),
     );
     let leaves: Vec<HashValue> = (0..100).map(|_| HashValue::random()).collect();
-    let (_root_hash, _) = accumulator.append(leaves.as_slice()).unwrap();
+    let _root_hash = accumulator.append(leaves.as_slice()).unwrap();
     accumulator.flush().unwrap();
 
     let leaves0 = accumulator.get_leaves(0, false, 100).unwrap();
@@ -287,7 +280,10 @@ fn test_get_leaves_batch() {
 
     let leaves1 = accumulator.get_leaves(5, true, 100).unwrap();
     assert_eq!(leaves1.len(), 6);
-    assert_eq!(&leaves[0..6], leaves1.as_slice());
+    assert_eq!(
+        (0..6usize).rev().map(|i| leaves[i]).collect::<Vec<_>>(),
+        leaves1
+    );
 
     let leaves2 = accumulator.get_leaves(5, false, 90).unwrap();
     assert_eq!(leaves2.len(), 90);

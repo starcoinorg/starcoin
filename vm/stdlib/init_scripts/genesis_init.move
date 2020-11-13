@@ -8,7 +8,6 @@ script {
     use 0x1::DummyToken;
     use 0x1::PackageTxnManager;
     use 0x1::ConsensusConfig;
-    use 0x1::Version;
     use 0x1::VMConfig;
     use 0x1::Vector;
     use 0x1::Block;
@@ -20,8 +19,11 @@ script {
     use 0x1::Box;
     use 0x1::TransactionTimeoutConfig;
     use 0x1::Epoch;
+    use 0x1::Version;
+    use 0x1::Config;
 
     fun genesis_init(
+        stdlib_version: u64,
 
         // block reward config
         reward_delay: u64,
@@ -106,7 +108,6 @@ script {
             gas_unit_scaling_factor,
             default_account_size,
         );
-        Version::initialize(&genesis_account);
         TransactionTimeoutConfig::initialize(&genesis_account, transaction_timeout);
         ConsensusConfig::initialize(
             &genesis_account,
@@ -128,8 +129,7 @@ script {
         let association = Account::create_genesis_account(
             CoreAddresses::ASSOCIATION_ROOT_ADDRESS(),
         );
-        //Grant stdlib maintainer to association
-        PackageTxnManager::grant_maintainer(&genesis_account, Signer::address_of(&association));
+        Config::publish_new_config<Version::Version>(&genesis_account, Version::new_version(stdlib_version));
         // stdlib use two phase upgrade strategy.
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,

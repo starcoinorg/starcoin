@@ -20,7 +20,7 @@ use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
     miner::MinerClient, node::NodeClient, node_manager::NodeManagerClient, state::StateClient,
-    txpool::TxPoolClient,
+    sync_manager::SyncManagerClient, txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -47,9 +47,11 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::types::ContractCall;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
+use starcoin_service_registry::{ServiceInfo, ServiceStatus};
+use starcoin_sync_api::TaskProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
+use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
@@ -201,6 +203,17 @@ impl RpcClient {
             inner
                 .node_manager_client
                 .start_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_check_service(&self, service_name: String) -> anyhow::Result<ServiceStatus> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .check_service(service_name)
                 .compat()
                 .await
         })
@@ -413,7 +426,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<Vec<u8>>> {
+    pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValue>> {
         self.call_rpc_blocking(|inner| async move {
             inner.dev_client.call_contract(call).compat().await
         })
@@ -444,6 +457,11 @@ impl RpcClient {
 
     pub fn debug_panic(&self) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move { inner.debug_client.panic().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sleep(&self, time: u64) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.debug_client.sleep(time).compat().await })
             .map_err(map_err)
     }
 
@@ -587,11 +605,6 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_branches(&self) -> anyhow::Result<Vec<ChainInfo>> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.branches().compat().await })
-            .map_err(map_err)
-    }
-
     pub fn dry_run(
         &self,
         txn: SignedUserTransaction,
@@ -599,9 +612,13 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
             .map_err(map_err)
     }
-    pub fn miner_submit(&self, header_hash: HashValue, nonce: u64) -> anyhow::Result<()> {
+    pub fn miner_submit(&self, minting_blob: Vec<u8>, nonce: u32) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {
-            inner.miner_client.submit(header_hash, nonce).compat().await
+            inner
+                .miner_client
+                .submit(minting_blob, nonce)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
@@ -680,6 +697,26 @@ impl RpcClient {
         result
     }
 
+    pub fn sync_status(&self) -> anyhow::Result<SyncStatus> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.status().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_progress(&self) -> anyhow::Result<Option<TaskProgressReport>> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.progress().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_start(&self, force: bool) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.start(force).compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn sync_cancel(&self) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.sync_client.cancel().compat().await })
+            .map_err(map_err)
+    }
+
     async fn get_rpc_channel(
         conn_source: ConnSource,
     ) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -715,6 +752,7 @@ pub(crate) struct RpcClientInner {
     pubsub_client: PubSubClient,
     dev_client: DevClient,
     miner_client: MinerClient,
+    sync_client: SyncManagerClient,
 }
 
 impl RpcClientInner {
@@ -729,7 +767,8 @@ impl RpcClientInner {
             chain_client: channel.clone().into(),
             dev_client: channel.clone().into(),
             pubsub_client: channel.clone().into(),
-            miner_client: channel.into(),
+            miner_client: channel.clone().into(),
+            sync_client: channel.into(),
         }
     }
 }

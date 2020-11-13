@@ -1,13 +1,13 @@
 [package]
 name = "network-p2p"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 
 bitflags = "1.2.0"
 bytes = "0.5.0"
@@ -23,7 +23,7 @@ futures_codec = "0.3"
 futures-timer = "3.0"
 linked-hash-map = "0.5.2"
 log = "0.4.11"
-lru = "0.6.0"
+lru = "0.6.1"
 nohash-hasher = "0.2.0"
 parking_lot = "0.11.0"
 prost = "0.6.1"
@@ -59,7 +59,7 @@ features = ["identify", "kad", "mdns", "mplex", "noise", "ping", "tcp-async-std"
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}
-async-std = "1.6"
+async-std = "1.7"
 tempfile = "3.1.0"
 libp2p = { version = "0.22.0", default-features = false, features = ["secio"] }
 

@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-rpc-client"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 # for RpcError convert.
 failure = "0.1"
@@ -36,8 +36,9 @@ starcoin-rpc-api = {path = "../api"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-state-api = { path = "../../state/api"}
-async-std = "1.6"
+async-std = "1.7"
 starcoin-txpool-api = {path = "../../txpool/api"}
+starcoin-sync-api = {path = "../../sync/api"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 
 [dev-dependencies]

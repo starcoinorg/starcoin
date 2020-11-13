@@ -12,12 +12,13 @@ use starcoin_miner::MinerService;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_server::module::{
     AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NodeManagerRpcImpl,
-    NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl, TxPoolRpcImpl,
+    NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl, SyncManagerRpcImpl, TxPoolRpcImpl,
 };
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Storage;
+use starcoin_sync::sync2::SyncService2;
 use starcoin_txpool::TxPoolService;
 use std::sync::Arc;
 
@@ -35,6 +36,9 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let node_manager_api = ctx
             .service_ref_opt::<NodeService>()?
             .map(|service_ref| NodeManagerRpcImpl::new(service_ref.clone()));
+        let sync_manager_api = ctx
+            .service_ref_opt::<SyncService2>()?
+            .map(|service_ref| SyncManagerRpcImpl::new(service_ref.clone()));
         let chain_api = ctx
             .service_ref_opt::<ChainReaderService>()?
             .map(|service_ref| ChainRpcImpl::new(service_ref.clone()));
@@ -63,6 +67,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             config,
             node_api,
             node_manager_api,
+            sync_manager_api,
             chain_api,
             txpool_api,
             account_api,

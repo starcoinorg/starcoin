@@ -6,6 +6,7 @@ mod metrics_cmd;
 mod peers_cmd;
 
 pub mod service;
+pub mod sync;
 
 pub use info_cmd::*;
 pub use metrics_cmd::*;

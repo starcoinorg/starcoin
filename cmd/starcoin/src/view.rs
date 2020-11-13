@@ -322,7 +322,7 @@ impl From<NodeInfo> for NodeInfoView {
             peer_info: node_info.peer_info.into(),
             self_address: node_info.self_address,
             net: node_info.net,
-            now: node_info.now,
+            now: node_info.now_seconds,
         }
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "stest"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -15,5 +15,5 @@ actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
 tokio = { version = "0.2", features = ["full"] }
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 

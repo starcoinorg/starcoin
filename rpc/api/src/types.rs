@@ -4,7 +4,7 @@
 mod contract_call;
 pub mod pubsub;
 
-pub use contract_call::ContractCall;
+pub use contract_call::*;
 use jsonrpc_core_client::RpcChannel;
 use starcoin_service_registry::ServiceRequest;
 

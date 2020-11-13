@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use serde::{Deserialize, Serialize};
+use serde_helpers::{deserialize_binary, serialize_binary};
 use std::fmt;
 
 #[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Module {
-    #[serde(with = "serde_bytes")]
+    #[serde(
+        deserialize_with = "deserialize_binary",
+        serialize_with = "serialize_binary"
+    )]
     code: Vec<u8>,
 }
 

@@ -1,11 +1,11 @@
 [package]
 name = "starcoin-miner"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 actix = "0.10.0"
 actix-rt = "1.1"
 futures = { version = "0.3" }

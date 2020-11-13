@@ -16,6 +16,8 @@ pub struct StarcoinOpt {
     pub server: String,
     #[structopt(long, short = "n", default_value = "1")]
     pub thread_num: u16,
+    #[structopt(long, short = "p")]
+    pub plugin_path: Option<String>,
 }
 
 fn main() {
@@ -24,13 +26,24 @@ fn main() {
     let config = {
         MinerClientConfig {
             server: Some(opts.server.clone()),
+            plugin_path: opts.plugin_path,
             thread_num: opts.thread_num,
             enable_stderr: true,
         }
     };
 
     let mut rt = tokio_compat::runtime::Runtime::new().unwrap();
-    let client = RpcClient::connect_websocket(&format!("ws://{}", opts.server), &mut rt).unwrap();
+    let client = match RpcClient::connect_websocket(&format!("ws://{}", opts.server), &mut rt) {
+        Ok(c) => c,
+        Err(err) => {
+            error!(
+                "Failed to connect to starcoin node: {}, error: {}",
+                opts.server, err
+            );
+            std::process::exit(-1);
+        }
+    };
+
     let mut system = System::builder()
         .stop_on_panic(true)
         .name("starcoin-miner")

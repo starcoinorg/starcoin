@@ -76,6 +76,10 @@ module Timestamp {
         ensures result == global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds;
     }
 
+    spec define spec_now_millseconds(): u64 {
+        global<CurrentTimeMilliseconds>(CoreAddresses::SPEC_GENESIS_ADDRESS()).milliseconds
+    }
+
     /// Marks that time has started and genesis has finished. This can only be called from genesis.
     public fun set_time_has_started(account: &signer) {
         CoreAddresses::assert_genesis_address(account);

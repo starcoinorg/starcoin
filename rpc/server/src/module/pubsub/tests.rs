@@ -11,9 +11,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
 use starcoin_chain_notify::ChainNotifyHandlerService;
 use starcoin_consensus::Consensus;
-use starcoin_crypto::{
-    ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, HashValue, PrivateKey,
-};
+use starcoin_crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
@@ -25,7 +23,10 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::system_events::MintBlockEvent;
+use starcoin_types::block::BlockHeader;
+use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::{MintBlockEvent, SyncStatusChangeEvent};
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, U256};
 use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
@@ -82,11 +83,14 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     // now block is applied, we can emit events.
 
     let bus = registry.service_ref::<BusService>().await?;
-    registry
+    let notify_service = registry
         .register::<ChainNotifyHandlerService>()
         .await
         .unwrap();
 
+    let mut sync_status = SyncStatus::new(ChainInfo::new(BlockHeader::random(), U256::from(1)));
+    sync_status.sync_done();
+    notify_service.notify(SyncStatusChangeEvent(sync_status))?;
     let service = PubSubService::new(bus.clone(), txpool_service);
 
     let pubsub = PubSubImpl::new(service);
@@ -193,7 +197,7 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     let res = receiver.next().await.transpose().unwrap();
     let prefix = r#"{"jsonrpc":"2.0","method":"starcoin_subscription","params":{"result":[""#;
     let suffix = r#""],"subscription":0}}"#;
-    let response = format!("{}{}{}", prefix, txn_id.to_hex(), suffix);
+    let response = format!("{}0x{}{}", prefix, txn_id.to_hex(), suffix);
     assert_eq!(res, Some(response));
     // And unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
@@ -231,8 +235,8 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     assert_eq!(resp, Ok(Some(response.to_owned())));
     // Generate a event
     let diff = U256::from(1024);
-    let header_hash = HashValue::random();
-    let mint_block_event = MintBlockEvent::new(ConsensusStrategy::Dummy, header_hash, diff);
+    let header_hash = vec![0u8; 76];
+    let mint_block_event = MintBlockEvent::new(ConsensusStrategy::Dummy, header_hash.clone(), diff);
     bus.broadcast(mint_block_event.clone()).unwrap();
     let res = timeout(Duration::from_secs(1), receiver.compat().next())
         .await?
@@ -243,7 +247,7 @@ pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let v = r["params"]["result"].clone();
     let mint_block: MintBlock = serde_json::from_value(v).unwrap();
     assert_eq!(mint_block.difficulty, diff);
-    assert_eq!(mint_block.minting_hash, header_hash);
+    assert_eq!(&mint_block.minting_blob, &header_hash);
     // Unsubscribe
     let request = r#"{"jsonrpc": "2.0", "method": "starcoin_unsubscribe", "params": [0], "id": 1}"#;
     let response = r#"{"jsonrpc":"2.0","result":true,"id":1}"#;

@@ -6,7 +6,6 @@ Feature: cmd integration test
 
 # chain
   Scenario Outline: [cmd] cli chain test
-    Then cmd: "chain branches"
     Then cmd: "chain epoch_info"
     Then cmd: "chain get_block_by_number"
     Then cmd: "chain list_block"
@@ -44,8 +43,8 @@ Feature: cmd integration test
 # node service
   Scenario Outline: [cmd] node service test
     Then cmd: "node service list"
-    Then cmd: "node service stop starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
-    Then cmd: "node service start starcoin_miner::ondemand_pacemaker::OndemandPacemaker"
+    Then cmd: "node service stop starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
+    Then cmd: "node service start starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker"
     Then stop
 
     Examples:
@@ -61,16 +60,16 @@ Feature: cmd integration test
     # index 1 is 0000000000000000000000000A550C18, and it is a multi address, so skip.
     # TODO support remove account and remove 0000000000000000000000000A550C18
     Then cmd: "dev derive-address -t 2 -p @$[0].public_key@ -p @$[2].public_key@ -p @$[3].public_key@"
-    Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg 0x@$.address@ --arg <para> --arg 10000000u128"
+    Then cmd: "account execute-builtin --blocking --script create_account --type_tag 0x01::STC::STC --arg @$.address@ --arg <para> --arg 10000000u128"
     Then stop
 
     Examples:
       | para |
-      | x@$.auth_key_prefix@  |
+      | x@$.auth_key@  |
 
  #dev
   Scenario Outline: [cmd] dev test
-    Then cmd: "account unlock -d 30000 0000000000000000000000000A550C18"
+    Then cmd: "account unlock -d 30000 0x0000000000000000000000000A550C18"
     Then stop
 
     Examples:
@@ -80,7 +79,7 @@ Feature: cmd integration test
   Scenario Outline: [cmd] state test
     Then cmd: "state get_root"
     Then cmd: "dev get_coin"
-    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0000000000000000000000000A550C18"
+    Then assert: "$.gas_unit_price 1 $.sequence_number 0 $.sender 0x0000000000000000000000000a550c18"
     Then cmd: "account show"
     Then assert: "$.account.is_default true $.sequence_number 0"
     Then cmd: "state get_proof @$.account.address@"

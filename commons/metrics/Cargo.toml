@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-metrics"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,9 +8,9 @@ edition = "2018"
 description = "Starcoin metrics"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 futures = "0.3"
-hyper = "0.13.8"
+hyper = "0.13.9"
 starcoin-logger = { path = "../logger" }
 once_cell = "1.4.1"
 prometheus = { version = "0.10.0", default-features = false }

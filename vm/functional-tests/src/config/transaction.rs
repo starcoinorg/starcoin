@@ -1,8 +1,8 @@
 // Copyright (c) The Libra Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account::Account;
 use crate::{common::strip, config::global::Config as GlobalConfig, errors::*, evaluator::Stage};
+use executor::account::Account;
 use starcoin_vm_types::{
     language_storage::TypeTag,
     parser::{parse_transaction_argument, parse_type_tags},

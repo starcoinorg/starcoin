@@ -5,16 +5,17 @@ use crate::handler_proxy::{HandlerProxy, MockHandlerProxy, ServiceHandlerProxy};
 use crate::mocker::MockHandler;
 use crate::service::{ActorService, ServiceContext, ServiceFactory, ServiceHandler};
 use crate::service_cache::ServiceCache;
+use crate::service_registry::ServiceStatusChangeEvent;
 use crate::{
-    EventHandler, RegistryService, ServiceCmd, ServiceQuery, ServiceQueryResult, ServiceRef,
-    ServiceRequest,
+    EventHandler, RegistryService, ServiceCmd, ServicePing, ServiceQuery, ServiceQueryResult,
+    ServiceRef, ServiceRequest,
 };
 use actix::{Actor, Context, Handler, Message, MessageResult, Supervised};
 use anyhow::{format_err, Result};
 use log::{debug, error, info};
 use std::fmt::Debug;
 
-const DEFAULT_MAIL_BOX_CAP: usize = 64;
+const DEFAULT_MAIL_BOX_CAP: usize = 128;
 
 pub struct ServiceActor<S>
 where
@@ -47,6 +48,21 @@ where
             cache: ServiceCache::new(registry),
         }
     }
+
+    fn notify_status(&self) {
+        if self.cache.registry_ref().connected() {
+            if let Err(e) = self
+                .cache
+                .registry_ref()
+                .notify(ServiceStatusChangeEvent::new(
+                    S::service_name().to_string(),
+                    self.proxy.status(),
+                ))
+            {
+                error!("Report status to registry error: {:?}", e);
+            }
+        }
+    }
 }
 
 impl<S> Actor for ServiceActor<S>
@@ -60,16 +76,20 @@ where
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
         if let Err(e) = self.proxy.start(&mut service_ctx) {
             error!("{} service start fail: {:?}.", S::service_name(), e);
+        } else {
+            info!("{} service actor started", S::service_name());
         }
-        info!("{} service actor started", S::service_name());
+        self.notify_status();
     }
 
     fn stopped(&mut self, ctx: &mut Self::Context) {
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
         if let Err(e) = self.proxy.stop(&mut service_ctx) {
             error!("{} service stop fail: {:?}.", S::service_name(), e);
+        } else {
+            info!("{} service actor stopped", S::service_name());
         }
-        info!("{} service actor stopped", S::service_name());
+        self.notify_status();
     }
 }
 
@@ -148,11 +168,13 @@ where
     fn handle(&mut self, msg: ServiceCmd, ctx: &mut Self::Context) -> Self::Result {
         debug!("{} Actor handle ServiceCmd: {:?}", S::service_name(), msg);
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);
-        match msg {
+        let result = match msg {
             ServiceCmd::Stop => self.proxy.stop(&mut service_ctx),
             ServiceCmd::Start => self.proxy.start(&mut service_ctx),
             ServiceCmd::Restart => self.proxy.restart(&mut service_ctx),
-        }
+        };
+        self.notify_status();
+        result
     }
 }
 
@@ -166,6 +188,17 @@ where
         match msg {
             ServiceQuery::Status => MessageResult(ServiceQueryResult::Status(self.proxy.status())),
         }
+    }
+}
+
+impl<S> Handler<ServicePing> for ServiceActor<S>
+where
+    S: ActorService,
+{
+    type Result = ();
+
+    fn handle(&mut self, _msg: ServicePing, _ctx: &mut Self::Context) -> Self::Result {
+        //do nothing
     }
 }
 

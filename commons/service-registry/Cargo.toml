@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-service-registry"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -11,7 +11,7 @@ edition = "2018"
 anyhow = "1.0"
 thiserror = "1.0"
 async-trait = "0.1"
-backtrace = "0.3.53"
+backtrace = "0.3.54"
 actix = "0.10.0"
 actix-rt = "1.1"
 futures = "0.3"
@@ -22,4 +22,4 @@ log = "0.4.11"
 
 [dev-dependencies]
 stest = { path = "../../commons/stest" }
-async-std = "1.6"
+async-std = "1.7"

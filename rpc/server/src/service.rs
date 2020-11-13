@@ -21,6 +21,7 @@ use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::node_manager::NodeManagerApi;
+use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::types::ConnectLocal;
 use starcoin_rpc_api::{
     account::AccountApi, chain::ChainApi, debug::DebugApi, dev::DevApi, miner::MinerApi,
@@ -66,10 +67,11 @@ impl RpcService {
         }
     }
 
-    pub fn new_with_api<C, N, NM, T, A, S, D, P, M, DEV>(
+    pub fn new_with_api<C, N, NM, SM, T, A, S, D, P, M, DEV>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
+        sync_manager_api: Option<SM>,
         chain_api: Option<C>,
         txpool_api: Option<T>,
         account_api: Option<A>,
@@ -82,6 +84,7 @@ impl RpcService {
     where
         N: NodeApi,
         NM: NodeManagerApi,
+        SM: SyncManagerApi,
         C: ChainApi,
         T: TxPoolApi,
         A: AccountApi,
@@ -99,6 +102,12 @@ impl RpcService {
                 APIType::Admin,
                 NodeManagerApi::to_delegate(node_manager_api),
             );
+        }
+        if let Some(sync_manager_api) = sync_manager_api {
+            api_registry.register(
+                APIType::Admin,
+                SyncManagerApi::to_delegate(sync_manager_api),
+            )
         }
         if let Some(chain_api) = chain_api {
             api_registry.register(APIType::Public, ChainApi::to_delegate(chain_api));
@@ -122,7 +131,7 @@ impl RpcService {
             api_registry.register(APIType::Public, MinerApi::to_delegate(miner_api));
         }
         if let Some(dev_api) = dev_api {
-            api_registry.register(APIType::Admin, DevApi::to_delegate(dev_api));
+            api_registry.register(APIType::Public, DevApi::to_delegate(dev_api));
         }
         Self::new(config, api_registry)
     }

@@ -1,0 +1,30 @@
+name: Build Docker
+on:
+  workflow_dispatch:
+  push:
+    # only build master
+    branches:
+      - 'master'
+    paths-ignore:
+      - '**.md'
+  release:
+    types: [ published ]
+
+jobs:
+  build-starcoin-docker:
+    name: build starcoin docker
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+      - uses: docker/build-push-action@v1
+        with:
+          push: true
+          username: ${{ github.actor }}
+          password: ${{ secrets.GIT_PACKAGE_TOKEN }}
+          registry: docker.pkg.github.com
+          repository: starcoinorg/starcoin/starcoin
+          dockerfile: docker/Dockerfile
+          tag_with_ref: true

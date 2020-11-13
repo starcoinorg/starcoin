@@ -5,15 +5,11 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-
 use starcoin_resource_viewer::AnnotatedMoveValue;
 use starcoin_rpc_api::types::ContractCall;
-
 use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
-
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
-
 use structopt::StructOpt;
 
 /// Call Contract command
@@ -27,7 +23,11 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "call")]
 pub struct CallContractOpt {
-    #[structopt(long = "module-address", name = "module address", help = "hex encoded string, like 0x0, 0x1", parse(try_from_str = parse_address))]
+    #[structopt(
+        long = "module-address",
+        name = "module address",
+        help = "hex encoded string, like 0x0, 0x1"
+    )]
     module_address: AccountAddress,
     #[structopt(long)]
     module_name: String,
@@ -40,10 +40,10 @@ pub struct CallContractOpt {
     help = "can specify multi type_tag",
     parse(try_from_str = parse_type_tag)
     )]
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 }
 
 pub struct CallContractCommand;
@@ -64,18 +64,11 @@ impl CommandAction for CallContractCommand {
             module_address: opt.module_address,
             module_name: opt.module_name.clone(),
             func: opt.func_name.clone(),
-            type_args: opt.type_tags.clone(),
-            args: opt.args.clone(),
+            type_args: opt.type_tags.clone().unwrap_or_default(),
+            args: opt.args.clone().unwrap_or_default(),
         };
 
         let result = ctx.state().client().contract_call(call)?;
-
-        let mut values = Vec::with_capacity(result.len());
-        for r in result {
-            let value: AnnotatedMoveValue = scs::from_bytes(&r)?;
-            values.push(value);
-        }
-
-        Ok(values)
+        Ok(result)
     }
 }

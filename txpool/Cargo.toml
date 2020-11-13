@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-txpool"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 actix = "0.10.0"
 actix-rt = "1.1"
 async-trait = "0.1"

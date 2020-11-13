@@ -151,7 +151,7 @@ impl Genesis {
         );
         let txn_info_hash = transaction_info.id();
 
-        let (accumulator_root, _) = accumulator.append(vec![txn_info_hash].as_slice())?;
+        let accumulator_root = accumulator.append(vec![txn_info_hash].as_slice())?;
         accumulator.flush()?;
         Ok(Block::genesis_block(
             genesis_config.parent_hash,
@@ -261,7 +261,7 @@ impl Genesis {
     ) -> Result<StartupInfo> {
         let mut genesis_chain = BlockChain::init_empty_chain(net.time_service(), storage.clone());
         genesis_chain.apply(self.block.clone())?;
-        let startup_info = StartupInfo::new(genesis_chain.current_header().id(), Vec::new());
+        let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)
     }
@@ -373,7 +373,8 @@ mod tests {
     use starcoin_types::account_config::genesis_address;
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
-    use starcoin_vm_types::on_chain_config::{VMConfig, Version};
+    use starcoin_vm_types::on_chain_config::DaoConfig;
+    use starcoin_vm_types::on_chain_config::{ConsensusConfig, VMConfig, Version};
     use starcoin_vm_types::on_chain_resource::Epoch;
 
     #[stest::test]
@@ -470,6 +471,18 @@ mod tests {
         assert!(
             vm_config.is_some(),
             "VMConfig on_chain_config should exist."
+        );
+
+        let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
+        assert!(
+            consensus_config.is_some(),
+            "ConsensusConfig on_chain_config should exist."
+        );
+
+        let dao_config = account_state_reader.get_on_chain_config::<DaoConfig>()?;
+        assert!(
+            dao_config.is_some(),
+            "DaoConfig on_chain_config should exist."
         );
 
         let version = account_state_reader.get_on_chain_config::<Version>()?;

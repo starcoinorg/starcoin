@@ -3,7 +3,7 @@
 
 //! Test infrastructure for modeling Libra accounts.
 
-use executor::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
+use crate::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey};
 use starcoin_config::genesis_key_pair;
 use starcoin_crypto::ed25519::*;

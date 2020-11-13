@@ -3,14 +3,18 @@
 
 use anyhow::Result;
 use starcoin_config::ChainNetwork;
+use starcoin_crypto::hash::PlainCryptoHash;
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config;
+use starcoin_vm_types::account_config::genesis_address;
 use starcoin_vm_types::gas_schedule::GasAlgebra;
 use starcoin_vm_types::genesis_config::ChainId;
-use starcoin_vm_types::language_storage::TypeTag;
-use starcoin_vm_types::token::stc::STC_TOKEN_CODE;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::{StructTag, TypeTag};
+use starcoin_vm_types::token::stc::{stc_type_tag, STC_TOKEN_CODE};
 use starcoin_vm_types::token::token_code::TokenCode;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use starcoin_vm_types::transaction::{
@@ -329,6 +333,7 @@ pub fn build_stdlib_package(
             compiled_init_script(net.stdlib_version(), InitScript::GenesisInit).into_vec(),
             vec![],
             vec![
+                TransactionArgument::U64(net.stdlib_version().version()),
                 TransactionArgument::U64(genesis_config.reward_delay),
                 TransactionArgument::U128(genesis_config.pre_mine_amount),
                 TransactionArgument::U128(genesis_config.time_mint_amount),
@@ -405,4 +410,62 @@ pub fn build_stdlib_package(
         ));
     }
     Ok(package)
+}
+
+pub fn build_module_upgrade_proposal(
+    package: &Package,
+    version: u64,
+    day: u64,
+) -> (Script, HashValue) {
+    let module_upgrade_proposal_script =
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::ProposeModuleUpgrade)
+            .into_vec();
+    let package_hash = package.crypto_hash();
+    (
+        Script::new(
+            module_upgrade_proposal_script,
+            vec![stc_type_tag()],
+            vec![
+                TransactionArgument::Address(package.package_address()),
+                TransactionArgument::U8Vector(package_hash.clone().to_vec()),
+                TransactionArgument::U64(version),
+                TransactionArgument::U64(day),
+            ],
+        ),
+        package_hash,
+    )
+}
+
+pub fn build_module_upgrade_plan(proposer_address: AccountAddress, proposal_id: u64) -> Script {
+    let module_upgrade_plan_script =
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::SubmitModuleUpgradePlan)
+            .into_vec();
+    Script::new(
+        module_upgrade_plan_script,
+        vec![stc_type_tag()],
+        vec![
+            TransactionArgument::Address(proposer_address),
+            TransactionArgument::U64(proposal_id),
+        ],
+    )
+}
+
+pub fn build_module_upgrade_queue(proposal_address: AccountAddress, proposal_id: u64) -> Script {
+    let upgrade_module = TypeTag::Struct(StructTag {
+        address: genesis_address(),
+        module: Identifier::new("UpgradeModuleDaoProposal").unwrap(),
+        name: Identifier::new("UpgradeModule").unwrap(),
+        type_params: vec![],
+    });
+    let module_upgrade_queue_script =
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::QueueProposalAction)
+            .into_vec();
+    Script::new(
+        module_upgrade_queue_script,
+        vec![stc_type_tag(), upgrade_module],
+        vec![
+            TransactionArgument::Address(proposal_address),
+            TransactionArgument::U64(proposal_id),
+        ],
+    )
 }

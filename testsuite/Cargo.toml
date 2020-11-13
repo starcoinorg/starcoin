@@ -1,13 +1,13 @@
 [package]
 name = "testsuite"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 actix = "0.10.0"
 actix-rt = "1.1"
 indexmap = "1.6.0"
@@ -16,7 +16,7 @@ static_assertions = "1.1.0"
 sha2 = "0.9.1"
 rand = "0.7.3"
 ring = "0.16.9"
-data-encoding = "2.3.0"
+data-encoding = "2.3.1"
 rmp = "0.8.8"
 rmp-serde = "0.14.4"
 serde = { version = "1.0", features = ["derive"] }
@@ -25,7 +25,7 @@ serde_json = { version="1.0", features = ["arbitrary_precision"]}
 reqwest = "0.10.8"
 clap = "2.33.3"
 structopt = "0.3.20"
-regex = "1.4.1"
+regex = "1.4.2"
 starcoin-config = {path = "../config"}
 starcoin-consensus = {path = "../consensus"}
 starcoin-executor = {path = "../executor"}

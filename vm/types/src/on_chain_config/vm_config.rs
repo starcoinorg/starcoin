@@ -6,10 +6,16 @@ use crate::{
     on_chain_config::OnChainConfig,
 };
 use anyhow::{format_err, Result};
+use move_core_types::identifier::Identifier;
+use move_core_types::language_storage::{StructTag, TypeTag, CORE_CODE_ADDRESS};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
 pub const SCRIPT_HASH_LENGTH: usize = HashValue::LENGTH;
+const VM_CONFIG_MODULE_NAME: &str = "VMConfig";
+static VM_CONFIG_IDENTIFIER: Lazy<Identifier> =
+    Lazy::new(|| Identifier::new(VM_CONFIG_MODULE_NAME).unwrap());
 
 /// Defines and holds the publishing policies for the VM. There are three possible configurations:
 /// 1. No module publishing, only whitelisted scripts are allowed.
@@ -84,7 +90,8 @@ impl CostTableInner {
 }
 
 impl OnChainConfig for VMConfig {
-    const IDENTIFIER: &'static str = "VMConfig";
+    const MODULE_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = VM_CONFIG_MODULE_NAME;
 
     fn deserialize_into_config(bytes: &[u8]) -> Result<Self> {
         let raw_vm_config = scs::from_bytes::<VMConfigInner>(&bytes).map_err(|e| {
@@ -96,4 +103,13 @@ impl OnChainConfig for VMConfig {
         let gas_schedule = raw_vm_config.gas_schedule.as_cost_table()?;
         Ok(VMConfig { gas_schedule })
     }
+}
+
+pub fn vm_config_type_tag() -> TypeTag {
+    TypeTag::Struct(StructTag {
+        address: CORE_CODE_ADDRESS,
+        module: VM_CONFIG_IDENTIFIER.clone(),
+        name: VM_CONFIG_IDENTIFIER.clone(),
+        type_params: vec![],
+    })
 }

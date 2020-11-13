@@ -17,7 +17,7 @@ use starcoin_types::transaction;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::env::current_dir;
@@ -31,7 +31,7 @@ use structopt::StructOpt;
 /// Generate multisig txn running stdlib script or custom script.
 /// And output the txn to file, waiting for other signers to sign the txn.
 pub struct GenerateMultisigTxnOpt {
-    #[structopt(short = "s", parse(try_from_str = parse_address))]
+    #[structopt(short = "s")]
     /// account address of the multisig account.
     sender: Option<AccountAddress>,
 
@@ -62,11 +62,11 @@ pub struct GenerateMultisigTxnOpt {
     help = "can specify multi type_tag",
     parse(try_from_str = parse_type_tag)
     )]
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
     /// transaction arguments
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 
     #[structopt(
         name = "expiration_time",
@@ -166,11 +166,15 @@ impl CommandAction for GenerateMultisigTxnCommand {
             bail!("address {} not exists on chain", &sender);
         }
         let account_resource = account_resource.unwrap();
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
         let script_txn = RawUserTransaction::new_script(
             sender,
             account_resource.sequence_number(),
-            Script::new(bytecode, opt.type_tags.clone(), args),
+            Script::new(
+                bytecode,
+                opt.type_tags.clone().unwrap_or_default(),
+                args.unwrap_or_default(),
+            ),
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,

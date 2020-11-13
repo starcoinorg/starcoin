@@ -13,7 +13,7 @@ use starcoin_transaction_builder::StdlibScript;
 use starcoin_types::transaction::{
     parse_transaction_argument, RawUserTransaction, Script, TransactionArgument,
 };
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
@@ -21,7 +21,7 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "execute-builtin")]
 pub struct ExecuteBuiltInScriptOpt {
-    #[structopt(short = "s", parse(try_from_str = parse_address))]
+    #[structopt(short = "s")]
     /// if `sender` is absent, use default account.
     sender: Option<AccountAddress>,
 
@@ -36,11 +36,11 @@ pub struct ExecuteBuiltInScriptOpt {
     parse(try_from_str = parse_type_tag)
     )]
     /// type tags for the script
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the script.
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 
     #[structopt(
         name = "expiration_time",
@@ -104,13 +104,13 @@ impl CommandAction for ExecuteBuildInCommand {
         }
 
         let account_resource = account_resource.unwrap();
-        let expiration_time = opt.expiration_time + node_info.now;
+        let expiration_time = opt.expiration_time + node_info.now_seconds;
 
         let bytecode =
             compiled_transaction_script(StdlibVersion::Latest, opt.script_name).into_vec();
 
-        let type_tags = opt.type_tags.clone();
-        let args = opt.args.clone();
+        let type_tags = opt.type_tags.clone().unwrap_or_default();
+        let args = opt.args.clone().unwrap_or_default();
 
         let script_txn = RawUserTransaction::new_script(
             sender.address,

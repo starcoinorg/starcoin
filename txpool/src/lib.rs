@@ -19,8 +19,10 @@ use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
 use tx_relay::{PeerTransactions, PropagateNewTransactions};
+use types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
 
 pub use pool::TxStatus;
+use serde::export::Option::Some;
 pub use tx_pool_service_impl::TxPoolService;
 
 mod counters;
@@ -33,6 +35,7 @@ mod tx_pool_service_impl;
 #[derive(Clone)]
 pub struct TxPoolActorService {
     inner: Inner,
+    sync_status: Option<SyncStatus>,
 }
 
 impl std::fmt::Debug for TxPoolActorService {
@@ -43,7 +46,17 @@ impl std::fmt::Debug for TxPoolActorService {
 
 impl TxPoolActorService {
     fn new(inner: Inner) -> Self {
-        Self { inner }
+        Self {
+            inner,
+            sync_status: None,
+        }
+    }
+
+    pub fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
+            None => false,
+        }
     }
 }
 
@@ -73,14 +86,20 @@ impl ServiceFactory<Self> for TxPoolActorService {
 
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<PeerTransactions>();
+        ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.add_stream(self.inner.subscribe_txns());
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<PeerTransactions>();
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         Ok(())
+    }
+}
+
+impl EventHandler<Self, SyncStatusChangeEvent> for TxPoolActorService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.sync_status = Some(msg.0);
     }
 }
 
@@ -132,9 +151,14 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
 
 impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
     fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
-        // JUST need to keep at most once delivery.
-        let txns = msg.peer_transactions();
-        let _ = self.inner.import_txns(txns);
+        //TODO should filter msg an NetworkService
+        if self.is_synced() {
+            // JUST need to keep at most once delivery.
+            let txns = msg.peer_transactions();
+            let _ = self.inner.import_txns(txns);
+        } else {
+            debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
+        }
     }
 }
 

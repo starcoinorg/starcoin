@@ -5,6 +5,7 @@ use anyhow::{bail, format_err, Result};
 use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumulator};
+use starcoin_executor::{execute_block_transactions, execute_transactions};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::genesis_config::ChainId;
@@ -138,7 +139,7 @@ impl OpenedBlock {
                 .gas_limit
                 .checked_sub(self.gas_used)
                 .expect("block gas_used exceed block gas_limit");
-            executor::execute_block_transactions(&self.state, txns.clone(), gas_left)?
+            execute_block_transactions(&self.state, txns.clone(), gas_left)?
         };
 
         let untouched_user_txns: Vec<SignedUserTransaction> = if txn_outputs.len() >= txns.len() {
@@ -180,7 +181,7 @@ impl OpenedBlock {
     fn initialize(&mut self) -> Result<()> {
         let block_metadata_txn = Transaction::BlockMetadata(self.block_meta.clone());
         let block_meta_txn_hash = block_metadata_txn.id();
-        let mut results = executor::execute_transactions(&self.state, vec![block_metadata_txn])
+        let mut results = execute_transactions(&self.state, vec![block_metadata_txn])
             .map_err(BlockExecutorError::BlockTransactionExecuteErr)?;
         let output = results.pop().expect("execute txn has output");
 
@@ -224,7 +225,7 @@ impl OpenedBlock {
             gas_used,
             status,
         );
-        let (accumulator_root, _) = self.txn_accumulator.append(&[txn_info.id()])?;
+        let accumulator_root = self.txn_accumulator.append(&[txn_info.id()])?;
         Ok((txn_state_root, accumulator_root))
     }
 

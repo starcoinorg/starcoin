@@ -11,6 +11,7 @@ use proptest_derive::Arbitrary;
 #[cfg(any(test, feature = "fuzzing"))]
 use rand::{rngs::OsRng, RngCore};
 use serde::{de, ser, Deserialize, Serialize};
+use std::str::FromStr;
 use std::{
     convert::{TryFrom, TryInto},
     fmt,
@@ -107,12 +108,7 @@ impl<'de> de::Deserialize<'de> for EventKey {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            Self::try_from(
-                hex::decode(s)
-                    .map_err(<D::Error as ::serde::de::Error>::custom)?
-                    .as_slice(),
-            )
-            .map_err(<D::Error as ::serde::de::Error>::custom)
+            Self::from_str(s.as_str()).map_err(<D::Error as ::serde::de::Error>::custom)
         } else {
             // See comment in serialize.
             #[derive(::serde::Deserialize)]
@@ -138,6 +134,16 @@ impl TryFrom<&[u8]> for EventKey {
         let mut addr = [0u8; Self::LENGTH];
         addr.copy_from_slice(bytes);
         Ok(EventKey(addr))
+    }
+}
+
+impl FromStr for EventKey {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or_else(|| s);
+        let data = hex::decode(s)?;
+        Self::try_from(data.as_slice())
     }
 }
 
@@ -198,6 +204,6 @@ impl fmt::LowerHex for EventKey {
 impl fmt::Display for EventKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         // Forward to the LowerHex impl with a "0x" prepended (the # flag).
-        write!(f, "{:#x}", self)
+        write!(f, "0x{:#x}", self)
     }
 }

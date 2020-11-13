@@ -30,7 +30,7 @@ use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState},
     peer_info::PeerId,
     startup_info::StartupInfo,
-    system_events::{MinedBlock, SyncDone, SystemStarted},
+    system_events::{MinedBlock, SystemStarted},
     U256,
 };
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -140,10 +140,14 @@ impl ActorService for DownloadService {
 }
 
 impl EventHandler<Self, SyncTaskType> for DownloadService {
-    fn handle_event(&mut self, task_type: SyncTaskType, ctx: &mut ServiceContext<DownloadService>) {
+    fn handle_event(
+        &mut self,
+        task_type: SyncTaskType,
+        _ctx: &mut ServiceContext<DownloadService>,
+    ) {
         self.sync_task.drop_task(&task_type);
         if self.sync_task.is_finish() {
-            ctx.broadcast(SyncDone);
+            //ctx.broadcast(SyncDone);
             self.need_sync_state.store(false, Ordering::Relaxed);
             self.syncing.store(false, Ordering::Relaxed);
             self.downloader.set_pivot(None);
@@ -370,7 +374,9 @@ impl DownloadService {
                 let peer_selector = network
                     .peer_selector()
                     .await?
-                    .filter_by_block_number(latest_number);
+                    .selector()
+                    .filter_by_block_number(latest_number)
+                    .into_selector();
                 let verified_rpc_client =
                     VerifiedRpcClient::new_with_client(peer_selector, rpc_client.clone());
                 let block_sync_task = BlockSyncTaskActor::launch(
@@ -492,7 +498,9 @@ impl DownloadService {
                         let peer_selector = network
                             .peer_selector()
                             .await?
-                            .filter_by_block_number(end_number);
+                            .selector()
+                            .filter_by_block_number(end_number)
+                            .into_selector();
                         let verified_rpc_client =
                             VerifiedRpcClient::new_with_client(peer_selector, rpc_client.clone());
                         let block_sync_task = BlockSyncTaskActor::launch(

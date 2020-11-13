@@ -18,6 +18,7 @@ pub struct MinerConfig {
 #[serde(deny_unknown_fields)]
 pub struct MinerClientConfig {
     pub server: Option<String>,
+    pub plugin_path: Option<String>,
     pub thread_num: u16,
     #[serde(skip)]
     pub enable_stderr: bool,
@@ -37,6 +38,7 @@ impl ConfigModule for MinerConfig {
             enable_miner_client: !opt.disable_miner_client,
             client_config: MinerClientConfig {
                 server: None,
+                plugin_path: None,
                 thread_num: opt.miner_thread.unwrap_or(1),
                 enable_stderr: false,
             },

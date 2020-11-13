@@ -1,20 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use super::test_helper::{
-    compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
-    prepare_genesis,
-};
-use crate::encode_create_account_script;
-use crate::test_helper::{
-    account_execute, association_execute, build_raw_txn, TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
-};
+use crate::account::{create_account_txn_sent_as_association, peer_to_peer_txn};
+use crate::{encode_create_account_script, Account};
 use anyhow::anyhow;
 use anyhow::Result;
 use logger::prelude::*;
-use starcoin_functional_tests::account::{
-    create_account_txn_sent_as_association, peer_to_peer_txn, Account,
-};
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::identifier::Identifier;
@@ -32,8 +23,16 @@ use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
 use starcoin_vm_types::values::VMValueCast;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::{transaction::Package, vm_status::StatusCode};
+use starcoin_vm_types::{transaction::Package, values::Value, vm_status::StatusCode};
 use stdlib::transaction_scripts::compiled_transaction_script;
+use test_helper::executor::{
+    account_execute, association_execute, build_raw_txn, TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
+};
+use test_helper::executor::{
+    compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
+    prepare_genesis,
+};
+// use test_helper::Account;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
 #[derive(Default)]
@@ -65,7 +64,7 @@ fn test_vm_version() {
             &version_module_id,
             &Identifier::new("get").unwrap(),
             vec![],
-            vec![],
+            vec![Value::address(genesis_address())],
         )
         .unwrap();
     let readed_version: u64 = read_version.pop().unwrap().1.cast().unwrap();
@@ -136,7 +135,7 @@ fn test_txn_verify_err_case() -> Result<()> {
 #[stest::test(timeout = 360)]
 fn test_package_txn() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let alice = Account::new();
+    let alice = test_helper::Account::new();
     let bob = Account::new();
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
 
@@ -167,28 +166,6 @@ fn test_package_txn() -> Result<()> {
             &chain_state,
             TransactionPayload::Script(script),
         )?;
-    }
-
-    // test on invalid sender on package txn
-    {
-        let module = compile_module_with_address(*bob.address(), TEST_MODULE);
-        let package = Package::new_with_module(module)?;
-        // let package_hash = package.crypto_hash();
-
-        let mut vm = StarcoinVM::new();
-        let txn = alice.sign_txn(build_raw_txn(
-            *alice.address(),
-            &chain_state,
-            TransactionPayload::Package(package),
-            net.chain_id(),
-        ));
-        let verify_result = vm.verify_transaction(&chain_state, txn);
-        assert!(verify_result.is_some());
-        let vm_status = verify_result.unwrap();
-        assert_eq!(
-            vm_status.status_code(),
-            StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
-        );
     }
 
     // verify package txn

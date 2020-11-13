@@ -6,7 +6,7 @@ use crate::account_storage::AccountStorage;
 use anyhow::{format_err, Result};
 use starcoin_account_api::error::AccountError;
 use starcoin_account_api::{AccountInfo, AccountPrivateKey, AccountPublicKey, AccountResult};
-use starcoin_crypto::PrivateKey;
+use starcoin_crypto::{PrivateKey, ValidCryptoMaterial};
 use starcoin_storage::storage::StorageInstance;
 use starcoin_types::account_address;
 use starcoin_types::account_address::AccountAddress;

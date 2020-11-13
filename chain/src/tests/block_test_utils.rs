@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crypto::HashValue;
-use executor::DEFAULT_EXPIRATION_TIME;
 use logger::prelude::*;
 use proptest::{collection::vec, prelude::*};
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_config::NodeConfig;
+use starcoin_executor::{block_execute, DEFAULT_EXPIRATION_TIME};
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
@@ -226,7 +226,7 @@ fn gen_root_hashes(
     //state_db
     let chain_state = ChainStateDB::new(storage.clone(), Some(pre_state_root));
 
-    match executor::block_execute(&chain_state, block_txns, block_gat_limit) {
+    match block_execute(&chain_state, block_txns, block_gat_limit) {
         Ok(executed_data) => {
             let txn_accumulator = MerkleAccumulator::new(
                 pre_accumulator_root,
@@ -241,8 +241,7 @@ fn gen_root_hashes(
                 .iter()
                 .map(|info| info.id())
                 .collect();
-            let (accumulator_root, _first_leaf_idx) =
-                txn_accumulator.append(&included_txn_info_hashes).unwrap();
+            let accumulator_root = txn_accumulator.append(&included_txn_info_hashes).unwrap();
             (accumulator_root, executed_data.state_root)
         }
         // Err(err) => {
@@ -281,7 +280,7 @@ proptest! {
         let chain_state = ChainStateDB::new(Arc::new(storage), None);
         let mut account = AccountInfoUniverse::default().unwrap();
         let txns = txn_transfer(&mut account, gens);
-        let result = executor::block_execute(&chain_state, txns, 0);
+        let result = block_execute(&chain_state, txns, 0);
         info!("execute result: {:?}", result);
     }
 }

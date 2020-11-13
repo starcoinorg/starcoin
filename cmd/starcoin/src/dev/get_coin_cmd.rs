@@ -84,7 +84,7 @@ impl CommandAction for GetCoinCommand {
             amount,
             1,
             DEFAULT_MAX_GAS_AMOUNT,
-            node_info.now + DEFAULT_EXPIRATION_TIME,
+            node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
             ctx.state().net().chain_id(),
         );
         client.account_unlock(

@@ -1,6 +1,6 @@
 [package]
 name = "network-rpc-derive"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -16,7 +16,7 @@ quote = "1.0.6"
 proc-macro-crate = "0.1.4"
 
 futures = "0.3"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 serde = { version = "1.0", features = ["derive"] }
 
 starcoin-types = {path = "../../types"}

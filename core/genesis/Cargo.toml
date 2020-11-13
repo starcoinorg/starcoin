@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-genesis"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -8,11 +8,11 @@ edition = "2018"
 
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 structopt = "0.3.20"
 once_cell = "1.4.1"
-starcoin-types = {path = "../../types"}
+starcoin-types = {path = "../../types", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto"}
 serde = { version = "1.0" }
 starcoin-config = { path = "../../config"}
@@ -30,3 +30,7 @@ stdlib = { path = "../../vm/stdlib"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-chain = { path = "../../chain"}
+
+[features]
+default = []
+fuzzing = ["starcoin-types/fuzzing"]

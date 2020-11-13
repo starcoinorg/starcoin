@@ -5,6 +5,7 @@ use anyhow::Result;
 use starcoin_account_api::message::{AccountRequest, AccountResponse};
 use starcoin_account_lib::{account_storage::AccountStorage, AccountManager};
 use starcoin_config::NodeConfig;
+use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceFactory, ServiceHandler};

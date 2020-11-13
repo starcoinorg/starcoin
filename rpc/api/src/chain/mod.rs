@@ -60,10 +60,6 @@ pub trait ChainApi {
     #[rpc(name = "chain.get_events")]
     fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>>;
 
-    /// Get branches of current chain, first is master.
-    #[rpc(name = "chain.branches")]
-    fn branches(&self) -> FutureResult<Vec<ChainInfo>>;
-
     /// Get current epoch info.
     #[rpc(name = "chain.epoch")]
     fn current_epoch(&self) -> FutureResult<EpochInfo>;

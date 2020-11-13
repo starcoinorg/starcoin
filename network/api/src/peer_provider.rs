@@ -6,7 +6,9 @@ use crate::PeerInfo;
 use anyhow::{format_err, Result};
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
+use itertools::Itertools;
 use rand::prelude::IteratorRandom;
+use rand::prelude::SliceRandom;
 use starcoin_types::block::BlockNumber;
 
 pub trait PeerProvider: Send + Sync {
@@ -14,7 +16,7 @@ pub trait PeerProvider: Send + Sync {
 
     fn best_peer(&self) -> BoxFuture<Result<Option<PeerInfo>>> {
         self.peer_selector()
-            .and_then(|selector| async move { Ok(selector.bests().random()) })
+            .and_then(|selector| async move { Ok(selector.bests().random().cloned()) })
             .boxed()
     }
 
@@ -39,6 +41,73 @@ pub trait PeerProvider: Send + Sync {
     }
 }
 
+pub struct Selector<'a> {
+    peers: Vec<&'a PeerInfo>,
+}
+
+impl<'a> Selector<'a> {
+    pub fn new(peers: Vec<&'a PeerInfo>) -> Self {
+        Self { peers }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(vec![])
+    }
+
+    pub fn first(&self) -> Option<&PeerInfo> {
+        self.peers.get(0).copied()
+    }
+
+    pub fn random_peer_id(&self) -> Option<PeerId> {
+        self.random().map(|info| info.peer_id.clone())
+    }
+
+    pub fn random(&self) -> Option<&PeerInfo> {
+        self.peers.choose(&mut rand::thread_rng()).copied()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.peers.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.peers.len()
+    }
+
+    pub fn filter<P>(self, predicate: P) -> Selector<'a>
+    where
+        P: Fn(&PeerInfo) -> bool + Send + 'static,
+    {
+        if self.is_empty() {
+            return self;
+        }
+        Selector::new(
+            self.peers
+                .into_iter()
+                .filter(|peer| predicate(peer))
+                .collect(),
+        )
+    }
+
+    pub fn filter_by_block_number(self, block_number: BlockNumber) -> Selector<'a> {
+        self.filter(move |peer| peer.latest_header.number >= block_number)
+    }
+
+    pub fn cloned(self) -> Vec<PeerInfo> {
+        self.peers.into_iter().cloned().collect()
+    }
+
+    pub fn into_selector(self) -> PeerSelector {
+        PeerSelector::new(self.cloned())
+    }
+}
+
+impl<'a> From<Vec<&'a PeerInfo>> for Selector<'a> {
+    fn from(peers: Vec<&'a PeerInfo>) -> Self {
+        Self::new(peers)
+    }
+}
+
 #[derive(Clone)]
 pub struct PeerSelector {
     peers: Vec<PeerInfo>,
@@ -60,37 +129,27 @@ impl PeerSelector {
     }
 
     /// Filter by the max total_difficulty
-    pub fn bests(self) -> Self {
+    pub fn bests(&self) -> Selector {
         if self.is_empty() {
-            return self;
+            return Selector::empty();
         }
-        let mut peers = self.peers;
-        Self::sort(&mut peers);
-        let max_total_difficulty = peers[0].total_difficulty;
-        let best_peers = peers
-            .into_iter()
-            .take_while(|peer| peer.total_difficulty == max_total_difficulty)
-            .collect();
-        Self::new(best_peers)
+        let peers: Vec<&PeerInfo> = vec![];
+        let best_peers = self
+            .peers
+            .iter()
+            .sorted_by_key(|info| info.total_difficulty)
+            .rev()
+            .fold(peers, |mut peers, peer| {
+                if peers.is_empty() || peer.total_difficulty >= peers[0].total_difficulty {
+                    peers.push(peer);
+                };
+                peers
+            });
+        Selector::new(best_peers)
     }
 
-    pub fn filter<P>(self, predicate: P) -> Self
-    where
-        P: Fn(&PeerInfo) -> bool + Send + 'static,
-    {
-        if self.is_empty() {
-            return self;
-        }
-        Self::new(
-            self.peers
-                .into_iter()
-                .filter(|peer| predicate(peer))
-                .collect(),
-        )
-    }
-
-    pub fn filter_by_block_number(self, block_number: BlockNumber) -> Self {
-        self.filter(move |peer| peer.latest_header.number >= block_number)
+    pub fn selector(&self) -> Selector {
+        Selector::new(self.peers.as_slice().iter().collect())
     }
 
     pub fn random_peer_id(&self) -> Option<PeerId> {
@@ -100,12 +159,16 @@ impl PeerSelector {
             .map(|info| info.peer_id.clone())
     }
 
-    pub fn random(&self) -> Option<PeerInfo> {
-        self.peers.iter().choose(&mut rand::thread_rng()).cloned()
+    pub fn random(&self) -> Option<&PeerInfo> {
+        self.peers.iter().choose(&mut rand::thread_rng())
     }
 
-    pub fn first(&self) -> Option<PeerId> {
-        self.peers.get(0).map(|info| info.peer_id.clone())
+    pub fn peers(&self) -> &[PeerInfo] {
+        self.peers.as_slice()
+    }
+
+    pub fn first(&self) -> Option<&PeerInfo> {
+        self.peers.get(0)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -147,7 +210,7 @@ mod tests {
         ];
 
         let peer_selector = PeerSelector::new(peers);
-        let beat_selector = peer_selector.clone().bests();
+        let beat_selector = peer_selector.bests();
         assert_eq!(2, beat_selector.len());
 
         let top_selector = peer_selector.top(3);

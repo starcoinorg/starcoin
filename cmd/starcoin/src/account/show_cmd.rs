@@ -9,14 +9,14 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::ValidCryptoMaterialStringExt;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
-use starcoin_vm_types::account_address::{parse_address, AccountAddress};
+use starcoin_vm_types::account_address::AccountAddress;
 use std::collections::HashMap;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
 #[structopt(name = "show")]
 pub struct ShowOpt {
-    #[structopt(name = "account_address", parse(try_from_str = parse_address))]
+    #[structopt(name = "account_address")]
     account_address: Option<AccountAddress>,
 }
 

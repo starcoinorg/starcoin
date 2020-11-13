@@ -3,7 +3,6 @@
 
 use crate::module::map_err;
 use jsonrpc_core::Result;
-use starcoin_crypto::HashValue;
 use starcoin_miner::MinerService;
 use starcoin_rpc_api::miner::MinerApi;
 use starcoin_service_registry::ServiceRef;
@@ -20,9 +19,12 @@ impl MinerRpcImpl {
 }
 
 impl MinerApi for MinerRpcImpl {
-    fn submit(&self, header_hash: HashValue, nonce: u64) -> Result<()> {
+    fn submit(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
         self.miner_service
-            .notify(SubmitSealEvent { nonce, header_hash })
+            .notify(SubmitSealEvent {
+                nonce,
+                minting_blob,
+            })
             .map_err(|e| map_err(e.into()))
     }
 }

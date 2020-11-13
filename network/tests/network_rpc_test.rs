@@ -14,6 +14,7 @@ use starcoin_service_registry::mocker::mock;
 use starcoin_service_registry::{RegistryAsyncService, ServiceContext};
 use std::any::Any;
 use test_helper::build_network;
+use test_helper::network::MockPeerMessageHandler;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct TestRequest {
@@ -34,13 +35,20 @@ async fn test_network_raw_rpc() {
     use std::time::Duration;
 
     let mocker1 = mock(mock_rpc_handler);
-    let (network1, node_config1, .., registry1) = build_network(None, Some(mocker1)).await.unwrap();
+    let mock_message_handler1 = MockPeerMessageHandler::default();
+    let (network1, node_config1, .., registry1) =
+        build_network(None, Some(mocker1), mock_message_handler1)
+            .await
+            .unwrap();
 
     let seed: Multiaddr = node_config1.network.self_address().unwrap();
 
+    let mock_message_handler2 = MockPeerMessageHandler::default();
     let mocker2 = mock(mock_rpc_handler);
     let (network2, _node_config2, .., registry2) =
-        build_network(Some(seed), Some(mocker2)).await.unwrap();
+        build_network(Some(seed), Some(mocker2), mock_message_handler2)
+            .await
+            .unwrap();
 
     let request = TestRequest {
         data: HashValue::random(),

@@ -10,7 +10,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
 const CONSENSUS_CONFIG_MODULE_NAME: &str = "ConsensusConfig";
-static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
+pub static CONSENSUS_CONFIG_IDENTIFIER: Lazy<Identifier> =
     Lazy::new(|| Identifier::new(CONSENSUS_CONFIG_MODULE_NAME).unwrap());
 
 /// The Consensus on chain.
@@ -30,7 +30,8 @@ pub struct ConsensusConfig {
 }
 
 impl OnChainConfig for ConsensusConfig {
-    const IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const MODULE_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
+    const CONF_IDENTIFIER: &'static str = CONSENSUS_CONFIG_MODULE_NAME;
 }
 
 pub fn consensus_config_type_tag() -> TypeTag {

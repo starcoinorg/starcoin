@@ -4,7 +4,6 @@
 use anyhow::{format_err, Result};
 use chain::BlockChain;
 use consensus::Consensus;
-use crypto::HashValue;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
@@ -15,10 +14,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 mod create_block_template;
-pub mod headblock_pacemaker;
+pub mod generate_block_event_pacemaker;
 pub mod job_bus_client;
 mod metrics;
-pub mod ondemand_pacemaker;
 pub mod task;
 
 use crate::metrics::MINER_METRICS;
@@ -67,7 +65,7 @@ impl ActorService for MinerService {
 
 impl EventHandler<Self, SubmitSealEvent> for MinerService {
     fn handle_event(&mut self, event: SubmitSealEvent, ctx: &mut ServiceContext<MinerService>) {
-        if let Err(e) = self.finish_task(event.nonce, event.header_hash, ctx) {
+        if let Err(e) = self.finish_task(event.nonce, event.minting_blob.clone(), ctx) {
             error!("Process SubmitSealEvent {:?} fail: {:?}", event, e);
         }
     }
@@ -98,14 +96,17 @@ impl MinerService {
                 .strategy()
                 .calculate_next_difficulty(&block_chain, &epoch)?;
             let task = MintTask::new(block_template, difficulty);
-            let mining_hash = task.mining_hash;
-            if self.is_minting() {
-                warn!("force set mint task, since mint task is not empty");
+            let mining_blob = task.minting_blob.clone();
+            if let Some(current_task) = self.current_task.as_ref() {
+                debug!(
+                    "force set mint task, current_task: {:?}, new_task: {:?}",
+                    current_task, task
+                );
             }
             self.current_task = Some(task);
             ctx.broadcast(MintBlockEvent::new(
                 block_chain.consensus(),
-                mining_hash,
+                mining_blob,
                 difficulty,
             ));
             Ok(())
@@ -114,21 +115,22 @@ impl MinerService {
 
     pub fn finish_task(
         &mut self,
-        nonce: u64,
-        header_hash: HashValue,
+        nonce: u32,
+        minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<MinerService>,
     ) -> Result<()> {
         let task = self.current_task.take().ok_or_else(|| {
             format_err!(
-                "MintTask is none, but got nonce: {} for header_hash: {:?}",
+                "MintTask is none, but got nonce: {} for minting_blob: {:?}",
                 nonce,
-                header_hash
+                minting_blob,
             )
         })?;
-        if task.mining_hash != header_hash {
+
+        if task.minting_blob != minting_blob {
             warn!(
                 "Header hash mismatch expect: {:?}, got: {:?}, probably received old job result.",
-                task.mining_hash, header_hash
+                task.minting_blob, minting_blob
             );
             self.current_task = Some(task);
             return Ok(());
@@ -147,9 +149,9 @@ impl MinerService {
 
 impl EventHandler<Self, GenerateBlockEvent> for MinerService {
     fn handle_event(&mut self, event: GenerateBlockEvent, ctx: &mut ServiceContext<MinerService>) {
-        info!("Handle GenerateBlockEvent:{:?}", event);
+        debug!("Handle GenerateBlockEvent:{:?}", event);
         if !event.force && self.is_minting() {
-            info!("Miner has mint job so just ignore this event.");
+            debug!("Miner has mint job so just ignore this event.");
             return;
         }
         if let Err(err) = self.dispatch_task(ctx) {

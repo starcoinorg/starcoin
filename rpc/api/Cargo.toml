@@ -1,13 +1,13 @@
 [package]
 name = "starcoin-rpc-api"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
@@ -27,9 +27,11 @@ starcoin-types = { path = "../../types"}
 starcoin-account-api = { path = "../../account/api"}
 starcoin-txpool-api = {path = "../../txpool/api"}
 starcoin-state-api = { path = "../../state/api"}
+starcoin-sync-api = { path = "../../sync/api"}
 starcoin-config = { path = "../../config"}
 starcoin-crypto = { path = "../../commons/crypto"}
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-vm-types = { path = "../../vm/types" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
+starcoin-resource-viewer = {path = "../../vm/resource-viewer"}

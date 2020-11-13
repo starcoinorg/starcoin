@@ -1,28 +1,30 @@
 [package]
 name = "starcoin-node"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 thiserror = "1.0"
-backtrace = "0.3.53"
+backtrace = "0.3.54"
 actix = "0.10.0"
 actix-rt = "1.1"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 futures-timer = "3.0"
 async-trait = "0.1"
-async-std = "1.6"
+async-std = "1.7"
 timeout-join-handler = {path = "../commons/timeout-join-handler"}
 starcoin-metrics = {path = "../commons/metrics"}
 starcoin-config = {path = "../config"}
 starcoin-consensus = {path = "../consensus"}
 starcoin-executor = {path = "../executor"}
+network-api = {path = "../network/api"}
 starcoin-network = {path = "../network"}
+starcoin-tx-relay = {path="../txpool/tx-relay"}
 starcoin-txpool = { path = "../txpool" }
 starcoin-chain-service = { path = "../chain/service" }
 starcoin-chain-notify = { path = "../chain/chain-notify" }
@@ -42,6 +44,7 @@ starcoin-statedb = { path = "../state/statedb"}
 starcoin-state-service = { path = "../state/service"}
 starcoin-txpool-api = {path = "../txpool/api"}
 starcoin-sync-api = {package="starcoin-sync-api", path="../sync/api"}
+starcoin-block-relayer-api = { path = "../block-relayer/api/" }
 starcoin-block-relayer = {path = "../block-relayer"}
 starcoin-network-rpc = {path = "../network-rpc"}
 starcoin-network-rpc-api = { path = "../network-rpc/api" }

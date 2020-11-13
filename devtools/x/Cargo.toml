@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-x"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -10,7 +10,7 @@ edition = "2018"
 serde = { version = "1.0.117", features = ["derive"] }
 serde_json = "1.0.59"
 structopt = "0.3.20"
-anyhow = "1.0.33"
+anyhow = "1.0.34"
 colored-diff = "0.2.2"
 guppy = { version = "0.5.0", features = ["summaries"] }
 indoc = "1.0.3"
@@ -19,7 +19,7 @@ env_logger = "0.7.1"
 log = "0.4.11"
 chrono = "0.4.19"
 glob = "0.3.0"
-x-core = { package="x-core", git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-libra-workspace-hack = { package="libra-workspace-hack", git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
-libra-x = { package="x", git = "https://github.com/starcoinorg/libra", rev="6e0b5f3be37f586f8bf9cb5e534ea138705b1e6f" }
+x-core = { package="x-core", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+libra-workspace-hack = { package="libra-workspace-hack", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+libra-x = { package="x", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }

@@ -3,7 +3,6 @@
 
 #![forbid(unsafe_code)]
 
-pub mod account;
 pub mod checker;
 pub mod common;
 pub mod compiler;
