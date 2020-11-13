@@ -48,7 +48,7 @@ mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
-use starcoin_service_registry::ServiceInfo;
+use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::TaskProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::sync_status::SyncStatus;
@@ -203,6 +203,17 @@ impl RpcClient {
             inner
                 .node_manager_client
                 .start_service(service_name)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn node_check_service(&self, service_name: String) -> anyhow::Result<ServiceStatus> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .node_manager_client
+                .check_service(service_name)
                 .compat()
                 .await
         })

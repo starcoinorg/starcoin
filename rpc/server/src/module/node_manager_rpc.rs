@@ -7,7 +7,7 @@ use futures::FutureExt;
 use starcoin_node_api::node_service::NodeAsyncService;
 use starcoin_rpc_api::node_manager::NodeManagerApi;
 use starcoin_rpc_api::FutureResult;
-use starcoin_service_registry::ServiceInfo;
+use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 
 pub struct NodeManagerRpcImpl<S>
 where
@@ -56,6 +56,12 @@ where
             Ok(())
         }
         .map_err(map_err);
+        Box::new(fut.boxed().compat())
+    }
+
+    fn check_service(&self, service_name: String) -> FutureResult<ServiceStatus> {
+        let service = self.service.clone();
+        let fut = async move { service.check_service(service_name).await }.map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 
