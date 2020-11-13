@@ -29,21 +29,21 @@ fn test_service_panic() {
         let result = service_ref.send(PanicRequest).await;
         assert!(result.is_err());
 
-        //wait registry to check service status
-        Delay::new(Duration::from_millis(3000)).await;
+        //wait registry service status report
+        Delay::new(Duration::from_millis(200)).await;
 
         let status = registry
-            .get_service_status(PanicService::service_name())
+            .check_service_status(PanicService::service_name())
             .await
             .unwrap();
-        assert_eq!(status, Some(ServiceStatus::Shutdown));
+        assert_eq!(status, ServiceStatus::Shutdown);
 
         let status = registry
-            .get_service_status(PanicService::service_name())
+            .check_service_status(PanicService::service_name())
             .await
             .unwrap();
 
-        assert_eq!(status, Some(Shutdown));
+        assert_eq!(status, Shutdown);
         registry.shutdown_system().await.unwrap();
         System::current().stop();
     });

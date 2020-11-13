@@ -3,7 +3,9 @@
 
 use crate::message::{NodeRequest, NodeResponse};
 use anyhow::Result;
-use starcoin_service_registry::{ActorService, ServiceHandler, ServiceInfo, ServiceRef};
+use starcoin_service_registry::{
+    ActorService, ServiceHandler, ServiceInfo, ServiceRef, ServiceStatus,
+};
 
 #[async_trait::async_trait]
 pub trait NodeAsyncService:
@@ -14,6 +16,8 @@ pub trait NodeAsyncService:
     async fn stop_service(&self, service_name: String) -> Result<()>;
 
     async fn start_service(&self, service_name: String) -> Result<()>;
+
+    async fn check_service(&self, service_name: String) -> Result<ServiceStatus>;
 
     async fn start_pacemaker(&self) -> Result<()>;
 
@@ -30,7 +34,7 @@ where
     A: std::marker::Send,
 {
     async fn list_service(&self) -> Result<Vec<ServiceInfo>> {
-        let response = self.send(NodeRequest::ListService).await?;
+        let response = self.send(NodeRequest::ListService).await??;
         if let NodeResponse::Services(services) = response {
             Ok(services)
         } else {
@@ -39,7 +43,7 @@ where
     }
 
     async fn stop_service(&self, service_name: String) -> Result<()> {
-        let response = self.send(NodeRequest::StopService(service_name)).await?;
+        let response = self.send(NodeRequest::StopService(service_name)).await??;
         if let NodeResponse::Result(result) = response {
             result
         } else {
@@ -48,7 +52,7 @@ where
     }
 
     async fn start_service(&self, service_name: String) -> Result<()> {
-        let response = self.send(NodeRequest::StartService(service_name)).await?;
+        let response = self.send(NodeRequest::StartService(service_name)).await??;
         if let NodeResponse::Result(result) = response {
             result
         } else {
@@ -56,8 +60,17 @@ where
         }
     }
 
+    async fn check_service(&self, service_name: String) -> Result<ServiceStatus> {
+        let response = self.send(NodeRequest::CheckService(service_name)).await??;
+        if let NodeResponse::ServiceStatus(status) = response {
+            Ok(status)
+        } else {
+            panic!("Unexpect response type.")
+        }
+    }
+
     async fn start_pacemaker(&self) -> Result<()> {
-        let response = self.send(NodeRequest::StartPacemaker).await?;
+        let response = self.send(NodeRequest::StartPacemaker).await??;
         if let NodeResponse::Result(result) = response {
             result
         } else {
@@ -66,7 +79,7 @@ where
     }
 
     async fn stop_pacemaker(&self) -> Result<()> {
-        let response = self.send(NodeRequest::StopPacemaker).await?;
+        let response = self.send(NodeRequest::StopPacemaker).await??;
         if let NodeResponse::Result(result) = response {
             result
         } else {

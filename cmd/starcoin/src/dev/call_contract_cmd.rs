@@ -40,10 +40,10 @@ pub struct CallContractOpt {
     help = "can specify multi type_tag",
     parse(try_from_str = parse_type_tag)
     )]
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 }
 
 pub struct CallContractCommand;
@@ -64,8 +64,8 @@ impl CommandAction for CallContractCommand {
             module_address: opt.module_address,
             module_name: opt.module_name.clone(),
             func: opt.func_name.clone(),
-            type_args: opt.type_tags.clone(),
-            args: opt.args.clone(),
+            type_args: opt.type_tags.clone().unwrap_or_default(),
+            args: opt.args.clone().unwrap_or_default(),
         };
 
         let result = ctx.state().client().contract_call(call)?;
