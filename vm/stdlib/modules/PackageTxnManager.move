@@ -90,7 +90,7 @@ address 0x1 {
                 let tpu = move_from<TwoPhaseUpgrade>(account_address);
                 let TwoPhaseUpgrade{plan:_, version_cap, upgrade_event} = tpu;
                 Event::destroy_handle<Self::UpgradeEvent>(upgrade_event);
-                Config::destory_modify_config_capability<Version::Version>(version_cap);
+                Config::destroy_modify_config_capability<Version::Version>(version_cap);
                 // UpgradePlanCapability may be extracted
                 if (exists<UpgradePlanCapability>(account_address)){
                     let cap = move_from<UpgradePlanCapability>(account_address);

@@ -535,6 +535,7 @@ Proposal state
 </code></pre>
 
 
+
 <a name="0x1_Dao_plugin"></a>
 
 ## Function `plugin`
@@ -2111,10 +2112,19 @@ set min action delay
 <b>aborts_if</b> len(expected_states) != 2;
 <b>aborts_if</b> expected_states[0] != <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>;
 <b>aborts_if</b> expected_states[1] != <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a>;
-<b>include</b> <a href="Dao.md#0x1_Dao_CheckProposalStates">CheckProposalStates</a>&lt;TokenT, ActionT&gt;{expected_states};
-<b>aborts_if</b> expected_states[0] == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a> && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
-<b>aborts_if</b> expected_states[1] == <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a> && <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
-<b>ensures</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<a name="0x1_Dao_proposal$63"></a>
+<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
+<b>aborts_if</b> proposal.id != proposal_id;
+<b>include</b> <a href="Dao.md#0x1_Dao_AbortIfTimestampNotExist">AbortIfTimestampNotExist</a>;
+<a name="0x1_Dao_current_time$64"></a>
+<b>let</b> current_time = <a href="Timestamp.md#0x1_Timestamp_spec_now_millseconds">Timestamp::spec_now_millseconds</a>();
+<a name="0x1_Dao_state$65"></a>
+<b>let</b> state = <a href="Dao.md#0x1_Dao__proposal_state">_proposal_state</a>(proposal, current_time);
+<b>aborts_if</b> (<b>forall</b> s in expected_states : s != state);
+<b>aborts_if</b> state == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a> && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+<b>aborts_if</b> state == <a href="Dao.md#0x1_Dao_EXTRACTED">EXTRACTED</a> && <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address).action);
+<b>modifies</b> <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 </code></pre>
 
 
@@ -2170,7 +2180,7 @@ set min action delay
 <pre><code><b>include</b> <a href="Dao.md#0x1_Dao_AbortIfTimestampNotExist">AbortIfTimestampNotExist</a>;
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_SPEC_GENESIS_ADDRESS">CoreAddresses::SPEC_GENESIS_ADDRESS</a>());
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$63"></a>
+<a name="0x1_Dao_proposal$66"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2189,7 +2199,7 @@ set min action delay
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$64"></a>
+<a name="0x1_Dao_proposal$67"></a>
 <b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
 <b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
@@ -2208,7 +2218,7 @@ set min action delay
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-<a name="0x1_Dao_vote$65"></a>
+<a name="0x1_Dao_vote$68"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 </code></pre>

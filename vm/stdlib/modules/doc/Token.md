@@ -389,20 +389,20 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
-<a name="0x1_Token_EDESTROY_TOKEN_NON_ZERO"></a>
-
-
-
-<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_TOKEN_NON_ZERO">EDESTROY_TOKEN_NON_ZERO</a>: u64 = 16;
-</code></pre>
-
-
-
 <a name="0x1_Token_EDESTROY_KEY_NOT_EMPTY"></a>
 
 
 
 <pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_KEY_NOT_EMPTY">EDESTROY_KEY_NOT_EMPTY</a>: u64 = 104;
+</code></pre>
+
+
+
+<a name="0x1_Token_EDESTROY_TOKEN_NON_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EDESTROY_TOKEN_NON_ZERO">EDESTROY_TOKEN_NON_ZERO</a>: u64 = 16;
 </code></pre>
 
 
