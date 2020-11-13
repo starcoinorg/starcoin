@@ -45,7 +45,7 @@ impl TaskState for FindAncestorTask {
             let current_number = self.start_number;
             let block_ids = self
                 .fetcher
-                .fetch_block_ids(current_number, true, self.batch_size as usize)
+                .fetch_block_ids(current_number, true, self.batch_size)
                 .await?;
             let id_and_numbers = block_ids
                 .into_iter()

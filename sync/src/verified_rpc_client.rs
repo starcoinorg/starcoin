@@ -342,7 +342,7 @@ impl VerifiedRpcClient {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>> {
         let peer_id = self.random_peer()?;
         let request = GetBlockIds {

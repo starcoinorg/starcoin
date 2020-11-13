@@ -36,12 +36,7 @@ pub trait Accumulator {
     /// Get leaf node by index.
     fn get_leaf(&self, leaf_index: u64) -> Result<Option<HashValue>>;
     /// Batch get leaves by index.
-    fn get_leaves(
-        &self,
-        start_index: u64,
-        reverse: bool,
-        max_size: usize,
-    ) -> Result<Vec<HashValue>>;
+    fn get_leaves(&self, start_index: u64, reverse: bool, max_size: u64) -> Result<Vec<HashValue>>;
     /// Get node by position.
     fn get_node_by_position(&self, position: u64) -> Result<Option<HashValue>>;
     /// Get proof by leaf index.
@@ -121,21 +116,11 @@ impl Accumulator for MerkleAccumulator {
             .get_node_hash(NodeIndex::from_leaf_index(leaf_index))
     }
 
-    fn get_leaves(
-        &self,
-        start_index: u64,
-        reverse: bool,
-        max_size: usize,
-    ) -> Result<Vec<HashValue>> {
+    fn get_leaves(&self, start_index: u64, reverse: bool, max_size: u64) -> Result<Vec<HashValue>> {
         let mut tree = self.tree.lock();
-        let max_size_u64 = max_size as u64;
         if reverse {
             let end = start_index + 1;
-            let begin = if end > max_size_u64 {
-                end - max_size_u64
-            } else {
-                0
-            };
+            let begin = if end > max_size { end - max_size } else { 0 };
             (begin..end)
                 .rev()
                 .map(|idx| {
@@ -150,7 +135,7 @@ impl Accumulator for MerkleAccumulator {
                 })
                 .collect()
         } else {
-            let mut end = start_index + max_size_u64;
+            let mut end = start_index + max_size;
             if end > tree.num_leaves {
                 end = tree.num_leaves;
             }

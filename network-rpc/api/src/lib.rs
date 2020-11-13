@@ -40,8 +40,8 @@ impl TransactionsData {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
     pub block_id: HashValue,
-    pub max_size: usize,
-    pub step: usize,
+    pub max_size: u64,
+    pub step: u64,
     pub reverse: bool,
 }
 
@@ -50,17 +50,17 @@ impl GetBlockHeaders {
         let mut numbers = Vec::new();
         let mut last_number = number;
         loop {
-            if numbers.len() >= self.max_size {
+            if numbers.len() as u64 >= self.max_size {
                 break;
             }
 
             last_number = if self.reverse {
-                if last_number < self.step as u64 {
+                if last_number < self.step {
                     break;
                 }
-                last_number - self.step as u64
+                last_number - self.step
             } else {
-                last_number + self.step as u64
+                last_number + self.step
             };
             numbers.push(last_number);
         }
@@ -90,8 +90,8 @@ impl Into<starcoin_types::block::BlockBody> for BlockBody {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeadersByNumber {
     pub number: BlockNumber,
-    pub max_size: usize,
-    pub step: usize,
+    pub max_size: u64,
+    pub step: u64,
 }
 
 impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
@@ -99,14 +99,14 @@ impl Into<Vec<BlockNumber>> for GetBlockHeadersByNumber {
         let mut numbers = Vec::new();
         let mut last_number = self.number;
         loop {
-            if numbers.len() >= self.max_size {
+            if numbers.len() as u64 >= self.max_size {
                 break;
             }
             numbers.push(last_number);
-            if last_number < self.step as u64 {
+            if last_number < self.step {
                 break;
             }
-            last_number -= self.step as u64
+            last_number -= self.step
         }
         numbers
     }
@@ -119,7 +119,7 @@ pub struct GetAccumulatorNodeByNodeHash {
 }
 
 impl GetBlockHeadersByNumber {
-    pub fn new(number: BlockNumber, step: usize, max_size: usize) -> Self {
+    pub fn new(number: BlockNumber, step: u64, max_size: u64) -> Self {
         GetBlockHeadersByNumber {
             number,
             max_size,
@@ -129,7 +129,7 @@ impl GetBlockHeadersByNumber {
 }
 
 impl GetBlockHeaders {
-    pub fn new(block_id: HashValue, step: usize, reverse: bool, max_size: usize) -> Self {
+    pub fn new(block_id: HashValue, step: u64, reverse: bool, max_size: u64) -> Self {
         GetBlockHeaders {
             block_id,
             max_size,
@@ -161,7 +161,7 @@ pub struct GetAccountState {
 pub struct GetBlockIds {
     pub start_number: BlockNumber,
     pub reverse: bool,
-    pub max_size: usize,
+    pub max_size: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, Eq, PartialEq)]
