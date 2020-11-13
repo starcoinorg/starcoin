@@ -30,7 +30,7 @@ pub struct CompileOpt {
         long = "dep",
         help = "path of dependency used to build, support multi deps"
     )]
-    deps: Vec<String>,
+    deps: Option<Vec<String>>,
 
     #[structopt(short = "o", name = "out_dir", help = "out dir", parse(from_os_str))]
     out_dir: Option<PathBuf>,
@@ -68,7 +68,7 @@ impl CommandAction for CompileCommand {
         }
         let mut deps = stdlib::stdlib_files();
         // add extra deps
-        deps.append(&mut ctx.opt().deps.clone());
+        deps.append(&mut ctx.opt().deps.clone().unwrap_or_default());
         let (sources, compile_result) = compile_source_string_no_report(
             std::fs::read_to_string(source_file_path)?.as_str(),
             &deps,
