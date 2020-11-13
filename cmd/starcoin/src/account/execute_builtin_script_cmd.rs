@@ -36,11 +36,11 @@ pub struct ExecuteBuiltInScriptOpt {
     parse(try_from_str = parse_type_tag)
     )]
     /// type tags for the script
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-args", parse(try_from_str = parse_transaction_argument))]
     /// args for the script.
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 
     #[structopt(
         name = "expiration_time",
@@ -109,8 +109,8 @@ impl CommandAction for ExecuteBuildInCommand {
         let bytecode =
             compiled_transaction_script(StdlibVersion::Latest, opt.script_name).into_vec();
 
-        let type_tags = opt.type_tags.clone();
-        let args = opt.args.clone();
+        let type_tags = opt.type_tags.clone().unwrap_or_default();
+        let args = opt.args.clone().unwrap_or_default();
 
         let script_txn = RawUserTransaction::new_script(
             sender.address,
