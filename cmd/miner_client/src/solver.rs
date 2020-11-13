@@ -19,7 +19,7 @@ pub fn create_solver(
             Ok(Box::new(CpuSolver::new(config, ts)))
         }
         Some(path) => unsafe {
-            let lib = Library::new(path).unwrap();
+            let lib = Library::new(path)?;
             let call_ref: libloading::Symbol<CreateSolver> = lib.get(SOLVER_CREATER)?;
             Ok(call_ref())
         },
