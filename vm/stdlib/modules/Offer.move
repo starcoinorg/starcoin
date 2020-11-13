@@ -20,15 +20,15 @@ module Offer {
 
     // Publish a value of type `Offered` under the sender's account. The value can be claimed by
     // either the `for` address or the transaction sender.
-    public fun create<Offered>(account: &signer, offered: Offered, for: address, lock_peroid: u64) {
-        let time_lock = Timestamp::now_seconds() + lock_peroid;
+    public fun create<Offered>(account: &signer, offered: Offered, for: address, lock_period: u64) {
+        let time_lock = Timestamp::now_seconds() + lock_period;
         //TODO should support multi Offer?
         move_to(account, Offer<Offered> { offered, for, time_lock });
     }
 
     spec fun create {
         include Timestamp::AbortsIfTimestampNotExists;
-        aborts_if Timestamp::now_seconds() + lock_peroid > max_u64();
+        aborts_if Timestamp::now_seconds() + lock_period > max_u64();
         aborts_if exists<Offer<Offered>>(Signer::address_of(account));
     }
 
