@@ -11,8 +11,9 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerService;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_server::module::{
-    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NodeManagerRpcImpl,
-    NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl, SyncManagerRpcImpl, TxPoolRpcImpl,
+    AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NetworkManagerRpcImpl,
+    NodeManagerRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl, SyncManagerRpcImpl,
+    TxPoolRpcImpl,
 };
 use starcoin_rpc_server::service::RpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
@@ -32,13 +33,14 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
         let network_service = ctx.get_shared::<NetworkAsyncService>()?;
-        let node_api = NodeRpcImpl::new(config.clone(), Some(network_service));
+        let node_api = NodeRpcImpl::new(config.clone(), Some(network_service.clone()));
         let node_manager_api = ctx
             .service_ref_opt::<NodeService>()?
             .map(|service_ref| NodeManagerRpcImpl::new(service_ref.clone()));
         let sync_manager_api = ctx
             .service_ref_opt::<SyncService2>()?
             .map(|service_ref| SyncManagerRpcImpl::new(service_ref.clone()));
+        let network_manager_api = NetworkManagerRpcImpl::new(network_service);
         let chain_api = ctx
             .service_ref_opt::<ChainReaderService>()?
             .map(|service_ref| ChainRpcImpl::new(service_ref.clone()));
@@ -68,6 +70,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             node_api,
             node_manager_api,
             sync_manager_api,
+            Some(network_manager_api),
             chain_api,
             txpool_api,
             account_api,

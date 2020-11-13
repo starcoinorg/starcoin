@@ -5,6 +5,7 @@ mod info_cmd;
 mod metrics_cmd;
 mod peers_cmd;
 
+pub mod network;
 pub mod service;
 pub mod sync;
 

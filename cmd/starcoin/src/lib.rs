@@ -64,9 +64,13 @@ pub fn add_command(
                         .subcommand(node::sync::StatusCommand)
                         .subcommand(node::sync::ProgressCommand)
                         .subcommand(node::sync::CancelCommand)
-                    //TODO support shutdown by command    
-                    //.subcommand(node::service::ShutdownSystemCommand),
-                ),
+                )
+                .subcommand(
+                Command::with_name("network")
+                    .subcommand(node::network::ConnectedPeersCommand)
+                    .subcommand(node::network::GetAddressCommand)
+                    .subcommand(node::network::AddPeerCommand)
+            ),
         )
         .command(
             Command::with_name("chain")

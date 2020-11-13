@@ -258,6 +258,23 @@ impl NetworkAsyncService {
         response
     }
 
+    pub fn add_peer(&self, peer: String) -> Result<()> {
+        self.network_service.add_peer(peer)
+    }
+
+    pub async fn connected_peers(&self) -> Vec<types::peer_info::PeerId> {
+        self.network_service
+            .connected_peers()
+            .await
+            .into_iter()
+            .map(|peer_id| peer_id.into())
+            .collect()
+    }
+
+    pub async fn get_address(&self, peer_id: types::peer_info::PeerId) -> Vec<Multiaddr> {
+        self.network_service.get_address(peer_id.into()).await
+    }
+
     pub fn start<H>(
         node_config: Arc<NodeConfig>,
         genesis_hash: HashValue,

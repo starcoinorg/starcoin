@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use libp2p::identity::PublicKey;
-use libp2p::multihash;
 use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 
@@ -13,6 +12,9 @@ use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
+
+pub use libp2p::multiaddr::Multiaddr;
+pub use libp2p::multihash::Multihash;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct PeerId(libp2p::PeerId);
@@ -41,7 +43,7 @@ impl PeerId {
 
     /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
     /// returns back the data as an error.
-    pub fn from_multihash(data: multihash::Multihash) -> Result<PeerId, multihash::Multihash> {
+    pub fn from_multihash(data: Multihash) -> Result<PeerId, Multihash> {
         Ok(Self::new(libp2p::PeerId::from_multihash(data)?))
     }
 
@@ -89,17 +91,25 @@ impl std::convert::AsRef<[u8]> for PeerId {
     }
 }
 
-impl TryFrom<multihash::Multihash> for PeerId {
-    type Error = multihash::Multihash;
+impl TryFrom<Multihash> for PeerId {
+    type Error = Multihash;
 
-    fn try_from(value: multihash::Multihash) -> Result<Self, Self::Error> {
+    fn try_from(value: Multihash) -> Result<Self, Self::Error> {
         PeerId::from_multihash(value)
     }
 }
 
-impl From<PeerId> for multihash::Multihash {
+impl From<PeerId> for Multihash {
     fn from(peer_id: PeerId) -> Self {
         peer_id.0.into()
+    }
+}
+
+impl FromStr for PeerId {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(libp2p::PeerId::from_str(s)?))
     }
 }
 
