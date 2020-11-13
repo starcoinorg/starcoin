@@ -96,6 +96,7 @@ module Dao {
     const ERR_QUROM_RATE_INVALID: u64 = 1406;
     const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
     const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
+    const ERR_ACTION_MUST_EXIST: u64 = 1409;
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
@@ -197,7 +198,7 @@ module Dao {
     /// propose a proposal.
     /// `action`: the actual action to execute.
     /// `action_delay`: the delay to execute after the proposal is agreed
-    public fun propose<TokenT: copyable, ActionT>(
+    public fun propose<TokenT: copyable, ActionT: copyable>(
         signer: &signer,
         action: ActionT,
         action_delay: u64,
@@ -253,7 +254,7 @@ module Dao {
     /// User can only vote once, then the stake is locked,
     /// which can only be unstaked by user after the proposal is expired, or cancelled, or executed.
     /// So think twice before casting vote.
-    public fun cast_vote<TokenT: copyable, ActionT>(
+    public fun cast_vote<TokenT: copyable, ActionT: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -333,7 +334,7 @@ module Dao {
         ensures !vote_exists ==> global<Vote<TokenT>>(sender).stake.value == stake.value;
     }
 
-    fun _cast_vote<TokenT: copyable, ActionT>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
+    fun _cast_vote<TokenT: copyable, ActionT: copyable>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, stake: Token::Token<TokenT>) {
         let stake_value = Token::value(&stake);
         Token::deposit(&mut vote.stake, stake);
         if (vote.agree) {
@@ -355,7 +356,7 @@ module Dao {
 
 
     /// Let user change their vote during the voting time.
-    public fun change_vote<TokenT: copyable, ActionT>(
+    public fun change_vote<TokenT: copyable, ActionT: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -419,7 +420,7 @@ module Dao {
         ensures vote.agree != agree ==> vote.agree == agree;
     }
 
-    fun _flip_vote<TokenT: copyable, ActionT>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
+    fun _flip_vote<TokenT: copyable, ActionT: copyable>(my_vote: &mut Vote<TokenT>, proposal: &mut Proposal<TokenT, ActionT>): u128 {
         my_vote.agree = !my_vote.agree;
         let total_voted = Token::value(&my_vote.stake);
         if (my_vote.agree) {
@@ -446,7 +447,7 @@ module Dao {
     }
 
     /// Revoke some voting powers from vote on `proposal_id` of `proposer_address`.
-    public fun revoke_vote<TokenT: copyable, ActionT>(
+    public fun revoke_vote<TokenT: copyable, ActionT: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -506,7 +507,7 @@ module Dao {
         ensures result.value == voting_power;
     }
 
-    fun _revoke_vote<TokenT: copyable, ActionT>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
+    fun _revoke_vote<TokenT: copyable, ActionT: copyable>(proposal: &mut Proposal<TokenT, ActionT>, vote: &mut Vote<TokenT>, to_revoke: u128): Token::Token<TokenT> {
         spec {
             assume vote.stake.value >= to_revoke;
         };
@@ -538,7 +539,7 @@ module Dao {
     }
 
     /// Retrieve back my staked token voted for a proposal.
-    public fun unstake_votes<TokenT: copyable, ActionT>(
+    public fun unstake_votes<TokenT: copyable, ActionT: copyable>(
         signer: &signer,
         proposer_address: address,
         proposal_id: u64,
@@ -582,7 +583,7 @@ module Dao {
 
 
     /// queue agreed proposal to execute.
-    public fun queue_proposal_action<TokenT: copyable, ActionT>(
+    public fun queue_proposal_action<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -604,7 +605,7 @@ module Dao {
     }
 
     /// extract proposal action to execute.
-    public fun extract_proposal_action<TokenT: copyable, ActionT>(
+    public fun extract_proposal_action<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ): ActionT acquires Proposal {
@@ -627,7 +628,7 @@ module Dao {
 
 
     /// remove terminated proposal from proposer
-    public fun destroy_terminated_proposal<TokenT: copyable, ActionT>(
+    public fun destroy_terminated_proposal<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ) acquires Proposal {
@@ -648,6 +649,10 @@ module Dao {
             quorum_votes: _,
             action,
         } = move_from<Proposal<TokenT, ActionT>>(proposer_address);
+        if (proposal_state == DEFEATED) {
+            assert(Option::is_some(&action), Errors::invalid_state(ERR_ACTION_MUST_EXIST));
+            let _ = Option::extract(&mut action);
+        };
         Option::destroy_none(action);
     }
 
@@ -656,13 +661,21 @@ module Dao {
         aborts_if len(expected_states) != 2;
         aborts_if expected_states[0] != DEFEATED;
         aborts_if expected_states[1] != EXTRACTED;
-        include CheckProposalStates<TokenT, ActionT>{expected_states};
-        aborts_if Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
-        ensures !exists<Proposal<TokenT, ActionT>>(proposer_address);
+
+        aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if proposal.id != proposal_id;
+        include AbortIfTimestampNotExist;
+        let current_time = Timestamp::spec_now_millseconds();
+        let state = _proposal_state(proposal, current_time);
+        aborts_if (forall s in expected_states : s != state);
+        aborts_if state == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        modifies global<Proposal<TokenT, ActionT>>(proposer_address);
     }
 
     /// check whether a proposal exists in `proposer_address` with id `proposal_id`.
-    public fun proposal_exists<TokenT: copyable, ActionT>(
+    public fun proposal_exists<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ): bool acquires Proposal {
@@ -678,7 +691,7 @@ module Dao {
                     result;
     }
 
-    spec define spec_proposal_exists<TokenT: copyable, ActionT>(
+    spec define spec_proposal_exists<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ): bool {
@@ -690,7 +703,7 @@ module Dao {
         }
     }
 
-    public fun proposal_state<TokenT: copyable, ActionT>(
+    public fun proposal_state<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ): u8 acquires Proposal {
@@ -725,7 +738,7 @@ module Dao {
         aborts_if proposal.id != proposal_id;
     }
 
-    fun _proposal_state<TokenT: copyable, ActionT>(
+    fun _proposal_state<TokenT: copyable, ActionT: copyable>(
         proposal: &Proposal<TokenT, ActionT>,
         current_time: u64,
     ): u8 {
@@ -755,7 +768,7 @@ module Dao {
 
     /// get proposal's information.
     /// return: (start_time, end_time, for_votes, against_votes).
-    public fun proposal_info<TokenT: copyable, ActionT>(
+    public fun proposal_info<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
         proposal_id: u64,
     ): (u64, u64, u128, u128) acquires Proposal {

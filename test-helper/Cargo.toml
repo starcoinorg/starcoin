@@ -37,8 +37,10 @@ starcoin-account-api = { path = "../account/api" }
 starcoin-account-service = { path = "../account/service" }
 starcoin-state-api = { path = "../state/api" }
 starcoin-state-service = { path = "../state/service" }
+starcoin-tx-relay= { path="../txpool/tx-relay"}
 starcoin-txpool-api = { path = "../txpool/api" }
 starcoin-sync-api = { package = "starcoin-sync-api", path = "../sync/api" }
+starcoin-block-relayer-api = { path = "../block-relayer/api" }
 starcoin-block-relayer = { path = "../block-relayer" }
 starcoin-network-rpc = { path = "../network-rpc" }
 starcoin-network-rpc-api = { path = "../network-rpc/api" }
@@ -58,6 +60,7 @@ async-trait = "0.1.41"
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
+
 
 [dev-dependencies]
 stest = { path = "../commons/stest" }

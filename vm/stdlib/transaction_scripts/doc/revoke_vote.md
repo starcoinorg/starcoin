@@ -16,7 +16,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="revoke_vote.md#revoke_vote">revoke_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(signer: &signer, proposer_address: address, proposal_id: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="revoke_vote.md#revoke_vote">revoke_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action: <b>copyable</b>&gt;(signer: &signer, proposer_address: address, proposal_id: u64)
 </code></pre>
 
 
@@ -25,7 +25,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="revoke_vote.md#revoke_vote">revoke_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action&gt;(
+<pre><code><b>fun</b> <a href="revoke_vote.md#revoke_vote">revoke_vote</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>: <b>copyable</b>, Action: <b>copyable</b>&gt;(
     signer: &signer,
     proposer_address: address,
     proposal_id: u64,

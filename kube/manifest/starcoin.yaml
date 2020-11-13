@@ -36,31 +36,31 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.7.2
+        image: starcoin/starcoin:v0.7.2.2
         imagePullPolicy: Always
         command:
           - bash
           - -c
         args:
           -
-            rm -rf /data/proxima/starcoin.ipc /data/proxima/starcoindb/db/starcoindb/LOCK /data/proxima/config.toml;
+            rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
             id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
             if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin -n proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
               sleep 5;
             else
-              /starcoin/starcoin -n proxima -d /data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin -n proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
             hostPort: 9840
         volumeMounts:
-        - name: volume
-          mountPath: /data
+        - name: starcoin-volume
+          mountPath: /sc-data
         env:
           - name: POD_NAME
             valueFrom:
@@ -82,17 +82,21 @@ spec:
                 name: starcoin-config
                 key: start_disable_seed_node
       - name: txfactory
-        image: starcoin/starcoin:v0.7.2
+        image: starcoin/starcoin:v0.7.2.2
         imagePullPolicy: IfNotPresent
         command:
           - bash
           - -c
         args:
-          - /starcoin/starcoin_txfactory --ipc-path /data/proxima/starcoin.ipc
+          - /starcoin/starcoin_txfactory --ipc-path /sc-data/proxima/starcoin.ipc
         volumeMounts:
-        - name: volume
-          mountPath: /data
-      volumes:
-      - name: volume
-        hostPath:
-          path: /data
+        - name: starcoin-volume
+          mountPath: /sc-data
+  volumeClaimTemplates:
+  - metadata:
+      name: starcoin-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
