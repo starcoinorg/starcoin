@@ -5,7 +5,7 @@ module Signer {
         pragma aborts_if_is_strict;
     }
     // Borrows the address of the signer
-    // Conceptually, you can think of the `signer` as being a resource struct wrapper arround an
+    // Conceptually, you can think of the `signer` as being a resource struct wrapper around an
     // address
     // ```
     // resource struct Signer { addr: address }

@@ -93,7 +93,7 @@ module Dao {
     const ERR_PROPOSAL_STATE_INVALID: u64 = 1403;
     const ERR_PROPOSAL_ID_MISMATCH: u64 = 1404;
     const ERR_PROPOSER_MISMATCH: u64 = 1405;
-    const ERR_QUROM_RATE_INVALID: u64 = 1406;
+    const ERR_QUORUM_RATE_INVALID: u64 = 1406;
     const ERR_CONFIG_PARAM_INVALID: u64 = 1407;
     const ERR_VOTE_STATE_MISMATCH: u64 = 1408;
     const ERR_ACTION_MUST_EXIST: u64 = 1409;
@@ -101,7 +101,7 @@ module Dao {
 
     /// plugin function, can only be called by token issuer.
     /// Any token who wants to has gov functionality
-    /// can optin this moudle by call this `register function`.
+    /// can optin this module by call this `register function`.
     public fun plugin<TokenT: copyable>(
         signer: &signer,
         voting_delay: u64,
@@ -913,7 +913,7 @@ module Dao {
             config.voting_delay = voting_delay;
         };
         if (voting_quorum_rate > 0) {
-            assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
+            assert(voting_quorum_rate <= 100, Errors::invalid_argument(ERR_QUORUM_RATE_INVALID));
             config.voting_quorum_rate = voting_quorum_rate;
         };
         if (min_action_delay > 0) {
@@ -967,7 +967,7 @@ module Dao {
         value: u8,
     ) {
         assert(Config::account_address(cap) == Token::token_address<TokenT>(), Errors::invalid_argument(ERR_NOT_AUTHORIZED));
-        assert(value <= 100 && value > 0, Errors::invalid_argument(ERR_QUROM_RATE_INVALID));
+        assert(value <= 100 && value > 0, Errors::invalid_argument(ERR_QUORUM_RATE_INVALID));
         let config = get_config<TokenT>();
         config.voting_quorum_rate = value;
         Config::set_with_capability<DaoConfig<TokenT>>(cap, config);

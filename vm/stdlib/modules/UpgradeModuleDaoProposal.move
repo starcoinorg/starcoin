@@ -29,7 +29,7 @@ module UpgradeModuleDaoProposal {
         version: u64,
     }
 
-    /// If this govverment can upgrade module, call this to register capability.
+    /// If this goverment can upgrade module, call this to register capability.
     public fun plugin<TokenT>(
         signer: &signer,
         cap: PackageTxnManager::UpgradePlanCapability,
