@@ -12,10 +12,14 @@ script {
         // 2. mint token
         let tokens = Token::mint_with_linear_key<Token>(&mut mint_key);
 
-        // 3. mint_to account
+        // 3. deposit
         Account::deposit_to_self(signer, tokens);
 
         // 4. put key
         Box::put(signer, mint_key);
+    }
+
+    spec fun mint_token_by_linear_key {
+        pragma verify = false;
     }
 }

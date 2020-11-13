@@ -5,6 +5,8 @@
 
 
 
+-  [Specification](#@Specification_0)
+    -  [Function `mint_token_by_linear_key`](#@Specification_0_mint_token_by_linear_key)
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/Account.md#0x1_Account">0x1::Account</a>;
@@ -33,7 +35,7 @@
     // 2. mint token
     <b>let</b> tokens = <a href="../../modules/doc/Token.md#0x1_Token_mint_with_linear_key">Token::mint_with_linear_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key);
 
-    // 3. mint_to account
+    // 3. deposit
     <a href="../../modules/doc/Account.md#0x1_Account_deposit_to_self">Account::deposit_to_self</a>(signer, tokens);
 
     // 4. put key
@@ -44,3 +46,22 @@
 
 
 </details>
+
+<a name="@Specification_0"></a>
+
+## Specification
+
+
+<a name="@Specification_0_mint_token_by_linear_key"></a>
+
+### Function `mint_token_by_linear_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="mint_token_by_linear_key.md#mint_token_by_linear_key">mint_token_by_linear_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
