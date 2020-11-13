@@ -10,6 +10,7 @@ use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
@@ -58,6 +59,7 @@ pub trait ReadableChainService {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
+    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
 }
 
 /// Writeable block chain service trait
@@ -115,6 +117,7 @@ pub trait ChainAsyncService:
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
+    async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
 }
 
 #[async_trait::async_trait]
@@ -380,6 +383,15 @@ where
             Ok(ids)
         } else {
             bail!("get_block_ids invalid response")
+        }
+    }
+
+    async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
+        let response = self.send(ChainRequest::TPS(number)).await??;
+        if let ChainResponse::TPS(tps) = response {
+            Ok(tps)
+        } else {
+            bail!("get tps error.")
         }
     }
 }

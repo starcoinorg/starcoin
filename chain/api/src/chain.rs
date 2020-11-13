@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
+use starcoin_types::stress_test::TPS;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::{Transaction, TransactionInfo},
@@ -42,6 +43,14 @@ pub trait ChainReader {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
+    fn get_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
+    fn total_txns_in_blocks(
+        &self,
+        start_number: BlockNumber,
+        end_number: BlockNumber,
+    ) -> Result<u64>;
+    /// Get tps for an epoch. The epoch includes the block given by `number`. If `number` is absent, return tps for the latest epoch
+    fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
 }
 
 pub trait ChainWriter {

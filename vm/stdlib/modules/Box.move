@@ -33,7 +33,7 @@ module Box {
 
     spec fun length {aborts_if false;}
 
-    // Put thing to account's box last postion.
+    // Put thing to account's box last position.
     public fun put<T>(account: &signer, thing: T) acquires Box{
         let addr = Signer::address_of(account);
         if (exists_at<T>(addr)) {
@@ -65,7 +65,7 @@ module Box {
         let box = borrow_global_mut<Box<T>>(addr);
         let thing = Vector::pop_back(&mut box.thing);
         if (Vector::is_empty(&box.thing)){
-            destory_empty<T>(addr);
+            destroy_empty<T>(addr);
         };
         thing
     }
@@ -87,12 +87,12 @@ module Box {
         aborts_if !exists_at<T>(Signer::address_of(account));
     }
 
-    fun destory_empty<T>(addr: address) acquires Box{
+    fun destroy_empty<T>(addr: address) acquires Box{
         let Box{ thing } = move_from<Box<T>>(addr);
         Vector::destroy_empty(thing);
     }
 
-    spec fun destory_empty {
+    spec fun destroy_empty {
         aborts_if !exists<Box<T>>(addr);
         aborts_if len(global<Box<T>>(addr).thing) > 0;
     }
