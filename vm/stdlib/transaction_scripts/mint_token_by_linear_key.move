@@ -15,8 +15,12 @@ script {
         // 3. deposit
         Account::deposit_to_self(signer, tokens);
 
-        // 4. put key
-        Box::put(signer, mint_key);
+        // 4. put or destroy key
+        if (Token::is_empty_key(&mint_key)) {
+            Token::destroy_empty_key(mint_key);
+        } else {
+            Box::put(signer, mint_key);
+        }
     }
 
     spec fun mint_token_by_linear_key {

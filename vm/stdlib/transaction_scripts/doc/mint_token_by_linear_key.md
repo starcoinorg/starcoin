@@ -38,8 +38,12 @@
     // 3. deposit
     <a href="../../modules/doc/Account.md#0x1_Account_deposit_to_self">Account::deposit_to_self</a>(signer, tokens);
 
-    // 4. put key
-    <a href="../../modules/doc/Box.md#0x1_Box_put">Box::put</a>(signer, mint_key);
+    // 4. put or destroy key
+    <b>if</b> (<a href="../../modules/doc/Token.md#0x1_Token_is_empty_key">Token::is_empty_key</a>(&mint_key)) {
+        <a href="../../modules/doc/Token.md#0x1_Token_destroy_empty_key">Token::destroy_empty_key</a>(mint_key);
+    } <b>else</b> {
+        <a href="../../modules/doc/Box.md#0x1_Box_put">Box::put</a>(signer, mint_key);
+    }
 }
 </code></pre>
 
