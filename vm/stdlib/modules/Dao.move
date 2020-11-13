@@ -661,10 +661,17 @@ module Dao {
         aborts_if len(expected_states) != 2;
         aborts_if expected_states[0] != DEFEATED;
         aborts_if expected_states[1] != EXTRACTED;
-        include CheckProposalStates<TokenT, ActionT>{expected_states};
-        aborts_if expected_states[0] == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
-        aborts_if expected_states[1] == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
-        ensures !exists<Proposal<TokenT, ActionT>>(proposer_address);
+
+        aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
+        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
+        aborts_if proposal.id != proposal_id;
+        include AbortIfTimestampNotExist;
+        let current_time = Timestamp::spec_now_millseconds();
+        let state = _proposal_state(proposal, current_time);
+        aborts_if (forall s in expected_states : s != state);
+        aborts_if state == DEFEATED && Option::spec_is_none(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        aborts_if state == EXTRACTED && Option::spec_is_some(global<Proposal<TokenT, ActionT>>(proposer_address).action);
+        modifies global<Proposal<TokenT, ActionT>>(proposer_address);
     }
 
     /// check whether a proposal exists in `proposer_address` with id `proposal_id`.
