@@ -87,14 +87,12 @@ impl ServiceFactory<Self> for TxPoolActorService {
 impl ActorService for TxPoolActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
-        ctx.subscribe::<PeerTransactions>();
         ctx.add_stream(self.inner.subscribe_txns());
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
-        ctx.unsubscribe::<PeerTransactions>();
         Ok(())
     }
 }

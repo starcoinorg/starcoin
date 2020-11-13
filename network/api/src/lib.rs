@@ -10,9 +10,11 @@ use starcoin_types::system_events::NewHeadBlock;
 use std::borrow::Cow;
 
 pub mod messages;
+mod peer_message_handler;
 mod peer_provider;
 
 pub use libp2p::multiaddr::Multiaddr;
+pub use peer_message_handler::PeerMessageHandler;
 pub use peer_provider::{PeerProvider, PeerSelector};
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};
 

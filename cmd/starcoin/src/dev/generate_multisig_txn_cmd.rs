@@ -62,11 +62,11 @@ pub struct GenerateMultisigTxnOpt {
     help = "can specify multi type_tag",
     parse(try_from_str = parse_type_tag)
     )]
-    type_tags: Vec<TypeTag>,
+    type_tags: Option<Vec<TypeTag>>,
 
     #[structopt(long = "arg", name = "transaction-arg",  parse(try_from_str = parse_transaction_argument))]
     /// transaction arguments
-    args: Vec<TransactionArgument>,
+    args: Option<Vec<TransactionArgument>>,
 
     #[structopt(
         name = "expiration_time",
@@ -170,7 +170,11 @@ impl CommandAction for GenerateMultisigTxnCommand {
         let script_txn = RawUserTransaction::new_script(
             sender,
             account_resource.sequence_number(),
-            Script::new(bytecode, opt.type_tags.clone(), args),
+            Script::new(
+                bytecode,
+                opt.type_tags.clone().unwrap_or_default(),
+                args.unwrap_or_default(),
+            ),
             opt.max_gas_amount,
             opt.gas_price,
             expiration_time,

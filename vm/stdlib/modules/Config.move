@@ -51,6 +51,14 @@ module Config {
         ensures exists<Config<ConfigValue>>(addr);
     }
 
+    public fun config_exist_by_address<ConfigValue: copyable>(addr: address): bool {
+        exists<Config<ConfigValue>>(addr)
+    }
+
+    spec fun config_exist_by_address {
+        aborts_if false;
+    }
+
     // Set a config item to a new value with capability stored under signer
     public fun set<ConfigValue: copyable>(account: &signer, payload: ConfigValue) acquires Config,ModifyConfigCapabilityHolder{
         let signer_address = Signer::address_of(account);

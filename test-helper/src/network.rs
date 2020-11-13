@@ -10,19 +10,42 @@ use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
 use starcoin_storage::Storage;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use network_api::PeerMessageHandler;
+use starcoin_block_relayer_api::PeerCmpctBlockEvent;
 pub use starcoin_network::NetworkAsyncService;
+use starcoin_tx_relay::PeerTransactions;
 
-pub async fn build_network(
+#[derive(Clone, Default)]
+pub struct MockPeerMessageHandler {
+    pub txns: Arc<Mutex<Vec<PeerTransactions>>>,
+    pub blocks: Arc<Mutex<Vec<PeerCmpctBlockEvent>>>,
+}
+
+impl PeerMessageHandler for MockPeerMessageHandler {
+    fn handle_transaction(&self, transaction: PeerTransactions) {
+        self.txns.lock().unwrap().push(transaction);
+    }
+
+    fn handle_block(&self, block: PeerCmpctBlockEvent) {
+        self.blocks.lock().unwrap().push(block);
+    }
+}
+
+pub async fn build_network<H>(
     seed: Option<Multiaddr>,
     rpc_service_mocker: Option<impl MockHandler<NetworkRpcService> + 'static>,
+    peer_message_handler: H,
 ) -> Result<(
     NetworkAsyncService,
     Arc<NodeConfig>,
     Arc<Storage>,
     ServiceRef<RegistryService>,
-)> {
+)>
+where
+    H: PeerMessageHandler + 'static,
+{
     let registry = RegistryService::launch();
 
     let mut config = NodeConfig::random_for_test();
@@ -49,6 +72,7 @@ pub async fn build_network(
             bus,
             storage.clone(),
             network_rpc_service,
+            peer_message_handler,
         )?,
         node_config,
         storage,
