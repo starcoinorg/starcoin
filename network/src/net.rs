@@ -248,7 +248,12 @@ pub fn build_network_service(
         use_yamux_flow_control: false,
     };
     let config = NetworkConfiguration {
-        listen_addresses: vec![cfg.listen.clone()],
+        listen_addresses: vec![
+            cfg.listen.clone(),
+            "/ip4/0.0.0.0/udp/9840"
+                .parse()
+                .expect("Parse multi address fail."),
+        ],
         boot_nodes: cfg.seeds.clone(),
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(
