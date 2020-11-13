@@ -60,7 +60,7 @@ impl TaskState for BlockSyncTask {
         async move {
             let block_ids =
                 self.accumulator
-                    .get_leaves(self.start_number, false, self.batch_size as usize)?;
+                    .get_leaves(self.start_number, false, self.batch_size)?;
             if block_ids.is_empty() {
                 return Ok(vec![]);
             }
