@@ -329,6 +329,14 @@ module Token {
         aborts_if key.total != key.minted;
     }
 
+    public fun is_empty_key<TokenType>(key: &LinearTimeMintKey<TokenType>) : bool {
+        key.total == key.minted
+    }
+
+    spec fun is_empty_key {
+        aborts_if false;
+    }
+
     public fun burn<TokenType>(account: &signer, tokens: Token<TokenType>)
     acquires TokenInfo, BurnCapability {
         burn_with_capability(
