@@ -20,7 +20,7 @@ pub struct BlockAccumulatorSyncTask {
     start_number: BlockNumber,
     target: AccumulatorInfo,
     fetcher: Arc<dyn BlockIdFetcher>,
-    batch_size: usize,
+    batch_size: u64,
 }
 
 impl BlockAccumulatorSyncTask {
@@ -28,7 +28,7 @@ impl BlockAccumulatorSyncTask {
         start_number: BlockNumber,
         target: AccumulatorInfo,
         fetcher: F,
-        batch_size: usize,
+        batch_size: u64,
     ) -> Self
     where
         F: BlockIdFetcher + 'static,
@@ -49,7 +49,7 @@ impl TaskState for BlockAccumulatorSyncTask {
         async move {
             let start = self.start_number;
             let target = self.target.num_leaves;
-            let mut max_size = (target - start) as usize;
+            let mut max_size = target - start;
             if max_size > self.batch_size {
                 max_size = self.batch_size;
             }

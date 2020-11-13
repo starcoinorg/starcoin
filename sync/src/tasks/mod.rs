@@ -25,7 +25,7 @@ pub trait BlockIdFetcher: Send + Sync {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
 }
 
@@ -34,7 +34,7 @@ impl BlockIdFetcher for VerifiedRpcClient {
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.get_block_ids(start_number, reverse, max_size).boxed()
     }
@@ -48,7 +48,7 @@ where
         &self,
         start_number: u64,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         BlockIdFetcher::fetch_block_ids(self.as_ref(), start_number, reverse, max_size)
     }

@@ -16,7 +16,7 @@ use starcoin_types::{
 use std::collections::HashSet;
 use std::hash::Hash;
 
-const HEAD_CT: usize = 10;
+const HEAD_CT: u64 = 10;
 //TODO find a suitable value and strategy.
 #[allow(dead_code)]
 const STABLELIZE_BLCOK_NUM: usize = 7;
@@ -231,7 +231,7 @@ pub fn get_headers_msg_for_common(block_id: HashValue) -> GetBlockHeaders {
 
 pub fn get_headers_msg_for_ancestor(
     block_number: BlockNumber,
-    step: usize,
+    step: u64,
 ) -> GetBlockHeadersByNumber {
     //todo：binary search
     GetBlockHeadersByNumber::new(block_number, step, HEAD_CT)

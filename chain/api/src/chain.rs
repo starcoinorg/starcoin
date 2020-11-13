@@ -41,7 +41,7 @@ pub trait ChainReader {
         &self,
         start_number: BlockNumber,
         reverse: bool,
-        max_size: usize,
+        max_size: u64,
     ) -> Result<Vec<HashValue>>;
     fn get_block_info_by_number(&self, number: BlockNumber) -> Result<Option<BlockInfo>>;
     fn total_txns_in_blocks(
