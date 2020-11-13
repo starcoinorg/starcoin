@@ -15,6 +15,9 @@ pub type TxnStatusFullEvent = Arc<Vec<(HashValue, transaction::TxStatus)>>;
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxPoolStatus {
     pub txn_count: usize,
+    pub txn_max_count: usize,
+    pub mem: usize,
+    pub mem_max: usize,
     pub senders: usize,
 }
 
