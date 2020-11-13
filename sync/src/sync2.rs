@@ -37,17 +37,12 @@ pub struct SyncTaskHandle {
 pub struct SyncService2 {
     sync_status: SyncStatus,
     config: Arc<NodeConfig>,
-    network: NetworkAsyncService,
     storage: Arc<Storage>,
     task_handle: Option<SyncTaskHandle>,
 }
 
 impl SyncService2 {
-    pub fn new(
-        config: Arc<NodeConfig>,
-        network: NetworkAsyncService,
-        storage: Arc<Storage>,
-    ) -> Result<Self> {
+    pub fn new(config: Arc<NodeConfig>, storage: Arc<Storage>) -> Result<Self> {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("can't get startup info"))?;
@@ -65,7 +60,6 @@ impl SyncService2 {
                 head_block_info.total_difficulty,
             )),
             config,
-            network,
             storage,
             task_handle: None,
         })
@@ -85,7 +79,7 @@ impl SyncService2 {
                 return Ok(());
             }
         }
-        let network = self.network.clone();
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
         let self_ref = ctx.self_ref();
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
@@ -116,7 +110,8 @@ impl SyncService2 {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let current_block_id = startup_info.master;
-        let network = self.network.clone();
+
+        let network = ctx.get_shared::<NetworkAsyncService>()?;
         let peer_selector = PeerSelector::new(target.peers.clone());
         let rpc_client = VerifiedRpcClient::new(peer_selector, network);
         let connector_service = ctx.service_ref::<BlockConnectorService>()?;
@@ -161,8 +156,8 @@ impl ServiceFactory<Self> for SyncService2 {
     fn create(ctx: &mut ServiceContext<Self>) -> Result<SyncService2> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let storage = ctx.get_shared::<Arc<Storage>>()?;
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
-        Self::new(config, network, storage)
+
+        Self::new(config, storage)
     }
 }
 
