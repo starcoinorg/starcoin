@@ -24,7 +24,7 @@ impl Metrics {
                 "network_connection_opened",
                 "Counters of how many connections opened",
             )
-            .namespace("star_coin"),
+            .namespace("starcoin"),
             &["network_connection_opened"]
         )?;
 
