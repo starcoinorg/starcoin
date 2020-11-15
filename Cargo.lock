@@ -4852,9 +4852,9 @@ dependencies = [
 
 [[package]]
 name = "parity-multiaddr"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22fe99b938abd57507e37f8d4ef30cd74b33c71face2809b37b8beb71bab15ab"
+checksum = "60d477bda9666bc37e5ac9e7e7ee3684f745ec33e6e86a5b48640e0407acda26"
 dependencies = [
  "arrayref",
  "bs58 0.4.0",
