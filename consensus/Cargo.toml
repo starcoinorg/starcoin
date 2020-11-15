@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.34"
 futures = { version = "0.3" }
-once_cell = "1.4.1"
+once_cell = "1.5.2"
 starcoin-types = { path = "../types" }
 starcoin-traits = { path = "../core/traits" }
 starcoin-crypto = { path = "../commons/crypto" }

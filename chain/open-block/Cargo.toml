@@ -18,7 +18,7 @@ starcoin-accumulator = {path = "../../core/accumulator", package="starcoin-accum
 async-trait = "0.1"
 futures = "0.3"
 parking_lot = "0.11"
-once_cell = "1.4.1"
+once_cell = "1.5.2"
 storage = { package="starcoin-storage", path = "../../storage"}
 logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-statedb = {path = "../../state/statedb"}
