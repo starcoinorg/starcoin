@@ -547,6 +547,7 @@ mod tests {
             .submit_transaction(package_txn_2)
             .unwrap();
         assert!(result.is_err());
+        info!("error : {:?}", result);
 
         node_handle.stop().unwrap();
     }
