@@ -88,7 +88,8 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
             pub fn new<C>(raw_rpc_client: C) -> Self where C: RawRpcClient + Send + Sync +'static {
                 Self {
                     raw_client: Arc::new(raw_rpc_client),
-                    timeout: Duration::from_secs(5),
+                    //TODO support custom timeout.
+                    timeout: Duration::from_secs(15),
                 }
             }
 

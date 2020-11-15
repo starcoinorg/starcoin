@@ -490,6 +490,15 @@ User vote info.
 
 
 
+<a name="0x1_Dao_ERR_VOTED_OTHERS_ALREADY"></a>
+
+
+
+<pre><code><b>const</b> <a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>: u64 = 1410;
+</code></pre>
+
+
+
 <a name="0x1_Dao_ERR_VOTE_STATE_MISMATCH"></a>
 
 
@@ -712,7 +721,7 @@ So think twice before casting vote.
     <b>let</b> sender = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer);
     <b>let</b> total_voted = <b>if</b> (<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender)) {
         <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(sender);
-        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
         <b>assert</b>(my_vote.agree == agree, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_VOTE_STATE_MISMATCH">ERR_VOTE_STATE_MISMATCH</a>));
 
         <a href="Dao.md#0x1_Dao__cast_vote">_cast_vote</a>(proposal, my_vote, stake);
@@ -811,7 +820,7 @@ Let user change their vote during the voting time.
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
     {
         <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
-        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
     };
 
     // flip the vote
@@ -904,7 +913,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
     <b>let</b> my_vote = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(signer));
     {
         <b>assert</b>(my_vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
-        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+        <b>assert</b>(my_vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
     };
     // revoke vote on proposal
     <b>let</b> reverted_stake =<a href="Dao.md#0x1_Dao__revoke_vote">_revoke_vote</a>(proposal, my_vote, voting_power);
@@ -997,7 +1006,7 @@ Retrieve back my staked token voted for a proposal.
     );
     // these checks are still required.
     <b>assert</b>(proposer == proposer_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
-    <b>assert</b>(id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+    <b>assert</b>(id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
     stake
 }
 </code></pre>
@@ -1287,7 +1296,7 @@ Get voter's vote info on proposal with <code>proposal_id</code> of <code>propose
 ): (bool, u128) <b>acquires</b> <a href="Dao.md#0x1_Dao_Vote">Vote</a> {
     <b>let</b> vote = borrow_global&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
     <b>assert</b>(vote.proposer == proposer_address, <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSER_MISMATCH">ERR_PROPOSER_MISMATCH</a>));
-    <b>assert</b>(vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
+    <b>assert</b>(vote.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_VOTED_OTHERS_ALREADY">ERR_VOTED_OTHERS_ALREADY</a>));
     (vote.agree, <a href="Token.md#0x1_Token_value">Token::value</a>(&vote.stake))
 }
 </code></pre>

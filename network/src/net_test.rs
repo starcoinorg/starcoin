@@ -39,7 +39,7 @@ mod tests {
     );
 
     async fn build_test_network_pair_not_wait() -> (NetworkComponent, NetworkComponent) {
-        let (mut service1, service2) = build_test_network_pair("127.0.0.1".to_string());
+        let (service1, service2) = build_test_network_pair("127.0.0.1".to_string());
         let from_peer_id = service1.0.identify().clone();
         let to_peer_id = service2.0.identify().clone();
         thread::sleep(Duration::from_secs(2));
@@ -51,7 +51,7 @@ mod tests {
             to_peer_id.to_base58()
         );
         debug!("to peer : {:?}", to_peer_id_str);
-        service1.0.add_peer_for_test(to_peer_id_str).unwrap();
+        service1.0.add_peer(to_peer_id_str).unwrap();
         (service1, service2)
     }
 

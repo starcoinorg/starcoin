@@ -14,6 +14,7 @@ use move_vm_runtime::data_cache::TransactionEffects;
 use move_vm_runtime::move_vm_adapter::{MoveVMAdapter, SessionAdapter};
 use starcoin_logger::prelude::*;
 use starcoin_move_compiler::check_module_compat;
+use starcoin_types::account_config::access_path_for_module_upgrade_strategy;
 use starcoin_types::{
     account_config,
     block_metadata::BlockMetadata,
@@ -25,7 +26,9 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access::ModuleAccess;
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::account_config::{genesis_address, EPILOGUE_NAME, PROLOGUE_NAME};
+use starcoin_vm_types::account_config::{
+    genesis_address, ModuleUpgradeStrategy, EPILOGUE_NAME, PROLOGUE_NAME,
+};
 use starcoin_vm_types::contract_event::ContractEvent;
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
@@ -197,8 +200,16 @@ impl StarcoinVM {
         self.check_gas(&txn_data)?;
         match transaction.payload() {
             TransactionPayload::Package(package) => {
-                for module in package.modules() {
-                    self.check_compatibility_if_exist(&session, module)?;
+                match Self::only_new_module_strategy(remote_cache, package.package_address()) {
+                    Err(e) => {
+                        warn!("[VM]Update module strategy deserialize err : {:?}", e);
+                        return Err(VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE));
+                    }
+                    Ok(only_new_module) => {
+                        for module in package.modules() {
+                            self.check_compatibility_if_exist(&session, module, only_new_module)?;
+                        }
+                    }
                 }
             }
             TransactionPayload::Script(_) => {}
@@ -236,6 +247,7 @@ impl StarcoinVM {
         &self,
         session: &SessionAdapter<R>,
         module: &Module,
+        only_new_module: bool,
     ) -> Result<(), VMStatus> {
         let compiled_module = match CompiledModule::deserialize(module.code()) {
             Ok(module) => module,
@@ -250,6 +262,10 @@ impl StarcoinVM {
             .exists_module(&module_id)
             .map_err(|e| e.into_vm_status())?
         {
+            if only_new_module {
+                warn!("only new module for {:?}", module_id);
+                return Err(VMStatus::Error(StatusCode::INVALID_MODULE_PUBLISHER));
+            }
             let pre_version = session
                 .load_module(&module_id)
                 .map_err(|e| e.into_vm_status())?;
@@ -268,6 +284,18 @@ impl StarcoinVM {
             })?;
         }
         Ok(())
+    }
+
+    fn only_new_module_strategy(
+        remote_cache: &StateViewCache,
+        package_address: AccountAddress,
+    ) -> Result<bool> {
+        let strategy_access_path = access_path_for_module_upgrade_strategy(package_address);
+        if let Some(data) = remote_cache.get(&strategy_access_path)? {
+            Ok(scs::from_bytes::<ModuleUpgradeStrategy>(&data)?.only_new_module())
+        } else {
+            Ok(false)
+        }
     }
 
     fn execute_package(
@@ -300,35 +328,42 @@ impl StarcoinVM {
                 .map_err(|e| e.into_vm_status())?;
 
             let package_address = package.package_address();
-            for module in package.modules() {
-                let compiled_module = match CompiledModule::deserialize(module.code()) {
-                    Ok(module) => module,
-                    Err(err) => {
-                        warn!("[VM] module deserialization failed {:?}", err);
-                        return Err(err.finish(Location::Undefined).into_vm_status());
-                    }
-                };
-
-                let module_id = compiled_module.self_id();
-                if module_id.address() != &package_address {
-                    return Err(errors::verification_error(
-                        //TODO define new error code.
-                        StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
-                        IndexKind::AddressIdentifier,
-                        compiled_module.self_handle_idx().0,
-                    )
-                    .finish(Location::Undefined)
-                    .into_vm_status());
+            match Self::only_new_module_strategy(remote_cache, package_address) {
+                Err(e) => {
+                    warn!("[VM]Update module strategy deserialize err : {:?}", e);
+                    return Err(VMStatus::Error(StatusCode::FAILED_TO_DESERIALIZE_RESOURCE));
                 }
-                self.check_compatibility_if_exist(&session, module)?;
+                Ok(only_new_module) => {
+                    for module in package.modules() {
+                        let compiled_module = match CompiledModule::deserialize(module.code()) {
+                            Ok(module) => module,
+                            Err(err) => {
+                                warn!("[VM] module deserialization failed {:?}", err);
+                                return Err(err.finish(Location::Undefined).into_vm_status());
+                            }
+                        };
 
-                session
-                    .verify_module(module.code())
-                    .map_err(|e| e.into_vm_status())?;
+                        let module_id = compiled_module.self_id();
+                        if module_id.address() != &package_address {
+                            return Err(errors::verification_error(
+                                StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
+                                IndexKind::AddressIdentifier,
+                                compiled_module.self_handle_idx().0,
+                            )
+                            .finish(Location::Undefined)
+                            .into_vm_status());
+                        }
+                        self.check_compatibility_if_exist(&session, module, only_new_module)?;
 
-                session
-                    .publish_module(module.code().to_vec(), txn_data.sender, cost_strategy)
-                    .map_err(|e| e.into_vm_status())?;
+                        session
+                            .verify_module(module.code())
+                            .map_err(|e| e.into_vm_status())?;
+
+                        session
+                            .publish_module(module.code().to_vec(), txn_data.sender, cost_strategy)
+                            .map_err(|e| e.into_vm_status())?;
+                    }
+                }
             }
             if let Some(init_script) = package.init_script() {
                 let sender = txn_data.sender;

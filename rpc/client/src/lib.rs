@@ -19,15 +19,16 @@ use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
 use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
-    miner::MinerClient, node::NodeClient, node_manager::NodeManagerClient, state::StateClient,
-    sync_manager::SyncManagerClient, txpool::TxPoolClient,
+    miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
+    node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
+    txpool::TxPoolClient,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::{Block, BlockNumber};
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{
@@ -723,6 +724,27 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn network_connected_peers(&self) -> anyhow::Result<Vec<PeerId>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.network_client.connected_peers().compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn network_get_address(&self, peer_id: String) -> anyhow::Result<Vec<Multiaddr>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.network_client.get_address(peer_id).compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn network_add_peer(&self, peer: String) -> anyhow::Result<()> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.network_client.add_peer(peer).compat().await },
+        )
+        .map_err(map_err)
+    }
+
     async fn get_rpc_channel(
         conn_source: ConnSource,
     ) -> anyhow::Result<RpcChannel, jsonrpc_client_transports::RpcError> {
@@ -759,6 +781,7 @@ pub(crate) struct RpcClientInner {
     dev_client: DevClient,
     miner_client: MinerClient,
     sync_client: SyncManagerClient,
+    network_client: NetworkManagerClient,
 }
 
 impl RpcClientInner {
@@ -774,7 +797,8 @@ impl RpcClientInner {
             dev_client: channel.clone().into(),
             pubsub_client: channel.clone().into(),
             miner_client: channel.clone().into(),
-            sync_client: channel.into(),
+            sync_client: channel.clone().into(),
+            network_client: channel.into(),
         }
     }
 }
