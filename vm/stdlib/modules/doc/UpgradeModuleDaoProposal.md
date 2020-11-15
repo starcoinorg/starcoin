@@ -129,7 +129,7 @@
 
 ## Function `plugin`
 
-If this govverment can upgrade module, call this to register capability.
+If this goverment can upgrade module, call this to register capability.
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_plugin">plugin</a>&lt;TokenT&gt;(signer: &signer, cap: <a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>)

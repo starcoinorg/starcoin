@@ -32,6 +32,7 @@
 -  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
 -  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
 -  [Function `destroy_empty_key`](#0x1_Token_destroy_empty_key)
+-  [Function `is_empty_key`](#0x1_Token_is_empty_key)
 -  [Function `burn`](#0x1_Token_burn)
 -  [Function `burn_with_capability`](#0x1_Token_burn_with_capability)
 -  [Function `zero`](#0x1_Token_zero)
@@ -68,6 +69,7 @@
     -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
     -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
     -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
+    -  [Function `is_empty_key`](#@Specification_1_is_empty_key)
     -  [Function `burn`](#@Specification_1_burn)
     -  [Function `burn_with_capability`](#@Specification_1_burn_with_capability)
     -  [Function `zero`](#@Specification_1_zero)
@@ -966,6 +968,30 @@ Only the Association account can acquire such a reference, and it can do so only
 
 </details>
 
+<a name="0x1_Token_is_empty_key"></a>
+
+## Function `is_empty_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): bool
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) : bool {
+    key.total == key.minted
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Token_burn"></a>
 
 ## Function `burn`
@@ -1774,6 +1800,22 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>aborts_if</b> key.total != key.minted;
+</code></pre>
+
+
+
+<a name="@Specification_1_is_empty_key"></a>
+
+### Function `is_empty_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_is_empty_key">is_empty_key</a>&lt;TokenType&gt;(key: &<a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): bool
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> <b>false</b>;
 </code></pre>
 
 
