@@ -346,7 +346,6 @@ impl StarcoinVM {
                         let module_id = compiled_module.self_id();
                         if module_id.address() != &package_address {
                             return Err(errors::verification_error(
-                                //TODO define new error code.
                                 StatusCode::MODULE_ADDRESS_DOES_NOT_MATCH_SENDER,
                                 IndexKind::AddressIdentifier,
                                 compiled_module.self_handle_idx().0,
