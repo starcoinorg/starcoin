@@ -25,7 +25,10 @@ spec:
     name: ws-rpc
     protocol: TCP
     targetPort: 9870
-    
+  - port: 9101
+    name: metrics
+    protocol: TCP
+    targetPort: 9101
   selector:
     app: starcoin
     network: proxima
@@ -61,6 +64,10 @@ spec:
     name: ws-rpc
     protocol: TCP
     targetPort: 9870
+  - port: 9101
+    name: metrics
+    protocol: TCP
+    targetPort: 9101
   selector:
     app: starcoin
     network: proxima
@@ -96,6 +103,10 @@ spec:
     name: ws-rpc
     protocol: TCP
     targetPort: 9870
+  - port: 9101
+    name: metrics
+    protocol: TCP
+    targetPort: 9101
   selector:
     app: starcoin
     network: proxima
