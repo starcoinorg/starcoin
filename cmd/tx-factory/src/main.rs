@@ -67,7 +67,7 @@ pub struct TxFactoryOpt {
         default_value = "30",
         help = "numbers of account will be created"
     )]
-    pub account_num: u8,
+    pub account_num: u32,
 
     #[structopt(long, short = "l", help = "run stress test in long term")]
     pub long_term: bool,
@@ -80,7 +80,7 @@ const TXN_LIMIT: usize = 16;
 fn get_account_or_default(
     client: &RpcClient,
     account_address: Option<AccountAddress>,
-    account_num: u8,
+    account_num: u32,
 ) -> Result<AccountInfo> {
     let account = match account_address {
         None => {
@@ -170,7 +170,7 @@ fn main() {
     };
 
     let accounts = tx_mocker
-        .create_accounts(account_num)
+        .get_accounts(account_num)
         .expect("create accounts should success");
 
     let stopping_signal = Arc::new(AtomicBool::new(false));
@@ -399,7 +399,40 @@ impl TxnMocker {
         result
     }
 
-    fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
+    fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
+        let mut account_list = Vec::new();
+        let mut account_local = self.client.account_list()?;
+        if account_list.is_empty() {
+            return self.create_accounts(account_num);
+        }
+
+        let mut index = 0;
+        while index < account_num {
+            if let Some(account) = account_local.pop() {
+                if self
+                    .client
+                    .account_unlock(
+                        account.address,
+                        self.account_password.clone(),
+                        self.unlock_duration,
+                    )
+                    .is_ok()
+                {
+                    account_list.push(account);
+                    index += 1;
+                }
+            } else {
+                break;
+            }
+        }
+        if (account_list.len() as u32) < account_num {
+            let lack = self.create_accounts(account_num - account_list.len() as u32)?;
+            account_list.extend_from_slice(lack.as_slice());
+        }
+        Ok(account_list)
+    }
+
+    fn create_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
         self.unlock_account()?;
         let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
