@@ -370,7 +370,7 @@ mod tests {
     use starcoin_storage::block_info::BlockInfoStore;
     use starcoin_storage::storage::StorageInstance;
     use starcoin_storage::{BlockStore, IntoSuper, Storage};
-    use starcoin_types::account_config::genesis_address;
+    use starcoin_types::account_config::{genesis_address, ModuleUpgradeStrategy};
     use starcoin_vm_types::account_config::association_address;
     use starcoin_vm_types::genesis_config::ChainId;
     use starcoin_vm_types::on_chain_config::DaoConfig;
@@ -487,6 +487,17 @@ mod tests {
 
         let version = account_state_reader.get_on_chain_config::<Version>()?;
         assert!(version.is_some(), "Version on_chain_config should exist.");
+
+        let module_upgrade_strategy =
+            account_state_reader.get_resource::<ModuleUpgradeStrategy>(genesis_address())?;
+        assert!(
+            module_upgrade_strategy.is_some(),
+            "ModuleUpgradeStrategy should exist."
+        );
+        assert!(
+            module_upgrade_strategy.unwrap().two_phase(),
+            "ModuleUpgradeStrategy should be STRATEGY_TWO_PHASE."
+        );
 
         let block_info = storage2
             .get_block_info(genesis_block.header().id())?
