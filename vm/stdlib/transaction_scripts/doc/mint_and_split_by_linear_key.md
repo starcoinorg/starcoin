@@ -37,7 +37,7 @@
     <b>let</b> mint_key = <a href="../../modules/doc/Box.md#0x1_Box_take">Box::take</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;&gt;(signer);
 
     // 2. mint token
-    <b>let</b> (tokens, new_mint_key) = <a href="../../modules/doc/Token.md#0x1_Token_split_with_linear_key">Token::split_with_linear_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key, amount);
+    <b>let</b> (tokens, new_mint_key) = <a href="../../modules/doc/Token.md#0x1_Token_split_linear_key">Token::split_linear_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(&<b>mut</b> mint_key, amount);
 
     // 3. deposit
     <a href="../../modules/doc/Account.md#0x1_Account_deposit_to_self">Account::deposit_to_self</a>(signer, tokens);

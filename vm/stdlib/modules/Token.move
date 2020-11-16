@@ -278,7 +278,7 @@ module Token {
         pragma verify = false; //timeout, fix later
     }
 
-    public fun split_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
+    public fun split_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
         let token = Self::mint_with_linear_key(key);
 
         assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
@@ -296,7 +296,7 @@ module Token {
         (token, new_key)
     }
 
-    spec fun split_with_linear_key {
+    spec fun split_linear_key {
         pragma verify = false; //timeout, fix later
     }
 

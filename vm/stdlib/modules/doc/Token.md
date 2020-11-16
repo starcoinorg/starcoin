@@ -28,7 +28,7 @@
 -  [Function `issue_linear_mint_key`](#0x1_Token_issue_linear_mint_key)
 -  [Function `mint_with_fixed_key`](#0x1_Token_mint_with_fixed_key)
 -  [Function `mint_with_linear_key`](#0x1_Token_mint_with_linear_key)
--  [Function `split_with_linear_key`](#0x1_Token_split_with_linear_key)
+-  [Function `split_linear_key`](#0x1_Token_split_linear_key)
 -  [Function `mint_amount_of_linear_key`](#0x1_Token_mint_amount_of_linear_key)
 -  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
 -  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
@@ -67,7 +67,7 @@
     -  [Function `issue_linear_mint_key`](#@Specification_1_issue_linear_mint_key)
     -  [Function `mint_with_fixed_key`](#@Specification_1_mint_with_fixed_key)
     -  [Function `mint_with_linear_key`](#@Specification_1_mint_with_linear_key)
-    -  [Function `split_with_linear_key`](#@Specification_1_split_with_linear_key)
+    -  [Function `split_linear_key`](#@Specification_1_split_linear_key)
     -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
     -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
     -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
@@ -889,13 +889,13 @@ Only the Association account can acquire such a reference, and it can do so only
 
 </details>
 
-<a name="0x1_Token_split_with_linear_key"></a>
+<a name="0x1_Token_split_linear_key"></a>
 
-## Function `split_with_linear_key`
+## Function `split_linear_key`
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_with_linear_key">split_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
 </code></pre>
 
 
@@ -904,7 +904,7 @@ Only the Association account can acquire such a reference, and it can do so only
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_with_linear_key">split_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token = <a href="Token.md#0x1_Token_mint_with_linear_key">Self::mint_with_linear_key</a>(key);
 
     <b>assert</b>(!<a href="Token.md#0x1_Token_is_empty_key">Self::is_empty_key</a>(key), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EEMPTY_KEY">EEMPTY_KEY</a>));
@@ -1804,12 +1804,12 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
-<a name="@Specification_1_split_with_linear_key"></a>
+<a name="@Specification_1_split_linear_key"></a>
 
-### Function `split_with_linear_key`
+### Function `split_linear_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_with_linear_key">split_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
 </code></pre>
 
 

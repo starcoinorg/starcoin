@@ -14,7 +14,7 @@ script {
         let mint_key = Box::take<Token::LinearTimeMintKey<Token>>(signer);
 
         // 2. mint token
-        let (tokens, new_mint_key) = Token::split_with_linear_key<Token>(&mut mint_key, amount);
+        let (tokens, new_mint_key) = Token::split_linear_key<Token>(&mut mint_key, amount);
 
         // 3. deposit
         Account::deposit_to_self(signer, tokens);
