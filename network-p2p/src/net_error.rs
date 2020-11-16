@@ -16,8 +16,9 @@
 
 //! Substrate network possible errors.
 
-use libp2p::{Multiaddr, PeerId};
-
+use crate::config::TransportConfig;
+use libp2p::core::{Multiaddr, PeerId};
+use starcoin_metrics::PrometheusError;
 use std::fmt;
 
 /// Result type alias for the network.
@@ -45,6 +46,20 @@ pub enum Error {
         /// The second peer id that was found for the bootnode.
         second_id: PeerId,
     },
+
+    /// Prometheus metrics error.
+    Prometheus(PrometheusError),
+    /// The network addresses are invalid because they don't match the transport.
+    #[display(
+        fmt = "The following addresses are invalid because they don't match the transport: {:?}",
+        addresses
+    )]
+    AddressesForAnotherTransport {
+        /// Transport used.
+        transport: TransportConfig,
+        /// The invalid addresses.
+        addresses: Vec<Multiaddr>,
+    },
 }
 
 // Make `Debug` use the `Display` implementation.
@@ -58,8 +73,9 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Io(ref err) => Some(err),
-            //Error::Client(ref err) => Some(err),
             Error::DuplicateBootnode { .. } => None,
+            Error::Prometheus(ref err) => Some(err),
+            Error::AddressesForAnotherTransport { .. } => None,
         }
     }
 }

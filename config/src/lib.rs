@@ -43,6 +43,7 @@ pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
+use network_p2p::config::MultiaddrWithPeerId;
 pub use rpc_config::RpcConfig;
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::genesis_config::{
@@ -132,7 +133,7 @@ pub struct StarcoinOpt {
 
     #[structopt(long)]
     /// P2P network seed, if want add more seeds, please edit config file.
-    pub seed: Option<Multiaddr>,
+    pub seed: Option<MultiaddrWithPeerId>,
 
     #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.

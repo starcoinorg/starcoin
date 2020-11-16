@@ -14,6 +14,7 @@ mod peer_message_handler;
 mod peer_provider;
 
 pub use libp2p::multiaddr::Multiaddr;
+pub use network_p2p::config::MultiaddrWithPeerId;
 pub use peer_message_handler::PeerMessageHandler;
 pub use peer_provider::{PeerProvider, PeerSelector};
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};

@@ -94,10 +94,10 @@ static THIRD_PARTY_MODULES: Lazy<Vec<(&str, LevelFilter)>> = Lazy::new(|| {
         ("jsonrpc_client_transports", LevelFilter::Info),
         ("parity_ws", LevelFilter::Info),
         ("multistream_select", LevelFilter::Info),
-        ("network_p2p", LevelFilter::Info),
+        //("network_p2p", LevelFilter::Info),
         //sub-libp2p and sync is network_p2p log target.
-        ("sub-libp2p", LevelFilter::Info),
-        ("sync", LevelFilter::Info),
+        //("sub-libp2p", LevelFilter::Info),
+        //("sync", LevelFilter::Info),
         ("libp2p", LevelFilter::Info),
         ("libp2p_swarm", LevelFilter::Info),
         ("libp2p_core", LevelFilter::Info),

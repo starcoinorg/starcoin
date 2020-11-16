@@ -20,7 +20,7 @@ use std::sync::Arc;
 use types::peer_info::PeerInfo;
 use types::PROTOCOLS;
 
-const PROTOCOL_ID: &[u8] = b"starcoin";
+const PROTOCOL_ID: &str = "starcoin";
 
 #[derive(Clone)]
 pub struct SNetworkService {
@@ -80,7 +80,7 @@ impl SNetworkService {
         event_tx: mpsc::UnboundedSender<PeerEvent>,
         close_rx: mpsc::UnboundedReceiver<()>,
     ) {
-        let mut event_stream = inner.service.event_stream().fuse();
+        let mut event_stream = inner.service.event_stream("network").fuse();
         let mut net_rx = net_rx.fuse();
         let mut close_rx = close_rx.fuse();
 
@@ -116,7 +116,7 @@ impl SNetworkService {
     pub async fn send_message(
         &self,
         peer_id: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        protocol_name: Cow<'static, str>,
         message: Vec<u8>,
     ) -> Result<()> {
         debug!("Send message to {}", &peer_id);
@@ -126,7 +126,7 @@ impl SNetworkService {
         Ok(())
     }
 
-    pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, [u8]>, message: Vec<u8>) {
+    pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, str>, message: Vec<u8>) {
         debug!("broadcast message, protocol: {:?}", protocol_name);
         self.service.broadcast_message(protocol_name, message).await;
     }
@@ -149,12 +149,8 @@ impl SNetworkService {
         self.service.get_address(peer_id).await
     }
 
-    pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, [u8]>) -> bool {
+    pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, str>) -> bool {
         self.service.exist_notif_proto(protocol_name).await
-    }
-
-    pub async fn sub_stream(&self, protocol_name: Cow<'static, [u8]>) -> impl Stream<Item = Event> {
-        self.service.sub_stream(protocol_name)
     }
 }
 
@@ -192,7 +188,7 @@ impl NetworkInner {
             }
             Event::NotificationsReceived {
                 remote,
-                protocol_name,
+                protocol: protocol_name,
                 messages,
             } => {
                 self.handle_messages(remote, protocol_name, messages, net_tx)
@@ -246,7 +242,6 @@ pub fn build_network_service(
         enable_mdns: false,
         allow_private_ipv4: false,
         wasm_external_transport: None,
-        use_yamux_flow_control: false,
     };
     let config = NetworkConfiguration {
         listen_addresses: vec![cfg.listen.clone()],

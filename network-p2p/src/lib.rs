@@ -20,13 +20,15 @@ pub use libp2p::{
 
 mod behaviour;
 pub mod config;
-mod debug_info;
 mod discovery;
 mod metrics;
 mod net_error;
 mod network_state;
+mod out_events;
+mod peer_info;
 mod protocol;
 mod service;
+#[cfg(test)]
 mod service_test;
 mod transport;
 mod utils;
@@ -39,7 +41,7 @@ use std::{
 };
 
 const MAX_CONNECTIONS_PER_PEER: usize = 2;
-pub const PROTOCOL_NAME: &[u8] = b"/starcoin/consensus/1";
+pub const PROTOCOL_NAME: &str = "/starcoin/consensus/1";
 
 trait DiscoveryNetBehaviour {
     /// Notify the protocol that we have learned about the existence of nodes.

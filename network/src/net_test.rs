@@ -330,27 +330,6 @@ mod tests {
     }
 
     #[stest::test]
-    async fn test_network_sub_stream() {
-        let (mut service1, service2) = build_test_network_pair_not_wait().await;
-        let _sub_stream_1 = service1
-            .0
-            .sub_stream(network_p2p::PROTOCOL_NAME.into())
-            .await;
-        let mut sub_stream_2 = service2
-            .0
-            .sub_stream(network_p2p::PROTOCOL_NAME.into())
-            .await;
-        let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
-        service1
-            .0
-            .broadcast_message(network_p2p::PROTOCOL_NAME.into(), random_bytes.clone())
-            .await;
-        let response =
-            futures::future::poll_fn(move |cx| Pin::new(&mut sub_stream_2).poll_next(cx)).await;
-        assert!(response.is_some());
-    }
-
-    #[stest::test]
     async fn test_event_dht() {
         let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
         let event = Event::Dht(DhtEvent::ValuePut(random_bytes.clone().into()));
@@ -361,6 +340,7 @@ mod tests {
     async fn test_event_notify_open() {
         let event = Event::NotificationStreamOpened {
             remote: PeerId::random(),
+            protocol: From::from("/test"),
             info: Box::new(PeerInfo::random()),
         };
         test_handle_event(event).await;
@@ -369,6 +349,7 @@ mod tests {
     #[stest::test]
     async fn test_event_notify_close() {
         let event = Event::NotificationStreamClosed {
+            protocol: From::from("/test"),
             remote: PeerId::random(),
         };
         test_handle_event(event).await;
@@ -380,7 +361,7 @@ mod tests {
         data.push(Bytes::from(&b"hello"[..]));
         let event = Event::NotificationsReceived {
             remote: PeerId::random(),
-            protocol_name: network_p2p::PROTOCOL_NAME.into(),
+            protocol: network_p2p::PROTOCOL_NAME.into(),
             messages: data,
         };
         test_handle_event(event).await;

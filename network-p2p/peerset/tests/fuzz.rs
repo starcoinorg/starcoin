@@ -18,9 +18,9 @@
 
 use futures::prelude::*;
 use libp2p::PeerId;
-use peerset::{IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange};
 use rand::distributions::{Distribution, Uniform, WeightedIndex};
 use rand::seq::IteratorRandom;
+use sc_peerset::{IncomingIndex, Message, Peerset, PeersetConfig, ReputationChange};
 use std::{collections::HashMap, collections::HashSet, iter, pin::Pin, task::Poll};
 
 #[test]
@@ -141,8 +141,8 @@ fn test_once() {
                         })
                         .choose(&mut rng)
                     {
-                        peerset.incoming(id.clone(), next_incoming_id);
-                        incoming_nodes.insert(next_incoming_id, id.clone());
+                        peerset.incoming(id.clone(), next_incoming_id.clone());
+                        incoming_nodes.insert(next_incoming_id.clone(), id.clone());
                         next_incoming_id.0 += 1;
                     }
                 }

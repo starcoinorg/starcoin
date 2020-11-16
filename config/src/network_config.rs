@@ -7,6 +7,7 @@ use crate::{
 };
 use anyhow::{bail, format_err, Result};
 use libp2p::multiaddr::{Multiaddr, Protocol};
+use network_p2p::config::MultiaddrWithPeerId;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
@@ -25,7 +26,7 @@ static NETWORK_KEY_FILE: &str = "network_key";
 pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
     pub listen: Multiaddr,
-    pub seeds: Vec<Multiaddr>,
+    pub seeds: Vec<MultiaddrWithPeerId>,
     pub disable_seed: bool,
     #[serde(skip)]
     pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
@@ -66,15 +67,15 @@ impl NetworkConfig {
         self.self_peer_id = Some(peer_id);
     }
 
-    fn check_seed(seed: &Multiaddr) -> Result<()> {
-        if let Some(Protocol::P2p(_peer_id)) = seed.clone().pop() {
-            return Ok(());
-        }
-        bail!(
-            "Invalid seed {:?}, seed addr last part must is p2p/peer_id ",
-            seed
-        )
-    }
+    // fn check_seed(seed: &MultiaddrWithPeerId) -> Result<()> {
+    //     if let Some(Protocol::P2p(_peer_id)) = seed.clone().pop() {
+    //         return Ok(());
+    //     }
+    //     bail!(
+    //         "Invalid seed {:?}, seed addr last part must is p2p/peer_id ",
+    //         seed
+    //     )
+    // }
 
     fn load_or_generate_keypair(
         opt: &StarcoinOpt,

@@ -1,50 +1,318 @@
-use starcoin_metrics::{IntCounterVec, IntGauge, Opts, PrometheusError, UIntGaugeVec};
+use prometheus::Registry;
+use starcoin_metrics::{
+    register, HistogramOpts, HistogramVec, IntCounter, IntCounterVec, Opts, PrometheusError,
+    UIntGauge, UIntGaugeVec,
+};
 
 #[derive(Clone)]
 pub struct Metrics {
-    pub network_per_sec_bytes: UIntGaugeVec,
+    // This list is ordered alphabetically
     pub connections_closed_total: IntCounterVec,
     pub connections_opened_total: IntCounterVec,
-    pub peers_count: IntGauge,
+    pub distinct_peers_connections_closed_total: IntCounter,
+    pub distinct_peers_connections_opened_total: IntCounter,
+    pub import_queue_blocks_submitted: IntCounter,
+    pub import_queue_finality_proofs_submitted: IntCounter,
+    pub import_queue_justifications_submitted: IntCounter,
+    pub incoming_connections_errors_total: IntCounterVec,
+    pub incoming_connections_total: IntCounter,
+    pub issued_light_requests: IntCounter,
+    pub kademlia_query_duration: HistogramVec,
+    pub kademlia_random_queries_total: IntCounterVec,
+    pub kademlia_records_count: UIntGaugeVec,
+    pub kademlia_records_sizes_total: UIntGaugeVec,
+    pub kbuckets_num_nodes: UIntGaugeVec,
+    pub listeners_local_addresses: UIntGauge,
+    pub listeners_errors_total: IntCounter,
+    pub notifications_sizes: HistogramVec,
+    pub notifications_streams_closed_total: IntCounterVec,
+    pub notifications_streams_opened_total: IntCounterVec,
+    pub peerset_num_discovered: UIntGauge,
+    pub peerset_num_requested: UIntGauge,
+    pub pending_connections: UIntGauge,
+    pub pending_connections_errors_total: IntCounterVec,
+    pub requests_in_failure_total: IntCounterVec,
+    pub requests_in_success_total: HistogramVec,
+    pub requests_out_failure_total: IntCounterVec,
+    pub requests_out_success_total: HistogramVec,
+    pub requests_out_started_total: IntCounterVec,
 }
 
 impl Metrics {
-    pub fn register() -> Result<Self, PrometheusError> {
-        let network_per_sec_bytes = register_uint_gauge_vec!(
-            Opts::new(
-                "sub_libp2p_network_per_sec_bytes",
-                "Average bandwidth usage per second"
-            )
-            .namespace("starcoin"),
-            &["direction"]
-        )?;
-
-        let connections_opened_total = register_int_counter_vec!(
-            Opts::new(
-                "network_connection_opened",
-                "Counters of how many connections opened",
-            )
-            .namespace("starcoin"),
-            &["network_connection_opened"]
-        )?;
-
-        let connections_closed_total = register_int_counter_vec!(
-            Opts::new(
-                "network_connection_closed",
-                "Counters of how many connections closed",
-            )
-            .namespace("starcoin"),
-            &["direction", "reason"]
-        )?;
-
-        let peers_count =
-            register_int_gauge!(Opts::new("peers_count", "peers count").namespace("starcoin"))?;
-
+    pub fn register(registry: &Registry) -> Result<Self, PrometheusError> {
         Ok(Self {
-            network_per_sec_bytes,
-            connections_closed_total,
-            connections_opened_total,
-            peers_count,
+            // This list is ordered alphabetically
+            connections_closed_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_connections_closed_total",
+                        "Total number of connections closed, by direction and reason",
+                    ),
+                    &["direction", "reason"],
+                )?,
+                registry,
+            )?,
+            connections_opened_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_connections_opened_total",
+                        "Total number of connections opened by direction",
+                    ),
+                    &["direction"],
+                )?,
+                registry,
+            )?,
+            distinct_peers_connections_closed_total: register(
+                IntCounter::new(
+                    "sub_libp2p_distinct_peers_connections_closed_total",
+                    "Total number of connections closed with distinct peers",
+                )?,
+                registry,
+            )?,
+            distinct_peers_connections_opened_total: register(
+                IntCounter::new(
+                    "sub_libp2p_distinct_peers_connections_opened_total",
+                    "Total number of connections opened with distinct peers",
+                )?,
+                registry,
+            )?,
+            import_queue_blocks_submitted: register(
+                IntCounter::new(
+                    "import_queue_blocks_submitted",
+                    "Number of blocks submitted to the import queue.",
+                )?,
+                registry,
+            )?,
+            import_queue_finality_proofs_submitted: register(
+                IntCounter::new(
+                    "import_queue_finality_proofs_submitted",
+                    "Number of finality proofs submitted to the import queue.",
+                )?,
+                registry,
+            )?,
+            import_queue_justifications_submitted: register(
+                IntCounter::new(
+                    "import_queue_justifications_submitted",
+                    "Number of justifications submitted to the import queue.",
+                )?,
+                registry,
+            )?,
+            incoming_connections_errors_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_incoming_connections_handshake_errors_total",
+                        "Total number of incoming connections that have failed during the \
+					initial handshake",
+                    ),
+                    &["reason"],
+                )?,
+                registry,
+            )?,
+            incoming_connections_total: register(
+                IntCounter::new(
+                    "sub_libp2p_incoming_connections_total",
+                    "Total number of incoming connections on the listening sockets",
+                )?,
+                registry,
+            )?,
+            issued_light_requests: register(
+                IntCounter::new(
+                    "issued_light_requests",
+                    "Number of light client requests that our node has issued.",
+                )?,
+                registry,
+            )?,
+            kademlia_query_duration: register(
+                HistogramVec::new(
+                    HistogramOpts {
+                        common_opts: Opts::new(
+                            "sub_libp2p_kademlia_query_duration",
+                            "Duration of Kademlia queries per query type",
+                        ),
+                        buckets: prometheus::exponential_buckets(0.5, 2.0, 10)
+                            .expect("parameters are always valid values; qed"),
+                    },
+                    &["type"],
+                )?,
+                registry,
+            )?,
+            kademlia_random_queries_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_kademlia_random_queries_total",
+                        "Number of random Kademlia queries started",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            kademlia_records_count: register(
+                UIntGaugeVec::new(
+                    Opts::new(
+                        "sub_libp2p_kademlia_records_count",
+                        "Number of records in the Kademlia records store",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            kademlia_records_sizes_total: register(
+                UIntGaugeVec::new(
+                    Opts::new(
+                        "sub_libp2p_kademlia_records_sizes_total",
+                        "Total size of all the records in the Kademlia records store",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            kbuckets_num_nodes: register(
+                UIntGaugeVec::new(
+                    Opts::new(
+                        "sub_libp2p_kbuckets_num_nodes",
+                        "Number of nodes per kbucket per Kademlia instance",
+                    ),
+                    &["protocol", "lower_ilog2_bucket_bound"],
+                )?,
+                registry,
+            )?,
+            listeners_local_addresses: register(
+                UIntGauge::new(
+                    "sub_libp2p_listeners_local_addresses",
+                    "Number of local addresses we're listening on",
+                )?,
+                registry,
+            )?,
+            listeners_errors_total: register(
+                IntCounter::new(
+                    "sub_libp2p_listeners_errors_total",
+                    "Total number of non-fatal errors reported by a listener",
+                )?,
+                registry,
+            )?,
+            notifications_sizes: register(
+                HistogramVec::new(
+                    HistogramOpts {
+                        common_opts: Opts::new(
+                            "sub_libp2p_notifications_sizes",
+                            "Sizes of the notifications send to and received from all nodes",
+                        ),
+                        buckets: prometheus::exponential_buckets(64.0, 4.0, 8)
+                            .expect("parameters are always valid values; qed"),
+                    },
+                    &["direction", "protocol"],
+                )?,
+                registry,
+            )?,
+            notifications_streams_closed_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_notifications_streams_closed_total",
+                        "Total number of notification substreams that have been closed",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            notifications_streams_opened_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_notifications_streams_opened_total",
+                        "Total number of notification substreams that have been opened",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            peerset_num_discovered: register(
+                UIntGauge::new(
+                    "sub_libp2p_peerset_num_discovered",
+                    "Number of nodes stored in the peerset manager",
+                )?,
+                registry,
+            )?,
+            peerset_num_requested: register(
+                UIntGauge::new(
+                    "sub_libp2p_peerset_num_requested",
+                    "Number of nodes that the peerset manager wants us to be connected to",
+                )?,
+                registry,
+            )?,
+            pending_connections: register(
+                UIntGauge::new(
+                    "sub_libp2p_pending_connections",
+                    "Number of connections in the process of being established",
+                )?,
+                registry,
+            )?,
+            pending_connections_errors_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_pending_connections_errors_total",
+                        "Total number of pending connection errors",
+                    ),
+                    &["reason"],
+                )?,
+                registry,
+            )?,
+            requests_in_failure_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_requests_in_failure_total",
+                        "Total number of incoming requests that the node has failed to answer",
+                    ),
+                    &["protocol", "reason"],
+                )?,
+                registry,
+            )?,
+            requests_in_success_total: register(
+                HistogramVec::new(
+                    HistogramOpts {
+                        common_opts: Opts::new(
+                            "sub_libp2p_requests_in_success_total",
+                            "Total number of requests received and answered",
+                        ),
+                        buckets: prometheus::exponential_buckets(0.001, 2.0, 16)
+                            .expect("parameters are always valid values; qed"),
+                    },
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            requests_out_failure_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_requests_out_failure_total",
+                        "Total number of requests that have failed",
+                    ),
+                    &["protocol", "reason"],
+                )?,
+                registry,
+            )?,
+            requests_out_success_total: register(
+                HistogramVec::new(
+                    HistogramOpts {
+                        common_opts: Opts::new(
+                            "sub_libp2p_requests_out_success_total",
+                            "For successful requests, time between a request's start and finish",
+                        ),
+                        buckets: prometheus::exponential_buckets(0.001, 2.0, 16)
+                            .expect("parameters are always valid values; qed"),
+                    },
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
+            requests_out_started_total: register(
+                IntCounterVec::new(
+                    Opts::new(
+                        "sub_libp2p_requests_out_started_total",
+                        "Total number of requests emitted",
+                    ),
+                    &["protocol"],
+                )?,
+                registry,
+            )?,
         })
     }
 }
