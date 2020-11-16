@@ -5,7 +5,7 @@
 address 0x1 {
 module Authenticator {
     use 0x1::Hash;
-    use 0x1::LCS;
+    use 0x1::SCS;
     use 0x1::Vector;
     use 0x1::Errors;
 
@@ -98,7 +98,7 @@ module Authenticator {
             i = i + 1;
         };
 
-        LCS::to_address(address_bytes)
+        SCS::to_address(address_bytes)
     }
 
     spec fun derived_address {
@@ -125,7 +125,7 @@ module Authenticator {
             );
             i = i + 1;
         };
-        Vector::append(&mut authentication_key_preimage, LCS::to_bytes(&k.threshold));
+        Vector::append(&mut authentication_key_preimage, SCS::to_bytes(&k.threshold));
         // TODO: add constant MULTI_ED25519_SCHEME_ID = 1u8
         Vector::push_back(&mut authentication_key_preimage, 1u8);
         Hash::sha3_256(authentication_key_preimage)

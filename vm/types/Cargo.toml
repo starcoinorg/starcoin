@@ -22,11 +22,11 @@ log = "0.4.11"
 
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-vm = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665"}
-move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f" }
+move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f" }
+vm = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f"}
+move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f" }
 
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
@@ -38,7 +38,7 @@ libp2p = "0.22.0"
 [dev-dependencies]
 proptest = "0.10.1"
 proptest-derive = "0.2.0"
-vm = { git = "https://github.com/starcoinorg/libra", rev = "30ed73f36ecd810c5983c3dd67d2aa63a3ba1665", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/libra", rev = "0277502dca4b4a1a498b3fe0f7bb8d412cb0058f", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 
