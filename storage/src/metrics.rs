@@ -16,6 +16,18 @@ pub static STORAGE_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
     .unwrap()
 });
 
+pub static STORAGE_ITER_BYTES: Lazy<HistogramVec> = Lazy::new(|| {
+    register_histogram_vec!(
+        // metric name
+        "storage_iter_bytes",
+        // metric description
+        "storage iter size in bytess",
+        // metric labels (dimensions)
+        &["cf_name"]
+    )
+    .unwrap()
+});
+
 pub static STORAGE_TIMES: Lazy<HistogramVec> = Lazy::new(|| {
     register_histogram_vec!(
         "starcoin_storage_time",

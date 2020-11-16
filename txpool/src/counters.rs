@@ -1,15 +1,5 @@
 use once_cell::sync::Lazy;
-use prometheus::{HistogramOpts, HistogramVec, IntCounterVec, IntGauge, IntGaugeVec, Opts};
-
-/// Counter of txn status in tx_pool
-pub static TXN_STATUS_COUNTERS: Lazy<IntCounterVec> = Lazy::new(|| {
-    let opts = Opts::new(
-        "txpool_txn_stats",
-        "Counters of how many txn's stats in tx pool",
-    )
-    .namespace("starcoin");
-    register_int_counter_vec!(opts, &["status"]).unwrap()
-});
+use prometheus::{HistogramOpts, HistogramVec, IntGauge, IntGaugeVec, Opts};
 
 pub static TXPOOL_TXNS_GAUGE: Lazy<IntGauge> = Lazy::new(|| {
     let opts =
