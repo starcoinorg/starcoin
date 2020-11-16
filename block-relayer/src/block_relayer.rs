@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::BLOCK_RELAYER_METRICS;
 use anyhow::Result;
 use crypto::HashValue;
 use futures::FutureExt;
@@ -74,6 +75,7 @@ impl BlockRelayer {
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if let Some(txn) = txns_pool_map.get(short_id) {
+                    BLOCK_RELAYER_METRICS.txns_filled_from_txpool.inc();
                     txns[index] = Some((*txn).clone());
                 } else {
                     missing_txn_short_ids.insert(short_id);
@@ -86,6 +88,7 @@ impl BlockRelayer {
                     continue;
                 }
                 txns[prefilled_txn.index as usize] = Some(prefilled_txn.clone().tx);
+                BLOCK_RELAYER_METRICS.txns_filled_from_prefill.inc();
                 missing_txn_short_ids.remove(&ShortId(
                     Transaction::UserTransaction(prefilled_txn.tx).id(),
                 ));
@@ -114,6 +117,7 @@ impl BlockRelayer {
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(&txn) = fetched_missing_txn_map.get(short_id) {
+                        BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
                         txns[index] = Some(txn.clone());
                     }
                 }
