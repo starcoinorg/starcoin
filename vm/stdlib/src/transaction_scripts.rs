@@ -148,6 +148,7 @@ pub enum StdlibScript {
     RotateAuthenticationKey,
     MintTokenByLinearKey,
     MintTokenByFixKey,
+    MintAndSplitByLinearKey,
     // ...add new scripts here
 }
 
@@ -183,6 +184,7 @@ impl StdlibScript {
             RotateAuthenticationKey,
             MintTokenByLinearKey,
             MintTokenByFixKey,
+            MintAndSplitByLinearKey,
             // ...add new scripts here
         ]
     }
@@ -246,6 +248,7 @@ impl fmt::Display for StdlibScript {
                 RotateAuthenticationKey => "rotate_authentication_key",
                 MintTokenByLinearKey => "mint_token_by_linear_key",
                 MintTokenByFixKey => "mint_token_by_fix_key",
+                MintAndSplitByLinearKey => "mint_and_split_by_linear_key",
             }
         )
     }
