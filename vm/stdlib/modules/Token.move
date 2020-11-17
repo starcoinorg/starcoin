@@ -310,7 +310,7 @@ module Token {
     }
 
     spec fun split_fixed_key {
-        pragma verify = false; //timeout, fix later
+        aborts_if key.total < amount;
     }
 
     // Returns the amount of the LinearTimeMintKey can mint now.
