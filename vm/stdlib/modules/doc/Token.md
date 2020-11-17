@@ -1862,7 +1862,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 
-<pre><code><b>pragma</b> verify = <b>false</b>;
+<pre><code><b>aborts_if</b> key.total &lt; amount;
 </code></pre>
 
 
