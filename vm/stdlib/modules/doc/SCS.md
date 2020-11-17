@@ -20,7 +20,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="LCS.md#0x1_SCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="SCS.md#0x1_SCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;
 </code></pre>
 
 
@@ -29,7 +29,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="LCS.md#0x1_SCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="SCS.md#0x1_SCS_to_bytes">to_bytes</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
 </code></pre>
 
 
@@ -42,7 +42,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="LCS.md#0x1_SCS_to_address">to_address</a>(key_bytes: vector&lt;u8&gt;): address
+<pre><code><b>public</b> <b>fun</b> <a href="SCS.md#0x1_SCS_to_address">to_address</a>(key_bytes: vector&lt;u8&gt;): address
 </code></pre>
 
 
@@ -51,7 +51,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="LCS.md#0x1_SCS_to_address">to_address</a>(key_bytes: vector&lt;u8&gt;): address;
+<pre><code><b>native</b> <b>public</b> <b>fun</b> <a href="SCS.md#0x1_SCS_to_address">to_address</a>(key_bytes: vector&lt;u8&gt;): address;
 </code></pre>
 
 
@@ -74,5 +74,5 @@
 <a name="0x1_SCS_serialize"></a>
 
 
-<pre><code><b>native</b> <b>define</b> <a href="LCS.md#0x1_SCS_serialize">serialize</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
+<pre><code><b>native</b> <b>define</b> <a href="SCS.md#0x1_SCS_serialize">serialize</a>&lt;MoveValue&gt;(v: &MoveValue): vector&lt;u8&gt;;
 </code></pre>

@@ -16,7 +16,7 @@
 -  [Specification](#@Specification_0)
 
 
-<pre><code><b>use</b> <a href="LCS.md#0x1_SCS">0x1::SCS</a>;
+<pre><code><b>use</b> <a href="SCS.md#0x1_SCS">0x1::SCS</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
@@ -129,8 +129,8 @@
 
 
 <pre><code><b>fun</b> <a href="Event.md#0x1_Event_fresh_guid">fresh_guid</a>(counter: &<b>mut</b> <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a>): vector&lt;u8&gt; {
-    <b>let</b> sender_bytes = <a href="LCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&counter.addr);
-    <b>let</b> count_bytes = <a href="LCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&counter.counter);
+    <b>let</b> sender_bytes = <a href="SCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&counter.addr);
+    <b>let</b> count_bytes = <a href="SCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&counter.counter);
     counter.counter = counter.counter + 1;
 
     // <a href="Event.md#0x1_Event_EventHandleGenerator">EventHandleGenerator</a> goes first just in case we want <b>to</b> extend address in the future.

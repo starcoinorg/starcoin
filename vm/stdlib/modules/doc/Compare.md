@@ -39,7 +39,7 @@
     <b>let</b> i2 = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(v2);
     <b>let</b> len_cmp = <a href="Compare.md#0x1_Compare_cmp_u64">cmp_u64</a>(i1, i2);
 
-    // <a href="LCS.md#0x1_SCS">SCS</a> uses little endian encoding for all integer types, so we choose <b>to</b> compare from left
+    // <a href="SCS.md#0x1_SCS">SCS</a> uses little endian encoding for all integer types, so we choose <b>to</b> compare from left
     // <b>to</b> right. Going right <b>to</b> left would make the behavior of <a href="Compare.md#0x1_Compare">Compare</a>.cmp diverge from the
     // bytecode operators &lt; and &gt; on integer values (which would be confusing).
     <b>while</b> (i1 &gt; 0 && i2 &gt; 0) {
