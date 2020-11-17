@@ -29,6 +29,7 @@
 -  [Function `mint_with_fixed_key`](#0x1_Token_mint_with_fixed_key)
 -  [Function `mint_with_linear_key`](#0x1_Token_mint_with_linear_key)
 -  [Function `split_linear_key`](#0x1_Token_split_linear_key)
+-  [Function `split_fixed_key`](#0x1_Token_split_fixed_key)
 -  [Function `mint_amount_of_linear_key`](#0x1_Token_mint_amount_of_linear_key)
 -  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
 -  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
@@ -68,6 +69,7 @@
     -  [Function `mint_with_fixed_key`](#@Specification_1_mint_with_fixed_key)
     -  [Function `mint_with_linear_key`](#@Specification_1_mint_with_linear_key)
     -  [Function `split_linear_key`](#@Specification_1_split_linear_key)
+    -  [Function `split_fixed_key`](#@Specification_1_split_fixed_key)
     -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
     -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
     -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
@@ -920,6 +922,35 @@ Only the Association account can acquire such a reference, and it can do so only
         period: new_period
     };
     (token, new_key)
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_split_fixed_key"></a>
+
+## Function `split_fixed_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt; {
+    <b>assert</b>(key.total &gt;= amount, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
+    key.total = key.total - amount;
+    <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
+        total: amount,
+        end_time: key.end_time,
+    }
 }
 </code></pre>
 
@@ -1810,6 +1841,22 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_split_fixed_key"></a>
+
+### Function `split_fixed_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
 </code></pre>
 
 

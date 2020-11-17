@@ -300,6 +300,19 @@ module Token {
         pragma verify = false; //timeout, fix later
     }
 
+    public fun split_fixed_key<TokenType>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
+        assert(key.total >= amount, Errors::invalid_state(ESPLIT));
+        key.total = key.total - amount;
+        FixedTimeMintKey{
+            total: amount,
+            end_time: key.end_time,
+        }
+    }
+
+    spec fun split_fixed_key {
+        pragma verify = false; //timeout, fix later
+    }
+
     // Returns the amount of the LinearTimeMintKey can mint now.
     public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
