@@ -22,7 +22,7 @@ impl<T> std::fmt::Debug for ThreadJoinError<T> {
         let msg = match self {
             ThreadJoinError::Timeout(_) => "timeout".to_string(),
             ThreadJoinError::Panic(msg) => format!("panic({})", msg),
-            ThreadJoinError::Unknown(_) => format!("unknown"),
+            ThreadJoinError::Unknown(_) => "unknown".to_string(),
         };
         write!(f, "ThreadJoinError({})", msg)
     }
