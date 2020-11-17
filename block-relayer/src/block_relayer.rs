@@ -19,7 +19,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use starcoin_types::{
     block::{Block, BlockBody},
-    cmpact_block::{CompactBlock, PrefiledTxn, ShortId},
+    cmpact_block::{CompactBlock, ShortId},
     peer_info::PeerId,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction},

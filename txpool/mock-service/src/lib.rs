@@ -92,7 +92,7 @@ impl TxPoolSyncService for MockTxPoolService {
         unimplemented!()
     }
 
-    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction> {
+    fn find_txn(&self, _hash: &HashValue) -> Option<SignedUserTransaction> {
         unimplemented!()
     }
 }
