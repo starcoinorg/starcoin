@@ -1,12 +1,12 @@
 
-<a name="mint_token_by_fix_key"></a>
+<a name="mint_token_by_fixed_key"></a>
 
-# Script `mint_token_by_fix_key`
+# Script `mint_token_by_fixed_key`
 
 
 
 -  [Specification](#@Specification_0)
-    -  [Function `mint_token_by_fix_key`](#@Specification_0_mint_token_by_fix_key)
+    -  [Function `mint_token_by_fixed_key`](#@Specification_0_mint_token_by_fixed_key)
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/Account.md#0x1_Account">0x1::Account</a>;
@@ -17,7 +17,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="mint_token_by_fix_key.md#mint_token_by_fix_key">mint_token_by_fix_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="mint_token_by_fixed_key.md#mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
@@ -26,7 +26,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="mint_token_by_fix_key.md#mint_token_by_fix_key">mint_token_by_fix_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(
+<pre><code><b>fun</b> <a href="mint_token_by_fixed_key.md#mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(
     signer: &signer,
 ) {
     // 1. take key: FixedTimeMintKey&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;
@@ -49,12 +49,12 @@
 ## Specification
 
 
-<a name="@Specification_0_mint_token_by_fix_key"></a>
+<a name="@Specification_0_mint_token_by_fixed_key"></a>
 
-### Function `mint_token_by_fix_key`
+### Function `mint_token_by_fixed_key`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="mint_token_by_fix_key.md#mint_token_by_fix_key">mint_token_by_fix_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
+<pre><code><b>public</b> <b>fun</b> <a href="mint_token_by_fixed_key.md#mint_token_by_fixed_key">mint_token_by_fixed_key</a>&lt;<a href="../../modules/doc/Token.md#0x1_Token">Token</a>&gt;(signer: &signer)
 </code></pre>
 
 
