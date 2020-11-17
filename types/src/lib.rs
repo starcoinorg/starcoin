@@ -32,6 +32,10 @@ pub mod contract_event {
     pub use starcoin_vm_types::contract_event::*;
 }
 
+pub mod time {
+    pub use starcoin_vm_types::time::*;
+}
+
 pub mod error;
 
 pub mod event {
