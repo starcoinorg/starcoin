@@ -7,6 +7,4 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/regression/Escape.move:24:5: install
-    =         account = <redacted>,
-    =         thing = <redacted>
     =     at tests/sources/regression/Escape.move:25:9: install

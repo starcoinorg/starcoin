@@ -566,6 +566,10 @@ axiom contents#$Memory($EmptyMemory) == $ConstMemoryContent($DefaultValue());
 var $abort_flag: bool;
 var $abort_code: int;
 
+function {:inline} $process_abort_code(code: int): int {
+    code
+}
+
 const $EXEC_FAILURE_CODE: int;
 axiom $EXEC_FAILURE_CODE == -1;
 
@@ -1349,45 +1353,45 @@ procedure {:inline 1} $Signature_ed25519_verify(
 }
 
 // ==================================================================================
-// Native LCS::serialize
+// Native SCS::serialize
 
 // native define serialize<MoveValue>(v: &MoveValue): vector<u8>;
 
 // Serialize is modeled as an uninterpreted function, with an additional
 // axiom to say it's an injection.
 
-function {:inline} $LCS_serialize(ta: $TypeValue, v: $Value): $Value {
-    $LCS_serialize_core(v)
+function {:inline} $SCS_serialize(ta: $TypeValue, v: $Value): $Value {
+    $SCS_serialize_core(v)
 }
 
-function $LCS_serialize_core(v: $Value): $Value;
-function $LCS_serialize_core_inv(v: $Value): $Value;
+function $SCS_serialize_core(v: $Value): $Value;
+function $SCS_serialize_core_inv(v: $Value): $Value;
 // Needed only because IsEqual(v1, v2) is weaker than v1 == v2 in case there is a vector nested inside v1 or v2.
-axiom (forall v1, v2: $Value :: $IsEqual(v1, v2) ==> $LCS_serialize_core(v1) == $LCS_serialize_core(v2));
+axiom (forall v1, v2: $Value :: $IsEqual(v1, v2) ==> $SCS_serialize_core(v1) == $SCS_serialize_core(v2));
 // Injectivity
-axiom (forall v: $Value :: $LCS_serialize_core_inv($LCS_serialize_core(v)) == v);
+axiom (forall v: $Value :: $SCS_serialize_core_inv($SCS_serialize_core(v)) == v);
 
 // This says that serialize returns a non-empty vec<u8>
 {{#if (eq backend.serialize_bound 0)}}
-axiom (forall v: $Value :: ( var r := $LCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 ));
+axiom (forall v: $Value :: ( var r := $SCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 ));
 {{else}}
-axiom (forall v: $Value :: ( var r := $LCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 &&
+axiom (forall v: $Value :: ( var r := $SCS_serialize_core(v); $IsValidU8Vector(r) && $vlen(r) > 0 &&
                             $vlen(r) <= {{backend.serialize_bound}} ));
 {{/if}}
 
 // Serialized addresses should have the same length
 const $serialized_address_len: int;
-axiom (forall v: $Value :: (var r := $LCS_serialize_core(v); is#$Address(v) ==> $vlen(r) == $serialized_address_len));
+axiom (forall v: $Value :: (var r := $SCS_serialize_core(v); is#$Address(v) ==> $vlen(r) == $serialized_address_len));
 
-procedure $LCS_to_bytes(ta: $TypeValue, v: $Value) returns (res: $Value);
-ensures res == $LCS_serialize(ta, v);
+procedure $SCS_to_bytes(ta: $TypeValue, v: $Value) returns (res: $Value);
+ensures res == $SCS_serialize(ta, v);
 ensures $IsValidU8Vector(res);    // result is a legal vector of U8s.
 
-function {:inline} $LCS_$to_bytes(ta: $TypeValue, v: $Value): $Value {
-    $LCS_serialize_core(v)
+function {:inline} $SCS_$to_bytes(ta: $TypeValue, v: $Value): $Value {
+    $SCS_serialize_core(v)
 }
 
-procedure $LCS_to_address(v: $Value) returns (res: $Value);
+procedure $SCS_to_address(v: $Value) returns (res: $Value);
 
 // ==================================================================================
 // Native Signer::spec_address_of

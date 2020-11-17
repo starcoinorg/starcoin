@@ -15,11 +15,12 @@ colored-diff = "0.2.2"
 guppy = { version = "0.5.0", features = ["summaries"] }
 indoc = "1.0.3"
 toml = "0.5.7"
-env_logger = "0.7.1"
+env_logger = "0.8.1"
 log = "0.4.11"
 chrono = "0.4.19"
 glob = "0.3.0"
-x-core = { package="x-core", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-x-lint = { package="x-lint", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-libra-workspace-hack = { package="libra-workspace-hack", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
-libra-x = { package="x", git = "https://github.com/starcoinorg/libra", rev="30ed73f36ecd810c5983c3dd67d2aa63a3ba1665" }
+indexmap = "1.6.0"
+x-core = { package="x-core", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
+x-lint = { package="x-lint", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
+libra-workspace-hack = { package="libra-workspace-hack", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
+libra-x = { package="x", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
