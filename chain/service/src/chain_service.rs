@@ -139,6 +139,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     .get_transaction(hash)?
                     .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
             ))),
+            ChainRequest::GetTransactionBlock(txn_id) => {
+                let block_id = self.inner.get_transaction_block_id(txn_id)?;
+                let block = match block_id {
+                    Some(id) => self.inner.get_block_by_hash(id)?,
+                    None => None,
+                };
+                Ok(ChainResponse::BlockOption(block.map(Box::new)))
+            }
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
                 self.inner.get_transaction_info(hash)?,
             )),
@@ -263,6 +271,9 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.storage.get_transaction(txn_hash)
+    }
+    fn get_transaction_block_id(&self, txn_hash: HashValue) -> Result<Option<HashValue>> {
+        self.storage.get_txn_block(txn_hash)
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {

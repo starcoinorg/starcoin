@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::TransactionInfoView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -30,8 +30,8 @@ impl CommandAction for GetTransactionCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let transaction = client.chain_get_transaction_info(opt.hash)?;
+        let txn_info = client.chain_get_transaction_info(opt.hash)?;
 
-        Ok(transaction.map(|t| t.into()))
+        Ok(txn_info)
     }
 }

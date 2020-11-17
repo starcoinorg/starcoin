@@ -30,7 +30,7 @@ impl CommandAction for GetTxnByBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info = client.chain_get_txn_by_block(opt.hash)?;
+        let vec_transaction_info = client.chain_get_block_txn_infos(opt.hash)?;
 
         Ok(vec_transaction_info
             .into_iter()

@@ -31,6 +31,7 @@ pub enum ChainRequest {
     GetEpochInfo(),
     GetEpochInfoByNumber(u64),
     GetGlobalTimeByNumber(u64),
+    GetTransactionBlock(HashValue),
     GetTransaction(HashValue),
     GetTransactionInfo(HashValue),
     GetBlockTransactionInfos(HashValue),
@@ -68,6 +69,7 @@ pub enum ChainResponse {
     StartupInfo(Box<StartupInfo>),
     ChainInfo(Box<ChainInfo>),
     Transaction(Box<Transaction>),
+
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
     TransactionInfos(Vec<TransactionInfo>),

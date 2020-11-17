@@ -58,6 +58,7 @@ pub const BLOCK_BODY_PREFIX_NAME: ColumnFamilyName = "block_body";
 pub const BLOCK_NUM_PREFIX_NAME: ColumnFamilyName = "block_num";
 pub const BLOCK_INFO_PREFIX_NAME: ColumnFamilyName = "block_info";
 pub const BLOCK_TRANSACTIONS_PREFIX_NAME: ColumnFamilyName = "block_txns";
+pub const TRANSACTION_BLOCK_PREFIX_NAME: ColumnFamilyName = "txn_block";
 pub const BLOCK_TRANSACTION_INFOS_PREFIX_NAME: ColumnFamilyName = "block_txn_infos";
 pub const STATE_NODE_PREFIX_NAME: ColumnFamilyName = "state_node";
 pub const CHAIN_INFO_PREFIX_NAME: ColumnFamilyName = "chain_info";
@@ -78,6 +79,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         BLOCK_NUM_PREFIX_NAME,
         BLOCK_INFO_PREFIX_NAME,
         BLOCK_TRANSACTIONS_PREFIX_NAME,
+        TRANSACTION_BLOCK_PREFIX_NAME,
         BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
         STATE_NODE_PREFIX_NAME,
         CHAIN_INFO_PREFIX_NAME,
@@ -95,6 +97,9 @@ pub trait BlockStore {
     fn get_headers(&self) -> Result<Vec<HashValue>>;
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>>;
+
+    /// get the block id which contains the given `tnx_id`
+    fn get_txn_block(&self, txn_id: HashValue) -> Result<Option<HashValue>>;
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
 
@@ -253,6 +258,10 @@ impl BlockStore for Storage {
 
     fn get_block(&self, block_id: HashValue) -> Result<Option<Block>> {
         self.block_storage.get(block_id)
+    }
+
+    fn get_txn_block(&self, txn_id: HashValue) -> Result<Option<HashValue>> {
+        self.block_storage.get_transaction_block(txn_id)
     }
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {

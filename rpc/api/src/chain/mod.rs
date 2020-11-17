@@ -3,7 +3,7 @@
 
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
-use crate::types::TransactionEventView;
+use crate::types::{TransactionEventView, TransactionInfoView};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
@@ -40,11 +40,11 @@ pub trait ChainApi {
     fn get_transaction_info(
         &self,
         transaction_id: HashValue,
-    ) -> FutureResult<Option<TransactionInfo>>;
+    ) -> FutureResult<Option<TransactionInfoView>>;
 
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]
-    fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
+    fn get_block_txn_infos(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
 
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]

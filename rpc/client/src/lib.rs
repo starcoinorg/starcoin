@@ -49,7 +49,7 @@ mod remote_state_reader;
 
 pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
+use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall, TransactionInfoView};
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::TaskProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
@@ -562,7 +562,7 @@ impl RpcClient {
     pub fn chain_get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Option<TransactionInfo>> {
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -587,12 +587,16 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_txn_by_block(
+    pub fn chain_get_block_txn_infos(
         &self,
         block_id: HashValue,
     ) -> anyhow::Result<Vec<TransactionInfo>> {
         self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_txn_by_block(block_id).compat().await
+            inner
+                .chain_client
+                .get_block_txn_infos(block_id)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }

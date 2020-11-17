@@ -6,7 +6,7 @@ use futures::future::{FutureExt, TryFutureExt};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::TransactionEventView;
+use starcoin_rpc_api::types::{TransactionEventView, TransactionInfoView, TransactionVMStatus};
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
@@ -96,18 +96,50 @@ where
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfo>> {
+    ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.get_transaction_info(transaction_hash).await?;
-            Ok(block)
+            let txn_info = {
+                let info = service.get_transaction_info(transaction_hash).await?;
+                if info.is_none() {
+                    return Ok(None);
+                }
+                info.unwrap()
+            };
+
+            let block = {
+                let block = service.get_transaction_block(transaction_hash).await?;
+                if block.is_none() {
+                    return Ok(None);
+                }
+                block.unwrap()
+            };
+
+            let index = block
+                .transactions()
+                .iter()
+                .position(|t| t.id() == transaction_hash);
+            if index.is_none() {
+                return Ok(None);
+            }
+            let index = index.unwrap();
+            Ok(Some(TransactionInfoView {
+                block_id: block.id(),
+                block_number: block.header().number,
+                transaction_hash,
+                transaction_index: index as u32 + 1,
+                state_root_hash: txn_info.state_root_hash(),
+                event_root_hash: txn_info.event_root_hash(),
+                gas_used: txn_info.gas_used(),
+                status: TransactionVMStatus::from(txn_info.status().clone()),
+            }))
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>> {
+    fn get_block_txn_infos(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>> {
         let service = self.service.clone();
         let fut = async move {
             let block = service.get_block_txn_infos(block_id).await?;

@@ -26,6 +26,7 @@ pub trait ReadableChainService {
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    fn get_transaction_block_id(&self, txn_hash: HashValue) -> Result<Option<HashValue>>;
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     fn get_txn_info_by_block_and_index(
@@ -84,6 +85,7 @@ pub trait ChainAsyncService:
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
     async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
+    async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
     async fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
         &self,
@@ -196,6 +198,17 @@ where
             Ok(txn_info)
         } else {
             bail!("get transaction_info error:{:?}", txn_hash)
+        }
+    }
+
+    async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>> {
+        let response = self
+            .send(ChainRequest::GetTransactionBlock(txn_hash))
+            .await??;
+        if let ChainResponse::BlockOption(b) = response {
+            Ok(b.map(|d| *d))
+        } else {
+            bail!("get transaction_block error:{:?}", txn_hash)
         }
     }
 
