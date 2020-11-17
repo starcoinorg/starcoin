@@ -129,7 +129,7 @@ mod tests {
     };
     use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
     use std::sync::Arc;
-    use std::time::Duration;
+    use std::{thread::sleep, time::Duration};
     use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
     use test_helper::executor::compile_module_with_address;
     use test_helper::run_node_by_config;
@@ -193,10 +193,12 @@ mod tests {
         let transfer_txn_id = transfer_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(transfer_txn)
+            .submit_transaction(transfer_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&transfer_txn));
         let transfer_txn_info = cli_state
             .client()
             .chain_get_transaction_info(transfer_txn_id)
@@ -256,10 +258,12 @@ mod tests {
         let proposal_txn_id = proposal_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(proposal_txn)
+            .submit_transaction(proposal_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&proposal_txn));
         let proposal_txn_info = cli_state
             .client()
             .chain_get_transaction_info(proposal_txn_id)
@@ -309,10 +313,12 @@ mod tests {
         let vote_txn_id = vote_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(vote_txn)
+            .submit_transaction(vote_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&vote_txn));
         let vote_txn_info = cli_state
             .client()
             .chain_get_transaction_info(vote_txn_id)
@@ -322,6 +328,7 @@ mod tests {
 
         // 4. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
+        sleep(Duration::from_millis(500));
         node_handle.generate_block().unwrap();
 
         // 5. queue
@@ -338,10 +345,12 @@ mod tests {
         let queue_txn_id = queue_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(queue_txn)
+            .submit_transaction(queue_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&queue_txn));
         let queue_txn_info = cli_state
             .client()
             .chain_get_transaction_info(queue_txn_id)
@@ -352,6 +361,7 @@ mod tests {
 
         // 6. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
+        sleep(Duration::from_millis(500));
         node_handle.generate_block().unwrap();
 
         // 7. plan
@@ -368,10 +378,12 @@ mod tests {
         let plan_txn_id = plan_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(plan_txn)
+            .submit_transaction(plan_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&plan_txn));
         let plan_txn_info = cli_state
             .client()
             .chain_get_transaction_info(plan_txn_id)
@@ -391,10 +403,12 @@ mod tests {
         let package_txn_id = package_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(package_txn)
+            .submit_transaction(package_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&package_txn));
         let package_txn_info = cli_state
             .client()
             .chain_get_transaction_info(package_txn_id)
@@ -470,10 +484,12 @@ mod tests {
         let only_new_module_strategy_txn_id = only_new_module_strategy_txn.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(only_new_module_strategy_txn)
+            .submit_transaction(only_new_module_strategy_txn.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&only_new_module_strategy_txn));
         let only_new_module_strategy_txn_info = cli_state
             .client()
             .chain_get_transaction_info(only_new_module_strategy_txn_id)
@@ -507,10 +523,12 @@ mod tests {
         let package_txn_id_1 = package_txn_1.crypto_hash();
         cli_state
             .client()
-            .submit_transaction(package_txn_1)
+            .submit_transaction(package_txn_1.clone())
             .unwrap()
             .unwrap();
-        node_handle.generate_block().unwrap();
+        sleep(Duration::from_millis(500));
+        let block = node_handle.generate_block().unwrap();
+        assert!(block.transactions().contains(&package_txn_1));
         let package_txn_info_1 = cli_state
             .client()
             .chain_get_transaction_info(package_txn_id_1)
