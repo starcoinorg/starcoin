@@ -70,6 +70,9 @@ module Token {
 
     const EDESTROY_KEY_NOT_EMPTY: u64 = 104;
     const EPRECISION_TOO_LARGE: u64 = 105;
+    const EEMPTY_KEY: u64 = 106;
+    const ESPLIT: u64 = 107;
+    const EPERIOD_NEW: u64 = 108;
 
     /// 2^128 < 10**39
     const MAX_PRECISION: u8 = 38;
@@ -272,6 +275,28 @@ module Token {
     }
 
     spec fun mint_with_linear_key {
+        pragma verify = false; //timeout, fix later
+    }
+
+    public fun split_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
+        let token = Self::mint_with_linear_key(key);
+
+        assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
+        assert((key.minted + amount) <= key.total, Errors::invalid_state(ESPLIT));
+        key.total = key.total - amount;
+        let start_time = Timestamp::now_seconds();
+        assert((key.start_time + key.period) > start_time, Errors::invalid_state(EPERIOD_NEW));
+        let new_period = key.start_time + key.period - start_time;
+        let new_key = LinearTimeMintKey<TokenType> {
+            total: amount,
+            minted: 0,
+            start_time,
+            period: new_period
+        };
+        (token, new_key)
+    }
+
+    spec fun split_linear_key {
         pragma verify = false; //timeout, fix later
     }
 

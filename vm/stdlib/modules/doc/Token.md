@@ -28,6 +28,7 @@
 -  [Function `issue_linear_mint_key`](#0x1_Token_issue_linear_mint_key)
 -  [Function `mint_with_fixed_key`](#0x1_Token_mint_with_fixed_key)
 -  [Function `mint_with_linear_key`](#0x1_Token_mint_with_linear_key)
+-  [Function `split_linear_key`](#0x1_Token_split_linear_key)
 -  [Function `mint_amount_of_linear_key`](#0x1_Token_mint_amount_of_linear_key)
 -  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
 -  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
@@ -66,6 +67,7 @@
     -  [Function `issue_linear_mint_key`](#@Specification_1_issue_linear_mint_key)
     -  [Function `mint_with_fixed_key`](#@Specification_1_mint_with_fixed_key)
     -  [Function `mint_with_linear_key`](#@Specification_1_mint_with_linear_key)
+    -  [Function `split_linear_key`](#@Specification_1_split_linear_key)
     -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
     -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
     -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
@@ -409,6 +411,15 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
+<a name="0x1_Token_EEMPTY_KEY"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EEMPTY_KEY">EEMPTY_KEY</a>: u64 = 106;
+</code></pre>
+
+
+
 <a name="0x1_Token_EINVALID_ARGUMENT"></a>
 
 
@@ -427,11 +438,29 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
+<a name="0x1_Token_EPERIOD_NEW"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EPERIOD_NEW">EPERIOD_NEW</a>: u64 = 108;
+</code></pre>
+
+
+
 <a name="0x1_Token_EPRECISION_TOO_LARGE"></a>
 
 
 
 <pre><code><b>const</b> <a href="Token.md#0x1_Token_EPRECISION_TOO_LARGE">EPRECISION_TOO_LARGE</a>: u64 = 105;
+</code></pre>
+
+
+
+<a name="0x1_Token_ESPLIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>: u64 = 107;
 </code></pre>
 
 
@@ -853,6 +882,44 @@ Only the Association account can acquire such a reference, and it can do so only
     <b>let</b> token = <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount);
     key.minted = key.minted + amount;
     token
+}
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_Token_split_linear_key"></a>
+
+## Function `split_linear_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
+    <b>let</b> token = <a href="Token.md#0x1_Token_mint_with_linear_key">Self::mint_with_linear_key</a>(key);
+
+    <b>assert</b>(!<a href="Token.md#0x1_Token_is_empty_key">Self::is_empty_key</a>(key), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EEMPTY_KEY">EEMPTY_KEY</a>));
+    <b>assert</b>((key.minted + amount) &lt;= key.total, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
+    key.total = key.total - amount;
+    <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
+    <b>assert</b>((key.start_time + key.period) &gt; start_time, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EPERIOD_NEW">EPERIOD_NEW</a>));
+    <b>let</b> new_period = key.start_time + key.period - start_time;
+    <b>let</b> new_key = <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
+        total: amount,
+        minted: 0,
+        start_time,
+        period: new_period
+    };
+    (token, new_key)
 }
 </code></pre>
 
@@ -1727,6 +1794,22 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_split_linear_key"></a>
+
+### Function `split_linear_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">Token::LinearTimeMintKey</a>&lt;TokenType&gt;)
 </code></pre>
 
 
