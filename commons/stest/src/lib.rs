@@ -27,11 +27,10 @@ where
     T: Send + 'static,
 {
     let handle = timeout_join_handler::spawn(f);
-    let _ = tx.send(
-        handle
-            .join(Duration::from_secs(timeout))
-            .map_err(|_| format_err!("test timeout for wait {} seconds", timeout)),
-    );
+    let result = handle
+        .join(Duration::from_secs(timeout))
+        .map_err(|e| anyhow::anyhow!("{}", e));
+    let _ = tx.send(result);
 }
 
 pub fn wait_channel<T>(rx: Receiver<Result<T>>) -> T {
