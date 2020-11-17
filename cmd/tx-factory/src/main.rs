@@ -14,7 +14,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
-use std::cmp::min;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -69,13 +68,17 @@ pub struct TxFactoryOpt {
     )]
     pub account_num: u32,
 
-    #[structopt(long, short = "l", help = "run stress test in long term")]
-    pub long_term: bool,
+    #[structopt(
+        long,
+        short = "t",
+        default_value = "20",
+        help = "count of round number"
+    )]
+    pub round_num: u32,
 }
 
 const WATCH_TIMEOUT: Duration = Duration::from_secs(60);
 const INITIAL_BALANCE: u128 = 1_000_000_000;
-const TXN_LIMIT: usize = 16;
 
 fn get_account_or_default(
     client: &RpcClient,
@@ -127,10 +130,11 @@ fn main() {
 
     let is_stress = opts.stress;
     let mut account_num = opts.account_num;
+    let round_num = opts.round_num;
+
     if !is_stress {
         account_num = 0;
     }
-    let long_term = opts.long_term;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
     while matches!(connected, Err(_)) {
@@ -182,7 +186,7 @@ fn main() {
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
             if is_stress {
-                let success = tx_mocker.stress_test(accounts.clone(), long_term);
+                let success = tx_mocker.stress_test(accounts.clone(), round_num);
                 if let Err(e) = success {
                     error!("fail to run stress test, err: {:?}", &e);
                     // if txn is rejected, recheck sequence number, and start over
@@ -402,10 +406,9 @@ impl TxnMocker {
     fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
         let mut account_list = Vec::new();
         let mut account_local = self.client.account_list()?;
-        if account_list.is_empty() {
+        if account_local.is_empty() {
             return self.create_accounts(account_num);
         }
-
         let mut index = 0;
         while index < account_num {
             if let Some(account) = account_local.pop() {
@@ -465,7 +468,7 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn transfer_to_accounts(
+    fn _transfer_to_accounts(
         &mut self,
         accounts: &[AccountInfo],
         expiration_timestamp: u64,
@@ -524,53 +527,47 @@ impl TxnMocker {
         Ok(result)
     }
 
-    fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
-        let expiration_timestamp = self.fetch_expiration_time();
-        info!("start stress......");
-        if long_term {
-            // running in long term, we must deposit STC to accounts frequently
-            self.transfer_to_accounts(&accounts, expiration_timestamp)?;
+    fn stress_test(&mut self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
+        //unlock all account and get sequence
+        let mut sequences = vec![];
+        for account in &accounts {
+            self.client.account_unlock(
+                account.address,
+                self.account_password.clone(),
+                self.unlock_duration,
+            )?;
+            sequences.push(self.sequence_number(account.address).unwrap().unwrap());
         }
-        let length = Vec::len(&accounts);
-        let mut i = 0;
-        let mut j;
-        while i < length {
-            j = 0;
-            let seq = self.sequence_number(accounts[i].address)?;
-            if let Some(seq) = seq {
-                let mut seq_num = seq;
-                while j < min(length, TXN_LIMIT) {
-                    if i != j {
-                        let result = self.gen_and_submit_transfer_txn(
-                            accounts[i].address,
-                            accounts[j].address,
-                            accounts[j].public_key.as_single(),
-                            1,
-                            seq_num,
-                            false,
-                            expiration_timestamp,
-                        );
-                        match result {
-                            Ok(_) => {
-                                seq_num += 1;
-                                j += 1;
-                            }
-                            Err(_) => {
-                                info!(
-                                    "Submit txn failed with error: {:?}. Try again after 500ms.",
-                                    result
-                                );
-                                std::thread::sleep(Duration::from_millis(500));
-                                j += 1;
-                            }
-                        }
-                    } else {
-                        j += 1;
+        //get  of all account
+        let expiration_timestamp = self.fetch_expiration_time();
+        let count = accounts.len();
+        (0..round_num).for_each(|_| {
+            (0..count).for_each(|index| {
+                let mut j = index + 1;
+                if j >= count {
+                    j = 0;
+                }
+                let result = self.gen_and_submit_transfer_txn(
+                    accounts[index].address,
+                    accounts[j].address,
+                    accounts[j].public_key.as_single(),
+                    1,
+                    sequences[index],
+                    false,
+                    expiration_timestamp,
+                );
+                //handle result
+                match result {
+                    Ok(_) => {
+                        // sequence add
+                        sequences[index] += 1;
+                    }
+                    Err(err) => {
+                        info!("Submit txn failed: {}", err);
                     }
                 }
-                i += 1;
-            }
-        }
+            });
+        });
         Ok(())
     }
 }
