@@ -7,9 +7,6 @@ error: post-condition does not hold
      │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      │
      =     at tests/sources/functional/global_vars.move:109:5: combi_incorrect
-     =         r = <redacted>,
-     =         s = <redacted>,
-     =         result = <redacted>
      =     at tests/sources/functional/global_vars.move:111:17: combi_incorrect
      =     at tests/sources/functional/global_vars.move:112:17: combi_incorrect
      =     at tests/sources/functional/global_vars.move:113:9: combi_incorrect
@@ -23,7 +20,6 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/global_vars.move:29:5: pack_incorrect
-    =         result = <redacted>
     =     at tests/sources/functional/global_vars.move:30:9: pack_incorrect
 
 error: post-condition does not hold
@@ -34,9 +30,6 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/global_vars.move:51:5: unpack_incorrect
-    =         t = <redacted>,
-    =         x = <redacted>,
-    =         result = <redacted>
     =     at tests/sources/functional/global_vars.move:52:13: unpack_incorrect
     =     at tests/sources/functional/global_vars.move:53:9: unpack_incorrect
 
@@ -48,9 +41,6 @@ error: post-condition does not hold
      │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
      │
      =     at tests/sources/functional/global_vars.move:146:5: update_S_incorrect
-     =         r = <redacted>,
-     =         s = <redacted>,
-     =         result = <redacted>
      =     at tests/sources/functional/global_vars.move:147:17: update_S_incorrect
      =     at tests/sources/functional/global_vars.move:148:17: update_S_incorrect
      =     at tests/sources/functional/global_vars.move:149:9: update_S_incorrect
@@ -64,13 +54,9 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/global_vars.move:82:5: update_incorrect
-    =         t = <redacted>,
-    =         result = <redacted>
     =     at tests/sources/functional/global_vars.move:83:17: update_incorrect
     =     at tests/sources/functional/global_vars.move:84:37: update_incorrect
     =     at tests/sources/functional/global_vars.move:64:5: update_valid_still_mutating
-    =         t = <redacted>,
-    =         result = <redacted>
     =     at tests/sources/functional/global_vars.move:65:19: update_valid_still_mutating
     =     at tests/sources/functional/global_vars.move:64:9: update_valid_still_mutating
     =     at tests/sources/functional/global_vars.move:85:9: update_incorrect

@@ -1,0 +1,24 @@
+Move prover returns: exiting with checking errors
+error:
+
+   ┌── tests/sources/functional/verify_lcs.move:4:9 ───
+   │
+ 4 │     use 0x1::LCS;
+   │         ^^^^^^^^ Invalid 'use'. Unbound module: '0x1::LCS'
+   │
+
+error:
+
+   ┌── tests/sources/functional/verify_lcs.move:8:9 ───
+   │
+ 8 │         LCS::to_bytes(v)
+   │         ^^^ Unbound module alias 'LCS'
+   │
+
+error:
+
+    ┌── tests/sources/functional/verify_lcs.move:11:27 ───
+    │
+ 11 │         ensures result == LCS::serialize(v);
+    │                           ^^^ Unbound module alias 'LCS'
+    │
