@@ -5,7 +5,8 @@ use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
-use starcoin_rpc_api::types::pubsub::{Event, EventFilter};
+use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::TransactionEventView;
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::{Block, BlockNumber};
@@ -145,7 +146,7 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>> {
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>> {
         let service = self.service.clone();
         let fut = async move {
             let filter = filter.try_into()?;

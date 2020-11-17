@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as ChainClient;
-use crate::types::pubsub::{Event, EventFilter};
+use crate::types::pubsub::EventFilter;
+use crate::types::TransactionEventView;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
@@ -59,7 +60,7 @@ pub trait ChainApi {
         -> FutureResult<Vec<ContractEvent>>;
 
     #[rpc(name = "chain.get_events")]
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>>;
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>>;
 
     /// Get current epoch info.
     #[rpc(name = "chain.epoch")]

@@ -15,13 +15,13 @@ use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
 use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
-use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
     miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
     node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
-    txpool::TxPoolClient,
+    txpool::TxPoolClient, types::TransactionEventView,
 };
 use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
@@ -638,7 +638,7 @@ impl RpcClient {
     pub fn subscribe_events(
         &self,
         filter: EventFilter,
-    ) -> anyhow::Result<impl TryStream<Ok = Event, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter).await;
             res.map(|s| s.compat().map_err(map_err))

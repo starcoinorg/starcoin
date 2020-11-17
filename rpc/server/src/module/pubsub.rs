@@ -13,6 +13,7 @@ use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
+use starcoin_rpc_api::types::TransactionEventView;
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
@@ -294,7 +295,7 @@ impl EventHandler<Notification<Arc<Vec<Event>>>> for ContractEventHandler {
         filtered_events
             .into_iter()
             .map(|e| {
-                pubsub::Event::new(
+                TransactionEventView::new(
                     Some(e.block_hash),
                     Some(e.block_number),
                     Some(e.transaction_hash),
