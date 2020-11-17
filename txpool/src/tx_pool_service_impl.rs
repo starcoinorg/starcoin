@@ -151,6 +151,13 @@ impl TxPoolSyncService for TxPoolService {
     fn status(&self) -> TxPoolStatus {
         self.inner.queue.status().into()
     }
+
+    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction> {
+        self.inner
+            .queue
+            .find(hash)
+            .map(move |txn| txn.signed().clone())
+    }
 }
 
 pub(crate) type TxnQueue = TransactionQueue;

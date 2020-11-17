@@ -1,5 +1,5 @@
 use once_cell::sync::Lazy;
-use starcoin_metrics::{register_int_gauge, IntGauge, PrometheusError, Opts};
+use starcoin_metrics::{register_int_gauge, IntGauge, Opts, PrometheusError};
 
 pub static BLOCK_RELAYER_METRICS: Lazy<BlockRelayerMetrics> =
     Lazy::new(|| BlockRelayerMetrics::register().unwrap());
