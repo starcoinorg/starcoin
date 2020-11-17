@@ -7,9 +7,5 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/marketcap_as_schema_apply.move:67:5: deposit_incorrect
-    =         coin_ref = <redacted>,
-    =         check = <redacted>,
-    =         value = <redacted>,
-    =         result = <redacted>
     =     at tests/sources/functional/marketcap_as_schema_apply.move:68:13: deposit_incorrect
     =     at tests/sources/functional/marketcap_as_schema_apply.move:69:26: deposit_incorrect

@@ -1,16 +1,40 @@
-Move prover returns: exiting with boogie verification errors
-error: post-condition does not hold
+Move prover returns: exiting with checking errors
+error:
 
-    ┌── tests/sources/functional/serialize_model.move:34:9 ───
+   ┌── tests/sources/functional/serialize_model.move:3:9 ───
+   │
+ 3 │     use 0x1::LCS;
+   │         ^^^^^^^^ Invalid 'use'. Unbound module: '0x1::LCS'
+   │
+
+error:
+
+    ┌── tests/sources/functional/serialize_model.move:12:18 ───
     │
- 34 │         ensures result_1 == result_2;
-    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 12 │         let s1 = LCS::to_bytes(v1);
+    │                  ^^^ Unbound module alias 'LCS'
     │
-    =     at tests/sources/functional/serialize_model.move:26:5: lcs_test1_incorrect
-    =         v1 = <redacted>,
-    =         v2 = <redacted>,
-    =         result_1 = <redacted>,
-    =         result_2 = <redacted>
-    =     at tests/sources/functional/serialize_model.move:28:23: lcs_test1_incorrect
-    =     at tests/sources/functional/serialize_model.move:29:23: lcs_test1_incorrect
-    =     at tests/sources/functional/serialize_model.move:30:9: lcs_test1_incorrect
+
+error:
+
+    ┌── tests/sources/functional/serialize_model.move:13:18 ───
+    │
+ 13 │         let s2 = LCS::to_bytes(v2);
+    │                  ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/serialize_model.move:28:18 ───
+    │
+ 28 │         let s1 = LCS::to_bytes(v1);
+    │                  ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/serialize_model.move:29:18 ───
+    │
+ 29 │         let s2 = LCS::to_bytes(v2);
+    │                  ^^^ Unbound module alias 'LCS'
+    │

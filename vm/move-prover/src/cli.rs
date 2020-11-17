@@ -26,7 +26,8 @@ pub const INLINE_PRELUDE: &str = "<inline-prelude>";
 const DEFAULT_BOOGIE_FLAGS: &[&str] = &[
     "-doModSetAnalysis",
     "-printVerifiedProceduresCount:0",
-    "-printModel:4",
+    "-printModel:1",
+    "-enhancedErrorMessages:1",
 ];
 
 /// Atomic used to prevent re-initialization of logging.
@@ -212,6 +213,8 @@ pub struct BackendOptions {
     pub eager_threshold: usize,
     /// Lazy threshold for quantifier instantiation.
     pub lazy_threshold: usize,
+    /// Whether to use the new Boogie `{:debug ..}` attribute for tracking debug values.
+    pub use_boogie_debug_attrib: bool,
 }
 
 impl Default for BackendOptions {
@@ -231,7 +234,7 @@ impl Default for BackendOptions {
             stratification_depth: 4,
             aggressive_func_inline: "".to_owned(),
             func_inline: "{:inline}".to_owned(),
-            serialize_bound: 4,
+            serialize_bound: 0,
             vector_using_sequences: false,
             random_seed: 1,
             proc_cores: 1,
@@ -239,6 +242,7 @@ impl Default for BackendOptions {
             keep_artifacts: false,
             eager_threshold: 100,
             lazy_threshold: 100,
+            use_boogie_debug_attrib: true,
         }
     }
 }

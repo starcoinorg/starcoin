@@ -7,7 +7,6 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/type_values.move:37:5: add_R_incorrect
-    =         account = <redacted>
     =     at tests/sources/functional/type_values.move:38:9: add_R_incorrect
 
 error: post-condition does not hold
@@ -18,5 +17,4 @@ error: post-condition does not hold
     │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/type_values.move:14:5: simple_type_equality_incorrect
-    =         result = <redacted>
     =     at tests/sources/functional/type_values.move:15:9: simple_type_equality_incorrect

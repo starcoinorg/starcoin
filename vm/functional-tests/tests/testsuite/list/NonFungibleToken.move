@@ -7,7 +7,7 @@
 //! sender: sys
 module SortedLinkedList {
     use 0x1::Compare;
-    use 0x1::LCS;
+    use 0x1::SCS;
     use 0x1::Signer;
 
     resource struct Node<T> {
@@ -76,9 +76,9 @@ module SortedLinkedList {
         //see if either prev or next are the head and get their keys
         let prev_key = *&prev_node.key;
         let next_key = *&next_node.key;
-        let key_lcs_bytes = LCS::to_bytes(&key);
-        let cmp_with_prev = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&prev_key));
-        let cmp_with_next = Compare::cmp_lcs_bytes(&key_lcs_bytes, &LCS::to_bytes(&next_key));
+        let key_lcs_bytes = SCS::to_bytes(&key);
+        let cmp_with_prev = Compare::cmp_scs_bytes(&key_lcs_bytes, &SCS::to_bytes(&prev_key));
+        let cmp_with_next = Compare::cmp_scs_bytes(&key_lcs_bytes, &SCS::to_bytes(&next_key));
 
         let prev_is_head = Self::is_head_node<T>(prev_node_address);
         let next_is_head = Self::is_head_node<T>(next_node_address);
@@ -181,14 +181,14 @@ module SortedLinkedList {
     public fun find<T: copyable>(key: T, head_address: address): (bool, address) acquires Node {
         assert(Self::is_head_node<T>(head_address), 18);
 
-        let key_lcs_bytes = LCS::to_bytes(&key);
+        let key_lcs_bytes = SCS::to_bytes(&key);
         let head_node = borrow_global<Node<T>>(head_address);
         let next_node_address = head_node.next;
         while (next_node_address != head_address) {
             let next_node = borrow_global<Node<T>>(next_node_address);
             let next_node_key = *&next_node.key;
-            let next_key_lcs_bytes = LCS::to_bytes(&next_node_key);
-            let cmp = Compare::cmp_lcs_bytes(&next_key_lcs_bytes, &key_lcs_bytes);
+            let next_key_lcs_bytes = SCS::to_bytes(&next_node_key);
+            let cmp = Compare::cmp_scs_bytes(&next_key_lcs_bytes, &key_lcs_bytes);
 
             if (cmp == 0u8) { // next_key == key
                 return (true, next_node_address)
