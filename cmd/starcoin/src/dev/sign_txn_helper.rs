@@ -129,7 +129,7 @@ mod tests {
     };
     use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
     use std::sync::Arc;
-    use std::time::Duration;
+    use std::{thread::sleep, time::Duration};
     use stdlib::transaction_scripts::{compiled_transaction_script, StdlibScript};
     use test_helper::executor::compile_module_with_address;
     use test_helper::run_node_by_config;
@@ -196,6 +196,7 @@ mod tests {
             .submit_transaction(transfer_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&transfer_txn));
         let transfer_txn_info = cli_state
@@ -260,6 +261,7 @@ mod tests {
             .submit_transaction(proposal_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&proposal_txn));
         let proposal_txn_info = cli_state
@@ -314,6 +316,7 @@ mod tests {
             .submit_transaction(vote_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&vote_txn));
         let vote_txn_info = cli_state
@@ -325,6 +328,7 @@ mod tests {
 
         // 4. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
+        sleep(Duration::from_millis(500));
         node_handle.generate_block().unwrap();
 
         // 5. queue
@@ -344,6 +348,7 @@ mod tests {
             .submit_transaction(queue_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&queue_txn));
         let queue_txn_info = cli_state
@@ -356,6 +361,7 @@ mod tests {
 
         // 6. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
+        sleep(Duration::from_millis(500));
         node_handle.generate_block().unwrap();
 
         // 7. plan
@@ -375,6 +381,7 @@ mod tests {
             .submit_transaction(plan_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&plan_txn));
         let plan_txn_info = cli_state
@@ -399,6 +406,7 @@ mod tests {
             .submit_transaction(package_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&package_txn));
         let package_txn_info = cli_state
@@ -479,6 +487,7 @@ mod tests {
             .submit_transaction(only_new_module_strategy_txn.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&only_new_module_strategy_txn));
         let only_new_module_strategy_txn_info = cli_state
@@ -517,6 +526,7 @@ mod tests {
             .submit_transaction(package_txn_1.clone())
             .unwrap()
             .unwrap();
+        sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&package_txn_1));
         let package_txn_info_1 = cli_state
