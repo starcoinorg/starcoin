@@ -101,7 +101,7 @@ impl<C: Client> tx_pool::Verifier<PoolTransaction>
         let priority = match (is_local_txn, is_retracted) {
             (true, _) => Priority::Local,
             (false, true) => Priority::Retracted,
-            (false, false) => Priority::Local,
+            (false, false) => Priority::Regular,
         };
         Ok(VerifiedTransaction {
             transaction: verified_txn,
