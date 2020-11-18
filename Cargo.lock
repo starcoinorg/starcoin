@@ -8854,6 +8854,7 @@ name = "timeout-join-handler"
 version = "0.7.1"
 dependencies = [
  "anyhow",
+ "thiserror",
 ]
 
 [[package]]
