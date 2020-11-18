@@ -242,7 +242,8 @@ pub fn build_network_service(
     mpsc::UnboundedSender<()>,
 ) {
     let transport_config = TransportConfig::Normal {
-        enable_mdns: true,
+        //TODO support enable mdns by config.
+        enable_mdns: false,
         allow_private_ipv4: true,
         wasm_external_transport: None,
         use_yamux_flow_control: false,

@@ -297,13 +297,13 @@ where
                 block_task_fetcher,
                 check_local_store,
                 chain_storage.clone(),
-                3,
+                1,
             );
             let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
             let block_collector = BlockCollector::new_with_handle(chain, block_event_handle);
             Ok(TaskGenerator::new(
                 block_sync_task,
-                3,
+                5,
                 max_retry_times,
                 delay_milliseconds_on_error,
                 block_collector,
