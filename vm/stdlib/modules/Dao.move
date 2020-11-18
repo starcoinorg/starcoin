@@ -768,20 +768,16 @@ module Dao {
 
 
     /// get proposal's information.
-    /// return: (start_time, end_time, for_votes, against_votes).
+    /// return: (id, start_time, end_time, for_votes, against_votes).
     public fun proposal_info<TokenT: copyable, ActionT: copyable>(
         proposer_address: address,
-        proposal_id: u64,
-    ): (u64, u64, u128, u128) acquires Proposal {
+    ): (u64, u64, u64, u128, u128) acquires Proposal {
         let proposal = borrow_global<Proposal<TokenT, ActionT>>(proposer_address);
-        assert(proposal.id == proposal_id, Errors::invalid_argument(ERR_PROPOSAL_ID_MISMATCH));
-        (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
+        (proposal.id, proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
     }
 
     spec fun proposal_info {
         aborts_if !exists<Proposal<TokenT, ActionT>>(proposer_address);
-        let proposal = global<Proposal<TokenT, ActionT>>(proposer_address);
-        aborts_if proposal.id != proposal_id;
     }
 
     /// Get voter's vote info on proposal with `proposal_id` of `proposer_address`.

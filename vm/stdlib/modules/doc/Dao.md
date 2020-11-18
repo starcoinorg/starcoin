@@ -1247,10 +1247,10 @@ check whether a proposal exists in <code>proposer_address</code> with id <code>p
 ## Function `proposal_info`
 
 get proposal's information.
-return: (start_time, end_time, for_votes, against_votes).
+return: (id, start_time, end_time, for_votes, against_votes).
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64): (u64, u64, u128, u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address): (u64, u64, u64, u128, u128)
 </code></pre>
 
 
@@ -1261,11 +1261,9 @@ return: (start_time, end_time, for_votes, against_votes).
 
 <pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(
     proposer_address: address,
-    proposal_id: u64,
-): (u64, u64, u128, u128) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
+): (u64, u64, u64, u128, u128) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a> {
     <b>let</b> proposal = borrow_global&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-    <b>assert</b>(proposal.id == proposal_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_ID_MISMATCH">ERR_PROPOSAL_ID_MISMATCH</a>));
-    (proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
+    (proposal.id, proposal.start_time, proposal.end_time, proposal.for_votes, proposal.against_votes)
 }
 </code></pre>
 
@@ -2201,16 +2199,13 @@ set min action delay
 ### Function `proposal_info`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address, proposal_id: u64): (u64, u64, u128, u128)
+<pre><code><b>public</b> <b>fun</b> <a href="Dao.md#0x1_Dao_proposal_info">proposal_info</a>&lt;TokenT: <b>copyable</b>, ActionT: <b>copyable</b>&gt;(proposer_address: address): (u64, u64, u64, u128, u128)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<a name="0x1_Dao_proposal$67"></a>
-<b>let</b> proposal = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
-<b>aborts_if</b> proposal.id != proposal_id;
 </code></pre>
 
 
@@ -2227,7 +2222,7 @@ set min action delay
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
-<a name="0x1_Dao_vote$68"></a>
+<a name="0x1_Dao_vote$67"></a>
 <b>let</b> vote = <b>global</b>&lt;<a href="Dao.md#0x1_Dao_Vote">Vote</a>&lt;TokenT&gt;&gt;(voter);
 <b>include</b> <a href="Dao.md#0x1_Dao_CheckVoteOnProposal">CheckVoteOnProposal</a>&lt;TokenT&gt;{vote, proposer_address, proposal_id};
 </code></pre>
