@@ -563,7 +563,11 @@ impl TxnMocker {
                         sequences[index] += 1;
                     }
                     Err(err) => {
-                        info!("Submit txn failed: {}", err);
+                        info!(
+                            "Submit txn failed with error: {:?}. Try again after 500ms.",
+                            err
+                        );
+                        std::thread::sleep(Duration::from_millis(500));
                     }
                 }
             });
