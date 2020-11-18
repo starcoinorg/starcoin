@@ -1,14 +1,14 @@
 name: Build and Test
 on:
   push:
-    # only build main
+    # only build master
     branches:
-      - main
+      - master
     paths-ignore:
       - '**.md'
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-test:
@@ -26,7 +26,7 @@ jobs:
           toolchain: stable
           components: rustfmt,clippy
       - name: run fmt check
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -38,7 +38,7 @@ jobs:
         with:
           command: clean
       - name: run cargo check
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
         env:
           RUSTFLAGS: -D warnings
@@ -51,12 +51,12 @@ jobs:
           command: build
           args: --all
       - name: test
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/master'
         run: bash ./scripts/auto_rerun_test.sh
       - name: check changed files
         run: bash ./scripts/changed-files.sh
       - name: integration test dev environment
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/master'
         env:
           RUST_LOG: info
           RUST_BACKTRACE: full
@@ -66,8 +66,8 @@ jobs:
           command: test
           args: --test integration -- -e cmd
       - name: deploy node
-        # only deploy main branch build.
-        if: github.ref == 'refs/heads/main'
+        # only deploy master branch build.
+        if: github.ref == 'refs/heads/master'
         env:
           node_keys: ${{ secrets.STARCOIN_NET_NODE_KEYS }}
         shell: bash
