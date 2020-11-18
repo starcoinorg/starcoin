@@ -37,22 +37,18 @@ pub trait ReadableChainService {
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
-    /// for master
-    fn master_head_header(&self) -> BlockHeader;
-    fn master_head_block(&self) -> Block;
-    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
-    fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
-    fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
-    fn master_startup_info(&self) -> StartupInfo;
-    fn master_blocks_by_number(
-        &self,
-        number: Option<BlockNumber>,
-        count: u64,
-    ) -> Result<Vec<Block>>;
+    /// for main
+    fn main_head_header(&self) -> BlockHeader;
+    fn main_head_block(&self) -> Block;
+    fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
+    fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
+    fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>>;
+    fn main_startup_info(&self) -> StartupInfo;
+    fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>>;
     fn epoch_info(&self) -> Result<EpochInfo>;
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
-    fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     fn get_block_ids(
         &self,
         start_number: BlockNumber,
@@ -94,23 +90,23 @@ pub trait ChainAsyncService:
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
-    /// for master
-    async fn master_head_header(&self) -> Result<BlockHeader>;
-    async fn master_head_block(&self) -> Result<Block>;
-    async fn master_block_by_number(&self, number: BlockNumber) -> Result<Block>;
-    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
-    async fn master_blocks_by_number(
+    /// for main
+    async fn main_head_header(&self) -> Result<BlockHeader>;
+    async fn main_head_block(&self) -> Result<Block>;
+    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Block>;
+    async fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
+    async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
     ) -> Result<Vec<Block>>;
-    async fn master_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader>;
-    async fn master_startup_info(&self) -> Result<StartupInfo>;
-    async fn master_head(&self) -> Result<ChainInfo>;
+    async fn main_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader>;
+    async fn main_startup_info(&self) -> Result<StartupInfo>;
+    async fn main_head(&self) -> Result<ChainInfo>;
     async fn epoch_info(&self) -> Result<EpochInfo>;
     async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
-    async fn master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
+    async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>>;
     async fn get_block_ids(
         &self,
         start_number: BlockNumber,
@@ -241,25 +237,25 @@ where
         }
     }
 
-    async fn master_head_header(&self) -> Result<BlockHeader> {
+    async fn main_head_header(&self) -> Result<BlockHeader> {
         if let ChainResponse::BlockHeader(header) =
             self.send(ChainRequest::CurrentHeader()).await??
         {
             Ok(*header)
         } else {
-            bail!("Get master head header response error.")
+            bail!("Get main head header response error.")
         }
     }
 
-    async fn master_head_block(&self) -> Result<Block> {
+    async fn main_head_block(&self) -> Result<Block> {
         if let ChainResponse::Block(block) = self.send(ChainRequest::HeadBlock()).await?? {
             Ok(*block)
         } else {
-            bail!("Get master head block response error.")
+            bail!("Get main head block response error.")
         }
     }
 
-    async fn master_block_by_number(&self, number: BlockNumber) -> Result<Block> {
+    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Block> {
         if let ChainResponse::Block(block) =
             self.send(ChainRequest::GetBlockByNumber(number)).await??
         {
@@ -269,7 +265,7 @@ where
         }
     }
 
-    async fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+    async fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
         if let ChainResponse::BlockOption(block) =
             self.send(ChainRequest::GetBlockByUncle(uncle_id)).await??
         {
@@ -282,7 +278,7 @@ where
         }
     }
 
-    async fn master_blocks_by_number(
+    async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
@@ -297,7 +293,7 @@ where
         }
     }
 
-    async fn master_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader> {
+    async fn main_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader> {
         if let ChainResponse::BlockHeaderOption(header) = self
             .send(ChainRequest::GetBlockHeaderByNumber(number))
             .await??
@@ -309,7 +305,7 @@ where
         bail!("Get chain block header by number response error.")
     }
 
-    async fn master_startup_info(&self) -> Result<StartupInfo> {
+    async fn main_startup_info(&self) -> Result<StartupInfo> {
         let response = self.send(ChainRequest::GetStartupInfo()).await??;
         if let ChainResponse::StartupInfo(startup_info) = response {
             Ok(*startup_info)
@@ -318,7 +314,7 @@ where
         }
     }
 
-    async fn master_head(&self) -> Result<ChainInfo> {
+    async fn main_head(&self) -> Result<ChainInfo> {
         let response = self.send(ChainRequest::GetHeadChainInfo()).await??;
         if let ChainResponse::ChainInfo(chain_info) = response {
             Ok(*chain_info)
@@ -357,12 +353,12 @@ where
             bail!("get global time error.")
         }
     }
-    async fn master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
-        let response = self.send(ChainRequest::MasterEvents(filter)).await??;
-        if let ChainResponse::MasterEvents(evts) = response {
+    async fn main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        let response = self.send(ChainRequest::MainEvents(filter)).await??;
+        if let ChainResponse::MainEvents(evts) = response {
             Ok(evts)
         } else {
-            bail!("get master events error.")
+            bail!("get main events error.")
         }
     }
 

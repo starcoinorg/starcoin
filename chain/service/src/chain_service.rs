@@ -68,11 +68,11 @@ impl ActorService for ChainReaderService {
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
         let new_head = event.0.get_block().header();
-        let old_head = self.inner.get_master().current_header().id();
+        let old_head = self.inner.get_main().current_header().id();
         if let Err(e) = if new_head.parent_hash() == old_head {
             self.inner.update_chain_head(event.0.get_block().clone())
         } else {
-            self.inner.switch_master(new_head.id())
+            self.inner.switch_main(new_head.id())
         } {
             warn!("err: {:?}", e);
         }
@@ -87,26 +87,26 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
     ) -> Result<ChainResponse> {
         match msg {
             ChainRequest::CurrentHeader() => Ok(ChainResponse::BlockHeader(Box::new(
-                self.inner.master_head_header(),
+                self.inner.main_head_header(),
             ))),
             ChainRequest::GetHeaderByHash(hash) => Ok(ChainResponse::BlockHeaderOption(Box::new(
                 self.inner.get_header_by_hash(hash)?,
             ))),
-            ChainRequest::HeadBlock() => Ok(ChainResponse::Block(Box::new(
-                self.inner.master_head_block(),
-            ))),
+            ChainRequest::HeadBlock() => {
+                Ok(ChainResponse::Block(Box::new(self.inner.main_head_block())))
+            }
             ChainRequest::GetBlockByNumber(number) => Ok(ChainResponse::Block(Box::new(
-                self.inner.master_block_by_number(number)?.ok_or_else(|| {
-                    format_err!("Can not find block from master by number {:?}", number)
+                self.inner.main_block_by_number(number)?.ok_or_else(|| {
+                    format_err!("Can not find block from main by number {:?}", number)
                 })?,
             ))),
             ChainRequest::GetBlockHeaderByNumber(number) => {
                 Ok(ChainResponse::BlockHeaderOption(Box::new(Some(
                     self.inner
-                        .master_block_header_by_number(number)?
+                        .main_block_header_by_number(number)?
                         .ok_or_else(|| {
                             format_err!(
-                                "Can not find block header from master by number {:?}",
+                                "Can not find block header from main by number {:?}",
                                 number
                             )
                         })?,
@@ -120,7 +120,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 },
             )),
             ChainRequest::GetBlockByUncle(uncle_id) => Ok(ChainResponse::BlockOption(
-                self.inner.master_block_by_uncle(uncle_id)?.map(Box::new),
+                self.inner.main_block_by_uncle(uncle_id)?.map(Box::new),
             )),
             ChainRequest::GetBlockStateByHash(hash) => Ok(ChainResponse::BlockState(
                 self.inner.get_block_state_by_hash(hash)?.map(Box::new),
@@ -129,10 +129,10 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 self.inner.get_block_info_by_hash(hash)?,
             ))),
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(Box::new(
-                self.inner.master_startup_info(),
+                self.inner.main_startup_info(),
             ))),
             ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(Box::new(
-                self.inner.master.get_chain_info()?,
+                self.inner.main.get_chain_info()?,
             ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.inner
@@ -143,7 +143,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 self.inner.get_transaction_info(hash)?,
             )),
             ChainRequest::GetBlocksByNumber(number, count) => Ok(ChainResponse::BlockVec(
-                self.inner.master_blocks_by_number(number, count)?,
+                self.inner.main_blocks_by_number(number, count)?,
             )),
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
                 ChainResponse::TransactionInfos(self.inner.get_block_txn_infos(block_id)?),
@@ -164,8 +164,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetGlobalTimeByNumber(number) => Ok(ChainResponse::GlobalTime(
                 self.inner.get_global_time_by_number(number)?,
             )),
-            ChainRequest::MasterEvents(filter) => Ok(ChainResponse::MasterEvents(
-                self.inner.get_master_events(filter)?,
+            ChainRequest::MainEvents(filter) => Ok(ChainResponse::MainEvents(
+                self.inner.get_main_events(filter)?,
             )),
             ChainRequest::GetBlockIds {
                 start_number,
@@ -187,7 +187,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
 pub struct ChainReaderServiceInner {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    master: BlockChain,
+    main: BlockChain,
     storage: Arc<dyn Store>,
 }
 
@@ -198,25 +198,25 @@ impl ChainReaderServiceInner {
         storage: Arc<dyn Store>,
     ) -> Result<Self> {
         let net = config.net();
-        let master = BlockChain::new(net.time_service(), startup_info.master, storage.clone())?;
+        let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
         Ok(Self {
             config,
             startup_info,
-            master,
+            main,
             storage,
         })
     }
 
-    pub fn get_master(&self) -> &BlockChain {
-        &self.master
+    pub fn get_main(&self) -> &BlockChain {
+        &self.main
     }
 
     pub fn update_chain_head(&mut self, block: Block) -> Result<()> {
-        self.master.update_chain_head(block)
+        self.main.update_chain_head(block)
     }
 
-    pub fn switch_master(&mut self, new_head_id: HashValue) -> Result<()> {
-        let old_head_id = self.get_master().current_header().id();
+    pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
+        let old_head_id = self.get_main().current_header().id();
         if old_head_id != new_head_id {
             let old_difficulty = self
                 .storage
@@ -234,7 +234,7 @@ impl ChainReaderServiceInner {
                 .get_total_difficulty();
             assert!(new_difficulty > old_difficulty);
             let net = self.config.net();
-            self.master = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
+            self.main = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
         }
         Ok(())
     }
@@ -266,7 +266,7 @@ impl ReadableChainService for ChainReaderServiceInner {
     }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
-        self.master.get_transaction_info(txn_hash)
+        self.main.get_transaction_info(txn_hash)
     }
 
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>, Error> {
@@ -288,51 +288,47 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage.get_contract_events(txn_info_id)
     }
 
-    fn master_head_header(&self) -> BlockHeader {
-        self.master.current_header()
+    fn main_head_header(&self) -> BlockHeader {
+        self.main.current_header()
     }
 
-    fn master_head_block(&self) -> Block {
-        self.master.head_block()
+    fn main_head_block(&self) -> Block {
+        self.main.head_block()
     }
 
-    fn master_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
-        self.master.get_block_by_number(number)
+    fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        self.main.get_block_by_number(number)
     }
 
-    fn master_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
-        self.master.get_latest_block_by_uncle(uncle_id, 500)
+    fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
+        self.main.get_latest_block_by_uncle(uncle_id, 500)
     }
 
-    fn master_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
-        self.master.get_header_by_number(number)
+    fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {
+        self.main.get_header_by_number(number)
     }
-    fn master_startup_info(&self) -> StartupInfo {
+    fn main_startup_info(&self) -> StartupInfo {
         self.startup_info.clone()
     }
 
-    fn master_blocks_by_number(
-        &self,
-        number: Option<BlockNumber>,
-        count: u64,
-    ) -> Result<Vec<Block>> {
-        self.master.get_blocks_by_number(number, count)
+    fn main_blocks_by_number(&self, number: Option<BlockNumber>, count: u64) -> Result<Vec<Block>> {
+        self.main.get_blocks_by_number(number, count)
     }
 
     fn epoch_info(&self) -> Result<EpochInfo> {
-        self.master.epoch_info()
+        self.main.epoch_info()
     }
 
     fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo> {
-        self.master.get_epoch_info_by_number(Some(number))
+        self.main.get_epoch_info_by_number(Some(number))
     }
 
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain> {
-        self.master.get_global_time_by_number(number)
+        self.main.get_global_time_by_number(number)
     }
 
-    fn get_master_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
-        self.master.filter_events(filter)
+    fn get_main_events(&self, filter: Filter) -> Result<Vec<ContractEventInfo>> {
+        self.main.filter_events(filter)
     }
 
     fn get_block_ids(
@@ -341,11 +337,11 @@ impl ReadableChainService for ChainReaderServiceInner {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>> {
-        self.master.get_block_ids(start_number, reverse, max_size)
+        self.main.get_block_ids(start_number, reverse, max_size)
     }
 
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
-        self.master.tps(number)
+        self.main.tps(number)
     }
 }
 
@@ -364,8 +360,8 @@ mod tests {
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
-        let chain_info = service_ref.master_head().await?;
-        assert_eq!(chain_info.head().id(), startup_info.master);
+        let chain_info = service_ref.main_head().await?;
+        assert_eq!(chain_info.head().id(), startup_info.main);
         Ok(())
     }
 }

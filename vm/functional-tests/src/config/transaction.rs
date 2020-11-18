@@ -182,11 +182,9 @@ impl<'a> Config<'a> {
                 Entry::DisableStages(stages) => {
                     for stage in stages {
                         if !disabled_stages.insert(*stage) {
-                            return Err(ErrorKind::Other(format!(
-                                "duplicate stage '{:?}' in black list",
-                                stage
-                            ))
-                            .into());
+                            return Err(
+                                ErrorKind::Other(format!("duplicate stage '{:?}'", stage)).into()
+                            );
                         }
                     }
                 }

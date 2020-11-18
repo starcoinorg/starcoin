@@ -48,20 +48,20 @@ impl CommandAction for GenDataCommand {
         let (config, storage, mut startup_info, genesis, account) =
             init_or_load_data_dir(global_opt, None)?;
         let genesis_hash = genesis.block().header().id();
-        if startup_info.master != genesis_hash {
+        if startup_info.main != genesis_hash {
             warn!("start block is not genesis.")
         }
         let begin = SystemTime::now();
         let mut mock_chain = MockChain::new_with_storage(
             config.net().clone(),
             storage.clone(),
-            startup_info.master,
+            startup_info.main,
             account,
         )?;
         let mut latest_header = mock_chain.head().current_header();
         for i in 0..opt.count {
             latest_header = mock_chain.produce_and_apply()?;
-            startup_info.master = latest_header.id();
+            startup_info.main = latest_header.id();
             storage.save_startup_info(startup_info.clone())?;
             if i % 10 == 0 {
                 println!(

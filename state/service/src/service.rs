@@ -44,8 +44,8 @@ impl ServiceFactory<Self> for ChainStateService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist at service init."))?;
-        let head_block = storage.get_block(startup_info.master)?.ok_or_else(|| {
-            format_err!("Can not find head block by hash:{:?}", startup_info.master)
+        let head_block = storage.get_block(startup_info.main)?.ok_or_else(|| {
+            format_err!("Can not find head block by hash:{:?}", startup_info.main)
         })?;
         Ok(Self::new(
             storage,

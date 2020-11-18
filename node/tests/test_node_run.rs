@@ -31,13 +31,13 @@ fn test_generate_block() {
     let node_service = handle.node_service();
     let chain_service = handle.chain_service().unwrap();
     block_on(async { node_service.stop_pacemaker().await }).unwrap();
-    let latest_block = block_on(async { chain_service.master_head_block().await }).unwrap();
+    let latest_block = block_on(async { chain_service.main_head_block().await }).unwrap();
     let count = 5;
     (0..count).for_each(|_| {
         handle.generate_block().unwrap();
     });
     thread::sleep(Duration::from_secs(1));
-    let latest_block2 = block_on(async { chain_service.master_head_block().await }).unwrap();
+    let latest_block2 = block_on(async { chain_service.main_head_block().await }).unwrap();
     assert_eq!(
         latest_block.header().number() + count,
         latest_block2.header().number()

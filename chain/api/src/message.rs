@@ -43,7 +43,7 @@ pub enum ChainRequest {
     },
     GetBlocksByNumber(Option<BlockNumber>, u64),
     GetBlockStateByHash(HashValue),
-    MasterEvents(Filter),
+    MainEvents(Filter),
     GetBlockIds {
         start_number: BlockNumber,
         reverse: bool,
@@ -73,7 +73,7 @@ pub enum ChainResponse {
     TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     Events(Option<Vec<ContractEvent>>),
-    MasterEvents(Vec<ContractEventInfo>),
+    MainEvents(Vec<ContractEventInfo>),
     None,
     Conn(Result<()>),
     BlockState(Option<Box<BlockState>>),

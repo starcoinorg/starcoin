@@ -121,7 +121,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                 }
                 let header = chain_reader
                     .clone()
-                    .master_block_header_by_number(number)
+                    .main_block_header_by_number(number)
                     .await?;
                 headers.push(header);
             }
@@ -172,7 +172,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                     }
                     if let Ok(header) = chain_reader
                         .clone()
-                        .master_block_header_by_number(number)
+                        .main_block_header_by_number(number)
                         .await
                     {
                         headers.push(header);

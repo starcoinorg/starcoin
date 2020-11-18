@@ -38,7 +38,7 @@ where
 {
     fn head(&self) -> FutureResult<ChainInfo> {
         let service = self.service.clone();
-        let fut = async move { service.master_head().await };
+        let fut = async move { service.main_head().await };
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
@@ -58,7 +58,7 @@ where
         let service = self.service.clone();
 
         let fut = async move {
-            let result = service.master_block_by_number(number).await?;
+            let result = service.main_block_by_number(number).await?;
             Ok(result)
         }
         .map_err(map_err);
@@ -73,7 +73,7 @@ where
     ) -> FutureResult<Vec<Block>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.master_blocks_by_number(number, count).await?;
+            let block = service.main_blocks_by_number(number, count).await?;
             Ok(block)
         }
         .map_err(map_err);
@@ -149,7 +149,7 @@ where
         let service = self.service.clone();
         let fut = async move {
             let filter = filter.try_into()?;
-            service.master_events(filter).await
+            service.main_events(filter).await
         }
         .map_ok(|d| d.into_iter().map(|e| e.into()).collect())
         .map_err(map_err);
@@ -181,7 +181,7 @@ where
     fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.master_block_by_uncle(uncle_id).await?;
+            let block = service.main_block_by_uncle(uncle_id).await?;
             Ok(block)
         }
         .map_err(map_err);

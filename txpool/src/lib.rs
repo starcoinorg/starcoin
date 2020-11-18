@@ -69,11 +69,11 @@ impl ServiceFactory<Self> for TxPoolActorService {
                 .get_startup_info()?
                 .ok_or_else(|| format_err!("StartupInfo should exist when service init."))?;
             let best_block = storage
-                .get_block_by_hash(startup_info.master)?
+                .get_block_by_hash(startup_info.main)?
                 .ok_or_else(|| {
                     format_err!(
                         "best block id {} should exists in storage",
-                        startup_info.master
+                        startup_info.main
                     )
                 })?;
 

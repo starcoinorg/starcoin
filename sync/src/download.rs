@@ -323,14 +323,14 @@ impl DownloadService {
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             //1. ancestor
-            let master_header = downloader.chain_reader.clone().master_head_header().await?;
-            let begin_number = master_header.number();
+            let main_header = downloader.chain_reader.clone().main_head_header().await?;
+            let begin_number = main_header.number();
             let total_difficulty = downloader
                 .chain_reader
                 .clone()
-                .get_block_info_by_hash(&master_header.id())
+                .get_block_info_by_hash(&main_header.id())
                 .await?
-                .ok_or_else(|| format_err!("Master head block info is none."))?
+                .ok_or_else(|| format_err!("main head block info is none."))?
                 .total_difficulty;
             if let Some(ancestor_header) = downloader
                 .find_ancestor_header(
@@ -471,14 +471,14 @@ impl DownloadService {
         download_address: ServiceRef<DownloadService>,
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
-            let header = downloader.chain_reader.clone().master_head_header().await?;
+            let header = downloader.chain_reader.clone().main_head_header().await?;
             let end_number = best_peer.get_block_number();
             let total_difficulty = downloader
                 .chain_reader
                 .clone()
                 .get_block_info_by_hash(&header.id())
                 .await?
-                .ok_or_else(|| format_err!("Master head block info is none."))?
+                .ok_or_else(|| format_err!("main head block info is none."))?
                 .total_difficulty;
             match downloader
                 .find_ancestor_header(
