@@ -73,7 +73,7 @@ pub fn new_block(
         None => AccountInfo::random(),
     };
     let miner_address = *miner.address();
-    let block_chain = writeable_block_chain_service.get_master();
+    let block_chain = writeable_block_chain_service.get_main();
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
@@ -102,7 +102,7 @@ async fn test_block_chain_apply() {
     );
     assert_eq!(
         writeable_block_chain_service
-            .get_master()
+            .get_main()
             .current_header()
             .number(),
         times
@@ -117,7 +117,7 @@ fn gen_fork_block_chain(
 ) {
     let miner_account = AccountInfo::random();
     if let Some(block_header) = writeable_block_chain_service
-        .get_master()
+        .get_main()
         .get_header_by_number(fork_number)
         .unwrap()
     {
@@ -127,7 +127,7 @@ fn gen_fork_block_chain(
             let block_chain = BlockChain::new(
                 net.time_service(),
                 parent_id,
-                writeable_block_chain_service.get_master().get_storage(),
+                writeable_block_chain_service.get_main().get_storage(),
             )
             .unwrap();
             let (block_template, _) = block_chain
@@ -163,7 +163,7 @@ async fn test_block_chain_forks() {
     );
     assert_eq!(
         writeable_block_chain_service
-            .get_master()
+            .get_main()
             .current_header()
             .number(),
         times
@@ -178,7 +178,7 @@ async fn test_block_chain_forks() {
 
     assert_eq!(
         writeable_block_chain_service
-            .get_master()
+            .get_main()
             .current_header()
             .number(),
         times
@@ -186,7 +186,7 @@ async fn test_block_chain_forks() {
 }
 
 #[stest::test]
-async fn test_block_chain_switch_master() {
+async fn test_block_chain_switch_main() {
     let times = 10;
     let (mut writeable_block_chain_service, node_config, _) = create_writeable_block_chain().await;
     let net = node_config.net();
@@ -197,7 +197,7 @@ async fn test_block_chain_switch_master() {
     );
     assert_eq!(
         writeable_block_chain_service
-            .get_master()
+            .get_main()
             .current_header()
             .number(),
         times
@@ -212,7 +212,7 @@ async fn test_block_chain_switch_master() {
 
     assert_eq!(
         writeable_block_chain_service
-            .get_master()
+            .get_main()
             .current_header()
             .number(),
         2 * times

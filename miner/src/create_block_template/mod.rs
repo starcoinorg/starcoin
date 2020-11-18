@@ -69,7 +69,7 @@ impl ServiceFactory<Self> for CreateBlockTemplateService {
         let inner = Inner::new(
             config.net(),
             storage,
-            startup_info.master,
+            startup_info.main,
             txpool,
             config.miner.block_gas_limit,
             miner_account,

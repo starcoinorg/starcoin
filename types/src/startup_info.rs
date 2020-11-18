@@ -35,30 +35,30 @@ impl ChainInfo {
 //TODO save more info to StartupInfo and simple chain init.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
-    /// Master chain info
-    pub master: HashValue,
+    /// main chain info
+    pub main: HashValue,
 }
 
 impl fmt::Display for StartupInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "StartupInfo {{")?;
-        write!(f, "master: {:?},", self.master)?;
+        write!(f, "main: {:?},", self.main)?;
         write!(f, "}}")?;
         Ok(())
     }
 }
 
 impl StartupInfo {
-    pub fn new(master: HashValue) -> Self {
-        Self { master }
+    pub fn new(main: HashValue) -> Self {
+        Self { main }
     }
 
-    pub fn update_master(&mut self, new_block_header: &BlockHeader) {
-        self.master = new_block_header.id();
+    pub fn update_main(&mut self, new_block_header: &BlockHeader) {
+        self.main = new_block_header.id();
     }
 
-    pub fn get_master(&self) -> &HashValue {
-        &self.master
+    pub fn get_main(&self) -> &HashValue {
+        &self.main
     }
 }
 

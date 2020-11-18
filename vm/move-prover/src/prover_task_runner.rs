@@ -68,8 +68,8 @@ impl ProverTaskRunner {
             Arc::new(Semaphore::new(MAX_PERMITS))
         };
         // Create channels for communication.
-        let (worker_tx, master_rx) = channel();
-        let (master_tx, _): (
+        let (worker_tx, main_rx) = channel();
+        let (main_tx, _): (
             tokio::sync::broadcast::Sender<BroadcastMsg>,
             Receiver<BroadcastMsg>,
         ) = broadcast::channel(num_instances);
@@ -79,7 +79,7 @@ impl ProverTaskRunner {
         for task_id in task_ids {
             let s = sem.clone();
             let send_n = worker_tx.clone();
-            let worker_rx = master_tx.subscribe();
+            let worker_rx = main_tx.subscribe();
             let cloned_task = task.clone();
             // Spawn a task worker for each task_id.
             rt.spawn(async move {
@@ -90,14 +90,14 @@ impl ProverTaskRunner {
         // Listens until one of the workers finishes.
         loop {
             // Result received from one worker.
-            let res = master_rx.recv();
+            let res = main_rx.recv();
             if let Ok((task_id, result)) = res {
                 if num_working_instances == 1 {
                     return (task_id, result);
                 } else if task.is_success(&result) {
                     // Result is successful. Broadcast to other workers
                     // so they can stop working.
-                    let _ = master_tx.send(BroadcastMsg::Stop);
+                    let _ = main_tx.send(BroadcastMsg::Stop);
                     return (task_id, result);
                 }
                 debug! {"previous instance failed, waiting for another worker to report..."}

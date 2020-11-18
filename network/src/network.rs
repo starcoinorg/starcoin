@@ -290,7 +290,7 @@ impl NetworkAsyncService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Can not find startup info."))?;
-        let head_block_hash = startup_info.master;
+        let head_block_hash = startup_info.main;
         let head_block = storage
             .get_block(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;

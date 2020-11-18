@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::on_chain_resource::EpochInfo;
 use structopt::StructOpt;
 
-/// Epoch info of master.
+/// Epoch info of main.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "epoch_info")]
 pub struct EpochInfoOpt {}

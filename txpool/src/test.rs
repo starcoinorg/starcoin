@@ -169,8 +169,8 @@ async fn test_rollback() -> Result<()> {
         let (_private_key, public_key) = KeyGen::from_os_rng().generate_keypair();
         let account_address = account_address::from_public_key(&public_key);
         let storage = storage.clone();
-        let master = storage.get_startup_info()?.unwrap().master;
-        let block_header = storage.get_block_header_by_hash(master)?.unwrap();
+        let main = storage.get_startup_info()?.unwrap().main;
+        let block_header = storage.get_block_header_by_hash(main)?.unwrap();
 
         let mut open_block = OpenedBlock::new(
             storage,
@@ -195,8 +195,8 @@ async fn test_rollback() -> Result<()> {
 
     // flush the state, to make txpool happy
     {
-        let master = storage.get_startup_info()?.unwrap().master;
-        let block_header = storage.get_block_header_by_hash(master)?.unwrap();
+        let main = storage.get_startup_info()?.unwrap().main;
+        let block_header = storage.get_block_header_by_hash(main)?.unwrap();
         let chain_state = ChainStateDB::new(storage.clone(), Some(block_header.state_root()));
         let mut txns: Vec<_> = enacted_block
             .transactions()

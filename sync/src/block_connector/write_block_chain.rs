@@ -29,7 +29,7 @@ where
 {
     config: Arc<NodeConfig>,
     startup_info: StartupInfo,
-    master: BlockChain,
+    main: BlockChain,
     storage: Arc<dyn Store>,
     txpool: P,
     bus: ServiceRef<BusService>,
@@ -67,11 +67,11 @@ where
         remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
         let net = config.net();
-        let master = BlockChain::new(net.time_service(), startup_info.master, storage.clone())?;
+        let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
         Ok(Self {
             config,
             startup_info,
-            master,
+            main,
             storage,
             txpool,
             bus,
@@ -111,19 +111,19 @@ where
         }
     }
 
-    pub fn get_master(&self) -> &BlockChain {
-        &self.master
+    pub fn get_main(&self) -> &BlockChain {
+        &self.main
     }
 
     pub fn select_head(&mut self, new_branch: BlockChain) -> Result<()> {
         let block = new_branch.head_block();
         let block_header = block.header().clone();
-        let master_total_difficulty = self.master.get_total_difficulty()?;
+        let main_total_difficulty = self.main.get_total_difficulty()?;
         let branch_total_difficulty = new_branch.get_total_difficulty()?;
         let mut map_be_uncles = Vec::new();
-        let parent_is_master_head = self.is_master_head(&block_header.parent_hash());
-        if branch_total_difficulty > master_total_difficulty {
-            let (enacted_blocks, retracted_blocks) = if !parent_is_master_head {
+        let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
+        if branch_total_difficulty > main_total_difficulty {
+            let (enacted_blocks, retracted_blocks) = if !parent_is_main_head {
                 self.find_ancestors_from_accumulator(&new_branch)?
             } else {
                 (vec![block.clone()], vec![])
@@ -131,7 +131,7 @@ where
 
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
-            self.update_master(new_branch);
+            self.update_main(new_branch);
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();
             self.config
@@ -148,14 +148,14 @@ where
         self.save_startup()
     }
 
-    fn update_master(&mut self, new_master: BlockChain) {
-        let header = new_master.current_header();
-        self.master = new_master;
-        self.startup_info.update_master(&header);
+    fn update_main(&mut self, new_main: BlockChain) {
+        let header = new_main.current_header();
+        self.main = new_main;
+        self.startup_info.update_main(&header);
     }
 
-    fn is_master_head(&self, parent_id: &HashValue) -> bool {
-        parent_id == &self.startup_info.master
+    fn is_main_head(&self, parent_id: &HashValue) -> bool {
+        parent_id == &self.startup_info.main
     }
 
     fn save_startup(&self) -> Result<()> {
@@ -174,20 +174,20 @@ where
         new_branch: &BlockChain,
     ) -> Result<(Vec<Block>, Vec<Block>)> {
         let new_header_number = new_branch.current_header().number();
-        let master_header_number = self.get_master().current_header().number();
-        let mut number = if new_header_number >= master_header_number {
-            master_header_number
+        let main_header_number = self.get_main().current_header().number();
+        let mut number = if new_header_number >= main_header_number {
+            main_header_number
         } else {
             new_header_number
         };
 
         let block_enacted = new_branch.current_header().id();
-        let block_retracted = self.get_master().current_header().id();
+        let block_retracted = self.get_main().current_header().id();
 
         let mut ancestor = None;
         loop {
             let block_id_1 = new_branch.find_block_by_number(number)?;
-            let block_id_2 = self.get_master().find_block_by_number(number)?;
+            let block_id_2 = self.get_main().find_block_by_number(number)?;
 
             if block_id_1 == block_id_2 {
                 ancestor = Some(block_id_1);
@@ -256,7 +256,7 @@ where
         remote_chain_state: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
         let block_id = block.id();
-        if self.master.current_header().id() == block.id() {
+        if self.main.current_header().id() == block.id() {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(());
         }

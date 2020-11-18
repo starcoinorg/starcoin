@@ -410,19 +410,19 @@ fn test_verify_txn() {
     mock_chain.produce_and_apply_times(10).unwrap();
     let head = mock_chain.head();
     let block = head.head_block();
-    let master_read = BlockChain::new(
+    let main_read = BlockChain::new(
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
-    let mut master_write = BlockChain::new(
+    let mut main_write = BlockChain::new(
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
-    let result = master_write.apply_without_execute(block, master_read.chain_state_reader());
+    let result = main_write.apply_without_execute(block, main_read.chain_state_reader());
     assert!(result.is_ok());
 }
 
@@ -431,13 +431,13 @@ fn verify_txn_failed(txns: &[Transaction]) {
     mock_chain.produce_and_apply_times(10).unwrap();
     let head = mock_chain.head();
     let header = head.current_header();
-    let master = BlockChainNotMock::new(
+    let main = BlockChainNotMock::new(
         head.time_service(),
         header.parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
-    let result = master.verify_txns_for_test(header.id(), txns);
+    let result = main.verify_txns_for_test(header.id(), txns);
     assert!(result.is_err());
     error!("verify txns failed : {:?}", result);
 }
@@ -473,13 +473,13 @@ fn test_save(txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>)
             .map(Transaction::UserTransaction),
     );
     let head = mock_chain.head();
-    let mut master = BlockChainNotMock::new(
+    let mut main = BlockChainNotMock::new(
         head.time_service(),
         block.header().parent_hash(),
         mock_chain.head().get_storage(),
     )
     .unwrap();
-    master.save_fot_test(block.id(), txns, txn_infos)
+    main.save_fot_test(block.id(), txns, txn_infos)
 }
 
 #[stest::test]

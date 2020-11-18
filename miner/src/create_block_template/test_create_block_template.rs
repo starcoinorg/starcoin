@@ -39,7 +39,7 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
 
     //TODO mock txpool after refactor txpool by service reigstry.
     let chain_header = storage
-        .get_block_header_by_hash(startup_info.master)
+        .get_block_header_by_hash(startup_info.main)
         .unwrap()
         .unwrap();
     //TODO mock txpool after refactor txpool by service reigstry.
@@ -57,21 +57,21 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
 
     let block_template = inner.create_block_template().unwrap();
     assert_eq!(block_template.parent_hash, genesis_id);
-    assert_eq!(block_template.parent_hash, *startup_info.get_master());
+    assert_eq!(block_template.parent_hash, *startup_info.get_main());
     assert_eq!(block_template.number, 1);
 }
 
 #[stest::test(timeout = 120)]
-fn test_switch_master() {
+fn test_switch_main() {
     let node_config = Arc::new(NodeConfig::random_for_test());
     let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
     let times = 10;
 
     let miner_account = AccountInfo::random();
-    // master
+    // main
     let mut head_id = genesis_id;
-    let mut master_inner = None;
+    let mut main_inner = None;
 
     let chain_header = storage
         .get_block_header_by_hash(genesis_id)
@@ -81,7 +81,7 @@ fn test_switch_master() {
 
     let net = node_config.net();
     for i in 0..times {
-        let mut master = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -95,24 +95,24 @@ fn test_switch_master() {
 
         let block_template = tmp_inner.create_block_template().unwrap();
 
-        let block = master
+        let block = main
             .consensus()
             .create_block(
-                &master,
+                &main,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
             .unwrap();
 
         let block_header = block.header().clone();
-        master.apply(block.clone()).unwrap();
+        main.apply(block.clone()).unwrap();
         tmp_inner.update_chain(block).unwrap();
-        master_inner = Some(tmp_inner);
+        main_inner = Some(tmp_inner);
 
         if i != (times - 1) {
             head_id = block_header.id();
         } else {
-            master_inner
+            main_inner
                 .as_mut()
                 .unwrap()
                 .insert_uncle(block_header.clone());
@@ -120,7 +120,7 @@ fn test_switch_master() {
     }
 
     for i in 0..3 {
-        let mut new_master = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut new_main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
 
         let block_template = if i == 0 {
             let tmp = Inner::new(
@@ -135,37 +135,37 @@ fn test_switch_master() {
 
             tmp.create_block_template().unwrap()
         } else {
-            master_inner
+            main_inner
                 .as_ref()
                 .unwrap()
                 .create_block_template()
                 .unwrap()
         };
 
-        let block = new_master
+        let block = new_main
             .consensus()
             .create_block(
-                &new_master,
+                &new_main,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
             .unwrap();
 
-        new_master.apply(block.clone()).unwrap();
+        new_main.apply(block.clone()).unwrap();
 
         head_id = block.id();
         if i == 0 {
             let block_header = block.header().clone();
-            assert_eq!(master_inner.as_ref().unwrap().uncles.len(), 1);
-            master_inner.as_mut().unwrap().update_chain(block).unwrap();
-            master_inner.as_mut().unwrap().insert_uncle(block_header);
+            assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 1);
+            main_inner.as_mut().unwrap().update_chain(block).unwrap();
+            main_inner.as_mut().unwrap().insert_uncle(block_header);
         } else if i == 1 {
-            assert_eq!(master_inner.as_ref().unwrap().uncles.len(), 2);
+            assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 2);
             assert!(block.body.uncles.is_some());
             assert_eq!(block.body.uncles.as_ref().unwrap().len(), 1);
-            master_inner.as_mut().unwrap().update_chain(block).unwrap();
+            main_inner.as_mut().unwrap().update_chain(block).unwrap();
         } else if i == 2 {
-            assert_eq!(master_inner.as_ref().unwrap().uncles.len(), 2);
+            assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 2);
             assert!(block.body.uncles.is_none());
         }
     }
@@ -179,9 +179,9 @@ fn test_do_uncles() {
     let times = 2;
 
     let miner_account = AccountInfo::random();
-    // master
+    // main
     let mut head_id = genesis_id;
-    let mut master_inner = None;
+    let mut main_inner = None;
 
     let chain_header = storage
         .get_block_header_by_hash(genesis_id)
@@ -191,7 +191,7 @@ fn test_do_uncles() {
 
     let net = node_config.net();
     for _i in 0..times {
-        let mut master = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
 
         let mut tmp_inner = Inner::new(
             net,
@@ -205,18 +205,18 @@ fn test_do_uncles() {
 
         let block_template = tmp_inner.create_block_template().unwrap();
 
-        let block = master
+        let block = main
             .consensus()
             .create_block(
-                &master,
+                &main,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
             .unwrap();
         head_id = block.id();
-        master.apply(block.clone()).unwrap();
+        main.apply(block.clone()).unwrap();
         tmp_inner.update_chain(block).unwrap();
-        master_inner = Some(tmp_inner);
+        main_inner = Some(tmp_inner);
     }
 
     // branch
@@ -244,7 +244,7 @@ fn test_do_uncles() {
         let uncle_block_header = uncle_block.header().clone();
         branch.apply(uncle_block).unwrap();
 
-        master_inner
+        main_inner
             .as_mut()
             .unwrap()
             .insert_uncle(uncle_block_header);
@@ -252,17 +252,17 @@ fn test_do_uncles() {
 
     // uncles
     for i in 0..times {
-        let mut master = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
+        let mut main = BlockChain::new(net.time_service(), head_id, storage.clone()).unwrap();
 
-        let block_template = master_inner
+        let block_template = main_inner
             .as_ref()
             .unwrap()
             .create_block_template()
             .unwrap();
-        let block = master
+        let block = main
             .consensus()
             .create_block(
-                &master,
+                &main,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
@@ -273,8 +273,8 @@ fn test_do_uncles() {
             assert!(block.uncles().is_none());
         }
         head_id = block.id();
-        master.apply(block.clone()).unwrap();
-        master_inner.as_mut().unwrap().update_chain(block).unwrap();
+        main.apply(block.clone()).unwrap();
+        main_inner.as_mut().unwrap().update_chain(block).unwrap();
     }
 }
 
@@ -293,7 +293,7 @@ fn test_new_head() {
 
     let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
 
-    let mut master_inner = Inner::new(
+    let mut main_inner = Inner::new(
         node_config.net(),
         storage,
         genesis_id,
@@ -304,21 +304,21 @@ fn test_new_head() {
     .unwrap();
 
     for i in 0..times {
-        let block_template = master_inner.create_block_template().unwrap();
-        let block = master_inner
+        let block_template = main_inner.create_block_template().unwrap();
+        let block = main_inner
             .chain
             .consensus()
             .create_block(
-                &master_inner.chain,
+                &main_inner.chain,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
             .unwrap();
-        (&mut master_inner.chain).apply(block.clone()).unwrap();
+        (&mut main_inner.chain).apply(block.clone()).unwrap();
         if i % 2 == 0 {
-            master_inner.update_chain(block).unwrap();
+            main_inner.update_chain(block).unwrap();
         }
-        assert_eq!(master_inner.chain.current_header().number(), i + 1);
+        assert_eq!(main_inner.chain.current_header().number(), i + 1);
     }
 }
 
@@ -337,9 +337,9 @@ fn test_new_branch() {
     let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
 
     let miner_account = AccountInfo::random();
-    // master
+    // main
 
-    let mut master_inner = Inner::new(
+    let mut main_inner = Inner::new(
         node_config.net(),
         storage.clone(),
         genesis_id,
@@ -349,17 +349,17 @@ fn test_new_branch() {
     )
     .unwrap();
     for _i in 0..times {
-        let block_template = master_inner.create_block_template().unwrap();
-        let block = master_inner
+        let block_template = main_inner.create_block_template().unwrap();
+        let block = main_inner
             .chain
             .consensus()
             .create_block(
-                &master_inner.chain,
+                &main_inner.chain,
                 block_template,
                 node_config.net().time_service().as_ref(),
             )
             .unwrap();
-        (&mut master_inner.chain).apply(block.clone()).unwrap();
+        (&mut main_inner.chain).apply(block.clone()).unwrap();
     }
 
     // branch
@@ -389,8 +389,8 @@ fn test_new_branch() {
         branch.apply(new_block.clone()).unwrap();
 
         if i > times {
-            master_inner.update_chain(new_block).unwrap();
-            assert_eq!(master_inner.chain.current_header().number(), i + 1);
+            main_inner.update_chain(new_block).unwrap();
+            assert_eq!(main_inner.chain.current_header().number(), i + 1);
         }
     }
 }

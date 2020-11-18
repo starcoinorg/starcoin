@@ -426,7 +426,7 @@ mod tests {
         );
 
         let genesis_block = storage2
-            .get_block(startup_info2.master)?
+            .get_block(startup_info2.main)?
             .expect("Genesis block must exist.");
 
         let state_db = ChainStateDB::new(

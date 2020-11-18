@@ -592,7 +592,7 @@ impl BlockChain {
         'outer: loop {
             let block = self.get_block_by_number(cur_block_number)?.ok_or_else(|| {
                 anyhow::anyhow!(format!(
-                    "cannot find block({}) on master chain(head: {})",
+                    "cannot find block({}) on main chain(head: {})",
                     cur_block_number,
                     chain_header.id()
                 ))
@@ -611,7 +611,7 @@ impl BlockChain {
             for (idx, id) in txn_info_ids.iter() {
                 let events = self.storage.get_contract_events(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
-                        "cannot find events of txn with txn_info_id {} on master chain(header: {})",
+                        "cannot find events of txn with txn_info_id {} on main chain(header: {})",
                         id,
                         chain_header.id()
                     ))
@@ -626,7 +626,7 @@ impl BlockChain {
 
                 let txn_info = self.storage.get_transaction_info(*id)?.ok_or_else(|| {
                     anyhow::anyhow!(format!(
-                        "cannot find txn info with txn_info_id {} on master chain(head: {})",
+                        "cannot find txn info with txn_info_id {} on main chain(head: {})",
                         id,
                         chain_header.id()
                     ))
@@ -831,15 +831,15 @@ impl BlockChain {
             verify_block!(
                 VerifyBlockField::Uncle,
                 !self.exist_block(uncle_id),
-                "legal master block can not be uncle block,block id is {:?}",
+                "legal main block can not be uncle block,block id is {:?}",
                 uncle_id
             );
 
-            debug!("uncle block exists in master,uncle id is {:?}", uncle_id,);
+            debug!("uncle block exists in main,uncle id is {:?}", uncle_id,);
             verify_block!(
                 VerifyBlockField::Uncle,
                 !self.uncles.contains(&uncle_id),
-                "uncle block exists in master,uncle id is {:?}",
+                "uncle block exists in main,uncle id is {:?}",
                 uncle_id
             );
         }

@@ -20,7 +20,7 @@ pub fn test_sync(sync_mode: SyncMode) {
     }
     //wait block generate.
     sleep(Duration::from_millis(500));
-    let block_1 = block_on(async { first_chain.master_head_block().await.unwrap() });
+    let block_1 = block_on(async { first_chain.main_head_block().await.unwrap() });
     let number_1 = block_1.header().number();
     debug!("first chain head block number is {}", number_1);
     assert_eq!(number_1, count);
@@ -41,7 +41,7 @@ pub fn test_sync(sync_mode: SyncMode) {
     let mut number_2 = 0;
     for i in 0..10 as usize {
         std::thread::sleep(Duration::from_secs(2));
-        let block_2 = block_on(async { second_chain.master_head_block().await.unwrap() });
+        let block_2 = block_on(async { second_chain.main_head_block().await.unwrap() });
         number_2 = block_2.header().number();
         debug!("index : {}, second chain number is {}", i, number_2);
         if number_2 == number_1 {

@@ -46,7 +46,7 @@ impl SyncService2 {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("can't get startup info"))?;
-        let head_block_hash = startup_info.master;
+        let head_block_hash = startup_info.main;
         let head_block = storage
             .get_block(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
@@ -109,7 +109,7 @@ impl SyncService2 {
             .storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
-        let current_block_id = startup_info.master;
+        let current_block_id = startup_info.main;
 
         let network = ctx.get_shared::<NetworkAsyncService>()?;
         let peer_selector = PeerSelector::new(target.peers.clone());

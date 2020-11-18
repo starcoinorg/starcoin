@@ -168,7 +168,7 @@ impl NodeHandle {
         block_on(async move {
             let bus = registry.service_ref::<BusService>().await?;
             let chain_service = registry.service_ref::<ChainReaderService>().await?;
-            let head = chain_service.master_head_block().await?;
+            let head = chain_service.main_head_block().await?;
             debug!("generate_block: current head block: {:?}", head.header);
             let receiver = bus.oneshot::<NewHeadBlock>().await?;
             bus.broadcast(GenerateBlockEvent::new(false))?;
@@ -179,7 +179,7 @@ impl NodeHandle {
                 Delay::new(Duration::from_millis(100)).await;
                 event.0.get_block().clone()
             } else {
-                let latest_head = chain_service.master_head_block().await?;
+                let latest_head = chain_service.main_head_block().await?;
                 debug!("generate_block: latest block: {:?}", latest_head.header);
                 if latest_head.header().number() > head.header().number() {
                     latest_head

@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_vm_types::on_chain_resource::GlobalTimeOnChain;
 use structopt::StructOpt;
 
-/// Get global time of master.
+/// Get global time of main.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_global_time_by_number")]
 pub struct GetGlobalTimeByNumberOpt {
