@@ -140,6 +140,14 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                     .get_transaction(hash)?
                     .ok_or_else(|| format_err!("Can not find transaction by hash {:?}", hash))?,
             ))),
+            ChainRequest::GetTransactionBlock(txn_id) => {
+                let block_id = self.inner.get_transaction_block_hash(txn_id)?;
+                let block = match block_id {
+                    Some(id) => self.inner.get_block_by_hash(id)?,
+                    None => None,
+                };
+                Ok(ChainResponse::BlockOption(block.map(Box::new)))
+            }
             ChainRequest::GetTransactionInfo(hash) => Ok(ChainResponse::TransactionInfo(
                 self.inner.get_transaction_info(hash)?,
             )),
@@ -149,15 +157,57 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlockTransactionInfos(block_id) => Ok(
                 ChainResponse::TransactionInfos(self.inner.get_block_txn_infos(block_id)?),
             ),
-            ChainRequest::GetTransactionInfoByBlockAndIndex { block_id, txn_idx } => {
-                Ok(ChainResponse::TransactionInfo(
-                    self.inner
-                        .get_txn_info_by_block_and_index(block_id, txn_idx)?,
-                ))
-            }
-            ChainRequest::GetEventsByTxnInfoId { txn_info_id } => Ok(ChainResponse::Events(
-                self.inner.get_events_by_txn_info_id(txn_info_id)?,
+            ChainRequest::GetTransactionInfoByBlockAndIndex {
+                block_hash: block_id,
+                txn_idx,
+            } => Ok(ChainResponse::TransactionInfo(
+                self.inner
+                    .get_txn_info_by_block_and_index(block_id, txn_idx)?,
             )),
+            ChainRequest::GetEventsByTxnHash { txn_hash } => {
+                let txn_info = self
+                    .inner
+                    .get_transaction_info(txn_hash)?
+                    .ok_or_else(|| anyhow::anyhow!("cannot find txn info of txn {}", txn_hash))?;
+
+                let events = self
+                    .inner
+                    .get_events_by_txn_info_hash(txn_info.id())?
+                    .unwrap_or_default();
+
+                let event_infos = if events.is_empty() {
+                    vec![]
+                } else {
+                    let block_hash = self
+                        .inner
+                        .get_transaction_block_hash(txn_hash)?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("cannot find txn block of txn {}", txn_hash)
+                        })?;
+                    let block = self
+                        .inner
+                        .get_block_by_hash(block_hash)?
+                        .ok_or_else(|| anyhow::anyhow!("cannot find block {}", block_hash))?;
+                    let index = block
+                        .transactions()
+                        .iter()
+                        .position(|t| t.id() == txn_hash)
+                        .ok_or_else(|| {
+                            anyhow::anyhow!("cannot find txn {} in block {}", txn_hash, block_hash)
+                        })? as u32;
+                    events
+                        .into_iter()
+                        .map(|evt| ContractEventInfo {
+                            block_hash,
+                            block_number: block.header().number,
+                            transaction_hash: txn_hash,
+                            transaction_index: index + 1,
+                            event: evt,
+                        })
+                        .collect()
+                };
+                Ok(ChainResponse::Events(event_infos))
+            }
             ChainRequest::GetEpochInfo() => Ok(ChainResponse::EpochInfo(self.inner.epoch_info()?)),
             ChainRequest::GetEpochInfoByNumber(number) => Ok(ChainResponse::EpochInfo(
                 self.inner.get_epoch_info_by_number(number)?,
@@ -315,6 +365,9 @@ impl ReadableChainService for ChainReaderServiceInner {
     fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>, Error> {
         self.storage.get_transaction(txn_hash)
     }
+    fn get_transaction_block_hash(&self, txn_hash: HashValue) -> Result<Option<HashValue>> {
+        self.storage.get_txn_block(txn_hash)
+    }
 
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>, Error> {
         self.main.get_transaction_info(txn_hash)
@@ -332,7 +385,7 @@ impl ReadableChainService for ChainReaderServiceInner {
         self.storage
             .get_transaction_info_by_block_and_index(block_id, idx)
     }
-    fn get_events_by_txn_info_id(
+    fn get_events_by_txn_info_hash(
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>, Error> {

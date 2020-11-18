@@ -1,9 +1,9 @@
 use crate::cli_state::CliState;
-use crate::view::BlockSimpleView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::BlockHeaderView;
 use structopt::StructOpt;
 
 /// Show the path from uncle parent block to mint block.
@@ -22,7 +22,7 @@ impl CommandAction for UnclePathCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = UnclePathOpt;
-    type ReturnItem = Vec<BlockSimpleView>;
+    type ReturnItem = Vec<BlockHeaderView>;
 
     fn run(
         &self,
@@ -30,9 +30,6 @@ impl CommandAction for UnclePathCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let block_headers = client.uncle_path(ctx.opt().block_id, ctx.opt().uncle_id)?;
-        Ok(block_headers
-            .into_iter()
-            .map(|block_header| -> BlockSimpleView { block_header.into() })
-            .collect())
+        Ok(block_headers)
     }
 }

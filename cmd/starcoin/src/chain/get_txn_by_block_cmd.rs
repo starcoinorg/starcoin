@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::TransactionInfoView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::TransactionInfoView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -30,11 +30,8 @@ impl CommandAction for GetTxnByBlockCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let vec_transaction_info = client.chain_get_txn_by_block(opt.hash)?;
+        let vec_transaction_info = client.chain_get_block_txn_infos(opt.hash)?;
 
-        Ok(vec_transaction_info
-            .into_iter()
-            .map(|t| t.into())
-            .collect::<Vec<_>>())
+        Ok(vec_transaction_info)
     }
 }

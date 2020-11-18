@@ -35,3 +35,4 @@ starcoin-vm-types = { path = "../../vm/types" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-resource-viewer = {path = "../../vm/resource-viewer"}
+serde-helpers = {path = "../../commons/serde-helpers"}

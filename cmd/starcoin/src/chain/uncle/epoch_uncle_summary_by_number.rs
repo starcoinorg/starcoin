@@ -2,7 +2,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::block::EpochUncleSummary;
+use starcoin_rpc_api::types::EpochUncleSummaryView;
 use structopt::StructOpt;
 
 /// Show uncle summary in a epoch.
@@ -19,7 +19,7 @@ impl CommandAction for EpochUncleSummaryByNumberCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = EpochUncleSummaryByNumberOpt;
-    type ReturnItem = EpochUncleSummary;
+    type ReturnItem = EpochUncleSummaryView;
 
     fn run(
         &self,

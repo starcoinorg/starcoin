@@ -7,13 +7,29 @@ use actix::AsyncContext;
 use futures03::channel::oneshot;
 use futures03::compat::Stream01CompatExt;
 use jsonrpc_core_client::RpcError;
-pub use pubsub::ThinHeadBlock;
+use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::types::pubsub;
+use starcoin_rpc_api::types::{BlockHeaderView, BlockView};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::system_events::{ActorStop, SystemStop};
 use std::collections::HashMap;
+/// Block with only txn hashes.
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ThinHeadBlock {
+    pub header: BlockHeaderView,
+    pub txn_hashes: Vec<HashValue>,
+}
+
+impl From<BlockView> for ThinHeadBlock {
+    fn from(view: BlockView) -> Self {
+        ThinHeadBlock {
+            header: view.header,
+            txn_hashes: view.body.txn_hashes(),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct ChainWatcher {
@@ -60,7 +76,7 @@ impl Actor for ChainWatcher {
     }
 }
 
-pub type WatchResult = Result<pubsub::ThinHeadBlock, anyhow::Error>;
+pub type WatchResult = Result<ThinHeadBlock, anyhow::Error>;
 type Responder = oneshot::Sender<WatchResult>;
 
 #[derive(Clone, Copy, Eq, Hash, PartialEq, PartialOrd, Ord)]
@@ -104,17 +120,18 @@ impl Handler<WatchTxn> for ChainWatcher {
     }
 }
 
-type BlockEvent = Result<pubsub::ThinHeadBlock, RpcError>;
+type BlockEvent = Result<BlockView, RpcError>;
 impl actix::StreamHandler<BlockEvent> for ChainWatcher {
     fn handle(&mut self, item: BlockEvent, _ctx: &mut Self::Context) {
-        match &item {
+        match item {
             Ok(b) => {
-                if let Some(responders) = self.watched_blocks.remove(&b.header().number()) {
+                let b: ThinHeadBlock = b.into();
+                if let Some(responders) = self.watched_blocks.remove(&b.header.number) {
                     for r in responders {
                         let _ = r.send(Ok(b.clone()));
                     }
                 }
-                for txn in b.body() {
+                for txn in &b.txn_hashes {
                     if let Some(r) = self.watched_txns.remove(txn) {
                         let _ = r.send(Ok(b.clone()));
                     }
@@ -124,12 +141,12 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
                 // if any error happen in subscription, return error to client
                 for (_, responders) in self.watched_blocks.drain() {
                     for r in responders {
-                        let e = anyhow::format_err!("{}", e);
+                        let e = anyhow::format_err!("{}", &e);
                         let _ = r.send(Err(e));
                     }
                 }
                 for (_, responder) in self.watched_txns.drain() {
-                    let e = anyhow::format_err!("{}", e);
+                    let e = anyhow::format_err!("{}", &e);
                     let _ = responder.send(Err(e));
                 }
             }

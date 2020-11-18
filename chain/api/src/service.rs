@@ -27,6 +27,7 @@ pub trait ReadableChainService {
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
+    fn get_transaction_block_hash(&self, txn_hash: HashValue) -> Result<Option<HashValue>>;
     fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
     fn get_txn_info_by_block_and_index(
@@ -34,7 +35,7 @@ pub trait ReadableChainService {
         block_id: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>>;
-    fn get_events_by_txn_info_id(
+    fn get_events_by_txn_info_hash(
         &self,
         txn_info_id: HashValue,
     ) -> Result<Option<Vec<ContractEvent>>>;
@@ -82,8 +83,8 @@ pub trait ChainAsyncService:
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
-    async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
-    async fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
+    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+    async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
     async fn uncle_path(
         &self,
         block_id: HashValue,
@@ -93,21 +94,19 @@ pub trait ChainAsyncService:
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
     async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
-    async fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>>;
+    async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
+    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<TransactionInfo>>;
     async fn get_txn_info_by_block_and_index(
         &self,
-        block_id: HashValue,
+        block_hash: HashValue,
         idx: u64,
     ) -> Result<Option<TransactionInfo>>;
-    async fn get_events_by_txn_info_id(
-        &self,
-        txn_info_id: HashValue,
-    ) -> Result<Option<Vec<ContractEvent>>>;
+    async fn get_events_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<ContractEventInfo>>;
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
     async fn main_block_by_number(&self, number: BlockNumber) -> Result<Block>;
-    async fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>>;
+    async fn main_block_by_uncle(&self, uncle_hash: HashValue) -> Result<Option<Block>>;
     async fn main_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
@@ -166,9 +165,9 @@ where
         }
     }
 
-    async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+    async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         if let ChainResponse::BlockOptionVec(blocks) =
-            self.send(ChainRequest::GetBlocks(ids)).await??
+            self.send(ChainRequest::GetBlocks(hashes)).await??
         {
             Ok(blocks)
         } else {
@@ -226,9 +225,20 @@ where
         }
     }
 
-    async fn get_block_txn_infos(&self, block_id: HashValue) -> Result<Vec<TransactionInfo>> {
+    async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>> {
         let response = self
-            .send(ChainRequest::GetBlockTransactionInfos(block_id))
+            .send(ChainRequest::GetTransactionBlock(txn_hash))
+            .await??;
+        if let ChainResponse::BlockOption(b) = response {
+            Ok(b.map(|d| *d))
+        } else {
+            bail!("get transaction_block error:{:?}", txn_hash)
+        }
+    }
+
+    async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<TransactionInfo>> {
+        let response = self
+            .send(ChainRequest::GetBlockTransactionInfos(block_hash))
             .await??;
         if let ChainResponse::TransactionInfos(vec_txn_id) = response {
             Ok(vec_txn_id)
@@ -244,7 +254,7 @@ where
     ) -> Result<Option<TransactionInfo>> {
         let response = self
             .send(ChainRequest::GetTransactionInfoByBlockAndIndex {
-                block_id,
+                block_hash: block_id,
                 txn_idx: idx,
             })
             .await??;
@@ -254,12 +264,9 @@ where
             bail!("get txn info by block and idx error.")
         }
     }
-    async fn get_events_by_txn_info_id(
-        &self,
-        txn_info_id: HashValue,
-    ) -> Result<Option<Vec<ContractEvent>>> {
+    async fn get_events_by_txn_hash(&self, txn_hash: HashValue) -> Result<Vec<ContractEventInfo>> {
         let response = self
-            .send(ChainRequest::GetEventsByTxnInfoId { txn_info_id })
+            .send(ChainRequest::GetEventsByTxnHash { txn_hash })
             .await??;
         if let ChainResponse::Events(events) = response {
             Ok(events)

@@ -7753,6 +7753,7 @@ dependencies = [
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
  "serde",
+ "serde-helpers",
  "serde_json",
  "starcoin-account-api",
  "starcoin-canonical-serialization",

@@ -9,10 +9,10 @@ Feature: cmd integration test
     Then cmd: "chain epoch_info"
     Then cmd: "chain get_block_by_number"
     Then cmd: "chain list_block"
-    Then cmd: "chain get_block @$[0].id@"
-    Then cmd: "chain get_txn_by_block @$.id@"
+    Then cmd: "chain get_block @$[0].block_hash@"
+    Then cmd: "chain get_txn_by_block @$.block_hash@"
     Then cmd: "chain get_txn @$[0].transaction_hash@"
-    Then cmd: "chain get_events @$.txn_info_id@"
+    Then cmd: "chain get_events @$.transaction_hash@"
     Then stop
 
     Examples:

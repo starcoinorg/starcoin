@@ -5,14 +5,16 @@ use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
-use starcoin_rpc_api::types::pubsub::{Event, EventFilter};
+use starcoin_rpc_api::types::pubsub::EventFilter;
+use starcoin_rpc_api::types::{
+    BlockHeaderView, BlockSummaryView, BlockView, EpochUncleSummaryView, TransactionEventView,
+    TransactionInfoView, TransactionView,
+};
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
-use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
 
@@ -42,24 +44,24 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Block> {
+    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<BlockView> {
         let service = self.service.clone();
 
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            Ok(result)
+            Ok(result.try_into()?)
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_block_by_number(&self, number: u64) -> FutureResult<Block> {
+    fn get_block_by_number(&self, number: u64) -> FutureResult<BlockView> {
         let service = self.service.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            Ok(result)
+            Ok(result.try_into()?)
         }
         .map_err(map_err);
 
@@ -70,22 +72,35 @@ where
         &self,
         number: Option<BlockNumber>,
         count: u64,
-    ) -> FutureResult<Vec<Block>> {
+    ) -> FutureResult<Vec<BlockView>> {
         let service = self.service.clone();
         let fut = async move {
             let block = service.main_blocks_by_number(number, count).await?;
-            Ok(block)
+
+            Ok(block
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<Result<Vec<_>, _>>()?)
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<Transaction> {
+    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<TransactionView> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.get_transaction(transaction_hash).await?;
-            Ok(block)
+            let transaction = service.get_transaction(transaction_hash).await?;
+            let block = service
+                .get_transaction_block(transaction_hash)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "cannot find block which includes the txn {}",
+                        transaction_hash
+                    )
+                })?;
+            TransactionView::new(transaction, &block)
         }
         .map_err(map_err);
 
@@ -95,22 +110,44 @@ where
     fn get_transaction_info(
         &self,
         transaction_hash: HashValue,
-    ) -> FutureResult<Option<TransactionInfo>> {
+    ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.get_transaction_info(transaction_hash).await?;
-            Ok(block)
+            let txn_info = {
+                let info = service.get_transaction_info(transaction_hash).await?;
+                if info.is_none() {
+                    return Ok(None);
+                }
+                info.unwrap()
+            };
+
+            let block = service
+                .get_transaction_block(transaction_hash)
+                .await?
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "cannot locate the block which include txn {}",
+                        transaction_hash
+                    )
+                })?;
+
+            TransactionInfoView::new(txn_info, &block).map(Some)
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>> {
+    fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.get_block_txn_infos(block_id).await?;
-            Ok(block)
+            let txn_infos = service.get_block_txn_infos(block_hash).await?;
+            let block = service.get_block_by_hash(block_hash).await?;
+
+            txn_infos
+                .into_iter()
+                .map(|info| TransactionInfoView::new(info, &block))
+                .collect::<Result<Vec<_>, _>>()
         }
         .map_err(map_err);
 
@@ -119,33 +156,38 @@ where
 
     fn get_txn_info_by_block_and_index(
         &self,
-        block_id: HashValue,
+        block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfo>> {
+    ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service
-                .get_txn_info_by_block_and_index(block_id, idx)
+            let txn_info = service
+                .get_txn_info_by_block_and_index(block_hash, idx)
                 .await?;
-            Ok(block)
+            let block = service.get_block_by_hash(block_hash).await?;
+            txn_info
+                .map(|info| TransactionInfoView::new(info, &block))
+                .transpose()
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
-    fn get_events_by_txn_info_id(
+    fn get_events_by_txn_hash(
         &self,
-        txn_info_id: HashValue,
-    ) -> FutureResult<Vec<ContractEvent>> {
+        txn_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionEventView>> {
         let service = self.service.clone();
-        let fut = async move { service.get_events_by_txn_info_id(txn_info_id).await }
-            .map_ok(|d| d.unwrap_or_default())
-            .map_err(map_err);
+        let fut = async move {
+            let events = service.get_events_by_txn_hash(txn_hash).await?;
+            Ok(events.into_iter().map(Into::into).collect())
+        }
+        .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>> {
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>> {
         let service = self.service.clone();
         let fut = async move {
             let filter = filter.try_into()?;
@@ -178,11 +220,11 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>> {
+    fn get_block_by_uncle(&self, uncle_hash: HashValue) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
         let fut = async move {
-            let block = service.main_block_by_uncle(uncle_id).await?;
-            Ok(block)
+            let block = service.main_block_by_uncle(uncle_hash).await?;
+            Ok(block.map(TryInto::try_into).transpose()?)
         }
         .map_err(map_err);
 
@@ -196,11 +238,14 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn get_epoch_uncles_by_number(&self, number: BlockNumber) -> FutureResult<Vec<BlockSummary>> {
+    fn get_epoch_uncles_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<Vec<BlockSummaryView>> {
         let service = self.service.clone();
         let fut = async move {
             let blocks = service.get_epoch_uncles_by_number(Some(number)).await?;
-            Ok(blocks)
+            Ok(blocks.into_iter().map(Into::into).collect())
         }
         .map_err(map_err);
 
@@ -210,20 +255,24 @@ where
     fn epoch_uncle_summary_by_number(
         &self,
         number: BlockNumber,
-    ) -> FutureResult<EpochUncleSummary> {
+    ) -> FutureResult<EpochUncleSummaryView> {
         let service = self.service.clone();
         let fut = async move {
             let summary = service.epoch_uncle_summary_by_number(Some(number)).await?;
-            Ok(summary)
+            Ok(summary.into())
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeader>> {
+    fn get_headers(&self, block_hashes: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
-        let fut = async move { Ok(service.get_headers(ids).await?) }.map_err(map_err);
+        let fut = async move {
+            let headers = service.get_headers(block_hashes).await?;
+            Ok(headers.into_iter().map(Into::into).collect())
+        }
+        .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
@@ -232,9 +281,17 @@ where
         &self,
         block_id: HashValue,
         uncle_id: HashValue,
-    ) -> FutureResult<Vec<BlockHeader>> {
+    ) -> FutureResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
-        let fut = async move { Ok(service.uncle_path(block_id, uncle_id).await?) }.map_err(map_err);
+        let fut = async move {
+            Ok(service
+                .uncle_path(block_id, uncle_id)
+                .await?
+                .into_iter()
+                .map(Into::into)
+                .collect())
+        }
+        .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }

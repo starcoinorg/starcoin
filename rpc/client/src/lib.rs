@@ -14,29 +14,39 @@ use starcoin_account_api::AccountInfo;
 use starcoin_crypto::HashValue;
 use starcoin_logger::{prelude::*, LogPattern};
 use starcoin_rpc_api::node::NodeInfo;
+use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
-use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
-use starcoin_rpc_api::types::pubsub::{Event, MintBlock};
+use starcoin_rpc_api::types::pubsub::MintBlock;
+use starcoin_rpc_api::types::{
+    AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ContractCall,
+    EpochUncleSummaryView, TransactionInfoView, TransactionView,
+};
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
     miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
     node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
-    txpool::TxPoolClient,
+    txpool::TxPoolClient, types::TransactionEventView,
 };
+use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_state_api::StateWithProof;
+use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
+use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
-use starcoin_types::transaction::{
-    RawUserTransaction, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
-};
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::SystemStop;
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionOutput};
+use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::token::token_code::TokenCode;
+use starcoin_vm_types::vm_status::VMStatus;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::thread::JoinHandle;
 use std::time::Duration;
 use thiserror::Error;
 use tokio01::reactor::Reactor;
@@ -46,19 +56,8 @@ use tokio_compat::runtime::Runtime;
 pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
-
 pub use crate::remote_state_reader::RemoteStateReader;
-use starcoin_rpc_api::service::RpcAsyncService;
-use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
-use starcoin_service_registry::{ServiceInfo, ServiceStatus};
 use starcoin_sync_api::SyncProgressReport;
-use starcoin_txpool_api::TxPoolStatus;
-use starcoin_types::sync_status::SyncStatus;
-use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
-use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::vm_status::VMStatus;
-use std::thread::JoinHandle;
 
 #[derive(Debug, Clone)]
 enum ConnSource {
@@ -149,11 +148,16 @@ impl RpcClient {
         ))
     }
 
+    pub fn chain_id(&self) -> anyhow::Result<ChainId> {
+        self.call_rpc_blocking(|inner| async move { inner.node_client.chain_id().compat().await })
+            .map_err(map_err)
+    }
+
     pub fn watch_txn(
         &self,
         txn_hash: HashValue,
         timeout: Option<Duration>,
-    ) -> anyhow::Result<ThinHeadBlock> {
+    ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchTxn { txn_hash }).await?;
@@ -165,7 +169,10 @@ impl RpcClient {
         futures03::executor::block_on(f)
     }
 
-    pub fn watch_block(&self, block_number: BlockNumber) -> anyhow::Result<ThinHeadBlock> {
+    pub fn watch_block(
+        &self,
+        block_number: BlockNumber,
+    ) -> anyhow::Result<chain_watcher::ThinHeadBlock> {
         let chain_watcher = self.chain_watcher.clone();
         let f = async move {
             let r = chain_watcher.send(WatchBlock(block_number)).await?;
@@ -498,7 +505,7 @@ impl RpcClient {
     pub fn get_epoch_uncles_by_number(
         &self,
         number: BlockNumber,
-    ) -> anyhow::Result<Vec<BlockSummary>> {
+    ) -> anyhow::Result<Vec<BlockSummaryView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -512,7 +519,7 @@ impl RpcClient {
     pub fn epoch_uncle_summary_by_number(
         &self,
         number: BlockNumber,
-    ) -> anyhow::Result<EpochUncleSummary> {
+    ) -> anyhow::Result<EpochUncleSummaryView> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -523,10 +530,13 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn get_headers(&self, ids: Vec<HashValue>) -> anyhow::Result<Vec<BlockHeader>> {
-        self.call_rpc_blocking(
-            |inner| async move { inner.chain_client.get_headers(ids).compat().await },
-        )
+    pub fn get_headers(
+        &self,
+        block_hashes: Vec<HashValue>,
+    ) -> anyhow::Result<Vec<BlockHeaderView>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.chain_client.get_headers(block_hashes).compat().await
+        })
         .map_err(map_err)
     }
 
@@ -534,7 +544,7 @@ impl RpcClient {
         &self,
         block_id: HashValue,
         uncle_id: HashValue,
-    ) -> anyhow::Result<Vec<BlockHeader>> {
+    ) -> anyhow::Result<Vec<BlockHeaderView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -559,14 +569,17 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Block> {
+    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<BlockView> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_block_by_hash(hash).compat().await
         })
         .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_uncle(&self, uncle_id: HashValue) -> anyhow::Result<Option<Block>> {
+    pub fn chain_get_block_by_uncle(
+        &self,
+        uncle_id: HashValue,
+    ) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -577,7 +590,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<Block> {
+    pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<BlockView> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -591,7 +604,7 @@ impl RpcClient {
         &self,
         number: Option<BlockNumber>,
         count: u64,
-    ) -> anyhow::Result<Vec<Block>> {
+    ) -> anyhow::Result<Vec<BlockView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -602,7 +615,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<Transaction> {
+    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<TransactionView> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_transaction(txn_id).compat().await
         })
@@ -612,7 +625,7 @@ impl RpcClient {
     pub fn chain_get_transaction_info(
         &self,
         txn_hash: HashValue,
-    ) -> anyhow::Result<Option<TransactionInfo>> {
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -623,26 +636,30 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_events_by_txn_info_id(
+    pub fn chain_get_events_by_txn_hash(
         &self,
-        txn_info_id: HashValue,
-    ) -> anyhow::Result<Vec<ContractEvent>> {
+        txn_hash: HashValue,
+    ) -> anyhow::Result<Vec<TransactionEventView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
-                .get_events_by_txn_info_id(txn_info_id)
+                .get_events_by_txn_hash(txn_hash)
                 .compat()
                 .await
         })
         .map_err(map_err)
     }
 
-    pub fn chain_get_txn_by_block(
+    pub fn chain_get_block_txn_infos(
         &self,
         block_id: HashValue,
-    ) -> anyhow::Result<Vec<TransactionInfo>> {
+    ) -> anyhow::Result<Vec<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| async move {
-            inner.chain_client.get_txn_by_block(block_id).compat().await
+            inner
+                .chain_client
+                .get_block_txn_infos(block_id)
+                .compat()
+                .await
         })
         .map_err(map_err)
     }
@@ -651,7 +668,7 @@ impl RpcClient {
         &self,
         block_id: HashValue,
         idx: u64,
-    ) -> anyhow::Result<Option<TransactionInfo>> {
+    ) -> anyhow::Result<Option<TransactionInfoView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -688,7 +705,7 @@ impl RpcClient {
     pub fn subscribe_events(
         &self,
         filter: EventFilter,
-    ) -> anyhow::Result<impl TryStream<Ok = Event, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = TransactionEventView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_events(filter).await;
             res.map(|s| s.compat().map_err(map_err))
@@ -697,7 +714,7 @@ impl RpcClient {
     }
     pub fn subscribe_new_blocks(
         &self,
-    ) -> anyhow::Result<impl TryStream<Ok = ThinHeadBlock, Error = anyhow::Error>> {
+    ) -> anyhow::Result<impl TryStream<Ok = BlockView, Error = anyhow::Error>> {
         self.call_rpc_blocking(|inner| async move {
             let res = inner.pubsub_client.subscribe_new_block().await;
             res.map(|s| s.compat().map_err(map_err))

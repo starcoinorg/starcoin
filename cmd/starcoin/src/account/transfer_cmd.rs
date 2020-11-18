@@ -146,8 +146,8 @@ impl CommandAction for TransferCommand {
 
         if opt.blocking {
             let block = ctx.state().watch_txn(txn_hash)?;
-            output_view.block_number = Some(block.header().number);
-            output_view.block_id = Some(block.header().id());
+            output_view.block_number = Some(block.header.number);
+            output_view.block_id = Some(block.header.block_hash);
         }
         Ok(ExecuteResultView::Run(output_view))
     }
