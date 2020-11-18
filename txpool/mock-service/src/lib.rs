@@ -91,6 +91,10 @@ impl TxPoolSyncService for MockTxPoolService {
     fn status(&self) -> TxPoolStatus {
         unimplemented!()
     }
+
+    fn find_txn(&self, _hash: &HashValue) -> Option<SignedUserTransaction> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

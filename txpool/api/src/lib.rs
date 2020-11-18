@@ -58,4 +58,6 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
 
     /// Tx Pool status
     fn status(&self) -> TxPoolStatus;
+
+    fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction>;
 }

@@ -6828,6 +6828,7 @@ dependencies = [
  "hex",
  "libp2p",
  "network-api",
+ "once_cell",
  "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-config",

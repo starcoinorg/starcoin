@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::BLOCK_RELAYER_METRICS;
 use anyhow::Result;
 use crypto::HashValue;
 use futures::FutureExt;
@@ -18,7 +19,7 @@ use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SyncStatusChangeEvent;
 use starcoin_types::{
     block::{Block, BlockBody},
-    cmpact_block::{CompactBlock, PrefiledTxn, ShortId},
+    cmpact_block::{CompactBlock, ShortId},
     peer_info::PeerId,
     system_events::NewHeadBlock,
     transaction::{SignedUserTransaction, Transaction},
@@ -59,22 +60,15 @@ impl BlockRelayer {
         compact_block: CompactBlock,
         peer_id: PeerId,
     ) -> Result<Block> {
-        let txns_pool_vec = txpool.get_pending_txns(None, None);
-        let txns_pool_map: HashMap<ShortId, &SignedUserTransaction> = {
-            let pool_id_txn_iter = txns_pool_vec
-                .iter()
-                .map(|txn| (Transaction::UserTransaction(txn.clone()).id(), txn))
-                .map(|(id, txn)| (ShortId(id), txn));
-            HashMap::from_iter(pool_id_txn_iter)
-        };
         let txns = {
             let mut txns: Vec<Option<SignedUserTransaction>> =
                 vec![None; compact_block.short_ids.len()];
             let mut missing_txn_short_ids = HashSet::new();
             // Fill the block txns by tx pool
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
-                if let Some(txn) = txns_pool_map.get(short_id) {
-                    txns[index] = Some((*txn).clone());
+                if let Some(txn) = txpool.find_txn(&short_id.0) {
+                    BLOCK_RELAYER_METRICS.txns_filled_from_txpool.inc();
+                    txns[index] = Some(txn);
                 } else {
                     missing_txn_short_ids.insert(short_id);
                 }
@@ -86,6 +80,7 @@ impl BlockRelayer {
                     continue;
                 }
                 txns[prefilled_txn.index as usize] = Some(prefilled_txn.clone().tx);
+                BLOCK_RELAYER_METRICS.txns_filled_from_prefill.inc();
                 missing_txn_short_ids.remove(&ShortId(
                     Transaction::UserTransaction(prefilled_txn.tx).id(),
                 ));
@@ -114,6 +109,7 @@ impl BlockRelayer {
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
                     if let Some(&txn) = fetched_missing_txn_map.get(short_id) {
+                        BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
                         txns[index] = Some(txn.clone());
                     }
                 }
@@ -129,27 +125,7 @@ impl BlockRelayer {
     }
 
     fn block_into_compact(&self, block: Block) -> CompactBlock {
-        let mut prefilled_txn = Vec::new();
-        let txns_pool_map: HashMap<HashValue, SignedUserTransaction> = {
-            let pool_id_txn = self.txpool.get_pending_txns(None, None);
-            HashMap::from_iter(
-                pool_id_txn
-                    .iter()
-                    .map(|txn| (Transaction::UserTransaction(txn.clone()).id(), txn.clone())),
-            )
-        };
-        for (index, txn) in block.transactions().iter().enumerate() {
-            let id = Transaction::UserTransaction(txn.clone()).id();
-            if !txns_pool_map.contains_key(&id) {
-                prefilled_txn.push(PrefiledTxn {
-                    index: index as u64,
-                    tx: txn.clone(),
-                });
-            }
-        }
-        // TODO: prefill txns always equal to block.transactions.
-        prefilled_txn.clear();
-        CompactBlock::new(&block, prefilled_txn)
+        CompactBlock::new(&block, vec![])
     }
 
     fn handle_block_event(

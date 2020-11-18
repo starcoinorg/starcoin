@@ -19,3 +19,11 @@ pub static TXN_EXECUTION_GAS_USAGE: Lazy<Histogram> = Lazy::new(|| {
     )
     .unwrap()
 });
+
+pub static BLOCK_UNCLES: Lazy<Histogram> = Lazy::new(|| {
+    register_histogram!(
+        "vm_block_uncles",
+        "Histogram for the uncles of block handle"
+    )
+    .unwrap()
+});
