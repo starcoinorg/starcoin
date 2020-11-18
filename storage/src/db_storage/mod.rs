@@ -3,7 +3,7 @@
 
 use crate::batch::WriteBatch;
 use crate::errors::StorageInitError;
-use crate::metrics::record_metrics;
+use crate::metrics::{record_metrics, STORAGE_ITER_BYTES};
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
@@ -159,6 +159,9 @@ impl InnerStore for DBStorage {
     }
 
     fn put(&self, prefix_name: &str, key: Vec<u8>, value: Vec<u8>) -> Result<()> {
+        STORAGE_ITER_BYTES
+            .with_label_values(&[prefix_name])
+            .observe((key.len() + value.len()) as f64);
         record_metrics("db", prefix_name, "put").end_with(|| {
             let cf_handle = self.get_cf_handle(prefix_name)?;
             self.db

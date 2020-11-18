@@ -147,8 +147,9 @@ pub enum StdlibScript {
     UpdateModuleUpgradeStrategy,
     RotateAuthenticationKey,
     MintTokenByLinearKey,
-    MintTokenByFixKey,
+    MintTokenByFixedKey,
     MintAndSplitByLinearKey,
+    SplitFixedKey,
     // ...add new scripts here
 }
 
@@ -183,8 +184,9 @@ impl StdlibScript {
             UpdateModuleUpgradeStrategy,
             RotateAuthenticationKey,
             MintTokenByLinearKey,
-            MintTokenByFixKey,
+            MintTokenByFixedKey,
             MintAndSplitByLinearKey,
+            SplitFixedKey,
             // ...add new scripts here
         ]
     }
@@ -247,8 +249,9 @@ impl fmt::Display for StdlibScript {
                 UpdateModuleUpgradeStrategy => "update_module_upgrade_strategy",
                 RotateAuthenticationKey => "rotate_authentication_key",
                 MintTokenByLinearKey => "mint_token_by_linear_key",
-                MintTokenByFixKey => "mint_token_by_fix_key",
+                MintTokenByFixedKey => "mint_token_by_fixed_key",
                 MintAndSplitByLinearKey => "mint_and_split_by_linear_key",
+                SplitFixedKey => "split_fixed_key",
             }
         )
     }

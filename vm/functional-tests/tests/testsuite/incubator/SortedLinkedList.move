@@ -7,7 +7,7 @@
 
 module SortedLinkedList {
     use 0x1::Compare;
-    use 0x1::LCS;
+    use 0x1::SCS;
     use 0x1::Signer;
     use 0x1::Vector;
 
@@ -114,9 +114,9 @@ module SortedLinkedList {
         //see if either prev or next are the head and get their datas
         let prev_data = *&prev_node.data;
         let next_data = *&next_node.data;
-        let data_lcs_bytes = LCS::to_bytes(&data);
-        let cmp_with_prev = Compare::cmp_lcs_bytes(&data_lcs_bytes, &LCS::to_bytes(&prev_data));
-        let cmp_with_next = Compare::cmp_lcs_bytes(&data_lcs_bytes, &LCS::to_bytes(&next_data));
+        let data_lcs_bytes = SCS::to_bytes(&data);
+        let cmp_with_prev = Compare::cmp_scs_bytes(&data_lcs_bytes, &SCS::to_bytes(&prev_data));
+        let cmp_with_next = Compare::cmp_scs_bytes(&data_lcs_bytes, &SCS::to_bytes(&next_data));
 
         let prev_is_head = Self::is_head_node<T>(&prev_entry);
         let next_is_head = Self::is_head_node<T>(&next_entry);
@@ -238,7 +238,7 @@ module SortedLinkedList {
     public fun find_position_and_insert<T: copyable>(account: &signer, data: T, head: EntryHandle): bool acquires NodeVector {
         assert(Self::is_head_node<T>(&copy head), 18);
 
-        let data_lcs_bytes = LCS::to_bytes(&data);
+        let data_lcs_bytes = SCS::to_bytes(&data);
         let nodes = &borrow_global<NodeVector<T>>(head.addr).nodes;
         let head_node = Vector::borrow<Node<T>>(nodes, head.index);
         let next_entry = *&head_node.next;
@@ -249,8 +249,8 @@ module SortedLinkedList {
             let next_node = Vector::borrow<Node<T>>(next_nodes, next_entry.index);
 
             let next_node_data = *&next_node.data;
-            let next_data_lcs_bytes = LCS::to_bytes(&next_node_data);
-            let cmp = Compare::cmp_lcs_bytes(&next_data_lcs_bytes, &data_lcs_bytes);
+            let next_data_lcs_bytes = SCS::to_bytes(&next_node_data);
+            let cmp = Compare::cmp_scs_bytes(&next_data_lcs_bytes, &data_lcs_bytes);
 
             if (cmp == 0u8) { // next_data == data
                 return false  // data already exist

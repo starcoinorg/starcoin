@@ -207,7 +207,7 @@ mod tests {
             let mut rx1 = rx1.fuse();
             loop {
                 futures::select! {
-                    message = rx1.select_next_some()=>{
+                    _message = rx1.select_next_some()=>{
                         info!("receive message ");
                     },
                     complete => {
@@ -241,7 +241,7 @@ mod tests {
             let mut rx1 = rx1.fuse();
             loop {
                 futures::select! {
-                    message = rx1.select_next_some()=>{
+                    _message = rx1.select_next_some()=>{
                         info!("receive message");
                     },
                     complete => {

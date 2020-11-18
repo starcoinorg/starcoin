@@ -29,6 +29,7 @@
 -  [Function `mint_with_fixed_key`](#0x1_Token_mint_with_fixed_key)
 -  [Function `mint_with_linear_key`](#0x1_Token_mint_with_linear_key)
 -  [Function `split_linear_key`](#0x1_Token_split_linear_key)
+-  [Function `split_fixed_key`](#0x1_Token_split_fixed_key)
 -  [Function `mint_amount_of_linear_key`](#0x1_Token_mint_amount_of_linear_key)
 -  [Function `mint_amount_of_fixed_key`](#0x1_Token_mint_amount_of_fixed_key)
 -  [Function `end_time_of_key`](#0x1_Token_end_time_of_key)
@@ -68,6 +69,7 @@
     -  [Function `mint_with_fixed_key`](#@Specification_1_mint_with_fixed_key)
     -  [Function `mint_with_linear_key`](#@Specification_1_mint_with_linear_key)
     -  [Function `split_linear_key`](#@Specification_1_split_linear_key)
+    -  [Function `split_fixed_key`](#@Specification_1_split_fixed_key)
     -  [Function `mint_amount_of_linear_key`](#@Specification_1_mint_amount_of_linear_key)
     -  [Function `mint_amount_of_fixed_key`](#@Specification_1_mint_amount_of_fixed_key)
     -  [Function `destroy_empty_key`](#@Specification_1_destroy_empty_key)
@@ -94,8 +96,8 @@
 
 <pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
-<b>use</b> <a href="LCS.md#0x1_LCS">0x1::LCS</a>;
 <b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
+<b>use</b> <a href="SCS.md#0x1_SCS">0x1::SCS</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
@@ -927,6 +929,35 @@ Only the Association account can acquire such a reference, and it can do so only
 
 </details>
 
+<a name="0x1_Token_split_fixed_key"></a>
+
+## Function `split_fixed_key`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt; {
+    <b>assert</b>(key.total &gt;= amount, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
+    key.total = key.total - amount;
+    <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>{
+        total: amount,
+        end_time: key.end_time,
+    }
+}
+</code></pre>
+
+
+
+</details>
+
 <a name="0x1_Token_mint_amount_of_linear_key"></a>
 
 ## Function `mint_amount_of_linear_key`
@@ -1494,7 +1525,7 @@ Return the token code for the registered token.
 
 
 <pre><code><b>fun</b> <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(addr: address, module_name: vector&lt;u8&gt;, name: vector&lt;u8&gt;): vector&lt;u8&gt; {
-    <b>let</b> code = <a href="LCS.md#0x1_LCS_to_bytes">LCS::to_bytes</a>(&addr);
+    <b>let</b> code = <a href="SCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&addr);
     // {{addr}}::{{<b>module</b>}}::{{<b>struct</b>}}
     <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, b"::");
     <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, module_name);
@@ -1816,6 +1847,22 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
+</code></pre>
+
+
+
+<a name="@Specification_1_split_fixed_key"></a>
+
+### Function `split_fixed_key`
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_fixed_key">split_fixed_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;, amount: u128): <a href="Token.md#0x1_Token_FixedTimeMintKey">Token::FixedTimeMintKey</a>&lt;TokenType&gt;
+</code></pre>
+
+
+
+
+<pre><code><b>aborts_if</b> key.total &lt; amount;
 </code></pre>
 
 

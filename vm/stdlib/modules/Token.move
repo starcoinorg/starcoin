@@ -3,7 +3,7 @@ module Token {
     use 0x1::Event;
     use 0x1::Signer;
     use 0x1::Vector;
-    use 0x1::LCS;
+    use 0x1::SCS;
     use 0x1::Errors;
     use 0x1::Timestamp;
     use 0x1::Math;
@@ -300,6 +300,19 @@ module Token {
         pragma verify = false; //timeout, fix later
     }
 
+    public fun split_fixed_key<TokenType>(key: &mut FixedTimeMintKey<TokenType>, amount: u128): FixedTimeMintKey<TokenType> {
+        assert(key.total >= amount, Errors::invalid_state(ESPLIT));
+        key.total = key.total - amount;
+        FixedTimeMintKey{
+            total: amount,
+            end_time: key.end_time,
+        }
+    }
+
+    spec fun split_fixed_key {
+        aborts_if key.total < amount;
+    }
+
     // Returns the amount of the LinearTimeMintKey can mint now.
     public fun mint_amount_of_linear_key<TokenType>(key: &LinearTimeMintKey<TokenType>): u128 {
         let now = Timestamp::now_seconds();
@@ -563,7 +576,7 @@ module Token {
     spec define spec_token_code<TokenType>(): vector<u8>;
 
     fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
-        let code = LCS::to_bytes(&addr);
+        let code = SCS::to_bytes(&addr);
         // {{addr}}::{{module}}::{{struct}}
         Vector::append(&mut code, b"::");
         Vector::append(&mut code, module_name);

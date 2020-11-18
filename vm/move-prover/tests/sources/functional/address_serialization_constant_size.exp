@@ -1,14 +1,72 @@
-Move prover returns: exiting with boogie verification errors
-error: post-condition does not hold
+Move prover returns: exiting with checking errors
+error:
 
-    ┌── tests/sources/functional/address_serialization_constant_size.move:19:9 ───
+   ┌── tests/sources/functional/address_serialization_constant_size.move:3:9 ───
+   │
+ 3 │     use 0x1::LCS;
+   │         ^^^^^^^^ Invalid 'use'. Unbound module: '0x1::LCS'
+   │
+
+error:
+
+   ┌── tests/sources/functional/address_serialization_constant_size.move:7:10 ───
+   │
+ 7 │         (LCS::to_bytes(addr1), LCS::to_bytes(addr2))
+   │          ^^^ Unbound module alias 'LCS'
+   │
+
+error:
+
+   ┌── tests/sources/functional/address_serialization_constant_size.move:7:32 ───
+   │
+ 7 │         (LCS::to_bytes(addr1), LCS::to_bytes(addr2))
+   │                                ^^^ Unbound module alias 'LCS'
+   │
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:10:21 ───
+    │
+ 10 │         ensures len(LCS::serialize(addr1)) == len(LCS::serialize(addr2));
+    │                     ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:10:51 ───
+    │
+ 10 │         ensures len(LCS::serialize(addr1)) == len(LCS::serialize(addr2));
+    │                                                   ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:16:10 ───
+    │
+ 16 │         (LCS::to_bytes(mv1), LCS::to_bytes(mv2))
+    │          ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:16:30 ───
+    │
+ 16 │         (LCS::to_bytes(mv1), LCS::to_bytes(mv2))
+    │                              ^^^ Unbound module alias 'LCS'
+    │
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:19:21 ───
     │
  19 │         ensures len(LCS::serialize(mv1)) == len(LCS::serialize(mv2));
-    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │                     ^^^ Unbound module alias 'LCS'
     │
-    =     at tests/sources/functional/address_serialization_constant_size.move:15:5: serialized_move_values_diff_len_incorrect
-    =         mv1 = <redacted>,
-    =         mv2 = <redacted>,
-    =         result_1 = <redacted>,
-    =         result_2 = <redacted>
-    =     at tests/sources/functional/address_serialization_constant_size.move:16:15: serialized_move_values_diff_len_incorrect
+
+error:
+
+    ┌── tests/sources/functional/address_serialization_constant_size.move:19:49 ───
+    │
+ 19 │         ensures len(LCS::serialize(mv1)) == len(LCS::serialize(mv2));
+    │                                                 ^^^ Unbound module alias 'LCS'
+    │

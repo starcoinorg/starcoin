@@ -6,7 +6,7 @@ use crate::data_cache::{RemoteStorage, StateViewCache};
 use crate::errors::{
     convert_normal_success_epilogue_error, convert_prologue_runtime_error, error_split,
 };
-use crate::metrics::TXN_EXECUTION_GAS_USAGE;
+use crate::metrics::{BLOCK_UNCLES, TXN_EXECUTION_GAS_USAGE};
 use anyhow::{format_err, Error, Result};
 use crypto::HashValue;
 use move_vm_runtime::data_cache::RemoteCache;
@@ -577,6 +577,7 @@ impl StarcoinVM {
                 &mut cost_strategy,
             )
             .or_else(convert_prologue_runtime_error)?;
+        BLOCK_UNCLES.observe(uncles as f64);
         Ok(get_transaction_output(
             &mut (),
             session,

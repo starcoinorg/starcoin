@@ -14,16 +14,13 @@ error: abort not covered by any of the `aborts_if` clauses
  85 │ │         }
  86 │ │     }
     │ ╰─────^
-    ·
- 83 │             if (i == 7) abort 7;
-    │             ------------------- abort happened here with code `0x7`
     │
     =     at tests/sources/functional/loops.move:77:5: iter10_abort_incorrect
-    =         i = <redacted>
     =     at tests/sources/functional/loops.move:78:13: iter10_abort_incorrect
     =     at tests/sources/functional/loops.move:80:13: iter10_abort_incorrect
     =     at tests/sources/functional/loops.move:79:9: iter10_abort_incorrect
-    =     at tests/sources/functional/loops.move:83:13: iter10_abort_incorrect (ABORTED)
+    =     at tests/sources/functional/loops.move:83:13: iter10_abort_incorrect
+    =     at tests/sources/functional/loops.move:86:5: iter10_abort_incorrect
 
 error: function does not abort under this condition
 
@@ -33,7 +30,6 @@ error: function does not abort under this condition
     │         ^^^^^^^^^^^^^^^
     │
     =     at tests/sources/functional/loops.move:48:5: iter10_no_abort_incorrect
-    =         i = <redacted>
     =     at tests/sources/functional/loops.move:49:13: iter10_no_abort_incorrect
     =     at tests/sources/functional/loops.move:51:13: iter10_no_abort_incorrect
     =     at tests/sources/functional/loops.move:50:9: iter10_no_abort_incorrect

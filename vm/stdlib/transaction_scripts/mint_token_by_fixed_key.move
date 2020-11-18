@@ -3,7 +3,7 @@ script {
     use 0x1::Box;
     use 0x1::Account;
 
-    fun mint_token_by_fix_key<Token>(
+    fun mint_token_by_fixed_key<Token>(
         signer: &signer,
     ) {
         // 1. take key: FixedTimeMintKey<Token>
@@ -16,7 +16,7 @@ script {
         Account::deposit_to_self(signer, tokens);
     }
 
-    spec fun mint_token_by_fix_key {
+    spec fun mint_token_by_fixed_key {
         pragma verify = false;
     }
 }
