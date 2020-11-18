@@ -24,7 +24,7 @@ script {
     use 0x1::Box;
     use 0x1::Token::{FixedTimeMintKey};
 
-    fun bob_take_linear_key_from_offer(account: &signer) {
+    fun bob_take_fixed_key_from_offer(account: &signer) {
         let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{genesis}});
         Box::put(account, key);
     }
@@ -59,7 +59,7 @@ script {
     use 0x1::Box;
     use 0x1::Token::{FixedTimeMintKey};
 
-    fun alice_take_linear_key_from_offer(account: &signer) {
+    fun alice_take_fixed_key_from_offer(account: &signer) {
         let key = Offer::redeem<FixedTimeMintKey<STC>>(account, {{bob}});
         Box::put(account, key);
     }
