@@ -18,7 +18,7 @@ starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
 lru = "0.6.1"
-parking_lot = "0.11.0"
+parking_lot = "0.11.1"
 
 [dev-dependencies]
 rand = "0.7.3"
