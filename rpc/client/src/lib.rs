@@ -516,6 +516,21 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn uncle_path(
+        &self,
+        block_id: HashValue,
+        uncle_id: HashValue,
+    ) -> anyhow::Result<Vec<BlockHeader>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .uncle_path(block_id, uncle_id)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn get_global_time_by_number(
         &self,
         number: BlockNumber,

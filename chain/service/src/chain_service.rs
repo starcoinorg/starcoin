@@ -187,6 +187,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetEpochUnclesByNumber(number) => Ok(ChainResponse::BlockSummaries(
                 self.inner.get_epoch_uncles_by_number(number)?,
             )),
+            ChainRequest::UnclePath(block_id, uncle_id) => Ok(ChainResponse::BlockHeaderVec(
+                self.inner.uncle_path(block_id, uncle_id)?,
+            )),
         }
     }
 }
@@ -319,6 +322,41 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn main_block_by_uncle(&self, uncle_id: HashValue) -> Result<Option<Block>> {
         self.main.get_latest_block_by_uncle(uncle_id, 500)
+    }
+
+    fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>> {
+        let mut headers = Vec::new();
+        if let Some(block_header) = self.main.get_header(block_id)? {
+            if let Some(uncle_parent_block_header) = self.main.get_header(uncle_id)? {
+                let uncle_parent_id = uncle_parent_block_header.id();
+                let end_number = uncle_parent_block_header.number();
+                assert!(
+                    block_header.number() >= end_number,
+                    "block number mismatch when call uncle_path."
+                );
+                headers.push(uncle_parent_block_header);
+                if block_header.number() > end_number {
+                    let mut latest_id = block_header.parent_hash();
+                    loop {
+                        if let Some(parent_block_header) = self.main.get_header(latest_id)? {
+                            if parent_block_header.number() == end_number {
+                                assert_eq!(
+                                    uncle_parent_id,
+                                    parent_block_header.id(),
+                                    "block id mismatch when call uncle_path."
+                                );
+                                break;
+                            } else {
+                                latest_id = parent_block_header.parent_hash();
+                                headers.push(parent_block_header);
+                            }
+                        }
+                    }
+                    headers.push(block_header);
+                }
+            }
+        }
+        Ok(headers)
     }
 
     fn main_block_header_by_number(&self, number: BlockNumber) -> Result<Option<BlockHeader>> {

@@ -53,6 +53,7 @@ pub enum ChainRequest {
     GetHeaders(Vec<HashValue>),
     TPS(Option<BlockNumber>),
     GetEpochUnclesByNumber(Option<BlockNumber>),
+    UnclePath(HashValue, HashValue),
 }
 
 impl ServiceRequest for ChainRequest {

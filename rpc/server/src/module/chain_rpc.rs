@@ -213,4 +213,15 @@ where
 
         Box::new(fut.boxed().compat())
     }
+
+    fn uncle_path(
+        &self,
+        block_id: HashValue,
+        uncle_id: HashValue,
+    ) -> FutureResult<Vec<BlockHeader>> {
+        let service = self.service.clone();
+        let fut = async move { Ok(service.uncle_path(block_id, uncle_id).await?) }.map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
 }
