@@ -287,7 +287,7 @@ Message for balance withdraw event.
 
 </dd>
 <dt>
-<code>token_code: vector&lt;u8&gt;</code>
+<code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
 
@@ -327,7 +327,7 @@ Message for balance deposit event.
 
 </dd>
 <dt>
-<code>token_code: vector&lt;u8&gt;</code>
+<code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
 
@@ -361,7 +361,7 @@ Message for accept token events
 
 <dl>
 <dt>
-<code>token_code: vector&lt;u8&gt;</code>
+<code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
 

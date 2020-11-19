@@ -1,13 +1,9 @@
 use anyhow::{Error, Result};
-use bstr::ByteSlice;
 use starcoin_account_lib::account_storage::AccountStorage;
-use starcoin_canonical_serialization::SCSCodec;
 use starcoin_chain_notify::message::ContractEventNotification;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::accept_token_payment::AcceptTokenEvent;
-use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::event::EventKey;
 use std::collections::HashSet;
@@ -78,17 +74,7 @@ impl AccountEventService {
     fn handle_contract_event(&self, event: &ContractEvent) -> Result<(), Error> {
         let evt = AcceptTokenEvent::try_from(event)?;
         let addr = event.key().get_creator_address();
-        let accepted_token = evt.currency_code();
-        let parts: Vec<_> = accepted_token.split_str("::").collect();
-        let token_addr = parts[0];
-        // TODO: should move emit the fields directly?
-        let token_code = AccountAddress::decode(token_addr).map(|addr| {
-            TokenCode::new(
-                addr,
-                String::from_utf8_lossy(parts[1]).to_string(),
-                String::from_utf8_lossy(parts[2]).to_string(),
-            )
-        })?;
+        let token_code = evt.token_code();
         self.storage.add_accepted_token(addr, token_code.clone())?;
         info!("addr {:#x} accept new token {}", addr, token_code);
         Ok(())

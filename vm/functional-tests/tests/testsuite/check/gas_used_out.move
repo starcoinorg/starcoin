@@ -5,7 +5,7 @@
 
 //! sender: alice
 //! gas-price: 1
-//! max-gas: 1000
+//! max-gas: 700
 
 script {
     use 0x1::Account;
@@ -22,7 +22,7 @@ script {
 // check: EXECUTION_FAILURE
 // check: OUT_OF_GAS
 // check: gas_used
-// check: 1000
+// check: 700
 
 //! new-transaction
 //! sender: bob
@@ -33,7 +33,7 @@ script {
     fun main() {
         // check the state is unchanged
         assert(Account::balance<0x1::STC::STC>({{bob}}) == 1000, 42);
-        assert(Account::balance<0x1::STC::STC>({{alice}}) == 0, 43);
+        assert(Account::balance<0x1::STC::STC>({{alice}}) == 300, 43);
     }
 }
 

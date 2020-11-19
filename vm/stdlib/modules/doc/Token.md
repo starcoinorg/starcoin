@@ -6,6 +6,7 @@
 
 
 -  [Resource `Token`](#0x1_Token_Token)
+-  [Struct `TokenCode`](#0x1_Token_TokenCode)
 -  [Resource `MintCapability`](#0x1_Token_MintCapability)
 -  [Resource `FixedTimeMintKey`](#0x1_Token_FixedTimeMintKey)
 -  [Resource `LinearTimeMintKey`](#0x1_Token_LinearTimeMintKey)
@@ -50,7 +51,6 @@
 -  [Function `is_same_token`](#0x1_Token_is_same_token)
 -  [Function `token_address`](#0x1_Token_token_address)
 -  [Function `token_code`](#0x1_Token_token_code)
--  [Function `code_to_bytes`](#0x1_Token_code_to_bytes)
 -  [Function `name_of`](#0x1_Token_name_of)
 -  [Function `name_of_token`](#0x1_Token_name_of_token)
 -  [Specification](#@Specification_1)
@@ -89,7 +89,6 @@
     -  [Function `is_same_token`](#@Specification_1_is_same_token)
     -  [Function `token_address`](#@Specification_1_token_address)
     -  [Function `token_code`](#@Specification_1_token_code)
-    -  [Function `code_to_bytes`](#@Specification_1_code_to_bytes)
     -  [Function `name_of`](#@Specification_1_name_of)
     -  [Function `name_of_token`](#@Specification_1_name_of_token)
 
@@ -97,10 +96,8 @@
 <pre><code><b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
 <b>use</b> <a href="Math.md#0x1_Math">0x1::Math</a>;
-<b>use</b> <a href="SCS.md#0x1_SCS">0x1::SCS</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
-<b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
 </code></pre>
 
 
@@ -128,6 +125,46 @@ The token has a <code>TokenType</code> color that tells us what token the
 </dt>
 <dd>
 
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_Token_TokenCode"></a>
+
+## Struct `TokenCode`
+
+Token Code which identify a unique Token.
+
+
+<pre><code><b>struct</b> <a href="Token.md#0x1_Token_TokenCode">TokenCode</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>addr: address</code>
+</dt>
+<dd>
+ address who define the module contains the Token Type.
+</dd>
+<dt>
+<code>module_name: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+ module which contains the Token Type.
+</dd>
+<dt>
+<code>name: vector&lt;u8&gt;</code>
+</dt>
+<dd>
+ name of the token. may nested if the token is a instantiated generic token type.
 </dd>
 </dl>
 
@@ -290,7 +327,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
  funds added to the system
 </dd>
 <dt>
-<code>token_code: vector&lt;u8&gt;</code>
+<code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
  full info of Token.
@@ -323,7 +360,7 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
  funds removed from the system
 </dd>
 <dt>
-<code>token_code: vector&lt;u8&gt;</code>
+<code>token_code: <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a></code>
 </dt>
 <dd>
  full info of Token
@@ -760,7 +797,7 @@ Only the Association account can acquire such a reference, and it can do so only
         &<b>mut</b> info.mint_events,
         <a href="Token.md#0x1_Token_MintEvent">MintEvent</a> {
             amount,
-            token_code: <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(token_address, module_name, token_name),
+            token_code: <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> { addr: token_address, module_name, name: token_name },
         },
     );
     <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; { value: amount }
@@ -1145,7 +1182,7 @@ Only the Association account can acquire such a reference, and it can do so only
         &<b>mut</b> info.burn_events,
         <a href="Token.md#0x1_Token_BurnEvent">BurnEvent</a> {
             amount: value,
-            token_code: <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(token_address, module_name, token_name),
+            token_code: <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> { addr: token_address, module_name, name: token_name },
         },
     );
 }
@@ -1490,7 +1527,7 @@ Return the TokenType's address
 Return the token code for the registered token.
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
 </code></pre>
 
 
@@ -1499,39 +1536,13 @@ Return the token code for the registered token.
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt; {
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> {
     <b>let</b> (addr, module_name, name) = <a href="Token.md#0x1_Token_name_of">name_of</a>&lt;TokenType&gt;();
-    <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(addr, module_name, name)
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_Token_code_to_bytes"></a>
-
-## Function `code_to_bytes`
-
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(addr: address, module_name: vector&lt;u8&gt;, name: vector&lt;u8&gt;): vector&lt;u8&gt;
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(addr: address, module_name: vector&lt;u8&gt;, name: vector&lt;u8&gt;): vector&lt;u8&gt; {
-    <b>let</b> code = <a href="SCS.md#0x1_SCS_to_bytes">SCS::to_bytes</a>(&addr);
-    // {{addr}}::{{<b>module</b>}}::{{<b>struct</b>}}
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, b"::");
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, module_name);
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, b"::");
-    <a href="Vector.md#0x1_Vector_append">Vector::append</a>(&<b>mut</b> code, name);
-    code
+    <a href="Token.md#0x1_Token_TokenCode">TokenCode</a> {
+        addr,
+        module_name,
+        name
+    }
 }
 </code></pre>
 
@@ -2187,7 +2198,7 @@ Return Token's module address, module name, and type name of <code>TokenType</co
 ### Function `token_code`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;
+<pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_token_code">token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">Token::TokenCode</a>
 </code></pre>
 
 
@@ -2206,23 +2217,7 @@ does not matter for the verification of callers.
 <a name="0x1_Token_spec_token_code"></a>
 
 
-<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): vector&lt;u8&gt;;
-</code></pre>
-
-
-
-<a name="@Specification_1_code_to_bytes"></a>
-
-### Function `code_to_bytes`
-
-
-<pre><code><b>fun</b> <a href="Token.md#0x1_Token_code_to_bytes">code_to_bytes</a>(addr: address, module_name: vector&lt;u8&gt;, name: vector&lt;u8&gt;): vector&lt;u8&gt;
-</code></pre>
-
-
-
-
-<pre><code><b>aborts_if</b> <b>false</b>;
+<pre><code><b>define</b> <a href="Token.md#0x1_Token_spec_token_code">spec_token_code</a>&lt;TokenType&gt;(): <a href="Token.md#0x1_Token_TokenCode">TokenCode</a>;
 </code></pre>
 
 
