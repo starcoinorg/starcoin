@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: starcoin-svc
+  name: centauri-svc
 spec:
   selector:
-    app: starcoin
+    app: starcoin-stress
   ports:
     -
       protocol: TCP
@@ -16,50 +16,50 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: starcoin
+  name: starcoin-stress
   labels:
-    app: starcoin
-    network: proxima
+    app: starcoin-stress
+    network: centauri
 spec:
   selector:
     matchLabels:
-      app: starcoin
-      network: proxima
-  serviceName: starcoin-svc
+      app: starcoin-stress
+      network: centauri
+  serviceName: centauri-svc
   replicas: 3
   template:
     metadata:
-      name: starcoin
+      name: starcoin-stress
       labels:
-        app: starcoin
-        network: proxima
+        app: starcoin-stress
+        network: centauri
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.7.2.3
+        image: starcoin/starcoin:v0.7.2.7
         imagePullPolicy: Always
         command:
           - bash
-          - -c
+          - -c	  
         args:
           -
-            rm -rf /sc-data/proxima/starcoin.ipc /sc-data/proxima/starcoindb/db/starcoindb/LOCK;
-            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
+            id=$(echo -e $POD_NAME|awk -F'-' '{print $3}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
             node_key=${node_keys[$id]};
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+            if [ $POD_NAME = "starcoin-stress-0" ] && [ $DISABLE_SEED = "true" ]; then
+              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
               sleep 5;
             else
-              /starcoin/starcoin -n proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
             hostPort: 9840
         volumeMounts:
-        - name: starcoin-volume
+        - name: starcoin-stress-volume
           mountPath: /sc-data
         env:
           - name: POD_NAME
@@ -75,28 +75,18 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: starcoin-config
-                key: seed
+                key: centauri_seed
           - name: DISABLE_SEED
             valueFrom:
               configMapKeyRef:
                 name: starcoin-config
                 key: start_disable_seed_node
-      - name: txfactory
-        image: starcoin/starcoin:v0.7.2.3
-        imagePullPolicy: IfNotPresent
-        command:
-          - bash
-          - -c
-        args:
-          - /starcoin/starcoin_txfactory --ipc-path /sc-data/proxima/starcoin.ipc
-        volumeMounts:
-        - name: starcoin-volume
-          mountPath: /sc-data
   volumeClaimTemplates:
   - metadata:
-      name: starcoin-volume
+      name: starcoin-stress-volume
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: [ "ReadWriteMany" ]
+      storageClassName: alicloud-disk-essd
       resources:
         requests:
           storage: 50Gi
