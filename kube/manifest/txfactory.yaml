@@ -18,7 +18,39 @@ spec:
       - bash
       - -c
     args:
-      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 60 -t 1
+      - rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
+        id=$(echo -e $POD_NAME|awk -F'-' '{print $3}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+        node_key=${node_keys[$id]};
+        if [ ! -z $node_key ]; then
+          node_key_flag="--node-key ${node_key}";
+        fi;
+        /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+        sleep 5;
+        /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 60 -t 1
+    ports:
+    - containerPort: 9840
+      hostPort: 9840
     volumeMounts:
-      - name: starcoin-volume
+      - name: starcoin-stress-volume
         mountPath: /sc-data
+    env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: NODE_KEYS
+          valueFrom:
+            secretKeyRef:
+              name: node-keys
+              key: node-keys
+        - name: SEED
+          valueFrom:
+            configMapKeyRef:
+              name: starcoin-config
+              key: centauri_seed
+        - name: DISABLE_SEED
+          valueFrom:
+            configMapKeyRef:
+              name: starcoin-config
+              key: start_disable_seed_node
+
