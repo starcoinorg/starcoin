@@ -12,7 +12,7 @@ anyhow = "1.0.34"
 futures = "0.3"
 async-trait = "0.1"
 rand = "0.7.3"
-parking_lot = "0.9"
+parking_lot = "0.11"
 serde = "1"
 rand_core = { version = "0.5.1", default-features = false }
 starcoin-account-api = {path = "../api",package = "starcoin-account-api"}

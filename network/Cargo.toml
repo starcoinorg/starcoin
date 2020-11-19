@@ -33,11 +33,11 @@ scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 fnv = "1.0.6"
 zeroize = "1.1.1"
 bitflags = "1.2.0"
-smallvec = "1.4.2"
+smallvec = "1.5.0"
 
 tempfile = "3.1.0"
 rand = "0.7.3"
-parking_lot = "0.11.0"
+parking_lot = "0.11.1"
 lru = "0.6.1"
 
 serde = { version = "1.0", features = ["derive"] }
