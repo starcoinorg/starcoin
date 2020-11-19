@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::language_storage::TypeTag;
+use crate::move_resource::MoveResource;
 use crate::parser::parse_type_tag;
+use crate::token::TOKEN_MODULE_NAME;
 use anyhow::{bail, ensure, Result};
 use move_core_types::account_address::AccountAddress;
 use move_core_types::identifier::Identifier;
@@ -20,6 +22,11 @@ pub struct TokenCode {
     pub module: String,
     //Token's struct name
     pub name: String,
+}
+
+impl MoveResource for TokenCode {
+    const MODULE_NAME: &'static str = TOKEN_MODULE_NAME;
+    const STRUCT_NAME: &'static str = "TokenCode";
 }
 
 impl TokenCode {

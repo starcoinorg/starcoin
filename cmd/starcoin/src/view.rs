@@ -192,7 +192,7 @@ impl From<ContractEvent> for EventView {
             if let Ok(received_event) = DepositEvent::try_from_bytes(&event.event_data()) {
                 let amount_view = AmountView::new(
                     received_event.amount(),
-                    received_event.currency_code().as_str(),
+                    received_event.token_code().to_string(),
                 );
                 Ok(EventDataView::ReceivedPayment {
                     amount: amount_view,
@@ -204,7 +204,7 @@ impl From<ContractEvent> for EventView {
         } else if event.type_tag() == &TypeTag::Struct(WithdrawEvent::struct_tag()) {
             if let Ok(sent_event) = WithdrawEvent::try_from_bytes(&event.event_data()) {
                 let amount_view =
-                    AmountView::new(sent_event.amount(), sent_event.currency_code().as_str());
+                    AmountView::new(sent_event.amount(), sent_event.token_code().to_string());
                 Ok(EventDataView::SentPayment {
                     amount: amount_view,
                     metadata: BytesView::from(sent_event.metadata()),
@@ -215,7 +215,7 @@ impl From<ContractEvent> for EventView {
         } else if event.type_tag() == &TypeTag::Struct(MintEvent::struct_tag()) {
             if let Ok(mint_event) = MintEvent::try_from_bytes(&event.event_data()) {
                 let amount_view =
-                    AmountView::new(mint_event.amount(), mint_event.token_code().as_str());
+                    AmountView::new(mint_event.amount(), mint_event.token_code().to_string());
                 Ok(EventDataView::Mint {
                     amount: amount_view,
                 })
@@ -283,11 +283,8 @@ pub struct AmountView {
 }
 
 impl AmountView {
-    fn new(amount: u128, token_code: &str) -> Self {
-        Self {
-            amount,
-            token_code: token_code.to_string(),
-        }
+    fn new(amount: u128, token_code: String) -> Self {
+        Self { amount, token_code }
     }
 }
 

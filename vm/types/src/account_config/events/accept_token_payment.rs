@@ -4,6 +4,7 @@
 use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
 use crate::contract_event::ContractEvent;
 use crate::language_storage::TypeTag;
+use crate::token::token_code::TokenCode;
 use anyhow::{Error, Result};
 use move_core_types::move_resource::MoveResource;
 use once_cell::sync::Lazy;
@@ -21,11 +22,11 @@ pub static ACCEPT_TOKEN_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
 /// Struct that represents a AcceptTokenEvent.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AcceptTokenEvent {
-    token_code: Vec<u8>,
+    token_code: TokenCode,
 }
 
 impl AcceptTokenEvent {
-    pub fn new(token_code: Vec<u8>) -> Self {
+    pub fn new(token_code: TokenCode) -> Self {
         Self { token_code }
     }
 
@@ -33,8 +34,8 @@ impl AcceptTokenEvent {
         scs::from_bytes(bytes).map_err(Into::into)
     }
 
-    /// Return the currency currency_code symbol that the payment was made in.
-    pub fn currency_code(&self) -> &[u8] {
+    /// Return the token code symbol that the payment was made in.
+    pub fn token_code(&self) -> &TokenCode {
         &self.token_code
     }
 }

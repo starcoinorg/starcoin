@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
+use crate::token::token_code::TokenCode;
 use anyhow::Result;
-use move_core_types::{
-    identifier::{IdentStr, Identifier},
-    move_resource::MoveResource,
-};
+use move_core_types::move_resource::MoveResource;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
@@ -22,12 +20,12 @@ pub static ACCOUNT_DEPOSIT_EVENT_PATH: Lazy<Vec<u8>> = Lazy::new(|| {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DepositEvent {
     amount: u128,
-    token_code: Identifier,
+    token_code: TokenCode,
     metadata: Vec<u8>,
 }
 
 impl DepositEvent {
-    pub fn new(amount: u128, token_code: Identifier, metadata: Vec<u8>) -> Self {
+    pub fn new(amount: u128, token_code: TokenCode, metadata: Vec<u8>) -> Self {
         Self {
             amount,
             token_code,
@@ -50,8 +48,8 @@ impl DepositEvent {
         &self.metadata
     }
 
-    /// Return the currency code that the payment was made in.
-    pub fn currency_code(&self) -> &IdentStr {
+    /// Return the token code that the payment was made in.
+    pub fn token_code(&self) -> &TokenCode {
         &self.token_code
     }
 }

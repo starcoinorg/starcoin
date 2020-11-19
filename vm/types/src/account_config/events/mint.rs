@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::TOKEN_MODULE_NAME;
+use crate::token::token_code::TokenCode;
 use anyhow::Result;
-use move_core_types::{
-    identifier::{IdentStr, Identifier},
-    move_resource::MoveResource,
-};
+use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a MintEvent.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MintEvent {
     amount: u128,
-    token_code: Identifier,
+    token_code: TokenCode,
 }
 
 impl MintEvent {
@@ -23,7 +21,7 @@ impl MintEvent {
     }
 
     /// Return the code for the currency that was minted
-    pub fn token_code(&self) -> &IdentStr {
+    pub fn token_code(&self) -> &TokenCode {
         &self.token_code
     }
 
