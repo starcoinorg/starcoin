@@ -13,7 +13,6 @@ use starcoin_network_rpc_api::{
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::{PeerInfo, RpcInfo};
-use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::borrow::Cow;
@@ -230,17 +229,9 @@ impl DummyNetworkService {
 impl NetworkService for DummyNetworkService {
     async fn send_peer_message(
         &self,
-        _protocol_name: Cow<'static, [u8]>,
+        _protocol_name: Cow<'static, str>,
         _peer_id: PeerId,
         _msg: PeerMessage,
-    ) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    async fn broadcast_new_head_block(
-        &self,
-        _protocol_name: Cow<'static, [u8]>,
-        _event: NewHeadBlock,
     ) -> anyhow::Result<()> {
         Ok(())
     }

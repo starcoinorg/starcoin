@@ -13,8 +13,8 @@ use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
 use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{bail, ensure, format_err, Result};
-use libp2p::multiaddr::Multiaddr;
 use move_core_types::move_resource::MoveResource;
+use network_p2p_types::MultiaddrWithPeerId;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use once_cell::sync::Lazy;
 use serde::de::Error;
@@ -260,7 +260,7 @@ impl BuiltinNetworkID {
         }
     }
 
-    pub fn boot_nodes(self) -> &'static [Multiaddr] {
+    pub fn boot_nodes(self) -> &'static [MultiaddrWithPeerId] {
         match self {
             BuiltinNetworkID::Test => EMPTY_BOOT_NODES.as_slice(),
             BuiltinNetworkID::Dev => &EMPTY_BOOT_NODES.as_slice(),
@@ -466,7 +466,7 @@ impl ChainNetworkID {
         }
     }
 
-    pub fn boot_nodes(&self) -> &[Multiaddr] {
+    pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
         match self {
             Self::Builtin(b) => b.boot_nodes(),
             _ => &[],
@@ -593,7 +593,7 @@ impl ChainNetwork {
         self.id.is_custom()
     }
 
-    pub fn boot_nodes(&self) -> &[Multiaddr] {
+    pub fn boot_nodes(&self) -> &[MultiaddrWithPeerId] {
         self.id.boot_nodes()
     }
 }
@@ -797,7 +797,7 @@ static DEFAULT_GAS_CONSTANTS: Lazy<GasConstants> = Lazy::new(|| {
     }
 });
 
-static EMPTY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
+static EMPTY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 const ONE_DAY: u64 = 86400;
 
 pub static TEST_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
@@ -900,7 +900,7 @@ pub static DEV_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static HALLEY_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
+pub static HALLEY_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/halley1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn".parse().expect("parse multi addr should be ok"),
          "/dns4/halley2.seed.starcoin.org/tcp/9840/p2p/12D3KooWCqWbB2Abp6co6vMGG7VcEC9yYJU3yB1VhVYvpRQAr3sv".parse().expect("parse multi addr should be ok"),
          "/dns4/halley3.seed.starcoin.org/tcp/9840/p2p/12D3KooWRiF6ZtUouCHgrgoCJ2jL4LCzzTEwopPbzVvTTRY3c2mf".parse().expect("parse multi addr should be ok"), ]
@@ -953,7 +953,7 @@ pub static HALLEY_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     }
 });
 
-pub static PROXIMA_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(|| {
+pub static PROXIMA_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(|| {
     vec!["/dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima2.seed.starcoin.org/tcp/9840/p2p/12D3KooWAua4KokJMiCodGPEF2n4yN42B2Q26KgwrQTntnrCDRHd".parse().expect("parse multi addr should be ok"),
          "/dns4/proxima3.seed.starcoin.org/tcp/9840/p2p/12D3KooWFvCKQ1n2JkSQpn8drqGwU27vTPkKx264zD4CFbgaKDJU".parse().expect("parse multi addr should be ok"), ]
@@ -1006,7 +1006,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
 }
 });
 
-pub static MAIN_BOOT_NODES: Lazy<Vec<Multiaddr>> = Lazy::new(Vec::new);
+pub static MAIN_BOOT_NODES: Lazy<Vec<MultiaddrWithPeerId>> = Lazy::new(Vec::new);
 
 pub static MAIN_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     //TODO set public key

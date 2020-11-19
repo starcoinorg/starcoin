@@ -500,7 +500,7 @@ impl GenericProto {
                     inc
                 } else {
                     error!(target: "sub-libp2p", "State mismatch in libp2p: no entry in \
-						incoming for incoming peer");
+        incoming for incoming peer");
                     return;
                 };
 
@@ -553,17 +553,17 @@ impl GenericProto {
     /// Can be called multiple times with the same `PeerId`s.
     pub fn add_discovered_nodes(&mut self, peer_ids: impl Iterator<Item = PeerId>) {
         let local_peer_id = &self.local_peer_id;
-        self.peerset.discovered(peer_ids.filter_map(|peer_id| {
-            if peer_id == *local_peer_id {
+        self.peerset.discovered(peer_ids.filter(|peer_id| {
+            if peer_id == local_peer_id {
                 error!(
                     target: "sub-libp2p",
                     "Discovered our own identity. This is a minor inconsequential bug."
                 );
-                return None;
+                return false;
             }
 
             debug!(target: "sub-libp2p", "PSM <= Discovered({:?})", peer_id);
-            Some(peer_id)
+            true
         }));
     }
 
@@ -631,7 +631,7 @@ impl GenericProto {
             PeerState::Banned { ref until } if *until > now => {
                 let peer_id = occ_entry.key().clone();
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Will start to connect at \
-					until {:?}", peer_id, until);
+    		until {:?}", peer_id, until);
 
                 let delay_id = self.next_delay_id;
                 self.next_delay_id.0 += 1;
@@ -713,7 +713,7 @@ impl GenericProto {
                     inc.alive = false;
                 } else {
                     error!(target: "sub-libp2p", "State mismatch in libp2p: no entry in \
-						incoming for incoming peer")
+        incoming for incoming peer")
                 }
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Enable", occ_entry.key());
                 self.events
@@ -834,7 +834,7 @@ impl GenericProto {
 
         if !incoming.alive {
             debug!(target: "sub-libp2p", "PSM => Accept({:?}, {:?}): Obsolete incoming,
-				sending back dropped", index, incoming.peer_id);
+    	sending back dropped", index, incoming.peer_id);
             debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", incoming.peer_id);
             self.peerset.dropped(incoming.peer_id);
             return;
@@ -873,7 +873,7 @@ impl GenericProto {
 
         if !incoming.alive {
             debug!(target: "sub-libp2p", "PSM => Reject({:?}, {:?}): Obsolete incoming, \
-				ignoring", index, incoming.peer_id);
+    	ignoring", index, incoming.peer_id);
             return;
         }
 
@@ -1159,7 +1159,7 @@ impl NetworkBehaviour for GenericProto {
                     state.alive = false;
                 } else {
                     error!(target: "sub-libp2p", "State mismatch in libp2p: no entry in incoming \
-						corresponding to an incoming state in peers")
+        corresponding to an incoming state in peers")
                 }
             }
 
@@ -1523,7 +1523,7 @@ impl NetworkBehaviour for GenericProto {
                             event: NotifsHandlerIn::Enable,
                         });
                     *peer_state = PeerState::Enabled {
-                        open: mem::replace(open, Default::default()),
+                        open: std::mem::take(open),
                     };
                 }
 

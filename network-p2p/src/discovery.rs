@@ -944,36 +944,33 @@ mod tests {
         let fut = futures::future::poll_fn(move |cx| {
             'polling: loop {
                 for swarm_n in 0..swarms.len() {
-                    match swarms[swarm_n].0.poll_next_unpin(cx) {
-                        Poll::Ready(Some(e)) => {
-                            match e {
-                                DiscoveryOut::UnroutablePeer(other)
-                                | DiscoveryOut::Discovered(other) => {
-                                    // Call `add_self_reported_address` to simulate identify happening.
-                                    let addr = swarms
-                                        .iter()
-                                        .find_map(|(s, a)| {
-                                            if s.local_peer_id == other {
-                                                Some(a.clone())
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .unwrap();
-                                    swarms[swarm_n].0.add_self_reported_address(
-                                        &other,
-                                        [protocol_name_from_protocol_id(&protocol_id)].iter(),
-                                        addr,
-                                    );
+                    if let Poll::Ready(Some(e)) = swarms[swarm_n].0.poll_next_unpin(cx) {
+                        match e {
+                            DiscoveryOut::UnroutablePeer(other)
+                            | DiscoveryOut::Discovered(other) => {
+                                // Call `add_self_reported_address` to simulate identify happening.
+                                let addr = swarms
+                                    .iter()
+                                    .find_map(|(s, a)| {
+                                        if s.local_peer_id == other {
+                                            Some(a.clone())
+                                        } else {
+                                            None
+                                        }
+                                    })
+                                    .unwrap();
+                                swarms[swarm_n].0.add_self_reported_address(
+                                    &other,
+                                    [protocol_name_from_protocol_id(&protocol_id)].iter(),
+                                    addr,
+                                );
 
-                                    to_discover[swarm_n].remove(&other);
-                                }
-                                DiscoveryOut::RandomKademliaStarted(_) => {}
-                                e => panic!("Unexpected event: {:?}", e),
+                                to_discover[swarm_n].remove(&other);
                             }
-                            continue 'polling;
+                            DiscoveryOut::RandomKademliaStarted(_) => {}
+                            e => panic!("Unexpected event: {:?}", e),
                         }
-                        _ => {}
+                        continue 'polling;
                     }
                 }
                 break;
@@ -1031,7 +1028,7 @@ mod tests {
         discovery.add_self_reported_address(
             &remote_peer_id,
             [protocol_name_from_protocol_id(&supported_protocol_id)].iter(),
-            remote_addr.clone(),
+            remote_addr,
         );
 
         for kademlia in discovery.kademlias.values_mut() {
@@ -1072,7 +1069,7 @@ mod tests {
         discovery.add_self_reported_address(
             &remote_peer_id,
             [protocol_name_from_protocol_id(&protocol_a)].iter(),
-            remote_addr.clone(),
+            remote_addr,
         );
 
         assert_eq!(
@@ -1092,7 +1089,7 @@ mod tests {
                 .kademlias
                 .get_mut(&protocol_b)
                 .expect("Kademlia instance to exist.")
-                .kbucket(remote_peer_id.clone())
+                .kbucket(remote_peer_id)
                 .expect("Remote peer id not to be equal to local peer id.")
                 .is_empty(),
             "Expected remote peer not to be added to `protocol_b` Kademlia instance.",

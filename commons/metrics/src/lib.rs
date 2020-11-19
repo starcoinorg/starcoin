@@ -10,7 +10,7 @@ use prometheus::{
     core::{Collector, Metric},
     proto,
     proto::MetricType,
-    Encoder, Registry, TextEncoder,
+    Encoder, TextEncoder,
 };
 use starcoin_logger::prelude::*;
 use std::{
@@ -33,11 +33,11 @@ pub mod macros;
 pub use op_counters::{DurationHistogram, OpMetrics};
 // Re-export counter types from prometheus crate
 pub use prometheus::{
-    histogram_opts, labels, opts, register_counter, register_counter_vec, register_gauge,
-    register_gauge_vec, register_histogram, register_histogram_vec, register_int_counter,
-    register_int_counter_vec, register_int_gauge, register_int_gauge_vec, Error as PrometheusError,
-    Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter, IntCounterVec, IntGauge,
-    IntGaugeVec, Opts,
+    default_registry, histogram_opts, labels, opts, register_counter, register_counter_vec,
+    register_gauge, register_gauge_vec, register_histogram, register_histogram_vec,
+    register_int_counter, register_int_counter_vec, register_int_gauge, register_int_gauge_vec,
+    Error as PrometheusError, Histogram, HistogramOpts, HistogramTimer, HistogramVec, IntCounter,
+    IntCounterVec, IntGauge, IntGaugeVec, Opts, Registry,
 };
 
 pub mod prometheus_export {

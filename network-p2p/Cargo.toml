@@ -47,6 +47,7 @@ logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
 starcoin-types = {path = "../types"}
+network-p2p-types = {path = "./types"}
 prometheus = "0.10"
 ip_network = "0.3.4"
 bs58 = "0.3.1"
@@ -55,7 +56,7 @@ bs58 = "0.3.1"
 [dependencies.libp2p]
 version = "0.29.1"
 default-features = false
-features = ["identify", "kad", "mdns-async-std", "mplex", "noise", "ping", "tcp-async-std", "websocket", "yamux"]
+features = ["dns", "identify", "kad", "mdns-async-std", "mplex", "noise", "ping", "tcp-async-std", "websocket", "yamux", "wasm-ext"]
 
 [dev-dependencies]
 stest = {path = "../commons/stest"}

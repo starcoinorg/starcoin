@@ -4,7 +4,7 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
-use libp2p::core::Multiaddr;
+use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
@@ -43,7 +43,6 @@ pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 pub use network_config::NetworkConfig;
-use network_p2p::config::MultiaddrWithPeerId;
 pub use rpc_config::RpcConfig;
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::genesis_config::{

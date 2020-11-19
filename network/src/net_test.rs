@@ -11,7 +11,6 @@ mod tests {
     use config::{get_random_available_port, NetworkConfig, NodeConfig};
     use crypto::hash::HashValue;
     use futures::channel::mpsc;
-    use futures::Stream;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
@@ -27,7 +26,7 @@ mod tests {
     use types::peer_info::PeerInfo;
     use types::PROTOCOLS;
 
-    const PROTOCOL_ID: &[u8] = b"starcoin";
+    const PROTOCOL_ID: &str = "starcoin";
 
     pub type NetworkComponent = (
         SNetworkService,
@@ -82,7 +81,7 @@ mod tests {
         };
 
         let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
-        let worker = NetworkWorker::new(Params::new(config, protocol)).unwrap();
+        let worker = NetworkWorker::new(Params::new(config, protocol, None)).unwrap();
         let service = worker.service().clone();
         NetworkInner::new(service)
     }

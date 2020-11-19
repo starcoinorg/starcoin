@@ -4,9 +4,11 @@ pub mod message;
 
 use crate::config::ProtocolId;
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, NotificationsSink};
+use crate::protocol::message::generic::{FallbackMessage, GenericMessage, Message, Status};
 use crate::utils::interval;
-use crate::{DiscoveryNetBehaviour, Multiaddr, PROTOCOL_NAME};
+use crate::{errors, DiscoveryNetBehaviour, Multiaddr, PROTOCOL_NAME};
 use bytes::{Bytes, BytesMut};
+use crypto::HashValue;
 use futures::prelude::*;
 use libp2p::core::{
     connection::{ConnectionId, ListenerId},
@@ -16,21 +18,18 @@ use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-
-use crate::protocol::message::generic::{FallbackMessage, GenericMessage, Message, Status};
-use crypto::HashValue;
 use scs::SCSCodec;
 use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write;
 use std::pin::Pin;
 use std::str;
 use std::sync::Arc;
 use std::task::Poll;
 use std::time;
-use wasm_timer::Instant;
 
-const REQUEST_TIMEOUT_SEC: u64 = 40;
+//const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
@@ -40,7 +39,7 @@ pub(crate) const MIN_VERSION: u32 = 1;
 
 pub use generic_proto::LegacyConnectionKillError;
 
-mod rep {
+pub mod rep {
     use sc_peerset::ReputationChange as Rep;
     /// Reputation change when a peer is "clogged", meaning that it's not fast enough to process our
     /// messages.
@@ -84,12 +83,6 @@ pub enum CustomMessageOutcome {
         messages: Vec<Bytes>,
     },
     None,
-}
-
-/// A peer that we are connected to
-/// and from whom we have not yet received a Status message.
-struct HandshakingPeer {
-    timestamp: Instant,
 }
 
 /// Peer information
@@ -328,7 +321,7 @@ impl Protocol {
         chain_info: ChainInfo,
         boot_node_ids: Arc<HashSet<PeerId>>,
         notif_protocols: impl IntoIterator<Item = Cow<'static, str>>,
-    ) -> anyhow::Result<(Protocol, sc_peerset::PeersetHandle)> {
+    ) -> errors::Result<(Protocol, sc_peerset::PeersetHandle)> {
         let important_peers = {
             let mut imp_p = HashSet::new();
             for reserved in peerset_config
@@ -348,7 +341,8 @@ impl Protocol {
             let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
             let handshake_message =
                 Self::build_status(chain_info.genesis_hash, chain_info.self_info.clone())
-                    .encode()?;
+                    .encode()
+                    .expect("Encode status message should success.");
             info!(
                 "Handshake message: {}",
                 hex::encode(handshake_message.as_slice())
@@ -392,6 +386,16 @@ impl Protocol {
         self.behaviour.is_open(peer_id)
     }
 
+    /// Returns the list of all the peers that the peerset currently requests us to be connected to.
+    pub fn requested_peers(&self) -> impl Iterator<Item = &PeerId> {
+        self.behaviour.requested_peers()
+    }
+
+    /// Returns the number of discovered nodes that we keep in memory.
+    pub fn num_discovered_peers(&self) -> usize {
+        self.behaviour.num_discovered_peers()
+    }
+
     /// Disconnects the given peer if we are connected to it.
     pub fn disconnect_peer(&mut self, peer_id: &PeerId) {
         self.behaviour.disconnect_peer(peer_id)
@@ -433,49 +437,12 @@ impl Protocol {
             protocol: protocol_name,
             messages: vec![Bytes::from(data)],
         }
-        // let message = match Message::decode(&data[..]) {
-        //     Ok(message) => message,
-        //     Err(err) => {
-        //         info!(target: "network-p2p", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
-        //         self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
-        //         return CustomMessageOutcome::None;
-        //     }
-        // };
-        //
-        // match message {
-        //     Message::Status(status) => {
-        //         info!(target: "network-p2p", "Unexpect status message.");
-        //         return CustomMessageOutcome::None;
-        //     }
-        //     Message::ConsensusMessage(data) => CustomMessageOutcome::NotificationsReceived {
-        //         remote: who,
-        //         protocol: protocol_name,
-        //         messages: vec![Bytes::from(data.data)],
-        //     },
-        // }
-    }
-
-    /// Called by peer to report status
-    fn on_status_message(&mut self, who: PeerId, status: Status) -> CustomMessageOutcome {
-        unimplemented!()
     }
 
     fn send_message(&mut self, who: &PeerId, message: Message) -> anyhow::Result<()> {
         send_message(&mut self.behaviour, who, message)?;
         Ok(())
     }
-
-    // /// Called when a new peer is connected
-    // pub fn on_peer_connected(&mut self, who: PeerId) {
-    //     debug!(target: "network-p2p", "Connecting {}", who);
-    //     self.handshaking_peers.insert(
-    //         who.clone(),
-    //         HandshakingPeer {
-    //             timestamp: Instant::now(),
-    //         },
-    //     );
-    //     self.send_status(who);
-    // }
 
     /// Called on the first connection between two peers, after their exchange of handshake.
     fn on_peer_connected(
@@ -546,7 +513,7 @@ impl Protocol {
     }
 
     /// Send Status message
-    fn send_status(&mut self, who: PeerId) {
+    pub fn send_status(&mut self, who: PeerId) {
         let status = Self::build_status(
             self.chain_info.genesis_hash,
             self.chain_info.self_info.clone(),
@@ -644,10 +611,43 @@ impl Protocol {
 
     pub fn update_self_info(&mut self, self_info: PeerInfo) {
         self.chain_info.self_info = self_info;
+        self.update_notif_handshake();
+    }
+
+    fn update_notif_handshake(&mut self) {
+        for protocol in &self.protocols {
+            self.behaviour.set_notif_protocol_handshake(
+                protocol,
+                Self::build_status(
+                    self.chain_info.genesis_hash,
+                    self.chain_info.self_info.clone(),
+                )
+                .encode()
+                .expect("Encode status should success."),
+            )
+        }
     }
 
     pub fn exist_notif_protocol(&self, proto_name: Cow<'static, str>) -> bool {
         self.behaviour.exist_notif_protocol(proto_name)
+    }
+
+    fn format_stats(&self) -> String {
+        let mut out = String::new();
+        for (id, stats) in &self.context_data.stats {
+            let _ = writeln!(
+                &mut out,
+                "{}: In: {} bytes ({}), Out: {} bytes ({})",
+                id, stats.bytes_in, stats.count_in, stats.bytes_out, stats.count_out,
+            );
+        }
+        out
+    }
+}
+
+impl Drop for Protocol {
+    fn drop(&mut self) {
+        debug!(target: "sync", "Network stats:\n{}", self.format_stats());
     }
 }
 

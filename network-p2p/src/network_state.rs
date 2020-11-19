@@ -23,7 +23,6 @@
 use libp2p::{core::ConnectedPoint, Multiaddr};
 use serde::{Deserialize, Serialize};
 use slog_derive::SerdeValue;
-use starcoin_types::peer_info::PeerInfo;
 use std::{
     collections::{HashMap, HashSet},
     time::Duration,

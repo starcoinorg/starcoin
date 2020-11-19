@@ -587,7 +587,6 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.8",
  "futures-timer",
- "libp2p",
  "network-api",
  "parking_lot 0.11.1",
  "proptest",
@@ -4133,7 +4132,7 @@ checksum = "2b3569c0dbfff1b8d5f1434c642b67f5bf81c0f354a3f5f8f180b549dba3c07c"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
- "syn 1.0.48",
+ "syn 1.0.51",
 ]
 
 [[package]]
@@ -4529,6 +4528,7 @@ dependencies = [
  "linked_hash_set",
  "log 0.4.11",
  "lru",
+ "network-p2p-types",
  "nohash-hasher",
  "parity-scale-codec",
  "parking_lot 0.11.1",
@@ -4555,6 +4555,18 @@ dependencies = [
  "void",
  "wasm-timer",
  "zeroize",
+]
+
+[[package]]
+name = "network-p2p-types"
+version = "0.7.1"
+dependencies = [
+ "anyhow",
+ "bitflags",
+ "bytes 0.5.6",
+ "libp2p",
+ "serde",
+ "starcoin-canonical-serialization",
 ]
 
 [[package]]
@@ -6764,7 +6776,6 @@ dependencies = [
  "async-trait",
  "futures 0.3.8",
  "hex",
- "libp2p",
  "network-api",
  "once_cell",
  "starcoin-block-relayer-api",
@@ -7001,9 +7012,8 @@ dependencies = [
  "anyhow",
  "dirs 3.0.1",
  "hex",
- "libp2p",
  "libra-temppath",
- "network-p2p",
+ "network-p2p-types",
  "num_enum",
  "once_cell",
  "rand 0.7.3",
@@ -7970,7 +7980,6 @@ dependencies = [
  "futures-timer",
  "hex",
  "itertools 0.9.0",
- "libp2p",
  "network-api",
  "once_cell",
  "parking_lot 0.11.1",
@@ -8177,8 +8186,8 @@ dependencies = [
  "futures 0.3.8",
  "hex",
  "itertools 0.9.0",
- "libp2p",
  "mirai-annotations",
+ "network-p2p-types",
  "num_enum",
  "once_cell",
  "parity-multiaddr",
@@ -8242,12 +8251,12 @@ dependencies = [
  "bytecode-verifier",
  "chrono",
  "hex",
- "libp2p",
  "log 0.4.11",
  "mirai-annotations",
  "move-core-types",
  "move-ir-types",
  "move-vm-types",
+ "network-p2p-types",
  "num_enum",
  "once_cell",
  "proptest",

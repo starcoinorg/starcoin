@@ -33,7 +33,7 @@ starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional 
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-uint = { path = "../../types/uint" }
 starcoin-accumulator = { path = "../../core/accumulator"}
-libp2p = "0.29.1"
+network-p2p-types = { path = "../../network-p2p/types"}
 
 [dev-dependencies]
 proptest = "0.10.1"

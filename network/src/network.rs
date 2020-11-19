@@ -45,7 +45,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
-use types::system_events::NewHeadBlock;
 use types::transaction::SignedUserTransaction;
 use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
 
@@ -114,7 +113,7 @@ impl PeerInfoNet {
 impl NetworkService for NetworkAsyncService {
     async fn send_peer_message(
         &self,
-        protocol_name: Cow<'static, [u8]>,
+        protocol_name: Cow<'static, str>,
         peer_id: types::peer_info::PeerId,
         msg: PeerMessage,
     ) -> Result<()> {
@@ -124,13 +123,6 @@ impl NetworkService for NetworkAsyncService {
             .await?;
 
         Ok(())
-    }
-    async fn broadcast_new_head_block(
-        &self,
-        _protocol_name: Cow<'static, [u8]>,
-        _event: NewHeadBlock,
-    ) -> Result<()> {
-        unimplemented!()
     }
 
     async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()> {

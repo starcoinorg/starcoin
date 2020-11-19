@@ -11,12 +11,8 @@ pub struct Metrics {
     pub connections_opened_total: IntCounterVec,
     pub distinct_peers_connections_closed_total: IntCounter,
     pub distinct_peers_connections_opened_total: IntCounter,
-    pub import_queue_blocks_submitted: IntCounter,
-    pub import_queue_finality_proofs_submitted: IntCounter,
-    pub import_queue_justifications_submitted: IntCounter,
     pub incoming_connections_errors_total: IntCounterVec,
     pub incoming_connections_total: IntCounter,
-    pub issued_light_requests: IntCounter,
     pub kademlia_query_duration: HistogramVec,
     pub kademlia_random_queries_total: IntCounterVec,
     pub kademlia_records_count: UIntGaugeVec,
@@ -76,27 +72,6 @@ impl Metrics {
                 )?,
                 registry,
             )?,
-            import_queue_blocks_submitted: register(
-                IntCounter::new(
-                    "import_queue_blocks_submitted",
-                    "Number of blocks submitted to the import queue.",
-                )?,
-                registry,
-            )?,
-            import_queue_finality_proofs_submitted: register(
-                IntCounter::new(
-                    "import_queue_finality_proofs_submitted",
-                    "Number of finality proofs submitted to the import queue.",
-                )?,
-                registry,
-            )?,
-            import_queue_justifications_submitted: register(
-                IntCounter::new(
-                    "import_queue_justifications_submitted",
-                    "Number of justifications submitted to the import queue.",
-                )?,
-                registry,
-            )?,
             incoming_connections_errors_total: register(
                 IntCounterVec::new(
                     Opts::new(
@@ -112,13 +87,6 @@ impl Metrics {
                 IntCounter::new(
                     "sub_libp2p_incoming_connections_total",
                     "Total number of incoming connections on the listening sockets",
-                )?,
-                registry,
-            )?,
-            issued_light_requests: register(
-                IntCounter::new(
-                    "issued_light_requests",
-                    "Number of light client requests that our node has issued.",
                 )?,
                 registry,
             )?,

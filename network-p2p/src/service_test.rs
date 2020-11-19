@@ -1,19 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::protocol::message::generic::Status;
 use crate::service::NetworkStateInfo;
 use crate::{config, Event, NetworkService, NetworkWorker};
-use crate::{Multiaddr, NodeKeyConfig, ProtocolId, Secret};
-use crate::{NetworkConfiguration, Params};
+use crate::{NetworkConfiguration, Params, ProtocolId};
 use async_std::task;
 use crypto::HashValue;
 use futures::prelude::*;
 use futures::stream::StreamExt;
-use libp2p::identity;
 use libp2p::PeerId;
-use scs::SCSCodec;
-use starcoin_types::peer_info::PeerInfo;
+use network_p2p_types::MultiaddrWithPeerId;
 use std::thread;
 use std::{sync::Arc, time::Duration};
 
@@ -21,7 +17,7 @@ use std::{sync::Arc, time::Duration};
 /// stream.
 ///
 /// > **Note**: We return the events stream in order to not possibly lose events between the
-/// >			construction of the service and the moment the events stream is grabbed.
+/// >   construction of the service and the moment the events stream is grabbed.
 fn build_test_full_node(
     config: config::NetworkConfiguration,
 ) -> (Arc<NetworkService>, impl Stream<Item = Event>) {
@@ -67,7 +63,7 @@ fn build_nodes_one_proto() -> (
         listen_addresses: vec![],
         reserved_nodes: vec![config::MultiaddrWithPeerId {
             multiaddr: listen_addr,
-            peer_id: node1.local_peer_id().clone(),
+            peer_id: node1.local_peer_id(),
         }],
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
@@ -81,14 +77,14 @@ fn lots_of_incoming_peers_works() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     let (main_node, _) = build_test_full_node(config::NetworkConfiguration {
-        //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
+        protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr.clone()],
         in_peers: u32::max_value(),
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
     });
 
-    let main_node_peer_id = main_node.local_peer_id().clone();
+    let main_node_peer_id = main_node.local_peer_id();
 
     // We spawn background tasks and push them in this `Vec`. They will all be waited upon before
     // this test ends.
@@ -98,7 +94,7 @@ fn lots_of_incoming_peers_works() {
         let main_node_peer_id = main_node_peer_id.clone();
 
         let (_dialing_node, event_stream) = build_test_full_node(config::NetworkConfiguration {
-            //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
+            protocols: vec![From::from(PROTOCOL_NAME)],
             listen_addresses: vec![],
             reserved_nodes: vec![config::MultiaddrWithPeerId {
                 multiaddr: listen_addr.clone(),
@@ -207,25 +203,13 @@ fn notifications_back_pressure() {
     });
 }
 
-// #[test]
-// fn test_handshake_mesage() {
-//     let status = Status {
-//         version: 0,
-//         min_supported_version: 0,
-//         genesis_hash: Default::default(),
-//         info: PeerInfo::random(),
-//     };
-//     let bytes = status.encode().unwrap();
-//     let status2 = Status::decode()
-// }
-
 #[test]
 #[should_panic(expected = "don't match the transport")]
 fn ensure_listen_addresses_consistent_with_transport_memory() {
     let listen_addr = config::build_multiaddr![Ip4([127, 0, 0, 1]), Tcp(0_u16)];
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
@@ -237,12 +221,12 @@ fn ensure_listen_addresses_consistent_with_transport_not_memory() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
 }
 
-#[stest::test]
+#[test]
 #[should_panic(expected = "don't match the transport")]
 fn ensure_boot_node_addresses_consistent_with_transport_memory() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
@@ -252,7 +236,7 @@ fn ensure_boot_node_addresses_consistent_with_transport_memory() {
     };
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         boot_nodes: vec![boot_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
@@ -269,7 +253,7 @@ fn ensure_boot_node_addresses_consistent_with_transport_not_memory() {
     };
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         boot_nodes: vec![boot_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
@@ -285,7 +269,7 @@ fn ensure_reserved_node_addresses_consistent_with_transport_memory() {
     };
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         reserved_nodes: vec![reserved_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
@@ -302,7 +286,7 @@ fn ensure_reserved_node_addresses_consistent_with_transport_not_memory() {
     };
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         reserved_nodes: vec![reserved_node],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
@@ -315,7 +299,7 @@ fn ensure_public_addresses_consistent_with_transport_memory() {
     let public_address = config::build_multiaddr![Ip4([127, 0, 0, 1]), Tcp(0_u16)];
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         public_addresses: vec![public_address],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
@@ -329,7 +313,7 @@ fn ensure_public_addresses_consistent_with_transport_not_memory() {
     let public_address = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     let _ = build_test_full_node(config::NetworkConfiguration {
-        listen_addresses: vec![listen_addr.clone()],
+        listen_addresses: vec![listen_addr],
         public_addresses: vec![public_address],
         ..config::NetworkConfiguration::new("test-node", "test-client", Default::default())
     });
@@ -435,75 +419,67 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 //     task::block_on(fut);
 // }
 //
-// #[test]
-// #[allow(clippy::string_lit_as_bytes)]
-// fn test_handshake_fail() {
-//     ::logger::init_for_test();
-//
-//     let protocol = ProtocolId::from(b"stargate".as_ref());
-//     let config1 = generate_config(vec![]);
-//
-//     let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone())).unwrap();
-//     let service1 = worker1.service().clone();
-//     let mut stream = service1.event_stream();
-//
-//     task::spawn(worker1);
-//
-//     let addr1_hex = service1.peer_id().to_base58();
-//     let seed: Multiaddr = format!(
-//         "{}/p2p/{}",
-//         &config1.listen_addresses.get(0).expect("should have"),
-//         addr1_hex
-//     )
-//     .parse()
-//     .unwrap();
-//     let mut config2 = generate_config(vec![seed]);
-//     config2.genesis_hash = HashValue::random();
-//
-//     let worker2 = NetworkWorker::new(Params::new(config2, protocol)).unwrap();
-//     let service2 = worker2.service().clone();
-//
-//     task::spawn(worker2);
-//
-//     thread::sleep(Duration::from_secs(1));
-//
-//     info!(
-//         "first peer is {:?},second peer is {:?}",
-//         service1.peer_id(),
-//         service2.peer_id()
-//     );
-//     let fut = async move {
-//         while let Some(event) = stream.next().await {
-//             match event {
-//                 Event::NotificationStreamClosed { remote } => {
-//                     info!("handshake failed from {}", remote);
-//                     break;
-//                 }
-//                 _ => {
-//                     info!("event is {:?}", event);
-//                 }
-//             }
-//         }
-//     };
-//
-//     task::block_on(fut);
-// }
-//
-// fn generate_config(boot_nodes: Vec<Multiaddr>) -> NetworkConfiguration {
-//     let mut config = NetworkConfiguration::default();
-//     let listen = format!(
-//         "/ip4/127.0.0.1/tcp/{}",
-//         sg_config::get_random_available_port()
-//     );
-//     config.listen_addresses = vec![listen.parse().expect("Failed to parse network config")];
-//     let keypair = sg_config::gen_keypair();
-//     config.node_key = {
-//         let secret =
-//             identity::ed25519::SecretKey::from_bytes(&mut keypair.private_key.to_bytes())
-//                 .unwrap();
-//         NodeKeyConfig::Ed25519(Secret::Input(secret))
-//     };
-//     config.boot_nodes = boot_nodes;
-//     config.protocols.push(PROTOCOL_NAME.into());
-//     config
-// }
+
+#[test]
+#[allow(clippy::string_lit_as_bytes)]
+fn test_handshake_fail() {
+    ::logger::init_for_test();
+
+    let protocol = ProtocolId::from("starcoin");
+    let config1 = generate_config(vec![]);
+
+    let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), None)).unwrap();
+    let service1 = worker1.service().clone();
+    let mut stream = service1.event_stream("test");
+
+    task::spawn(worker1);
+
+    let seed = config::MultiaddrWithPeerId {
+        multiaddr: config1.listen_addresses[0].clone(),
+        peer_id: service1.local_peer_id(),
+    };
+
+    let mut config2 = generate_config(vec![seed]);
+    config2.genesis_hash = HashValue::random();
+
+    let worker2 = NetworkWorker::new(Params::new(config2, protocol, None)).unwrap();
+    let service2 = worker2.service().clone();
+
+    task::spawn(worker2);
+
+    thread::sleep(Duration::from_secs(1));
+
+    info!(
+        "first peer is {:?},second peer is {:?}",
+        service1.peer_id(),
+        service2.peer_id()
+    );
+    let fut = async move {
+        while let Some(event) = stream.next().await {
+            match event {
+                Event::NotificationStreamClosed { remote, protocol } => {
+                    info!("handshake failed from {}, protocol: {}", remote, protocol);
+                    break;
+                }
+                _ => {
+                    info!("event is {:?}", event);
+                }
+            }
+        }
+    };
+
+    task::block_on(fut);
+}
+
+fn generate_config(boot_nodes: Vec<MultiaddrWithPeerId>) -> NetworkConfiguration {
+    let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
+
+    config::NetworkConfiguration {
+        //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
+        protocols: vec![From::from(PROTOCOL_NAME)],
+        listen_addresses: vec![listen_addr],
+        transport: config::TransportConfig::MemoryOnly,
+        boot_nodes,
+        ..config::NetworkConfiguration::new_local()
+    }
+}

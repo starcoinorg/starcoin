@@ -5,7 +5,6 @@ use crypto::HashValue;
 use logger::prelude::*;
 use network_api::messages::RawRpcRequestMessage;
 use network_api::PeerProvider;
-use network_p2p::Multiaddr;
 use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
@@ -41,7 +40,7 @@ async fn test_network_raw_rpc() {
             .await
             .unwrap();
 
-    let seed: Multiaddr = node_config1.network.self_address().unwrap();
+    let seed = node_config1.network.self_address().unwrap();
 
     let mock_message_handler2 = MockPeerMessageHandler::default();
     let mocker2 = mock(mock_rpc_handler);

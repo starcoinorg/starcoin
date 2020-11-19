@@ -15,6 +15,7 @@ use network_p2p::{
     Params, Secret, PROTOCOL_NAME,
 };
 use parity_codec::alloc::collections::HashSet;
+use prometheus::Registry;
 use std::borrow::Cow;
 use std::sync::Arc;
 use types::peer_info::PeerInfo;
@@ -35,10 +36,10 @@ pub struct NetworkInner {
 }
 
 impl SNetworkService {
-    pub fn new(cfg: NetworkConfiguration) -> Self {
+    pub fn new(cfg: NetworkConfiguration, metrics_registry: Option<Registry>) -> Self {
         let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
 
-        let worker = NetworkWorker::new(Params::new(cfg, protocol)).unwrap();
+        let worker = NetworkWorker::new(Params::new(cfg, protocol, metrics_registry)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
 
@@ -168,30 +169,26 @@ impl NetworkInner {
             Event::Dht(_) => {
                 debug!("ignore dht event");
             }
-            Event::NotificationStreamOpened { remote, info } => {
-                debug!(
-                    "Connected peer {:?},Myself is {:?}",
-                    remote,
-                    self.service.peer_id()
-                );
+            Event::NotificationStreamOpened {
+                remote,
+                protocol,
+                info,
+            } => {
+                debug!("Connected peer {:?}, protocol: {}", remote, protocol,);
                 let open_msg = PeerEvent::Open(remote.into(), Box::new(info.as_ref().clone()));
                 event_tx.unbounded_send(open_msg)?;
             }
-            Event::NotificationStreamClosed { remote } => {
-                debug!(
-                    "Close peer {:?},Myself is {:?}",
-                    remote,
-                    self.service.peer_id()
-                );
+            Event::NotificationStreamClosed { remote, protocol } => {
+                debug!("Close peer {:?}, protocol: {}", remote, protocol,);
                 let open_msg = PeerEvent::Close(remote.into());
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationsReceived {
                 remote,
-                protocol: protocol_name,
+                protocol,
                 messages,
             } => {
-                self.handle_messages(remote, protocol_name, messages, net_tx)
+                self.handle_messages(remote, protocol, messages, net_tx)
                     .await?;
             }
         }
@@ -201,16 +198,19 @@ impl NetworkInner {
     async fn handle_messages(
         &self,
         peer_id: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        protocol: Cow<'static, str>,
         messages: Vec<Bytes>,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
     ) -> Result<()> {
-        debug!("Receive message with peer_id:{:?}", &peer_id);
+        debug!(
+            "Receive message with peer_id:{:?}, protocol: {}",
+            &peer_id, protocol
+        );
         for message in messages {
             //receive message
             let network_msg = NetworkMessage {
                 peer_id: peer_id.clone(),
-                protocol_name: protocol_name.clone(),
+                protocol_name: protocol.clone(),
                 data: message.to_vec(),
             };
             net_tx.unbounded_send(network_msg)?;
@@ -259,7 +259,8 @@ pub fn build_network_service(
         self_info,
         ..NetworkConfiguration::default()
     };
-    let mut service = SNetworkService::new(config);
+    //TODO set metric.
+    let mut service = SNetworkService::new(config, None);
     let (net_tx, net_rx, event_rx, control_tx) = service.run();
     (service, net_tx, net_rx, event_rx, control_tx)
 }

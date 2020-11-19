@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::Result;
-use libp2p::core::Multiaddr;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_network_rpc::NetworkRpcService;
@@ -12,7 +11,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRe
 use starcoin_storage::Storage;
 use std::sync::{Arc, Mutex};
 
-use network_api::PeerMessageHandler;
+use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
 use starcoin_block_relayer_api::PeerCmpctBlockEvent;
 pub use starcoin_network::NetworkAsyncService;
 use starcoin_tx_relay::PeerTransactions;
@@ -34,7 +33,7 @@ impl PeerMessageHandler for MockPeerMessageHandler {
 }
 
 pub async fn build_network<H>(
-    seed: Option<Multiaddr>,
+    seed: Option<MultiaddrWithPeerId>,
     rpc_service_mocker: Option<impl MockHandler<NetworkRpcService> + 'static>,
     peer_message_handler: H,
 ) -> Result<(

@@ -29,7 +29,7 @@ actix = "0.10.0"
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 starcoin-crypto = { path = "../commons/crypto"}
 starcoin-uint = {path = "uint"}
-libp2p = "0.29.1"
+network-p2p-types = { path = "../network-p2p/types"}
 starcoin-vm-types = { path = "../vm/types"}
 futures = "0.3"
 starcoin-accumulator = {path = "../core/accumulator"}

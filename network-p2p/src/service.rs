@@ -31,7 +31,7 @@ use std::sync::{
     Arc,
 };
 use std::task::Poll;
-use std::{borrow::Cow, collections::HashSet, io, path::Path};
+use std::{borrow::Cow, collections::HashSet, io};
 
 use futures::{
     channel::{mpsc, oneshot},
@@ -52,8 +52,8 @@ use starcoin_types::peer_info::PeerInfo;
 
 use crate::config::{Params, TransportConfig};
 use crate::discovery::DiscoveryConfig;
+use crate::errors::Error;
 use crate::metrics::Metrics;
-use crate::net_error::Error;
 use crate::network_state::{
     NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
 };
@@ -62,9 +62,12 @@ use crate::protocol::generic_proto::{NotificationsSink, Ready};
 use crate::protocol::{ChainInfo, Protocol};
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
-    out_events, parse_addr, parse_str_addr, DhtEvent,
+    errors, out_events, DhtEvent,
 };
-use crate::{config::NonReservedPeerMode, transport};
+use crate::{
+    config::{parse_addr, parse_str_addr, NonReservedPeerMode},
+    transport,
+};
 use crate::{Multiaddr, PROTOCOL_NAME};
 use starcoin_metrics::{Histogram, HistogramVec};
 use std::collections::HashMap;
@@ -121,7 +124,7 @@ impl NetworkWorker {
     /// Returns a `NetworkWorker` that implements `Future` and must be regularly polled in order
     /// for the network processing to advance. From it, you can extract a `NetworkService` using
     /// `worker.service()`. The `NetworkService` can be shared through the codebase.
-    pub fn new(params: Params) -> anyhow::Result<NetworkWorker> {
+    pub fn new(params: Params) -> errors::Result<NetworkWorker> {
         // Ensure the listen addresses are consistent with the transport.
         ensure_addresses_consistent_with_transport(
             params.network_config.listen_addresses.iter(),
@@ -533,11 +536,11 @@ impl NetworkService {
     /// ```ignore
     /// // Do NOT do this
     /// for peer in peers {
-    /// 	if let Ok(n) = network.notification_sender(peer, ...) {
-    ///			if let Ok(s) = n.ready().await {
-    ///				let _ = s.send(...);
-    ///			}
-    /// 	}
+    ///     if let Ok(n) = network.notification_sender(peer, ...) {
+    ///         if let Ok(s) = n.ready().await {
+    ///             let _ = s.send(...);
+    ///        }
+    ///     }
     /// }
     /// ```
     ///
@@ -664,18 +667,6 @@ impl NetworkService {
             .unbounded_send(ServiceToWorkerMsg::EventStream(tx));
         rx
     }
-
-    // pub fn sub_stream(
-    //     &self,
-    //     protocol_name: impl Into<Cow<'static, str>>,
-    // ) -> impl Stream<Item = Event> {
-    //     // Note: when transitioning to stable futures, remove the `Error` entirely
-    //     let (tx, rx) = mpsc::unbounded();
-    //     let _ = self
-    //         .to_worker
-    //         .unbounded_send(ServiceToWorkerMsg::EventSubStream(protocol_name.into(), tx));
-    //     rx
-    // }
 
     /// Registers a new notifications protocol.
     ///
@@ -846,9 +837,7 @@ pub struct NotificationSender {
 
 impl NotificationSender {
     /// Returns a future that resolves when the `NotificationSender` is ready to send a notification.
-    pub async fn ready<'a>(
-        &'a self,
-    ) -> Result<NotificationSenderReady<'a>, NotificationSenderError> {
+    pub async fn ready(&self) -> Result<NotificationSenderReady<'_>, NotificationSenderError> {
         Ok(NotificationSenderReady {
             ready: match self
                 .sink

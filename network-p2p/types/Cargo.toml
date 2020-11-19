@@ -1,0 +1,22 @@
+[package]
+name = "network-p2p-types"
+version = "0.7.1"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.34"
+bitflags = "1.2.0"
+bytes = "0.5.0"
+scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
+serde = { version = "1.0", features = ["derive"] }
+
+[dependencies.libp2p]
+version = "0.29.1"
+default-features = false
+
+[features]
+default = []
+
