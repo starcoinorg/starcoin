@@ -12,6 +12,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
+use starcoin_types::block::BlockSummary;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
@@ -179,7 +180,13 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetBlocks(ids) => {
                 Ok(ChainResponse::BlockOptionVec(self.inner.get_blocks(ids)?))
             }
+            ChainRequest::GetHeaders(ids) => {
+                Ok(ChainResponse::BlockHeaderVec(self.inner.get_headers(ids)?))
+            }
             ChainRequest::TPS(number) => Ok(ChainResponse::TPS(self.inner.tps(number)?)),
+            ChainRequest::GetEpochUnclesByNumber(number) => Ok(ChainResponse::BlockSummaries(
+                self.inner.get_epoch_uncles_by_number(number)?,
+            )),
         }
     }
 }
@@ -251,6 +258,16 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
         self.storage.get_blocks(ids)
+    }
+
+    fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+        let mut headers = Vec::new();
+        self.get_blocks(ids)?.into_iter().for_each(|block| {
+            if let Some(b) = block {
+                headers.push(b.header)
+            }
+        });
+        Ok(headers)
     }
 
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>> {
@@ -342,6 +359,26 @@ impl ReadableChainService for ChainReaderServiceInner {
 
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS> {
         self.main.tps(number)
+    }
+
+    fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>> {
+        let epoch_info = self.main.get_epoch_info_by_number(number)?;
+        let start_number = epoch_info.start_block_number();
+        let mut end_number = epoch_info.end_block_number();
+        if end_number > self.main.current_header().number() {
+            end_number = self.main.current_header().number();
+        }
+
+        let mut block_summaries: Vec<BlockSummary> = Vec::new();
+        for number in start_number..(end_number + 1) {
+            if let Some(block) = self.main.get_block_by_number(number)? {
+                if block.uncles().is_some() {
+                    block_summaries.push(block.into());
+                }
+            }
+        }
+
+        Ok(block_summaries)
     }
 }
 

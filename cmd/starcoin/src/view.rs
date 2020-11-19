@@ -432,3 +432,45 @@ where
 {
     s.serialize_str(&hex::encode(bytes))
 }
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct BlockSimpleView {
+    pub id: HashValue,
+    pub number: u64,
+    pub parent_hash: HashValue,
+    pub author: AccountAddress,
+    pub time: u64,
+}
+
+impl From<BlockHeader> for BlockSimpleView {
+    fn from(header: BlockHeader) -> Self {
+        Self {
+            parent_hash: header.parent_hash,
+            number: header.number,
+            id: header.id(),
+            author: header.author,
+            time: header.timestamp,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct UncleInfo {
+    pub uncle_view: BlockSimpleView,
+    pub uncle_parent_view: BlockSimpleView,
+    pub block_view: BlockSimpleView,
+}
+
+impl UncleInfo {
+    pub fn new(
+        uncle_view: BlockSimpleView,
+        uncle_parent_view: BlockSimpleView,
+        block_view: BlockSimpleView,
+    ) -> Self {
+        Self {
+            uncle_view,
+            uncle_parent_view,
+            block_view,
+        }
+    }
+}

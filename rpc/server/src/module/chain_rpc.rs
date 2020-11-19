@@ -8,7 +8,7 @@ use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::types::pubsub::{Event, EventFilter};
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
-use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
@@ -194,5 +194,23 @@ where
         let fut = async move { service.tps(number).await };
 
         Box::new(fut.boxed().map_err(map_err).compat())
+    }
+
+    fn get_epoch_uncles_by_number(&self, number: BlockNumber) -> FutureResult<Vec<BlockSummary>> {
+        let service = self.service.clone();
+        let fut = async move {
+            let blocks = service.get_epoch_uncles_by_number(Some(number)).await?;
+            Ok(blocks)
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
+
+    fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeader>> {
+        let service = self.service.clone();
+        let fut = async move { Ok(service.get_headers(ids).await?) }.map_err(map_err);
+
+        Box::new(fut.boxed().compat())
     }
 }
