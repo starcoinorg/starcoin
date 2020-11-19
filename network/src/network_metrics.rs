@@ -16,7 +16,6 @@ impl NetworkMetrics {
             register_int_gauge!(
                 Opts::new("request_timeout_count", "request timeout count").namespace("starcoin")
             )?;
-
         Ok(Self {
             request_count,
             request_timeout_count,
