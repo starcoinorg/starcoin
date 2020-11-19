@@ -25,6 +25,7 @@ use std::time::Duration;
 use tokio::runtime::Runtime;
 
 pub mod crash_handler;
+mod metrics;
 pub mod node;
 pub mod peer_message_handler;
 pub mod rpc_service_factory;

@@ -46,7 +46,6 @@ use std::time::Duration;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
 use types::system_events::NewHeadBlock;
-use types::time::duration_since_epoch;
 use types::transaction::SignedUserTransaction;
 use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
 
@@ -661,12 +660,7 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
         let network = self.network.clone();
         let block_header = msg.compact_block.header.clone();
         let total_difficulty = msg.total_difficulty;
-        let header_time = msg.compact_block.header.timestamp;
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
-        if let Some(metrics) = &self.network.metrics {
-            let latency = (duration_since_epoch().as_millis() - header_time as u128) as f64;
-            metrics.request_block_latency.observe(latency);
-        }
         let self_id: PeerId = self.network.identify().into();
         ctx.spawn(async move {
             let peers = network.peers();

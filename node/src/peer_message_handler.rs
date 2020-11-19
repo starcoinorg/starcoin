@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::metrics::NODE_METRICS;
 use network_api::PeerMessageHandler;
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_block_relayer_api::PeerCmpctBlockEvent;
@@ -8,6 +9,7 @@ use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
 use starcoin_tx_relay::PeerTransactions;
 use starcoin_txpool::TxPoolActorService;
+use starcoin_types::time::duration_since_epoch;
 use std::sync::mpsc::TrySendError;
 
 pub struct NodePeerMessageHandler {
@@ -42,6 +44,10 @@ impl PeerMessageHandler for NodePeerMessageHandler {
     }
 
     fn handle_block(&self, block: PeerCmpctBlockEvent) {
+        let header_time = block.compact_block.header.timestamp;
+        NODE_METRICS
+            .block_latency
+            .observe((duration_since_epoch().as_millis() - header_time as u128) as f64);
         if let Err(e) = self.block_relayer.notify(block) {
             match e {
                 TrySendError::Full(_) => {
