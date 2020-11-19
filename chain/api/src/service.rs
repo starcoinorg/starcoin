@@ -5,7 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::BlockState;
+use starcoin_types::block::{BlockState, BlockSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::peer_info::PeerId;
@@ -23,6 +23,7 @@ pub trait ReadableChainService {
     fn get_header_by_hash(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
     fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+    fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
     fn get_block_state_by_hash(&self, hash: HashValue) -> Result<Option<BlockState>>;
     fn get_block_info_by_hash(&self, hash: HashValue) -> Result<Option<BlockInfo>>;
     fn get_transaction(&self, hash: HashValue) -> Result<Option<Transaction>>;
@@ -56,6 +57,7 @@ pub trait ReadableChainService {
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
+    fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>>;
 }
 
 /// Writeable block chain service trait
@@ -76,6 +78,7 @@ pub trait ChainAsyncService:
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
     async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
+    async fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
@@ -114,6 +117,10 @@ pub trait ChainAsyncService:
         max_size: u64,
     ) -> Result<Vec<HashValue>>;
     async fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
+    async fn get_epoch_uncles_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<Vec<BlockSummary>>;
 }
 
 #[async_trait::async_trait]
@@ -152,6 +159,16 @@ where
             Ok(blocks)
         } else {
             bail!("get_blocks response type error.")
+        }
+    }
+
+    async fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>> {
+        if let ChainResponse::BlockHeaderVec(headers) =
+            self.send(ChainRequest::GetHeaders(ids)).await??
+        {
+            Ok(headers)
+        } else {
+            bail!("get_headers response type error.")
         }
     }
 
@@ -388,6 +405,20 @@ where
             Ok(tps)
         } else {
             bail!("get tps error.")
+        }
+    }
+
+    async fn get_epoch_uncles_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<Vec<BlockSummary>> {
+        let response = self
+            .send(ChainRequest::GetEpochUnclesByNumber(number))
+            .await??;
+        if let ChainResponse::BlockSummaries(summaries) = response {
+            Ok(summaries)
+        } else {
+            bail!("get epoch uncles error.")
         }
     }
 }

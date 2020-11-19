@@ -709,3 +709,37 @@ pub enum BlockState {
     Executed,
     Verified,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BlockSummary {
+    pub block_header: BlockHeader,
+    pub uncles: Option<Vec<BlockHeader>>,
+}
+
+impl BlockSummary {
+    pub fn uncles(&self) -> Option<&[BlockHeader]> {
+        match &self.uncles {
+            Some(uncles) => Some(uncles.as_slice()),
+            None => None,
+        }
+    }
+
+    pub fn header(&self) -> &BlockHeader {
+        &self.block_header
+    }
+}
+
+impl From<Block> for BlockSummary {
+    fn from(block: Block) -> Self {
+        Self {
+            block_header: block.header,
+            uncles: block.body.uncles,
+        }
+    }
+}
+
+impl Into<(BlockHeader, Option<Vec<BlockHeader>>)> for BlockSummary {
+    fn into(self) -> (BlockHeader, Option<Vec<BlockHeader>>) {
+        (self.block_header, self.uncles)
+    }
+}

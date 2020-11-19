@@ -27,7 +27,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{Block, BlockNumber};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary};
 use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
@@ -493,6 +493,27 @@ impl RpcClient {
     pub fn tps(&self, number: Option<BlockNumber>) -> anyhow::Result<TPS> {
         self.call_rpc_blocking(|inner| async move { inner.chain_client.tps(number).compat().await })
             .map_err(map_err)
+    }
+
+    pub fn get_epoch_uncles_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<Vec<BlockSummary>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .get_epoch_uncles_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn get_headers(&self, ids: Vec<HashValue>) -> anyhow::Result<Vec<BlockHeader>> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.chain_client.get_headers(ids).compat().await },
+        )
+        .map_err(map_err)
     }
 
     pub fn get_global_time_by_number(

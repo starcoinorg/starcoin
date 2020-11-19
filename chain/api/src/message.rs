@@ -6,7 +6,7 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::{
-    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockSummary, BlockTemplate},
     contract_event::ContractEvent,
     contract_event::ContractEventInfo,
     filter::Filter,
@@ -50,7 +50,9 @@ pub enum ChainRequest {
         max_size: u64,
     },
     GetBlocks(Vec<HashValue>),
+    GetHeaders(Vec<HashValue>),
     TPS(Option<BlockNumber>),
+    GetEpochUnclesByNumber(Option<BlockNumber>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -70,6 +72,7 @@ pub enum ChainResponse {
     Transaction(Box<Transaction>),
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
+    BlockHeaderVec(Vec<BlockHeader>),
     TransactionInfos(Vec<TransactionInfo>),
     TransactionInfo(Option<TransactionInfo>),
     Events(Option<Vec<ContractEvent>>),
@@ -81,4 +84,5 @@ pub enum ChainResponse {
     GlobalTime(GlobalTimeOnChain),
     HashVec(Vec<HashValue>),
     TPS(TPS),
+    BlockSummaries(Vec<BlockSummary>),
 }
