@@ -9,6 +9,7 @@ edition = "2018"
 
 [dependencies]
 once_cell = "1.5.2"
+petgraph = "0.5.1"
 structopt = "0.3.20"
 serde = { version = "1.0.117", default-features = false }
 anyhow = "1.0.34"
@@ -18,7 +19,7 @@ scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}
 starcoin-vm-types = { path = "../types"}
 bytecode-source-map = { package = "bytecode-source-map", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
-
+bytecode-verifier = { package = "bytecode-verifier", version = "0.1.0", git = "https://github.com/starcoinorg/libra", rev="8b8727e21a3b86a84806e319052bf405bc0d5e7e" }
 
 [features]
 default = []

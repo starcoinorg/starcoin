@@ -4314,9 +4314,11 @@ version = "0.7.1"
 dependencies = [
  "anyhow",
  "bytecode-source-map",
+ "bytecode-verifier",
  "codespan",
  "colored",
  "once_cell",
+ "petgraph",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-types",
