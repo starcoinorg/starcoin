@@ -661,7 +661,6 @@ impl EventHandler<Self, NetCmpctBlockMessage> for PeerMsgBroadcasterService {
         let block_header = msg.compact_block.header.clone();
         let total_difficulty = msg.total_difficulty;
         let msg = PeerMessage::CompactBlock(msg.compact_block, total_difficulty);
-
         let self_id: PeerId = self.network.identify().into();
         ctx.spawn(async move {
             let peers = network.peers();
