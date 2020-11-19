@@ -418,6 +418,14 @@ impl From<WriteOp> for WriteOpView {
     }
 }
 
+#[derive(Debug, Serialize)]
+pub struct MoveExplainView {
+    pub category_code: u64,
+    pub category_name: Option<String>,
+    pub reason_code: u64,
+    pub reason_name: Option<String>,
+}
+
 pub fn serialize_bytes_to_hex<S>(bytes: &[u8], s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
