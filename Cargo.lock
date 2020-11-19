@@ -32,9 +32,9 @@ dependencies = [
  "futures-util",
  "log 0.4.11",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "pin-project 0.4.27",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "tokio 0.2.23",
  "tokio-util",
  "trust-dns-proto",
@@ -62,7 +62,7 @@ dependencies = [
  "copyless",
  "futures-channel",
  "futures-util",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "tokio 0.2.23",
 ]
 
@@ -77,7 +77,7 @@ dependencies = [
  "lazy_static",
  "log 0.4.11",
  "num_cpus",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "threadpool",
 ]
 
@@ -595,7 +595,7 @@ dependencies = [
  "futures-timer",
  "libp2p",
  "network-api",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "proptest",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -984,7 +984,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c2be76f06820200669a77ae59a8328c6b8fe4496e8fb7fed02f2806a442c5ff"
 dependencies = [
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
 ]
 
 [[package]]
@@ -3400,7 +3400,7 @@ dependencies = [
  "parity-multiaddr",
  "parking_lot 0.10.2",
  "pin-project 0.4.27",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "wasm-timer",
 ]
 
@@ -3431,7 +3431,7 @@ dependencies = [
  "ring",
  "rw-stream-sink",
  "sha2 0.8.2",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "thiserror",
  "unsigned-varint 0.4.0",
  "void",
@@ -3484,7 +3484,7 @@ dependencies = [
  "prost",
  "prost-build",
  "rand 0.7.3",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
 ]
 
 [[package]]
@@ -3507,7 +3507,7 @@ dependencies = [
  "prost-build",
  "rand 0.7.3",
  "sha2 0.8.2",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "unsigned-varint 0.4.0",
  "wasm-timer",
 ]
@@ -3524,7 +3524,7 @@ dependencies = [
  "log 0.4.11",
  "prost",
  "prost-build",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "wasm-timer",
 ]
 
@@ -3548,7 +3548,7 @@ dependencies = [
  "prost-build",
  "rand 0.7.3",
  "sha2 0.8.2",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "uint",
  "unsigned-varint 0.4.0",
  "void",
@@ -3572,7 +3572,7 @@ dependencies = [
  "log 0.4.11",
  "net2",
  "rand 0.7.3",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "void",
  "wasm-timer",
 ]
@@ -3672,7 +3672,7 @@ dependencies = [
  "futures 0.3.8",
  "libp2p-core",
  "libp2p-swarm",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "wasm-timer",
 ]
 
@@ -3716,7 +3716,7 @@ dependencies = [
  "libp2p-core",
  "log 0.4.11",
  "rand 0.7.3",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "void",
  "wasm-timer",
 ]
@@ -4081,7 +4081,7 @@ dependencies = [
  "libc",
  "log 0.4.11",
  "log-mdc",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "serde",
  "serde-value",
  "serde_derive",
@@ -4489,7 +4489,7 @@ dependencies = [
  "futures 0.3.8",
  "log 0.4.11",
  "pin-project 1.0.1",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "unsigned-varint 0.5.1",
 ]
 
@@ -4583,7 +4583,7 @@ dependencies = [
  "lru 0.6.1",
  "nohash-hasher",
  "parity-scale-codec",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "peerset",
  "pin-project 0.4.27",
  "prometheus",
@@ -4594,7 +4594,7 @@ dependencies = [
  "serde_json",
  "slog",
  "slog_derive",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -4646,7 +4646,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77a5d83df9f36fe23f0c3648c6bbb8b0298bb5f1939c8f2704431371f4b84d43"
 dependencies = [
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
 ]
 
 [[package]]
@@ -5060,9 +5060,9 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4893845fa2ca272e647da5d0e46660a314ead9c2fdd9a883aabc32e481a8733"
+checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
 dependencies = [
  "instant",
  "lock_api 0.4.1",
@@ -5094,7 +5094,7 @@ dependencies = [
  "cloudabi 0.0.3",
  "libc",
  "redox_syscall",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "winapi 0.3.9",
 ]
 
@@ -5109,7 +5109,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "winapi 0.3.9",
 ]
 
@@ -5499,7 +5499,7 @@ dependencies = [
  "cfg-if 0.1.10",
  "fnv",
  "lazy_static",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "protobuf",
  "regex",
  "thiserror",
@@ -6038,9 +6038,9 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.15"
+version = "0.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "952cd6b98c85bbc30efa1ba5783b8abf12fec8b3287ffa52605b9432313e34e4"
+checksum = "b72b84d47e8ec5a4f2872e8262b8f8256c5be1c938a7d6d3a867a3ba8f722f74"
 dependencies = [
  "cc",
  "libc",
@@ -6633,9 +6633,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.4.2"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
+checksum = "7acad6f34eb9e8a259d3283d1e8c1d34d7415943d4895f65cc73813c7396fc85"
 
 [[package]]
 name = "snow"
@@ -6757,7 +6757,7 @@ dependencies = [
  "dashmap",
  "futures 0.3.8",
  "hex",
- "parking_lot 0.9.0",
+ "parking_lot 0.11.1",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "serde",
@@ -6805,7 +6805,7 @@ dependencies = [
  "lru 0.6.1",
  "mirai-annotations",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
@@ -6939,7 +6939,7 @@ dependencies = [
  "futures 0.3.8",
  "futures-timer",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "proptest",
  "proptest-derive",
  "starcoin-account-api",
@@ -7379,7 +7379,7 @@ dependencies = [
  "futures-timer",
  "hex",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-accumulator",
@@ -7508,14 +7508,14 @@ dependencies = [
  "network-p2p",
  "network-rpc-core",
  "parity-codec",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "prometheus",
  "rand 0.7.3",
  "serde",
  "serde_json",
  "slog",
  "slog_derive",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
@@ -7688,7 +7688,7 @@ dependencies = [
  "async-trait",
  "futures 0.3.8",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -7777,7 +7777,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "serde",
  "serde_json",
  "starcoin-account-api",
@@ -7843,7 +7843,7 @@ dependencies = [
  "log 0.4.11",
  "network-api",
  "num_cpus",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "serde",
  "serde_json",
  "starcoin-account-api",
@@ -7972,7 +7972,7 @@ dependencies = [
  "anyhow",
  "forkable-jellyfish-merkle",
  "lru 0.6.1",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -7994,7 +7994,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "lru 0.6.1",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "paste",
  "proptest",
  "proptest-derive",
@@ -8033,7 +8033,7 @@ dependencies = [
  "libp2p",
  "network-api",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "pin-project 1.0.1",
  "pin-utils",
  "rand 0.7.3",
@@ -8169,7 +8169,7 @@ dependencies = [
  "linked-hash-map",
  "log 0.4.11",
  "once_cell",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "prometheus",
  "proptest",
  "proptest-derive",
@@ -9341,7 +9341,7 @@ dependencies = [
  "lazy_static",
  "log 0.4.11",
  "rand 0.7.3",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "thiserror",
  "tokio 0.2.23",
  "url 2.2.0",
@@ -9361,7 +9361,7 @@ dependencies = [
  "log 0.4.11",
  "lru-cache",
  "resolv-conf",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "thiserror",
  "tokio 0.2.23",
  "trust-dns-proto",
@@ -9793,7 +9793,7 @@ checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
 dependencies = [
  "futures 0.3.8",
  "js-sys",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "pin-utils",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -10087,7 +10087,7 @@ dependencies = [
  "futures 0.3.8",
  "log 0.4.11",
  "nohash-hasher",
- "parking_lot 0.11.0",
+ "parking_lot 0.11.1",
  "rand 0.7.3",
  "static_assertions",
 ]
