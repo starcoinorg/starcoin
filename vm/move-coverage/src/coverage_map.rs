@@ -6,6 +6,7 @@
 use anyhow::{format_err, Result};
 use serde::{Deserialize, Serialize};
 use starcoin_types::account_address::AccountAddress;
+use starcoin_vm_types::file_format::CodeOffset;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use std::{
     collections::BTreeMap,
@@ -13,7 +14,6 @@ use std::{
     io::{BufRead, BufReader, Read, Write},
     path::Path,
 };
-use starcoin_vm_types::file_format::CodeOffset;
 
 pub type FunctionCoverage = BTreeMap<u64, u64>;
 
@@ -64,8 +64,8 @@ impl CoverageMap {
             if !is_script {
                 let func_name = Identifier::new(context_segs.pop().unwrap()).unwrap();
                 let module_name = Identifier::new(context_segs.pop().unwrap()).unwrap();
-                let module_addr =
-                    AccountAddress::from_hex_literal(context_segs.pop().unwrap()).unwrap();
+                let module_addr_literal = preprocess_address(context_segs.pop().unwrap());
+                let module_addr = AccountAddress::from_hex_literal(module_addr_literal).unwrap();
                 self.insert(exec_id, module_addr, module_name, func_name, pc);
             } else {
                 // Don't count scripts (for now)
@@ -271,4 +271,12 @@ pub fn output_map_to_file<M: Serialize, P: AsRef<Path>>(file_name: P, data: &M) 
     let mut file = File::create(file_name)?;
     file.write_all(&bytes)?;
     Ok(())
+}
+
+pub fn preprocess_address(literal: &str) -> &str {
+    if literal.starts_with("0x0x") {
+        literal.strip_prefix("0x").unwrap_or_else(|| literal)
+    } else {
+        literal
+    }
 }

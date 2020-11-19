@@ -7,13 +7,15 @@ use crate::coverage_map::{ExecCoverageMap, TraceMap};
 use bytecode_verifier::control_flow_graph::{BlockId, ControlFlowGraph, VMControlFlowGraph};
 use petgraph::{algo::tarjan_scc, Graph};
 use serde::{Deserialize, Serialize};
-use starcoin_vm_types::{access::ModuleAccess, file_format::CompiledModule, file_format::Bytecode, file_format::CodeOffset};
+use starcoin_vm_types::{
+    access::ModuleAccess, file_format::Bytecode, file_format::CodeOffset,
+    file_format::CompiledModule,
+};
 use starcoin_vm_types::{identifier::Identifier, language_storage::ModuleId};
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::{self, Write},
 };
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ModuleSummary {
