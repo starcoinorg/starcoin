@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::MoveExplainView;
 use crate::StarcoinOpt;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_move_explain::get_explanation;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -42,29 +42,36 @@ impl CommandAction for MoveExplain {
         match opt.location {
             Some(_) => {
                 let mut location = opt.location.as_ref().unwrap().trim().split("::");
-                let mut address_literal =
-                    location.next().expect("Could not find address").to_string();
+                let mut address_literal = location
+                    .next()
+                    .ok_or_else(|| format_err!("Could not find address"))?
+                    .to_string();
                 let module_name = location
                     .next()
-                    .expect("Could not find module name")
+                    .ok_or_else(|| format_err!("Could not find module name"))?
                     .to_string();
                 if !address_literal.starts_with("0x") {
                     address_literal = format!("0x{}", address_literal);
                 }
                 let module_id = ModuleId::new(
-                    AccountAddress::from_hex_literal(&address_literal)
-                        .expect("Unable to parse module address"),
-                    Identifier::new(module_name).expect("Invalid module name encountered"),
+                    AccountAddress::from_hex_literal(&address_literal)?,
+                    Identifier::new(module_name)?,
                 );
 
-                let error_ctx =
-                    get_explanation(&module_id, opt.abort_code).expect("Failed to get explain");
+                let error_ctx = get_explanation(&module_id, opt.abort_code);
 
+                let (category_name, reason_name) = match error_ctx {
+                    Some(_) => (
+                        Some(error_ctx.clone().unwrap().category.code_name),
+                        Some(error_ctx.unwrap().reason.code_name),
+                    ),
+                    None => (None, None),
+                };
                 Ok(Some(MoveExplainView {
                     category_code: category,
-                    category_name: Some(error_ctx.category.code_name),
+                    category_name,
                     reason_code,
-                    reason_name: Some(error_ctx.reason.code_name),
+                    reason_name,
                 }))
             }
             None => Ok(Some(MoveExplainView {
