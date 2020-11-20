@@ -58,6 +58,7 @@ pub trait ReadableChainService {
     ) -> Result<Vec<HashValue>>;
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
     fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>>;
+    fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>>;
 }
 
 /// Writeable block chain service trait
@@ -79,6 +80,11 @@ pub trait ChainAsyncService:
     async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
     async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     async fn get_headers(&self, ids: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
+    async fn uncle_path(
+        &self,
+        block_id: HashValue,
+        uncle_id: HashValue,
+    ) -> Result<Vec<BlockHeader>>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
     async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
@@ -419,6 +425,21 @@ where
             Ok(summaries)
         } else {
             bail!("get epoch uncles error.")
+        }
+    }
+
+    async fn uncle_path(
+        &self,
+        block_id: HashValue,
+        uncle_id: HashValue,
+    ) -> Result<Vec<BlockHeader>> {
+        let response = self
+            .send(ChainRequest::UnclePath(block_id, uncle_id))
+            .await??;
+        if let ChainResponse::BlockHeaderVec(headers) = response {
+            Ok(headers)
+        } else {
+            bail!("get uncle path error.")
         }
     }
 }

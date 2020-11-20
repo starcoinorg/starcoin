@@ -88,4 +88,12 @@ pub trait ChainApi {
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
     fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeader>>;
+
+    /// Uncle path.
+    #[rpc(name = "chain.uncle_path")]
+    fn uncle_path(
+        &self,
+        block_id: HashValue,
+        uncle_id: HashValue,
+    ) -> FutureResult<Vec<BlockHeader>>;
 }

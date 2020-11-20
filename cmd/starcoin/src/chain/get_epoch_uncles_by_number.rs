@@ -6,6 +6,7 @@ use scmd::{CommandAction, ExecContext};
 use std::collections::HashMap;
 use structopt::StructOpt;
 
+/// Show block list which uncles is some in a epoch.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_epoch_uncles_by_number")]
 pub struct GetEpochUnclesByNumberOpt {
