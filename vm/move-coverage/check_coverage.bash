@@ -22,10 +22,13 @@ cargo test
 popd || exit 1
 
 echo "Converting trace file..."
+echo "---------------------------------------------------------------------------"
 cargo run --bin move-trace-conversion -- -f "$TRACE_PATH" -o trace.mvcov
 
+echo "---------------------------------------------------------------------------"
 echo "Producing coverage summaries..."
-cargo run --bin coverage-summaries -- --summarize-functions -t trace.mvcov -s ../stdlib/compiled/latest/stdlib
+echo "---------------------------------------------------------------------------"
+cargo run --bin coverage-summaries -- -t trace.mvcov -s ../stdlib/compiled/latest/stdlib
 
 echo "==========================================================================="
 echo "You can check source coverage for a module by running:"
