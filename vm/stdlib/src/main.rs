@@ -285,26 +285,21 @@ fn main() {
         }
     }
 
-    if no_check_compatibility {
+    if generate_new_version {
+        let dest_dir = full_update_with_version(version_number);
         let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
-
-        if generate_new_version {
-            let dest_dir = full_update_with_version(version_number);
-
-            if let Some(pre_version) = pre_version {
-                let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
-                pre_version_dir.push(format!("{}", pre_version));
-                let sub_dir = format!("{}-{}", pre_version, version_number);
-                incremental_update_with_version(
-                    &mut pre_version_dir,
-                    dest_dir,
-                    sub_dir,
-                    &new_modules,
-                    &new_scripts,
-                );
-            }
+        if let Some(pre_version) = pre_version {
+            let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
+            pre_version_dir.push(format!("{}", pre_version));
+            let sub_dir = format!("{}-{}", pre_version, version_number);
+            incremental_update_with_version(
+                &mut pre_version_dir,
+                dest_dir,
+                sub_dir,
+                &new_modules,
+                &new_scripts,
+            );
         }
-
         replace_stdlib_by_path(&mut module_path, new_modules, new_scripts);
     }
 }

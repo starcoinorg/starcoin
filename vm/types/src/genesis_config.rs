@@ -963,7 +963,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     GenesisConfig {
     version: Version { major: 1 },
     parent_hash: HashValue::sha3_256_of(b"starcoin_proxima"),
-    timestamp: 1605792058000,
+    timestamp: 1605834287000,
     reward_delay: 7,
     difficulty: 100.into(),
     nonce: 0,
@@ -995,7 +995,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     ),
     genesis_key_pair: None,
     time_service_type: TimeServiceType::RealTimeService,
-    stdlib_version: StdlibVersion::Latest,
+    stdlib_version: StdlibVersion::Version(7),
     dao_config: DaoConfig {
         voting_delay: 60_000,          // 1min
         voting_period: 60 * 60 * 1000, // 1h
