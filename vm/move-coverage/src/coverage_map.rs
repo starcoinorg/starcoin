@@ -64,8 +64,8 @@ impl CoverageMap {
             if !is_script {
                 let func_name = Identifier::new(context_segs.pop().unwrap()).unwrap();
                 let module_name = Identifier::new(context_segs.pop().unwrap()).unwrap();
-                let module_addr_literal = preprocess_address(context_segs.pop().unwrap());
-                let module_addr = AccountAddress::from_hex_literal(module_addr_literal).unwrap();
+                let module_addr =
+                    AccountAddress::from_hex_literal(context_segs.pop().unwrap()).unwrap();
                 self.insert(exec_id, module_addr, module_name, func_name, pc);
             } else {
                 // Don't count scripts (for now)
@@ -271,12 +271,4 @@ pub fn output_map_to_file<M: Serialize, P: AsRef<Path>>(file_name: P, data: &M) 
     let mut file = File::create(file_name)?;
     file.write_all(&bytes)?;
     Ok(())
-}
-
-pub fn preprocess_address(literal: &str) -> &str {
-    if literal.starts_with("0x0x") {
-        literal.strip_prefix("0x").unwrap_or_else(|| literal)
-    } else {
-        literal
-    }
 }
