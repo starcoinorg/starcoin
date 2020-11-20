@@ -242,7 +242,14 @@ impl ChainReaderServiceInner {
                     format_err!("block info not exist by new block id {:?}.", new_head_id)
                 })?
                 .get_total_difficulty();
-            assert!(new_difficulty > old_difficulty);
+            if new_difficulty <= old_difficulty {
+                return Err(format_err!(
+                    "Can not switch main branch with difficulty {:?} : {:?}.",
+                    new_difficulty,
+                    old_difficulty
+                ));
+            }
+
             let net = self.config.net();
             self.main = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
         }
@@ -330,21 +337,21 @@ impl ReadableChainService for ChainReaderServiceInner {
             if let Some(uncle_parent_block_header) = self.main.get_header(uncle_id)? {
                 let uncle_parent_id = uncle_parent_block_header.id();
                 let end_number = uncle_parent_block_header.number();
-                assert!(
-                    block_header.number() >= end_number,
-                    "block number mismatch when call uncle_path."
-                );
+                if block_header.number() < end_number {
+                    return Err(format_err!("block number {:?} : {:?} mismatch when call uncle_path with args {:?} : {:?}.",
+                        block_header.number() ,end_number, block_id, uncle_id));
+                }
+
                 headers.push(uncle_parent_block_header);
                 if block_header.number() > end_number {
                     let mut latest_id = block_header.parent_hash();
                     loop {
                         if let Some(parent_block_header) = self.main.get_header(latest_id)? {
                             if parent_block_header.number() == end_number {
-                                assert_eq!(
-                                    uncle_parent_id,
-                                    parent_block_header.id(),
-                                    "block id mismatch when call uncle_path."
-                                );
+                                if uncle_parent_id != parent_block_header.id() {
+                                    return Err(format_err!("block id {:?} : {:?} mismatch when call uncle_path with args {:?} : {:?}.",
+                                        uncle_parent_id, parent_block_header.id(), block_id, uncle_id));
+                                }
                                 break;
                             } else {
                                 latest_id = parent_block_header.parent_hash();

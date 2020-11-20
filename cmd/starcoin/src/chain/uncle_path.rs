@@ -6,6 +6,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use structopt::StructOpt;
 
+/// Show the path from uncle parent block to mint block.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "uncle_path")]
 pub struct UnclePathOpt {
