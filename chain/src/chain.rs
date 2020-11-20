@@ -764,11 +764,12 @@ impl BlockChain {
         }
 
         let consensus = epoch.epoch().strategy();
-        // TODO 最小值是否需要
         if let Err(err) = if is_uncle {
             let uncle_branch =
                 BlockChain::new(self.time_service(), parent_hash, self.storage.clone())?;
-            consensus.verify(&uncle_branch, epoch, header)
+            //TODO get epoch in consensus.verify
+            let uncle_epoch = uncle_branch.epoch_info()?;
+            consensus.verify(&uncle_branch, &uncle_epoch, header)
         } else {
             consensus.verify(self, epoch, header)
         } {
@@ -943,13 +944,6 @@ impl BlockChain {
                     .get_block_accumulator_info()
                     .get_accumulator_root(),
                 header.parent_block_accumulator_root(),
-            );
-
-            verify_block!(
-                VerifyBlockField::Header,
-                block.body.hash() == header.body_hash(),
-                "verify block:{:?} body hash fail.",
-                header.id(),
             );
 
             if header.number() == epoch_info.end_block_number() {
