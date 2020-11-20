@@ -2,8 +2,6 @@ address 0x1 {
 module Token {
     use 0x1::Event;
     use 0x1::Signer;
-    use 0x1::Vector;
-    use 0x1::SCS;
     use 0x1::Errors;
     use 0x1::Timestamp;
     use 0x1::Math;
@@ -17,6 +15,16 @@ module Token {
     /// `value` inside represents.
     resource struct Token<TokenType> {
         value: u128,
+    }
+
+    /// Token Code which identify a unique Token.
+    struct TokenCode {
+        /// address who define the module contains the Token Type.
+        addr: address,
+        /// module which contains the Token Type.
+        module_name: vector<u8>,
+        /// name of the token. may nested if the token is a instantiated generic token type.
+        name: vector<u8>,
     }
 
     /// A minting capability allows tokens of type `TokenType` to be minted
@@ -35,14 +43,14 @@ module Token {
         /// funds added to the system
         amount: u128,
         /// full info of Token.
-        token_code: vector<u8>,
+        token_code: TokenCode,
     }
 
     struct BurnEvent {
         /// funds removed from the system
         amount: u128,
         /// full info of Token
-        token_code: vector<u8>,
+        token_code: TokenCode,
     }
 
     resource struct TokenInfo<TokenType> {
@@ -203,7 +211,7 @@ module Token {
             &mut info.mint_events,
             MintEvent {
                 amount,
-                token_code: code_to_bytes(token_address, module_name, token_name),
+                token_code: TokenCode { addr: token_address, module_name, name: token_name },
             },
         );
         Token<TokenType> { value: amount }
@@ -400,7 +408,7 @@ module Token {
             &mut info.burn_events,
             BurnEvent {
                 amount: value,
-                token_code: code_to_bytes(token_address, module_name, token_name),
+                token_code: TokenCode { addr: token_address, module_name, name: token_name },
             },
         );
     }
@@ -560,9 +568,13 @@ module Token {
 }
 
     /// Return the token code for the registered token.
-    public fun token_code<TokenType>(): vector<u8> {
+    public fun token_code<TokenType>(): TokenCode {
         let (addr, module_name, name) = name_of<TokenType>();
-        code_to_bytes(addr, module_name, name)
+        TokenCode {
+            addr,
+            module_name,
+            name
+        }
     }
 
     spec fun token_code {
@@ -573,21 +585,7 @@ module Token {
 
     /// We use an uninterpreted function to represent the result of derived address. The actual value
     /// does not matter for the verification of callers.
-    spec define spec_token_code<TokenType>(): vector<u8>;
-
-    fun code_to_bytes(addr: address, module_name: vector<u8>, name: vector<u8>): vector<u8> {
-        let code = SCS::to_bytes(&addr);
-        // {{addr}}::{{module}}::{{struct}}
-        Vector::append(&mut code, b"::");
-        Vector::append(&mut code, module_name);
-        Vector::append(&mut code, b"::");
-        Vector::append(&mut code, name);
-        code
-    }
-
-    spec fun code_to_bytes {
-        aborts_if false;
-    }
+    spec define spec_token_code<TokenType>(): TokenCode;
 
     /// Return Token's module address, module name, and type name of `TokenType`.
     native fun name_of<TokenType>(): (address, vector<u8>, vector<u8>);

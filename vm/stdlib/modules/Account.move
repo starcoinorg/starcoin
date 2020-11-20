@@ -75,7 +75,7 @@ module Account {
         // The amount of Token<TokenType> sent
         amount: u128,
         // The code symbol for the token that was sent
-        token_code: vector<u8>,
+        token_code: Token::TokenCode,
         // Metadata associated with the withdraw
         metadata: vector<u8>,
     }
@@ -84,14 +84,14 @@ module Account {
         // The amount of Token<TokenType> sent
         amount: u128,
         // The code symbol for the token that was sent
-        token_code: vector<u8>,
+        token_code: Token::TokenCode,
         // Metadata associated with the deposit
         metadata: vector<u8>,
     }
 
     /// Message for accept token events
     struct AcceptTokenEvent {
-        token_code: vector<u8>,
+        token_code: Token::TokenCode,
     }
 
     const EPROLOGUE_ACCOUNT_DOES_NOT_EXIST: u64 = 0;
