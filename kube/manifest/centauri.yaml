@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.7.2.7
+        image: starcoin/starcoin:v0.8.1
         imagePullPolicy: Always
         command:
           - bash
@@ -85,8 +85,8 @@ spec:
   - metadata:
       name: starcoin-stress-volume
     spec:
-      accessModes: [ "ReadWriteMany" ]
       storageClassName: alicloud-disk-essd
+      accessModes: [ "ReadWriteMany" ]
       resources:
         requests:
           storage: 50Gi

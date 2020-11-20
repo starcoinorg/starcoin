@@ -3,9 +3,8 @@ apiVersion: v1
 metadata:
   name: starcoin-stress-txfactory
 spec:
-  storageClassName: alicloud-disk-essd
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 50Gi
@@ -23,14 +22,14 @@ spec:
         claimName: starcoin-stress-txfactory
   containers:
   - name: starcoin
-    image: starcoin/starcoin:v0.7.2.7
+    image: starcoin/starcoin:v0.8.1
     imagePullPolicy: Always
     command:
       - bash
       - -c
     args:
       - rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
-        /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data  --rpc-address 0.0.0.0;
+        /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data  --rpc-address 0.0.0.0 --seed $(SEED);
     ports:
     - containerPort: 9840
       hostPort: 9840
@@ -48,7 +47,7 @@ spec:
               name: starcoin-config
               key: centauri_seed
   - name: txfactory
-    image: starcoin/starcoin:v0.7.2.7
+    image: starcoin/starcoin:v0.8.1
     imagePullPolicy: IfNotPresent
     command:
       - bash
