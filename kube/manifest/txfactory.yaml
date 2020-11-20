@@ -1,0 +1,59 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: starcoin-stress-txfactory
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: txfactory
+  name: txfactory
+spec:
+  volumes:
+    - name: starcoin-stress-txfactory
+      persistentVolumeClaim:
+        claimName: starcoin-stress-txfactory
+  containers:
+  - name: starcoin
+    image: starcoin/starcoin:v0.8.1
+    imagePullPolicy: Always
+    command:
+      - bash
+      - -c
+    args:
+      - rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
+        /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data  --rpc-address 0.0.0.0 --seed $(SEED);
+    ports:
+    - containerPort: 9840
+      hostPort: 9840
+    volumeMounts:
+      - name: starcoin-stress-txfactory
+        mountPath: /sc-data
+    env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: SEED
+          valueFrom:
+            configMapKeyRef:
+              name: starcoin-config
+              key: centauri_seed
+  - name: txfactory
+    image: starcoin/starcoin:v0.8.1
+    imagePullPolicy: IfNotPresent
+    command:
+      - bash
+      - -c
+    args:
+      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 60 -t 1
+    volumeMounts:
+    - name: starcoin-stress-txfactory
+      mountPath: /sc-data
