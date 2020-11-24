@@ -56,7 +56,7 @@ starcoin-move-compiler = { path = "../vm/compiler"}
 rand = "0.7.3"
 network-api = { path = "../network/api" }
 libp2p = "0.22.0"
-async-trait = "0.1.41"
+async-trait = "0.1.42"
 accumulator = { path = "../core/accumulator", package = "starcoin-accumulator" }
 state-tree = { path = "../state/state-tree", package = "starcoin-state-tree" }
 scs = { package = "starcoin-canonical-serialization", path = "../commons/scs" }
