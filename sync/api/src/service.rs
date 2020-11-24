@@ -1,16 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{SyncCancelRequest, SyncProgressRequest, SyncStartRequest, SyncStatusRequest};
+use crate::{
+    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncStartRequest, SyncStatusRequest,
+};
 use anyhow::Result;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::sync_status::SyncStatus;
-use stream_task::TaskProgressReport;
 
 #[async_trait::async_trait]
 pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn status(&self) -> Result<SyncStatus>;
-    async fn progress(&self) -> Result<Option<TaskProgressReport>>;
+    async fn progress(&self) -> Result<Option<SyncProgressReport>>;
     async fn cancel(&self) -> Result<()>;
     async fn start(&self, force: bool) -> Result<()>;
 }
@@ -33,7 +34,7 @@ where
         self.send(SyncStatusRequest).await
     }
 
-    async fn progress(&self) -> Result<Option<TaskProgressReport>> {
+    async fn progress(&self) -> Result<Option<SyncProgressReport>> {
         self.send(SyncProgressRequest).await
     }
 

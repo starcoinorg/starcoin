@@ -6,7 +6,7 @@ use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
-use starcoin_sync_api::{SyncAsyncService, TaskProgressReport};
+use starcoin_sync_api::{SyncAsyncService, SyncProgressReport};
 use starcoin_types::sync_status::SyncStatus;
 
 pub struct SyncManagerRpcImpl<S>
@@ -59,7 +59,7 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn progress(&self) -> FutureResult<Option<TaskProgressReport>> {
+    fn progress(&self) -> FutureResult<Option<SyncProgressReport>> {
         let service = self.service.clone();
         let fut = async move {
             let result = service.progress().await?;

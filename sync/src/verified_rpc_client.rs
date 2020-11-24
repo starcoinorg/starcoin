@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::SyncTarget;
 use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
 use network_api::PeerSelector;
@@ -14,6 +13,7 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetBlockIds, GetTxns, RawRpcClient, TransactionsData,
 };
 use starcoin_state_tree::StateNode;
+use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::{
