@@ -746,8 +746,11 @@ impl Into<(BlockHeader, Option<Vec<BlockHeader>>)> for BlockSummary {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EpochUncleSummary {
+    /// epoch number
     pub epoch: u64,
+    /// total uncle
     pub uncles: u64,
+    /// sum(number of the block which contain uncle block - uncle parent block number).
     pub sum: u64,
     pub avg: u64,
 }
