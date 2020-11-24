@@ -8,18 +8,18 @@ use structopt::StructOpt;
 
 /// Show block list which uncles is some in a epoch.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "get_epoch_uncles_by_number")]
-pub struct GetEpochUnclesByNumberOpt {
+#[structopt(name = "list_epoch_uncles_by_number")]
+pub struct ListEpochUnclesByNumberOpt {
     #[structopt(name = "number", long, short = "n", default_value = "0")]
     number: u64,
 }
 
-pub struct GetEpochUnclesByNumberCommand;
+pub struct ListEpochUnclesByNumberCommand;
 
-impl CommandAction for GetEpochUnclesByNumberCommand {
+impl CommandAction for ListEpochUnclesByNumberCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = GetEpochUnclesByNumberOpt;
+    type Opt = ListEpochUnclesByNumberOpt;
     type ReturnItem = Vec<UncleInfo>;
 
     fn run(

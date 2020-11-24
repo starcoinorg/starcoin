@@ -8,7 +8,7 @@ use structopt::StructOpt;
 
 /// Show the path from uncle parent block to mint block.
 #[derive(Debug, StructOpt)]
-#[structopt(name = "uncle_path")]
+#[structopt(name = "path")]
 pub struct UnclePathOpt {
     #[structopt(short = "b")]
     block_id: HashValue,
