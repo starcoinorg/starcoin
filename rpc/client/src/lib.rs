@@ -27,7 +27,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
 use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
@@ -503,6 +503,20 @@ impl RpcClient {
             inner
                 .chain_client
                 .get_epoch_uncles_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn epoch_uncle_summary_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<EpochUncleSummary> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .epoch_uncle_summary_by_number(number)
                 .compat()
                 .await
         })

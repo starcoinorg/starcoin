@@ -5,7 +5,7 @@ use crate::message::{ChainRequest, ChainResponse};
 use anyhow::{bail, Result};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
-use starcoin_types::block::{BlockState, BlockSummary};
+use starcoin_types::block::{BlockState, BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::peer_info::PeerId;
@@ -59,6 +59,10 @@ pub trait ReadableChainService {
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
     fn get_epoch_uncles_by_number(&self, number: Option<BlockNumber>) -> Result<Vec<BlockSummary>>;
     fn uncle_path(&self, block_id: HashValue, uncle_id: HashValue) -> Result<Vec<BlockHeader>>;
+    fn epoch_uncle_summary_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<EpochUncleSummary>;
 }
 
 /// Writeable block chain service trait
@@ -127,6 +131,10 @@ pub trait ChainAsyncService:
         &self,
         number: Option<BlockNumber>,
     ) -> Result<Vec<BlockSummary>>;
+    async fn epoch_uncle_summary_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<EpochUncleSummary>;
 }
 
 #[async_trait::async_trait]
@@ -425,6 +433,20 @@ where
             Ok(summaries)
         } else {
             bail!("get epoch uncles error.")
+        }
+    }
+
+    async fn epoch_uncle_summary_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<EpochUncleSummary> {
+        let response = self
+            .send(ChainRequest::EpochUncleSummaryByNumber(number))
+            .await??;
+        if let ChainResponse::UncleSummary(summary) = response {
+            Ok(summary)
+        } else {
+            bail!("epoch uncle summary error.")
         }
     }
 

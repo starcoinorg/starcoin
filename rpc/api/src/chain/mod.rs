@@ -6,7 +6,7 @@ use crate::types::pubsub::{Event, EventFilter};
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
@@ -96,4 +96,9 @@ pub trait ChainApi {
         block_id: HashValue,
         uncle_id: HashValue,
     ) -> FutureResult<Vec<BlockHeader>>;
+
+    /// Epoch uncle summary by number.
+    #[rpc(name = "chain.epoch_uncle_summary_by_number")]
+    fn epoch_uncle_summary_by_number(&self, number: BlockNumber)
+        -> FutureResult<EpochUncleSummary>;
 }

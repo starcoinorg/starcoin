@@ -12,7 +12,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::block::BlockSummary;
+use starcoin_types::block::{BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
@@ -189,6 +189,9 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             )),
             ChainRequest::UnclePath(block_id, uncle_id) => Ok(ChainResponse::BlockHeaderVec(
                 self.inner.uncle_path(block_id, uncle_id)?,
+            )),
+            ChainRequest::EpochUncleSummaryByNumber(number) => Ok(ChainResponse::UncleSummary(
+                self.inner.epoch_uncle_summary_by_number(number)?,
             )),
         }
     }
@@ -424,6 +427,41 @@ impl ReadableChainService for ChainReaderServiceInner {
         }
 
         Ok(block_summaries)
+    }
+
+    fn epoch_uncle_summary_by_number(
+        &self,
+        number: Option<BlockNumber>,
+    ) -> Result<EpochUncleSummary> {
+        let epoch_info = self.main.get_epoch_info_by_number(number)?;
+        let start_number = epoch_info.start_block_number();
+        let mut end_number = epoch_info.end_block_number();
+        if end_number > self.main.current_header().number() {
+            end_number = self.main.current_header().number();
+        }
+
+        let mut sum: u64 = 0;
+        for number in start_number..(end_number + 1) {
+            if let Some(block) = self.main.get_block_by_number(number)? {
+                if let Some(block_uncles) = block.uncles() {
+                    block_uncles.iter().for_each(|uncle| {
+                        if let Ok(Some(uncle_parent_header)) =
+                            self.main.get_header(uncle.parent_hash)
+                        {
+                            if uncle_parent_header.number() <= block.header().number() {
+                                sum += block.header().number() - uncle_parent_header.number();
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        Ok(EpochUncleSummary::new(
+            epoch_info.number(),
+            epoch_info.uncles(),
+            sum,
+        ))
     }
 }
 
