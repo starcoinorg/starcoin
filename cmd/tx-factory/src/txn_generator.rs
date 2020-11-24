@@ -61,6 +61,7 @@ impl MockTxnGenerator {
         receiver_address: AccountAddress,
         receiver_public_key: Option<Ed25519PublicKey>,
         amount: u128,
+        gas_price: u64,
         expiration_timestamp: u64,
     ) -> Result<RawUserTransaction> {
         let transfer_txn = starcoin_executor::build_transfer_txn(
@@ -71,7 +72,7 @@ impl MockTxnGenerator {
                 .map(|k| AuthenticationKey::ed25519(k)),
             sequence_number,
             amount,
-            1,
+            gas_price,
             5000,
             expiration_timestamp,
             self.chain_id,

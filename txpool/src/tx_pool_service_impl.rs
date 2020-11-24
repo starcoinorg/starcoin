@@ -247,6 +247,11 @@ impl Inner {
             max_len: max_len as usize,
             ordering: PendingOrdering::Priority,
         };
+        self.queue.inner_status(
+            self.get_pool_client(),
+            u64::max_value(),
+            current_timestamp_secs,
+        );
         self.queue.pending(self.get_pool_client(), pending_settings)
     }
     pub(crate) fn next_sequence_number(&self, address: AccountAddress) -> Option<u64> {

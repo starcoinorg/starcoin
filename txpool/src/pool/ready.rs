@@ -74,7 +74,9 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .nonces
             .get_mut(sender)
             .expect("sender nonce should exists");
-        match tx.transaction.sequence_number().cmp(nonce) {
+        let seq = tx.transaction.sequence_number();
+        debug!("client noce: {}, seq: {}", nonce, seq);
+        match seq.cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
                 Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
@@ -102,7 +104,9 @@ impl Expiration {
 
 impl tx_pool::Ready<VerifiedTransaction> for Expiration {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
-        if tx.transaction.transaction.expiration_timestamp_secs() <= self.now {
+        let expire = tx.transaction.transaction.expiration_timestamp_secs();
+        if expire <= self.now {
+            debug!("Expiration tx: {}, now: {}", expire, self.now);
             tx_pool::Readiness::Stale
         } else {
             tx_pool::Readiness::Ready
