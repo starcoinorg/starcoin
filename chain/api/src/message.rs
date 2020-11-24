@@ -4,6 +4,7 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::EpochUncleSummary;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockSummary, BlockTemplate},
@@ -54,6 +55,7 @@ pub enum ChainRequest {
     TPS(Option<BlockNumber>),
     GetEpochUnclesByNumber(Option<BlockNumber>),
     UnclePath(HashValue, HashValue),
+    EpochUncleSummaryByNumber(Option<BlockNumber>),
 }
 
 impl ServiceRequest for ChainRequest {
@@ -86,4 +88,5 @@ pub enum ChainResponse {
     HashVec(Vec<HashValue>),
     TPS(TPS),
     BlockSummaries(Vec<BlockSummary>),
+    UncleSummary(EpochUncleSummary),
 }
