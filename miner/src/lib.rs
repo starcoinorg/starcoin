@@ -128,9 +128,10 @@ impl MinerService {
         })?;
 
         if task.minting_blob != minting_blob {
-            warn!(
-                "Header hash mismatch expect: {:?}, got: {:?}, probably received old job result.",
-                task.minting_blob, minting_blob
+            info!(
+                "[miner] Jobs hash mismatch expect: {}, got: {}, probably received old job result.",
+                hex::encode(task.minting_blob.as_slice()),
+                hex::encode(minting_blob.as_slice())
             );
             self.current_task = Some(task);
             return Ok(());

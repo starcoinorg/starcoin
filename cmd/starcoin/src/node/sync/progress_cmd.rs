@@ -5,7 +5,7 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_sync_api::TaskProgressReport;
+use starcoin_sync_api::SyncProgressReport;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
@@ -18,7 +18,7 @@ impl CommandAction for ProgressCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
     type Opt = ProgressOpt;
-    type ReturnItem = TaskProgressReport;
+    type ReturnItem = SyncProgressReport;
 
     fn run(
         &self,
