@@ -12,6 +12,12 @@ use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 use tokio::time::Duration;
 
+#[cfg(not(target_env = "msvc"))]
+use jemallocator::Jemalloc;
+
+#[cfg(not(target_env = "msvc"))]
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
 static EXIT_CODE_NEED_HELP: i32 = 120;
