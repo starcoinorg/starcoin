@@ -758,7 +758,7 @@ impl EpochUncleSummary {
             epoch,
             uncles,
             sum,
-            avg: if uncles > 0 { uncles / sum } else { 0 },
+            avg: if uncles > 0 { sum / uncles } else { 0 },
         }
     }
 }
