@@ -1,1050 +1,1468 @@
 +-------------------------+
 | Move Coverage Summary   |
 +-------------------------+
-Module 00000000000000000000000000000001::BitOperators
-	fun and
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun lshift
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun not
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun or
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun rshift
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun xor
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::Timestamp
-	fun initialize
-		total instructions: 16
-		covered instructions: 16
-		% coverage: 100.00
-	fun is_genesis
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun now_seconds
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun update_global_time
-		total instructions: 29
-		covered instructions: 29
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::STC
-	fun burn
-		total instructions: 8
-		covered instructions: 0
-		% coverage: 0.00
-	fun initialize
-		total instructions: 23
-		covered instructions: 23
-		% coverage: 100.00
-	fun is_stc
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun token_address
-		total instructions: 2
-		covered instructions: 2
-		% coverage: 100.00
->>> % Module coverage: 77.78
-Module 00000000000000000000000000000001::TransactionFee
-	fun add_txn_fee_token
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun distribute_transaction_fees
-		total instructions: 35
-		covered instructions: 35
-		% coverage: 100.00
-	fun initialize
-		total instructions: 22
-		covered instructions: 14
-		% coverage: 63.64
-	fun pay_fee
-		total instructions: 8
-		covered instructions: 8
-		% coverage: 100.00
->>> % Module coverage: 88.57
-Module 00000000000000000000000000000001::SignedInteger64
-	fun add_u64
-		total instructions: 51
-		covered instructions: 51
-		% coverage: 100.00
-	fun create_from_raw_value
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun divide_u64
-		total instructions: 13
-		covered instructions: 13
-		% coverage: 100.00
-	fun get_value
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun is_negative
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun multiply_u64
-		total instructions: 13
-		covered instructions: 13
-		% coverage: 100.00
-	fun sub_u64
-		total instructions: 51
-		covered instructions: 51
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::Option
-	fun borrow
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun borrow_mut
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun borrow_with_default
-		total instructions: 20
-		covered instructions: 20
-		% coverage: 100.00
-	fun contains
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun destroy_none
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun destroy_some
-		total instructions: 10
-		covered instructions: 10
-		% coverage: 100.00
-	fun destroy_with_default
-		total instructions: 16
-		covered instructions: 16
-		% coverage: 100.00
-	fun extract
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun fill
-		total instructions: 15
-		covered instructions: 11
-		% coverage: 73.33
-	fun get_with_default
-		total instructions: 19
-		covered instructions: 19
-		% coverage: 100.00
-	fun is_none
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun is_some
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun none
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun some
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun swap
-		total instructions: 11
-		covered instructions: 11
-		% coverage: 100.00
->>> % Module coverage: 96.97
-Module 00000000000000000000000000000001::Hash
-	native fun sha2_256
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun sha3_256
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: NaN
-Module 00000000000000000000000000000001::Account
-	fun accept_token
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun authentication_key
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun balance
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun balance_for
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun create_account
-		total instructions: 13
-		covered instructions: 13
-		% coverage: 100.00
-	fun create_genesis_account
-		total instructions: 16
-		covered instructions: 14
-		% coverage: 87.50
-	native fun create_signer
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun delegated_key_rotation_capability
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun delegated_withdraw_capability
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun deposit
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun deposit_to_sender
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun deposit_with_metadata
-		total instructions: 8
-		covered instructions: 8
-		% coverage: 100.00
-	fun deposit_with_sender_and_metadata
-		total instructions: 44
-		covered instructions: 42
-		% coverage: 95.45
-	native fun destroy_signer
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun exists_at
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun extract_key_rotation_capability
-		total instructions: 18
-		covered instructions: 18
-		% coverage: 100.00
-	fun extract_withdraw_capability
-		total instructions: 18
-		covered instructions: 16
-		% coverage: 88.89
-	fun is_accepts_token
-		total instructions: 3
-		covered instructions: 0
-		% coverage: 0.00
-	fun key_rotation_capability_address
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun make_account
-		total instructions: 36
-		covered instructions: 32
-		% coverage: 88.89
-	fun mint_to_address
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun pay_from_capability
-		total instructions: 11
-		covered instructions: 11
-		% coverage: 100.00
-	fun pay_from_sender
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun pay_from_sender_with_metadata
-		total instructions: 9
-		covered instructions: 9
-		% coverage: 100.00
-	fun release_genesis_signer
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun restore_key_rotation_capability
-		total instructions: 10
-		covered instructions: 10
-		% coverage: 100.00
-	fun restore_withdraw_capability
-		total instructions: 10
-		covered instructions: 10
-		% coverage: 100.00
-	fun rotate_authentication_key
-		total instructions: 21
-		covered instructions: 21
-		% coverage: 100.00
-	fun rotate_authentication_key_for_account
-		total instructions: 16
-		covered instructions: 0
-		% coverage: 0.00
-	fun sequence_number
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
-	fun sequence_number_for_account
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
-	fun txn_epilogue
-		total instructions: 84
-		covered instructions: 64
-		% coverage: 76.19
-	fun txn_prologue
-		total instructions: 73
-		covered instructions: 61
-		% coverage: 83.56
-	fun withdraw_capability_address
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun withdraw_from_balance
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun withdraw_from_sender
-		total instructions: 21
-		covered instructions: 17
-		% coverage: 80.95
-	fun withdraw_with_capability
-		total instructions: 12
-		covered instructions: 12
-		% coverage: 100.00
->>> % Module coverage: 85.49
-Module 00000000000000000000000000000001::Authenticator
-	fun create_multi_ed25519
-		total instructions: 32
-		covered instructions: 32
-		% coverage: 100.00
-	fun ed25519_authentication_key
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun multi_ed25519_authentication_key
-		total instructions: 41
-		covered instructions: 41
-		% coverage: 100.00
-	fun public_keys
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun threshold
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::Config
-	fun emit_config_change_event
-		total instructions: 9
-		covered instructions: 9
-		% coverage: 100.00
-	fun extract_modify_config_capability
-		total instructions: 10
-		covered instructions: 10
-		% coverage: 100.00
+Module 0x00000000000000000000000000000001::ChainId
 	fun get
-		total instructions: 15
-		covered instructions: 0
-		% coverage: 0.00
-	fun get_by_address
-		total instructions: 12
-		covered instructions: 10
-		% coverage: 83.33
-	fun publish_new_config
-		total instructions: 16
-		covered instructions: 16
-		% coverage: 100.00
-	fun publish_new_config_with_capability
-		total instructions: 6
-		covered instructions: 3
-		% coverage: 50.00
-	fun restore_modify_config_capability
-		total instructions: 10
-		covered instructions: 10
-		% coverage: 100.00
-	fun set
-		total instructions: 29
-		covered instructions: 27
-		% coverage: 93.10
-	fun set_with_capability
-		total instructions: 24
-		covered instructions: 20
-		% coverage: 83.33
->>> % Module coverage: 80.15
-Module 00000000000000000000000000000001::Consensus
-	fun adjust_epoch
-		total instructions: 322
-		covered instructions: 282
-		% coverage: 87.58
-	fun base_block_difficulty_window
-		total instructions: 6
-		covered instructions: 0
-		% coverage: 0.00
-	fun block_time_target
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun end_number
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun epoch_number
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun epoch_start_time
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun epoch_time_target
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun first_epoch
-		total instructions: 60
-		covered instructions: 54
-		% coverage: 90.00
-	fun get_config
-		total instructions: 3
-		covered instructions: 3
+		total: 5
+		covered: 5
 		% coverage: 100.00
 	fun initialize
-		total instructions: 129
-		covered instructions: 89
-		% coverage: 68.99
+		total: 8
+		covered: 8
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::ConsensusConfig
+	fun base_block_difficulty_window
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun base_block_gas_limit
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun base_block_time_target
+		total: 4
+		covered: 4
+		% coverage: 100.00
 	fun base_max_uncles_per_block
-		total instructions: 6
-		covered instructions: 6
+		total: 4
+		covered: 4
 		% coverage: 100.00
-	fun min_time_target
-		total instructions: 6
-		covered instructions: 6
+	fun base_reward_per_block
+		total: 4
+		covered: 4
 		% coverage: 100.00
-	fun reward_half_epoch
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun reward_per_block
-		total instructions: 18
-		covered instructions: 18
-		% coverage: 100.00
-	fun reward_per_epoch
-		total instructions: 7
-		covered instructions: 0
-		% coverage: 0.00
 	fun base_reward_per_uncle_percent
-		total instructions: 6
-		covered instructions: 6
+		total: 4
+		covered: 4
 		% coverage: 100.00
-	fun set_epoch_time_target
-		total instructions: 11
-		covered instructions: 0
+	fun compute_reward_per_block
+		total: 6
+		covered: 0
 		% coverage: 0.00
-	fun set_reward_half_epoch
-		total instructions: 11
-		covered instructions: 0
-		% coverage: 0.00
-	fun set_uncle_rate_target
-		total instructions: 11
-		covered instructions: 0
-		% coverage: 0.00
-	fun start_number
-		total instructions: 7
-		covered instructions: 7
+	fun do_compute_reward_per_block
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun epoch_block_count
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun get_config
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun initialize
+		total: 18
+		covered: 18
+		% coverage: 100.00
+	fun max_block_time_target
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun min_block_time_target
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun new_consensus_config
+		total: 145
+		covered: 125
+		% coverage: 86.21
+	fun strategy
+		total: 4
+		covered: 4
 		% coverage: 100.00
 	fun uncle_rate_target
-		total instructions: 6
-		covered instructions: 6
+		total: 4
+		covered: 4
 		% coverage: 100.00
-	fun uncles
-		total instructions: 7
-		covered instructions: 0
-		% coverage: 0.00
->>> % Module coverage: 78.81
-Module 00000000000000000000000000000001::Debug
-	native fun print
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun print_stack_trace
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: NaN
-Module 00000000000000000000000000000001::Block
-	fun get_current_author
-		total instructions: 5
-		covered instructions: 5
+>>> % Module coverage: 88.55
+Module 0x00000000000000000000000000000001::ModifyDaoConfigProposal
+	fun execute
+		total: 19
+		covered: 19
 		% coverage: 100.00
-	fun get_current_block_height
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun get_parent_hash
-		total instructions: 5
-		covered instructions: 0
-		% coverage: 0.00
-	fun initialize
-		total instructions: 28
-		covered instructions: 20
-		% coverage: 71.43
-	fun process_block_metadata
-		total instructions: 48
-		covered instructions: 44
-		% coverage: 91.67
->>> % Module coverage: 81.32
-Module 00000000000000000000000000000001::BlockReward
-	fun initialize
-		total instructions: 44
-		covered instructions: 32
-		% coverage: 72.73
-	fun process_block_reward
-		total instructions: 165
-		covered instructions: 127
-		% coverage: 76.97
-	fun withdraw
-		total instructions: 24
-		covered instructions: 19
-		% coverage: 79.17
->>> % Module coverage: 76.39
-Module 00000000000000000000000000000001::Compare
-	fun cmp_lcs_bytes
-		total instructions: 61
-		covered instructions: 51
-		% coverage: 83.61
-	fun cmp_u64
-		total instructions: 22
-		covered instructions: 22
-		% coverage: 100.00
-	fun cmp_u8
-		total instructions: 22
-		covered instructions: 22
-		% coverage: 100.00
->>> % Module coverage: 90.48
-Module 00000000000000000000000000000001::Version
-	fun get
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun initialize
-		total instructions: 16
-		covered instructions: 16
-		% coverage: 100.00
-	fun set
-		total instructions: 31
-		covered instructions: 11
-		% coverage: 35.48
->>> % Module coverage: 62.96
-Module 00000000000000000000000000000001::VMConfig
-	fun initialize
-		total instructions: 31
-		covered instructions: 27
-		% coverage: 87.10
-	fun set_publishing_option
-		total instructions: 11
-		covered instructions: 0
-		% coverage: 0.00
->>> % Module coverage: 64.29
-Module 00000000000000000000000000000001::TransactionTimeout
-	fun initialize
-		total instructions: 16
-		covered instructions: 12
-		% coverage: 75.00
-	fun is_valid_transaction_timestamp
-		total instructions: 13
-		covered instructions: 13
-		% coverage: 100.00
-	fun set_timeout
-		total instructions: 17
-		covered instructions: 0
-		% coverage: 0.00
->>> % Module coverage: 54.35
-Module 00000000000000000000000000000001::PackageTxnManager
-	fun STRATEGY_ARBITRARY
-		total instructions: 2
-		covered instructions: 2
-		% coverage: 100.00
-	fun STRATEGY_FREEZE
-		total instructions: 2
-		covered instructions: 0
-		% coverage: 0.00
-	fun STRATEGY_NEW_MODULE
-		total instructions: 2
-		covered instructions: 0
-		% coverage: 0.00
-	fun STRATEGY_TWO_PHASE
-		total instructions: 2
-		covered instructions: 2
-		% coverage: 100.00
-	fun cancel_upgrade_plan
-		total instructions: 9
-		covered instructions: 0
-		% coverage: 0.00
-	fun cancel_upgrade_plan_with_cap
-		total instructions: 31
-		covered instructions: 0
-		% coverage: 0.00
-	fun check_package_txn
-		total instructions: 75
-		covered instructions: 55
-		% coverage: 73.33
-	fun destroy_upgrade_plan_cap
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
-	fun extract_submit_upgrade_plan_cap
-		total instructions: 15
-		covered instructions: 0
-		% coverage: 0.00
-	fun finish_upgrade_plan
-		total instructions: 8
-		covered instructions: 0
-		% coverage: 0.00
-	fun get_module_maintainer
-		total instructions: 14
-		covered instructions: 14
-		% coverage: 100.00
-	fun get_module_upgrade_strategy
-		total instructions: 14
-		covered instructions: 14
-		% coverage: 100.00
-	fun get_upgrade_plan
-		total instructions: 14
-		covered instructions: 11
-		% coverage: 78.57
-	fun grant_maintainer
-		total instructions: 20
-		covered instructions: 12
-		% coverage: 60.00
-	fun package_txn_epilogue
-		total instructions: 23
-		covered instructions: 16
-		% coverage: 69.57
-	fun package_txn_prologue
-		total instructions: 14
-		covered instructions: 12
-		% coverage: 85.71
-	fun submit_upgrade_plan
-		total instructions: 11
-		covered instructions: 11
-		% coverage: 100.00
-	fun submit_upgrade_plan_with_cap
-		total instructions: 34
-		covered instructions: 28
-		% coverage: 82.35
-	fun update_module_upgrade_strategy
-		total instructions: 107
-		covered instructions: 62
-		% coverage: 57.94
->>> % Module coverage: 59.60
-Module 00000000000000000000000000000001::Genesis
-	fun initialize
-		total instructions: 111
-		covered instructions: 107
-		% coverage: 96.40
->>> % Module coverage: 96.40
-Module 00000000000000000000000000000001::Signature
-	native fun ed25519_validate_pubkey
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun ed25519_verify
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: NaN
-Module 00000000000000000000000000000001::SharedEd25519PublicKey
-	fun exists_at
-		total instructions: 3
-		covered instructions: 3
-		% coverage: 100.00
-	fun key
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	fun publish
-		total instructions: 12
-		covered instructions: 12
-		% coverage: 100.00
-	fun rotate_key
-		total instructions: 6
-		covered instructions: 6
-		% coverage: 100.00
-	fun rotate_key_
-		total instructions: 19
-		covered instructions: 19
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::FixedPoint32
-	fun create_from_rational
-		total instructions: 36
-		covered instructions: 0
-		% coverage: 0.00
-	fun create_from_raw_value
-		total instructions: 3
-		covered instructions: 0
-		% coverage: 0.00
-	fun divide_u64
-		total instructions: 15
-		covered instructions: 0
-		% coverage: 0.00
-	fun get_raw_value
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
-	fun multiply_u64
-		total instructions: 15
-		covered instructions: 0
-		% coverage: 0.00
->>> % Module coverage: 0.00
-Module 00000000000000000000000000000001::SortedLinkedList
-	fun create_new_list
-		total instructions: 31
-		covered instructions: 31
-		% coverage: 100.00
-	fun entry_handle
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun find_position_and_insert
-		total instructions: 98
-		covered instructions: 88
-		% coverage: 89.80
-	fun get_addr
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun get_data
-		total instructions: 23
-		covered instructions: 21
-		% coverage: 91.30
-	fun get_index
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	fun get_prev_node_addr
-		total instructions: 24
-		covered instructions: 22
-		% coverage: 91.67
-	fun insert_node
-		total instructions: 194
-		covered instructions: 182
-		% coverage: 93.81
-	fun is_head_node
-		total instructions: 50
-		covered instructions: 46
-		% coverage: 92.00
-	fun node_exists
-		total instructions: 27
-		covered instructions: 23
-		% coverage: 85.19
-	fun remove_list
-		total instructions: 87
-		covered instructions: 71
-		% coverage: 81.61
-	fun remove_node
-		total instructions: 96
-		covered instructions: 94
-		% coverage: 97.92
-	fun remove_node_by_list_owner
-		total instructions: 50
-		covered instructions: 40
-		% coverage: 80.00
-	fun remove_node_by_node_owner
-		total instructions: 35
-		covered instructions: 25
-		% coverage: 71.43
->>> % Module coverage: 90.10
-Module 00000000000000000000000000000001::TransactionManager
-	fun TXN_PAYLOAD_TYPE_PACKAGE
-		total instructions: 2
-		covered instructions: 2
-		% coverage: 100.00
-	fun TXN_PAYLOAD_TYPE_SCRIPT
-		total instructions: 2
-		covered instructions: 2
-		% coverage: 100.00
-	fun block_prologue
-		total instructions: 38
-		covered instructions: 34
-		% coverage: 89.47
-	fun distribute
-		total instructions: 18
-		covered instructions: 18
-		% coverage: 100.00
-	fun epilogue
-		total instructions: 34
-		covered instructions: 30
-		% coverage: 88.24
-	fun prologue
-		total instructions: 45
-		covered instructions: 37
-		% coverage: 82.22
->>> % Module coverage: 88.49
-Module 00000000000000000000000000000001::Math
-	fun pow
-		total instructions: 36
-		covered instructions: 36
-		% coverage: 100.00
-	fun sqrt
-		total instructions: 47
-		covered instructions: 47
-		% coverage: 100.00
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::Vector
-	fun append
-		total instructions: 17
-		covered instructions: 17
-		% coverage: 100.00
-	native fun borrow
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun borrow_mut
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun contains
-		total instructions: 34
-		covered instructions: 28
-		% coverage: 82.35
-	native fun destroy_empty
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun empty
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun index_of
-		total instructions: 36
-		covered instructions: 36
-		% coverage: 100.00
-	fun is_empty
-		total instructions: 5
-		covered instructions: 5
-		% coverage: 100.00
-	native fun length
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun pop_back
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	native fun push_back
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun remove
-		total instructions: 38
-		covered instructions: 21
-		% coverage: 55.26
-	fun reverse
-		total instructions: 39
-		covered instructions: 36
-		% coverage: 92.31
-	fun singleton
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	native fun swap
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
-	fun swap_remove
-		total instructions: 13
-		covered instructions: 0
-		% coverage: 0.00
->>> % Module coverage: 79.37
-Module 00000000000000000000000000000001::Signer
-	fun address_of
-		total instructions: 4
-		covered instructions: 4
-		% coverage: 100.00
-	native fun borrow_address
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: 100.00
-Module 00000000000000000000000000000001::LCS
-	native fun to_bytes
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: NaN
-Module 00000000000000000000000000000001::Event
-	fun destroy_handle
-		total instructions: 5
-		covered instructions: 0
-		% coverage: 0.00
-	fun emit_event
-		total instructions: 19
-		covered instructions: 19
-		% coverage: 100.00
-	fun fresh_guid
-		total instructions: 21
-		covered instructions: 21
-		% coverage: 100.00
-	fun new_event_handle
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	fun publish_generator
-		total instructions: 7
-		covered instructions: 7
-		% coverage: 100.00
-	native fun write_to_event_store
-		total instructions: 0
-		covered instructions: 0
-		% coverage: NaN
->>> % Module coverage: 91.53
-Module 00000000000000000000000000000001::Token
+	fun plugin
+		total: 26
+		covered: 22
+		% coverage: 84.62
+	fun propose
+		total: 24
+		covered: 20
+		% coverage: 83.33
+>>> % Module coverage: 88.41
+Module 0x00000000000000000000000000000001::Token
 	fun add_burn_capability
-		total instructions: 4
-		covered instructions: 0
+		total: 4
+		covered: 0
 		% coverage: 0.00
 	fun add_mint_capability
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
-	fun assert_is_token
-		total instructions: 7
-		covered instructions: 0
-		% coverage: 0.00
+		total: 4
+		covered: 4
+		% coverage: 100.00
 	fun burn
-		total instructions: 6
-		covered instructions: 0
+		total: 6
+		covered: 0
 		% coverage: 0.00
 	fun burn_with_capability
-		total instructions: 29
-		covered instructions: 0
-		% coverage: 0.00
-	fun code_to_bytes
-		total instructions: 17
-		covered instructions: 17
+		total: 28
+		covered: 28
 		% coverage: 100.00
 	fun deposit
-		total instructions: 12
-		covered instructions: 12
+		total: 12
+		covered: 12
 		% coverage: 100.00
 	fun destroy_burn_capability
-		total instructions: 4
-		covered instructions: 0
+		total: 4
+		covered: 0
 		% coverage: 0.00
+	fun destroy_empty_key
+		total: 18
+		covered: 16
+		% coverage: 88.89
 	fun destroy_mint_capability
-		total instructions: 4
-		covered instructions: 0
+		total: 4
+		covered: 0
 		% coverage: 0.00
 	fun destroy_zero
-		total instructions: 12
-		covered instructions: 10
-		% coverage: 83.33
-	fun fractional_part
-		total instructions: 9
-		covered instructions: 0
-		% coverage: 0.00
-	fun is_registered_in
-		total instructions: 3
-		covered instructions: 3
+		total: 15
+		covered: 13
+		% coverage: 86.67
+	fun do_mint
+		total: 27
+		covered: 27
 		% coverage: 100.00
-	fun is_token
-		total instructions: 7
-		covered instructions: 0
+	fun end_time_of_key
+		total: 4
+		covered: 0
 		% coverage: 0.00
+	fun is_empty_key
+		total: 8
+		covered: 8
+		% coverage: 100.00
+	fun is_registered_in
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun is_same_token
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun issue_fixed_mint_key
+		total: 32
+		covered: 28
+		% coverage: 87.50
+	fun issue_linear_mint_key
+		total: 30
+		covered: 26
+		% coverage: 86.67
 	fun join
-		total instructions: 5
-		covered instructions: 0
+		total: 5
+		covered: 0
 		% coverage: 0.00
 	fun market_cap
-		total instructions: 9
-		covered instructions: 9
+		total: 7
+		covered: 7
 		% coverage: 100.00
 	fun mint
-		total instructions: 6
-		covered instructions: 6
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun mint_amount_of_fixed_key
+		total: 20
+		covered: 20
+		% coverage: 100.00
+	fun mint_amount_of_linear_key
+		total: 41
+		covered: 41
 		% coverage: 100.00
 	fun mint_with_capability
-		total instructions: 28
-		covered instructions: 28
+		total: 3
+		covered: 3
 		% coverage: 100.00
+	fun mint_with_fixed_key
+		total: 21
+		covered: 21
+		% coverage: 100.00
+	fun mint_with_linear_key
+		total: 30
+		covered: 26
+		% coverage: 86.67
 	native fun name_of
-		total instructions: 0
-		covered instructions: 0
+		total: 0
+		covered: 0
 		% coverage: NaN
+	fun name_of_token
+		total: 2
+		covered: 2
+		% coverage: 100.00
 	fun register_token
-		total instructions: 34
-		covered instructions: 30
-		% coverage: 88.24
+		total: 52
+		covered: 48
+		% coverage: 92.31
 	fun remove_burn_capability
-		total instructions: 4
-		covered instructions: 4
+		total: 4
+		covered: 4
 		% coverage: 100.00
 	fun remove_mint_capability
-		total instructions: 4
-		covered instructions: 0
-		% coverage: 0.00
+		total: 4
+		covered: 4
+		% coverage: 100.00
 	fun scaling_factor
-		total instructions: 9
-		covered instructions: 0
+		total: 7
+		covered: 0
 		% coverage: 0.00
 	fun split
-		total instructions: 7
-		covered instructions: 0
+		total: 7
+		covered: 0
 		% coverage: 0.00
+	fun split_fixed_key
+		total: 29
+		covered: 25
+		% coverage: 86.21
+	fun split_linear_key
+		total: 84
+		covered: 72
+		% coverage: 85.71
+	fun token_address
+		total: 6
+		covered: 6
+		% coverage: 100.00
 	fun token_code
-		total instructions: 9
-		covered instructions: 9
+		total: 9
+		covered: 9
 		% coverage: 100.00
 	fun value
-		total instructions: 4
-		covered instructions: 4
+		total: 4
+		covered: 4
 		% coverage: 100.00
 	fun withdraw
-		total instructions: 23
-		covered instructions: 19
-		% coverage: 82.61
+		total: 26
+		covered: 22
+		% coverage: 84.62
 	fun zero
-		total instructions: 3
-		covered instructions: 3
+		total: 3
+		covered: 3
 		% coverage: 100.00
->>> % Module coverage: 58.56
-Module 00000000000000000000000000000001::CoreAddresses
+>>> % Module coverage: 85.86
+Module 0x00000000000000000000000000000001::PackageTxnManager
+	fun account_address
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun cancel_upgrade_plan
+		total: 9
+		covered: 0
+		% coverage: 0.00
+	fun cancel_upgrade_plan_with_cap
+		total: 37
+		covered: 0
+		% coverage: 0.00
+	fun check_package_txn
+		total: 73
+		covered: 55
+		% coverage: 75.34
+	fun destroy_upgrade_plan_cap
+		total: 4
+		covered: 0
+		% coverage: 0.00
+	fun extract_submit_upgrade_plan_cap
+		total: 18
+		covered: 16
+		% coverage: 88.89
+	fun finish_upgrade_plan
+		total: 35
+		covered: 35
+		% coverage: 100.00
+	fun get_module_upgrade_strategy
+		total: 14
+		covered: 14
+		% coverage: 100.00
+	fun get_strategy_arbitrary
+		total: 2
+		covered: 0
+		% coverage: 0.00
+	fun get_strategy_freeze
+		total: 2
+		covered: 0
+		% coverage: 0.00
+	fun get_strategy_new_module
+		total: 2
+		covered: 0
+		% coverage: 0.00
+	fun get_strategy_two_phase
+		total: 2
+		covered: 2
+		% coverage: 100.00
+	fun get_upgrade_plan
+		total: 14
+		covered: 11
+		% coverage: 78.57
+	fun package_txn_epilogue
+		total: 16
+		covered: 15
+		% coverage: 93.75
+	fun package_txn_prologue
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun submit_upgrade_plan
+		total: 12
+		covered: 12
+		% coverage: 100.00
+	fun submit_upgrade_plan_with_cap
+		total: 54
+		covered: 44
+		% coverage: 81.48
+	fun update_module_upgrade_strategy
+		total: 125
+		covered: 74
+		% coverage: 59.20
+>>> % Module coverage: 67.13
+Module 0x00000000000000000000000000000001::Event
+	fun destroy_handle
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun emit_event
+		total: 19
+		covered: 19
+		% coverage: 100.00
+	fun fresh_guid
+		total: 21
+		covered: 21
+		% coverage: 100.00
+	fun new_event_handle
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun publish_generator
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	native fun write_to_event_store
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::CoreAddresses
 	fun ASSOCIATION_ROOT_ADDRESS
-		total instructions: 2
-		covered instructions: 2
+		total: 2
+		covered: 2
 		% coverage: 100.00
-	fun GENESIS_ACCOUNT
-		total instructions: 2
-		covered instructions: 2
+	fun GENESIS_ADDRESS
+		total: 2
+		covered: 2
 		% coverage: 100.00
 	fun VM_RESERVED_ADDRESS
-		total instructions: 2
-		covered instructions: 2
+		total: 2
+		covered: 2
+		% coverage: 100.00
+	fun assert_genesis_address
+		total: 13
+		covered: 13
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Math
+	fun mul_div
+		total: 54
+		covered: 54
+		% coverage: 100.00
+	fun pow
+		total: 36
+		covered: 36
+		% coverage: 100.00
+	fun sqrt
+		total: 47
+		covered: 47
+		% coverage: 100.00
+	fun u128_max
+		total: 2
+		covered: 2
+		% coverage: 100.00
+	fun u64_max
+		total: 2
+		covered: 2
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::UpgradeModuleDaoProposal
+	fun plugin
+		total: 21
+		covered: 17
+		% coverage: 80.95
+	fun propose_module_upgrade
+		total: 28
+		covered: 24
+		% coverage: 85.71
+	fun submit_module_upgrade_plan
+		total: 34
+		covered: 30
+		% coverage: 88.24
+>>> % Module coverage: 85.54
+Module 0x00000000000000000000000000000001::BitOperators
+	fun and
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun lshift
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun not
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun or
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun rshift
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun xor
+		total: 5
+		covered: 5
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::TransactionTimeoutConfig
+	fun duration_seconds
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun get_transaction_timeout_config
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun initialize
+		total: 8
+		covered: 8
+		% coverage: 100.00
+	fun new_transaction_timeout_config
+		total: 3
+		covered: 3
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::SCS
+	native fun to_address
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun to_bytes
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: NaN
+Module 0x00000000000000000000000000000001::BlockReward
+	fun initialize
+		total: 12
+		covered: 12
+		% coverage: 100.00
+	fun process_block_reward
+		total: 188
+		covered: 158
+		% coverage: 84.04
+>>> % Module coverage: 85.00
+Module 0x00000000000000000000000000000001::Epoch
+	fun adjust_epoch
+		total: 200
+		covered: 187
+		% coverage: 93.50
+	fun adjust_gas_limit
+		total: 22
+		covered: 22
+		% coverage: 100.00
+	fun block_gas_limit
+		total: 7
+		covered: 0
+		% coverage: 0.00
+	fun block_time_target
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun compute_gas_limit
+		total: 71
+		covered: 71
+		% coverage: 100.00
+	fun compute_next_block_time_target
+		total: 73
+		covered: 69
+		% coverage: 94.52
+	fun emit_epoch_event
+		total: 24
+		covered: 24
+		% coverage: 100.00
+	fun end_block_number
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun in_or_decrease_gas_limit
+		total: 24
+		covered: 24
+		% coverage: 100.00
+	fun initialize
+		total: 36
+		covered: 36
+		% coverage: 100.00
+	fun number
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun start_block_number
+		total: 7
+		covered: 0
+		% coverage: 0.00
+	fun start_time
+		total: 7
+		covered: 0
+		% coverage: 0.00
+	fun total_gas
+		total: 7
+		covered: 0
+		% coverage: 0.00
+	fun uncles
+		total: 7
+		covered: 0
+		% coverage: 0.00
+	fun update_epoch_data
+		total: 42
+		covered: 42
+		% coverage: 100.00
+>>> % Module coverage: 90.51
+Module 0x00000000000000000000000000000001::SharedEd25519PublicKey
+	fun exists_at
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun key
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun publish
+		total: 12
+		covered: 12
+		% coverage: 100.00
+	fun rotate_key
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun rotate_key_
+		total: 22
+		covered: 22
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Account
+	fun accept_token
+		total: 16
+		covered: 16
+		% coverage: 100.00
+	fun authentication_key
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun balance
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun balance_for
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun create_account
+		total: 21
+		covered: 21
+		% coverage: 100.00
+	fun create_genesis_account
+		total: 9
+		covered: 9
+		% coverage: 100.00
+	native fun create_signer
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun delegated_key_rotation_capability
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun delegated_withdraw_capability
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun deposit
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun deposit_to_balance
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun deposit_to_self
+		total: 17
+		covered: 17
+		% coverage: 100.00
+	fun deposit_with_metadata
+		total: 23
+		covered: 21
+		% coverage: 91.30
+	native fun destroy_signer
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun emit_account_deposit_event
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun emit_account_withdraw_event
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun exists_at
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun extract_key_rotation_capability
+		total: 21
+		covered: 21
+		% coverage: 100.00
+	fun extract_withdraw_capability
+		total: 21
+		covered: 19
+		% coverage: 90.48
+	fun is_accepts_token
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun key_rotation_capability_address
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun make_account
+		total: 37
+		covered: 33
+		% coverage: 89.19
+	fun pay_from
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun pay_from_capability
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun pay_from_with_metadata
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun release_genesis_signer
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun restore_key_rotation_capability
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun restore_withdraw_capability
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun rotate_authentication_key
+		total: 24
+		covered: 24
+		% coverage: 100.00
+	fun sequence_number
+		total: 4
+		covered: 0
+		% coverage: 0.00
+	fun sequence_number_for_account
+		total: 4
+		covered: 0
+		% coverage: 0.00
+	fun txn_epilogue
+		total: 53
+		covered: 47
+		% coverage: 88.68
+	fun txn_prologue
+		total: 91
+		covered: 79
+		% coverage: 86.81
+	fun withdraw
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun withdraw_capability_address
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun withdraw_from_balance
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun withdraw_with_capability
+		total: 5
+		covered: 0
+		% coverage: 0.00
+	fun withdraw_with_capability_and_metadata
+		total: 15
+		covered: 15
+		% coverage: 100.00
+	fun withdraw_with_metadata
+		total: 27
+		covered: 23
+		% coverage: 85.19
+>>> % Module coverage: 91.67
+Module 0x00000000000000000000000000000001::Dao
+	fun _cast_vote
+		total: 30
+		covered: 21
+		% coverage: 70.00
+	fun _flip_vote
+		total: 51
+		covered: 51
+		% coverage: 100.00
+	fun _proposal_state
+		total: 98
+		covered: 98
+		% coverage: 100.00
+	fun _revoke_vote
+		total: 31
+		covered: 22
+		% coverage: 70.97
+	fun cast_vote
+		total: 138
+		covered: 116
+		% coverage: 84.06
+	fun change_vote
+		total: 123
+		covered: 90
+		% coverage: 73.17
+	fun destroy_terminated_proposal
+		total: 59
+		covered: 57
+		% coverage: 96.61
+	fun extract_proposal_action
+		total: 22
+		covered: 20
+		% coverage: 90.91
+	fun generate_next_proposal_id
+		total: 15
+		covered: 15
+		% coverage: 100.00
+	fun get_config
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun min_action_delay
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun modify_dao_config
+		total: 70
+		covered: 52
+		% coverage: 74.29
+	fun new_dao_config
+		total: 60
+		covered: 49
+		% coverage: 81.67
+	fun plugin
+		total: 36
+		covered: 32
+		% coverage: 88.89
+	fun proposal_exists
+		total: 15
+		covered: 12
+		% coverage: 80.00
+	fun proposal_info
+		total: 19
+		covered: 0
+		% coverage: 0.00
+	fun proposal_state
+		total: 24
+		covered: 20
+		% coverage: 83.33
+	fun propose
+		total: 60
+		covered: 46
+		% coverage: 76.67
+	fun queue_proposal_action
+		total: 25
+		covered: 23
+		% coverage: 92.00
+	fun quorum_votes
+		total: 13
+		covered: 13
+		% coverage: 100.00
+	fun revoke_vote
+		total: 98
+		covered: 82
+		% coverage: 83.67
+	fun set_min_action_delay
+		total: 38
+		covered: 0
+		% coverage: 0.00
+	fun set_voting_delay
+		total: 38
+		covered: 0
+		% coverage: 0.00
+	fun set_voting_period
+		total: 38
+		covered: 0
+		% coverage: 0.00
+	fun set_voting_quorum_rate
+		total: 48
+		covered: 0
+		% coverage: 0.00
+	fun unstake_votes
+		total: 54
+		covered: 45
+		% coverage: 83.33
+	fun vote_of
+		total: 40
+		covered: 32
+		% coverage: 80.00
+	fun voting_delay
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun voting_period
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun voting_quorum_rate
+		total: 6
+		covered: 6
+		% coverage: 100.00
+>>> % Module coverage: 72.72
+Module 0x00000000000000000000000000000001::STC
+	fun burn
+		total: 8
+		covered: 8
+		% coverage: 100.00
+	fun initialize
+		total: 35
+		covered: 35
+		% coverage: 100.00
+	fun is_stc
+		total: 2
+		covered: 2
+		% coverage: 100.00
+	fun token_address
+		total: 2
+		covered: 2
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::VMConfig
+	fun initialize
+		total: 19
+		covered: 19
+		% coverage: 100.00
+	fun new_vm_config
+		total: 19
+		covered: 19
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Vector
+	fun append
+		total: 17
+		covered: 17
+		% coverage: 100.00
+	native fun borrow
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun borrow_mut
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun contains
+		total: 34
+		covered: 28
+		% coverage: 82.35
+	native fun destroy_empty
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun empty
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun index_of
+		total: 36
+		covered: 36
+		% coverage: 100.00
+	fun is_empty
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	native fun length
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun pop_back
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun push_back
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun remove
+		total: 38
+		covered: 21
+		% coverage: 55.26
+	fun reverse
+		total: 39
+		covered: 36
+		% coverage: 92.31
+	fun singleton
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun split
+		total: 104
+		covered: 100
+		% coverage: 96.15
+	native fun swap
+		total: 0
+		covered: 0
+		% coverage: NaN
+	fun swap_remove
+		total: 13
+		covered: 0
+		% coverage: 0.00
+>>> % Module coverage: 85.32
+Module 0x00000000000000000000000000000001::Version
+	fun get
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun new_version
+		total: 3
+		covered: 3
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::FixedPoint32
+	fun create_from_rational
+		total: 61
+		covered: 61
+		% coverage: 100.00
+	fun create_from_raw_value
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun divide_u64
+		total: 39
+		covered: 39
+		% coverage: 100.00
+	fun get_raw_value
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun multiply_u64
+		total: 26
+		covered: 26
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::OnChainConfigDao
+	fun execute
+		total: 13
+		covered: 13
+		% coverage: 100.00
+	fun plugin
+		total: 26
+		covered: 22
+		% coverage: 84.62
+	fun propose_update
+		total: 6
+		covered: 6
+		% coverage: 100.00
+>>> % Module coverage: 91.11
+Module 0x00000000000000000000000000000001::SignedInteger64
+	fun add_u64
+		total: 51
+		covered: 51
+		% coverage: 100.00
+	fun create_from_raw_value
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun divide_u64
+		total: 13
+		covered: 13
+		% coverage: 100.00
+	fun get_value
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun is_negative
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun multiply_u64
+		total: 13
+		covered: 13
+		% coverage: 100.00
+	fun sub_u64
+		total: 51
+		covered: 51
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::TransactionPublishOption
+	fun initialize
+		total: 23
+		covered: 19
+		% coverage: 82.61
+	fun is_module_allowed
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun is_script_allowed
+		total: 20
+		covered: 14
+		% coverage: 70.00
+	fun new_transaction_publish_option
+		total: 52
+		covered: 52
+		% coverage: 100.00
+>>> % Module coverage: 90.20
+Module 0x00000000000000000000000000000001::Signature
+	native fun ed25519_validate_pubkey
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun ed25519_verify
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: NaN
+Module 0x00000000000000000000000000000001::Block
+	fun get_current_author
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun get_current_block_number
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun get_parent_hash
+		total: 5
+		covered: 0
+		% coverage: 0.00
+	fun initialize
+		total: 13
+		covered: 13
+		% coverage: 100.00
+	fun process_block_metadata
+		total: 47
+		covered: 47
+		% coverage: 100.00
+>>> % Module coverage: 93.33
+Module 0x00000000000000000000000000000001::Option
+	fun borrow
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun borrow_mut
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun borrow_with_default
+		total: 20
+		covered: 20
+		% coverage: 100.00
+	fun contains
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun destroy_none
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun destroy_some
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun destroy_with_default
+		total: 16
+		covered: 16
+		% coverage: 100.00
+	fun extract
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun fill
+		total: 15
+		covered: 11
+		% coverage: 73.33
+	fun get_with_default
+		total: 19
+		covered: 19
+		% coverage: 100.00
+	fun is_none
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun is_some
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun none
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun some
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun swap
+		total: 11
+		covered: 11
+		% coverage: 100.00
+>>> % Module coverage: 96.97
+Module 0x00000000000000000000000000000001::DummyToken
+	fun burn
+		total: 8
+		covered: 8
+		% coverage: 100.00
+	fun initialize
+		total: 18
+		covered: 18
+		% coverage: 100.00
+	fun is_dummy_token
+		total: 2
+		covered: 2
+		% coverage: 100.00
+	fun mint
+		total: 19
+		covered: 19
+		% coverage: 100.00
+	fun token_address
+		total: 2
+		covered: 2
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::RewardConfig
+	fun get_reward_config
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun initialize
+		total: 8
+		covered: 8
+		% coverage: 100.00
+	fun new_reward_config
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun reward_delay
+		total: 6
+		covered: 6
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::TransactionManager
+	fun block_prologue
+		total: 47
+		covered: 43
+		% coverage: 91.49
+	fun distribute
+		total: 15
+		covered: 15
+		% coverage: 100.00
+	fun epilogue
+		total: 23
+		covered: 23
+		% coverage: 100.00
+	fun prologue
+		total: 90
+		covered: 77
+		% coverage: 85.56
+>>> % Module coverage: 90.29
+Module 0x00000000000000000000000000000001::Box
+	fun destroy_empty
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun exists_at
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun length
+		total: 16
+		covered: 16
+		% coverage: 100.00
+	fun put
+		total: 23
+		covered: 23
+		% coverage: 100.00
+	fun put_all
+		total: 22
+		covered: 22
+		% coverage: 100.00
+	fun take
+		total: 29
+		covered: 29
+		% coverage: 100.00
+	fun take_all
+		total: 19
+		covered: 19
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Signer
+	fun address_of
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	native fun borrow_address
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::TransactionFee
+	fun add_txn_fee_token
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun distribute_transaction_fees
+		total: 28
+		covered: 28
+		% coverage: 100.00
+	fun initialize
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun pay_fee
+		total: 8
+		covered: 8
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Timestamp
+	fun assert_genesis
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun initialize
+		total: 9
+		covered: 9
+		% coverage: 100.00
+	fun is_genesis
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun now_milliseconds
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun now_seconds
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun set_time_has_started
+		total: 19
+		covered: 15
+		% coverage: 78.95
+	fun update_global_time
+		total: 25
+		covered: 25
+		% coverage: 100.00
+>>> % Module coverage: 94.74
+Module 0x00000000000000000000000000000001::TransactionTimeout
+	fun is_valid_transaction_timestamp
+		total: 33
+		covered: 30
+		% coverage: 90.91
+>>> % Module coverage: 90.91
+Module 0x00000000000000000000000000000001::Config
+	fun account_address
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun config_exist_by_address
+		total: 3
+		covered: 0
+		% coverage: 0.00
+	fun destroy_modify_config_capability
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun emit_config_change_event
+		total: 9
+		covered: 9
+		% coverage: 100.00
+	fun extract_modify_config_capability
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun get_by_address
+		total: 15
+		covered: 13
+		% coverage: 86.67
+	fun publish_new_config
+		total: 16
+		covered: 16
+		% coverage: 100.00
+	fun publish_new_config_with_capability
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun restore_modify_config_capability
+		total: 10
+		covered: 10
+		% coverage: 100.00
+	fun set
+		total: 35
+		covered: 33
+		% coverage: 94.29
+	fun set_with_capability
+		total: 27
+		covered: 23
+		% coverage: 85.19
+>>> % Module coverage: 92.25
+Module 0x00000000000000000000000000000001::ConsensusStrategy
+	fun get
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun initialize
+		total: 11
+		covered: 11
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Authenticator
+	fun create_multi_ed25519
+		total: 41
+		covered: 41
+		% coverage: 100.00
+	fun derived_address
+		total: 37
+		covered: 35
+		% coverage: 94.59
+	fun ed25519_authentication_key
+		total: 6
+		covered: 6
+		% coverage: 100.00
+	fun multi_ed25519_authentication_key
+		total: 41
+		covered: 41
+		% coverage: 100.00
+	fun public_keys
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun threshold
+		total: 4
+		covered: 4
+		% coverage: 100.00
+>>> % Module coverage: 98.48
+Module 0x00000000000000000000000000000001::Compare
+	fun cmp_scs_bytes
+		total: 61
+		covered: 61
+		% coverage: 100.00
+	fun cmp_u64
+		total: 22
+		covered: 22
+		% coverage: 100.00
+	fun cmp_u8
+		total: 22
+		covered: 22
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::Hash
+	native fun sha2_256
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun sha3_256
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: NaN
+Module 0x00000000000000000000000000000001::Debug
+	native fun print
+		total: 0
+		covered: 0
+		% coverage: NaN
+	native fun print_stack_trace
+		total: 0
+		covered: 0
+		% coverage: NaN
+>>> % Module coverage: NaN
+Module 0x00000000000000000000000000000001::Errors
+	fun already_published
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun custom
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun internal
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun invalid_argument
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun invalid_state
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun limit_exceeded
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun make
+		total: 7
+		covered: 7
+		% coverage: 100.00
+	fun not_published
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun requires_address
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun requires_capability
+		total: 4
+		covered: 4
+		% coverage: 100.00
+	fun requires_role
+		total: 4
+		covered: 4
+		% coverage: 100.00
+>>> % Module coverage: 100.00
+Module 0x00000000000000000000000000000001::MintDaoProposal
+	fun execute_mint_proposal
+		total: 18
+		covered: 0
+		% coverage: 0.00
+	fun plugin
+		total: 24
+		covered: 0
+		% coverage: 0.00
+	fun propose_mint_to
+		total: 7
+		covered: 0
+		% coverage: 0.00
+>>> % Module coverage: 0.00
+Module 0x00000000000000000000000000000001::Offer
+	fun address_of
+		total: 5
+		covered: 5
+		% coverage: 100.00
+	fun create
+		total: 11
+		covered: 11
+		% coverage: 100.00
+	fun exists_at
+		total: 3
+		covered: 3
+		% coverage: 100.00
+	fun redeem
+		total: 45
+		covered: 45
 		% coverage: 100.00
 >>> % Module coverage: 100.00
 +-------------------------+
-| % Move Coverage: 80.57  |
+| % Move Coverage: 85.94  |
 +-------------------------+
