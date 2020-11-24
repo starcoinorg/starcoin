@@ -45,6 +45,8 @@ starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
 errmapgen = { git = "https://github.com/starcoinorg/libra", rev="cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
+[target.'cfg(not(target_env = "msvc"))'.dependencies]
+jemallocator = "0.3.2"
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}
