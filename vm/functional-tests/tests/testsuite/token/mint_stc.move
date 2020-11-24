@@ -38,3 +38,22 @@ fun main(account: &signer) {
 // check: MISSING_DATA
 // check: Keep
 
+//! new-transaction
+//! sender: genesis
+script {
+    use 0x1::STC::{Self, STC};
+    use 0x1::Token;
+    fun test_burn(account: &signer) {
+        // mint 100 coins and check that the market cap increases appropriately
+        let old_market_cap = Token::market_cap<STC>();
+        let coin = Token::mint<STC>(account, 100);
+        assert(Token::value<STC>(&coin) == 100, 8000);
+        assert(Token::market_cap<STC>() == old_market_cap + 100, 8001);
+
+        // burn the coin
+        STC::burn(coin);
+        assert(Token::market_cap<STC>() == old_market_cap, 8002);
+    }
+}
+
+// check: EXECUTED
