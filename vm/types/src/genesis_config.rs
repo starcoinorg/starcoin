@@ -329,8 +329,6 @@ impl FromStr for CustomNetworkID {
     }
 }
 
-// ChainNetwork is a global variable and does not create many instances, so allow large enum
-#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum ChainNetworkID {
     Builtin(BuiltinNetworkID),

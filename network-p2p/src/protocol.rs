@@ -4,9 +4,9 @@ pub mod message;
 
 use crate::config::ProtocolId;
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, NotificationsSink};
-use crate::protocol::message::generic::{FallbackMessage, GenericMessage, Message, Status};
+use crate::protocol::message::generic::{FallbackMessage, Status};
 use crate::utils::interval;
-use crate::{errors, DiscoveryNetBehaviour, Multiaddr, PROTOCOL_NAME};
+use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bytes::{Bytes, BytesMut};
 use crypto::HashValue;
 use futures::prelude::*;
@@ -249,25 +249,16 @@ impl NetworkBehaviour for Protocol {
                 peer_id: who,
                 received_handshake,
                 notifications_sink,
-            } => {
-                debug!(
-                    "Receive handshake {:?}",
-                    hex::encode(received_handshake.as_slice())
-                );
-                if received_handshake.is_empty() {
-                    info!("Receive empty handshake");
+            } => match Status::decode(&received_handshake[..]) {
+                Ok(status) => self.on_peer_connected(who, status, notifications_sink),
+                Err(err) => {
+                    info!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", who, hex::encode(received_handshake), err);
+                    self.peerset_handle
+                        .report_peer(who.clone(), rep::BAD_MESSAGE);
+                    self.behaviour.disconnect_peer(&who);
                     CustomMessageOutcome::None
-                } else {
-                    match Status::decode(&received_handshake[..]) {
-                        Ok(status) => self.on_peer_connected(who, status, notifications_sink),
-                        Err(err) => {
-                            info!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", who, hex::encode(received_handshake), err);
-                            self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
-                            CustomMessageOutcome::None
-                        }
-                    }
                 }
-            }
+            },
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
                 self.on_peer_disconnected(peer_id.clone());
                 // Notify all the notification protocols as closed.
@@ -435,11 +426,6 @@ impl Protocol {
         }
     }
 
-    fn send_message(&mut self, who: &PeerId, message: Message) -> anyhow::Result<()> {
-        send_message(&mut self.behaviour, who, message)?;
-        Ok(())
-    }
-
     /// Called on the first connection between two peers, after their exchange of handshake.
     fn on_peer_connected(
         &mut self,
@@ -507,17 +493,6 @@ impl Protocol {
         }
     }
 
-    /// Send Status message
-    pub fn send_status(&mut self, who: PeerId) {
-        let status = Self::build_status(
-            self.chain_info.genesis_hash,
-            self.chain_info.self_info.clone(),
-        );
-
-        self.send_message(&who, Message::Status(Box::new(status)))
-            .expect("should succ")
-    }
-
     fn build_status(genesis_hash: HashValue, info: PeerInfo) -> Status {
         message::generic::Status {
             version: CURRENT_VERSION,
@@ -572,12 +547,8 @@ impl Protocol {
         protocol_name: Cow<'static, str>,
         data: impl Into<Vec<u8>>,
     ) {
-        let message = Message::ConsensusMessage(Box::new(GenericMessage { data: data.into() }))
-            .encode()
-            .expect("should encode right");
-
         self.behaviour
-            .write_notification(&target, protocol_name, message);
+            .write_notification(&target, protocol_name, data.into());
     }
 
     pub fn register_notifications_protocol<'a>(
@@ -663,14 +634,4 @@ impl Drop for Protocol {
     fn drop(&mut self) {
         debug!(target: "sync", "Network stats:\n{}", self.format_stats());
     }
-}
-
-fn send_message(
-    behaviour: &mut GenericProto,
-    who: &PeerId,
-    message: Message,
-) -> anyhow::Result<()> {
-    let encoded = message.encode()?;
-    behaviour.write_notification(who, PROTOCOL_NAME.into(), encoded);
-    Ok(())
 }

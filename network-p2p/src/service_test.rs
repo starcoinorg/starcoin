@@ -420,10 +420,9 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 // }
 //
 
-#[test]
-#[allow(clippy::string_lit_as_bytes)]
+#[stest::test]
 fn test_handshake_fail() {
-    ::logger::init_for_test();
+    //::logger::init_for_test();
 
     let protocol = ProtocolId::from("starcoin");
     let config1 = generate_config(vec![]);
@@ -459,7 +458,12 @@ fn test_handshake_fail() {
             match event {
                 Event::NotificationStreamClosed { remote } => {
                     info!("handshake failed from {}", remote);
+                    assert_eq!(remote, service2.local_peer_id());
                     break;
+                }
+                Event::NotificationStreamOpened { remote, .. } => {
+                    error!("unexpect stream open with {}", remote);
+                    panic!("expect handshake fail, but got stream opened")
                 }
                 _ => {
                     info!("event is {:?}", event);

@@ -150,7 +150,8 @@ impl OutChannels {
     /// Creates a new empty collection of senders.
     pub fn new(registry: Option<&Registry>) -> Result<Self, PrometheusError> {
         let metrics = if let Some(registry) = registry {
-            Some(Metrics::register(registry)?)
+            //TODO return PrometheusError
+            Metrics::register(registry).ok()
         } else {
             None
         };

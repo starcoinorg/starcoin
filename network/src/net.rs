@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{NetworkMessage, PeerEvent};
-
 use anyhow::*;
 use bytes::Bytes;
 use config::NetworkConfig;
@@ -12,16 +11,14 @@ use libp2p::PeerId;
 use network_p2p::config::TransportConfig;
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
-    Params, Secret, PROTOCOL_NAME,
+    Params, ProtocolId, Secret,
 };
 use parity_codec::alloc::collections::HashSet;
-use prometheus::Registry;
+use prometheus::{default_registry, Registry};
 use std::borrow::Cow;
 use std::sync::Arc;
+use types::genesis_config::ChainNetworkID;
 use types::peer_info::PeerInfo;
-use types::PROTOCOLS;
-
-const PROTOCOL_ID: &str = "starcoin";
 
 #[derive(Clone)]
 pub struct SNetworkService {
@@ -36,9 +33,11 @@ pub struct NetworkInner {
 }
 
 impl SNetworkService {
-    pub fn new(cfg: NetworkConfiguration, metrics_registry: Option<Registry>) -> Self {
-        let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
-
+    pub fn new(
+        protocol: ProtocolId,
+        cfg: NetworkConfiguration,
+        metrics_registry: Option<Registry>,
+    ) -> Self {
         let worker = NetworkWorker::new(Params::new(cfg, protocol, metrics_registry)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
@@ -88,10 +87,10 @@ impl SNetworkService {
         loop {
             futures::select! {
                 message = net_rx.select_next_some()=>{
-                    inner.handle_network_send(message).await.unwrap();
+                    inner.handle_network_send(message).await;
                 },
                 event = event_stream.select_next_some()=>{
-                    inner.handle_network_receive(event,net_tx.clone(),event_tx.clone()).await.unwrap();
+                    inner.handle_network_receive(event,net_tx.clone(),event_tx.clone()).await;
                 },
                 _ = close_rx.select_next_some() => {
                     //TODO
@@ -164,6 +163,20 @@ impl NetworkInner {
         event: Event,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
         event_tx: mpsc::UnboundedSender<PeerEvent>,
+    ) {
+        if let Err(e) = self
+            .handle_network_receive_inner(event, net_tx, event_tx)
+            .await
+        {
+            error!("handle_network_receive error: {:?}", e);
+        }
+    }
+
+    pub(crate) async fn handle_network_receive_inner(
+        &self,
+        event: Event,
+        net_tx: mpsc::UnboundedSender<NetworkMessage>,
+        event_tx: mpsc::UnboundedSender<PeerEvent>,
     ) -> Result<()> {
         match event {
             Event::Dht(_) => {
@@ -214,16 +227,17 @@ impl NetworkInner {
         Ok(())
     }
 
-    async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
+    async fn handle_network_send(&self, message: NetworkMessage) {
         let peer_id = message.peer_id.clone();
         self.service
             .write_notification(peer_id, message.protocol_name, message.data);
-        Ok(())
     }
 }
 
 pub fn build_network_service(
+    chain_net_id: &ChainNetworkID,
     cfg: &NetworkConfig,
+    protocols: Vec<Cow<'static, str>>,
     genesis_hash: HashValue,
     self_info: PeerInfo,
 ) -> (
@@ -249,14 +263,15 @@ pub fn build_network_service(
             .unwrap();
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
-        protocols: PROTOCOLS.clone(),
+        protocols,
         transport: transport_config,
         genesis_hash,
         self_info,
         ..NetworkConfiguration::default()
     };
-    //TODO set metric.
-    let mut service = SNetworkService::new(config, None);
+    let protocol_id = ProtocolId::from(chain_net_id.to_string().as_str());
+    //TODO use a custom registry for each instance.
+    let mut service = SNetworkService::new(protocol_id, config, Some(default_registry().clone()));
     let (net_tx, net_rx, event_rx, control_tx) = service.run();
     (service, net_tx, net_rx, event_rx, control_tx)
 }

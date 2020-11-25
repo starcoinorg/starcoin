@@ -208,16 +208,14 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
             } => {
                 self.events
                     .push_back(BehaviourOut::NotificationStreamOpened {
-                        remote: remote.clone(),
-                        notifications_sink: notifications_sink.clone(),
-                        info: info.clone(),
+                        remote,
+                        notifications_sink,
+                        info,
                     });
             }
             CustomMessageOutcome::NotificationStreamClosed { remote } => {
                 self.events
-                    .push_back(BehaviourOut::NotificationStreamClosed {
-                        remote: remote.clone(),
-                    });
+                    .push_back(BehaviourOut::NotificationStreamClosed { remote });
             }
             CustomMessageOutcome::NotificationsReceived {
                 remote,
@@ -237,8 +235,8 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
             } => {
                 self.events
                     .push_back(BehaviourOut::NotificationStreamReplaced {
-                        remote: remote.clone(),
-                        notifications_sink: notifications_sink.clone(),
+                        remote,
+                        notifications_sink,
                     });
             }
         }

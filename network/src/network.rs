@@ -46,7 +46,7 @@ use std::time::Duration;
 use tx_relay::*;
 use types::peer_info::{PeerInfo, RpcInfo};
 use types::transaction::SignedUserTransaction;
-use types::{BLOCK_PROTOCOL_NAME, TXN_PROTOCOL_NAME};
+use types::{BLOCK_PROTOCOL_NAME, PROTOCOLS, TXN_PROTOCOL_NAME};
 
 const LRU_CACHE_SIZE: usize = 1024;
 const PEERS_FILE_NAME: &str = "peers.json";
@@ -308,8 +308,13 @@ impl NetworkAsyncService {
         }
         let has_seed = !config.seeds.is_empty();
 
-        let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(&config, genesis_hash, self_info.clone());
+        let (service, tx, rx, event_rx, tx_command) = build_network_service(
+            node_config.net().id(),
+            &config,
+            PROTOCOLS.clone(),
+            genesis_hash,
+            self_info.clone(),
+        );
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,
