@@ -50,4 +50,17 @@ mod tests {
         data.output.reverse();
         assert_eq!(hash, data.output);
     }
+
+    #[test]
+    #[ignore]
+    fn test_with_spawn() {
+        use super::*;
+        let input = [0x1; 76];
+        loop {
+            std::thread::spawn(move || {
+                cryptonight_r(&input, input.len());
+            });
+            std::thread::sleep(std::time::Duration::from_millis(100));
+        }
+    }
 }
