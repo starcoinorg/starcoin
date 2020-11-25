@@ -22,6 +22,7 @@ use starcoin_sync_api::{
     SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
@@ -66,7 +67,12 @@ impl SyncService2 {
         })
     }
 
-    pub fn check_sync(&self, force: bool, ctx: &mut ServiceContext<Self>) -> Result<()> {
+    pub fn check_sync(
+        &self,
+        force: bool,
+        peers: Vec<PeerId>,
+        ctx: &mut ServiceContext<Self>,
+    ) -> Result<()> {
         if let Some(task_handle) = self.task_handle.as_ref() {
             let task_running = !task_handle.task_handle.is_done();
             if task_running && force {
@@ -84,6 +90,18 @@ impl SyncService2 {
         let self_ref = ctx.self_ref();
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
+            if peer_selector.is_empty() {
+                info!("[sync] No peers to sync.");
+                return Ok(());
+            }
+            let peer_selector = if !peers.is_empty() {
+                peer_selector
+                    .selector()
+                    .filter(move |peer_info| peers.contains(&peer_info.peer_id))
+                    .into_selector()
+            } else {
+                peer_selector
+            };
             if peer_selector.is_empty() {
                 info!("[sync] No peers to sync.");
                 return Ok(());
@@ -106,6 +124,17 @@ impl SyncService2 {
         target: SyncTarget,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
+        if let Some(task_handle) = self.task_handle.as_ref() {
+            let task_running = !task_handle.task_handle.is_done();
+            if task_running {
+                //TODO replace old task with new task at some condition.
+                info!(
+                    "[sync] A sync task is running，current target: {:?}, ignore new sync target: {:?}",
+                    task_handle.target, target
+                );
+                return Ok(());
+            }
+        }
         let startup_info = self
             .storage
             .get_startup_info()?
@@ -186,7 +215,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
         match msg {
             PeerEvent::Open(open_peer_id, _) => {
                 debug!("[sync] connect new peer:{:?}", open_peer_id);
-                ctx.notify(CheckSyncEvent { force: false });
+                ctx.notify(CheckSyncEvent::default());
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("[sync] disconnect peer: {:?}", close_peer_id);
@@ -234,17 +263,19 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
 #[derive(Debug, Clone, Default)]
 pub struct CheckSyncEvent {
     force: bool,
+    /// check sync with special peers
+    peers: Vec<PeerId>,
 }
 
 impl CheckSyncEvent {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(force: bool, peers: Vec<PeerId>) -> Self {
+        Self { force, peers }
     }
 }
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_sync(msg.force, ctx) {
+        if let Err(e) = self.check_sync(msg.force, msg.peers, ctx) {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -254,7 +285,7 @@ impl EventHandler<Self, SystemStarted> for SyncService2 {
     fn handle_event(&mut self, _msg: SystemStarted, ctx: &mut ServiceContext<Self>) {
         // change from prepare to Synchronized
         self.sync_status.sync_done();
-        ctx.notify(CheckSyncEvent { force: false });
+        ctx.notify(CheckSyncEvent::default());
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
     }
 }
@@ -337,7 +368,8 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
         msg: SyncStartRequest,
         ctx: &mut ServiceContext<SyncService2>,
     ) -> Result<()> {
-        self.check_sync(msg.force, ctx)
+        ctx.notify(CheckSyncEvent::new(msg.force, msg.peers));
+        Ok(())
     }
 }
 

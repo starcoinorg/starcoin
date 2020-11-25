@@ -88,6 +88,7 @@ impl ServiceRequest for SyncCancelRequest {
 #[derive(Debug, Clone)]
 pub struct SyncStartRequest {
     pub force: bool,
+    pub peers: Vec<PeerId>,
 }
 
 impl ServiceRequest for SyncStartRequest {

@@ -5,6 +5,7 @@ pub use self::gen_client::Client as SyncManagerClient;
 use crate::FutureResult;
 use jsonrpc_derive::rpc;
 use starcoin_sync_api::SyncProgressReport;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 #[rpc]
@@ -16,7 +17,9 @@ pub trait SyncManagerApi {
     fn cancel(&self) -> FutureResult<()>;
 
     #[rpc(name = "sync.start")]
-    fn start(&self, force: bool) -> FutureResult<()>;
+    /// if `force` is true, will cancel current task and start a new task.
+    /// if peers is not empty, will try sync with the special peers.
+    fn start(&self, force: bool, peers: Vec<PeerId>) -> FutureResult<()>;
 
     #[rpc(name = "sync.progress")]
     fn progress(&self) -> FutureResult<Option<SyncProgressReport>>;
