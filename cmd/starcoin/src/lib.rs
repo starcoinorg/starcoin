@@ -85,8 +85,12 @@ pub fn add_command(
                 .subcommand(chain::EpochInfoCommand)
                 .subcommand(chain::GetEpochInfoByNumberCommand)
                 .subcommand(chain::TPSCommand)
-                .subcommand(chain::UnclePathCommand)
-                .subcommand(chain::GetEpochUnclesByNumberCommand),
+                .subcommand(
+                    Command::with_name("uncle")
+                        .subcommand(chain::uncle::UnclePathCommand)
+                        .subcommand(chain::uncle::ListEpochUnclesByNumberCommand)
+                        .subcommand(chain::uncle::EpochUncleSummaryByNumberCommand),
+                ),
         )
         .command(
             Command::with_name("dev")

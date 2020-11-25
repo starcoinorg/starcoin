@@ -5,12 +5,14 @@ use actix::prelude::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
-use starcoin_types::block::Block;
-use starcoin_types::peer_info::PeerId;
+use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::sync_status::SyncStatus;
 
 mod service;
 pub use service::{SyncAsyncService, SyncServiceHandler};
+use starcoin_crypto::HashValue;
+use starcoin_types::U256;
 pub use stream_task::TaskProgressReport;
 
 #[derive(Message, Clone, Debug)]
@@ -46,6 +48,13 @@ pub enum SyncNotify {
     NewPeerMsg(PeerId),
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncTarget {
+    pub block_header: BlockHeader,
+    pub block_info: BlockInfo,
+    pub peers: Vec<PeerInfo>,
+}
+
 #[derive(Debug, Clone)]
 pub struct SyncStatusRequest;
 
@@ -56,8 +65,17 @@ impl ServiceRequest for SyncStatusRequest {
 #[derive(Debug, Clone)]
 pub struct SyncProgressRequest;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SyncProgressReport {
+    pub target_id: HashValue,
+    pub target_number: BlockNumber,
+    pub target_difficulty: U256,
+    pub target_peers: Vec<PeerId>,
+    pub current: TaskProgressReport,
+}
+
 impl ServiceRequest for SyncProgressRequest {
-    type Response = Option<TaskProgressReport>;
+    type Response = Option<SyncProgressReport>;
 }
 
 #[derive(Debug, Clone)]

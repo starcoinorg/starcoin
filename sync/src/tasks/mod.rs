@@ -13,8 +13,7 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
-use starcoin_types::block::{Block, BlockHeader, BlockIdAndNumber, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_vm_types::time::TimeService;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
@@ -109,18 +108,6 @@ pub trait BlockLocalStore: Send + Sync {
     ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>>;
 }
 
-// impl<T> BlockLocalStore for Arc<T>
-// where
-//     T: BlockLocalStore,
-// {
-//     fn get_block_with_info(
-//         &self,
-//         block_ids: Vec<HashValue>,
-//     ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>> {
-//         BlockLocalStore::get_block_with_info(self.as_ref(), block_ids)
-//     }
-// }
-
 impl BlockLocalStore for Arc<dyn Store> {
     fn get_block_with_info(
         &self,
@@ -138,13 +125,6 @@ impl BlockLocalStore for Arc<dyn Store> {
             })
             .collect()
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct SyncTarget {
-    pub block_header: BlockHeader,
-    pub block_info: BlockInfo,
-    pub peers: Vec<PeerInfo>,
 }
 
 #[derive(Clone, Debug)]

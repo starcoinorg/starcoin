@@ -27,7 +27,7 @@ use starcoin_state_api::StateWithProof;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary};
+use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
 use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
@@ -51,7 +51,7 @@ pub use crate::remote_state_reader::RemoteStateReader;
 use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
 use starcoin_service_registry::{ServiceInfo, ServiceStatus};
-use starcoin_sync_api::TaskProgressReport;
+use starcoin_sync_api::SyncProgressReport;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::{contract_event::ContractEvent, system_events::SystemStop};
@@ -509,6 +509,20 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn epoch_uncle_summary_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<EpochUncleSummary> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .chain_client
+                .epoch_uncle_summary_by_number(number)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn get_headers(&self, ids: Vec<HashValue>) -> anyhow::Result<Vec<BlockHeader>> {
         self.call_rpc_blocking(
             |inner| async move { inner.chain_client.get_headers(ids).compat().await },
@@ -745,7 +759,7 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn sync_progress(&self) -> anyhow::Result<Option<TaskProgressReport>> {
+    pub fn sync_progress(&self) -> anyhow::Result<Option<SyncProgressReport>> {
         self.call_rpc_blocking(|inner| async move { inner.sync_client.progress().compat().await })
             .map_err(map_err)
     }

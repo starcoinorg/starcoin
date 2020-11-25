@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::tasks::{full_sync_task, SyncTarget};
+use crate::tasks::full_sync_task;
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
@@ -18,14 +18,15 @@ use starcoin_service_registry::{
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync_api::{
-    SyncCancelRequest, SyncProgressRequest, SyncServiceHandler, SyncStartRequest, SyncStatusRequest,
+    SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
+    SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
-use stream_task::{TaskEventCounterHandle, TaskHandle, TaskProgressReport};
+use stream_task::{TaskEventCounterHandle, TaskHandle};
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -301,10 +302,24 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         &mut self,
         _msg: SyncProgressRequest,
         _ctx: &mut ServiceContext<SyncService2>,
-    ) -> Option<TaskProgressReport> {
-        self.task_handle
-            .as_ref()
-            .and_then(|handle| handle.task_event_handle.get_report())
+    ) -> Option<SyncProgressReport> {
+        self.task_handle.as_ref().and_then(|handle| {
+            handle
+                .task_event_handle
+                .get_report()
+                .map(|report| SyncProgressReport {
+                    target_id: handle.target.block_header.id(),
+                    target_number: handle.target.block_header.number,
+                    target_difficulty: handle.target.block_info.total_difficulty,
+                    target_peers: handle
+                        .target
+                        .peers
+                        .iter()
+                        .map(|peer| peer.peer_id.clone())
+                        .collect(),
+                    current: report,
+                })
+        })
     }
 }
 
