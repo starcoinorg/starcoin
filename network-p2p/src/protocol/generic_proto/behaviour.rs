@@ -344,7 +344,6 @@ impl GenericProto {
             .collect::<Vec<_>>();
 
         assert!(!notif_protocols.is_empty());
-
         let legacy_handshake_message = Arc::new(RwLock::new(handshake_message));
         let legacy_protocol = RegisteredProtocol::new(protocol, versions, legacy_handshake_message);
 

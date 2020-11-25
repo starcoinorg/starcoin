@@ -121,7 +121,7 @@ pub struct Protocol {
     context_data: ContextData,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
-    protocols: HashSet<Cow<'static, str>>,
+    notif_protocols: HashSet<Cow<'static, str>>,
     chain_info: ChainInfo,
 }
 
@@ -276,7 +276,7 @@ impl NetworkBehaviour for Protocol {
                 // Notify all the notification protocols as closed.
                 CustomMessageOutcome::NotificationStreamClosed {
                     remote: peer_id,
-                    protocols: self.protocols.iter().cloned().collect(),
+                    protocols: self.notif_protocols.iter().cloned().collect(),
                 }
             }
             GenericProtoOut::CustomProtocolReplaced {
@@ -285,7 +285,7 @@ impl NetworkBehaviour for Protocol {
                 ..
             } => CustomMessageOutcome::NotificationStreamReplaced {
                 remote: peer_id,
-                protocols: self.protocols.iter().cloned().collect(),
+                protocols: self.notif_protocols.iter().cloned().collect(),
                 notifications_sink,
             },
             GenericProtoOut::LegacyMessage { peer_id, message } => {
@@ -336,7 +336,7 @@ impl Protocol {
         };
 
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
-
+        let mut notif_protocol_set = HashSet::new();
         let behaviour = {
             let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
             let handshake_message =
@@ -347,15 +347,18 @@ impl Protocol {
                 "Handshake message: {}",
                 hex::encode(handshake_message.as_slice())
             );
+
             GenericProto::new(
                 local_peer_id,
                 protocol_id,
                 versions,
                 handshake_message.clone(),
                 peerset,
-                notif_protocols
-                    .into_iter()
-                    .map(|protocol| (protocol, handshake_message.clone())),
+                //notif stream use same handshake message with legacy protocol
+                notif_protocols.into_iter().map(|protocol| {
+                    notif_protocol_set.insert(protocol.clone());
+                    (protocol, handshake_message.clone())
+                }),
             )
         };
 
@@ -370,7 +373,7 @@ impl Protocol {
             },
             chain_info,
             boot_node_ids,
-            protocols: Default::default(),
+            notif_protocols: notif_protocol_set,
         };
 
         Ok((protocol, peerset_handle))
@@ -506,7 +509,7 @@ impl Protocol {
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
-            protocols: self.protocols.iter().cloned().collect(),
+            protocols: self.notif_protocols.iter().cloned().collect(),
             notifications_sink,
             info: Box::new(status.info),
         }
@@ -530,6 +533,12 @@ impl Protocol {
             genesis_hash,
             info,
         }
+    }
+
+    fn build_handshake_msg(genesis_hash: HashValue, info: PeerInfo) -> Vec<u8> {
+        Self::build_status(genesis_hash, info)
+            .encode()
+            .expect("Status encode should success.")
     }
 
     /// Called by peer when it is disconnecting
@@ -583,11 +592,16 @@ impl Protocol {
         &'a mut self,
         protocol: Cow<'static, str>,
     ) -> impl Iterator<Item = (&'a PeerId, &'a NotificationsSink, &'a PeerInfo)> + 'a {
-        if !self.protocols.insert(protocol.clone()) {
+        if !self.notif_protocols.insert(protocol.clone()) {
             error!(target: "sub-libp2p", "Notifications protocol already registered: {:?}", protocol);
         } else {
-            self.behaviour
-                .register_notif_protocol(protocol.clone(), Vec::new());
+            self.behaviour.register_notif_protocol(
+                protocol.clone(),
+                Self::build_handshake_msg(
+                    self.chain_info.genesis_hash,
+                    self.chain_info.self_info.clone(),
+                ),
+            );
         }
 
         info!("register protocol {:?} successful", protocol);
@@ -611,11 +625,19 @@ impl Protocol {
 
     pub fn update_self_info(&mut self, self_info: PeerInfo) {
         self.chain_info.self_info = self_info;
-        self.update_notif_handshake();
+        self.update_handshake();
     }
 
-    fn update_notif_handshake(&mut self) {
-        for protocol in &self.protocols {
+    fn update_handshake(&mut self) {
+        self.behaviour.set_legacy_handshake_message(
+            Self::build_status(
+                self.chain_info.genesis_hash,
+                self.chain_info.self_info.clone(),
+            )
+            .encode()
+            .expect("Encode status should success."),
+        );
+        for protocol in &self.notif_protocols {
             self.behaviour.set_notif_protocol_handshake(
                 protocol,
                 Self::build_status(

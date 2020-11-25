@@ -60,6 +60,7 @@ use crate::network_state::{
 use crate::protocol::event::Event;
 use crate::protocol::generic_proto::{NotificationsSink, Ready};
 use crate::protocol::{ChainInfo, Protocol};
+use crate::Multiaddr;
 use crate::{
     behaviour::{Behaviour, BehaviourOut},
     errors, out_events, DhtEvent,
@@ -68,7 +69,6 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
-use crate::{Multiaddr, PROTOCOL_NAME};
 use starcoin_metrics::{Histogram, HistogramVec};
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
@@ -213,8 +213,7 @@ impl NetworkWorker {
             genesis_hash: params.network_config.genesis_hash,
             self_info: params.network_config.self_info,
         };
-        let mut notif_protocols = params.network_config.protocols.clone();
-        notif_protocols.push(PROTOCOL_NAME.into());
+        let notif_protocols = params.network_config.protocols.clone();
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
@@ -257,18 +256,7 @@ impl NetworkWorker {
                 config
             };
 
-            // protocol.register_notifications_protocol(PROTOCOL_NAME.into());
-            // for protocol_name in params.network_config.protocols {
-            //     protocol.register_notifications_protocol(protocol_name);
-            // }
-
-            let mut behaviour =
-                Behaviour::new(protocol, user_agent, local_public, discovery_config);
-
-            behaviour.register_notifications_protocol(Cow::Borrowed(PROTOCOL_NAME));
-            for protocol_name in &params.network_config.protocols {
-                behaviour.register_notifications_protocol(protocol_name.clone());
-            }
+            let behaviour = Behaviour::new(protocol, user_agent, local_public, discovery_config);
 
             let (transport, bandwidth) = {
                 let (config_mem, config_wasm) = match params.network_config.transport {
