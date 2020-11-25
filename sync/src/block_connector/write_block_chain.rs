@@ -135,8 +135,7 @@ where
             if !parent_is_main_head {
                 WRITE_BLOCK_CHAIN_METRICS
                     .rollback_block_size
-                    .with_label_values(&["size"])
-                    .set(retracted_blocks.len() as u64);
+                    .set(retracted_blocks.len() as i64);
             }
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();

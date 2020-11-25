@@ -4,7 +4,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     register_histogram_vec, register_int_counter, register_int_gauge, HistogramOpts, HistogramVec,
-    IntCounter, Opts, PrometheusError, UIntGaugeVec,
+    IntCounter, IntGauge, Opts, PrometheusError,
 };
 
 const SC_NS: &str = "starcoin";
@@ -17,12 +17,11 @@ pub static WRITE_BLOCK_CHAIN_METRICS: Lazy<ChainMetrics> =
 pub struct ChainMetrics {
     pub try_connect_count: IntCounter,
     pub duplicate_conn_count: IntCounter,
-    pub rollback_count: IntCounter,
     pub broadcast_head_count: IntCounter,
     pub verify_fail_count: IntCounter,
     pub exe_block_time: HistogramVec,
-    pub branch_total_count: UIntGaugeVec,
-    pub rollback_block_size: UIntGaugeVec,
+    pub branch_total_count: IntGauge,
+    pub rollback_block_size: IntGauge,
 }
 
 impl ChainMetrics {
@@ -36,12 +35,6 @@ impl ChainMetrics {
         let duplicate_conn_count = register_int_counter!(Opts::new(
             format!("{}{}", PRIFIX, "duplicate_conn_count"),
             "block duplicate connect count".to_string()
-        )
-        .namespace(SC_NS))?;
-
-        let rollback_count = register_int_counter!(Opts::new(
-            format!("{}{}", PRIFIX, "rollback_count"),
-            "chain rollback count".to_string()
         )
         .namespace(SC_NS))?;
 
@@ -66,25 +59,21 @@ impl ChainMetrics {
             &["time"]
         )?;
 
-        let branch_total_count = register_uint_gauge_vec!(Opts::new(
+        let branch_total_count = register_int_gauge!(Opts::new(
             format!("{}{}", PRIFIX, "branch_total_count"),
             "branch total count".to_string()
         )
         .namespace(SC_NS))?;
 
-        let rollback_block_size = register_uint_gauge_vec!(
-            Opts::new(
-                format!("{}{}", PRIFIX, "rollback_block_size"),
-                "rollback block size".to_string()
-            )
-            .namespace(SC_NS),
-            &["rollback"]
-        )?;
+        let rollback_block_size = register_int_gauge!(Opts::new(
+            format!("{}{}", PRIFIX, "rollback_block_size"),
+            "rollback block size".to_string()
+        )
+        .namespace(SC_NS))?;
 
         Ok(Self {
             try_connect_count,
             duplicate_conn_count,
-            rollback_count,
             broadcast_head_count,
             verify_fail_count,
             exe_block_time,
