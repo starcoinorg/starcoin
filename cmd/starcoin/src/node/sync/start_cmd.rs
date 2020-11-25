@@ -35,7 +35,7 @@ impl CommandAction for StartCommand {
         let client = ctx.state().client();
         client.sync_start(
             ctx.opt().force,
-            ctx.opt().peers.as_ref().cloned().unwrap_or(vec![]),
+            ctx.opt().peers.as_ref().cloned().unwrap_or_default(),
         )
     }
 }
