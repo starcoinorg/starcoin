@@ -3391,8 +3391,8 @@ dependencies = [
  "libp2p-wasm-ext",
  "libp2p-websocket",
  "libp2p-yamux",
- "multihash",
- "parity-multiaddr",
+ "multihash 0.11.4",
+ "parity-multiaddr 0.9.6",
  "parking_lot 0.10.2",
  "pin-project 0.4.27",
  "smallvec 1.5.0",
@@ -3415,9 +3415,9 @@ dependencies = [
  "lazy_static",
  "libsecp256k1",
  "log 0.4.11",
- "multihash",
+ "multihash 0.11.4",
  "multistream-select",
- "parity-multiaddr",
+ "parity-multiaddr 0.9.6",
  "parking_lot 0.10.2",
  "pin-project 0.4.27",
  "prost",
@@ -3538,7 +3538,7 @@ dependencies = [
  "libp2p-core",
  "libp2p-swarm",
  "log 0.4.11",
- "multihash",
+ "multihash 0.11.4",
  "prost",
  "prost-build",
  "rand 0.7.3",
@@ -4471,6 +4471,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "multihash"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb63389ee5fcd4df3f8727600f4a0c3df53c541f0ed4e8b50a9ae51a80fc1efe"
+dependencies = [
+ "generic-array 0.14.4",
+ "multihash-derive",
+ "unsigned-varint 0.5.1",
+]
+
+[[package]]
+name = "multihash-derive"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f5653449cd45d502a53480ee08d7a599e8f4893d2bacb33c63d65bc20af6c1a"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro-error",
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.51",
+ "synstructure",
+]
+
+[[package]]
 name = "multimap"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4938,15 +4963,33 @@ dependencies = [
 
 [[package]]
 name = "parity-multiaddr"
-version = "0.9.5"
+version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60d477bda9666bc37e5ac9e7e7ee3684f745ec33e6e86a5b48640e0407acda26"
+checksum = "43244a26dc1ddd3097216bb12eaa6cf8a07b060c72718d9ebd60fd297d6401df"
 dependencies = [
  "arrayref",
  "bs58 0.4.0",
  "byteorder 1.3.4",
  "data-encoding",
- "multihash",
+ "multihash 0.11.4",
+ "percent-encoding 2.1.0",
+ "serde",
+ "static_assertions",
+ "unsigned-varint 0.5.1",
+ "url 2.2.0",
+]
+
+[[package]]
+name = "parity-multiaddr"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f51a30667591b14f96068b2d12f1306d07a41ebd98239d194356d4d9707ac16"
+dependencies = [
+ "arrayref",
+ "bs58 0.4.0",
+ "byteorder 1.3.4",
+ "data-encoding",
+ "multihash 0.13.1",
  "percent-encoding 2.1.0",
  "serde",
  "static_assertions",
@@ -8252,7 +8295,7 @@ dependencies = [
  "mirai-annotations",
  "num_enum",
  "once_cell",
- "parity-multiaddr",
+ "parity-multiaddr 0.10.0",
  "proptest",
  "proptest-derive",
  "prost",
