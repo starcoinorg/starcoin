@@ -764,9 +764,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn sync_start(&self, force: bool) -> anyhow::Result<()> {
-        self.call_rpc_blocking(|inner| async move { inner.sync_client.start(force).compat().await })
-            .map_err(map_err)
+    pub fn sync_start(&self, force: bool, peers: Vec<PeerId>) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.sync_client.start(force, peers).compat().await
+        })
+        .map_err(map_err)
     }
 
     pub fn sync_cancel(&self) -> anyhow::Result<()> {
