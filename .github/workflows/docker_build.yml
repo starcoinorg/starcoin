@@ -32,6 +32,9 @@ jobs:
       - uses: docker/build-push-action@v2
         with:
           push: true
-          repository: starcoin/starcoin
-          dockerfile: docker/Dockerfile
-          tag_with_ref: true
+          context: .
+          file: docker/Dockerfile
+          tags: |
+            starcoin/starcoin:latest
+            docker.pkg.github.com/starcoinorg/user/app:latest
+
