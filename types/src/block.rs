@@ -745,23 +745,47 @@ impl Into<(BlockHeader, Option<Vec<BlockHeader>>)> for BlockSummary {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EpochUncleSummary {
-    /// epoch number
-    pub epoch: u64,
+pub struct UncleSummary {
     /// total uncle
     pub uncles: u64,
     /// sum(number of the block which contain uncle block - uncle parent block number).
     pub sum: u64,
     pub avg: u64,
+    pub time_sum: u64,
+    pub time_avg: u64,
+}
+
+impl UncleSummary {
+    pub fn new(uncles: u64, sum: u64, time_sum: u64) -> Self {
+        let (avg, time_avg) = if uncles > 0 {
+            (sum / uncles, time_sum / uncles)
+        } else {
+            (0, 0)
+        };
+        Self {
+            uncles,
+            sum,
+            avg,
+            time_sum,
+            time_avg,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EpochUncleSummary {
+    /// epoch number
+    pub epoch: u64,
+    pub number_summary: UncleSummary,
+    pub epoch_summary: UncleSummary,
 }
 
 impl EpochUncleSummary {
-    pub fn new(epoch: u64, uncles: u64, sum: u64) -> Self {
+    pub fn new(epoch: u64, number_summary: UncleSummary, epoch_summary: UncleSummary) -> Self {
         Self {
             epoch,
-            uncles,
-            sum,
-            avg: if uncles > 0 { sum / uncles } else { 0 },
+            number_summary,
+            epoch_summary,
         }
     }
 }

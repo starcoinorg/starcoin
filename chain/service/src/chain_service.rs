@@ -12,7 +12,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::block::{BlockSummary, EpochUncleSummary};
+use starcoin_types::block::{BlockSummary, EpochUncleSummary, UncleSummary};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
@@ -258,6 +258,27 @@ impl ChainReaderServiceInner {
         }
         Ok(())
     }
+
+    fn uncle_summary(
+        &self,
+        start_number: BlockNumber,
+        end_number: BlockNumber,
+    ) -> Result<(u64, u64)> {
+        let mut sum: u64 = 0;
+        let mut time_sum: u64 = 0;
+        for num in start_number..(end_number + 1) {
+            if let Some(block) = self.main.get_block_by_number(num)? {
+                if let Some(block_uncles) = block.uncles() {
+                    block_uncles.iter().for_each(|uncle| {
+                        sum += block.header().number() + 1 - uncle.number();
+                        time_sum += block.header().timestamp() - uncle.timestamp();
+                    });
+                }
+            }
+        }
+
+        Ok((sum, time_sum))
+    }
 }
 
 impl ReadableChainService for ChainReaderServiceInner {
@@ -435,32 +456,27 @@ impl ReadableChainService for ChainReaderServiceInner {
     ) -> Result<EpochUncleSummary> {
         let epoch_info = self.main.get_epoch_info_by_number(number)?;
         let start_number = epoch_info.start_block_number();
-        let mut end_number = epoch_info.end_block_number();
+        let mut end_number = epoch_info.end_block_number() - 1;
         if end_number > self.main.current_header().number() {
             end_number = self.main.current_header().number();
         }
-
-        let mut sum: u64 = 0;
-        for number in start_number..(end_number + 1) {
-            if let Some(block) = self.main.get_block_by_number(number)? {
-                if let Some(block_uncles) = block.uncles() {
-                    block_uncles.iter().for_each(|uncle| {
-                        if let Ok(Some(uncle_parent_header)) =
-                            self.main.get_header(uncle.parent_hash)
-                        {
-                            if uncle_parent_header.number() <= block.header().number() {
-                                sum += block.header().number() - uncle_parent_header.number();
-                            }
-                        }
-                    });
-                }
-            }
-        }
-
+        let end_epoch_info = self.main.get_epoch_info_by_number(Some(end_number))?;
+        let number_summary = self.uncle_summary(
+            start_number,
+            match number {
+                Some(n) => n,
+                None => end_number,
+            },
+        )?;
+        let epoch_summary = self.uncle_summary(start_number, end_number)?;
+        let number_uncle_summary =
+            UncleSummary::new(epoch_info.uncles(), number_summary.0, number_summary.1);
+        let epoch_uncle_summary =
+            UncleSummary::new(end_epoch_info.uncles(), epoch_summary.0, epoch_summary.1);
         Ok(EpochUncleSummary::new(
             epoch_info.number(),
-            epoch_info.uncles(),
-            sum,
+            number_uncle_summary,
+            epoch_uncle_summary,
         ))
     }
 }
