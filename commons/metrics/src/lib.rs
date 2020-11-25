@@ -5,7 +5,9 @@
 extern crate prometheus;
 
 use anyhow::Result;
-use prometheus::core::{AtomicU64, GenericCounterVec, GenericGauge, GenericGaugeVec};
+use prometheus::core::{
+    AtomicU64, GenericCounter, GenericCounterVec, GenericGauge, GenericGaugeVec,
+};
 use prometheus::{
     core::{Collector, Metric},
     proto,
@@ -48,6 +50,7 @@ pub type UIntGaugeVec = GenericGaugeVec<AtomicU64>;
 pub type UIntGauge = GenericGauge<AtomicU64>;
 
 pub type UIntCounterVec = GenericCounterVec<AtomicU64>;
+pub type UIntCounter = GenericCounter<AtomicU64>;
 
 pub fn register<T: Clone + Collector + 'static>(
     metric: T,

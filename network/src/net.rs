@@ -169,17 +169,13 @@ impl NetworkInner {
             Event::Dht(_) => {
                 debug!("ignore dht event");
             }
-            Event::NotificationStreamOpened {
-                remote,
-                protocol,
-                info,
-            } => {
-                debug!("Connected peer {:?}, protocol: {}", remote, protocol,);
+            Event::NotificationStreamOpened { remote, info } => {
+                debug!("Connected peer {:?}", remote);
                 let open_msg = PeerEvent::Open(remote.into(), Box::new(info.as_ref().clone()));
                 event_tx.unbounded_send(open_msg)?;
             }
-            Event::NotificationStreamClosed { remote, protocol } => {
-                debug!("Close peer {:?}, protocol: {}", remote, protocol,);
+            Event::NotificationStreamClosed { remote } => {
+                debug!("Close peer {:?}", remote);
                 let open_msg = PeerEvent::Close(remote.into());
                 event_tx.unbounded_send(open_msg)?;
             }
@@ -219,9 +215,9 @@ impl NetworkInner {
     }
 
     async fn handle_network_send(&self, message: NetworkMessage) -> Result<()> {
-        let account_addr = message.peer_id.clone();
+        let peer_id = message.peer_id.clone();
         self.service
-            .write_notification(account_addr, PROTOCOL_NAME.into(), message.data);
+            .write_notification(peer_id, message.protocol_name, message.data);
         Ok(())
     }
 }

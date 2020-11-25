@@ -61,20 +61,17 @@ pub enum CustomMessageOutcome {
     /// Notification protocols have been opened with a remote.
     NotificationStreamOpened {
         remote: PeerId,
-        protocols: Vec<Cow<'static, str>>,
         notifications_sink: NotificationsSink,
         info: Box<PeerInfo>,
     },
     /// The [`NotificationsSink`] of some notification protocols need an update.
     NotificationStreamReplaced {
         remote: PeerId,
-        protocols: Vec<Cow<'static, str>>,
         notifications_sink: NotificationsSink,
     },
     /// Notification protocols have been closed with a remote.
     NotificationStreamClosed {
         remote: PeerId,
-        protocols: Vec<Cow<'static, str>>,
     },
     /// Messages have been received on one or more notifications protocols.
     NotificationsReceived {
@@ -274,10 +271,7 @@ impl NetworkBehaviour for Protocol {
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
                 self.on_peer_disconnected(peer_id.clone());
                 // Notify all the notification protocols as closed.
-                CustomMessageOutcome::NotificationStreamClosed {
-                    remote: peer_id,
-                    protocols: self.notif_protocols.iter().cloned().collect(),
-                }
+                CustomMessageOutcome::NotificationStreamClosed { remote: peer_id }
             }
             GenericProtoOut::CustomProtocolReplaced {
                 peer_id,
@@ -285,7 +279,6 @@ impl NetworkBehaviour for Protocol {
                 ..
             } => CustomMessageOutcome::NotificationStreamReplaced {
                 remote: peer_id,
-                protocols: self.notif_protocols.iter().cloned().collect(),
                 notifications_sink,
             },
             GenericProtoOut::LegacyMessage { peer_id, message } => {
@@ -509,7 +502,6 @@ impl Protocol {
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
-            protocols: self.notif_protocols.iter().cloned().collect(),
             notifications_sink,
             info: Box::new(status.info),
         }

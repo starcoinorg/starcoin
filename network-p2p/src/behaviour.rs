@@ -60,8 +60,6 @@ pub enum BehaviourOut {
     NotificationStreamOpened {
         /// Node we opened the substream with.
         remote: PeerId,
-        /// The concerned protocol. Each protocol uses a different substream.
-        protocol: Cow<'static, str>,
         /// Object that permits sending notifications to the peer.
         notifications_sink: NotificationsSink,
         info: Box<PeerInfo>,
@@ -75,8 +73,6 @@ pub enum BehaviourOut {
     NotificationStreamReplaced {
         /// Id of the peer we are connected to.
         remote: PeerId,
-        /// The concerned protocol. Each protocol uses a different substream.
-        protocol: Cow<'static, str>,
         /// Replacement for the previous [`NotificationsSink`].
         notifications_sink: NotificationsSink,
     },
@@ -86,8 +82,6 @@ pub enum BehaviourOut {
     NotificationStreamClosed {
         /// Node we closed the substream with.
         remote: PeerId,
-        /// The concerned protocol. Each protocol uses a different substream.
-        protocol: Cow<'static, str>,
     },
 
     /// Messages have been received on one or more notifications protocols.
@@ -171,9 +165,6 @@ impl Behaviour {
     /// You are very strongly encouraged to call this method very early on. Any connection open
     /// will retain the protocols that were registered then, and not any new one.
     pub fn register_notifications_protocol(&mut self, protocol_name: impl Into<Cow<'static, str>>) {
-        // This is the message that we will send to the remote as part of the initial handshake.
-        // At the moment, we force this to be an encoded `Roles`.
-        //let handshake_message = Roles::from(&self.role).encode();
         let protocol = protocol_name.into();
         let list = self
             .protocol
@@ -184,7 +175,6 @@ impl Behaviour {
             self.events
                 .push_back(BehaviourOut::NotificationStreamOpened {
                     remote: remote.clone(),
-                    protocol: protocol.clone(),
                     notifications_sink: notifications_sink.clone(),
                     info: Box::new(info.clone()),
                 });
@@ -213,28 +203,21 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
         match event {
             CustomMessageOutcome::NotificationStreamOpened {
                 remote,
-                protocols,
                 notifications_sink,
                 info,
             } => {
-                for protocol in protocols {
-                    self.events
-                        .push_back(BehaviourOut::NotificationStreamOpened {
-                            remote: remote.clone(),
-                            protocol,
-                            notifications_sink: notifications_sink.clone(),
-                            info: info.clone(),
-                        });
-                }
+                self.events
+                    .push_back(BehaviourOut::NotificationStreamOpened {
+                        remote: remote.clone(),
+                        notifications_sink: notifications_sink.clone(),
+                        info: info.clone(),
+                    });
             }
-            CustomMessageOutcome::NotificationStreamClosed { remote, protocols } => {
-                for protocol in protocols {
-                    self.events
-                        .push_back(BehaviourOut::NotificationStreamClosed {
-                            remote: remote.clone(),
-                            protocol,
-                        });
-                }
+            CustomMessageOutcome::NotificationStreamClosed { remote } => {
+                self.events
+                    .push_back(BehaviourOut::NotificationStreamClosed {
+                        remote: remote.clone(),
+                    });
             }
             CustomMessageOutcome::NotificationsReceived {
                 remote,
@@ -250,17 +233,13 @@ impl NetworkBehaviourEventProcess<CustomMessageOutcome> for Behaviour {
             CustomMessageOutcome::None => {}
             CustomMessageOutcome::NotificationStreamReplaced {
                 remote,
-                protocols,
                 notifications_sink,
             } => {
-                for protocol in protocols {
-                    self.events
-                        .push_back(BehaviourOut::NotificationStreamReplaced {
-                            remote: remote.clone(),
-                            protocol,
-                            notifications_sink: notifications_sink.clone(),
-                        });
-                }
+                self.events
+                    .push_back(BehaviourOut::NotificationStreamReplaced {
+                        remote: remote.clone(),
+                        notifications_sink: notifications_sink.clone(),
+                    });
             }
         }
     }

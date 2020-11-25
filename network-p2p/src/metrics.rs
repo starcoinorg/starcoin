@@ -1,37 +1,37 @@
 use prometheus::Registry;
 use starcoin_metrics::{
-    register, HistogramOpts, HistogramVec, IntCounter, IntCounterVec, Opts, PrometheusError,
-    UIntGauge, UIntGaugeVec,
+    register, HistogramOpts, HistogramVec, IntCounter, Opts, PrometheusError, UIntCounter,
+    UIntCounterVec, UIntGauge, UIntGaugeVec,
 };
 
 #[derive(Clone)]
 pub struct Metrics {
     // This list is ordered alphabetically
-    pub connections_closed_total: IntCounterVec,
-    pub connections_opened_total: IntCounterVec,
+    pub connections_closed_total: UIntCounterVec,
+    pub connections_opened_total: UIntCounterVec,
     pub distinct_peers_connections_closed_total: IntCounter,
     pub distinct_peers_connections_opened_total: IntCounter,
-    pub incoming_connections_errors_total: IntCounterVec,
+    pub incoming_connections_errors_total: UIntCounterVec,
     pub incoming_connections_total: IntCounter,
     pub kademlia_query_duration: HistogramVec,
-    pub kademlia_random_queries_total: IntCounterVec,
+    pub kademlia_random_queries_total: UIntCounterVec,
     pub kademlia_records_count: UIntGaugeVec,
     pub kademlia_records_sizes_total: UIntGaugeVec,
     pub kbuckets_num_nodes: UIntGaugeVec,
     pub listeners_local_addresses: UIntGauge,
     pub listeners_errors_total: IntCounter,
     pub notifications_sizes: HistogramVec,
-    pub notifications_streams_closed_total: IntCounterVec,
-    pub notifications_streams_opened_total: IntCounterVec,
+    pub notifications_streams_closed_total: UIntCounter,
+    pub notifications_streams_opened_total: UIntCounter,
     pub peerset_num_discovered: UIntGauge,
     pub peerset_num_requested: UIntGauge,
     pub pending_connections: UIntGauge,
-    pub pending_connections_errors_total: IntCounterVec,
-    pub requests_in_failure_total: IntCounterVec,
+    pub pending_connections_errors_total: UIntCounterVec,
+    pub requests_in_failure_total: UIntCounterVec,
     pub requests_in_success_total: HistogramVec,
-    pub requests_out_failure_total: IntCounterVec,
+    pub requests_out_failure_total: UIntCounterVec,
     pub requests_out_success_total: HistogramVec,
-    pub requests_out_started_total: IntCounterVec,
+    pub requests_out_started_total: UIntCounterVec,
 }
 
 impl Metrics {
@@ -39,7 +39,7 @@ impl Metrics {
         Ok(Self {
             // This list is ordered alphabetically
             connections_closed_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_connections_closed_total",
                         "Total number of connections closed, by direction and reason",
@@ -49,7 +49,7 @@ impl Metrics {
                 registry,
             )?,
             connections_opened_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_connections_opened_total",
                         "Total number of connections opened by direction",
@@ -73,7 +73,7 @@ impl Metrics {
                 registry,
             )?,
             incoming_connections_errors_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_incoming_connections_handshake_errors_total",
                         "Total number of incoming connections that have failed during the \
@@ -105,7 +105,7 @@ impl Metrics {
                 registry,
             )?,
             kademlia_random_queries_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_kademlia_random_queries_total",
                         "Number of random Kademlia queries started",
@@ -173,22 +173,16 @@ impl Metrics {
                 registry,
             )?,
             notifications_streams_closed_total: register(
-                IntCounterVec::new(
-                    Opts::new(
-                        "sub_libp2p_notifications_streams_closed_total",
-                        "Total number of notification substreams that have been closed",
-                    ),
-                    &["protocol"],
+                UIntCounter::new(
+                    "sub_libp2p_notifications_streams_closed_total",
+                    "Total number of notification substreams that have been closed",
                 )?,
                 registry,
             )?,
             notifications_streams_opened_total: register(
-                IntCounterVec::new(
-                    Opts::new(
-                        "sub_libp2p_notifications_streams_opened_total",
-                        "Total number of notification substreams that have been opened",
-                    ),
-                    &["protocol"],
+                UIntCounter::new(
+                    "sub_libp2p_notifications_streams_opened_total",
+                    "Total number of notification substreams that have been opened",
                 )?,
                 registry,
             )?,
@@ -214,7 +208,7 @@ impl Metrics {
                 registry,
             )?,
             pending_connections_errors_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_pending_connections_errors_total",
                         "Total number of pending connection errors",
@@ -224,7 +218,7 @@ impl Metrics {
                 registry,
             )?,
             requests_in_failure_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_requests_in_failure_total",
                         "Total number of incoming requests that the node has failed to answer",
@@ -248,7 +242,7 @@ impl Metrics {
                 registry,
             )?,
             requests_out_failure_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_requests_out_failure_total",
                         "Total number of requests that have failed",
@@ -272,7 +266,7 @@ impl Metrics {
                 registry,
             )?,
             requests_out_started_total: register(
-                IntCounterVec::new(
+                UIntCounterVec::new(
                     Opts::new(
                         "sub_libp2p_requests_out_started_total",
                         "Total number of requests emitted",

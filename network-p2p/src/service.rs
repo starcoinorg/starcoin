@@ -108,9 +108,9 @@ pub struct NetworkService {
     /// Peerset manager (PSM); manages the reputation of nodes and indicates the network which
     /// nodes it should be connected to or not.
     peerset: PeersetHandle,
-    /// For each peer and protocol combination, an object that allows sending notifications to
+    /// For each peer, an object that allows sending notifications to
     /// that peer. Updated by the [`NetworkWorker`].
-    peers_notifications_sinks: Arc<Mutex<HashMap<(PeerId, Cow<'static, str>), NotificationsSink>>>,
+    peers_notifications_sinks: Arc<Mutex<HashMap<PeerId, NotificationsSink>>>,
     /// Channel that sends messages to the actual worker.
     to_worker: mpsc::UnboundedSender<ServiceToWorkerMsg>,
     /// Field extracted from the [`Metrics`] struct and necessary to report the
@@ -468,7 +468,7 @@ impl NetworkService {
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
             let peers_notifications_sinks = self.peers_notifications_sinks.lock();
-            if let Some(sink) = peers_notifications_sinks.get(&(target, protocol_name.clone())) {
+            if let Some(sink) = peers_notifications_sinks.get(&target) {
                 sink.clone()
             } else {
                 // Notification silently discarded, as documented.
@@ -477,15 +477,15 @@ impl NetworkService {
         };
 
         // Used later for the metrics report.
-        //let message_len = message.len();
+        let message_len = message.len();
 
-        sink.send_sync_notification(protocol_name, message);
+        sink.send_sync_notification(protocol_name.clone(), message);
 
-        // if let Some(notifications_sizes_metric) = self.notifications_sizes_metric.as_ref() {
-        //     notifications_sizes_metric
-        //         .with_label_values(&["out", &maybe_utf8_bytes_to_string(&engine_id)])
-        //         .observe(message_len as f64);
-        // }
+        if let Some(notifications_sizes_metric) = self.notifications_sizes_metric.as_ref() {
+            notifications_sizes_metric
+                .with_label_values(&["out", &protocol_name])
+                .observe(message_len as f64);
+        }
     }
 
     /// Obtains a [`NotificationSender`] for a connected peer, if it exists.
@@ -564,7 +564,7 @@ impl NetworkService {
         // `peers_notifications_sinks` mutex as soon as possible.
         let sink = {
             let peers_notifications_sinks = self.peers_notifications_sinks.lock();
-            if let Some(sink) = peers_notifications_sinks.get(&(target, protocol_name.clone())) {
+            if let Some(sink) = peers_notifications_sinks.get(&target) {
                 sink.clone()
             } else {
                 return Err(NotificationSenderError::Closed);
@@ -917,9 +917,9 @@ pub struct NetworkWorker {
     metrics: Option<Metrics>,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
-    /// For each peer and protocol combination, an object that allows sending notifications to
+    /// For each peer, an object that allows sending notifications to
     /// that peer. Shared with the [`NetworkService`].
-    peers_notifications_sinks: Arc<Mutex<HashMap<(PeerId, Cow<'static, str>), NotificationsSink>>>,
+    peers_notifications_sinks: Arc<Mutex<HashMap<PeerId, NotificationsSink>>>,
 }
 
 impl Future for NetworkWorker {
@@ -1002,35 +1002,25 @@ impl Future for NetworkWorker {
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::RandomKademliaStarted(_))) => {}
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamOpened {
                     remote,
-                    protocol,
                     notifications_sink,
                     info,
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
-                        metrics
-                            .notifications_streams_opened_total
-                            .with_label_values(&[&protocol])
-                            .inc();
+                        metrics.notifications_streams_opened_total.inc();
                     }
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks
-                            .insert((remote.clone(), protocol.clone()), notifications_sink);
+                        peers_notifications_sinks.insert(remote.clone(), notifications_sink);
                     }
-                    this.event_streams.send(Event::NotificationStreamOpened {
-                        remote,
-                        protocol,
-                        //TODO
-                        info,
-                    });
+                    this.event_streams
+                        .send(Event::NotificationStreamOpened { remote, info });
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamReplaced {
                     remote,
-                    protocol,
                     notifications_sink,
                 })) => {
                     let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                    if let Some(s) = peers_notifications_sinks.get_mut(&(remote, protocol)) {
+                    if let Some(s) = peers_notifications_sinks.get_mut(&remote) {
                         *s = notifications_sink;
                     } else {
                         log::error!(
@@ -1062,21 +1052,16 @@ impl Future for NetworkWorker {
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationStreamClosed {
                     remote,
-                    protocol,
                 })) => {
                     if let Some(metrics) = this.metrics.as_ref() {
-                        metrics
-                            .notifications_streams_closed_total
-                            .with_label_values(&[&protocol])
-                            .inc();
+                        metrics.notifications_streams_closed_total.inc();
                     }
                     this.event_streams.send(Event::NotificationStreamClosed {
                         remote: remote.clone(),
-                        protocol: protocol.clone(),
                     });
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks.remove(&(remote.clone(), protocol));
+                        peers_notifications_sinks.remove(&remote);
                     }
                 }
                 Poll::Ready(SwarmEvent::Behaviour(BehaviourOut::NotificationsReceived {

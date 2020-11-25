@@ -457,8 +457,8 @@ fn test_handshake_fail() {
     let fut = async move {
         while let Some(event) = stream.next().await {
             match event {
-                Event::NotificationStreamClosed { remote, protocol } => {
-                    info!("handshake failed from {}, protocol: {}", remote, protocol);
+                Event::NotificationStreamClosed { remote } => {
+                    info!("handshake failed from {}", remote);
                     break;
                 }
                 _ => {
