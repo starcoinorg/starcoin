@@ -4,7 +4,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
     register_histogram_vec, register_int_counter, register_int_gauge, HistogramOpts, HistogramVec,
-    IntCounter, IntGauge, Opts, PrometheusError,
+    IntCounter, Opts, PrometheusError, UIntGaugeVec,
 };
 
 const SC_NS: &str = "starcoin";
@@ -21,7 +21,8 @@ pub struct ChainMetrics {
     pub broadcast_head_count: IntCounter,
     pub verify_fail_count: IntCounter,
     pub exe_block_time: HistogramVec,
-    pub branch_total_count: IntGauge,
+    pub branch_total_count: UIntGaugeVec,
+    pub rollback_block_size: UIntGaugeVec,
 }
 
 impl ChainMetrics {
@@ -65,11 +66,20 @@ impl ChainMetrics {
             &["time"]
         )?;
 
-        let branch_total_count = register_int_gauge!(Opts::new(
+        let branch_total_count = register_uint_gauge_vec!(Opts::new(
             format!("{}{}", PRIFIX, "branch_total_count"),
             "branch total count".to_string()
         )
         .namespace(SC_NS))?;
+
+        let rollback_block_size = register_uint_gauge_vec!(
+            Opts::new(
+                format!("{}{}", PRIFIX, "rollback_block_size"),
+                "rollback block size".to_string()
+            )
+            .namespace(SC_NS),
+            &["rollback"]
+        )?;
 
         Ok(Self {
             try_connect_count,
@@ -79,6 +89,7 @@ impl ChainMetrics {
             verify_fail_count,
             exe_block_time,
             branch_total_count,
+            rollback_block_size,
         })
     }
 }
