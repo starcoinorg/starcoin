@@ -244,7 +244,7 @@ pub fn build_network_service(
     let transport_config = TransportConfig::Normal {
         //TODO support enable mdns by config.
         enable_mdns: false,
-        allow_private_ipv4: true,
+        allow_private_ipv4: false,
         wasm_external_transport: None,
         use_yamux_flow_control: false,
     };

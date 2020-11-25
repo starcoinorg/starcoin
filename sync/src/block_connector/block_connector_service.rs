@@ -125,7 +125,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                     block.header().number,
                                     peer_id
                                 );
-                                let _ = sync_service.notify(CheckSyncEvent::new());
+                                let _ = sync_service.notify(CheckSyncEvent::default());
                             }
                         }
                         e => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),

@@ -7,6 +7,7 @@ use futures::FutureExt;
 use starcoin_rpc_api::sync_manager::SyncManagerApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_sync_api::{SyncAsyncService, SyncProgressReport};
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 pub struct SyncManagerRpcImpl<S>
@@ -49,10 +50,10 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn start(&self, force: bool) -> FutureResult<()> {
+    fn start(&self, force: bool, peers: Vec<PeerId>) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move {
-            service.start(force).await?;
+            service.start(force, peers).await?;
             Ok(())
         }
         .map_err(map_err);

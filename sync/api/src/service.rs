@@ -6,6 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::sync_status::SyncStatus;
 
 #[async_trait::async_trait]
@@ -13,7 +14,9 @@ pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn status(&self) -> Result<SyncStatus>;
     async fn progress(&self) -> Result<Option<SyncProgressReport>>;
     async fn cancel(&self) -> Result<()>;
-    async fn start(&self, force: bool) -> Result<()>;
+    /// if `force` is true, will cancel current task and start a new task.
+    /// if peers is not empty, will try sync with the special peers.
+    async fn start(&self, force: bool, peers: Vec<PeerId>) -> Result<()>;
 }
 
 pub trait SyncServiceHandler:
@@ -42,7 +45,7 @@ where
         self.send(SyncCancelRequest).await
     }
 
-    async fn start(&self, force: bool) -> Result<()> {
-        self.send(SyncStartRequest { force }).await?
+    async fn start(&self, force: bool, peers: Vec<PeerId>) -> Result<()> {
+        self.send(SyncStartRequest { force, peers }).await?
     }
 }
