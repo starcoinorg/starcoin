@@ -8,7 +8,6 @@ use crate::protocol::message::generic::{FallbackMessage, Status};
 use crate::utils::interval;
 use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bytes::{Bytes, BytesMut};
-use crypto::HashValue;
 use futures::prelude::*;
 use libp2p::core::{
     connection::{ConnectionId, ListenerId},
@@ -19,7 +18,7 @@ use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
 use scs::SCSCodec;
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
@@ -62,7 +61,7 @@ pub enum CustomMessageOutcome {
     NotificationStreamOpened {
         remote: PeerId,
         notifications_sink: NotificationsSink,
-        info: Box<PeerInfo>,
+        info: Box<ChainInfo>,
     },
     /// The [`NotificationsSink`] of some notification protocols need an update.
     NotificationStreamReplaced {
@@ -85,7 +84,7 @@ pub enum CustomMessageOutcome {
 /// Peer information
 #[derive(Debug, Clone)]
 struct Peer {
-    info: PeerInfo,
+    info: ChainInfo,
 }
 
 #[derive(Default)]
@@ -100,11 +99,6 @@ struct ContextData {
     // All connected peers
     peers: HashMap<PeerId, Peer>,
     stats: HashMap<&'static str, PacketStats>,
-}
-
-pub struct ChainInfo {
-    pub genesis_hash: HashValue,
-    pub self_info: PeerInfo,
 }
 
 pub struct Protocol {
@@ -320,14 +314,22 @@ impl Protocol {
         };
 
         let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
+        let notif_protocols: Vec<Cow<'static, str>> = notif_protocols.into_iter().collect();
         let mut notif_protocol_set = HashSet::new();
+
         let behaviour = {
             let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
+
+            // we use same handshake message for notif stream and legacy protocol
             let handshake_message =
-                Self::build_status(chain_info.genesis_hash, chain_info.self_info.clone())
-                    .encode()
-                    .expect("Encode status message should success.");
-            info!(
+                Self::build_handshake_msg(notif_protocols.clone(), chain_info.clone());
+
+            let notif_protocol_wth_handshake = notif_protocols.into_iter().map(|protocol| {
+                notif_protocol_set.insert(protocol.clone());
+                (protocol, handshake_message.clone())
+            });
+
+            debug!(
                 "Handshake message: {}",
                 hex::encode(handshake_message.as_slice())
             );
@@ -338,11 +340,7 @@ impl Protocol {
                 versions,
                 handshake_message.clone(),
                 peerset,
-                //notif stream use same handshake message with legacy protocol
-                notif_protocols.into_iter().map(|protocol| {
-                    notif_protocol_set.insert(protocol.clone());
-                    (protocol, handshake_message.clone())
-                }),
+                notif_protocol_wth_handshake,
             )
         };
 
@@ -443,24 +441,26 @@ impl Protocol {
             self.peerset_handle.report_peer(who, rep::UNEXPECTED_STATUS);
             return CustomMessageOutcome::None;
         }
-        if status.genesis_hash != self.chain_info.genesis_hash {
-            error!(
-                "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
-                who, self.chain_info.genesis_hash, status.genesis_hash,
-            );
-            self.peerset_handle
-                .report_peer(who.clone(), rep::GENESIS_MISMATCH);
-            self.behaviour.disconnect_peer(&who);
-
+        if status.info.genesis_hash() != self.chain_info.genesis_hash() {
             if self.boot_node_ids.contains(&who) {
                 error!(
                     target: "network-p2p",
                     "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
                     who,
-                    self.chain_info.genesis_hash,
-                    status.genesis_hash,
+                    self.chain_info.genesis_hash(),
+                    status.info.genesis_hash(),
+                );
+            } else {
+                info!(
+                    "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
+                    who,
+                    self.chain_info.genesis_hash(),
+                    status.info.genesis_hash(),
                 );
             }
+            self.peerset_handle
+                .report_peer(who.clone(), rep::GENESIS_MISMATCH);
+            self.behaviour.disconnect_peer(&who);
 
             return CustomMessageOutcome::None;
         }
@@ -493,17 +493,18 @@ impl Protocol {
         }
     }
 
-    fn build_status(genesis_hash: HashValue, info: PeerInfo) -> Status {
+    fn build_status(notif_protocols: Vec<Cow<'static, str>>, info: ChainInfo) -> Status {
         message::generic::Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
-            genesis_hash,
+            notif_protocols,
+            rpc_protocols: vec![],
             info,
         }
     }
 
-    fn build_handshake_msg(genesis_hash: HashValue, info: PeerInfo) -> Vec<u8> {
-        Self::build_status(genesis_hash, info)
+    fn build_handshake_msg(notif_protocols: Vec<Cow<'static, str>>, info: ChainInfo) -> Vec<u8> {
+        Self::build_status(notif_protocols, info)
             .encode()
             .expect("Status encode should success.")
     }
@@ -554,15 +555,15 @@ impl Protocol {
     pub fn register_notifications_protocol<'a>(
         &'a mut self,
         protocol: Cow<'static, str>,
-    ) -> impl Iterator<Item = (&'a PeerId, &'a NotificationsSink, &'a PeerInfo)> + 'a {
+    ) -> impl Iterator<Item = (&'a PeerId, &'a NotificationsSink, &'a ChainInfo)> + 'a {
         if !self.notif_protocols.insert(protocol.clone()) {
             error!(target: "sub-libp2p", "Notifications protocol already registered: {:?}", protocol);
         } else {
             self.behaviour.register_notif_protocol(
                 protocol.clone(),
                 Self::build_handshake_msg(
-                    self.chain_info.genesis_hash,
-                    self.chain_info.self_info.clone(),
+                    self.notif_protocols.iter().cloned().collect(),
+                    self.chain_info.clone(),
                 ),
             );
         }
@@ -586,30 +587,21 @@ impl Protocol {
             })
     }
 
-    pub fn update_self_info(&mut self, self_info: PeerInfo) {
-        self.chain_info.self_info = self_info;
+    pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
+        self.chain_info.update_status(chain_status);
         self.update_handshake();
     }
 
     fn update_handshake(&mut self) {
-        self.behaviour.set_legacy_handshake_message(
-            Self::build_status(
-                self.chain_info.genesis_hash,
-                self.chain_info.self_info.clone(),
-            )
-            .encode()
-            .expect("Encode status should success."),
+        let handshake_msg = Self::build_handshake_msg(
+            self.notif_protocols.iter().cloned().collect(),
+            self.chain_info.clone(),
         );
+        self.behaviour
+            .set_legacy_handshake_message(handshake_msg.clone());
         for protocol in &self.notif_protocols {
-            self.behaviour.set_notif_protocol_handshake(
-                protocol,
-                Self::build_status(
-                    self.chain_info.genesis_hash,
-                    self.chain_info.self_info.clone(),
-                )
-                .encode()
-                .expect("Encode status should success."),
-            )
+            self.behaviour
+                .set_notif_protocol_handshake(protocol, handshake_msg.clone())
         }
     }
 

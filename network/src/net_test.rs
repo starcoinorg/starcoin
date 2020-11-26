@@ -8,7 +8,7 @@ mod tests {
     use crate::PeerEvent;
     use async_std::task;
     use bytes::Bytes;
-    use config::{get_random_available_port, NetworkConfig, NodeConfig};
+    use config::{get_random_available_port, BuiltinNetworkID, NetworkConfig, NodeConfig};
     use crypto::hash::HashValue;
     use futures::channel::mpsc;
     use futures::{
@@ -22,7 +22,7 @@ mod tests {
     use std::future::Future;
     use std::pin::Pin;
     use std::{thread, time::Duration};
-    use types::peer_info::PeerInfo;
+    use types::startup_info::{ChainInfo, ChainStatus};
     use types::PROTOCOLS;
 
     const PROTOCOL_ID: &str = "starcoin";
@@ -54,7 +54,14 @@ mod tests {
     }
 
     fn gen_network_inner() -> NetworkInner {
-        let mut cfg = NodeConfig::random_for_test().network;
+        let node_config = NodeConfig::random_for_test();
+
+        let chain_info = ChainInfo::new(
+            node_config.net().chain_id(),
+            HashValue::default(),
+            ChainStatus::random(),
+        );
+        let mut cfg = node_config.network;
         cfg.listen = format!(
             "/ip4/{}/tcp/{}",
             "127.0.0.1".to_string(),
@@ -74,13 +81,11 @@ mod tests {
                 NodeKeyConfig::Ed25519(Secret::Input(secret))
             },
             protocols: PROTOCOLS.clone(),
-            genesis_hash: HashValue::default(),
-            self_info: PeerInfo::random(),
             ..NetworkConfiguration::default()
         };
 
         let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
-        let worker = NetworkWorker::new(Params::new(config, protocol, None)).unwrap();
+        let worker = NetworkWorker::new(Params::new(config, protocol, chain_info, None)).unwrap();
         let service = worker.service().clone();
         NetworkInner::new(service)
     }
@@ -123,6 +128,11 @@ mod tests {
             NetworkConfig,
         )> = Vec::with_capacity(num);
         let mut first_addr = None::<String>;
+        let chain_info = ChainInfo::new(
+            BuiltinNetworkID::Test.chain_id(),
+            HashValue::random(),
+            ChainStatus::random(),
+        );
         for index in 0..num {
             let mut boot_nodes = Vec::new();
 
@@ -134,7 +144,6 @@ mod tests {
                 );
             }
             let node_config = NodeConfig::random_for_test();
-            let chain_net_id = node_config.net().id();
             let mut config = node_config.network.clone();
 
             config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16)
@@ -148,13 +157,7 @@ mod tests {
             }
             let mut protocols = PROTOCOLS.clone();
             protocols.push(TEST_PROTOCOL_NAME.into());
-            let server = build_network_service(
-                chain_net_id,
-                &config,
-                protocols,
-                HashValue::default(),
-                PeerInfo::random(),
-            );
+            let server = build_network_service(chain_info.clone(), &config, protocols);
             result.push({
                 let c: NetworkComponent = (
                     server.0,
@@ -348,7 +351,7 @@ mod tests {
     async fn test_event_notify_open() {
         let event = Event::NotificationStreamOpened {
             remote: PeerId::random(),
-            info: Box::new(PeerInfo::random()),
+            info: Box::new(ChainInfo::random()),
         };
         test_handle_event(event).await;
     }

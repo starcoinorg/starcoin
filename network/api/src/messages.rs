@@ -7,7 +7,7 @@ use futures::channel::mpsc::Sender;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
 
@@ -37,6 +37,6 @@ impl ServiceRequest for RawRpcRequestMessage {
 #[rtype(result = "Result<()>")]
 #[derive(Debug, Eq, PartialEq, Message, Clone)]
 pub enum PeerEvent {
-    Open(PeerId, Box<PeerInfo>),
+    Open(PeerId, Box<ChainInfo>),
     Close(PeerId),
 }

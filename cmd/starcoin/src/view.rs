@@ -336,9 +336,9 @@ pub struct PeerInfoView {
 impl From<PeerInfo> for PeerInfoView {
     fn from(peer_info: PeerInfo) -> Self {
         Self {
-            peer_id: peer_info.peer_id,
-            latest_header: peer_info.latest_header.into(),
-            total_difficulty: peer_info.total_difficulty,
+            peer_id: peer_info.peer_id(),
+            latest_header: peer_info.latest_header().clone().into(),
+            total_difficulty: peer_info.total_difficulty(),
         }
     }
 }

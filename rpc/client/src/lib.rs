@@ -18,8 +18,8 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ContractCall,
-    EpochUncleSummaryView, TransactionInfoView, TransactionView,
+    AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView,
+    ContractCall, EpochUncleSummaryView, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
@@ -35,7 +35,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 use starcoin_types::block::BlockNumber;
 use starcoin_types::peer_info::{Multiaddr, PeerId, PeerInfo};
-use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SystemStop;
@@ -146,11 +145,6 @@ impl RpcClient {
             ConnSource::Ipc(path, Arc::new(reactor)),
             client_inner,
         ))
-    }
-
-    pub fn chain_id(&self) -> anyhow::Result<ChainId> {
-        self.call_rpc_blocking(|inner| async move { inner.node_client.chain_id().compat().await })
-            .map_err(map_err)
     }
 
     pub fn watch_txn(
@@ -474,8 +468,13 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn chain_head(&self) -> anyhow::Result<ChainInfo> {
-        self.call_rpc_blocking(|inner| async move { inner.chain_client.head().compat().await })
+    pub fn chain_id(&self) -> anyhow::Result<ChainId> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.id().compat().await })
+            .map_err(map_err)
+    }
+
+    pub fn chain_info(&self) -> anyhow::Result<ChainInfoView> {
+        self.call_rpc_blocking(|inner| async move { inner.chain_client.info().compat().await })
             .map_err(map_err)
     }
 

@@ -12,7 +12,7 @@ use starcoin_network_rpc_api::{
 };
 use starcoin_traits::ChainReader;
 use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
-use starcoin_types::peer_info::{PeerInfo, RpcInfo};
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::borrow::Cow;
@@ -233,10 +233,6 @@ impl NetworkService for DummyNetworkService {
         _peer_id: PeerId,
         _msg: PeerMessage,
     ) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    async fn register_rpc_proto(&self, _rpc_info: RpcInfo) -> anyhow::Result<()> {
         Ok(())
     }
 }

@@ -20,6 +20,7 @@ use starcoin_types::block::{
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::RawUserTransaction;
 use starcoin_types::vm_error::AbortLocation;
@@ -514,6 +515,27 @@ impl From<EpochUncleSummary> for EpochUncleSummaryView {
             epoch: origin.epoch,
             number_summary: origin.number_summary.into(),
             epoch_summary: origin.epoch_summary.into(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ChainInfoView {
+    pub chain_id: u8,
+    pub genesis_hash: HashValue,
+    pub head: BlockHeaderView,
+    pub total_difficulty: U256,
+}
+
+impl From<ChainInfo> for ChainInfoView {
+    fn from(info: ChainInfo) -> Self {
+        let (chain_id, genesis_hash, status) = info.into_inner();
+        let (head, total_difficulty) = status.into_inner();
+        Self {
+            chain_id: chain_id.into(),
+            genesis_hash,
+            head: head.into(),
+            total_difficulty,
         }
     }
 }

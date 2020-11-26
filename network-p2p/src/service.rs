@@ -33,6 +33,25 @@ use std::sync::{
 use std::task::Poll;
 use std::{borrow::Cow, collections::HashSet, io};
 
+use crate::config::{Params, TransportConfig};
+use crate::discovery::DiscoveryConfig;
+use crate::errors::Error;
+use crate::metrics::Metrics;
+use crate::network_state::{
+    NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
+};
+use crate::protocol::event::Event;
+use crate::protocol::generic_proto::{NotificationsSink, Ready};
+use crate::protocol::Protocol;
+use crate::Multiaddr;
+use crate::{
+    behaviour::{Behaviour, BehaviourOut},
+    errors, out_events, DhtEvent,
+};
+use crate::{
+    config::{parse_addr, parse_str_addr, NonReservedPeerMode},
+    transport,
+};
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
@@ -48,28 +67,8 @@ use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
 use parking_lot::Mutex;
 use sc_peerset::{PeersetHandle, ReputationChange};
-use starcoin_types::peer_info::PeerInfo;
-
-use crate::config::{Params, TransportConfig};
-use crate::discovery::DiscoveryConfig;
-use crate::errors::Error;
-use crate::metrics::Metrics;
-use crate::network_state::{
-    NetworkState, NotConnectedPeer as NetworkStateNotConnectedPeer, Peer as NetworkStatePeer,
-};
-use crate::protocol::event::Event;
-use crate::protocol::generic_proto::{NotificationsSink, Ready};
-use crate::protocol::{ChainInfo, Protocol};
-use crate::Multiaddr;
-use crate::{
-    behaviour::{Behaviour, BehaviourOut},
-    errors, out_events, DhtEvent,
-};
-use crate::{
-    config::{parse_addr, parse_str_addr, NonReservedPeerMode},
-    transport,
-};
 use starcoin_metrics::{Histogram, HistogramVec};
+use starcoin_types::startup_info::ChainStatus;
 use std::collections::HashMap;
 use std::num::NonZeroUsize;
 
@@ -209,17 +208,14 @@ impl NetworkWorker {
 
         let num_connected = Arc::new(AtomicUsize::new(0));
         let is_major_syncing = Arc::new(AtomicBool::new(false));
-        let chain_info = ChainInfo {
-            genesis_hash: params.network_config.genesis_hash,
-            self_info: params.network_config.self_info,
-        };
+
         let notif_protocols = params.network_config.protocols.clone();
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
             local_peer_id.clone(),
             params.protocol_id.clone(),
-            chain_info,
+            params.chain_info,
             boot_node_ids.clone(),
             notif_protocols,
         )?;
@@ -633,10 +629,12 @@ impl NetworkService {
         }
     }
 
-    pub fn update_self_info(&self, info: PeerInfo) {
+    pub fn update_chain_status(&self, chain_status: ChainStatus) {
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::SelfInfo(Box::new(info)));
+            .unbounded_send(ServiceToWorkerMsg::UpdateChainStatus(Box::new(
+                chain_status,
+            )));
     }
 
     /// Returns a stream containing the events that happen on the network.
@@ -892,7 +890,7 @@ enum ServiceToWorkerMsg {
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
     ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
-    SelfInfo(Box<PeerInfo>),
+    UpdateChainStatus(Box<ChainStatus>),
     AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
     ExistNotifProtocol {
         protocol_name: Cow<'static, str>,
@@ -964,10 +962,10 @@ impl Future for NetworkWorker {
                     }
                     let _ = tx.send(result);
                 }
-                ServiceToWorkerMsg::SelfInfo(info) => {
+                ServiceToWorkerMsg::UpdateChainStatus(status) => {
                     this.network_service
                         .user_protocol_mut()
-                        .update_self_info(*info);
+                        .update_chain_status(*status);
                 }
                 ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
                     let _ = tx.send(this.network_service.get_address(&peer_id));

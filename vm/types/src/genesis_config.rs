@@ -646,6 +646,12 @@ impl From<u8> for ChainId {
     }
 }
 
+impl Into<u8> for ChainId {
+    fn into(self) -> u8 {
+        self.id
+    }
+}
+
 impl MoveResource for ChainId {
     const MODULE_NAME: &'static str = "ChainId";
     const STRUCT_NAME: &'static str = "ChainId";

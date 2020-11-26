@@ -6,7 +6,7 @@ extern crate log;
 #[macro_use]
 extern crate prometheus;
 
-mod helper;
+pub mod helper;
 mod message_processor;
 mod net;
 #[cfg(test)]

@@ -7,20 +7,83 @@ use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 use starcoin_uint::U256;
+use starcoin_vm_types::genesis_config::ChainId;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 
+/// The info of a chain.
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct ChainInfo {
+    chain_id: ChainId,
+    genesis_hash: HashValue,
+    status: ChainStatus,
+}
+
+impl ChainInfo {
+    pub fn new(chain_id: ChainId, genesis_hash: HashValue, status: ChainStatus) -> Self {
+        Self {
+            chain_id,
+            genesis_hash,
+            status,
+        }
+    }
+
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
+
+    pub fn genesis_hash(&self) -> HashValue {
+        self.genesis_hash
+    }
+
+    pub fn status(&self) -> &ChainStatus {
+        &self.status
+    }
+
+    pub fn update_status(&mut self, status: ChainStatus) {
+        self.status = status
+    }
+
+    pub fn head(&self) -> &BlockHeader {
+        self.status.head()
+    }
+
+    pub fn total_difficulty(&self) -> U256 {
+        self.status.total_difficulty()
+    }
+
+    pub fn into_inner(self) -> (ChainId, HashValue, ChainStatus) {
+        (self.chain_id, self.genesis_hash, self.status)
+    }
+
+    pub fn random() -> Self {
+        Self {
+            chain_id: ChainId::new(rand::random()),
+            genesis_hash: HashValue::random(),
+            status: ChainStatus::random(),
+        }
+    }
+}
+
+/// The latest status of a chain.
+#[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
+pub struct ChainStatus {
     head: BlockHeader,
     total_difficulty: U256,
 }
 
-impl ChainInfo {
+impl ChainStatus {
     pub fn new(head: BlockHeader, total_difficulty: U256) -> Self {
         Self {
             head,
             total_difficulty,
+        }
+    }
+
+    pub fn random() -> Self {
+        Self {
+            head: BlockHeader::random(),
+            total_difficulty: U256::from(rand::random::<u64>()),
         }
     }
 
@@ -31,11 +94,15 @@ impl ChainInfo {
     pub fn total_difficulty(&self) -> U256 {
         self.total_difficulty
     }
+
+    pub fn into_inner(self) -> (BlockHeader, U256) {
+        (self.head, self.total_difficulty)
+    }
 }
-//TODO save more info to StartupInfo and simple chain init.
+
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct StartupInfo {
-    /// main chain info
+    /// main chain head block hash
     pub main: HashValue,
 }
 

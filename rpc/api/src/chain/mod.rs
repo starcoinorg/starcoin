@@ -4,22 +4,25 @@
 pub use self::gen_client::Client as ChainClient;
 use crate::types::pubsub::EventFilter;
 use crate::types::{
-    BlockHeaderView, BlockSummaryView, BlockView, EpochUncleSummaryView, TransactionEventView,
-    TransactionInfoView, TransactionView,
+    BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
+    TransactionEventView, TransactionInfoView, TransactionView,
 };
 use crate::FutureResult;
+use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
 use starcoin_types::block::BlockNumber;
-use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc]
 pub trait ChainApi {
-    /// Get chain head info
-    #[rpc(name = "chain.head")]
-    fn head(&self) -> FutureResult<ChainInfo>;
+    #[rpc(name = "chain.id")]
+    fn id(&self) -> Result<ChainId>;
+
+    /// Get main chain info
+    #[rpc(name = "chain.info")]
+    fn info(&self) -> FutureResult<ChainInfoView>;
     /// Get chain block info
     #[rpc(name = "chain.get_block_by_hash")]
     fn get_block_by_hash(&self, block_hash: HashValue) -> FutureResult<BlockView>;

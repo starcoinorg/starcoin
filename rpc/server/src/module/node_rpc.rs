@@ -9,7 +9,6 @@ use network_api::PeerProvider;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};
-use starcoin_rpc_api::types::ChainId;
 use starcoin_rpc_api::FutureResult;
 use starcoin_types::peer_info::PeerInfo;
 use std::collections::HashMap;
@@ -27,10 +26,6 @@ impl NodeRpcImpl {
 }
 
 impl NodeApi for NodeRpcImpl {
-    fn chain_id(&self) -> Result<ChainId> {
-        Ok(self.config.net().id().into())
-    }
-
     fn status(&self) -> Result<bool> {
         //TODO check service status.
         Ok(true)

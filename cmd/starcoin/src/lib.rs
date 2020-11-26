@@ -74,7 +74,7 @@ pub fn add_command(
         )
         .command(
             Command::with_name("chain")
-                .subcommand(chain::ShowCommand)
+                .subcommand(chain::InfoCommand)
                 .subcommand(chain::GetBlockByNumberCommand)
                 .subcommand(chain::ListBlockCommand)
                 .subcommand(chain::GetTransactionCommand)

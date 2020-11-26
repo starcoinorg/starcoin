@@ -59,7 +59,7 @@ impl<'a> Selector<'a> {
     }
 
     pub fn random_peer_id(&self) -> Option<PeerId> {
-        self.random().map(|info| info.peer_id.clone())
+        self.random().map(|info| info.peer_id())
     }
 
     pub fn random(&self) -> Option<&PeerInfo> {
@@ -90,7 +90,7 @@ impl<'a> Selector<'a> {
     }
 
     pub fn filter_by_block_number(self, block_number: BlockNumber) -> Selector<'a> {
-        self.filter(move |peer| peer.latest_header.number >= block_number)
+        self.filter(move |peer| peer.latest_header().number >= block_number)
     }
 
     pub fn cloned(self) -> Vec<PeerInfo> {
@@ -137,10 +137,10 @@ impl PeerSelector {
         let best_peers = self
             .peers
             .iter()
-            .sorted_by_key(|info| info.total_difficulty)
+            .sorted_by_key(|info| info.total_difficulty())
             .rev()
             .fold(peers, |mut peers, peer| {
-                if peers.is_empty() || peer.total_difficulty >= peers[0].total_difficulty {
+                if peers.is_empty() || peer.total_difficulty() >= peers[0].total_difficulty() {
                     peers.push(peer);
                 };
                 peers
@@ -156,7 +156,7 @@ impl PeerSelector {
         self.peers
             .iter()
             .choose(&mut rand::thread_rng())
-            .map(|info| info.peer_id.clone())
+            .map(|info| info.peer_id())
     }
 
     pub fn random(&self) -> Option<&PeerInfo> {
@@ -180,7 +180,7 @@ impl PeerSelector {
     }
 
     fn sort(peers: &mut Vec<PeerInfo>) {
-        peers.sort_by_key(|p| p.total_difficulty);
+        peers.sort_by_key(|p| p.total_difficulty());
         peers.reverse();
     }
 }
@@ -197,16 +197,46 @@ impl IntoIterator for PeerSelector {
 #[cfg(test)]
 mod tests {
     use crate::peer_provider::PeerSelector;
+    use starcoin_crypto::HashValue;
     use starcoin_types::block::BlockHeader;
     use starcoin_types::peer_info::{PeerId, PeerInfo};
+    use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
     #[test]
     fn test_peer_selector() {
         let peers = vec![
-            PeerInfo::new_with_proto(PeerId::random(), 100.into(), BlockHeader::random(), vec![]),
-            PeerInfo::new_with_proto(PeerId::random(), 99.into(), BlockHeader::random(), vec![]),
-            PeerInfo::new_with_proto(PeerId::random(), 100.into(), BlockHeader::random(), vec![]),
-            PeerInfo::new_with_proto(PeerId::random(), 1.into(), BlockHeader::random(), vec![]),
+            PeerInfo::new(
+                PeerId::random(),
+                ChainInfo::new(
+                    1.into(),
+                    HashValue::zero(),
+                    ChainStatus::new(BlockHeader::random(), 100.into()),
+                ),
+            ),
+            PeerInfo::new(
+                PeerId::random(),
+                ChainInfo::new(
+                    1.into(),
+                    HashValue::zero(),
+                    ChainStatus::new(BlockHeader::random(), 99.into()),
+                ),
+            ),
+            PeerInfo::new(
+                PeerId::random(),
+                ChainInfo::new(
+                    1.into(),
+                    HashValue::zero(),
+                    ChainStatus::new(BlockHeader::random(), 100.into()),
+                ),
+            ),
+            PeerInfo::new(
+                PeerId::random(),
+                ChainInfo::new(
+                    1.into(),
+                    HashValue::zero(),
+                    ChainStatus::new(BlockHeader::random(), 1.into()),
+                ),
+            ),
         ];
 
         let peer_selector = PeerSelector::new(peers);

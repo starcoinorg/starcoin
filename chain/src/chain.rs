@@ -17,7 +17,7 @@ use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, Chain
 use starcoin_statedb::ChainStateDB;
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::{
     account_address::AccountAddress,
     block::{
@@ -312,11 +312,11 @@ impl BlockChain {
         }
     }
 
-    pub fn get_chain_info(&self) -> Result<ChainInfo> {
+    pub fn get_chain_status(&self) -> Result<ChainStatus> {
         //TODO cache the chain info.
         let header = self.current_header();
         let total_difficulty = self.get_total_difficulty()?;
-        Ok(ChainInfo::new(header, total_difficulty))
+        Ok(ChainStatus::new(header, total_difficulty))
     }
 
     fn ensure_head(&self) -> &Block {

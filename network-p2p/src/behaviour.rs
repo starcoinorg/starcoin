@@ -30,7 +30,7 @@ use libp2p::swarm::{
 };
 use libp2p::NetworkBehaviour;
 use log::debug;
-use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
 use std::collections::{HashSet, VecDeque};
 use std::time::Duration;
@@ -62,7 +62,7 @@ pub enum BehaviourOut {
         remote: PeerId,
         /// Object that permits sending notifications to the peer.
         notifications_sink: NotificationsSink,
-        info: Box<PeerInfo>,
+        info: Box<ChainInfo>,
     },
 
     /// The [`NotificationsSink`] object used to send notifications with the given peer must be
