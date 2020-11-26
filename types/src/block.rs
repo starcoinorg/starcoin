@@ -713,15 +713,12 @@ pub enum BlockState {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BlockSummary {
     pub block_header: BlockHeader,
-    pub uncles: Option<Vec<BlockHeader>>,
+    pub uncles: Vec<BlockHeader>,
 }
 
 impl BlockSummary {
-    pub fn uncles(&self) -> Option<&[BlockHeader]> {
-        match &self.uncles {
-            Some(uncles) => Some(uncles.as_slice()),
-            None => None,
-        }
+    pub fn uncles(&self) -> &[BlockHeader] {
+        &self.uncles
     }
 
     pub fn header(&self) -> &BlockHeader {
@@ -733,13 +730,13 @@ impl From<Block> for BlockSummary {
     fn from(block: Block) -> Self {
         Self {
             block_header: block.header,
-            uncles: block.body.uncles,
+            uncles: block.body.uncles.unwrap_or_default(),
         }
     }
 }
 
-impl Into<(BlockHeader, Option<Vec<BlockHeader>>)> for BlockSummary {
-    fn into(self) -> (BlockHeader, Option<Vec<BlockHeader>>) {
+impl Into<(BlockHeader, Vec<BlockHeader>)> for BlockSummary {
+    fn into(self) -> (BlockHeader, Vec<BlockHeader>) {
         (self.block_header, self.uncles)
     }
 }

@@ -115,7 +115,7 @@ mod tests {
     use starcoin_crypto::hash::PlainCryptoHash;
     use starcoin_logger::prelude::*;
     use starcoin_node::NodeHandle;
-    use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall};
+    use starcoin_rpc_api::types::{AnnotatedMoveValue, ContractCall, TransactionVMStatus};
     use starcoin_rpc_client::RpcClient;
     use starcoin_transaction_builder::{
         build_module_upgrade_plan, build_module_upgrade_proposal, build_module_upgrade_queue,
@@ -125,7 +125,6 @@ mod tests {
         account_config::{association_address, genesis_address, AccountResource},
         genesis_config::StdlibVersion,
         transaction::Package,
-        vm_status::KeptVMStatus,
     };
     use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
     use std::sync::Arc;
@@ -204,7 +203,7 @@ mod tests {
             .chain_get_transaction_info(transfer_txn_id)
             .unwrap()
             .unwrap();
-        assert_eq!(transfer_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(transfer_txn_info.status, TransactionVMStatus::Executed);
         transfer_amount
     }
 
@@ -270,7 +269,7 @@ mod tests {
             .unwrap()
             .unwrap();
         info!("txn status : {:?}", proposal_txn_info);
-        assert_eq!(proposal_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(proposal_txn_info.status, TransactionVMStatus::Executed);
 
         // 2. transfer
         cli_state
@@ -324,7 +323,7 @@ mod tests {
             .chain_get_transaction_info(vote_txn_id)
             .unwrap()
             .unwrap();
-        assert_eq!(vote_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(vote_txn_info.status, TransactionVMStatus::Executed);
 
         // 4. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
@@ -357,7 +356,7 @@ mod tests {
             .unwrap()
             .unwrap();
         info!("queue txn info : {:?}", queue_txn_info);
-        assert_eq!(queue_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(queue_txn_info.status, TransactionVMStatus::Executed);
 
         // 6. sleep
         cli_state.client().sleep(dao_config.voting_period).unwrap();
@@ -389,7 +388,7 @@ mod tests {
             .chain_get_transaction_info(plan_txn_id)
             .unwrap()
             .unwrap();
-        assert_eq!(plan_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(plan_txn_info.status, TransactionVMStatus::Executed);
 
         // 8. exe package
         let package_txn = _sign_txn_with_association_account_by_rpc_client(
@@ -414,7 +413,7 @@ mod tests {
             .chain_get_transaction_info(package_txn_id)
             .unwrap()
             .unwrap();
-        assert_eq!(package_txn_info.status(), &KeptVMStatus::Executed);
+        assert_eq!(package_txn_info.status, TransactionVMStatus::Executed);
 
         // 9. verify
         let call = ContractCall {
@@ -496,8 +495,8 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(
-            only_new_module_strategy_txn_info.status(),
-            &KeptVMStatus::Executed
+            only_new_module_strategy_txn_info.status,
+            TransactionVMStatus::Executed
         );
 
         // 3. apply new module
@@ -534,7 +533,7 @@ mod tests {
             .chain_get_transaction_info(package_txn_id_1)
             .unwrap()
             .unwrap();
-        assert_eq!(package_txn_info_1.status(), &KeptVMStatus::Executed);
+        assert_eq!(package_txn_info_1.status, TransactionVMStatus::Executed);
 
         // 4. 更新module
         let test_upgrade_module_source_2 = r#"

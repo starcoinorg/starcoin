@@ -180,6 +180,24 @@ impl RawUserTransaction {
     pub fn sender(&self) -> AccountAddress {
         self.sender
     }
+    pub fn sequence_number(&self) -> u64 {
+        self.sequence_number
+    }
+    pub fn max_gas_amount(&self) -> u64 {
+        self.max_gas_amount
+    }
+    pub fn gas_unit_price(&self) -> u64 {
+        self.gas_unit_price
+    }
+    pub fn gas_token_code(&self) -> String {
+        self.gas_token_code.clone()
+    }
+    pub fn expiration_timestamp_secs(&self) -> u64 {
+        self.expiration_timestamp_secs
+    }
+    pub fn chain_id(&self) -> ChainId {
+        self.chain_id
+    }
 
     pub fn mock() -> Self {
         Self::mock_by_sender(AccountAddress::random())

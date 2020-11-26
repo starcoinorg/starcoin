@@ -12,7 +12,8 @@ use parking_lot::RwLock;
 use starcoin_chain_notify::message::{Event, Notification, ThinBlock};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::metadata::Metadata;
-use starcoin_rpc_api::types::pubsub::{MintBlock, ThinHeadBlock};
+use starcoin_rpc_api::types::pubsub::MintBlock;
+use starcoin_rpc_api::types::{BlockView, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
@@ -247,10 +248,11 @@ pub struct NewHeadHandler;
 impl EventHandler<Notification<ThinBlock>> for NewHeadHandler {
     fn handle(&self, msg: Notification<ThinBlock>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         let Notification(block) = msg;
-        vec![Ok(pubsub::Result::Block(Box::new(ThinHeadBlock::new(
-            block.header,
-            block.body,
-        ))))]
+        vec![Ok(pubsub::Result::Block(Box::new(BlockView {
+            header: block.header.into(),
+            body: block.body.into(),
+            uncles: vec![],
+        })))]
     }
 }
 
@@ -294,7 +296,7 @@ impl EventHandler<Notification<Arc<Vec<Event>>>> for ContractEventHandler {
         filtered_events
             .into_iter()
             .map(|e| {
-                pubsub::Event::new(
+                TransactionEventView::new(
                     Some(e.block_hash),
                     Some(e.block_number),
                     Some(e.transaction_hash),

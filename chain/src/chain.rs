@@ -636,7 +636,7 @@ impl BlockChain {
                     block_hash: block_id,
                     block_number: block.header().number,
                     transaction_hash: txn_info.transaction_hash(),
-                    transaction_index: *idx as u64,
+                    transaction_index: *idx as u32,
                     event: evt,
                 });
                 if reverse {

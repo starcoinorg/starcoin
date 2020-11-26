@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as NodeClient;
+use super::types::ChainId;
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
@@ -40,6 +41,9 @@ impl NodeInfo {
 
 #[rpc]
 pub trait NodeApi {
+    #[rpc(name = "node.chain_id")]
+    fn chain_id(&self) -> Result<ChainId>;
+
     /// Get node run status, just for api available check.
     #[rpc(name = "node.status")]
     fn status(&self) -> Result<bool>;

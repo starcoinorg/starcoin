@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_rpc_api::types::BlockHeaderView;
 use starcoin_types::block::BlockNumber;
 use structopt::StructOpt;
 
@@ -34,10 +34,7 @@ impl CommandAction for ListBlockCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let blocks = client.chain_get_blocks_by_number(opt.number, opt.count)?;
-        let block_view = blocks
-            .iter()
-            .map(|block| BlockHeaderView::from(block.clone()))
-            .collect();
+        let block_view = blocks.into_iter().map(|block| block.header).collect();
         Ok(block_view)
     }
 }

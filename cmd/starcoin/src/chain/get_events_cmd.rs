@@ -12,8 +12,8 @@ use structopt::StructOpt;
 #[derive(Debug, StructOpt)]
 #[structopt(name = "get_events")]
 pub struct GetEventsOpt {
-    #[structopt(name = "txn-info-id")]
-    /// txn info id
+    #[structopt(name = "txn-hash")]
+    /// txn hash
     hash: HashValue,
 }
 
@@ -31,7 +31,7 @@ impl CommandAction for GetEventsCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let opt = ctx.opt();
-        let events = client.chain_get_events_by_txn_info_id(opt.hash)?;
+        let events = client.chain_get_events_by_txn_hash(opt.hash)?;
         let events = events.into_iter().map(|e| e.into()).collect::<Vec<_>>();
         Ok(events)
     }
