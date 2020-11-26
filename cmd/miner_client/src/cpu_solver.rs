@@ -78,7 +78,7 @@ impl Solver for CpuSolver {
                                 if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
                                     error!("Failed to send nonce: {:?}", e);
                                 };
-                                break;
+                                return;
                             }
                             strategy => {
                                 let nonce = Self::nonce_generator(&nonce_range);
@@ -94,7 +94,7 @@ impl Solver for CpuSolver {
                                         {
                                             error!("Failed to send nonce: {:?}", e);
                                         };
-                                        break;
+                                        return;
                                     }
                                 }
                             }
