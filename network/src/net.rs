@@ -5,7 +5,6 @@ use crate::{NetworkMessage, PeerEvent};
 use anyhow::*;
 use bytes::Bytes;
 use config::NetworkConfig;
-use crypto::hash::HashValue;
 use futures::{channel::mpsc, prelude::*};
 use libp2p::PeerId;
 use network_p2p::config::TransportConfig;
@@ -17,8 +16,7 @@ use parity_codec::alloc::collections::HashSet;
 use prometheus::{default_registry, Registry};
 use std::borrow::Cow;
 use std::sync::Arc;
-use types::genesis_config::ChainNetworkID;
-use types::peer_info::PeerInfo;
+use types::startup_info::{ChainInfo, ChainStatus};
 
 #[derive(Clone)]
 pub struct SNetworkService {
@@ -35,10 +33,12 @@ pub struct NetworkInner {
 impl SNetworkService {
     pub fn new(
         protocol: ProtocolId,
+        chain_info: ChainInfo,
         cfg: NetworkConfiguration,
         metrics_registry: Option<Registry>,
     ) -> Self {
-        let worker = NetworkWorker::new(Params::new(cfg, protocol, metrics_registry)).unwrap();
+        let worker =
+            NetworkWorker::new(Params::new(cfg, protocol, chain_info, metrics_registry)).unwrap();
         let service = worker.service().clone();
         let worker = worker;
 
@@ -141,8 +141,8 @@ impl SNetworkService {
         self.service.connected_peers().await
     }
 
-    pub fn update_self_info(&self, info: PeerInfo) {
-        self.service.update_self_info(info);
+    pub fn update_chain_status(&self, chain_status: ChainStatus) {
+        self.service.update_chain_status(chain_status);
     }
 
     pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
@@ -184,7 +184,7 @@ impl NetworkInner {
             }
             Event::NotificationStreamOpened { remote, info } => {
                 debug!("Connected peer {:?}", remote);
-                let open_msg = PeerEvent::Open(remote.into(), Box::new(info.as_ref().clone()));
+                let open_msg = PeerEvent::Open(remote.into(), info);
                 event_tx.unbounded_send(open_msg)?;
             }
             Event::NotificationStreamClosed { remote } => {
@@ -235,11 +235,9 @@ impl NetworkInner {
 }
 
 pub fn build_network_service(
-    chain_net_id: &ChainNetworkID,
+    chain_info: ChainInfo,
     cfg: &NetworkConfig,
     protocols: Vec<Cow<'static, str>>,
-    genesis_hash: HashValue,
-    self_info: PeerInfo,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -265,13 +263,18 @@ pub fn build_network_service(
         },
         protocols,
         transport: transport_config,
-        genesis_hash,
-        self_info,
         ..NetworkConfiguration::default()
     };
-    let protocol_id = ProtocolId::from(chain_net_id.to_string().as_str());
-    //TODO use a custom registry for each instance.
-    let mut service = SNetworkService::new(protocol_id, config, Some(default_registry().clone()));
+    // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix
+    let protocol_id = ProtocolId::from(format!("chain/{}", chain_info.chain_id()).as_str());
+
+    let mut service = SNetworkService::new(
+        protocol_id,
+        chain_info,
+        config,
+        //TODO use a custom registry for each instance.
+        Some(default_registry().clone()),
+    );
     let (net_tx, net_rx, event_rx, control_tx) = service.run();
     (service, net_tx, net_rx, event_rx, control_tx)
 }

@@ -10,8 +10,14 @@ use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
 use network_p2p_types::MultiaddrWithPeerId;
+use once_cell::sync::Lazy;
+use starcoin_types::genesis_config::ChainId;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use std::thread;
 use std::{sync::Arc, time::Duration};
+
+static TEST_CHAIN_INFO: Lazy<ChainInfo> =
+    Lazy::new(|| ChainInfo::new(ChainId::new(0), HashValue::zero(), ChainStatus::random()));
 
 /// Builds a full node to be used for testing. Returns the node service and its associated events
 /// stream.
@@ -24,6 +30,7 @@ fn build_test_full_node(
     let worker = NetworkWorker::new(config::Params {
         network_config: config,
         protocol_id: config::ProtocolId::from("/test-protocol-name"),
+        chain_info: TEST_CHAIN_INFO.clone(),
         metrics_registry: None,
     })
     .unwrap();
@@ -422,12 +429,11 @@ const PROTOCOL_NAME: &str = "/starcoin/notify/1";
 
 #[stest::test]
 fn test_handshake_fail() {
-    //::logger::init_for_test();
-
     let protocol = ProtocolId::from("starcoin");
     let config1 = generate_config(vec![]);
-
-    let worker1 = NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), None)).unwrap();
+    let chain1 = ChainInfo::random();
+    let worker1 =
+        NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), chain1, None)).unwrap();
     let service1 = worker1.service().clone();
     let mut stream = service1.event_stream("test");
 
@@ -438,10 +444,10 @@ fn test_handshake_fail() {
         peer_id: service1.local_peer_id(),
     };
 
-    let mut config2 = generate_config(vec![seed]);
-    config2.genesis_hash = HashValue::random();
+    let config2 = generate_config(vec![seed]);
+    let chain2 = ChainInfo::random();
 
-    let worker2 = NetworkWorker::new(Params::new(config2, protocol, None)).unwrap();
+    let worker2 = NetworkWorker::new(Params::new(config2, protocol, chain2, None)).unwrap();
     let service2 = worker2.service().clone();
 
     task::spawn(worker2);

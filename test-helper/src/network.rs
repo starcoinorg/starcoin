@@ -1,20 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use std::sync::{Arc, Mutex};
 
 use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
 use starcoin_block_relayer_api::PeerCmpctBlockEvent;
 pub use starcoin_network::NetworkAsyncService;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_tx_relay::PeerTransactions;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
 #[derive(Clone, Default)]
 pub struct MockPeerMessageHandler {
@@ -52,7 +54,21 @@ where
         config.network.seeds = vec![seed];
     }
     let node_config = Arc::new(config);
-    let (storage, _, genesis_hash) = Genesis::init_storage_for_test(node_config.net())?;
+    let (storage, startup_info, genesis_hash) = Genesis::init_storage_for_test(node_config.net())?;
+
+    let head_block_hash = startup_info.main;
+    let head_block_header = storage
+        .get_block_header_by_hash(head_block_hash)?
+        .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
+    let head_block_info = storage
+        .get_block_info(head_block_hash)?
+        .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
+
+    let chain_info = ChainInfo::new(
+        node_config.net().chain_id(),
+        genesis_hash,
+        ChainStatus::new(head_block_header, head_block_info.total_difficulty),
+    );
 
     registry.put_shared(node_config.clone()).await?;
     registry.put_shared(storage.clone()).await?;
@@ -67,9 +83,8 @@ where
     Ok((
         NetworkAsyncService::start(
             node_config.clone(),
-            genesis_hash,
+            chain_info,
             bus,
-            storage.clone(),
             network_rpc_service,
             peer_message_handler,
         )?,

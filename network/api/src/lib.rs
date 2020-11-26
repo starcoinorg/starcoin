@@ -5,7 +5,6 @@ use crate::messages::PeerMessage;
 use anyhow::*;
 use async_trait::async_trait;
 use network_rpc_core::RawRpcClient;
-use starcoin_types::peer_info::RpcInfo;
 use std::borrow::Cow;
 
 pub mod messages;
@@ -28,6 +27,4 @@ pub trait NetworkService:
         peer_id: PeerId,
         msg: PeerMessage,
     ) -> Result<()>;
-
-    async fn register_rpc_proto(&self, rpc_info: RpcInfo) -> Result<()>;
 }

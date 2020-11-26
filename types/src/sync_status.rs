@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block::BlockIdAndNumber;
-use crate::startup_info::ChainInfo;
+use crate::startup_info::ChainStatus;
 use serde::{Deserialize, Serialize};
 use starcoin_uint::U256;
 
@@ -44,14 +44,14 @@ impl SyncState {
 
 #[derive(Eq, PartialEq, Deserialize, Serialize, Clone, Debug)]
 pub struct SyncStatus {
-    chain_info: ChainInfo,
+    chain_status: ChainStatus,
     state: SyncState,
 }
 
 impl SyncStatus {
-    pub fn new(chain_info: ChainInfo) -> Self {
+    pub fn new(chain_status: ChainStatus) -> Self {
         Self {
-            chain_info,
+            chain_status,
             state: SyncState::Prepare,
         }
     }
@@ -67,9 +67,9 @@ impl SyncStatus {
         self.state = SyncState::Synchronized;
     }
 
-    pub fn update_chain_info(&mut self, chain_info: ChainInfo) -> bool {
-        if self.chain_info != chain_info {
-            self.chain_info = chain_info;
+    pub fn update_chain_status(&mut self, chain_status: ChainStatus) -> bool {
+        if self.chain_status != chain_status {
+            self.chain_status = chain_status;
             return true;
         }
         false
@@ -79,8 +79,8 @@ impl SyncStatus {
         &self.state
     }
 
-    pub fn chain_info(&self) -> &ChainInfo {
-        &self.chain_info
+    pub fn chain_status(&self) -> &ChainStatus {
+        &self.chain_status
     }
 
     pub fn is_syncing(&self) -> bool {

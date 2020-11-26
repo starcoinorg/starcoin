@@ -4536,6 +4536,7 @@ dependencies = [
  "lru",
  "network-p2p-types",
  "nohash-hasher",
+ "once_cell",
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "pin-project 0.4.27",

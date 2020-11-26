@@ -9,7 +9,7 @@ use starcoin_types::block::{BlockState, BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_types::{
@@ -114,7 +114,7 @@ pub trait ChainAsyncService:
     ) -> Result<Vec<Block>>;
     async fn main_block_header_by_number(&self, number: BlockNumber) -> Result<BlockHeader>;
     async fn main_startup_info(&self) -> Result<StartupInfo>;
-    async fn main_head(&self) -> Result<ChainInfo>;
+    async fn main_status(&self) -> Result<ChainStatus>;
     async fn epoch_info(&self) -> Result<EpochInfo>;
     async fn get_epoch_info_by_number(&self, number: BlockNumber) -> Result<EpochInfo>;
     async fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
@@ -352,10 +352,10 @@ where
         }
     }
 
-    async fn main_head(&self) -> Result<ChainInfo> {
-        let response = self.send(ChainRequest::GetHeadChainInfo()).await??;
-        if let ChainResponse::ChainInfo(chain_info) = response {
-            Ok(*chain_info)
+    async fn main_status(&self) -> Result<ChainStatus> {
+        let response = self.send(ChainRequest::GetHeadChainStatus()).await??;
+        if let ChainResponse::ChainStatus(chain_status) = response {
+            Ok(*chain_status)
         } else {
             bail!("get head chain info error.")
         }

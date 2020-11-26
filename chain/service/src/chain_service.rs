@@ -132,8 +132,8 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
             ChainRequest::GetStartupInfo() => Ok(ChainResponse::StartupInfo(Box::new(
                 self.inner.main_startup_info(),
             ))),
-            ChainRequest::GetHeadChainInfo() => Ok(ChainResponse::ChainInfo(Box::new(
-                self.inner.main.get_chain_info()?,
+            ChainRequest::GetHeadChainStatus() => Ok(ChainResponse::ChainStatus(Box::new(
+                self.inner.main.get_chain_status()?,
             ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.inner
@@ -549,7 +549,7 @@ mod tests {
         registry.put_shared(config).await?;
         registry.put_shared(storage).await?;
         let service_ref = registry.register::<ChainReaderService>().await?;
-        let chain_info = service_ref.main_head().await?;
+        let chain_info = service_ref.main_status().await?;
         assert_eq!(chain_info.head().id(), startup_info.main);
         Ok(())
     }
