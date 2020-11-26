@@ -97,9 +97,6 @@ module ConsensusConfig {
         // base_reward_per_uncle_percent can been zero.
         assert(min_block_time_target > 0, Errors::invalid_argument(EINVALID_ARGUMENT));
         assert(max_block_time_target >= min_block_time_target, Errors::invalid_argument(EINVALID_ARGUMENT));
-        assert(base_max_uncles_per_block >= 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        assert(base_block_gas_limit >= 0, Errors::invalid_argument(EINVALID_ARGUMENT));
-        assert(strategy >= 0, Errors::invalid_argument(EINVALID_ARGUMENT));
 
         ConsensusConfig {
             uncle_rate_target,
