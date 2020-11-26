@@ -8209,7 +8209,6 @@ dependencies = [
  "network-p2p-types",
  "num_enum",
  "once_cell",
- "parity-multiaddr",
  "proptest",
  "proptest-derive",
  "prost",
