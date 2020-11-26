@@ -1,0 +1,21 @@
+* Usb solver
+** Compile
+   #+BEGIN_SRC bash
+   cargo build
+   #+END_SRC
+   then, you get a shared libary named libsolver.so (linux) or libsolver.dylib (macos) under ./target/debug/
+
+** Plugin to miner_client
+
+   #+BEGIN_SRC bash
+   starcoin_miner -p ${path_of_the_solver_libary}
+   #+END_SRC
+
+** Plugin to starcoin node
+   Edit the config.yaml of starcoin node, in miner.client_config session
+   
+   #+BEGIN_SRC 
+   [miner.client_config]
+   plugin_path = ${path_of_the_solver_libary}
+   #+END_SRC
+

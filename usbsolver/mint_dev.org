@@ -1,0 +1,17 @@
+* Mint on starcoin
+** Build a starcoin node 
+   https://github.com/starcoinorg/starcoin
+
+   http://developer.starcoin.org
+
+** Connect to halley test network
+   starcoin -n halley 
+
+   Note: halley test network is for develop now, may clean data.
+
+** Use usb derive plugin to mint 
+   https://github.com/fikgol/usbsolver
+
+   Note: 
+   1. Pow input is 76 bytes as the same as Monero.
+   2. the height params in cryponight function is awalys 0.

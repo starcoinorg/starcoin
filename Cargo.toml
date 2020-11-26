@@ -86,6 +86,8 @@ members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
+    "usbsolver",
+    "usbsolver/usbderive",
 ]
 
 [profile.dev]

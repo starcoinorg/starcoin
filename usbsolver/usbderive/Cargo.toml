@@ -1,0 +1,20 @@
+[package]
+name = "usbderive"
+version = "0.1.0"
+authors = ["fikgol <hit.cs.lijun@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serialport = "3.3.0"
+anyhow = "1.0.34"
+byteorder = "1.3"
+async-std = "1.6.5"
+futures = "0.3.7"
+parking_lot = "0.11.0"
+starcoin-logger = { git = "https://github.com/fikgol/starcoin", branch = "miner_solver", package = "starcoin-logger" }
+
+[dev-dependencies]
+cryptonight-rs = { git = "https://github.com/fikgol/starcoin", branch = "miner_solver" , package = "cryptonight-rs"}
+starcoin-consensus = { git = "https://github.com/fikgol/starcoin", branch = "miner_solver" , package = "starcoin-consensus"}
