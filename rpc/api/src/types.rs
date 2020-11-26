@@ -15,7 +15,7 @@ use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary,
+    Block, BlockBody, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary, UncleSummary,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -472,10 +472,7 @@ impl TransactionEventView {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct EpochUncleSummaryView {
-    /// epoch number
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
-    pub epoch: u64,
+pub struct UncleSummaryView {
     /// total uncle
     #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
     pub uncles: u64,
@@ -484,15 +481,39 @@ pub struct EpochUncleSummaryView {
     pub sum: u64,
     #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
     pub avg: u64,
+    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    pub time_sum: u64,
+    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    pub time_avg: u64,
+}
+
+impl From<UncleSummary> for UncleSummaryView {
+    fn from(origin: UncleSummary) -> Self {
+        Self {
+            uncles: origin.uncles,
+            sum: origin.sum,
+            avg: origin.avg,
+            time_sum: origin.time_sum,
+            time_avg: origin.time_avg,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EpochUncleSummaryView {
+    /// epoch number
+    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    pub epoch: u64,
+    pub number_summary: UncleSummaryView,
+    pub epoch_summary: UncleSummaryView,
 }
 
 impl From<EpochUncleSummary> for EpochUncleSummaryView {
     fn from(origin: EpochUncleSummary) -> Self {
         EpochUncleSummaryView {
             epoch: origin.epoch,
-            uncles: origin.uncles,
-            sum: origin.sum,
-            avg: origin.avg,
+            number_summary: origin.number_summary.into(),
+            epoch_summary: origin.epoch_summary.into(),
         }
     }
 }
