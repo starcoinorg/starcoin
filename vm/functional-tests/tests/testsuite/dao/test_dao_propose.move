@@ -32,6 +32,25 @@ script {
 }
 // check: EXECUTED
 
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::Dao;
+    use 0x1::STC::STC;
+    use 0x1::ModifyDaoConfigProposal;
+
+    fun proposal_info(_signer: &signer) {
+        let (id, start_time, end_time, for_votes, against_votes)
+                = Dao::proposal_info<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}});
+
+        assert(id == 0, 101);
+        assert(start_time == 86460000, 102); // be consistent with genesis config
+        assert(end_time == 90060000, 103); // be consistent with genesis config
+        assert(for_votes == 0, 104);
+        assert(against_votes == 0, 104);
+    }
+}
+// check: EXECUTED
 
 //! block-prologue
 //! author: genesis
