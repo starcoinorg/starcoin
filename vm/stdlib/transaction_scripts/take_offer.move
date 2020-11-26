@@ -2,7 +2,7 @@ script {
     use 0x1::Offer;
     use 0x1::Box;
 
-    fun take_offer<Offered: copyable>(
+    fun take_offer<Offered>(
         signer: &signer,
         offer_address: address,
     ) {
