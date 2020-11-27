@@ -6,7 +6,7 @@ use crate::view::AccountWithStateView;
 use crate::StarcoinOpt;
 use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
-use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_vm_types::account_address::AccountAddress;
@@ -18,6 +18,9 @@ use structopt::StructOpt;
 pub struct ShowOpt {
     #[structopt(name = "account_address")]
     account_address: Option<AccountAddress>,
+
+    #[structopt(name = "block_id", short = "b")]
+    block_id: Option<HashValue>,
 }
 
 pub struct ShowCommand;
@@ -46,7 +49,13 @@ impl CommandAction for ShowCommand {
             .account_get(account_address)?
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
-        let chain_state_reader = RemoteStateReader::new(client);
+        let state_root = if let Some(block_id) = opt.block_id {
+            let block = client.chain_get_block_by_hash(block_id)?;
+            Some(block.header.state_root)
+        } else {
+            None
+        };
+        let chain_state_reader = RemoteStateReader::new_with_root(client, state_root);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let sequence_number = account_state_reader
             .get_account_resource(account.address())?

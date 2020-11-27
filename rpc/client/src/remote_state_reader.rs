@@ -13,11 +13,16 @@ use starcoin_types::state_set::ChainStateSet;
 pub struct RemoteStateReader<'a> {
     //TODO add cache.
     client: &'a RpcClient,
+    state_root: Option<HashValue>,
 }
 
 impl<'a> RemoteStateReader<'a> {
     pub fn new(client: &'a RpcClient) -> Self {
-        Self { client }
+        Self::new_with_root(client, None)
+    }
+
+    pub fn new_with_root(client: &'a RpcClient, state_root: Option<HashValue>) -> Self {
+        Self { client, state_root }
     }
 }
 
@@ -44,7 +49,14 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 
 impl<'a> StateView for RemoteStateReader<'a> {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.client.state_get(access_path.clone())
+        match self.state_root {
+            Some(root) => Ok(self
+                .client
+                .state_get_with_proof_by_root(access_path.clone(), root)?
+                .get_state()
+                .clone()),
+            None => self.client.state_get(access_path.clone()),
+        }
     }
 
     fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {
