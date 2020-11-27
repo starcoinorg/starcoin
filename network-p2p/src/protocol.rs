@@ -3,13 +3,12 @@ pub mod generic_proto;
 pub mod message;
 
 use crate::config::ProtocolId;
-use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
+use crate::protocol::generic_proto::{GenericProto, GenericProtoOut, NotificationsSink};
+use crate::protocol::message::generic::{FallbackMessage, Status};
 use crate::utils::interval;
-use crate::{DiscoveryNetBehaviour, Multiaddr, PROTOCOL_NAME};
-
-use crate::network_state::Peer;
-
+use crate::{errors, DiscoveryNetBehaviour, Multiaddr};
 use bytes::{Bytes, BytesMut};
+use crypto::HashValue;
 use futures::prelude::*;
 use libp2p::core::{
     connection::{ConnectionId, ListenerId},
@@ -19,21 +18,18 @@ use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler};
 use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
 use libp2p::PeerId;
 use log::Level;
-
-use crate::protocol::message::generic::{FallbackMessage, GenericMessage, Message, Status};
-use crypto::HashValue;
 use scs::SCSCodec;
+use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+use std::fmt::Write;
 use std::pin::Pin;
 use std::str;
 use std::sync::Arc;
 use std::task::Poll;
 use std::time;
-use types::peer_info::PeerInfo;
-use wasm_timer::Instant;
 
-const REQUEST_TIMEOUT_SEC: u64 = 40;
+//const REQUEST_TIMEOUT_SEC: u64 = 40;
 /// Interval at which we perform time based maintenance
 const TICK_TIMEOUT: time::Duration = time::Duration::from_millis(1100);
 /// Current protocol version.
@@ -43,8 +39,8 @@ pub(crate) const MIN_VERSION: u32 = 1;
 
 pub use generic_proto::LegacyConnectionKillError;
 
-mod rep {
-    use peerset::ReputationChange as Rep;
+pub mod rep {
+    use sc_peerset::ReputationChange as Rep;
     /// Reputation change when a peer is "clogged", meaning that it's not fast enough to process our
     /// messages.
     pub const CLOGGED_PEER: Rep = Rep::new(-(1 << 12), "Clogged message queue");
@@ -62,9 +58,16 @@ mod rep {
 
 #[derive(Debug)]
 pub enum CustomMessageOutcome {
+    /// Notification protocols have been opened with a remote.
     NotificationStreamOpened {
         remote: PeerId,
+        notifications_sink: NotificationsSink,
         info: Box<PeerInfo>,
+    },
+    /// The [`NotificationsSink`] of some notification protocols need an update.
+    NotificationStreamReplaced {
+        remote: PeerId,
+        notifications_sink: NotificationsSink,
     },
     /// Notification protocols have been closed with a remote.
     NotificationStreamClosed {
@@ -73,21 +76,30 @@ pub enum CustomMessageOutcome {
     /// Messages have been received on one or more notifications protocols.
     NotificationsReceived {
         remote: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        protocol: Cow<'static, str>,
         messages: Vec<Bytes>,
     },
     None,
 }
 
-/// A peer that we are connected to
-/// and from whom we have not yet received a Status message.
-struct HandshakingPeer {
-    timestamp: Instant,
+/// Peer information
+#[derive(Debug, Clone)]
+struct Peer {
+    info: PeerInfo,
+}
+
+#[derive(Default)]
+struct PacketStats {
+    bytes_in: u64,
+    bytes_out: u64,
+    count_in: u64,
+    count_out: u64,
 }
 
 struct ContextData {
     // All connected peers
     peers: HashMap<PeerId, Peer>,
+    stats: HashMap<&'static str, PacketStats>,
 }
 
 pub struct ChainInfo {
@@ -99,16 +111,14 @@ pub struct Protocol {
     /// Interval at which we call `tick`.
     tick_timeout: Pin<Box<dyn Stream<Item = ()> + Send>>,
     important_peers: HashSet<PeerId>,
-    /// Connected peers pending Status message.
-    handshaking_peers: HashMap<PeerId, HandshakingPeer>,
     /// Used to report reputation changes.
-    peerset_handle: peerset::PeersetHandle,
+    peerset_handle: sc_peerset::PeersetHandle,
     /// Handles opening the unique substream and sending and receiving raw messages.
     behaviour: GenericProto,
     context_data: ContextData,
     /// The `PeerId`'s of all boot nodes.
     boot_node_ids: Arc<HashSet<PeerId>>,
-
+    notif_protocols: HashSet<Cow<'static, str>>,
     chain_info: ChainInfo,
 }
 
@@ -161,6 +171,40 @@ impl NetworkBehaviour for Protocol {
         self.behaviour.inject_event(peer_id, connection, event)
     }
 
+    fn inject_addr_reach_failure(
+        &mut self,
+        peer_id: Option<&PeerId>,
+        addr: &Multiaddr,
+        error: &dyn std::error::Error,
+    ) {
+        self.behaviour
+            .inject_addr_reach_failure(peer_id, addr, error)
+    }
+
+    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
+        self.behaviour.inject_dial_failure(peer_id)
+    }
+
+    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
+        self.behaviour.inject_new_listen_addr(addr)
+    }
+
+    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
+        self.behaviour.inject_expired_listen_addr(addr)
+    }
+
+    fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
+        self.behaviour.inject_new_external_addr(addr)
+    }
+
+    fn inject_listener_error(&mut self, id: ListenerId, err: &(dyn std::error::Error + 'static)) {
+        self.behaviour.inject_listener_error(id, err);
+    }
+
+    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &std::io::Error>) {
+        self.behaviour.inject_listener_closed(id, reason);
+    }
+
     fn poll(
         &mut self,
         cx: &mut std::task::Context,
@@ -201,15 +245,33 @@ impl NetworkBehaviour for Protocol {
         };
 
         let outcome = match event {
-            GenericProtoOut::CustomProtocolOpen { peer_id, .. } => {
-                self.on_peer_connected(peer_id);
-                CustomMessageOutcome::None
-            }
+            GenericProtoOut::CustomProtocolOpen {
+                peer_id: who,
+                received_handshake,
+                notifications_sink,
+            } => match Status::decode(&received_handshake[..]) {
+                Ok(status) => self.on_peer_connected(who, status, notifications_sink),
+                Err(err) => {
+                    info!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", who, hex::encode(received_handshake), err);
+                    self.peerset_handle
+                        .report_peer(who.clone(), rep::BAD_MESSAGE);
+                    self.behaviour.disconnect_peer(&who);
+                    CustomMessageOutcome::None
+                }
+            },
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
                 self.on_peer_disconnected(peer_id.clone());
                 // Notify all the notification protocols as closed.
                 CustomMessageOutcome::NotificationStreamClosed { remote: peer_id }
             }
+            GenericProtoOut::CustomProtocolReplaced {
+                peer_id,
+                notifications_sink,
+                ..
+            } => CustomMessageOutcome::NotificationStreamReplaced {
+                remote: peer_id,
+                notifications_sink,
+            },
             GenericProtoOut::LegacyMessage { peer_id, message } => {
                 self.on_legacy_message(peer_id, message)
             }
@@ -218,13 +280,6 @@ impl NetworkBehaviour for Protocol {
                 protocol_name,
                 message,
             } => self.on_notify(peer_id, protocol_name, message),
-            GenericProtoOut::Clogged {
-                peer_id,
-                messages: _,
-            } => {
-                self.on_clogged_peer(peer_id);
-                CustomMessageOutcome::None
-            }
         };
 
         if let CustomMessageOutcome::None = outcome {
@@ -232,40 +287,6 @@ impl NetworkBehaviour for Protocol {
         } else {
             Poll::Ready(NetworkBehaviourAction::GenerateEvent(outcome))
         }
-    }
-
-    fn inject_addr_reach_failure(
-        &mut self,
-        peer_id: Option<&PeerId>,
-        addr: &Multiaddr,
-        error: &dyn std::error::Error,
-    ) {
-        self.behaviour
-            .inject_addr_reach_failure(peer_id, addr, error)
-    }
-
-    fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        self.behaviour.inject_dial_failure(peer_id)
-    }
-
-    fn inject_new_listen_addr(&mut self, addr: &Multiaddr) {
-        self.behaviour.inject_new_listen_addr(addr)
-    }
-
-    fn inject_expired_listen_addr(&mut self, addr: &Multiaddr) {
-        self.behaviour.inject_expired_listen_addr(addr)
-    }
-
-    fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
-        self.behaviour.inject_new_external_addr(addr)
-    }
-
-    fn inject_listener_error(&mut self, id: ListenerId, err: &(dyn std::error::Error + 'static)) {
-        self.behaviour.inject_listener_error(id, err);
-    }
-
-    fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &std::io::Error>) {
-        self.behaviour.inject_listener_closed(id, reason);
     }
 }
 
@@ -278,11 +299,13 @@ impl DiscoveryNetBehaviour for Protocol {
 impl Protocol {
     /// Create a new instance.
     pub fn new(
-        peerset_config: peerset::PeersetConfig,
+        peerset_config: sc_peerset::PeersetConfig,
+        local_peer_id: PeerId,
         protocol_id: ProtocolId,
         chain_info: ChainInfo,
         boot_node_ids: Arc<HashSet<PeerId>>,
-    ) -> crate::net_error::Result<(Protocol, peerset::PeersetHandle)> {
+        notif_protocols: impl IntoIterator<Item = Cow<'static, str>>,
+    ) -> errors::Result<(Protocol, sc_peerset::PeersetHandle)> {
         let important_peers = {
             let mut imp_p = HashSet::new();
             for reserved in peerset_config
@@ -296,21 +319,45 @@ impl Protocol {
             imp_p
         };
 
-        let (peerset, peerset_handle) = peerset::Peerset::from_config(peerset_config);
-        let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
-        let behaviour = GenericProto::new(protocol_id, versions, peerset, None);
+        let (peerset, peerset_handle) = sc_peerset::Peerset::from_config(peerset_config);
+        let mut notif_protocol_set = HashSet::new();
+        let behaviour = {
+            let versions = &((MIN_VERSION as u8)..=(CURRENT_VERSION as u8)).collect::<Vec<u8>>();
+            let handshake_message =
+                Self::build_status(chain_info.genesis_hash, chain_info.self_info.clone())
+                    .encode()
+                    .expect("Encode status message should success.");
+            info!(
+                "Handshake message: {}",
+                hex::encode(handshake_message.as_slice())
+            );
+
+            GenericProto::new(
+                local_peer_id,
+                protocol_id,
+                versions,
+                handshake_message.clone(),
+                peerset,
+                //notif stream use same handshake message with legacy protocol
+                notif_protocols.into_iter().map(|protocol| {
+                    notif_protocol_set.insert(protocol.clone());
+                    (protocol, handshake_message.clone())
+                }),
+            )
+        };
 
         let protocol = Protocol {
             tick_timeout: Box::pin(interval(TICK_TIMEOUT)),
-            handshaking_peers: HashMap::new(),
             important_peers,
             peerset_handle: peerset_handle.clone(),
             behaviour,
             context_data: ContextData {
                 peers: HashMap::new(),
+                stats: HashMap::new(),
             },
             chain_info,
             boot_node_ids,
+            notif_protocols: notif_protocol_set,
         };
 
         Ok((protocol, peerset_handle))
@@ -324,6 +371,16 @@ impl Protocol {
     /// Returns true if we have a channel open with this node.
     pub fn is_open(&self, peer_id: &PeerId) -> bool {
         self.behaviour.is_open(peer_id)
+    }
+
+    /// Returns the list of all the peers that the peerset currently requests us to be connected to.
+    pub fn requested_peers(&self) -> impl Iterator<Item = &PeerId> {
+        self.behaviour.requested_peers()
+    }
+
+    /// Returns the number of discovered nodes that we keep in memory.
+    pub fn num_discovered_peers(&self) -> usize {
+        self.behaviour.num_discovered_peers()
     }
 
     /// Disconnects the given peer if we are connected to it.
@@ -347,7 +404,7 @@ impl Protocol {
         match FallbackMessage::decode(&data[..]) {
             Ok(msg) => self.on_notify(who, msg.protocol_name, BytesMut::from(&msg.data[..])),
             Err(err) => {
-                info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
+                info!(target: "network-p2p", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
                 self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
                 CustomMessageOutcome::None
             }
@@ -357,135 +414,107 @@ impl Protocol {
     pub fn on_notify(
         &mut self,
         who: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        protocol_name: Cow<'static, str>,
         data: BytesMut,
     ) -> CustomMessageOutcome {
         debug!("receive custom message from {} ", who);
-        let message = match Message::decode(&data[..]) {
-            Ok(message) => message,
-            Err(err) => {
-                info!(target: "sync", "Couldn't decode packet sent by {}: {:?}: {}", who, data, err);
-                self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
-                return CustomMessageOutcome::None;
-            }
-        };
 
-        match message {
-            Message::Status(status) => self.on_status_message(who, *status),
-            Message::ConsensusMessage(data) => CustomMessageOutcome::NotificationsReceived {
-                remote: who,
-                protocol_name,
-                messages: vec![Bytes::from(data.data)],
-            },
+        CustomMessageOutcome::NotificationsReceived {
+            remote: who,
+            protocol: protocol_name,
+            messages: vec![Bytes::from(data)],
         }
     }
 
-    /// Called by peer to report status
-    fn on_status_message(&mut self, who: PeerId, status: Status) -> CustomMessageOutcome {
-        trace!(target: "sync", "New peer {} {:?}", who, status);
-        let _protocol_version = {
-            if self.context_data.peers.contains_key(&who) {
-                log!(
-                    target: "sync",
-                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
-                    "Unexpected status packet from {}", who
-                );
-                self.peerset_handle.report_peer(who, rep::UNEXPECTED_STATUS);
-                return CustomMessageOutcome::None;
-            }
-            if status.genesis_hash != self.chain_info.genesis_hash {
+    /// Called on the first connection between two peers, after their exchange of handshake.
+    fn on_peer_connected(
+        &mut self,
+        who: PeerId,
+        status: Status,
+        notifications_sink: NotificationsSink,
+    ) -> CustomMessageOutcome {
+        debug!(target: "network-p2p", "New peer {} {:?}", who, status);
+        if self.context_data.peers.contains_key(&who) {
+            log!(
+                target: "network-p2p",
+                if self.important_peers.contains(&who) { Level::Warn } else { Level::Debug },
+                "Unexpected status packet from {}", who
+            );
+            self.peerset_handle.report_peer(who, rep::UNEXPECTED_STATUS);
+            return CustomMessageOutcome::None;
+        }
+        if status.genesis_hash != self.chain_info.genesis_hash {
+            error!(
+                "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
+                who, self.chain_info.genesis_hash, status.genesis_hash,
+            );
+            self.peerset_handle
+                .report_peer(who.clone(), rep::GENESIS_MISMATCH);
+            self.behaviour.disconnect_peer(&who);
+
+            if self.boot_node_ids.contains(&who) {
                 error!(
-                    "Peer with id `{}` is on different chain (our genesis: {} theirs: {})",
-                    who, self.chain_info.genesis_hash, status.genesis_hash,
+                    target: "network-p2p",
+                    "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
+                    who,
+                    self.chain_info.genesis_hash,
+                    status.genesis_hash,
                 );
-                self.peerset_handle
-                    .report_peer(who.clone(), rep::GENESIS_MISMATCH);
-                self.behaviour.disconnect_peer(&who);
-
-                if self.boot_node_ids.contains(&who) {
-                    error!(
-                        target: "sync",
-                        "Bootnode with peer id `{}` is on a different chain (our genesis: {} theirs: {})",
-                        who,
-                        self.chain_info.genesis_hash,
-                        status.genesis_hash,
-                    );
-                }
-
-                return CustomMessageOutcome::None;
-            }
-            if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
-                log!(
-                    target: "sync",
-                    if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
-                    "Peer {:?} using unsupported protocol version {}", who, status.version
-                );
-                self.peerset_handle
-                    .report_peer(who.clone(), rep::BAD_PROTOCOL);
-                self.behaviour.disconnect_peer(&who);
-                return CustomMessageOutcome::None;
             }
 
-            match self.handshaking_peers.remove(&who) {
-                Some(_handshaking) => {}
-                None => {
-                    error!(target: "sync", "Received status from previously unconnected node {}", who);
-                    return CustomMessageOutcome::None;
-                }
-            };
+            return CustomMessageOutcome::None;
+        }
+        if status.version < MIN_VERSION && CURRENT_VERSION < status.min_supported_version {
+            log!(
+                target: "network-p2p",
+                if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
+                "Peer {:?} using unsupported protocol version {}", who, status.version
+            );
+            self.peerset_handle
+                .report_peer(who.clone(), rep::BAD_PROTOCOL);
+            self.behaviour.disconnect_peer(&who);
+            return CustomMessageOutcome::None;
+        }
 
-            debug!(target: "sync", "Connected {}", who);
-            status.version
+        debug!(target: "network-p2p", "Connected {}", who);
+
+        let peer = Peer {
+            info: status.info.clone(),
         };
+        self.context_data.peers.insert(who.clone(), peer);
+
+        debug!(target: "sync", "Connected {}", who);
+
         // Notify all the notification protocols as open.
         CustomMessageOutcome::NotificationStreamOpened {
             remote: who,
+            notifications_sink,
             info: Box::new(status.info),
         }
     }
 
-    fn send_message(&mut self, who: &PeerId, message: Message) -> anyhow::Result<()> {
-        send_message(&mut self.behaviour, who, message)?;
-        Ok(())
-    }
-
-    /// Called when a new peer is connected
-    pub fn on_peer_connected(&mut self, who: PeerId) {
-        debug!(target: "sync", "Connecting {}", who);
-        self.handshaking_peers.insert(
-            who.clone(),
-            HandshakingPeer {
-                timestamp: Instant::now(),
-            },
-        );
-        self.send_status(who);
-    }
-
-    /// Send Status message
-    fn send_status(&mut self, who: PeerId) {
-        let status = message::generic::Status {
+    fn build_status(genesis_hash: HashValue, info: PeerInfo) -> Status {
+        message::generic::Status {
             version: CURRENT_VERSION,
             min_supported_version: MIN_VERSION,
-            genesis_hash: self.chain_info.genesis_hash,
-            info: self.chain_info.self_info.clone(),
-        };
+            genesis_hash,
+            info,
+        }
+    }
 
-        self.send_message(&who, Message::Status(Box::new(status)))
-            .expect("should succ")
+    fn build_handshake_msg(genesis_hash: HashValue, info: PeerInfo) -> Vec<u8> {
+        Self::build_status(genesis_hash, info)
+            .encode()
+            .expect("Status encode should success.")
     }
 
     /// Called by peer when it is disconnecting
     pub fn on_peer_disconnected(&mut self, peer: PeerId) {
         if self.important_peers.contains(&peer) {
-            warn!(target: "sync", "Reserved peer {} disconnected", peer);
+            warn!(target: "network-p2p", "Reserved peer {} disconnected", peer);
         } else {
-            trace!(target: "sync", "{} disconnected", peer);
+            trace!(target: "network-p2p", "{} disconnected", peer);
         }
-
-        // lock all the the peer lists so that add/remove peer events are in order
-        {
-            self.handshaking_peers.remove(&peer);
-        };
     }
 
     /// Called as a back-pressure mechanism if the networking detects that the peer cannot process
@@ -501,26 +530,7 @@ impl Protocol {
         self.maintain_peers();
     }
 
-    fn maintain_peers(&mut self) {
-        let tick = Instant::now();
-        let mut aborting = Vec::new();
-        {
-            for (who, _) in self.handshaking_peers.iter().filter(|(_, handshaking)| {
-                (tick - handshaking.timestamp).as_secs() > REQUEST_TIMEOUT_SEC
-            }) {
-                debug!(
-                    target: "sync",
-                    "Handshake timeout {}", who
-                );
-                aborting.push(who.clone());
-            }
-        }
-
-        for p in aborting {
-            self.behaviour.disconnect_peer(&p);
-            self.peerset_handle.report_peer(p, rep::TIMEOUT);
-        }
-    }
+    fn maintain_peers(&mut self) {}
 
     /// Returns the number of peers we're connected to.
     pub fn num_connected_peers(&self) -> usize {
@@ -534,67 +544,94 @@ impl Protocol {
     pub fn write_notification(
         &mut self,
         target: PeerId,
-        protocol_name: Cow<'static, [u8]>,
+        protocol_name: Cow<'static, str>,
         data: impl Into<Vec<u8>>,
     ) {
-        let message = Message::ConsensusMessage(Box::new(GenericMessage { data: data.into() }))
-            .encode()
-            .expect("should encode right");
-
-        let fallback = FallbackMessage {
-            protocol_name: PROTOCOL_NAME.into(),
-            data: message.clone(),
-        }
-        .encode()
-        .expect("should encode right");
-
         self.behaviour
-            .write_notification(&target, protocol_name, message, fallback);
+            .write_notification(&target, protocol_name, data.into());
     }
 
-    pub fn register_notifications_protocol(
-        &mut self,
-        protocol_name: impl Into<Cow<'static, [u8]>>,
-    ) -> Vec<event::Event> {
-        let protocol_name = protocol_name.into();
-        self.behaviour
-            .register_notif_protocol(protocol_name.clone(), Vec::new());
+    pub fn register_notifications_protocol<'a>(
+        &'a mut self,
+        protocol: Cow<'static, str>,
+    ) -> impl Iterator<Item = (&'a PeerId, &'a NotificationsSink, &'a PeerInfo)> + 'a {
+        if !self.notif_protocols.insert(protocol.clone()) {
+            error!(target: "sub-libp2p", "Notifications protocol already registered: {:?}", protocol);
+        } else {
+            self.behaviour.register_notif_protocol(
+                protocol.clone(),
+                Self::build_handshake_msg(
+                    self.chain_info.genesis_hash,
+                    self.chain_info.self_info.clone(),
+                ),
+            );
+        }
 
-        info!(
-            "register protocol {:?} successful",
-            str::from_utf8(&protocol_name)
-        );
+        info!("register protocol {:?} successful", protocol);
+
+        let behaviour = &self.behaviour;
         self.context_data
             .peers
             .iter()
-            .map(|(peer_id, _peer)| event::Event::NotificationStreamOpened {
-                remote: peer_id.clone(),
-                info: Box::new(self.chain_info.self_info.clone()),
+            .filter_map(move |(peer_id, peer)| {
+                if let Some(notifications_sink) = behaviour.notifications_sink(peer_id) {
+                    Some((peer_id, notifications_sink, &peer.info))
+                } else {
+                    log::error!(
+                        "State mismatch: no notifications sink for opened peer {:?}",
+                        peer_id
+                    );
+                    None
+                }
             })
-            .collect()
     }
 
     pub fn update_self_info(&mut self, self_info: PeerInfo) {
         self.chain_info.self_info = self_info;
+        self.update_handshake();
     }
 
-    pub fn exist_notif_protocol(&self, proto_name: Cow<'static, [u8]>) -> bool {
+    fn update_handshake(&mut self) {
+        self.behaviour.set_legacy_handshake_message(
+            Self::build_status(
+                self.chain_info.genesis_hash,
+                self.chain_info.self_info.clone(),
+            )
+            .encode()
+            .expect("Encode status should success."),
+        );
+        for protocol in &self.notif_protocols {
+            self.behaviour.set_notif_protocol_handshake(
+                protocol,
+                Self::build_status(
+                    self.chain_info.genesis_hash,
+                    self.chain_info.self_info.clone(),
+                )
+                .encode()
+                .expect("Encode status should success."),
+            )
+        }
+    }
+
+    pub fn exist_notif_protocol(&self, proto_name: Cow<'static, str>) -> bool {
         self.behaviour.exist_notif_protocol(proto_name)
+    }
+
+    fn format_stats(&self) -> String {
+        let mut out = String::new();
+        for (id, stats) in &self.context_data.stats {
+            let _ = writeln!(
+                &mut out,
+                "{}: In: {} bytes ({}), Out: {} bytes ({})",
+                id, stats.bytes_in, stats.count_in, stats.bytes_out, stats.count_out,
+            );
+        }
+        out
     }
 }
 
-fn send_message(
-    behaviour: &mut GenericProto,
-    who: &PeerId,
-    message: Message,
-) -> anyhow::Result<()> {
-    let encoded = message.encode()?;
-    let fallback = FallbackMessage {
-        protocol_name: PROTOCOL_NAME.into(),
-        data: encoded.clone(),
+impl Drop for Protocol {
+    fn drop(&mut self) {
+        debug!(target: "sync", "Network stats:\n{}", self.format_stats());
     }
-    .encode()?;
-
-    behaviour.write_notification(who, PROTOCOL_NAME.into(), encoded, fallback);
-    Ok(())
 }

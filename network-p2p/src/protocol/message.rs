@@ -2,20 +2,13 @@
 pub mod generic {
     use crypto::HashValue;
     use serde::{Deserialize, Serialize};
+    use starcoin_types::peer_info::PeerInfo;
     use std::borrow::Cow;
-    use types::peer_info::PeerInfo;
-
-    /// Consensus is mostly opaque to us
-    #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-    pub struct GenericMessage {
-        /// Message payload.
-        pub data: Vec<u8>,
-    }
 
     /// Consensus is mostly opaque to us
     #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
     pub struct FallbackMessage {
-        pub protocol_name: Cow<'static, [u8]>,
+        pub protocol_name: Cow<'static, str>,
         /// Message payload.
         pub data: Vec<u8>,
     }
@@ -31,12 +24,5 @@ pub mod generic {
         pub genesis_hash: HashValue,
 
         pub info: PeerInfo,
-    }
-
-    #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
-    pub enum Message {
-        /// Status message for handshake
-        Status(Box<Status>),
-        ConsensusMessage(Box<GenericMessage>),
     }
 }

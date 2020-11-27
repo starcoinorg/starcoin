@@ -21,9 +21,10 @@
 //! network, then performs the Substrate protocol handling on top.
 
 pub use self::behaviour::{GenericProto, GenericProtoOut};
-pub use self::handler::LegacyConnectionKillError;
+pub use self::handler::{LegacyConnectionKillError, NotificationsSink, NotifsHandlerError, Ready};
 
-mod behaviour;
+//TODO change behaviour to private
+pub mod behaviour;
 mod handler;
 mod tests;
-mod upgrade;
+pub mod upgrade;

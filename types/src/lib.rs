@@ -85,11 +85,11 @@ pub mod genesis_config {
 pub mod sync_status;
 
 //TODO should define at here? move to network api.
-pub const CHAIN_PROTOCOL_NAME: &[u8] = b"/starcoin/chain/1";
-pub const TXN_PROTOCOL_NAME: &[u8] = b"/starcoin/txn/1";
-pub const BLOCK_PROTOCOL_NAME: &[u8] = b"/starcoin/block/1";
+pub const CHAIN_PROTOCOL_NAME: &str = "/starcoin/chain/1";
+pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
+pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
 
-pub static PROTOCOLS: Lazy<Vec<Cow<'static, [u8]>>> = Lazy::new(|| {
+pub static PROTOCOLS: Lazy<Vec<Cow<'static, str>>> = Lazy::new(|| {
     vec![
         CHAIN_PROTOCOL_NAME.into(),
         TXN_PROTOCOL_NAME.into(),

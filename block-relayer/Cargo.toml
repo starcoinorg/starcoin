@@ -33,5 +33,4 @@ once_cell = "1.5.2"
 tokio = { version = "0.2", features = ["full"] }
 actix-rt = "1.1"
 hex = "0.4.2"
-libp2p = "0.22.0"
 stest = { path = "../commons/stest"}

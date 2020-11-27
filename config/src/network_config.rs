@@ -6,7 +6,10 @@ use crate::{
     ConfigModule, StarcoinOpt,
 };
 use anyhow::{bail, format_err, Result};
-use libp2p::multiaddr::{Multiaddr, Protocol};
+use network_p2p_types::{
+    multiaddr::{Multiaddr, Protocol},
+    MultiaddrWithPeerId,
+};
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{
     ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
@@ -25,14 +28,14 @@ static NETWORK_KEY_FILE: &str = "network_key";
 pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
     pub listen: Multiaddr,
-    pub seeds: Vec<Multiaddr>,
+    pub seeds: Vec<MultiaddrWithPeerId>,
     pub disable_seed: bool,
     #[serde(skip)]
     pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
     #[serde(skip)]
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
-    pub self_address: Option<Multiaddr>,
+    pub self_address: Option<MultiaddrWithPeerId>,
 }
 
 impl NetworkConfig {
@@ -40,7 +43,7 @@ impl NetworkConfig {
         self.network_keypair.clone().unwrap()
     }
 
-    pub fn self_address(&self) -> Result<Multiaddr> {
+    pub fn self_address(&self) -> Result<MultiaddrWithPeerId> {
         self.self_address
             .as_ref()
             .cloned()
@@ -60,20 +63,8 @@ impl NetworkConfig {
             .clone()
             .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
             .expect("Replace multi address fail.");
-        let mut p2p_address = host;
-        p2p_address.push(Protocol::P2p(peer_id.clone().into()));
-        self.self_address = Some(p2p_address);
+        self.self_address = Some(MultiaddrWithPeerId::new(host, peer_id.clone().into()));
         self.self_peer_id = Some(peer_id);
-    }
-
-    fn check_seed(seed: &Multiaddr) -> Result<()> {
-        if let Some(Protocol::P2p(_peer_id)) = seed.clone().pop() {
-            return Ok(());
-        }
-        bail!(
-            "Invalid seed {:?}, seed addr last part must is p2p/peer_id ",
-            seed
-        )
     }
 
     fn load_or_generate_keypair(
@@ -104,9 +95,7 @@ impl ConfigModule for NetworkConfig {
             .as_ref()
             .map(|seed| vec![seed.clone()])
             .unwrap_or_default();
-        for seed in &seeds {
-            Self::check_seed(seed)?;
-        }
+
         let port = if base.net.is_test() {
             get_random_available_port()
         } else if base.net.is_dev() {
@@ -139,9 +128,7 @@ impl ConfigModule for NetworkConfig {
             }
             info!("Final bootstrap seeds: {:?}", self.seeds);
         }
-        for seed in &self.seeds {
-            Self::check_seed(seed)?;
-        }
+
         self.network_keypair = Some(Arc::new(Self::load_or_generate_keypair(opt, base)?));
         self.disable_seed = opt.disable_seed;
         self.prepare_peer_id();

@@ -53,6 +53,7 @@ members = [
     "miner",
     "node",
     "network-p2p",
+    "network-p2p/types",
     "network-p2p/peerset",
     "network",
     "network/api",

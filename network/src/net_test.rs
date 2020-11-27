@@ -11,14 +11,12 @@ mod tests {
     use config::{get_random_available_port, NetworkConfig, NodeConfig};
     use crypto::hash::HashValue;
     use futures::channel::mpsc;
-    use futures::Stream;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
     };
     use futures_timer::Delay;
     use libp2p::core::PeerId;
-    use network_p2p::PROTOCOL_NAME;
     use network_p2p::{identity, DhtEvent, Event};
     use network_p2p::{NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, Secret};
     use std::future::Future;
@@ -27,7 +25,7 @@ mod tests {
     use types::peer_info::PeerInfo;
     use types::PROTOCOLS;
 
-    const PROTOCOL_ID: &[u8] = b"starcoin";
+    const PROTOCOL_ID: &str = "starcoin";
 
     pub type NetworkComponent = (
         SNetworkService,
@@ -82,7 +80,7 @@ mod tests {
         };
 
         let protocol = network_p2p::ProtocolId::from(PROTOCOL_ID);
-        let worker = NetworkWorker::new(Params::new(config, protocol)).unwrap();
+        let worker = NetworkWorker::new(Params::new(config, protocol, None)).unwrap();
         let service = worker.service().clone();
         NetworkInner::new(service)
     }
@@ -92,7 +90,7 @@ mod tests {
         let (net_tx, _rx) = mpsc::unbounded::<NetworkMessage>();
         let (event_tx, _event_rx) = mpsc::unbounded::<PeerEvent>();
         assert!(network_inner
-            .handle_network_receive(event, net_tx, event_tx)
+            .handle_network_receive_inner(event, net_tx, event_tx)
             .await
             .is_ok());
     }
@@ -135,7 +133,9 @@ mod tests {
                         .unwrap(),
                 );
             }
-            let mut config = NodeConfig::random_for_test().network.clone();
+            let node_config = NodeConfig::random_for_test();
+            let chain_net_id = node_config.net().id();
+            let mut config = node_config.network.clone();
 
             config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16)
                 .parse()
@@ -146,17 +146,31 @@ mod tests {
             if first_addr.is_none() {
                 first_addr = Some(config.listen.to_string());
             }
-
-            let server = build_network_service(&config, HashValue::default(), PeerInfo::random());
+            let mut protocols = PROTOCOLS.clone();
+            protocols.push(TEST_PROTOCOL_NAME.into());
+            let server = build_network_service(
+                chain_net_id,
+                &config,
+                protocols,
+                HashValue::default(),
+                PeerInfo::random(),
+            );
             result.push({
-                let c: NetworkComponent =
-                    (server.0, server.1, server.2, server.3, server.4, config);
+                let c: NetworkComponent = (
+                    server.0,
+                    server.1,
+                    server.2,
+                    server.3,
+                    server.4,
+                    config.clone(),
+                );
                 c
             });
         }
         result
     }
 
+    const TEST_PROTOCOL_NAME: &str = "/test_notif";
     #[test]
     fn test_send_receive_1() {
         ::logger::init_for_test();
@@ -179,7 +193,7 @@ mod tests {
                 if count == 1000 {
                     continue_loop = false;
                 }
-                info!("count is {}", count);
+                debug!("count is {}", count);
                 count += 1;
                 Delay::new(Duration::from_millis(1)).await;
                 let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
@@ -187,19 +201,18 @@ mod tests {
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_1.clone(),
-                        // `PROTOCOL_NAME` is a build-in protocol.
-                        protocol_name: std::borrow::Cow::Borrowed(PROTOCOL_NAME),
+                        protocol_name: std::borrow::Cow::Borrowed(TEST_PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_2.clone(),
-                        protocol_name: std::borrow::Cow::Borrowed(PROTOCOL_NAME),
+                        protocol_name: std::borrow::Cow::Borrowed(TEST_PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } {
-                    Ok(()) => info!("ok"),
-                    Err(_e) => warn!("err"),
+                    Ok(()) => debug!("ok"),
+                    Err(e) => warn!("err: {:?}", e),
                 }
             }
         };
@@ -269,7 +282,7 @@ mod tests {
                 );
 
                 service2_clone
-                    .send_message(peer_id, network_p2p::PROTOCOL_NAME.into(), random_bytes)
+                    .send_message(peer_id, TEST_PROTOCOL_NAME.into(), random_bytes)
                     .await
                     .unwrap();
             };
@@ -307,7 +320,7 @@ mod tests {
         let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
         service1
             .0
-            .broadcast_message(network_p2p::PROTOCOL_NAME.into(), random_bytes.clone())
+            .broadcast_message(TEST_PROTOCOL_NAME.into(), random_bytes.clone())
             .await;
         let mut receiver = service2.2.select_next_some();
         let response = futures::future::poll_fn(move |cx| Pin::new(&mut receiver).poll(cx)).await;
@@ -321,33 +334,7 @@ mod tests {
                 .into_iter()
                 .next()
                 .unwrap();
-        assert!(
-            service
-                .0
-                .exist_notif_proto(network_p2p::PROTOCOL_NAME.into())
-                .await
-        );
-    }
-
-    #[stest::test]
-    async fn test_network_sub_stream() {
-        let (mut service1, service2) = build_test_network_pair_not_wait().await;
-        let _sub_stream_1 = service1
-            .0
-            .sub_stream(network_p2p::PROTOCOL_NAME.into())
-            .await;
-        let mut sub_stream_2 = service2
-            .0
-            .sub_stream(network_p2p::PROTOCOL_NAME.into())
-            .await;
-        let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
-        service1
-            .0
-            .broadcast_message(network_p2p::PROTOCOL_NAME.into(), random_bytes.clone())
-            .await;
-        let response =
-            futures::future::poll_fn(move |cx| Pin::new(&mut sub_stream_2).poll_next(cx)).await;
-        assert!(response.is_some());
+        assert!(service.0.exist_notif_proto(TEST_PROTOCOL_NAME.into()).await);
     }
 
     #[stest::test]
@@ -380,7 +367,7 @@ mod tests {
         data.push(Bytes::from(&b"hello"[..]));
         let event = Event::NotificationsReceived {
             remote: PeerId::random(),
-            protocol_name: network_p2p::PROTOCOL_NAME.into(),
+            protocol: TEST_PROTOCOL_NAME.into(),
             messages: data,
         };
         test_handle_event(event).await;
