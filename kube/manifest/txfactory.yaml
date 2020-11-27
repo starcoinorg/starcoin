@@ -48,12 +48,12 @@ spec:
               key: centauri_seed
   - name: txfactory
     image: starcoin/starcoin:v0.8.5
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     command:
       - bash
       - -c
     args:
-      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 60 -t 1
+      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 100 -t 2
     volumeMounts:
     - name: starcoin-stress-txfactory
       mountPath: /sc-data
