@@ -38,7 +38,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 
     fn state_root(&self) -> HashValue {
         //TODO change trait api to return Result<HashValue>
-        self.state_root.clone()
+        self.state_root
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
