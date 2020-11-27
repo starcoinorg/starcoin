@@ -94,7 +94,7 @@ fn get_account_or_default(
             }
 
             let addr = default_account.clone().unwrap().address;
-            let state_reader = RemoteStateReader::new(&client);
+            let state_reader = RemoteStateReader::new(&client)?;
             let account_state_reader = AccountStateReader::new(&state_reader);
             let mut balance = account_state_reader.get_balance(&addr)?;
             // balance resource has not been created
@@ -231,7 +231,7 @@ impl TxnMocker {
         account_password: String,
         unlock_duration: Duration,
     ) -> Result<Self> {
-        let state_reader = RemoteStateReader::new(&client);
+        let state_reader = RemoteStateReader::new(&client)?;
         let account_state_reader = AccountStateReader::new(&state_reader);
 
         let account_resource = account_state_reader.get_account_resource(&account_address)?;
@@ -275,7 +275,7 @@ impl TxnMocker {
         self.next_sequence_number = match seq_number_in_pool {
             Some(n) => n,
             None => {
-                let state_reader = RemoteStateReader::new(&self.client);
+                let state_reader = RemoteStateReader::new(&self.client)?;
                 let account_state_reader = AccountStateReader::new(&state_reader);
 
                 let account_resource =
@@ -292,14 +292,14 @@ impl TxnMocker {
         Ok(())
     }
 
-    fn is_account_exist(&mut self, account: &AccountAddress) -> bool {
-        let state_reader = RemoteStateReader::new(&self.client);
+    fn is_account_exist(&mut self, account: &AccountAddress) -> Result<bool> {
+        let state_reader = RemoteStateReader::new(&self.client)?;
         let account_state_reader = AccountStateReader::new(&state_reader);
 
         let account_resource = account_state_reader
             .get_account_resource(account)
             .unwrap_or(None);
-        account_resource.is_some()
+        Ok(account_resource.is_some())
     }
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
@@ -456,7 +456,7 @@ impl TxnMocker {
                 account_list.push(account);
                 i += 1;
             } else {
-                if self.is_account_exist(&account.address) {
+                if self.is_account_exist(&account.address)? {
                     account_list.push(account);
                     i += 1;
                     info!("watch timeout.")
@@ -511,7 +511,7 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
-                let state_reader = RemoteStateReader::new(&self.client);
+                let state_reader = RemoteStateReader::new(&self.client)?;
                 let account_state_reader = AccountStateReader::new(&state_reader);
 
                 let account_resource = account_state_reader.get_account_resource(&address)?;

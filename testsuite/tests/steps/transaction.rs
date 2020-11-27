@@ -24,7 +24,7 @@ pub fn steps() -> Steps<MyWorld> {
             let result = transfer_txn(client, to, pre_mine_address, None);
             assert!(result.is_ok());
             std::thread::sleep(Duration::from_millis(3000));
-            let chain_state_reader = RemoteStateReader::new(client);
+            let chain_state_reader = RemoteStateReader::new(client).unwrap();
             let account_state_reader = AccountStateReader::new(&chain_state_reader);
             let balances = account_state_reader.get_balance(to.address());
             assert!(balances.is_ok());
@@ -50,7 +50,7 @@ fn transfer_txn(
     from: AccountAddress,
     amount: Option<u128>,
 ) -> Result<(), Error> {
-    let chain_state_reader = RemoteStateReader::new(client);
+    let chain_state_reader = RemoteStateReader::new(client)?;
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
         .get_account_resource(&from)

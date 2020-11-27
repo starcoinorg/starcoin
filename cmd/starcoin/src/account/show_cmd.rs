@@ -49,13 +49,12 @@ impl CommandAction for ShowCommand {
             .account_get(account_address)?
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
-        let state_root = if let Some(block_id) = opt.block_id {
+        let chain_state_reader = if let Some(block_id) = opt.block_id {
             let block = client.chain_get_block_by_hash(block_id)?;
-            Some(block.header.state_root)
+            RemoteStateReader::new_with_root(client, block.header.state_root)
         } else {
-            None
+            RemoteStateReader::new(client)?
         };
-        let chain_state_reader = RemoteStateReader::new_with_root(client, state_root);
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let sequence_number = account_state_reader
             .get_account_resource(account.address())?
