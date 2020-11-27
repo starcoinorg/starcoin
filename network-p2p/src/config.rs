@@ -22,6 +22,7 @@ use std::{
 };
 use zeroize::Zeroize;
 
+pub use crate::request_responses::{IncomingRequest, ProtocolConfig as RequestResponseConfig};
 pub use libp2p::{build_multiaddr, core::PublicKey, identity, wasm_ext::ExtTransport};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
 use starcoin_types::startup_info::ChainInfo;
@@ -107,6 +108,7 @@ pub struct NetworkConfiguration {
 
     pub protocols: Vec<Cow<'static, str>>,
 
+    pub request_response_protocols: Vec<RequestResponseConfig>,
     /// Should we insert non-global addresses into the DHT?
     pub allow_non_globals_in_dht: bool,
     /// Require iterative Kademlia DHT queries to use disjoint paths for increased resiliency in the
@@ -162,6 +164,7 @@ impl Default for NetworkConfiguration {
             },
             disable_seed: false,
             protocols: vec![],
+            request_response_protocols: vec![],
             allow_non_globals_in_dht: false,
             kademlia_disjoint_query_paths: false,
         }
@@ -195,6 +198,7 @@ impl NetworkConfiguration {
             },
             disable_seed: false,
             protocols: vec![],
+            request_response_protocols: vec![],
             allow_non_globals_in_dht: false,
             kademlia_disjoint_query_paths: false,
         }

@@ -156,7 +156,7 @@ impl DummyNetworkService {
 
     async fn handle_request(
         &self,
-        _peer_id: Option<PeerId>,
+        _peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
         _time_out: Duration,
@@ -214,7 +214,7 @@ impl DummyNetworkService {
 
     async fn send_request_bytes(
         &self,
-        peer_id: Option<PeerId>,
+        peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
         time_out: Duration,
@@ -240,7 +240,7 @@ impl NetworkService for DummyNetworkService {
 impl RawRpcClient for DummyNetworkService {
     fn send_raw_request(
         &self,
-        peer_id: Option<PeerId>,
+        peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
         timeout: Duration,

@@ -2,53 +2,70 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crypto::HashValue;
+use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::messages::RawRpcRequestMessage;
 use network_api::PeerProvider;
+use network_p2p_types::ProtocolRequest;
 use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_network_rpc::NetworkRpcService;
-use starcoin_service_registry::mocker::mock;
+use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{RegistryAsyncService, ServiceContext};
 use std::any::Any;
 use test_helper::build_network;
 use test_helper::network::MockPeerMessageHandler;
+use types::peer_info::RpcInfo;
 
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct TestRequest {
     pub data: HashValue,
 }
 
-pub fn mock_rpc_handler(
-    req: Box<dyn Any>,
-    _ctx: &mut ServiceContext<NetworkRpcService>,
-) -> Box<dyn Any> {
-    let mut req = req.downcast::<RawRpcRequestMessage>().unwrap();
-    req.responder.try_send(req.request.2).unwrap();
-    Box::new(())
+pub struct MockRpcHandler;
+
+impl MockHandler<NetworkRpcService> for MockRpcHandler {
+    fn handle(
+        &mut self,
+        _r: Box<dyn Any>,
+        _ctx: &mut ServiceContext<NetworkRpcService>,
+    ) -> Box<dyn Any> {
+        unreachable!()
+    }
+
+    fn handle_event(&mut self, msg: Box<dyn Any>, _ctx: &mut ServiceContext<NetworkRpcService>) {
+        let req = msg.downcast::<ProtocolRequest>().unwrap();
+        req.request
+            .pending_response
+            .send(req.request.payload)
+            .unwrap();
+    }
 }
 
 #[stest::test]
 async fn test_network_raw_rpc() {
     use std::time::Duration;
-
-    let mocker1 = mock(mock_rpc_handler);
+    let rpc_info = RpcInfo::new(vec!["test".to_string()]);
     let mock_message_handler1 = MockPeerMessageHandler::default();
-    let (network1, node_config1, .., registry1) =
-        build_network(None, Some(mocker1), mock_message_handler1)
-            .await
-            .unwrap();
+    let (network1, node_config1, .., registry1) = build_network(
+        None,
+        Some((rpc_info.clone(), MockRpcHandler)),
+        mock_message_handler1,
+    )
+    .await
+    .unwrap();
 
     let seed = node_config1.network.self_address().unwrap();
 
     let mock_message_handler2 = MockPeerMessageHandler::default();
-    let mocker2 = mock(mock_rpc_handler);
-    let (network2, _node_config2, .., registry2) =
-        build_network(Some(seed), Some(mocker2), mock_message_handler2)
-            .await
-            .unwrap();
-
+    let (network2, _node_config2, .., registry2) = build_network(
+        Some(seed),
+        Some((rpc_info, MockRpcHandler)),
+        mock_message_handler2,
+    )
+    .await
+    .unwrap();
+    Delay::new(Duration::from_secs(1)).await;
     let request = TestRequest {
         data: HashValue::random(),
     };
@@ -57,7 +74,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = network2
         .send_raw_request(
-            Some(network1.identify().clone()),
+            network1.identify().clone(),
             "test".to_string(),
             request.clone(),
             Duration::from_secs(1),
@@ -74,7 +91,7 @@ async fn test_network_raw_rpc() {
     info!("req :{:?}", request);
     let resp = network1
         .send_raw_request(
-            Some(network2.identify().clone()),
+            network2.identify().clone(),
             "test".to_string(),
             request.clone(),
             Duration::from_secs(1),

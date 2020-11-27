@@ -130,7 +130,7 @@ pub trait RawRpcClient {
     /// RawRpcClient's result Vec<u8> is Result<Vec<u8>, NetRpcError>'s bytes.
     fn send_raw_request(
         &self,
-        peer_id: Option<PeerId>,
+        peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
         timeout: Duration,
@@ -155,7 +155,7 @@ impl InmemoryRpcClient {
 impl RawRpcClient for InmemoryRpcClient {
     fn send_raw_request(
         &self,
-        _peer_id: Option<PeerId>,
+        _peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
         _timeout: Duration,

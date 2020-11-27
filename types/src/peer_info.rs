@@ -218,3 +218,12 @@ impl RpcInfo {
         Self { paths }
     }
 }
+
+impl IntoIterator for RpcInfo {
+    type Item = String;
+    type IntoIter = std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.paths.into_iter()
+    }
+}

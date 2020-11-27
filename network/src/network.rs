@@ -3,7 +3,7 @@
 
 use crate::helper::get_unix_ts;
 use crate::message_processor::{MessageFuture, MessageProcessor};
-use crate::net::{build_network_service, SNetworkService};
+use crate::net::{build_network_service, SNetworkService, RPC_PROTOCOL_PREFIX};
 use crate::network_metrics::NetworkMetrics;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
 use anyhow::{format_err, Result};
@@ -14,15 +14,15 @@ use config::NodeConfig;
 use crypto::{hash::PlainCryptoHash, HashValue};
 use futures::future::BoxFuture;
 use futures::lock::Mutex;
-use futures::FutureExt;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
+use futures::{FutureExt, TryFutureExt};
 use futures_timer::Delay;
-use libp2p::PeerId;
 use lru::LruCache;
 use network_api::{
     messages::RawRpcRequestMessage, NetworkService, PeerMessageHandler, PeerProvider,
 };
 use network_p2p::Multiaddr;
+use network_p2p_types::PeerId;
 use network_rpc_core::RawRpcClient;
 use scs::SCSCodec;
 use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
@@ -38,7 +38,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tx_relay::*;
-use types::peer_info::PeerInfo;
+use types::peer_info::{PeerInfo, RpcInfo};
 use types::startup_info::{ChainInfo, ChainStatus};
 use types::transaction::SignedUserTransaction;
 use types::{BLOCK_PROTOCOL_NAME, PROTOCOLS, TXN_PROTOCOL_NAME};
@@ -131,12 +131,14 @@ impl PeerProvider for NetworkAsyncService {
 impl RawRpcClient for NetworkAsyncService {
     fn send_raw_request(
         &self,
-        peer_id: Option<network_api::PeerId>,
+        peer_id: network_api::PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        timeout: Duration,
+        _timeout: Duration,
     ) -> BoxFuture<Result<Vec<u8>>> {
-        self.send_request_bytes(peer_id, rpc_path, message, timeout)
+        let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
+        self.request(peer_id, protocol, message)
+            .map_err(|e| e.into())
             .boxed()
     }
 }
@@ -165,7 +167,7 @@ impl NetworkAsyncService {
         self.inner.peers.clone()
     }
 
-    async fn send_request_bytes(
+    async fn _send_request_bytes(
         &self,
         peer_id: Option<types::peer_info::PeerId>,
         rpc_path: String,
@@ -248,6 +250,7 @@ impl NetworkAsyncService {
         node_config: Arc<NodeConfig>,
         chain_info: ChainInfo,
         bus: ServiceRef<BusService>,
+        rpc_info: RpcInfo,
         network_rpc_service: ServiceRef<NetworkRpcService>,
         peer_message_handler: H,
     ) -> Result<NetworkAsyncService>
@@ -266,8 +269,12 @@ impl NetworkAsyncService {
         }
         let has_seed = !config.seeds.is_empty();
 
-        let (service, tx, rx, event_rx, tx_command) =
-            build_network_service(chain_info, &config, PROTOCOLS.clone());
+        let (service, tx, rx, event_rx, tx_command) = build_network_service(
+            chain_info,
+            &config,
+            PROTOCOLS.clone(),
+            Some((rpc_info, network_rpc_service.clone())),
+        );
         info!(
             "network started at {} with seed {},network address is {}",
             &node_config.network.listen,

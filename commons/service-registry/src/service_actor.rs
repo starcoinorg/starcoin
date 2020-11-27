@@ -213,7 +213,7 @@ where
     type Result = ();
 
     fn handle(&mut self, msg: ServiceEventStream<Fut>, ctx: &mut Self::Context) {
-        ctx.add_message_stream(msg.stream.map(|m| EventMessage::new(m)));
+        ctx.add_message_stream(msg.stream.map(EventMessage::new));
     }
 }
 

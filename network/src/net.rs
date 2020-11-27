@@ -3,19 +3,24 @@
 
 use crate::{NetworkMessage, PeerEvent};
 use anyhow::*;
+use bitflags::_core::time::Duration;
 use bytes::Bytes;
 use config::NetworkConfig;
+use futures::channel::mpsc::channel;
 use futures::{channel::mpsc, prelude::*};
-use libp2p::PeerId;
-use network_p2p::config::TransportConfig;
+use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
     Params, ProtocolId, Secret,
 };
-use parity_codec::alloc::collections::HashSet;
+use network_p2p_types::{PeerId, ProtocolRequest, RequestFailure};
 use prometheus::{default_registry, Registry};
+use starcoin_network_rpc::NetworkRpcService;
+use starcoin_service_registry::ServiceRef;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::sync::Arc;
+use types::peer_info::RpcInfo;
 use types::startup_info::{ChainInfo, ChainStatus};
 
 #[derive(Clone)]
@@ -126,6 +131,17 @@ impl SNetworkService {
         Ok(())
     }
 
+    pub async fn request(
+        &self,
+        target: network_api::PeerId,
+        protocol: impl Into<Cow<'static, str>>,
+        request: Vec<u8>,
+    ) -> Result<Vec<u8>, RequestFailure> {
+        let protocol = protocol.into();
+        debug!("Send request to peer {} and rpc: {:?}", target, protocol);
+        self.service.request(target.into(), protocol, request).await
+    }
+
     pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, str>, message: Vec<u8>) {
         debug!("broadcast message, protocol: {:?}", protocol_name);
         self.service.broadcast_message(protocol_name, message).await;
@@ -234,10 +250,16 @@ impl NetworkInner {
     }
 }
 
+const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
+const MAX_RESPONSE_SIZE: u64 = 1024 * 1024 * 64;
+const REQUEST_BUFFER_SIZE: usize = 128;
+pub const RPC_PROTOCOL_PREFIX: &str = "/starcoin/rpc/";
+
 pub fn build_network_service(
     chain_info: ChainInfo,
     cfg: &NetworkConfig,
     protocols: Vec<Cow<'static, str>>,
+    rpc_service: Option<(RpcInfo, ServiceRef<NetworkRpcService>)>,
 ) -> (
     SNetworkService,
     mpsc::UnboundedSender<NetworkMessage>,
@@ -251,6 +273,38 @@ pub fn build_network_service(
         allow_private_ipv4: false,
         wasm_external_transport: None,
     };
+    //let rpc_info: Vec<String> = starcoin_network_rpc_api::gen_client::get_rpc_info();
+    //TODO define RequestResponseConfig by rpc api
+    let rpc_protocols = match rpc_service {
+        Some((rpc_info, rpc_service)) => rpc_info
+            .into_iter()
+            .map(|rpc_path| {
+                //TODO define rpc path in rpc api, and add prefix.
+                let protocol_name: Cow<'static, str> =
+                    format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path.as_str()).into();
+                let rpc_path_for_stream: Cow<'static, str> = rpc_path.into();
+                let (sender, receiver) = channel(REQUEST_BUFFER_SIZE);
+                let stream = receiver.map(move |request| ProtocolRequest {
+                    protocol: rpc_path_for_stream.clone(),
+                    request,
+                });
+                if let Err(e) = rpc_service.add_event_stream(stream) {
+                    error!(
+                        "Add request event stream for rpc {} fail: {:?}",
+                        protocol_name, e
+                    );
+                }
+                RequestResponseConfig {
+                    name: protocol_name,
+                    max_request_size: MAX_REQUEST_SIZE,
+                    max_response_size: MAX_RESPONSE_SIZE,
+                    request_timeout: Duration::from_secs(15),
+                    inbound_queue: Some(sender),
+                }
+            })
+            .collect::<Vec<_>>(),
+        None => vec![],
+    };
     let config = NetworkConfiguration {
         listen_addresses: vec![cfg.listen.clone()],
         boot_nodes: cfg.seeds.clone(),
@@ -262,6 +316,7 @@ pub fn build_network_service(
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
         protocols,
+        request_response_protocols: rpc_protocols,
         transport: transport_config,
         ..NetworkConfiguration::default()
     };
