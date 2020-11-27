@@ -98,6 +98,10 @@ impl StateWithProof {
     pub fn new(state: Option<Vec<u8>>, proof: StateProof) -> Self {
         Self { state, proof }
     }
+
+    pub fn get_state(&self) -> &Option<Vec<u8>> {
+        &self.state
+    }
 }
 
 pub trait ChainStateReader: StateView {

@@ -89,7 +89,7 @@ impl CommandAction for TransferCommand {
         };
         let receiver = opt.receiver;
 
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let receiver_exist_on_chain = account_state_reader
             .get_account_resource(&receiver)?

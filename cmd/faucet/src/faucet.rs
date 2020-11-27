@@ -32,7 +32,7 @@ impl Faucet {
         receiver: AccountAddress,
         public_key: Vec<u8>,
     ) -> Result<Result<(), anyhow::Error>> {
-        let chain_state_reader = RemoteStateReader::new(&self.client);
+        let chain_state_reader = RemoteStateReader::new(&self.client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(self.faucet_account.address())?

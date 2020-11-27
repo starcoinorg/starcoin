@@ -57,7 +57,7 @@ impl CommandAction for GetCoinCommand {
         })?;
 
         let association_address = account_config::association_address();
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&association_address)?
