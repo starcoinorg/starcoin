@@ -20,7 +20,7 @@ Feature: cmd integration test
 
 # debug
   Scenario Outline: [cmd] debug test
-    Then cmd: "chain show"
+    Then cmd: "chain info"
 #    Then cmd: "debug gen_dev_block -p $.head_block"
     Then cmd: "account unlock"
     Then cmd: "dev get_coin"
