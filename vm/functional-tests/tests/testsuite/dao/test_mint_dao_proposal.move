@@ -92,6 +92,18 @@ script {
 // check: EXECUTED
 
 //! new-transaction
+//! sender: bob
+script {
+    use {{alice}}::MyToken;
+
+    fun delegate(account: &signer) {
+        MyToken::delegate_to_dao(account);
+    }
+}
+
+// check: "Keep(ABORTED { code: 358658"
+
+//! new-transaction
 //! sender: alice
 script {
     use {{alice}}::MyToken;
