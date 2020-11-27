@@ -1,7 +1,6 @@
 use crate::cpu_solver::CpuSolver;
 use crate::Solver;
 use anyhow::Result;
-use libloading::Library;
 use starcoin_config::{MinerClientConfig, TimeService};
 use std::sync::Arc;
 
@@ -19,8 +18,13 @@ pub fn create_solver(
             Ok(Box::new(CpuSolver::new(config, ts)))
         }
         Some(path) => unsafe {
-            let lib = Library::new(path)?;
-            let call_ref: libloading::Symbol<CreateSolver> = lib.get(SOLVER_CREATER)?;
+            //Since this issue https://github.com/nagisa/rust_libloading/issues/41
+            #[cfg(target_os = "linux")]
+            let lib = libloading::os::unix::Library::open(Some(path), 0x2 | 0x1000)?;
+            #[cfg(not(target_os = "linux"))]
+            let lib = libloading::Library::new(path)?;
+            let call_ref = lib.get::<CreateSolver>(SOLVER_CREATER)?;
+
             Ok(call_ref())
         },
     }
