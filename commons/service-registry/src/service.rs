@@ -229,7 +229,7 @@ where
     pub fn notify<M>(&mut self, msg: M)
     where
         S: EventHandler<S, M>,
-        M: Clone + Debug + Send + 'static,
+        M: Debug + Send + 'static,
     {
         self.ctx.notify(EventMessage::new(msg))
     }
@@ -250,7 +250,7 @@ where
 pub trait EventHandler<S, M>
 where
     S: ActorService,
-    M: Clone + Debug + Send,
+    M: Debug + Send,
 {
     fn handle_event(&mut self, msg: M, ctx: &mut ServiceContext<S>);
 }
