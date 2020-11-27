@@ -88,7 +88,7 @@ impl Inner {
             return Ok(());
         }
         for peer in best_peers {
-            match self.sync_txn_from_peer(peer.peer_id).await {
+            match self.sync_txn_from_peer(peer.peer_id()).await {
                 Ok(_) => {
                     return Ok(());
                 }

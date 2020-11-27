@@ -23,7 +23,7 @@ use starcoin_sync_api::{
 };
 use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
@@ -57,7 +57,7 @@ impl SyncService2 {
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
 
         Ok(Self {
-            sync_status: SyncStatus::new(ChainInfo::new(
+            sync_status: SyncStatus::new(ChainStatus::new(
                 head_block.header,
                 head_block_info.total_difficulty,
             )),
@@ -97,7 +97,7 @@ impl SyncService2 {
             let peer_selector = if !peers.is_empty() {
                 peer_selector
                     .selector()
-                    .filter(move |peer_info| peers.contains(&peer_info.peer_id))
+                    .filter(move |peer_info| peers.contains(&peer_info.peer_id()))
                     .into_selector()
             } else {
                 peer_selector
@@ -224,7 +224,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
                         .target
                         .peers
                         .iter()
-                        .any(|peer| peer.peer_id == close_peer_id)
+                        .any(|peer| peer.peer_id() == close_peer_id)
                     {
                         warn!(
                             "[sync] Current sync task may be failed because peer {} closed",
@@ -246,7 +246,7 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: StartSyncEvent, ctx: &mut ServiceContext<Self>) {
         let target_block_header = msg.target.block_header.clone();
         let target_total_difficulty = msg.target.block_info.total_difficulty;
-        let current_total_difficulty = self.sync_status.chain_info().total_difficulty();
+        let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
         if target_total_difficulty <= current_total_difficulty {
             debug!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), ignore StartSyncEvent.", target_block_header.number, target_total_difficulty, current_total_difficulty);
             return;
@@ -309,7 +309,7 @@ impl EventHandler<Self, SyncDone> for SyncService2 {
 impl EventHandler<Self, NewHeadBlock> for SyncService2 {
     fn handle_event(&mut self, msg: NewHeadBlock, ctx: &mut ServiceContext<Self>) {
         let NewHeadBlock(block) = msg;
-        if self.sync_status.update_chain_info(ChainInfo::new(
+        if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
             block.get_total_difficulty(),
         )) {
@@ -346,7 +346,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                         .target
                         .peers
                         .iter()
-                        .map(|peer| peer.peer_id.clone())
+                        .map(|peer| peer.peer_id())
                         .collect(),
                     current: report,
                 })

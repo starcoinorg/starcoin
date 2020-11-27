@@ -7,6 +7,7 @@ use starcoin_account_service::AccountService;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_config::NodeConfig;
 use starcoin_dev::playground::PlaygroudService;
+use starcoin_genesis::Genesis;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerService;
 use starcoin_network::NetworkAsyncService;
@@ -29,6 +30,7 @@ pub struct RpcServiceFactory;
 impl ServiceFactory<RpcService> for RpcServiceFactory {
     fn create(ctx: &mut ServiceContext<RpcService>) -> Result<RpcService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
+        let genesis = ctx.get_shared::<Genesis>()?;
         let bus = ctx.bus_ref().clone();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
@@ -43,7 +45,9 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let network_manager_api = NetworkManagerRpcImpl::new(network_service);
         let chain_api = ctx
             .service_ref_opt::<ChainReaderService>()?
-            .map(|service_ref| ChainRpcImpl::new(service_ref.clone()));
+            .map(|service_ref| {
+                ChainRpcImpl::new(config.clone(), genesis.block().id(), service_ref.clone())
+            });
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
         let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));
         let account_api = ctx

@@ -345,7 +345,7 @@ impl DownloadService {
                 let ancestor = ancestor_header.number();
 
                 // 2. pivot
-                let latest_header = best_peer.get_latest_header();
+                let latest_header = best_peer.latest_header();
                 let latest_block_id = latest_header.id();
                 let latest_number = latest_header.number();
 
@@ -366,7 +366,7 @@ impl DownloadService {
                 // 3. sync task
                 let (root, block_info) = Downloader::get_pivot(
                     &rpc_client,
-                    best_peer.get_peer_id(),
+                    best_peer.peer_id(),
                     (latest_block_id, latest_number),
                     min_behind,
                 )
@@ -472,7 +472,7 @@ impl DownloadService {
     ) -> Result<bool> {
         if let Some(best_peer) = network.best_peer().await? {
             let header = downloader.chain_reader.clone().main_head_header().await?;
-            let end_number = best_peer.get_block_number();
+            let end_number = best_peer.block_number();
             let total_difficulty = downloader
                 .chain_reader
                 .clone()
@@ -576,16 +576,16 @@ impl Downloader {
         total_difficulty: U256,
         is_full_mode: bool,
     ) -> Result<Option<BlockHeader>> {
-        let peer_id = peer_info.get_peer_id();
+        let peer_id = peer_info.peer_id();
         let mut ancestor_header = None;
 
-        if peer_info.total_difficulty <= total_difficulty {
+        if peer_info.total_difficulty() <= total_difficulty {
             return Ok(ancestor_header);
         }
         info!("Sync begin, find ancestor.");
         let mut need_executed = is_full_mode;
-        let mut latest_block_number = if block_number > peer_info.latest_header.number() {
-            peer_info.latest_header.number()
+        let mut latest_block_number = if block_number > peer_info.latest_header().number() {
+            peer_info.latest_header().number()
         } else {
             block_number
         };

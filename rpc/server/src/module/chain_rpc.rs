@@ -3,12 +3,13 @@
 
 use crate::module::map_err;
 use futures::future::{FutureExt, TryFutureExt};
+use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::chain::ChainApi;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::{
-    BlockHeaderView, BlockSummaryView, BlockView, EpochUncleSummaryView, TransactionEventView,
-    TransactionInfoView, TransactionView,
+    BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
+    TransactionEventView, TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
@@ -17,11 +18,14 @@ use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use std::convert::TryInto;
+use std::sync::Arc;
 
 pub struct ChainRpcImpl<S>
 where
     S: ChainAsyncService + 'static,
 {
+    config: Arc<NodeConfig>,
+    genesis_hash: HashValue,
     service: S,
 }
 
@@ -29,8 +33,12 @@ impl<S> ChainRpcImpl<S>
 where
     S: ChainAsyncService,
 {
-    pub fn new(service: S) -> Self {
-        Self { service }
+    pub fn new(config: Arc<NodeConfig>, genesis_hash: HashValue, service: S) -> Self {
+        Self {
+            config,
+            genesis_hash,
+            service,
+        }
     }
 }
 
@@ -38,9 +46,19 @@ impl<S> ChainApi for ChainRpcImpl<S>
 where
     S: ChainAsyncService,
 {
-    fn head(&self) -> FutureResult<ChainInfo> {
+    fn id(&self) -> jsonrpc_core::Result<ChainId> {
+        Ok(self.config.net().id().into())
+    }
+
+    fn info(&self) -> FutureResult<ChainInfoView> {
         let service = self.service.clone();
-        let fut = async move { service.main_head().await };
+        let chain_id = self.config.net().chain_id();
+        let genesis_hash = self.genesis_hash;
+        let fut = async move {
+            let chain_status = service.main_status().await?;
+            //TODO get chain info from chain service.
+            Ok(ChainInfo::new(chain_id, genesis_hash, chain_status).into())
+        };
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
@@ -252,20 +270,6 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn epoch_uncle_summary_by_number(
-        &self,
-        number: BlockNumber,
-    ) -> FutureResult<EpochUncleSummaryView> {
-        let service = self.service.clone();
-        let fut = async move {
-            let summary = service.epoch_uncle_summary_by_number(Some(number)).await?;
-            Ok(summary.into())
-        }
-        .map_err(map_err);
-
-        Box::new(fut.boxed().compat())
-    }
-
     fn get_headers(&self, block_hashes: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>> {
         let service = self.service.clone();
         let fut = async move {
@@ -290,6 +294,20 @@ where
                 .into_iter()
                 .map(Into::into)
                 .collect())
+        }
+        .map_err(map_err);
+
+        Box::new(fut.boxed().compat())
+    }
+
+    fn epoch_uncle_summary_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<EpochUncleSummaryView> {
+        let service = self.service.clone();
+        let fut = async move {
+            let summary = service.epoch_uncle_summary_by_number(Some(number)).await?;
+            Ok(summary.into())
         }
         .map_err(map_err);
 

@@ -435,12 +435,12 @@ impl Inner {
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
-                    if self.self_peer_id == best_peer.get_peer_id() {
+                    if self.self_peer_id == best_peer.peer_id() {
                         return;
                     }
                     let rpc_client = self.rpc_client.clone();
                     self.state_sync_task
-                        .insert(best_peer.get_peer_id(), (node_key, is_state_root));
+                        .insert(best_peer.peer_id(), (node_key, is_state_root));
                     Arbiter::spawn(async move {
                         sync_state_node(
                             is_state_root,
@@ -555,9 +555,9 @@ impl Inner {
                     node_key, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
-                    if self.self_peer_id != best_peer.get_peer_id() {
+                    if self.self_peer_id != best_peer.peer_id() {
                         self.block_accumulator_sync_task
-                            .insert(best_peer.get_peer_id(), node_key);
+                            .insert(best_peer.peer_id(), node_key);
                         let rpc_client = self.rpc_client.clone();
                         Arbiter::spawn(async move {
                             sync_accumulator_node(
@@ -667,12 +667,12 @@ impl Inner {
                     block_id, best_peer_info
                 );
                 if let Some(best_peer) = best_peer_info {
-                    if self.self_peer_id == best_peer.get_peer_id() {
+                    if self.self_peer_id == best_peer.peer_id() {
                         return;
                     }
                     let rpc_client = self.rpc_client.clone();
                     self.txn_info_sync_task
-                        .insert(best_peer.get_peer_id(), block_id);
+                        .insert(best_peer.peer_id(), block_id);
                     Arbiter::spawn(async move {
                         sync_txn_info(block_id, rpc_client, state_sync_task_event_handler).await;
                     });

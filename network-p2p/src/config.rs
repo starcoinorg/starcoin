@@ -3,7 +3,6 @@
 
 //! Libp2p network configuration.
 
-use crypto::HashValue;
 use libp2p::{
     core::Multiaddr,
     identity::{ed25519, Keypair},
@@ -11,7 +10,6 @@ use libp2p::{
     wasm_ext,
 };
 use prometheus::Registry;
-use starcoin_types::peer_info::PeerInfo;
 use std::borrow::Cow;
 use std::fmt;
 use std::{
@@ -26,6 +24,7 @@ use zeroize::Zeroize;
 
 pub use libp2p::{build_multiaddr, core::PublicKey, identity, wasm_ext::ExtTransport};
 pub use network_p2p_types::{parse_addr, parse_str_addr, MultiaddrWithPeerId};
+use starcoin_types::startup_info::ChainInfo;
 
 /// Name of a protocol, transmitted on the wire. Should be unique for each chain. Always UTF-8.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -58,6 +57,7 @@ pub struct Params {
     /// Name of the protocol to use on the wire. Should be different for each chain.
     pub protocol_id: ProtocolId,
 
+    pub chain_info: ChainInfo,
     pub metrics_registry: Option<Registry>,
 }
 
@@ -65,11 +65,13 @@ impl Params {
     pub fn new(
         network_config: NetworkConfiguration,
         protocol_id: ProtocolId,
+        chain_info: ChainInfo,
         metrics_registry: Option<Registry>,
     ) -> Self {
         Self {
             network_config,
             protocol_id,
+            chain_info,
             metrics_registry,
         }
     }
@@ -100,10 +102,6 @@ pub struct NetworkConfiguration {
     pub node_name: String,
 
     pub transport: TransportConfig,
-
-    pub genesis_hash: HashValue,
-
-    pub self_info: PeerInfo,
 
     pub disable_seed: bool,
 
@@ -162,9 +160,6 @@ impl Default for NetworkConfiguration {
                 allow_private_ipv4: false,
                 wasm_external_transport: None,
             },
-            genesis_hash: HashValue::default(),
-            //TODO should use random? maybe set this value to Option be more appropriate
-            self_info: PeerInfo::random(),
             disable_seed: false,
             protocols: vec![],
             allow_non_globals_in_dht: false,
@@ -198,9 +193,6 @@ impl NetworkConfiguration {
                 allow_private_ipv4: true,
                 wasm_external_transport: None,
             },
-            //TODO pass as argument.
-            genesis_hash: Default::default(),
-            self_info: PeerInfo::random(),
             disable_seed: false,
             protocols: vec![],
             allow_non_globals_in_dht: false,

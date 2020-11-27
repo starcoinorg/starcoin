@@ -5,26 +5,26 @@ use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_rpc_api::types::ChainInfoView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "show")]
-pub struct ShowOpt {}
+#[structopt(name = "info")]
+pub struct InfoOpt {}
 
-pub struct ShowCommand;
+pub struct InfoCommand;
 
-impl CommandAction for ShowCommand {
+impl CommandAction for InfoCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ShowOpt;
-    type ReturnItem = ChainInfo;
+    type Opt = InfoOpt;
+    type ReturnItem = ChainInfoView;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        client.chain_head()
+        client.chain_info()
     }
 }

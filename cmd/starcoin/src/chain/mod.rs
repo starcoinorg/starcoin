@@ -10,8 +10,8 @@ mod get_global_time_by_number;
 mod get_txn_by_block_cmd;
 mod get_txn_cmd;
 mod get_txn_info_cmd;
+mod info_cmd;
 mod list_block_cmd;
-mod show_cmd;
 mod tps;
 pub mod uncle;
 
@@ -24,6 +24,6 @@ pub use get_global_time_by_number::*;
 pub use get_txn_by_block_cmd::*;
 pub use get_txn_cmd::*;
 pub use get_txn_info_cmd::*;
+pub use info_cmd::*;
 pub use list_block_cmd::*;
-pub use show_cmd::*;
 pub use tps::*;
