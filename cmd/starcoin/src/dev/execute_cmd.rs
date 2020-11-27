@@ -171,7 +171,7 @@ impl CommandAction for ExecuteCommand {
 
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
 
@@ -210,7 +210,7 @@ impl CommandAction for ExecuteCommand {
         let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let (vm_status, output) = if opt.local_mode {
-            let state_view = RemoteStateReader::new(client);
+            let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(
                 &state_view,
                 Transaction::UserTransaction(signed_txn.clone()),

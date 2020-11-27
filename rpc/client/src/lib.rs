@@ -412,6 +412,21 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn state_get_with_proof_by_root(
+        &self,
+        access_path: AccessPath,
+        state_root: HashValue,
+    ) -> anyhow::Result<StateWithProof> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .state_client
+                .get_with_proof_by_root(access_path, state_root)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn state_get_state_root(&self) -> anyhow::Result<HashValue> {
         self.call_rpc_blocking(
             |inner| async move { inner.state_client.get_state_root().compat().await },

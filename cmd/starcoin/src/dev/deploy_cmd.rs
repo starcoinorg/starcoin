@@ -81,7 +81,7 @@ impl CommandAction for DeployCommand {
         let module_address = *compiled_module.address();
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&module_address)?;
 

@@ -74,7 +74,7 @@ fn sign_txn_by_rpc_client(
     let account = cli_state.get_account_or_default(account_address)?;
     let client = cli_state.client();
     let node_info = client.node_info()?;
-    let chain_state_reader = RemoteStateReader::new(client);
+    let chain_state_reader = RemoteStateReader::new(client)?;
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     let account_resource = account_state_reader
         .get_account_resource(account.address())?
@@ -101,7 +101,7 @@ fn sign_txn_by_rpc_client(
 
 pub fn get_dao_config(cli_state: &CliState) -> Result<DaoConfig> {
     let client = cli_state.client();
-    let chain_state_reader = RemoteStateReader::new(client);
+    let chain_state_reader = RemoteStateReader::new(client)?;
     let account_state_reader = AccountStateReader::new(&chain_state_reader);
     Ok(account_state_reader
         .get_on_chain_config::<DaoConfig>()?
@@ -137,7 +137,7 @@ mod tests {
         cli_state: &CliState,
         addr: AccountAddress,
     ) -> Result<(AccountResource, u128)> {
-        let chain_state_reader = RemoteStateReader::new(cli_state.client());
+        let chain_state_reader = RemoteStateReader::new(cli_state.client())?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&addr)?
