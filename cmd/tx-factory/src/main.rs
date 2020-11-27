@@ -449,7 +449,7 @@ impl TxnMocker {
                 account.public_key.as_single(),
                 1000000000,
                 self.next_sequence_number,
-                true,
+                false,
                 expiration_timestamp,
             );
             if matches!(result, Ok(_)) {
