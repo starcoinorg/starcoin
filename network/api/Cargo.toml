@@ -15,7 +15,7 @@ itertools = "0.9.0"
 starcoin-crypto = { path = "../../commons/crypto" }
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 async-trait = "0.1.42"
-libp2p = "0.29.1"
+libp2p = "0.31.1"
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-rpc-core = { path = "../../network-rpc/core" }
 starcoin-tx-relay= { path="../../txpool/tx-relay"}
