@@ -75,26 +75,9 @@ pub mod write_set {
     pub use starcoin_vm_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 }
 
-use once_cell::sync::Lazy;
-use std::borrow::Cow;
-
 pub mod genesis_config {
     pub use starcoin_vm_types::genesis_config::*;
 }
 
-pub mod sync_status;
-
-//TODO should define at here? move to network api.
-pub const CHAIN_PROTOCOL_NAME: &str = "/starcoin/chain/1";
-pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
-pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
-
-pub static PROTOCOLS: Lazy<Vec<Cow<'static, str>>> = Lazy::new(|| {
-    vec![
-        CHAIN_PROTOCOL_NAME.into(),
-        TXN_PROTOCOL_NAME.into(),
-        BLOCK_PROTOCOL_NAME.into(),
-    ]
-});
-
 pub mod stress_test;
+pub mod sync_status;

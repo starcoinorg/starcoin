@@ -14,13 +14,13 @@ use anyhow::{format_err, Result};
 use counters::{TXPOOL_STATUS_GAUGE_VEC, TXPOOL_TXNS_GAUGE};
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
-use starcoin_txpool_api::TxnStatusFullEvent;
+use starcoin_txpool_api::{PropagateNewTransactions, TxnStatusFullEvent};
 use std::sync::Arc;
 use storage::{BlockStore, Storage};
 use tx_pool_service_impl::Inner;
-use tx_relay::{PeerTransactions, PropagateNewTransactions};
 use types::{sync_status::SyncStatus, system_events::SyncStatusChangeEvent};
 
+use network_api::messages::PeerTransactionsMessage;
 pub use pool::TxStatus;
 use serde::export::Option::Some;
 pub use tx_pool_service_impl::TxPoolService;
@@ -149,13 +149,12 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
     }
 }
 
-impl EventHandler<Self, PeerTransactions> for TxPoolActorService {
-    fn handle_event(&mut self, msg: PeerTransactions, _ctx: &mut ServiceContext<Self>) {
+impl EventHandler<Self, PeerTransactionsMessage> for TxPoolActorService {
+    fn handle_event(&mut self, msg: PeerTransactionsMessage, _ctx: &mut ServiceContext<Self>) {
         //TODO should filter msg an NetworkService
         if self.is_synced() {
             // JUST need to keep at most once delivery.
-            let txns = msg.peer_transactions();
-            let _ = self.inner.import_txns(txns);
+            let _ = self.inner.import_txns(msg.message.txns);
         } else {
             debug!("[txpool] Ignore PeerTransactions event because the node has not been synchronized yet.");
         }

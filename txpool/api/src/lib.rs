@@ -67,3 +67,18 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
         max_len: Option<usize>,
     ) -> Vec<SignedUserTransaction>;
 }
+
+#[derive(Clone, Debug)]
+pub struct PropagateNewTransactions {
+    txns: Vec<SignedUserTransaction>,
+}
+
+impl PropagateNewTransactions {
+    pub fn propagate_transaction(self) -> Vec<SignedUserTransaction> {
+        self.txns
+    }
+
+    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+        Self { txns }
+    }
+}

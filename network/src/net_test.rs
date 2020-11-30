@@ -16,6 +16,7 @@ mod tests {
         stream::StreamExt,
     };
     use futures_timer::Delay;
+    use network_api::messages::NotificationMessage;
     use network_p2p::{identity, DhtEvent, Event};
     use network_p2p::{NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, Secret};
     use network_p2p_types::PeerId;
@@ -23,7 +24,6 @@ mod tests {
     use std::pin::Pin;
     use std::{thread, time::Duration};
     use types::startup_info::{ChainInfo, ChainStatus};
-    use types::PROTOCOLS;
 
     const PROTOCOL_ID: &str = "starcoin";
 
@@ -80,7 +80,7 @@ mod tests {
                 .unwrap();
                 NodeKeyConfig::Ed25519(Secret::Input(secret))
             },
-            protocols: PROTOCOLS.clone(),
+            protocols: NotificationMessage::protocols(),
             ..NetworkConfiguration::default()
         };
 
@@ -155,7 +155,7 @@ mod tests {
             if first_addr.is_none() {
                 first_addr = Some(config.listen.to_string());
             }
-            let mut protocols = PROTOCOLS.clone();
+            let mut protocols = NotificationMessage::protocols();
             protocols.push(TEST_PROTOCOL_NAME.into());
             let server = build_network_service(chain_info.clone(), &config, protocols, None);
             result.push({

@@ -2,6 +2,7 @@ use accumulator::AccumulatorNode;
 
 use futures::future::BoxFuture;
 use futures::FutureExt;
+use network_api::messages::NotificationMessage;
 use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider};
 use network_rpc_core::RawRpcClient;
 use network_rpc_core::Result;
@@ -15,7 +16,6 @@ use starcoin_types::block::{BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
-use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -227,14 +227,11 @@ impl DummyNetworkService {
 
 #[async_trait::async_trait]
 impl NetworkService for DummyNetworkService {
-    async fn send_peer_message(
-        &self,
-        _protocol_name: Cow<'static, str>,
-        _peer_id: PeerId,
-        _msg: PeerMessage,
-    ) -> anyhow::Result<()> {
+    async fn send_peer_message(&self, _msg: PeerMessage) -> anyhow::Result<()> {
         Ok(())
     }
+
+    async fn broadcast(&self, _notification: NotificationMessage) {}
 }
 
 impl RawRpcClient for DummyNetworkService {

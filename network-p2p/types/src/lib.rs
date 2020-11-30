@@ -1,15 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use libp2p::futures::channel::oneshot;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
-use libp2p::futures::channel::oneshot;
 pub use libp2p::multihash;
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
-use std::borrow::Cow;
 
 /// Parses a string address and splits it into Multiaddress and PeerId, if
 /// valid.
