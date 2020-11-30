@@ -171,7 +171,6 @@ address 0x1 {
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
-            aborts_if !Option::spec_is_none(global<TwoPhaseUpgrade>(account).plan);
         }
 
         public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
