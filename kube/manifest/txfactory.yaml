@@ -22,7 +22,7 @@ spec:
         claimName: starcoin-stress-txfactory
   containers:
   - name: starcoin
-    image: starcoin/starcoin:v0.8.5
+    image: starcoin/starcoin:stress
     imagePullPolicy: Always
     command:
       - bash
@@ -47,13 +47,13 @@ spec:
               name: starcoin-config
               key: centauri_seed
   - name: txfactory
-    image: starcoin/starcoin:v0.8.5
+    image: starcoin/starcoin:stress
     imagePullPolicy: Always
     command:
       - bash
       - -c
     args:
-      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 500 -a 0x0000000000000000000000000a550c18 -t 4
+      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 300 -a 0x0000000000000000000000000a550c18 -t 2
     volumeMounts:
     - name: starcoin-stress-txfactory
       mountPath: /sc-data
