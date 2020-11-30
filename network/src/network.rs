@@ -285,7 +285,7 @@ impl Inner {
             network_msg.peer_id,
         );
         if let Err(e) = inner.handle_network_message(network_msg).await {
-            warn!("Handle_network_message error: {:?}", e);
+            error!("Handle_network_message error: {:?}", e);
         }
     }
 

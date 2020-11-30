@@ -61,7 +61,7 @@ impl NotificationMessage {
     pub fn encode_notification(&self) -> Result<(Cow<'static, str>, Vec<u8>)> {
         Ok(match self {
             NotificationMessage::Transactions(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
-            NotificationMessage::CompactBlock(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
+            NotificationMessage::CompactBlock(msg) => (BLOCK_PROTOCOL_NAME.into(), msg.encode()?),
         })
     }
 
