@@ -230,9 +230,9 @@ impl Inner {
             .unwrap_or(on_chain_block_gas_limit);
 
         info!("block_gas_limit: {}", block_gas_limit);
-        //TODO use a GasConstant value to replace 600.
+        //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = (block_gas_limit / 600) * 2;
+        let max_txns = (block_gas_limit / 200) * 2;
 
         let txns = self.txpool.get_pending_txns(Some(max_txns), None);
 

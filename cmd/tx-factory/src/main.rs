@@ -75,9 +75,10 @@ pub struct TxFactoryOpt {
         help = "count of round number"
     )]
     pub round_num: u32,
+    #[structopt(long, short = "w", default_value = "60", help = "watch_timeout")]
+    pub watch_timeout: u32,
 }
 
-const WATCH_TIMEOUT: Duration = Duration::from_secs(60);
 const INITIAL_BALANCE: u128 = 1_000_000_000;
 
 fn get_account_or_default(
@@ -135,6 +136,7 @@ fn main() {
     if !is_stress {
         account_num = 0;
     }
+    let watch_timeout = opts.watch_timeout;
 
     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
     while matches!(connected, Err(_)) {
@@ -164,6 +166,7 @@ fn main() {
         account.address,
         account_password,
         Duration::from_secs(60 * 10),
+        watch_timeout,
     );
 
     let mut tx_mocker = match tx_mocker {
@@ -221,6 +224,7 @@ struct TxnMocker {
 
     next_sequence_number: u64,
     account_unlock_time: Option<Instant>,
+    watch_timeout: u32,
 }
 
 impl TxnMocker {
@@ -230,6 +234,7 @@ impl TxnMocker {
         account_address: AccountAddress,
         account_password: String,
         unlock_duration: Duration,
+        watch_timeout: u32,
     ) -> Result<Self> {
         let state_reader = RemoteStateReader::new(&client);
         let account_state_reader = AccountStateReader::new(&state_reader);
@@ -255,6 +260,7 @@ impl TxnMocker {
             unlock_duration,
             account_unlock_time: None,
             next_sequence_number,
+            watch_timeout,
         })
     }
 }
@@ -332,7 +338,10 @@ impl TxnMocker {
             self.next_sequence_number += 1;
         }
         if blocking {
-            self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;
+            self.client.watch_txn(
+                txn_hash,
+                Some(Duration::from_secs(self.watch_timeout as u64)),
+            )?;
         }
         result
     }
@@ -398,7 +407,10 @@ impl TxnMocker {
         let result = self.client.submit_transaction(user_txn).and_then(|r| r);
 
         if matches!(result, Ok(_)) && blocking {
-            self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;
+            self.client.watch_txn(
+                txn_hash,
+                Some(Duration::from_secs(self.watch_timeout as u64)),
+            )?;
         }
         result
     }
