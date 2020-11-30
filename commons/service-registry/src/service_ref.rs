@@ -4,13 +4,15 @@
 use crate::service::{ActorService, ServiceHandler};
 use crate::service_actor::{EventMessage, ServiceActor, ServiceMessage};
 use crate::{
-    EventHandler, ServiceCmd, ServiceQuery, ServiceQueryResult, ServiceRequest, ServiceStatus,
+    EventHandler, ServiceCmd, ServiceEventStream, ServiceQuery, ServiceQueryResult, ServiceRequest,
+    ServiceStatus,
 };
 use actix::dev::SendError;
 use actix::{Addr, MailboxError, Recipient};
 use anyhow::Result;
+use futures::channel::mpsc::channel;
 use futures::future::BoxFuture;
-use futures::FutureExt;
+use futures::{FutureExt, Stream};
 use log::warn;
 use std::any::type_name;
 use std::fmt::Debug;
@@ -20,7 +22,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct EventNotifier<M>
 where
-    M: Clone + Send + Debug,
+    M: Send + Debug,
 {
     // target service name.
     target_service: &'static str,
@@ -29,7 +31,7 @@ where
 
 impl<M> EventNotifier<M>
 where
-    M: Clone + Send + Debug,
+    M: Send + Debug,
 {
     pub fn target_service(&self) -> &'static str {
         self.target_service
@@ -52,7 +54,7 @@ where
 impl<S, M> From<ServiceRef<S>> for EventNotifier<M>
 where
     S: ActorService + EventHandler<S, M>,
-    M: Clone + Send + Debug + 'static,
+    M: Send + Debug + 'static,
 {
     fn from(service_ref: ServiceRef<S>) -> Self {
         Self {
@@ -64,7 +66,7 @@ where
 
 impl<M> Debug for EventNotifier<M>
 where
-    M: Clone + Send + Debug,
+    M: Send + Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -189,9 +191,35 @@ where
     pub fn event_notifier<M>(self) -> EventNotifier<M>
     where
         S: EventHandler<S, M>,
-        M: Clone + Debug + Send + 'static,
+        M: Debug + Send + 'static,
     {
         self.into()
+    }
+
+    pub fn add_event_stream<M, Fut>(&self, stream: Fut) -> Result<(), TrySendError<Fut>>
+    where
+        S: EventHandler<S, M>,
+        Fut: Stream<Item = M> + Send + 'static,
+        M: Debug + Send + 'static,
+    {
+        self.addr
+            .try_send(ServiceEventStream { stream })
+            .map_err(|e| match e {
+                SendError::Full(m) => TrySendError::Full(m.stream),
+                SendError::Closed(m) => TrySendError::Disconnected(m.stream),
+            })
+    }
+
+    /// Create a `Sender` for special event message.
+    pub fn event_sender<M>(&self, buffer: usize) -> futures::channel::mpsc::Sender<M>
+    where
+        S: EventHandler<S, M>,
+        M: Debug + Send + 'static,
+    {
+        let (sender, receiver) = channel(buffer);
+        // drop error, the receiver will also bean dropped, so sender will got error when try send.
+        let _ = self.add_event_stream(receiver);
+        sender
     }
 
     /// Get self service status

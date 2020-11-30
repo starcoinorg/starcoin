@@ -41,6 +41,7 @@ use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
+use starcoin_types::peer_info::RpcInfo;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
@@ -242,10 +243,13 @@ impl NodeService {
 
         let network_rpc_service = registry.register::<NetworkRpcService>().await?;
         let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
+
+        let rpc_info = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
         let network = NetworkAsyncService::start(
             config.clone(),
             chain_info,
             bus.clone(),
+            rpc_info,
             network_rpc_service,
             peer_message_handle,
         )?;

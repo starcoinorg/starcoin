@@ -1,23 +1,20 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use std::{collections::HashMap, sync::Arc};
-
+use anyhow::*;
+use futures::lock::Mutex;
 use futures::{
     channel::mpsc::{Receiver, Sender},
     sink::SinkExt,
     task::{Context, Poll},
     Future, Stream,
 };
-
-use anyhow::*;
-use futures::lock::Mutex;
-
-use libp2p::PeerId;
+use network_p2p_types::PeerId;
 use std::cmp::Eq;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::pin::Pin;
+use std::{collections::HashMap, sync::Arc};
 
 pub struct MessageFuture<T> {
     rx: Receiver<Result<T>>,
@@ -55,7 +52,7 @@ impl<T> Future for MessageFuture<T> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct MessageProcessor<K, T> {
     tx_map: Arc<Mutex<HashMap<K, (Sender<Result<T>>, PeerId)>>>,
 }
@@ -124,7 +121,7 @@ mod tests {
     use crate::message_processor::{MessageFuture, MessageProcessor};
     use anyhow::{format_err, Result};
     use futures::{Future, SinkExt};
-    use libp2p::PeerId;
+    use network_p2p_types::PeerId;
     use std::pin::Pin;
 
     #[stest::test]

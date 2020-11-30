@@ -16,9 +16,9 @@ mod tests {
         stream::StreamExt,
     };
     use futures_timer::Delay;
-    use libp2p::core::PeerId;
     use network_p2p::{identity, DhtEvent, Event};
     use network_p2p::{NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, Secret};
+    use network_p2p_types::PeerId;
     use std::future::Future;
     use std::pin::Pin;
     use std::{thread, time::Duration};
@@ -157,7 +157,7 @@ mod tests {
             }
             let mut protocols = PROTOCOLS.clone();
             protocols.push(TEST_PROTOCOL_NAME.into());
-            let server = build_network_service(chain_info.clone(), &config, protocols);
+            let server = build_network_service(chain_info.clone(), &config, protocols, None);
             result.push({
                 let c: NetworkComponent = (
                     server.0,

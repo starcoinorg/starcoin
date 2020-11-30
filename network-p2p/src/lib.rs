@@ -30,6 +30,7 @@ mod out_events;
 mod peer_info;
 //TODO change to private
 pub mod protocol;
+mod request_responses;
 mod service;
 #[cfg(test)]
 mod service_test;

@@ -16,6 +16,7 @@ use starcoin_block_relayer_api::PeerCmpctBlockEvent;
 pub use starcoin_network::NetworkAsyncService;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_tx_relay::PeerTransactions;
+use starcoin_types::peer_info::RpcInfo;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 
 #[derive(Clone, Default)]
@@ -36,7 +37,7 @@ impl PeerMessageHandler for MockPeerMessageHandler {
 
 pub async fn build_network<H>(
     seed: Option<MultiaddrWithPeerId>,
-    rpc_service_mocker: Option<impl MockHandler<NetworkRpcService> + 'static>,
+    rpc_service_mocker: Option<(RpcInfo, impl MockHandler<NetworkRpcService> + 'static)>,
     peer_message_handler: H,
 ) -> Result<(
     NetworkAsyncService,
@@ -74,10 +75,11 @@ where
     registry.put_shared(storage.clone()).await?;
 
     let bus = registry.service_ref::<BusService>().await?;
-    let network_rpc_service = if let Some(mocker) = rpc_service_mocker {
-        registry.register_mocker(mocker).await?
+    let (rpc_info, network_rpc_service) = if let Some((rpc_info, mocker)) = rpc_service_mocker {
+        (rpc_info, registry.register_mocker(mocker).await?)
     } else {
-        registry.register::<NetworkRpcService>().await?
+        let rpc_info: RpcInfo = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
+        (rpc_info, registry.register::<NetworkRpcService>().await?)
     };
 
     Ok((
@@ -85,6 +87,7 @@ where
             node_config.clone(),
             chain_info,
             bus,
+            rpc_info,
             network_rpc_service,
             peer_message_handler,
         )?,

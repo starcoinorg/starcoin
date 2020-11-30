@@ -105,7 +105,7 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
             async fn request(&self, peer_id: PeerId, path: String, request: Vec<u8>) -> anyhow::Result<Vec<u8>> {
                     self.raw_client
                     .send_raw_request(
-                        Some(peer_id),
+                        peer_id,
                         path,
                         request,
                         self.timeout,

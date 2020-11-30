@@ -54,7 +54,7 @@ use libp2p::core::{
     connection::{ConnectionId, ListenerId},
     ConnectedPoint, Multiaddr, PeerId, PublicKey,
 };
-use libp2p::kad::handler::KademliaHandler;
+use libp2p::kad::handler::KademliaHandlerProto;
 use libp2p::kad::record::{
     self,
     store::{MemoryStore, RecordStore},
@@ -67,10 +67,13 @@ use libp2p::kad::{
 #[cfg(not(target_os = "unknown"))]
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::multiaddr::Protocol;
-use libp2p::swarm::protocols_handler::multi::MultiHandler;
+use libp2p::swarm::protocols_handler::multi::IntoMultiHandler;
 #[cfg(not(target_os = "unknown"))]
 use libp2p::swarm::toggle::Toggle;
-use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters, ProtocolsHandler};
+use libp2p::swarm::{
+    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
+    ProtocolsHandler,
+};
 use log::{debug, info, trace, warn};
 use std::task::{Context, Poll};
 use std::{
@@ -474,7 +477,7 @@ pub enum DiscoveryOut {
 }
 
 impl NetworkBehaviour for DiscoveryBehaviour {
-    type ProtocolsHandler = MultiHandler<ProtocolId, KademliaHandler<QueryId>>;
+    type ProtocolsHandler = IntoMultiHandler<ProtocolId, KademliaHandlerProto<QueryId>>;
     type OutEvent = DiscoveryOut;
 
     fn new_handler(&mut self) -> Self::ProtocolsHandler {
@@ -483,7 +486,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
             .iter_mut()
             .map(|(p, k)| (p.clone(), NetworkBehaviour::new_handler(k)));
 
-        MultiHandler::try_from_iter(iter).expect(
+        IntoMultiHandler::try_from_iter(iter).expect(
             "There can be at most one handler per `ProtocolId` and \
 				protocol names contain the `ProtocolId` so no two protocol \
 				names in `self.kademlias` can be equal which is the only error \
@@ -579,7 +582,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         &mut self,
         peer_id: PeerId,
         connection: ConnectionId,
-        (pid, event): <Self::ProtocolsHandler as ProtocolsHandler>::OutEvent,
+        (pid, event): <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::OutEvent,
     ) {
         if let Some(kad) = self.kademlias.get_mut(&pid) {
             return kad.inject_event(peer_id, connection, event);
@@ -644,10 +647,10 @@ impl NetworkBehaviour for DiscoveryBehaviour {
         params: &mut impl PollParameters,
     ) -> Poll<
         NetworkBehaviourAction<
-            <Self::ProtocolsHandler as ProtocolsHandler>::InEvent,
+            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
             Self::OutEvent,
         >,
-    > {
+>{
         // Immediately process the content of `discovered`.
         if let Some(ev) = self.pending_events.pop_front() {
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
@@ -712,13 +715,13 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                         } => match res {
                             Err(GetClosestPeersError::Timeout { key, peers }) => {
                                 debug!(target: "sub-libp2p",
-                                           "Libp2p => Query for {} timed out with {} results",
-                                           hex::encode(key.as_slice()), peers.len());
+                                           "Libp2p => Query for {:?} timed out with {} results",
+                                           hex::encode(&key), peers.len());
                             }
                             Ok(ok) => {
                                 trace!(target: "sub-libp2p",
-                                           "Libp2p => Query for {} yielded {:?} results",
-                                           hex::encode(ok.key.as_slice()), ok.peers.len());
+                                           "Libp2p => Query for {:?} yielded {:?} results",
+                                           hex::encode(&ok.key), ok.peers.len());
                                 if ok.peers.is_empty() && self.num_connections != 0 {
                                     debug!(target: "sub-libp2p", "Libp2p => Random Kademlia query has yielded empty \
 											results");
@@ -752,8 +755,8 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                     )
                                 }
                                 Err(e) => {
-                                    warn!(target: "sub-libp2p",
-                                          "Libp2p => Failed to get record: {:?}", e);
+                                    debug!(target: "sub-libp2p",
+                                           "Libp2p => Failed to get record: {:?}", e);
                                     DiscoveryOut::ValueNotFound(
                                         e.into_key(),
                                         stats.duration().unwrap_or_else(Default::default),
@@ -773,8 +776,8 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                                     stats.duration().unwrap_or_else(Default::default),
                                 ),
                                 Err(e) => {
-                                    warn!(target: "sub-libp2p",
-                                          "Libp2p => Failed to put record: {:?}", e);
+                                    debug!(target: "sub-libp2p",
+                                           "Libp2p => Failed to put record: {:?}", e);
                                     DiscoveryOut::ValuePutFailed(
                                         e.into_key(),
                                         stats.duration().unwrap_or_else(Default::default),
@@ -790,9 +793,9 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             Ok(ok) => debug!(target: "sub-libp2p",
                                                  "Libp2p => Record republished: {:?}",
                                                  ok.key),
-                            Err(e) => warn!(target: "sub-libp2p",
-                                                "Libp2p => Republishing of record {:?} failed with: {:?}",
-                                                e.key(), e),
+                            Err(e) => debug!(target: "sub-libp2p",
+                                                 "Libp2p => Republishing of record {:?} failed with: {:?}",
+                                                 e.key(), e),
                         },
                         // We never start any other type of query.
                         e => {
@@ -899,7 +902,7 @@ mod tests {
                 let transport = MemoryTransport
                     .upgrade(upgrade::Version::V1)
                     .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
-                    .multiplex(yamux::Config::default())
+                    .multiplex(yamux::YamuxConfig::default())
                     .boxed();
 
                 let behaviour = {

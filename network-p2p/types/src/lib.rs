@@ -6,7 +6,10 @@ use std::fmt;
 use std::str::FromStr;
 
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
+use libp2p::futures::channel::oneshot;
 pub use libp2p::multihash;
+pub use libp2p::request_response::{InboundFailure, OutboundFailure};
+use std::borrow::Cow;
 
 /// Parses a string address and splits it into Multiaddress and PeerId, if
 /// valid.
@@ -142,4 +145,45 @@ impl From<multiaddr::Error> for ParseErr {
     fn from(err: multiaddr::Error) -> ParseErr {
         ParseErr::MultiaddrParse(err)
     }
+}
+
+/// Error in a request.
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum RequestFailure {
+    /// Remote has closed the substream before answering, thereby signaling that it considers the
+    /// request as valid, but refused to answer it.
+    Refused,
+    /// Problem on the network.
+    #[display(fmt = "Problem on the network")]
+    Network(#[error(ignore)] OutboundFailure),
+}
+
+/// Error when processing a request sent by a remote.
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum ResponseFailure {
+    /// Internal response builder is too busy to process this request.
+    Busy,
+    /// Problem on the network.
+    #[display(fmt = "Problem on the network")]
+    Network(#[error(ignore)] InboundFailure),
+}
+
+/// A single request received by a peer on a request-response protocol.
+#[derive(Debug)]
+pub struct IncomingRequest {
+    /// Who sent the request.
+    pub peer: PeerId,
+
+    /// Request sent by the remote. Will always be smaller than
+    /// [`ProtocolConfig::max_request_size`].
+    pub payload: Vec<u8>,
+
+    /// Channel to send back the response to.
+    pub pending_response: oneshot::Sender<Vec<u8>>,
+}
+
+#[derive(Debug)]
+pub struct ProtocolRequest {
+    pub protocol: Cow<'static, str>,
+    pub request: IncomingRequest,
 }

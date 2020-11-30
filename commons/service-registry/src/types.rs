@@ -3,6 +3,7 @@
 
 use actix::Message;
 use anyhow::{Error, Result};
+use futures::Stream;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -69,6 +70,21 @@ impl Message for ServiceQuery {
 pub(crate) struct ServicePing;
 
 impl Message for ServicePing {
+    type Result = ();
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ServiceEventStream<Fut>
+where
+    Fut: Stream + 'static,
+{
+    pub stream: Fut,
+}
+
+impl<Fut> Message for ServiceEventStream<Fut>
+where
+    Fut: Stream,
+{
     type Result = ();
 }
 
