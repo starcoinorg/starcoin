@@ -151,6 +151,7 @@ pub enum StdlibScript {
     MintAndSplitByLinearKey,
     SplitFixedKey,
     TakeOffer,
+    CancelUpgradePlan,
     // ...add new scripts here
 }
 
@@ -189,6 +190,7 @@ impl StdlibScript {
             MintAndSplitByLinearKey,
             SplitFixedKey,
             TakeOffer,
+            CancelUpgradePlan,
             // ...add new scripts here
         ]
     }
@@ -255,6 +257,7 @@ impl fmt::Display for StdlibScript {
                 MintAndSplitByLinearKey => "mint_and_split_by_linear_key",
                 SplitFixedKey => "split_fixed_key",
                 TakeOffer => "take_offer",
+                CancelUpgradePlan => "cancel_upgrade_plan",
             }
         )
     }
