@@ -13,7 +13,7 @@ petgraph = "0.5.1"
 structopt = "0.3.20"
 serde = { version = "1.0.117", default-features = false }
 anyhow = "1.0.34"
-codespan = { version = "0.8.0", features = ["serialization"] }
+codespan = { version = "0.11.0", features = ["serialization"] }
 colored = "2.0.0"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 starcoin-types = { path = "../../types"}

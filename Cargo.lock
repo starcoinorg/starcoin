@@ -856,8 +856,8 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=cafca49a35e073586e5dc0cbbe16120bc9b9f366#cafca49a35e073586e5dc0cbbe16120bc9b9f366"
 dependencies = [
  "anyhow",
- "codespan",
- "codespan-reporting",
+ "codespan 0.8.0",
+ "codespan-reporting 0.8.0",
  "libra-canonical-serialization",
  "libra-types",
  "libra-workspace-hack",
@@ -1090,12 +1090,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "codespan"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "991d34632921756cbe9e3e1736b2e1f12f16166a9c9cd91979d96d4c0a086b63"
+dependencies = [
+ "codespan-reporting 0.11.0",
+ "serde",
+]
+
+[[package]]
 name = "codespan-reporting"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "600c3317d4705222ff820139aaa76a3a208024ffc41f894da565a4c3b949d4c9"
 dependencies = [
- "codespan",
+ "codespan 0.8.0",
+ "termcolor",
+ "unicode-width",
+]
+
+[[package]]
+name = "codespan-reporting"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6ce42b8998a383572e0a802d859b1f00c79b7b7474e62fff88ee5c2845d9c13"
+dependencies = [
+ "serde",
  "termcolor",
  "unicode-width",
 ]
@@ -1773,8 +1794,8 @@ source = "git+https://github.com/starcoinorg/libra?rev=cafca49a35e073586e5dc0cbb
 dependencies = [
  "anyhow",
  "bytecode",
- "codespan",
- "codespan-reporting",
+ "codespan 0.8.0",
+ "codespan-reporting 0.8.0",
  "itertools 0.9.0",
  "libra-workspace-hack",
  "log 0.4.11",
@@ -2991,8 +3012,8 @@ source = "git+https://github.com/starcoinorg/libra?rev=cafca49a35e073586e5dc0cbb
 dependencies = [
  "anyhow",
  "bytecode-source-map",
- "codespan",
- "codespan-reporting",
+ "codespan 0.8.0",
+ "codespan-reporting 0.8.0",
  "ir-to-bytecode-syntax",
  "libra-types",
  "libra-workspace-hack",
@@ -3009,7 +3030,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=cafca49a35e073586e5dc0cbbe16120bc9b9f366#cafca49a35e073586e5dc0cbbe16120bc9b9f366"
 dependencies = [
  "anyhow",
- "codespan",
+ "codespan 0.8.0",
  "hex",
  "libra-types",
  "libra-workspace-hack",
@@ -4137,7 +4158,7 @@ dependencies = [
  "anyhow",
  "bytecode-source-map",
  "bytecode-verifier",
- "codespan",
+ "codespan 0.11.0",
  "colored",
  "once_cell",
  "petgraph",
@@ -4154,7 +4175,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/libra?rev=cafca49a35e073586e5dc0cbbe16120bc9b9f366#cafca49a35e073586e5dc0cbbe16120bc9b9f366"
 dependencies = [
  "anyhow",
- "codespan",
+ "codespan 0.8.0",
  "hex",
  "libra-types",
  "libra-workspace-hack",
@@ -4172,8 +4193,8 @@ dependencies = [
  "borrow-graph",
  "bytecode-source-map",
  "bytecode-verifier",
- "codespan",
- "codespan-reporting",
+ "codespan 0.8.0",
+ "codespan-reporting 0.8.0",
  "datatest-stable",
  "difference",
  "hex",
@@ -4202,8 +4223,8 @@ dependencies = [
  "bytecode",
  "bytecode-source-map",
  "clap",
- "codespan",
- "codespan-reporting",
+ "codespan 0.11.0",
+ "codespan-reporting 0.8.0",
  "datatest-stable",
  "docgen",
  "errmapgen",
@@ -6536,8 +6557,8 @@ dependencies = [
  "anyhow",
  "bytecode-source-map",
  "bytecode-verifier",
- "codespan",
- "codespan-reporting",
+ "codespan 0.8.0",
+ "codespan-reporting 0.8.0",
  "itertools 0.9.0",
  "libra-types",
  "libra-workspace-hack",
