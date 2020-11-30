@@ -31,18 +31,14 @@ async fn handle_fund(faucet: &Faucet, query: &str) -> Response<Cursor<String>> {
     let query_param =
         unwrap_or_return!(parse_query(query), response_custom(400, "Invalid request"));
     info!("Fund query params: {:?}", query_param);
-    let ret = unwrap_or_return!(
-        faucet.transfer(
-            query_param.amount,
-            query_param.address,
-            query_param.public_key
-        ),
-        response_custom(500, "Inner error")
-    );
-    if ret.is_err() {
-        return response_custom(400, "Fund too frequently");
+    match faucet.transfer(
+        query_param.amount,
+        query_param.address,
+        query_param.public_key,
+    ) {
+        Ok(_) => response_custom(200, "Success"),
+        Err(e) => response_custom(400, &e.to_string()),
     }
-    response_custom(200, "Success")
 }
 
 pub async fn run(server: Server, faucet: Faucet) {

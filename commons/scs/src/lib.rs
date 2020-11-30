@@ -47,7 +47,7 @@ where
     }
 }
 
-pub use lcs::{is_human_readable, serialize_into, serialized_size};
+pub use lcs::{is_human_readable, serialize_into, serialized_size, Error};
 
 #[cfg(test)]
 mod tests {

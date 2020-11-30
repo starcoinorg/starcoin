@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::dev::sign_txn_helper::sign_txn_with_account_by_rpc_client;
 use crate::StarcoinOpt;
-use anyhow::{bail, Result};
+use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::{HashValue, PlainCryptoHash};
 use starcoin_transaction_builder::build_module_upgrade_plan;
@@ -97,10 +97,8 @@ impl CommandAction for UpgradeModulePlanCommand {
             TransactionPayload::Script(module_upgrade_plan),
         )?;
         let txn_hash = signed_txn.crypto_hash();
-        let success = cli_state.client().submit_transaction(signed_txn)?;
-        if let Err(e) = success {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
+        cli_state.client().submit_transaction(signed_txn)?;
+
         println!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {

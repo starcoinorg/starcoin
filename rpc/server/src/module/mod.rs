@@ -1,8 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use starcoin_logger::prelude::*;
-
 mod account_rpc;
 mod chain_rpc;
 mod debug_rpc;
@@ -29,12 +27,141 @@ pub use self::state_rpc::StateRpcImpl;
 pub use self::sync_manager_rpc::SyncManagerRpcImpl;
 pub use self::txpool_rpc::TxPoolRpcImpl;
 
+use actix::MailboxError;
+use anyhow::Error;
+use hex::FromHexError;
+use jsonrpc_core::ErrorCode;
 use starcoin_account_api::error::AccountError;
+use starcoin_vm_types::transaction::{CallError, TransactionError};
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
-    //TODO error convert.
-    error!("rpc return internal_error for: {:?}", err);
-    jsonrpc_core::Error::internal_error()
+    // TODO: add more error downcasting here
+    let rpc_error: RpcError = if err.is::<TransactionError>() {
+        err.downcast::<TransactionError>().unwrap().into()
+    } else if err.is::<scs::Error>() {
+        err.downcast::<scs::Error>().unwrap().into()
+    } else if err.is::<AccountError>() {
+        err.downcast::<AccountError>().unwrap().into()
+    } else if err.is::<MailboxError>() {
+        err.downcast::<MailboxError>().unwrap().into()
+    } else {
+        err.into()
+    };
+    rpc_error.into()
+}
+
+fn convert_to_rpc_error<T: Into<RpcError>>(err: T) -> jsonrpc_core::Error {
+    let err = err.into();
+    err.into()
+}
+
+/// A wrapper for jsonrpc error.
+/// It's necessary because
+/// only traits defined in the current crate can be implemented for arbitrary types.
+#[derive(Debug)]
+struct RpcError(jsonrpc_core::Error);
+impl Into<jsonrpc_core::Error> for RpcError {
+    fn into(self) -> jsonrpc_core::Error {
+        self.0
+    }
+}
+
+impl From<anyhow::Error> for RpcError {
+    fn from(e: Error) -> Self {
+        RpcError(jsonrpc_core::Error {
+            code: jsonrpc_core::ErrorCode::InternalError,
+            message: e.to_string(),
+            data: None,
+        })
+    }
+}
+
+const MAILBOX_ERROR_BASE: i64 = -41000;
+const TXN_ERROR_BASE: i64 = -50000;
+const ACCOUNT_ERROR_BASE: i64 = -60000;
+
+impl From<AccountError> for RpcError {
+    fn from(err: AccountError) -> Self {
+        let rpc_error = match err {
+            AccountError::StoreError(error) => jsonrpc_core::Error {
+                code: ErrorCode::ServerError(ACCOUNT_ERROR_BASE),
+                message: error.to_string(),
+                data: None,
+            },
+            e => jsonrpc_core::Error {
+                code: ErrorCode::InvalidParams,
+                message: e.to_string(),
+                data: None,
+            },
+        };
+        RpcError(rpc_error)
+    }
+}
+
+impl From<TransactionError> for RpcError {
+    fn from(err: TransactionError) -> Self {
+        let (err_code, err_data) = match err {
+            TransactionError::AlreadyImported
+            | TransactionError::Old
+            | TransactionError::InsufficientGasPrice { .. }
+            | TransactionError::TooCheapToReplace { .. }
+            | TransactionError::InsufficientGas { .. }
+            | TransactionError::InsufficientBalance { .. }
+            | TransactionError::GasLimitExceeded { .. }
+            | TransactionError::SenderBanned
+            | TransactionError::RecipientBanned
+            | TransactionError::CodeBanned
+            | TransactionError::InvalidChainId
+            | TransactionError::InvalidSignature(..)
+            | TransactionError::NotAllowed
+            | TransactionError::TooBig => (ErrorCode::InvalidParams, None),
+            TransactionError::LimitReached => (ErrorCode::ServerError(TXN_ERROR_BASE), None),
+            TransactionError::CallErr(call_err) => match call_err {
+                CallError::TransactionNotFound => (ErrorCode::InvalidParams, None),
+                CallError::StatePruned | CallError::StateCorrupt => {
+                    (ErrorCode::ServerError(TXN_ERROR_BASE + 1), None)
+                }
+                CallError::ExecutionError(vm_status) => (
+                    ErrorCode::ServerError(TXN_ERROR_BASE + 2),
+                    Some(serde_json::to_value(vm_status).expect("vm status to json should be ok")),
+                ),
+            },
+        };
+        RpcError(jsonrpc_core::Error {
+            code: err_code,
+            message: "".to_string(),
+            data: err_data,
+        })
+    }
+}
+
+impl From<hex::FromHexError> for RpcError {
+    fn from(err: FromHexError) -> Self {
+        RpcError(jsonrpc_core::Error {
+            code: ErrorCode::InvalidParams,
+            message: err.to_string(),
+            data: None,
+        })
+    }
+}
+impl From<scs::Error> for RpcError {
+    fn from(err: scs::Error) -> Self {
+        RpcError(jsonrpc_core::Error {
+            code: ErrorCode::InvalidParams,
+            message: err.to_string(),
+            data: None,
+        })
+    }
+}
+
+impl From<MailboxError> for RpcError {
+    fn from(err: MailboxError) -> Self {
+        RpcError(jsonrpc_core::Error {
+            code: ErrorCode::ServerError(MAILBOX_ERROR_BASE),
+            message: err.to_string(),
+            data: None,
+        })
+    }
 }
 
 pub fn to_invalid_param_err<E>(err: E) -> jsonrpc_core::Error
@@ -44,26 +171,4 @@ where
     let anyhow_err: anyhow::Error = err.into();
     let message = format!("Invalid param error: {:?}", anyhow_err);
     jsonrpc_core::Error::invalid_params(message)
-}
-
-pub fn map_rpc_err(err: RpcError) -> jsonrpc_core::Error {
-    match err {
-        RpcError::InternalError => jsonrpc_core::Error::internal_error(),
-        RpcError::InvalidRequest(message) => jsonrpc_core::Error::invalid_params(message),
-    }
-}
-
-#[derive(Debug)]
-pub enum RpcError {
-    InternalError,
-    InvalidRequest(String),
-}
-
-impl From<AccountError> for RpcError {
-    fn from(err: AccountError) -> Self {
-        match err {
-            AccountError::StoreError(_) => RpcError::InternalError,
-            e => RpcError::InvalidRequest(format!("{:?}", e)),
-        }
-    }
 }

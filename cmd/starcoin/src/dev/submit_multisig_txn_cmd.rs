@@ -44,10 +44,8 @@ impl CommandAction for ExecuteMultiSignedTxnCommand {
         let client = ctx.state().client();
         let signed_txn = assemble_multisig_txn(opt.partial_signed_txns.clone())?;
         let txn_hash = signed_txn.crypto_hash();
-        let succ = client.submit_transaction(signed_txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
+        client.submit_transaction(signed_txn)?;
+
         println!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {

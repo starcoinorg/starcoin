@@ -115,10 +115,8 @@ impl CommandAction for UpgradeModuleProposalCommand {
                 TransactionPayload::Script(module_upgrade_proposal),
             )?;
             let txn_hash = signed_txn.crypto_hash();
-            let success = cli_state.client().submit_transaction(signed_txn)?;
-            if let Err(e) = success {
-                bail!("execute-txn is reject by node, reason: {}", &e)
-            }
+            cli_state.client().submit_transaction(signed_txn)?;
+
             println!("txn {:#x} submitted.", txn_hash);
 
             if opt.blocking {
