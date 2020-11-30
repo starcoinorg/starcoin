@@ -38,8 +38,8 @@ Module 0x00000000000000000000000000000001::ConsensusConfig
 		% coverage: 100.00
 	fun compute_reward_per_block
 		total: 6
-		covered: 0
-		% coverage: 0.00
+		covered: 6
+		% coverage: 100.00
 	fun do_compute_reward_per_block
 		total: 11
 		covered: 11
@@ -66,8 +66,8 @@ Module 0x00000000000000000000000000000001::ConsensusConfig
 		% coverage: 100.00
 	fun new_consensus_config
 		total: 145
-		covered: 125
-		% coverage: 86.21
+		covered: 145
+		% coverage: 100.00
 	fun strategy
 		total: 4
 		covered: 4
@@ -76,7 +76,7 @@ Module 0x00000000000000000000000000000001::ConsensusConfig
 		total: 4
 		covered: 4
 		% coverage: 100.00
->>> % Module coverage: 88.55
+>>> % Module coverage: 100.00
 Module 0x00000000000000000000000000000001::ModifyDaoConfigProposal
 	fun execute
 		total: 19
@@ -88,9 +88,9 @@ Module 0x00000000000000000000000000000001::ModifyDaoConfigProposal
 		% coverage: 84.62
 	fun propose
 		total: 24
-		covered: 20
-		% coverage: 83.33
->>> % Module coverage: 88.41
+		covered: 24
+		% coverage: 100.00
+>>> % Module coverage: 94.20
 Module 0x00000000000000000000000000000001::Token
 	fun add_burn_capability
 		total: 4
@@ -102,8 +102,8 @@ Module 0x00000000000000000000000000000001::Token
 		% coverage: 100.00
 	fun burn
 		total: 6
-		covered: 0
-		% coverage: 0.00
+		covered: 6
+		% coverage: 100.00
 	fun burn_with_capability
 		total: 28
 		covered: 28
@@ -238,13 +238,13 @@ Module 0x00000000000000000000000000000001::Token
 		% coverage: 100.00
 	fun withdraw
 		total: 26
-		covered: 22
-		% coverage: 84.62
+		covered: 26
+		% coverage: 100.00
 	fun zero
 		total: 3
 		covered: 3
 		% coverage: 100.00
->>> % Module coverage: 85.86
+>>> % Module coverage: 87.61
 Module 0x00000000000000000000000000000001::PackageTxnManager
 	fun account_address
 		total: 4
@@ -252,20 +252,20 @@ Module 0x00000000000000000000000000000001::PackageTxnManager
 		% coverage: 100.00
 	fun cancel_upgrade_plan
 		total: 9
-		covered: 0
-		% coverage: 0.00
+		covered: 9
+		% coverage: 100.00
 	fun cancel_upgrade_plan_with_cap
 		total: 37
-		covered: 0
-		% coverage: 0.00
+		covered: 35
+		% coverage: 94.59
 	fun check_package_txn
 		total: 73
-		covered: 55
-		% coverage: 75.34
+		covered: 61
+		% coverage: 83.56
 	fun destroy_upgrade_plan_cap
 		total: 4
-		covered: 0
-		% coverage: 0.00
+		covered: 4
+		% coverage: 100.00
 	fun extract_submit_upgrade_plan_cap
 		total: 18
 		covered: 16
@@ -280,16 +280,16 @@ Module 0x00000000000000000000000000000001::PackageTxnManager
 		% coverage: 100.00
 	fun get_strategy_arbitrary
 		total: 2
-		covered: 0
-		% coverage: 0.00
+		covered: 2
+		% coverage: 100.00
 	fun get_strategy_freeze
 		total: 2
-		covered: 0
-		% coverage: 0.00
+		covered: 2
+		% coverage: 100.00
 	fun get_strategy_new_module
 		total: 2
-		covered: 0
-		% coverage: 0.00
+		covered: 2
+		% coverage: 100.00
 	fun get_strategy_two_phase
 		total: 2
 		covered: 2
@@ -316,9 +316,9 @@ Module 0x00000000000000000000000000000001::PackageTxnManager
 		% coverage: 81.48
 	fun update_module_upgrade_strategy
 		total: 125
-		covered: 74
-		% coverage: 59.20
->>> % Module coverage: 67.13
+		covered: 120
+		% coverage: 96.00
+>>> % Module coverage: 91.84
 Module 0x00000000000000000000000000000001::Event
 	fun destroy_handle
 		total: 5
@@ -474,8 +474,8 @@ Module 0x00000000000000000000000000000001::Epoch
 		% coverage: 100.00
 	fun block_gas_limit
 		total: 7
-		covered: 0
-		% coverage: 0.00
+		covered: 7
+		% coverage: 100.00
 	fun block_time_target
 		total: 7
 		covered: 7
@@ -510,25 +510,25 @@ Module 0x00000000000000000000000000000001::Epoch
 		% coverage: 100.00
 	fun start_block_number
 		total: 7
-		covered: 0
-		% coverage: 0.00
+		covered: 7
+		% coverage: 100.00
 	fun start_time
 		total: 7
-		covered: 0
-		% coverage: 0.00
+		covered: 7
+		% coverage: 100.00
 	fun total_gas
 		total: 7
-		covered: 0
-		% coverage: 0.00
+		covered: 7
+		% coverage: 100.00
 	fun uncles
 		total: 7
-		covered: 0
-		% coverage: 0.00
+		covered: 7
+		% coverage: 100.00
 	fun update_epoch_data
 		total: 42
 		covered: 42
 		% coverage: 100.00
->>> % Module coverage: 90.51
+>>> % Module coverage: 96.90
 Module 0x00000000000000000000000000000001::SharedEd25519PublicKey
 	fun exists_at
 		total: 3
@@ -712,32 +712,32 @@ Module 0x00000000000000000000000000000001::Account
 Module 0x00000000000000000000000000000001::Dao
 	fun _cast_vote
 		total: 30
-		covered: 21
-		% coverage: 70.00
+		covered: 30
+		% coverage: 100.00
 	fun _flip_vote
 		total: 51
 		covered: 51
 		% coverage: 100.00
 	fun _proposal_state
 		total: 98
-		covered: 98
-		% coverage: 100.00
+		covered: 90
+		% coverage: 91.84
 	fun _revoke_vote
 		total: 31
 		covered: 22
 		% coverage: 70.97
 	fun cast_vote
 		total: 138
-		covered: 116
-		% coverage: 84.06
+		covered: 126
+		% coverage: 91.30
 	fun change_vote
 		total: 123
-		covered: 90
-		% coverage: 73.17
+		covered: 110
+		% coverage: 89.43
 	fun destroy_terminated_proposal
 		total: 59
-		covered: 57
-		% coverage: 96.61
+		covered: 43
+		% coverage: 72.88
 	fun extract_proposal_action
 		total: 22
 		covered: 20
@@ -764,24 +764,24 @@ Module 0x00000000000000000000000000000001::Dao
 		% coverage: 81.67
 	fun plugin
 		total: 36
-		covered: 32
-		% coverage: 88.89
+		covered: 36
+		% coverage: 100.00
 	fun proposal_exists
 		total: 15
 		covered: 12
 		% coverage: 80.00
 	fun proposal_info
 		total: 19
-		covered: 0
-		% coverage: 0.00
+		covered: 19
+		% coverage: 100.00
 	fun proposal_state
 		total: 24
-		covered: 20
-		% coverage: 83.33
+		covered: 24
+		% coverage: 100.00
 	fun propose
 		total: 60
-		covered: 46
-		% coverage: 76.67
+		covered: 56
+		% coverage: 93.33
 	fun queue_proposal_action
 		total: 25
 		covered: 23
@@ -792,24 +792,24 @@ Module 0x00000000000000000000000000000001::Dao
 		% coverage: 100.00
 	fun revoke_vote
 		total: 98
-		covered: 82
-		% coverage: 83.67
+		covered: 98
+		% coverage: 100.00
 	fun set_min_action_delay
 		total: 38
-		covered: 0
-		% coverage: 0.00
+		covered: 30
+		% coverage: 78.95
 	fun set_voting_delay
 		total: 38
-		covered: 0
-		% coverage: 0.00
+		covered: 30
+		% coverage: 78.95
 	fun set_voting_period
 		total: 38
-		covered: 0
-		% coverage: 0.00
+		covered: 30
+		% coverage: 78.95
 	fun set_voting_quorum_rate
 		total: 48
-		covered: 0
-		% coverage: 0.00
+		covered: 37
+		% coverage: 77.08
 	fun unstake_votes
 		total: 54
 		covered: 45
@@ -830,7 +830,7 @@ Module 0x00000000000000000000000000000001::Dao
 		total: 6
 		covered: 6
 		% coverage: 100.00
->>> % Module coverage: 72.72
+>>> % Module coverage: 88.21
 Module 0x00000000000000000000000000000001::STC
 	fun burn
 		total: 8
@@ -874,8 +874,8 @@ Module 0x00000000000000000000000000000001::Vector
 		% coverage: NaN
 	fun contains
 		total: 34
-		covered: 28
-		% coverage: 82.35
+		covered: 34
+		% coverage: 100.00
 	native fun destroy_empty
 		total: 0
 		covered: 0
@@ -906,8 +906,8 @@ Module 0x00000000000000000000000000000001::Vector
 		% coverage: NaN
 	fun remove
 		total: 38
-		covered: 21
-		% coverage: 55.26
+		covered: 34
+		% coverage: 89.47
 	fun reverse
 		total: 39
 		covered: 36
@@ -918,17 +918,17 @@ Module 0x00000000000000000000000000000001::Vector
 		% coverage: 100.00
 	fun split
 		total: 104
-		covered: 100
-		% coverage: 96.15
+		covered: 104
+		% coverage: 100.00
 	native fun swap
 		total: 0
 		covered: 0
 		% coverage: NaN
 	fun swap_remove
 		total: 13
-		covered: 0
-		% coverage: 0.00
->>> % Module coverage: 85.32
+		covered: 13
+		% coverage: 100.00
+>>> % Module coverage: 97.61
 Module 0x00000000000000000000000000000001::Version
 	fun get
 		total: 7
@@ -1332,8 +1332,8 @@ Module 0x00000000000000000000000000000001::Authenticator
 		% coverage: 100.00
 	fun derived_address
 		total: 37
-		covered: 35
-		% coverage: 94.59
+		covered: 37
+		% coverage: 100.00
 	fun ed25519_authentication_key
 		total: 6
 		covered: 6
@@ -1350,7 +1350,7 @@ Module 0x00000000000000000000000000000001::Authenticator
 		total: 4
 		covered: 4
 		% coverage: 100.00
->>> % Module coverage: 98.48
+>>> % Module coverage: 100.00
 Module 0x00000000000000000000000000000001::Compare
 	fun cmp_scs_bytes
 		total: 61
@@ -1434,17 +1434,17 @@ Module 0x00000000000000000000000000000001::Errors
 Module 0x00000000000000000000000000000001::MintDaoProposal
 	fun execute_mint_proposal
 		total: 18
-		covered: 0
-		% coverage: 0.00
+		covered: 18
+		% coverage: 100.00
 	fun plugin
 		total: 24
-		covered: 0
-		% coverage: 0.00
+		covered: 20
+		% coverage: 83.33
 	fun propose_mint_to
 		total: 7
-		covered: 0
-		% coverage: 0.00
->>> % Module coverage: 0.00
+		covered: 7
+		% coverage: 100.00
+>>> % Module coverage: 91.84
 Module 0x00000000000000000000000000000001::Offer
 	fun address_of
 		total: 5
@@ -1464,5 +1464,5 @@ Module 0x00000000000000000000000000000001::Offer
 		% coverage: 100.00
 >>> % Module coverage: 100.00
 +-------------------------+
-| % Move Coverage: 85.94  |
+| % Move Coverage: 93.20  |
 +-------------------------+
