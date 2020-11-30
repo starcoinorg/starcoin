@@ -76,7 +76,6 @@ impl From<anyhow::Error> for RpcError {
     }
 }
 
-const MAILBOX_ERROR_BASE: i64 = -41000;
 const TXN_ERROR_BASE: i64 = -50000;
 const ACCOUNT_ERROR_BASE: i64 = -60000;
 
@@ -157,7 +156,7 @@ impl From<scs::Error> for RpcError {
 impl From<MailboxError> for RpcError {
     fn from(err: MailboxError) -> Self {
         RpcError(jsonrpc_core::Error {
-            code: ErrorCode::ServerError(MAILBOX_ERROR_BASE),
+            code: ErrorCode::InternalError,
             message: err.to_string(),
             data: None,
         })
