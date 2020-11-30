@@ -44,8 +44,7 @@ address 0x1 {
         const ESTRATEGY_FREEZED: u64 = 105;
         const ESTRATEGY_INCORRECT: u64 = 106;
         const ESTRATEGY_NOT_TWO_PHASE: u64 = 107;
-        const EUPGRADE_PLAN_IS_NOT_NONE: u64 = 108;
-        const EUNKNOWN_STRATEGY: u64 = 109;
+        const EUNKNOWN_STRATEGY: u64 = 108;
 
         resource struct ModuleUpgradeStrategy {
             // 0 arbitrary
@@ -138,6 +137,7 @@ address 0x1 {
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
         }
 
+        // upgrade plan can override
         public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
@@ -155,7 +155,6 @@ address 0x1 {
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            assert(Option::is_none(&tpu.plan), Errors::invalid_state(EUPGRADE_PLAN_IS_NOT_NONE));
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number, version});
         }
 
@@ -172,7 +171,6 @@ address 0x1 {
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
-            aborts_if !Option::spec_is_none(global<TwoPhaseUpgrade>(account).plan);
         }
 
         public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
