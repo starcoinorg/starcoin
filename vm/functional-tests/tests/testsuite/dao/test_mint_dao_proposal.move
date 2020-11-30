@@ -101,7 +101,18 @@ script {
     }
 }
 
-// check: "Keep(ABORTED { code: 358658"
+//! new-transaction
+//! sender: bob
+script {
+    use {{alice}}::MyToken::MyToken;
+    use 0x1::MintDaoProposal;
+
+    fun test_plugin_fail(account: &signer) {
+        MintDaoProposal::plugin<MyToken>(account); //ERR_NOT_AUTHORIZED
+    }
+}
+
+// check: "Keep(ABORTED { code: 102658"
 
 //! new-transaction
 //! sender: alice

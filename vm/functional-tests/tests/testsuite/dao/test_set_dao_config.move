@@ -60,4 +60,14 @@ script {
 }
 // check: EXECUTED
 
+//! new-transaction
+//! sender: bob
+script {
+    use {{alice}}::MyToken::MyToken;
+    use 0x1::ModifyDaoConfigProposal;
 
+    fun test_plugin(signer: &signer) {
+        ModifyDaoConfigProposal::plugin<MyToken>(signer); //ERR_NOT_AUTHORIZED
+    }
+}
+// check: "Keep(ABORTED { code: 102658"

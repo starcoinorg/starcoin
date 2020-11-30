@@ -55,7 +55,7 @@ fun main(account: &signer) {
     let coin = Token::mint<MyToken>(account, 10000);
     assert(Token::value<MyToken>(&coin) == 10000, 8002);
     assert(Token::market_cap<MyToken>() == old_market_cap + 10000, 8003);
-    Account::deposit_to_self<MyToken>(account, coin)
+    Account::deposit_to_self<MyToken>(account, coin);
 }
 }
 
@@ -63,14 +63,37 @@ fun main(account: &signer) {
 
 // user query
 //! new-transaction
-//! sender: bob
+//! sender: alice
 script {
 use 0x1::Token;
 use {{alice}}::MyToken::{MyToken};
-fun main() {
-    // mint 100 coins and check that the market cap increases appropriately
+use 0x1::Account;
+fun test_withdraw_and_burn(account: &signer) {
     let market_cap = Token::market_cap<MyToken>();
     assert(market_cap == 10000, 8004);
+    let token = Account::withdraw<MyToken>(account, 10000);
+    let t1 = Token::withdraw<MyToken>(&mut token, 100);
+    let t2 = Token::withdraw<MyToken>(&mut token, 10000); // amount is not enough
+    Token::burn<MyToken>(account, token);
+    Token::burn<MyToken>(account, t1);
+    Token::burn<MyToken>(account, t2);
+}
+}
+
+// check: "Keep(ABORTED { code: 26120"
+
+//! new-transaction
+//! sender: alice
+script {
+use 0x1::Token;
+use {{alice}}::MyToken::MyToken;
+fun test_mint_and_burn(account: &signer) {
+    let old_market_cap = Token::market_cap<MyToken>();
+    let amount = 100;
+    let coin = Token::mint<MyToken>(account, amount);
+    assert(Token::value<MyToken>(&coin) == amount, 8008);
+    assert(Token::market_cap<MyToken>() == old_market_cap + amount, 8009);
+    Token::burn<MyToken>(account, coin);
 }
 }
 
