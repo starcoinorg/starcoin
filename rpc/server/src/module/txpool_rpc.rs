@@ -91,6 +91,7 @@ mod tests {
         let txpool_service = MockTxPoolService::new();
         io.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
         let txn = SignedUserTransaction::mock();
+        let txn_hash = txn.id();
         let prefix = r#"{"jsonrpc":"2.0","method":"txpool.submit_transaction","params":["#;
         let suffix = r#"],"id":0}"#;
         let request = format!(
@@ -99,10 +100,11 @@ mod tests {
             serde_json::to_string(&txn).expect("txn to json should success."),
             suffix
         );
-        let response = r#"{"jsonrpc":"2.0","result":{"Ok":null},"id":0}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"$txn_hash","id":0}"#;
+        let response = response.replace("$txn_hash", &txn_hash.to_string());
         assert_eq!(
             io.handle_request(request.as_str()).wait().unwrap(),
-            Some(response.to_string())
+            Some(response)
         );
     }
 }
