@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.34"
 once_cell = "1.5.2"
-prometheus = "0.10"
+prometheus = "0.11"
 starcoin-types = { path = "../../types"}
 move-vm-runtime = { git = "https://github.com/starcoinorg/libra", rev="4236206844fdba73316d036a1f930e0fab63553b" }
 starcoin-state-api = {path="../../state/api"}

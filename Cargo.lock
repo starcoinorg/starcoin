@@ -3685,7 +3685,7 @@ dependencies = [
  "libra-log-derive",
  "libra-workspace-hack",
  "once_cell",
- "prometheus",
+ "prometheus 0.10.0",
  "serde",
  "serde_json",
 ]
@@ -4411,7 +4411,7 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.1",
  "pin-project 0.4.27",
- "prometheus",
+ "prometheus 0.11.0",
  "prost",
  "rand 0.7.3",
  "rustc-hex",
@@ -5341,6 +5341,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "30d70cf4412832bcac9cffe27906f4a66e450d323525e977168c70d1b36120ae"
 dependencies = [
  "cfg-if 0.1.10",
+ "fnv",
+ "lazy_static",
+ "parking_lot 0.11.1",
+ "regex",
+ "thiserror",
+]
+
+[[package]]
+name = "prometheus"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8425533e7122f0c3cc7a37e6244b16ad3a2cc32ae7ac6276e2a75da0d9c200d"
+dependencies = [
+ "cfg-if 1.0.0",
  "fnv",
  "lazy_static",
  "parking_lot 0.11.1",
@@ -6524,7 +6538,7 @@ dependencies = [
  "futures 0.3.8",
  "futures-core",
  "lazy_static",
- "prometheus",
+ "prometheus 0.11.0",
 ]
 
 [[package]]
@@ -7180,7 +7194,7 @@ dependencies = [
  "futures 0.3.8",
  "hyper 0.13.9",
  "once_cell",
- "prometheus",
+ "prometheus 0.11.0",
  "psutil",
  "serde_json",
  "starcoin-logger",
@@ -7326,7 +7340,7 @@ dependencies = [
  "network-p2p-types",
  "network-rpc-core",
  "parking_lot 0.11.1",
- "prometheus",
+ "prometheus 0.11.0",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -7370,7 +7384,7 @@ dependencies = [
  "network-rpc-derive",
  "once_cell",
  "parity-codec",
- "prometheus",
+ "prometheus 0.11.0",
  "serde",
  "serde_json",
  "starcoin-account-api",
@@ -7978,7 +7992,7 @@ dependencies = [
  "network-api",
  "once_cell",
  "parking_lot 0.11.1",
- "prometheus",
+ "prometheus 0.11.0",
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
@@ -8085,7 +8099,7 @@ dependencies = [
  "move-vm-runtime",
  "num_enum",
  "once_cell",
- "prometheus",
+ "prometheus 0.11.0",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "starcoin-canonical-serialization",
