@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use starcoin_txpool_api::TxPoolStatus;
 use structopt::StructOpt;
 
-///Get tx pool status
+///Get tx pool status, Deprecated, please use txpool status.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "txpool_status")]
 pub struct TxPoolStatusOpt {}

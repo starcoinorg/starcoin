@@ -7,6 +7,7 @@ use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
 use starcoin_rpc_api::types::SignedUserTransactionView;
+use starcoin_txpool_api::TxPoolStatus;
 use starcoin_vm_types::account_address::AccountAddress;
 use structopt::StructOpt;
 
@@ -63,5 +64,27 @@ impl CommandAction for PendingTxnsCommand {
         let txns = client.get_pending_txns_of_sender(ctx.opt().sender, ctx.opt().max_len)?;
 
         Ok(txns)
+    }
+}
+
+///Get tx pool status
+#[derive(Debug, StructOpt)]
+#[structopt(name = "status")]
+pub struct TxPoolStatusOpt {}
+
+pub struct TxPoolStatusCommand;
+
+impl CommandAction for TxPoolStatusCommand {
+    type State = CliState;
+    type GlobalOpt = StarcoinOpt;
+    type Opt = TxPoolStatusOpt;
+    type ReturnItem = TxPoolStatus;
+
+    fn run(
+        &self,
+        ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
+    ) -> Result<Self::ReturnItem> {
+        let client = ctx.state().client();
+        Ok(client.txpool_status()?)
     }
 }
