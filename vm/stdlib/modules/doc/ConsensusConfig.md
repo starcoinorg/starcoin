@@ -230,9 +230,6 @@
     // base_reward_per_uncle_percent can been zero.
     <b>assert</b>(min_block_time_target &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
     <b>assert</b>(max_block_time_target &gt;= min_block_time_target, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
-    <b>assert</b>(base_max_uncles_per_block &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
-    <b>assert</b>(base_block_gas_limit &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
-    <b>assert</b>(strategy &gt;= 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="ConsensusConfig.md#0x1_ConsensusConfig_EINVALID_ARGUMENT">EINVALID_ARGUMENT</a>));
 
     <a href="ConsensusConfig.md#0x1_ConsensusConfig">ConsensusConfig</a> {
         uncle_rate_target,

@@ -5,16 +5,49 @@
 
 
 
+-  [Constants](#@Constants_0)
 -  [Function `cmp_scs_bytes`](#0x1_Compare_cmp_scs_bytes)
 -  [Function `cmp_u8`](#0x1_Compare_cmp_u8)
 -  [Function `cmp_u64`](#0x1_Compare_cmp_u64)
--  [Specification](#@Specification_0)
-    -  [Function `cmp_scs_bytes`](#@Specification_0_cmp_scs_bytes)
-    -  [Function `cmp_u8`](#@Specification_0_cmp_u8)
-    -  [Function `cmp_u64`](#@Specification_0_cmp_u64)
+-  [Specification](#@Specification_1)
+    -  [Function `cmp_scs_bytes`](#@Specification_1_cmp_scs_bytes)
+    -  [Function `cmp_u8`](#@Specification_1_cmp_u8)
+    -  [Function `cmp_u64`](#@Specification_1_cmp_u64)
 
 
 <pre><code><b>use</b> <a href="Vector.md#0x1_Vector">0x1::Vector</a>;
+</code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_Compare_EQUAL"></a>
+
+
+
+<pre><code><b>const</b> <a href="Compare.md#0x1_Compare_EQUAL">EQUAL</a>: u8 = 0;
+</code></pre>
+
+
+
+<a name="0x1_Compare_GREATER_THAN"></a>
+
+
+
+<pre><code><b>const</b> <a href="Compare.md#0x1_Compare_GREATER_THAN">GREATER_THAN</a>: u8 = 2;
+</code></pre>
+
+
+
+<a name="0x1_Compare_LESS_THAN"></a>
+
+
+
+<pre><code><b>const</b> <a href="Compare.md#0x1_Compare_LESS_THAN">LESS_THAN</a>: u8 = 1;
 </code></pre>
 
 
@@ -74,9 +107,9 @@
 
 
 <pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u8">cmp_u8</a>(i1: u8, i2: u8): u8 {
-    <b>if</b> (i1 == i2) 0
-    <b>else</b> <b>if</b> (i1 &lt; i2) 1
-    <b>else</b> 2
+    <b>if</b> (i1 == i2) <a href="Compare.md#0x1_Compare_EQUAL">EQUAL</a>
+    <b>else</b> <b>if</b> (i1 &lt; i2) <a href="Compare.md#0x1_Compare_LESS_THAN">LESS_THAN</a>
+    <b>else</b> <a href="Compare.md#0x1_Compare_GREATER_THAN">GREATER_THAN</a>
 }
 </code></pre>
 
@@ -100,9 +133,9 @@
 
 
 <pre><code><b>fun</b> <a href="Compare.md#0x1_Compare_cmp_u64">cmp_u64</a>(i1: u64, i2: u64): u8 {
-    <b>if</b> (i1 == i2) 0
-    <b>else</b> <b>if</b> (i1 &lt; i2) 1
-    <b>else</b> 2
+    <b>if</b> (i1 == i2) <a href="Compare.md#0x1_Compare_EQUAL">EQUAL</a>
+    <b>else</b> <b>if</b> (i1 &lt; i2) <a href="Compare.md#0x1_Compare_LESS_THAN">LESS_THAN</a>
+    <b>else</b> <a href="Compare.md#0x1_Compare_GREATER_THAN">GREATER_THAN</a>
 }
 </code></pre>
 
@@ -110,7 +143,7 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -122,7 +155,7 @@
 
 
 
-<a name="@Specification_0_cmp_scs_bytes"></a>
+<a name="@Specification_1_cmp_scs_bytes"></a>
 
 ### Function `cmp_scs_bytes`
 
@@ -138,7 +171,7 @@
 
 
 
-<a name="@Specification_0_cmp_u8"></a>
+<a name="@Specification_1_cmp_u8"></a>
 
 ### Function `cmp_u8`
 
@@ -154,7 +187,7 @@
 
 
 
-<a name="@Specification_0_cmp_u64"></a>
+<a name="@Specification_1_cmp_u64"></a>
 
 ### Function `cmp_u64`
 
