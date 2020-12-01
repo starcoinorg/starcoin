@@ -6,16 +6,17 @@ use jsonrpc_derive::rpc;
 use starcoin_types::transaction::SignedUserTransaction;
 
 pub use self::gen_client::Client as TxPoolClient;
+use starcoin_crypto::HashValue;
 use starcoin_txpool_api::TxPoolStatus;
 use starcoin_types::account_address::AccountAddress;
 
 #[rpc]
 pub trait TxPoolApi {
     #[rpc(name = "txpool.submit_transaction")]
-    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<Result<(), String>>;
+    fn submit_transaction(&self, tx: SignedUserTransaction) -> FutureResult<HashValue>;
 
     #[rpc(name = "txpool.submit_hex_transaction")]
-    fn submit_hex_transaction(&self, tx: String) -> FutureResult<Result<(), String>>;
+    fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue>;
 
     /// Returns next valid sequence number for given sender
     /// or `None` if there are no pending transactions from that sender in txpool.

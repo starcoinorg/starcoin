@@ -94,10 +94,7 @@ impl CommandAction for GetCoinCommand {
         )?;
         let txn = client.account_sign_txn(raw_txn)?;
         let id = txn.crypto_hash();
-        let ret = client.submit_transaction(txn.clone())?;
-        if let Err(e) = ret {
-            bail!("execute-txn is reject by node, reason: {}", e)
-        }
+        client.submit_transaction(txn.clone())?;
         if !opt.no_blocking {
             ctx.state().watch_txn(id)?;
         }

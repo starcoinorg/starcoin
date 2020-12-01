@@ -6,7 +6,9 @@ use starcoin_rpc_api::{txpool::TxPoolApi, FutureResult};
 use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::transaction::SignedUserTransaction;
 
+use crate::module::{convert_to_rpc_error, map_err};
 use scs::SCSCodec;
+use starcoin_crypto::HashValue;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
 use starcoin_types::account_address::AccountAddress;
@@ -31,34 +33,33 @@ impl<S> TxPoolApi for TxPoolRpcImpl<S>
 where
     S: TxPoolSyncService,
 {
-    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<Result<(), String>> {
-        let result = self
+    fn submit_transaction(&self, txn: SignedUserTransaction) -> FutureResult<HashValue> {
+        let txn_hash = txn.id();
+        let result: Result<(), jsonrpc_core::Error> = self
             .service
             .add_txns(vec![txn])
             .pop()
-            .expect("txpool should return result");
-        Box::new(jsonrpc_core::futures::done(Ok(
-            result.map_err(|e| format!("{:?}", e))
-        )))
+            .expect("txpool should return result")
+            .map_err(convert_to_rpc_error);
+
+        Box::new(jsonrpc_core::futures::done(result.map(|_| txn_hash)))
     }
 
-    fn submit_hex_transaction(&self, tx: String) -> FutureResult<Result<(), String>> {
-        let txn_bytes = match hex::decode(tx) {
-            Ok(t) => t,
-            Err(e) => return Box::new(jsonrpc_core::futures::done(Ok(Err(format!("{:?}", e))))),
-        };
-        let txn = match SignedUserTransaction::decode(&txn_bytes) {
-            Ok(t) => t,
-            Err(e) => return Box::new(jsonrpc_core::futures::done(Ok(Err(format!("{:?}", e))))),
-        };
-        let result = self
-            .service
-            .add_txns(vec![txn])
-            .pop()
-            .expect("txpool should return result");
-        Box::new(jsonrpc_core::futures::done(Ok(
-            result.map_err(|e| format!("{:?}", e))
-        )))
+    fn submit_hex_transaction(&self, tx: String) -> FutureResult<HashValue> {
+        let tx = tx.strip_prefix("0x").unwrap_or_else(|| tx.as_str());
+        let result = hex::decode(tx)
+            .map_err(convert_to_rpc_error)
+            .and_then(|txn_bytes| SignedUserTransaction::decode(&txn_bytes).map_err(map_err))
+            .and_then(|txn| {
+                let txn_hash = txn.id();
+                self.service
+                    .add_txns(vec![txn])
+                    .pop()
+                    .expect("txpool should return result")
+                    .map(|_| txn_hash)
+                    .map_err(convert_to_rpc_error)
+            });
+        Box::new(jsonrpc_core::futures::done(result))
     }
 
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {
@@ -90,6 +91,7 @@ mod tests {
         let txpool_service = MockTxPoolService::new();
         io.extend_with(TxPoolRpcImpl::new(txpool_service).to_delegate());
         let txn = SignedUserTransaction::mock();
+        let txn_hash = txn.id();
         let prefix = r#"{"jsonrpc":"2.0","method":"txpool.submit_transaction","params":["#;
         let suffix = r#"],"id":0}"#;
         let request = format!(
@@ -98,10 +100,11 @@ mod tests {
             serde_json::to_string(&txn).expect("txn to json should success."),
             suffix
         );
-        let response = r#"{"jsonrpc":"2.0","result":{"Ok":null},"id":0}"#;
+        let response = r#"{"jsonrpc":"2.0","result":"$txn_hash","id":0}"#;
+        let response = response.replace("$txn_hash", &txn_hash.to_string());
         assert_eq!(
             io.handle_request(request.as_str()).wait().unwrap(),
-            Some(response.to_string())
+            Some(response)
         );
     }
 }
