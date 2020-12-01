@@ -95,7 +95,8 @@ pub fn add_command(
         .command(
             Command::with_name("txpool")
                 .subcommand(txpool::PendingTxnCommand)
-                .subcommand(txpool::PendingTxnsCommand),
+                .subcommand(txpool::PendingTxnsCommand)
+                .subcommand(txpool::TxPoolStatusCommand),
         )
         .command(
             Command::with_name("dev")

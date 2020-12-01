@@ -58,6 +58,15 @@ pub struct Status {
     pub limits: tx_pool::Options,
 }
 
+impl Status {
+    /// helper func to check pool status is full or not.
+    /// should keep sync with Pool::is_full
+    pub fn is_full(&self) -> bool {
+        self.status.transaction_count >= self.limits.max_count
+            || self.status.mem_usage >= self.limits.max_mem_usage
+    }
+}
+
 impl fmt::Display for Status {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
@@ -80,6 +89,7 @@ impl Into<TxPoolStatus> for Status {
             mem: self.status.mem_usage / 1024,
             mem_max: self.limits.max_mem_usage / 1024,
             senders: self.status.senders,
+            is_full: self.is_full(),
         }
     }
 }
