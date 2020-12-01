@@ -1,15 +1,15 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use libp2p::futures::channel::oneshot;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
-use libp2p::futures::channel::oneshot;
-pub use libp2p::multihash;
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
-use std::borrow::Cow;
+pub use libp2p::{build_multiaddr, multihash};
 
 /// Parses a string address and splits it into Multiaddress and PeerId, if
 /// valid.
@@ -40,6 +40,22 @@ pub fn parse_addr(mut addr: Multiaddr) -> Result<(PeerId, Multiaddr), ParseErr> 
     };
 
     Ok((who, addr))
+}
+
+/// Build memory protocol Multiaddr by port
+pub fn memory_addr(port: u64) -> Multiaddr {
+    build_multiaddr!(Memory(port))
+}
+
+/// Generate a random memory protocol Multiaddr
+pub fn random_memory_addr() -> Multiaddr {
+    memory_addr(rand::random::<u64>())
+}
+
+/// Check the address is a memory protocol Multiaddr.
+pub fn is_memory_addr(addr: &Multiaddr) -> bool {
+    addr.iter()
+        .any(|protocol| matches!(protocol, libp2p::core::multiaddr::Protocol::Memory(_)))
 }
 
 /// Address of a node, including its identity.
@@ -186,4 +202,15 @@ pub struct IncomingRequest {
 pub struct ProtocolRequest {
     pub protocol: Cow<'static, str>,
     pub request: IncomingRequest,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_memory_address() {
+        let addr = random_memory_addr();
+        assert!(is_memory_addr(&addr));
+    }
 }

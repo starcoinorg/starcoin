@@ -20,7 +20,7 @@ bytes = "0.5.0"
 
 config = {path = "../config", package="starcoin-config"}
 types = {path = "../types", package="starcoin-types"}
-tx-relay = {path="../txpool/tx-relay", package="starcoin-tx-relay"}
+starcoin-txpool-api = {path = "../txpool/api"}
 network-p2p-types = {path = "../network-p2p/types"}
 network-p2p = {path = "../network-p2p"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
@@ -50,8 +50,8 @@ async-std = "1.7"
 prometheus = "0.10"
 
 network-api = { package = "network-api", path = "../network/api" }
+starcoin-metrics = {path = "../commons/metrics"}
 starcoin-sync-api = { package = "starcoin-sync-api", path = "../sync/api" }
-starcoin-block-relayer-api = { path = "../block-relayer/api/" }
 starcoin-service-registry = { path = "../commons/service-registry" }
 starcoin-network-rpc = { path = "../network-rpc" }
 network-rpc-core = { path = "../network-rpc/core" }

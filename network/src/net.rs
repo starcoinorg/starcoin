@@ -13,7 +13,7 @@ use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
     Params, ProtocolId, Secret,
 };
-use network_p2p_types::{PeerId, ProtocolRequest, RequestFailure};
+use network_p2p_types::{is_memory_addr, PeerId, ProtocolRequest, RequestFailure};
 use prometheus::{default_registry, Registry};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
@@ -25,8 +25,11 @@ use types::startup_info::{ChainInfo, ChainStatus};
 
 #[derive(Clone)]
 pub struct SNetworkService {
-    inner: NetworkInner,
-    service: Arc<NetworkService>,
+    protocol: ProtocolId,
+    chain_info: ChainInfo,
+    cfg: NetworkConfiguration,
+    metrics_registry: Option<Registry>,
+    service: Option<Arc<NetworkService>>,
     net_tx: Option<mpsc::UnboundedSender<NetworkMessage>>,
 }
 
@@ -42,18 +45,12 @@ impl SNetworkService {
         cfg: NetworkConfiguration,
         metrics_registry: Option<Registry>,
     ) -> Self {
-        let worker =
-            NetworkWorker::new(Params::new(cfg, protocol, chain_info, metrics_registry)).unwrap();
-        let service = worker.service().clone();
-        let worker = worker;
-
-        async_std::task::spawn(worker);
-
-        let inner = NetworkInner::new(service.clone());
-
         Self {
-            inner,
-            service,
+            protocol,
+            chain_info,
+            cfg,
+            metrics_registry,
+            service: None,
             net_tx: None,
         }
     }
@@ -70,21 +67,28 @@ impl SNetworkService {
         let (tx, net_rx) = mpsc::unbounded();
         let (net_tx, rx) = mpsc::unbounded::<NetworkMessage>();
         let (event_tx, event_rx) = mpsc::unbounded::<PeerEvent>();
-        let inner = self.inner.clone();
 
+        let worker = NetworkWorker::new(Params::new(
+            self.cfg.clone(),
+            self.protocol.clone(),
+            self.chain_info.clone(),
+            self.metrics_registry.clone(),
+        ))
+        .unwrap();
         self.net_tx = Some(net_tx.clone());
-
-        async_std::task::spawn(Self::start_network(inner, tx, rx, event_tx, close_rx));
+        self.service = Some(worker.service().clone());
+        async_std::task::spawn(Self::start_network(worker, tx, rx, event_tx, close_rx));
         (net_tx, net_rx, event_rx, close_tx)
     }
 
     async fn start_network(
-        inner: NetworkInner,
+        mut worker: NetworkWorker,
         net_tx: mpsc::UnboundedSender<NetworkMessage>,
         net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
         event_tx: mpsc::UnboundedSender<PeerEvent>,
         close_rx: mpsc::UnboundedReceiver<()>,
     ) {
+        let inner = NetworkInner::new(worker.service().clone());
         let mut event_stream = inner.service.event_stream("network").fuse();
         let mut net_rx = net_rx.fuse();
         let mut close_rx = close_rx.fuse();
@@ -98,10 +102,10 @@ impl SNetworkService {
                     inner.handle_network_receive(event,net_tx.clone(),event_tx.clone()).await;
                 },
                 _ = close_rx.select_next_some() => {
-                    //TODO
-                    debug!("To shutdown command ");
+                    info!("Network shutdown");
                     break;
                 }
+                _ = (&mut worker).fuse() => {},
                 complete => {
                     debug!("all stream are complete");
                     break;
@@ -109,13 +113,18 @@ impl SNetworkService {
             }
         }
     }
+    fn service(&self) -> &Arc<NetworkService> {
+        self.service
+            .as_ref()
+            .expect("Should call network function after network running.")
+    }
 
     pub async fn is_connected(&self, peer_id: PeerId) -> Result<bool> {
-        Ok(self.service.is_connected(peer_id).await)
+        Ok(self.service().is_connected(peer_id).await)
     }
 
     pub fn identify(&self) -> &PeerId {
-        self.service.peer_id()
+        self.service().peer_id()
     }
 
     pub async fn send_message(
@@ -125,7 +134,7 @@ impl SNetworkService {
         message: Vec<u8>,
     ) -> Result<()> {
         debug!("Send message to {}", &peer_id);
-        self.service
+        self.service()
             .write_notification(peer_id, protocol_name, message);
 
         Ok(())
@@ -139,34 +148,38 @@ impl SNetworkService {
     ) -> Result<Vec<u8>, RequestFailure> {
         let protocol = protocol.into();
         debug!("Send request to peer {} and rpc: {:?}", target, protocol);
-        self.service.request(target.into(), protocol, request).await
+        self.service()
+            .request(target.into(), protocol, request)
+            .await
     }
 
     pub async fn broadcast_message(&mut self, protocol_name: Cow<'static, str>, message: Vec<u8>) {
         debug!("broadcast message, protocol: {:?}", protocol_name);
-        self.service.broadcast_message(protocol_name, message).await;
+        self.service()
+            .broadcast_message(protocol_name, message)
+            .await;
     }
 
     pub fn add_peer(&self, peer: String) -> Result<()> {
-        self.service
+        self.service()
             .add_reserved_peer(peer)
             .map_err(|e| format_err!("{:?}", e))
     }
 
     pub async fn connected_peers(&self) -> HashSet<PeerId> {
-        self.service.connected_peers().await
+        self.service().connected_peers().await
     }
 
     pub fn update_chain_status(&self, chain_status: ChainStatus) {
-        self.service.update_chain_status(chain_status);
+        self.service().update_chain_status(chain_status);
     }
 
     pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
-        self.service.get_address(peer_id).await
+        self.service().get_address(peer_id).await
     }
 
     pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, str>) -> bool {
-        self.service.exist_notif_proto(protocol_name).await
+        self.service().exist_notif_proto(protocol_name).await
     }
 }
 
@@ -267,11 +280,15 @@ pub fn build_network_service(
     mpsc::UnboundedReceiver<PeerEvent>,
     mpsc::UnboundedSender<()>,
 ) {
-    let transport_config = TransportConfig::Normal {
-        //TODO support enable mdns by config.
-        enable_mdns: false,
-        allow_private_ipv4: false,
-        wasm_external_transport: None,
+    let transport_config = if is_memory_addr(&cfg.listen) {
+        TransportConfig::MemoryOnly
+    } else {
+        TransportConfig::Normal {
+            //TODO support enable mdns by config.
+            enable_mdns: false,
+            allow_private_ipv4: false,
+            wasm_external_transport: None,
+        }
     };
     //let rpc_info: Vec<String> = starcoin_network_rpc_api::gen_client::get_rpc_info();
     //TODO define RequestResponseConfig by rpc api

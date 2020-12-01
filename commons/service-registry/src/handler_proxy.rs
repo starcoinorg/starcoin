@@ -80,7 +80,7 @@ where
 
     fn stop(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_stopped() {
-            warn!("Service {} has bean stopped", S::service_name());
+            info!("Service {} has bean stopped", S::service_name());
             return Ok(());
         }
         let service = self.service.take();

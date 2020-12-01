@@ -47,7 +47,7 @@ wasm-timer = "0.2"
 sc-peerset = {  path = "peerset" }
 logger = {path = "../commons/logger",package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
-starcoin-metrics = {path = "../commons/metrics",package="starcoin-metrics"}
+starcoin-metrics = {path = "../commons/metrics"}
 starcoin-types = {path = "../types"}
 network-p2p-types = {path = "./types"}
 prometheus = "0.10"

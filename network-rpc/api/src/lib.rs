@@ -23,9 +23,6 @@ pub use remote_chain_state::RemoteChainStateReader;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 
-//TODO move this constants from types
-pub use starcoin_types::CHAIN_PROTOCOL_NAME;
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TransactionsData {
     pub txns: Vec<SignedUserTransaction>,

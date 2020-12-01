@@ -2,36 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{format_err, Result};
+use network_api::messages::PeerMessage;
+use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::bus::BusService;
 use starcoin_service_registry::mocker::MockHandler;
 use starcoin_service_registry::{RegistryAsyncService, RegistryService, ServiceRef};
-use starcoin_storage::{BlockStore, Storage};
-use std::sync::{Arc, Mutex};
-
-use network_api::{MultiaddrWithPeerId, PeerMessageHandler};
-use starcoin_block_relayer_api::PeerCmpctBlockEvent;
-pub use starcoin_network::NetworkAsyncService;
 use starcoin_storage::block_info::BlockInfoStore;
-use starcoin_tx_relay::PeerTransactions;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_types::peer_info::RpcInfo;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use std::sync::{Arc, Mutex};
+
+pub use starcoin_network::NetworkAsyncService;
 
 #[derive(Clone, Default)]
 pub struct MockPeerMessageHandler {
-    pub txns: Arc<Mutex<Vec<PeerTransactions>>>,
-    pub blocks: Arc<Mutex<Vec<PeerCmpctBlockEvent>>>,
+    pub messages: Arc<Mutex<Vec<PeerMessage>>>,
 }
 
 impl PeerMessageHandler for MockPeerMessageHandler {
-    fn handle_transaction(&self, transaction: PeerTransactions) {
-        self.txns.lock().unwrap().push(transaction);
-    }
-
-    fn handle_block(&self, block: PeerCmpctBlockEvent) {
-        self.blocks.lock().unwrap().push(block);
+    fn handle_message(&self, peer_message: PeerMessage) {
+        self.messages.lock().unwrap().push(peer_message);
     }
 }
 

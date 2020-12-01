@@ -7,8 +7,6 @@ extern crate log;
 extern crate prometheus;
 
 pub mod helper;
-//TODO cleanup
-pub mod message_processor;
 pub mod net;
 #[cfg(test)]
 mod net_test;

@@ -4366,20 +4366,18 @@ dependencies = [
 name = "network-api"
 version = "0.8.0"
 dependencies = [
- "actix",
  "anyhow",
  "async-trait",
  "futures 0.3.8",
+ "hex",
  "itertools 0.9.0",
  "network-p2p-types",
  "network-rpc-core",
  "rand 0.7.3",
  "serde",
- "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
  "starcoin-service-registry",
- "starcoin-tx-relay",
  "starcoin-types",
 ]
 
@@ -4446,6 +4444,7 @@ dependencies = [
  "bytes 0.5.6",
  "derive_more",
  "libp2p",
+ "rand 0.7.3",
  "serde",
  "starcoin-canonical-serialization",
 ]
@@ -6663,7 +6662,6 @@ dependencies = [
  "hex",
  "network-api",
  "once_cell",
- "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
@@ -6680,19 +6678,6 @@ dependencies = [
  "starcoin-types",
  "stest",
  "tokio 0.2.23",
-]
-
-[[package]]
-name = "starcoin-block-relayer-api"
-version = "0.8.0"
-dependencies = [
- "actix",
- "anyhow",
- "futures 0.3.8",
- "once_cell",
- "starcoin-canonical-serialization",
- "starcoin-crypto",
- "starcoin-types",
 ]
 
 [[package]]
@@ -7242,7 +7227,6 @@ dependencies = [
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
- "starcoin-tx-relay",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7349,17 +7333,17 @@ dependencies = [
  "slog",
  "slog_derive",
  "smallvec 1.5.0",
- "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
  "starcoin-logger",
+ "starcoin-metrics",
  "starcoin-network-rpc",
  "starcoin-network-rpc-api",
  "starcoin-service-registry",
  "starcoin-storage",
  "starcoin-sync-api",
- "starcoin-tx-relay",
+ "starcoin-txpool-api",
  "starcoin-types",
  "stest",
  "tempfile",
@@ -7392,7 +7376,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-block-relayer",
- "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-chain-service",
  "starcoin-config",
@@ -7458,7 +7441,6 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-account-service",
  "starcoin-block-relayer",
- "starcoin-block-relayer-api",
  "starcoin-chain-notify",
  "starcoin-chain-service",
  "starcoin-config",
@@ -7483,7 +7465,6 @@ dependencies = [
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
- "starcoin-tx-relay",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",
@@ -7982,14 +7963,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "starcoin-tx-relay"
-version = "0.8.0"
-dependencies = [
- "actix",
- "starcoin-types",
-]
-
-[[package]]
 name = "starcoin-txpool"
 version = "0.8.0"
 dependencies = [
@@ -8002,6 +7975,7 @@ dependencies = [
  "futures-channel",
  "linked-hash-map",
  "log 0.4.11",
+ "network-api",
  "once_cell",
  "parking_lot 0.11.1",
  "prometheus",
@@ -8023,7 +7997,6 @@ dependencies = [
  "starcoin-state-tree",
  "starcoin-statedb",
  "starcoin-storage",
- "starcoin-tx-relay",
  "starcoin-txpool-api",
  "starcoin-types",
  "stdlib",
@@ -8492,7 +8465,6 @@ dependencies = [
  "starcoin-account-service",
  "starcoin-accumulator",
  "starcoin-block-relayer",
- "starcoin-block-relayer-api",
  "starcoin-canonical-serialization",
  "starcoin-chain",
  "starcoin-chain-notify",
@@ -8522,7 +8494,6 @@ dependencies = [
  "starcoin-sync",
  "starcoin-sync-api",
  "starcoin-traits",
- "starcoin-tx-relay",
  "starcoin-txpool",
  "starcoin-txpool-api",
  "starcoin-types",

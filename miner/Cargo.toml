@@ -10,6 +10,11 @@ actix = "0.10.0"
 actix-rt = "1.1"
 futures = { version = "0.3" }
 futures-timer = "3.0"
+hex = { version = "0.4.2", default-features = false }
+thiserror = "1.0"
+once_cell = "1.5.2"
+parking_lot = "0.11.1"
+
 starcoin-config = { path = "../config" }
 network = { path = "../network", package = "starcoin-network" }
 chain = {path = "../chain", package="starcoin-chain" }
@@ -22,18 +27,13 @@ consensus = {path = "../consensus", package="starcoin-consensus" }
 starcoin-storage = { path = "../storage" }
 executor = { path = "../executor", package = "starcoin-executor" }
 starcoin-txpool = { path = "../txpool" }
-tx-relay = { path = "../txpool/tx-relay", package = "starcoin-tx-relay" }
+starcoin-txpool-api = { path = "../txpool/api" }
 tokio = { version = "0.2", features = ["full"] }
 logger = {path = "../commons/logger", package="starcoin-logger"}
 crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 starcoin-accumulator = {path = "../core/accumulator", package="starcoin-accumulator"}
 starcoin-account-api = { path = "../account/api" }
 starcoin-account-service = { path = "../account/service" }
-starcoin-txpool-api = { path = "../txpool/api" }
-hex = { version = "0.4.2", default-features = false }
-thiserror = "1.0"
-once_cell = "1.5.2"
-parking_lot = "0.11.1"
 starcoin-metrics = { path = "../commons/metrics" }
 starcoin-miner-client = { path = "../cmd/miner_client" }
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}

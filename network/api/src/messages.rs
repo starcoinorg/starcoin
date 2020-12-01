@@ -1,41 +1,175 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use actix::prelude::*;
 use anyhow::*;
-use futures::channel::mpsc::Sender;
+use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_service_registry::ServiceRequest;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
+use std::borrow::Cow;
 
-/// message from peer
-#[rtype(result = "Result<()>")]
-#[derive(Clone, Debug, Serialize, Deserialize, Message)]
-#[allow(clippy::large_enum_variant)]
-pub enum PeerMessage {
-    NewTransactions(Vec<SignedUserTransaction>),
-    CompactBlock(CompactBlock, U256),
-    RawRPCRequest(u128, String, Vec<u8>),
-    RawRPCResponse(u128, Vec<u8>),
+pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
+pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TransactionsMessage {
+    pub txns: Vec<SignedUserTransaction>,
 }
 
-#[rtype(result = "Result<()>")]
-#[derive(Debug, Message, Clone)]
-pub struct RawRpcRequestMessage {
-    pub request: (PeerId, String, Vec<u8>),
-    pub responder: Sender<Vec<u8>>,
+impl TransactionsMessage {
+    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+        Self { txns }
+    }
+
+    pub fn transactions(self) -> Vec<SignedUserTransaction> {
+        self.txns
+    }
 }
 
-// TODO remove RawRpcRequestMessage responder and set response.
-impl ServiceRequest for RawRpcRequestMessage {
-    type Response = ();
+/// Message of sending or receive block notification to network
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CompactBlockMessage {
+    pub compact_block: CompactBlock,
+    pub total_difficulty: U256,
 }
 
-#[rtype(result = "Result<()>")]
-#[derive(Debug, Eq, PartialEq, Message, Clone)]
+#[derive(Clone, Debug)]
+pub enum NotificationMessage {
+    Transactions(TransactionsMessage),
+    CompactBlock(Box<CompactBlockMessage>),
+}
+
+impl NotificationMessage {
+    pub fn decode_notification(protocol_name: Cow<'static, str>, bytes: &[u8]) -> Result<Self> {
+        Ok(match protocol_name.as_ref() {
+            TXN_PROTOCOL_NAME => {
+                NotificationMessage::Transactions(TransactionsMessage::decode(bytes)?)
+            }
+            BLOCK_PROTOCOL_NAME => {
+                NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::decode(bytes)?))
+            }
+            unknown_protocol => bail!(
+                "Unknown protocol {}'s message: {}",
+                unknown_protocol,
+                hex::encode(bytes)
+            ),
+        })
+    }
+
+    pub fn encode_notification(&self) -> Result<(Cow<'static, str>, Vec<u8>)> {
+        Ok(match self {
+            NotificationMessage::Transactions(msg) => (TXN_PROTOCOL_NAME.into(), msg.encode()?),
+            NotificationMessage::CompactBlock(msg) => (BLOCK_PROTOCOL_NAME.into(), msg.encode()?),
+        })
+    }
+
+    pub fn protocol_name(&self) -> Cow<'static, str> {
+        match self {
+            Self::Transactions(_) => TXN_PROTOCOL_NAME.into(),
+            Self::CompactBlock(_) => BLOCK_PROTOCOL_NAME.into(),
+        }
+    }
+
+    pub fn protocols() -> Vec<Cow<'static, str>> {
+        vec![TXN_PROTOCOL_NAME.into(), BLOCK_PROTOCOL_NAME.into()]
+    }
+
+    pub fn into_transactions(self) -> Option<TransactionsMessage> {
+        match self {
+            NotificationMessage::Transactions(message) => Some(message),
+            _ => None,
+        }
+    }
+
+    pub fn into_compact_block(self) -> Option<CompactBlockMessage> {
+        match self {
+            NotificationMessage::CompactBlock(message) => Some(*message),
+            _ => None,
+        }
+    }
+}
+
+/// Message for send or receive from peer
+#[derive(Clone, Debug)]
+pub struct PeerMessage {
+    pub peer_id: PeerId,
+    pub notification: NotificationMessage,
+}
+
+impl PeerMessage {
+    pub fn new(peer_id: PeerId, notification: NotificationMessage) -> Self {
+        Self {
+            peer_id,
+            notification,
+        }
+    }
+    pub fn new_transactions(peer_id: PeerId, transactions: TransactionsMessage) -> Self {
+        Self::new(peer_id, NotificationMessage::Transactions(transactions))
+    }
+
+    pub fn new_compact_block(peer_id: PeerId, compact_block: CompactBlockMessage) -> Self {
+        Self::new(
+            peer_id,
+            NotificationMessage::CompactBlock(Box::new(compact_block)),
+        )
+    }
+
+    pub fn into_transactions(self) -> Option<PeerTransactionsMessage> {
+        let peer_id = self.peer_id;
+        self.notification
+            .into_transactions()
+            .map(|message| PeerTransactionsMessage { peer_id, message })
+    }
+
+    pub fn into_compact_block(self) -> Option<PeerCompactBlockMessage> {
+        let peer_id = self.peer_id;
+        self.notification
+            .into_compact_block()
+            .map(|message| PeerCompactBlockMessage { peer_id, message })
+    }
+}
+
+/// Message for combine PeerId and TransactionsMessage
+#[derive(Clone, Debug)]
+pub struct PeerTransactionsMessage {
+    pub peer_id: PeerId,
+    pub message: TransactionsMessage,
+}
+
+impl PeerTransactionsMessage {
+    pub fn new(peer_id: PeerId, message: TransactionsMessage) -> Self {
+        Self { peer_id, message }
+    }
+}
+
+impl Into<PeerMessage> for PeerTransactionsMessage {
+    fn into(self) -> PeerMessage {
+        PeerMessage::new_transactions(self.peer_id, self.message)
+    }
+}
+
+/// Message for combine PeerId and CompactBlockMessage
+#[derive(Clone, Debug)]
+pub struct PeerCompactBlockMessage {
+    pub peer_id: PeerId,
+    pub message: CompactBlockMessage,
+}
+
+impl PeerCompactBlockMessage {
+    pub fn new(peer_id: PeerId, message: CompactBlockMessage) -> Self {
+        Self { peer_id, message }
+    }
+}
+
+impl Into<PeerMessage> for PeerCompactBlockMessage {
+    fn into(self) -> PeerMessage {
+        PeerMessage::new_compact_block(self.peer_id, self.message)
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum PeerEvent {
     Open(PeerId, Box<ChainInfo>),
     Close(PeerId),

@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::metrics::NODE_METRICS;
+use network_api::messages::{
+    NotificationMessage, PeerCompactBlockMessage, PeerMessage, PeerTransactionsMessage,
+};
 use network_api::PeerMessageHandler;
 use starcoin_block_relayer::BlockRelayer;
-use starcoin_block_relayer_api::PeerCmpctBlockEvent;
 use starcoin_logger::prelude::*;
 use starcoin_service_registry::ServiceRef;
-use starcoin_tx_relay::PeerTransactions;
 use starcoin_txpool::TxPoolActorService;
 use starcoin_types::time::duration_since_epoch;
 use std::sync::mpsc::TrySendError;
@@ -30,31 +31,40 @@ impl NodePeerMessageHandler {
 }
 
 impl PeerMessageHandler for NodePeerMessageHandler {
-    fn handle_transaction(&self, transaction: PeerTransactions) {
-        if let Err(e) = self.txpool_service.notify(transaction) {
-            match e {
-                TrySendError::Full(_) => {
-                    warn!("Handle PeerTransaction error, TxPoolService is too busy.");
-                }
-                TrySendError::Disconnected(_) => {
-                    error!("Handle PeerTransaction error, TxPoolService is shutdown.");
+    fn handle_message(&self, peer_message: PeerMessage) {
+        match peer_message.notification {
+            NotificationMessage::Transactions(message) => {
+                if let Err(e) = self
+                    .txpool_service
+                    .notify(PeerTransactionsMessage::new(peer_message.peer_id, message))
+                {
+                    match e {
+                        TrySendError::Full(_) => {
+                            warn!("Handle PeerTransaction error, TxPoolService is too busy.");
+                        }
+                        TrySendError::Disconnected(_) => {
+                            error!("Handle PeerTransaction error, TxPoolService is shutdown.");
+                        }
+                    }
                 }
             }
-        }
-    }
-
-    fn handle_block(&self, block: PeerCmpctBlockEvent) {
-        let header_time = block.compact_block.header.timestamp;
-        NODE_METRICS
-            .block_latency
-            .observe((duration_since_epoch().as_millis() - header_time as u128) as f64);
-        if let Err(e) = self.block_relayer.notify(block) {
-            match e {
-                TrySendError::Full(_) => {
-                    warn!("Handle PeerCmpctBlock error, BlockRelayer is too busy.");
-                }
-                TrySendError::Disconnected(_) => {
-                    error!("Handle PeerCmpctBlock error, BlockRelayer is shutdown.");
+            NotificationMessage::CompactBlock(message) => {
+                let header_time = message.compact_block.header.timestamp;
+                NODE_METRICS
+                    .block_latency
+                    .observe((duration_since_epoch().as_millis() - header_time as u128) as f64);
+                if let Err(e) = self
+                    .block_relayer
+                    .notify(PeerCompactBlockMessage::new(peer_message.peer_id, *message))
+                {
+                    match e {
+                        TrySendError::Full(_) => {
+                            warn!("Handle PeerCmpctBlock error, BlockRelayer is too busy.");
+                        }
+                        TrySendError::Disconnected(_) => {
+                            error!("Handle PeerCmpctBlock error, BlockRelayer is shutdown.");
+                        }
+                    }
                 }
             }
         }
