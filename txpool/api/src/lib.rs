@@ -19,6 +19,7 @@ pub struct TxPoolStatus {
     pub mem: usize,
     pub mem_max: usize,
     pub senders: usize,
+    pub is_full: bool,
 }
 
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
