@@ -393,12 +393,11 @@ impl Inner {
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
                 let id = msg.compact_block.header.id();
-                debug!("broadcast new compact block message {:?}", id);
                 let block_header = msg.compact_block.header.clone();
                 let total_difficulty = msg.total_difficulty;
                 if let Some(peer_info) = self.peers.lock().await.get_mut(self_id) {
                     debug!(
-                        "total_difficulty is {}, peer_info is {:?}",
+                        "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                         total_difficulty, peer_info
                     );
 
@@ -418,7 +417,7 @@ impl Inner {
                     if peer_info.known_blocks.contains(&id)
                         || peer_info.peer_info.total_difficulty() >= total_difficulty
                     {
-                        debug!("peer({:?})'s total_difficulty is > block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
+                        debug!("peer({:?})'s total_difficulty is >= block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
                         None
                     }else{
                         peer_info.known_blocks.put(id, ());
@@ -428,10 +427,17 @@ impl Inner {
                             ))
                     }
                 }).collect::<Vec<_>>();
-                futures::future::join_all(send_futures)
-                    .await
-                    .into_iter()
-                    .collect::<Result<_>>()?;
+                debug!(
+                    "[network] broadcast new compact block message {:?} to {} peers",
+                    id,
+                    send_futures.len()
+                );
+                if !send_futures.is_empty() {
+                    futures::future::join_all(send_futures)
+                        .await
+                        .into_iter()
+                        .collect::<Result<_>>()?;
+                }
                 Ok(())
             }
             NotificationMessage::Transactions(msg) => {
@@ -465,10 +471,17 @@ impl Inner {
                         )))
                     })
                     .collect::<Vec<_>>();
-                futures::future::join_all(send_futures)
-                    .await
-                    .into_iter()
-                    .collect::<Result<_>>()?;
+                debug!(
+                    "[network] broadcast new {} transactions to {} peers",
+                    msg.txns.len(),
+                    send_futures.len()
+                );
+                if !send_futures.is_empty() {
+                    futures::future::join_all(send_futures)
+                        .await
+                        .into_iter()
+                        .collect::<Result<_>>()?;
+                }
                 Ok(())
             }
         }

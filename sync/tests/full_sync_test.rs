@@ -16,6 +16,7 @@ fn test_full_sync() {
     test_sync::test_sync(SyncMode::FULL)
 }
 
+#[ignore]
 #[stest::test(timeout = 120)]
 fn test_sync_by_notification() {
     let first_config = Arc::new(NodeConfig::random_for_test());
@@ -25,6 +26,9 @@ fn test_sync_by_notification() {
     );
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     let first_chain = first_node.chain_service().unwrap();
+
+    //wait node start
+    sleep(Duration::from_millis(1000));
 
     let mut second_config = NodeConfig::random_for_test();
     info!(
@@ -42,8 +46,8 @@ fn test_sync_by_notification() {
 
     let second_chain = second_node.chain_service().unwrap();
 
-    //wait second node sync service stop.
-    sleep(Duration::from_millis(500));
+    //wait node start and sync service stop.
+    sleep(Duration::from_millis(1000));
 
     let count = 5;
     for _i in 0..count {

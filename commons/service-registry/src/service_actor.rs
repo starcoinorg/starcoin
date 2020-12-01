@@ -255,7 +255,7 @@ where
     fn handle(&mut self, msg: EventMessage<M>, ctx: &mut Self::Context) -> Self::Result {
         debug!("{} handle event: {:?}", S::service_name(), &msg.msg);
         if self.proxy.status().is_stopped() {
-            error!("Service {} is stopped", S::service_name());
+            info!("Service {} is already stopped", S::service_name());
             return;
         }
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);

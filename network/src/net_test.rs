@@ -17,9 +17,11 @@ mod tests {
     };
     use futures_timer::Delay;
     use network_api::messages::NotificationMessage;
+    use network_api::Multiaddr;
     use network_p2p::{identity, DhtEvent, Event};
     use network_p2p::{NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, Secret};
-    use network_p2p_types::PeerId;
+    use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId, PeerId};
+    use std::borrow::Cow;
     use std::future::Future;
     use std::pin::Pin;
     use std::{thread, time::Duration};
@@ -37,7 +39,7 @@ mod tests {
     );
 
     async fn build_test_network_pair_not_wait() -> (NetworkComponent, NetworkComponent) {
-        let (service1, service2) = build_test_network_pair("127.0.0.1".to_string());
+        let (service1, service2) = build_test_network_pair();
         let from_peer_id = service1.0.identify().clone();
         let to_peer_id = service2.0.identify().clone();
         thread::sleep(Duration::from_secs(2));
@@ -100,8 +102,8 @@ mod tests {
             .is_ok());
     }
 
-    fn build_test_network_pair(host: String) -> (NetworkComponent, NetworkComponent) {
-        let mut l = build_test_network_services(2, host, get_random_available_port()).into_iter();
+    fn build_test_network_pair() -> (NetworkComponent, NetworkComponent) {
+        let mut l = build_test_network_services(2).into_iter();
         let a = l.next().unwrap();
         let b = l.next().unwrap();
         (a, b)
@@ -109,8 +111,6 @@ mod tests {
 
     fn build_test_network_services(
         num: usize,
-        host: String,
-        base_port: u16,
     ) -> Vec<(
         SNetworkService,
         UnboundedSender<NetworkMessage>,
@@ -127,36 +127,33 @@ mod tests {
             UnboundedSender<()>,
             NetworkConfig,
         )> = Vec::with_capacity(num);
-        let mut first_addr = None::<String>;
+        let mut first_addr: Option<Multiaddr> = None;
         let chain_info = ChainInfo::new(
             BuiltinNetworkID::Test.chain_id(),
             HashValue::random(),
             ChainStatus::random(),
         );
-        for index in 0..num {
+        for _index in 0..num {
             let mut boot_nodes = Vec::new();
 
             if let Some(first_addr) = first_addr.as_ref() {
-                boot_nodes.push(
-                    format!("{}/p2p/{}", first_addr, result[0].0.identify().to_base58())
-                        .parse()
-                        .unwrap(),
-                );
+                boot_nodes.push(MultiaddrWithPeerId::new(
+                    first_addr.clone(),
+                    result[0].0.identify().clone(),
+                ));
             }
             let node_config = NodeConfig::random_for_test();
             let mut config = node_config.network.clone();
 
-            config.listen = format!("/ip4/{}/tcp/{}", host, base_port + index as u16)
-                .parse()
-                .unwrap();
+            config.listen = random_memory_addr();
             config.seeds = boot_nodes;
 
             info!("listen:{:?},boots {:?}", config.listen, config.seeds);
             if first_addr.is_none() {
-                first_addr = Some(config.listen.to_string());
+                first_addr = Some(config.listen.clone());
             }
             let mut protocols = NotificationMessage::protocols();
-            protocols.push(TEST_PROTOCOL_NAME.into());
+            protocols.push(TEST_NOTIF_PROTOCOL_NAME.into());
             let server = build_network_service(chain_info.clone(), &config, protocols, None);
             result.push({
                 let c: NetworkComponent = (
@@ -173,7 +170,7 @@ mod tests {
         result
     }
 
-    const TEST_PROTOCOL_NAME: &str = "/test_notif";
+    const TEST_NOTIF_PROTOCOL_NAME: &str = "/test_notif";
     #[test]
     fn test_send_receive_1() {
         ::logger::init_for_test();
@@ -181,7 +178,7 @@ mod tests {
         let (
             (service1, tx1, rx1, _event_rx1, close_tx1, _),
             (service2, tx2, _rx2, _event_rx2, close_tx2, _),
-        ) = build_test_network_pair("127.0.0.1".to_string());
+        ) = build_test_network_pair();
         let msg_peer_id_1 = service1.identify().clone();
         let msg_peer_id_2 = service2.identify().clone();
         // Once sender has been droped, the select_all will return directly. clone it to prevent it.
@@ -204,13 +201,13 @@ mod tests {
                 match if count % 2 == 0 {
                     tx2.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_1.clone(),
-                        protocol_name: std::borrow::Cow::Borrowed(TEST_PROTOCOL_NAME),
+                        protocol_name: std::borrow::Cow::Borrowed(TEST_NOTIF_PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } else {
                     tx1.unbounded_send(NetworkMessage {
                         peer_id: msg_peer_id_2.clone(),
-                        protocol_name: std::borrow::Cow::Borrowed(TEST_PROTOCOL_NAME),
+                        protocol_name: std::borrow::Cow::Borrowed(TEST_NOTIF_PROTOCOL_NAME),
                         data: random_bytes,
                     })
                 } {
@@ -245,60 +242,10 @@ mod tests {
     }
 
     #[test]
-    fn test_send_receive_2() {
-        ::logger::init_for_test();
-
-        let (
-            (service1, _tx1, rx1, _event_rx1, _close_tx1, _),
-            (service2, _tx2, _rx2, _event_rx2, _close_tx2, _),
-        ) = build_test_network_pair("127.0.0.1".to_string());
-        let msg_peer_id = service1.identify().clone();
-        let receive_fut = async move {
-            let mut rx1 = rx1.fuse();
-            loop {
-                futures::select! {
-                    _message = rx1.select_next_some()=>{
-                        info!("receive message");
-                    },
-                    complete => {
-                        info!("complete");
-                        break;
-                    }
-                }
-            }
-        };
-
-        task::spawn(receive_fut);
-
-        //wait the network started.
-        thread::sleep(Duration::from_secs(1));
-
-        for _x in 0..1000 {
-            let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
-            let service2_clone = service2.clone();
-
-            let peer_id = msg_peer_id.clone();
-            let fut = async move {
-                assert_eq!(
-                    service2_clone.is_connected(peer_id.clone()).await.unwrap(),
-                    true
-                );
-
-                service2_clone
-                    .send_message(peer_id, TEST_PROTOCOL_NAME.into(), random_bytes)
-                    .await
-                    .unwrap();
-            };
-            task::spawn(fut);
-        }
-        thread::sleep(Duration::from_secs(3));
-    }
-
-    #[test]
     fn test_connected_nodes() {
         ::logger::init_for_test();
 
-        let (service1, _service2) = build_test_network_pair("127.0.0.1".to_string());
+        let (service1, _service2) = build_test_network_pair();
         thread::sleep(Duration::from_secs(2));
         let fut = async move {
             assert_eq!(
@@ -323,7 +270,7 @@ mod tests {
         let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
         service1
             .0
-            .broadcast_message(TEST_PROTOCOL_NAME.into(), random_bytes.clone())
+            .broadcast_message(TEST_NOTIF_PROTOCOL_NAME.into(), random_bytes.clone())
             .await;
         let mut receiver = service2.2.select_next_some();
         let response = futures::future::poll_fn(move |cx| Pin::new(&mut receiver).poll(cx)).await;
@@ -332,12 +279,13 @@ mod tests {
 
     #[stest::test]
     async fn test_network_exist_notify_proto() {
-        let service: NetworkComponent =
-            build_test_network_services(1, "127.0.0.1".to_string(), get_random_available_port())
-                .into_iter()
-                .next()
-                .unwrap();
-        assert!(service.0.exist_notif_proto(TEST_PROTOCOL_NAME.into()).await);
+        let service: NetworkComponent = build_test_network_services(1).into_iter().next().unwrap();
+        assert!(
+            service
+                .0
+                .exist_notif_proto(TEST_NOTIF_PROTOCOL_NAME.into())
+                .await
+        );
     }
 
     #[stest::test]
@@ -370,104 +318,119 @@ mod tests {
         data.push(Bytes::from(&b"hello"[..]));
         let event = Event::NotificationsReceived {
             remote: PeerId::random(),
-            protocol: TEST_PROTOCOL_NAME.into(),
+            protocol: TEST_NOTIF_PROTOCOL_NAME.into(),
             messages: data,
         };
         test_handle_event(event).await;
     }
 
-    // //FIXME temp ignore for #139
-    // #[ignore]
-    // #[test]
-    // fn test_reconnected_nodes() {
-    //     ::logger::init_for_test();
-    //
-    //     let mut node_config1 = NodeConfig::random_for_test().network;
-    //     node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-    //         .parse()
-    //         .unwrap();
-    //
-    //     let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
-    //         build_network_service(&node_config1, HashValue::default(), PeerInfo::random());
-    //
-    //     thread::sleep(Duration::from_secs(1));
-    //
-    //     let mut node_config2 = NodeConfig::random_for_test().network;
-    //     let addr1_hex = service1.identify().to_base58();
-    //     let seed: Multiaddr = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
-    //         .parse()
-    //         .unwrap();
-    //     node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-    //         .parse()
-    //         .unwrap();
-    //     node_config2.seeds = vec![seed.clone()];
-    //     let (service2, _net_tx2, _net_rx2, _event_rx2, _command_tx2) =
-    //         build_network_service(&node_config2, HashValue::default(), PeerInfo::random());
-    //
-    //     thread::sleep(Duration::from_secs(1));
-    //
-    //     let mut node_config3 = NodeConfig::random_for_test().network;
-    //     node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-    //         .parse()
-    //         .unwrap();
-    //     node_config3.seeds = vec![seed];
-    //     let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-    //         build_network_service(&node_config3, HashValue::default(), PeerInfo::random());
-    //
-    //     thread::sleep(Duration::from_secs(1));
-    //
-    //     let service1_clone = service1.clone();
-    //     let fut = async move {
-    //         assert_eq!(
-    //             service1_clone
-    //                 .is_connected(service2.identify().clone())
-    //                 .await
-    //                 .unwrap(),
-    //             true
-    //         );
-    //         assert_eq!(
-    //             service1_clone
-    //                 .is_connected(service3.identify().clone())
-    //                 .await
-    //                 .unwrap(),
-    //             true
-    //         );
-    //
-    //         drop(service2);
-    //         drop(service3);
-    //
-    //         Delay::new(Duration::from_secs(1)).await;
-    //     };
-    //     task::block_on(fut);
-    //
-    //     thread::sleep(Duration::from_secs(10));
-    //
-    //     let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
-    //         build_network_service(&node_config2, HashValue::default(), PeerInfo::random());
-    //
-    //     thread::sleep(Duration::from_secs(1));
-    //
-    //     let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-    //         build_network_service(&node_config3, HashValue::default(), PeerInfo::random());
-    //
-    //     thread::sleep(Duration::from_secs(1));
-    //
-    //     let fut = async move {
-    //         assert_eq!(
-    //             service1
-    //                 .is_connected(service2.identify().clone())
-    //                 .await
-    //                 .unwrap(),
-    //             true
-    //         );
-    //         assert_eq!(
-    //             service1
-    //                 .is_connected(service3.identify().clone())
-    //                 .await
-    //                 .unwrap(),
-    //             true
-    //         );
-    //     };
-    //     task::block_on(fut);
-    // }
+    //TOD FIXME  provider a shutdown network method, shutdown first, then start.
+    #[ignore]
+    #[stest::test]
+    fn test_reconnected_nodes() {
+        let protocols: Vec<Cow<'static, str>> = vec![TEST_NOTIF_PROTOCOL_NAME.into()];
+        let mut node_config1 = NodeConfig::random_for_test().network;
+        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+            .parse()
+            .unwrap();
+
+        let chain_info = ChainInfo::new(
+            BuiltinNetworkID::Test.chain_id(),
+            HashValue::random(),
+            ChainStatus::random(),
+        );
+
+        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
+            build_network_service(chain_info.clone(), &node_config1, protocols.clone(), None);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let mut node_config2 = NodeConfig::random_for_test().network;
+        let addr1_hex = service1.identify().to_base58();
+        let seed: MultiaddrWithPeerId = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
+            .parse()
+            .unwrap();
+        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+            .parse()
+            .unwrap();
+        node_config2.seeds = vec![seed.clone()];
+        let (service2, net_tx2, net_rx2, event_rx2, command_tx2) =
+            build_network_service(chain_info.clone(), &node_config2, protocols.clone(), None);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let mut node_config3 = NodeConfig::random_for_test().network;
+        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
+            .parse()
+            .unwrap();
+        node_config3.seeds = vec![seed];
+        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
+            build_network_service(chain_info.clone(), &node_config3, protocols.clone(), None);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let service1_clone = service1.clone();
+        let fut = async move {
+            assert_eq!(
+                service1_clone
+                    .is_connected(service2.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                service1_clone
+                    .is_connected(service3.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+
+            drop(service2);
+            drop(service3);
+
+            drop(net_tx2);
+            drop(net_rx2);
+            drop(event_rx2);
+
+            drop(net_tx3);
+            drop(net_rx3);
+            drop(event_rx3);
+
+            command_tx2.close_channel();
+            command_tx3.close_channel();
+            Delay::new(Duration::from_secs(1)).await;
+        };
+        task::block_on(fut);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
+            build_network_service(chain_info.clone(), &node_config2, protocols.clone(), None);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
+            build_network_service(chain_info, &node_config3, protocols.clone(), None);
+
+        thread::sleep(Duration::from_secs(1));
+
+        let fut = async move {
+            assert_eq!(
+                service1
+                    .is_connected(service2.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+            assert_eq!(
+                service1
+                    .is_connected(service3.identify().clone())
+                    .await
+                    .unwrap(),
+                true
+            );
+        };
+        task::block_on(fut);
+    }
 }

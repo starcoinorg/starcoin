@@ -11,6 +11,7 @@ anyhow = "1.0.34"
 bitflags = "1.2.0"
 bytes = "0.5.0"
 derive_more = "0.99.11"
+rand = "0.7.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0", features = ["derive"] }
 libp2p = { version = "0.30.1", default-features = false, features = ["request-response"] }

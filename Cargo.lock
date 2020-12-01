@@ -4444,6 +4444,7 @@ dependencies = [
  "bytes 0.5.6",
  "derive_more",
  "libp2p",
+ "rand 0.7.3",
  "serde",
  "starcoin-canonical-serialization",
 ]

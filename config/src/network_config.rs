@@ -7,6 +7,7 @@ use crate::{
 };
 use anyhow::{bail, format_err, Result};
 use network_p2p_types::{
+    is_memory_addr, memory_addr,
     multiaddr::{Multiaddr, Protocol},
     MultiaddrWithPeerId,
 };
@@ -58,11 +59,14 @@ impl NetworkConfig {
 
     fn prepare_peer_id(&mut self) {
         let peer_id = PeerId::from_ed25519_public_key(self.network_keypair().public_key.clone());
-        let host = self
-            .listen
-            .clone()
-            .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
-            .expect("Replace multi address fail.");
+        let host = if is_memory_addr(&self.listen) {
+            self.listen.clone()
+        } else {
+            self.listen
+                .clone()
+                .replace(0, |_p| Some(Protocol::Ip4(Ipv4Addr::new(127, 0, 0, 1))))
+                .expect("Replace multi address fail.")
+        };
         self.self_address = Some(MultiaddrWithPeerId::new(host, peer_id.clone().into()));
         self.self_peer_id = Some(peer_id);
     }
@@ -103,10 +107,16 @@ impl ConfigModule for NetworkConfig {
         } else {
             DEFAULT_NETWORK_PORT
         };
-        Ok(Self {
-            listen: format!("/ip4/0.0.0.0/tcp/{}", port)
+        //test env use in memory transport.
+        let listen = if base.net.is_test() {
+            memory_addr(port as u64)
+        } else {
+            format!("/ip4/0.0.0.0/tcp/{}", port)
                 .parse()
-                .expect("Parse multi address fail."),
+                .expect("Parse multi address fail.")
+        };
+        Ok(Self {
+            listen,
             seeds,
             network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
             self_peer_id: None,
