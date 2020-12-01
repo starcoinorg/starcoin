@@ -116,7 +116,7 @@ fn get_account_or_default(
             Some(w) => w,
         },
     };
-
+    info!("get_account_or_default: {}", account.address);
     Ok(account)
 }
 
@@ -374,6 +374,7 @@ impl TxnMocker {
         receiver_address: AccountAddress,
         receiver_public_key: Option<Ed25519PublicKey>,
         amount: u128,
+        gas_price: u64,
         sequence_number: u64,
         blocking: bool,
         expiration_timestamp: u64,
@@ -384,6 +385,7 @@ impl TxnMocker {
             receiver_address,
             receiver_public_key,
             amount,
+            gas_price,
             expiration_timestamp,
         )?;
         info!("prepare to sign txn, sender: {}", raw_txn.sender());
@@ -441,7 +443,9 @@ impl TxnMocker {
             }
         }
         if (account_list.len() as u32) < account_num {
-            let lack = self.create_accounts(account_num - account_list.len() as u32)?;
+            let lack_len = account_num - account_list.len() as u32;
+            info!("account lack: {}", lack_len);
+            let lack = self.create_accounts(lack_len)?;
             account_list.extend_from_slice(lack.as_slice());
         }
         Ok(account_list)
@@ -460,6 +464,7 @@ impl TxnMocker {
                 account.address,
                 account.public_key.as_single(),
                 1000000000,
+                100,
                 self.next_sequence_number,
                 true,
                 expiration_timestamp,
@@ -495,6 +500,7 @@ impl TxnMocker {
                 accounts[i].address,
                 accounts[i].public_key.as_single(),
                 100000,
+                100,
                 self.next_sequence_number,
                 false,
                 expiration_timestamp,
@@ -504,10 +510,10 @@ impl TxnMocker {
                 i += 1;
             } else {
                 info!(
-                    "submit txn failed. error: {:?}. try again after 500ms.",
+                    "submit txn failed. error: {:?}. try again after 200ms.",
                     result
                 );
-                std::thread::sleep(Duration::from_millis(500));
+                std::thread::sleep(Duration::from_millis(200));
             }
         }
         Ok(())
@@ -563,6 +569,7 @@ impl TxnMocker {
                     accounts[index].address,
                     accounts[j].address,
                     accounts[j].public_key.as_single(),
+                    1,
                     1,
                     sequences[index],
                     false,

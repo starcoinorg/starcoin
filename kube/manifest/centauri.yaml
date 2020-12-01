@@ -81,6 +81,17 @@ spec:
               configMapKeyRef:
                 name: starcoin-config
                 key: start_disable_seed_node
+    - name: txfactory
+          image: starcoin/starcoin:stress
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -c
+          args:
+            - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 100 -t 1
+          volumeMounts:
+            - name: starcoin-stress-volume
+              mountPath: /sc-data
   volumeClaimTemplates:
   - metadata:
       name: starcoin-stress-volume
