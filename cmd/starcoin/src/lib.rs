@@ -13,8 +13,8 @@ pub mod helper;
 pub mod mutlisig_transaction;
 pub mod node;
 pub mod state;
+mod txpool;
 pub mod view;
-
 pub use cli_state::CliState;
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
@@ -91,6 +91,11 @@ pub fn add_command(
                         .subcommand(chain::uncle::ListEpochUnclesByNumberCommand)
                         .subcommand(chain::uncle::EpochUncleSummaryByNumberCommand),
                 ),
+        )
+        .command(
+            Command::with_name("txpool")
+                .subcommand(txpool::PendingTxnCommand)
+                .subcommand(txpool::PendingTxnsCommand),
         )
         .command(
             Command::with_name("dev")

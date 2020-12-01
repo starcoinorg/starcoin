@@ -95,6 +95,14 @@ impl TxPoolSyncService for MockTxPoolService {
     fn find_txn(&self, _hash: &HashValue) -> Option<SignedUserTransaction> {
         unimplemented!()
     }
+
+    fn txns_of_sender(
+        &self,
+        _sender: &AccountAddress,
+        _max_len: Option<usize>,
+    ) -> Vec<SignedUserTransaction> {
+        todo!()
+    }
 }
 
 #[cfg(test)]
