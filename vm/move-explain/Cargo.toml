@@ -10,7 +10,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-structopt = "0.3.18"
+structopt = "0.3.21"
 stdlib = { package="stdlib", path = "../stdlib"}
 libra-workspace-hack = { git = "https://github.com/starcoinorg/libra", rev="f8e60a81061d1bfd0f3bd0daf5c76071e35cbd7f" }
 errmapgen = { git = "https://github.com/starcoinorg/libra", rev="f8e60a81061d1bfd0f3bd0daf5c76071e35cbd7f" }
