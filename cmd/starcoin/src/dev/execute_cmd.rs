@@ -229,10 +229,8 @@ impl CommandAction for ExecuteCommand {
             );
         }
         if !opt.dry_run {
-            let success = client.submit_transaction(signed_txn)?;
-            if let Err(e) = success {
-                bail!("execute-txn is reject by node, reason: {}", &e)
-            }
+            client.submit_transaction(signed_txn)?;
+
             println!("txn {:#x} submitted.", txn_hash);
 
             let mut output_view = ExecutionOutputView::new(txn_hash);

@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
@@ -302,7 +302,7 @@ impl TxnMocker {
         Ok(account_resource.is_some())
     }
 
-    fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
+    fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<HashValue> {
         let expiration_timestamp = self.fetch_expiration_time();
         let raw_txn = self
             .generator
@@ -325,7 +325,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.crypto_hash();
-        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
+        let result = self.client.submit_transaction(user_txn);
 
         // increase sequence number if added in pool.
         if matches!(result, Ok(_)) {
@@ -368,7 +368,7 @@ impl TxnMocker {
         sequence_number: u64,
         blocking: bool,
         expiration_timestamp: u64,
-    ) -> Result<()> {
+    ) -> Result<HashValue> {
         let raw_txn = self.generator.generate_transfer_txn(
             sequence_number,
             sender,
@@ -395,7 +395,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.crypto_hash();
-        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
+        let result = self.client.submit_transaction(user_txn);
 
         if matches!(result, Ok(_)) && blocking {
             self.client.watch_txn(txn_hash, Some(WATCH_TIMEOUT))?;

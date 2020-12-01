@@ -193,8 +193,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(transfer_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&transfer_txn));
@@ -258,8 +258,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(proposal_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&proposal_txn));
@@ -313,8 +313,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(vote_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&vote_txn));
@@ -345,8 +345,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(queue_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&queue_txn));
@@ -378,8 +378,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(plan_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&plan_txn));
@@ -403,8 +403,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(package_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&package_txn));
@@ -484,8 +484,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(only_new_module_strategy_txn.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&only_new_module_strategy_txn));
@@ -523,8 +523,8 @@ mod tests {
         cli_state
             .client()
             .submit_transaction(package_txn_1.clone())
-            .unwrap()
             .unwrap();
+
         sleep(Duration::from_millis(500));
         let block = node_handle.generate_block().unwrap();
         assert!(block.transactions().contains(&package_txn_1));
@@ -559,10 +559,8 @@ mod tests {
             TransactionPayload::Package(test_upgrade_module_package_2),
         )
         .unwrap();
-        let result = cli_state
-            .client()
-            .submit_transaction(package_txn_2)
-            .unwrap();
+        let result = cli_state.client().submit_transaction(package_txn_2);
+
         assert!(result.is_err());
         info!("error : {:?}", result);
 

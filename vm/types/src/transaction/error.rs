@@ -65,8 +65,6 @@ pub enum Error {
     InvalidSignature(String),
     /// Transaction too big
     TooBig,
-    /// Invalid RLP encoding
-    InvalidRlp(String),
     CallErr(CallError),
 }
 
@@ -104,7 +102,6 @@ impl fmt::Display for Error {
                 "Sender does not have permissions to execute this type of transaction".into()
             }
             TooBig => "Transaction too big".into(),
-            InvalidRlp(err) => format!("Transaction has invalid RLP structure: {}.", err),
             CallErr(call_err) => format!("Call txn err: {}.", call_err),
         };
 
@@ -131,12 +128,12 @@ pub enum CallError {
     /// Corrupt state.
     StateCorrupt,
     /// Error executing.
-    Execution(VMStatus),
+    ExecutionError(VMStatus),
 }
 
 impl From<VMStatus> for CallError {
     fn from(error: VMStatus) -> Self {
-        CallError::Execution(error)
+        CallError::ExecutionError(error)
     }
 }
 
@@ -148,7 +145,7 @@ impl fmt::Display for CallError {
             StatePruned => "Couldn't find the transaction block's state in the chain".into(),
             //            Exceptional(ref e) => format!("An exception ({}) happened in the execution", e),
             StateCorrupt => "Stored state found to be corrupted.".into(),
-            Execution(ref e) => format!("{}", e),
+            ExecutionError(ref e) => format!("Execution error: {}", e),
         };
 
         f.write_fmt(format_args!("Transaction execution error ({}).", msg))

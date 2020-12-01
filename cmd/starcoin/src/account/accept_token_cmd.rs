@@ -92,10 +92,7 @@ impl CommandAction for AcceptTokenCommand {
 
         let signed_txn = client.account_sign_txn(accept_token_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let succ = client.submit_transaction(signed_txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
+        client.submit_transaction(signed_txn)?;
         println!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {
