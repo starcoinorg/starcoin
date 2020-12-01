@@ -7,10 +7,12 @@ use starcoin_txpool_api::{TxPoolStatus, TxPoolSyncService};
 use starcoin_types::transaction::SignedUserTransaction;
 
 use crate::module::{convert_to_rpc_error, map_err};
+use failure::_core::convert::TryInto;
 use scs::SCSCodec;
 use starcoin_crypto::HashValue;
 /// Re-export the API
 pub use starcoin_rpc_api::txpool::*;
+use starcoin_rpc_api::types::SignedUserTransactionView;
 use starcoin_types::account_address::AccountAddress;
 
 pub struct TxPoolRpcImpl<S>
@@ -60,6 +62,30 @@ where
                     .map_err(convert_to_rpc_error)
             });
         Box::new(jsonrpc_core::futures::done(result))
+    }
+
+    fn pending_txns(
+        &self,
+        addr: AccountAddress,
+        max_len: Option<u32>,
+    ) -> FutureResult<Vec<SignedUserTransactionView>> {
+        let txns: Result<Vec<SignedUserTransactionView>, _> = self
+            .service
+            .txns_of_sender(&addr, max_len.map(|v| v as usize))
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect();
+        Box::new(jsonrpc_core::futures::done(txns.map_err(map_err)))
+    }
+
+    fn pending_txn(&self, txn_hash: HashValue) -> FutureResult<Option<SignedUserTransactionView>> {
+        let txn = self
+            .service
+            .find_txn(&txn_hash)
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(map_err);
+        Box::new(jsonrpc_core::futures::done(txn))
     }
 
     fn next_sequence_number(&self, address: AccountAddress) -> FutureResult<Option<u64>> {

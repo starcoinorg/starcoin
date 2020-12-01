@@ -19,7 +19,8 @@ use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView,
-    ContractCall, EpochUncleSummaryView, TransactionInfoView, TransactionView,
+    ContractCall, EpochUncleSummaryView, SignedUserTransactionView, TransactionInfoView,
+    TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
@@ -261,6 +262,32 @@ impl RpcClient {
         })
         .map_err(map_err)
     }
+
+    pub fn get_pending_txn_by_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> anyhow::Result<Option<SignedUserTransactionView>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.txpool_client.pending_txn(txn_hash).compat().await
+        })
+        .map_err(map_err)
+    }
+
+    pub fn get_pending_txns_of_sender(
+        &self,
+        sender: AccountAddress,
+        max_len: Option<u32>,
+    ) -> anyhow::Result<Vec<SignedUserTransactionView>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .txpool_client
+                .pending_txns(sender, max_len)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     //TODO should split client for different api ?
     // such as  RpcClient().account().default()
     pub fn account_default(&self) -> anyhow::Result<Option<AccountInfo>> {

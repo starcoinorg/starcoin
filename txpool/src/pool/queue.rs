@@ -7,6 +7,7 @@ use super::{
     client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
     PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
+use crate::pool::ready::Expiration;
 use crate::{pool, pool::PoolTransaction};
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
@@ -328,6 +329,20 @@ impl TransactionQueue {
             self.cached_pending.write().clear();
         }
         results
+    }
+
+    pub fn txns_of_sender(
+        &self,
+        sender: &Address,
+        max_len: usize,
+    ) -> Vec<Arc<pool::VerifiedTransaction>> {
+        // always ready
+        let ready = Expiration::new(0);
+        self.pool
+            .read()
+            .pending_from_sender(ready, sender)
+            .take(max_len)
+            .collect()
     }
 
     /// Returns current pending transactions ordered by priority.
