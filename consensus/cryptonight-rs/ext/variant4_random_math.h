@@ -1,5 +1,8 @@
 #ifndef VARIANT4_RANDOM_MATH_H
 #define VARIANT4_RANDOM_MATH_H
+#include <stdbool.h>
+#include "c_blake256.h"
+#include "int-util.h"
 
 // Register size can be configured to either 32 bit (uint32_t) or 64 bit (uint64_t)
 typedef uint32_t v4_reg;
@@ -172,7 +175,7 @@ static FORCEINLINE void check_data(size_t* data_index, const size_t bytes_needed
 {
 	if (*data_index + bytes_needed > data_size)
 	{
-		hash_extra_blake(data, data_size, (char*) data);
+        	blake256_hash((uint8_t*)data, (uint8_t *)data, data_size);
 		*data_index = 0;
 	}
 }
