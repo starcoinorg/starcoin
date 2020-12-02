@@ -70,11 +70,8 @@ module BlockReward {
                 while (i > 0 && i >= reward_delay) {
                     let reward_number = rewards.reward_number + 1;
                     let first_info = *Vector::borrow(&rewards.infos, 0);
-                    assert((reward_number == first_info.number), Errors::invalid_argument(EREWARD_NUMBER_IS_WRONG));
-
                     rewards.reward_number = reward_number;
                     if (first_info.reward > 0) {
-                        assert(Account::exists_at(first_info.miner), Errors::requires_address(EMINER_EXIST));
                         let reward = Token::mint<STC>(account, first_info.reward);
                         Account::deposit<STC>(first_info.miner, reward);
                     };

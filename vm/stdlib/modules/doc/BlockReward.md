@@ -210,11 +210,8 @@
             <b>while</b> (i &gt; 0 && i &gt;= reward_delay) {
                 <b>let</b> reward_number = rewards.reward_number + 1;
                 <b>let</b> first_info = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&rewards.infos, 0);
-                <b>assert</b>((reward_number == first_info.number), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EREWARD_NUMBER_IS_WRONG">EREWARD_NUMBER_IS_WRONG</a>));
-
                 rewards.reward_number = reward_number;
                 <b>if</b> (first_info.reward &gt; 0) {
-                    <b>assert</b>(<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(first_info.miner), <a href="Errors.md#0x1_Errors_requires_address">Errors::requires_address</a>(<a href="BlockReward.md#0x1_BlockReward_EMINER_EXIST">EMINER_EXIST</a>));
                     <b>let</b> reward = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.reward);
                     <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(first_info.miner, reward);
                 };
