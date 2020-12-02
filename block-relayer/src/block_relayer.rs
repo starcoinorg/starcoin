@@ -9,10 +9,10 @@ use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::NetworkService;
 use starcoin_network::NetworkAsyncService;
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithHash};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::BlockConnectorService;
-use starcoin_sync::helper::get_txns;
+use starcoin_sync::helper::get_txns_with_hash;
 use starcoin_sync_api::PeerNewBlock;
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
@@ -26,6 +26,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
 };
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 use std::iter::FromIterator;
 
 pub struct BlockRelayer {
@@ -91,27 +92,25 @@ impl BlockRelayer {
                 .iter()
                 .map(|&short_id| short_id.0)
                 .collect();
-            let fetched_missing_txn = get_txns(
+            let (_, fetched_missing_txn) = get_txns_with_hash(
                 &rpc_client,
                 peer_id,
-                GetTxns {
-                    ids: Some(missing_txn_ids),
+                GetTxnsWithHash {
+                    ids: missing_txn_ids,
                 },
             )
-            .await?
-            .txns;
-            let fetched_missing_txn_map: HashMap<ShortId, &SignedUserTransaction> = {
+            .await?;
+            let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> = {
                 let iter = fetched_missing_txn
-                    .iter()
-                    .map(|txn| (Transaction::UserTransaction(txn.clone()).id(), txn))
-                    .map(|(id, txn)| (ShortId(id), txn));
+                    .into_iter()
+                    .map(|data| (ShortId(data.id()), data.try_into()));
                 HashMap::from_iter(iter)
             };
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
-                    if let Some(&txn) = fetched_missing_txn_map.get(short_id) {
+                    if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
+                        txns[index] = Some(txn?);
                         BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
-                        txns[index] = Some(txn.clone());
                     }
                 }
             }

@@ -10,7 +10,8 @@ use network_rpc_core::NetRpcError;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_network_rpc_api::{
     gen_server, BlockBody, GetAccountState, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof, GetTxns, Ping, TransactionsData,
+    GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof, GetTxnsWithHash, GetTxnsWithSize,
+    Ping,
 };
 use starcoin_service_registry::ServiceRef;
 use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
@@ -21,7 +22,7 @@ use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
-    transaction::TransactionInfo,
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use state_tree::StateNode;
 use std::sync::Arc;
@@ -31,6 +32,7 @@ use txpool_api::TxPoolSyncService;
 
 //TODO Define a more suitable value and check
 const MAX_REQUEST_SIZE: usize = 10;
+const MAX_TXN_SIZE: u64 = 1000;
 
 pub struct NetworkRpcImpl {
     storage: Arc<dyn Store>,
@@ -59,32 +61,30 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
     fn get_txns_from_pool(
         &self,
         _peer_id: PeerId,
-        req: GetTxns,
-    ) -> BoxFuture<Result<TransactionsData>> {
+        req: GetTxnsWithSize,
+    ) -> BoxFuture<Result<Vec<SignedUserTransaction>>> {
         let txpool = self.txpool_service.clone();
+        let max_size = if req.max_size < MAX_TXN_SIZE {
+            req.max_size
+        } else {
+            MAX_TXN_SIZE
+        };
+        let fut = async move { Ok(txpool.get_pending_txns(Some(max_size), None)) };
+        Box::pin(fut)
+    }
+
+    fn get_txns(
+        &self,
+        _peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
         let storage = self.storage.clone();
         let fut = async move {
-            let data = {
-                match req.ids {
-                    // get from txpool
-                    None => txpool.get_pending_txns(None, None),
-                    // get from storage
-                    Some(ids) => {
-                        let mut data = vec![];
-                        for id in ids {
-                            if let Ok(txn) = storage.get_transaction(id) {
-                                if let Some(txn) = txn {
-                                    if let Ok(stxn) = txn.as_signed_user_txn() {
-                                        data.push(stxn.clone());
-                                    }
-                                }
-                            }
-                        }
-                        data
-                    }
-                }
-            };
-            Ok(TransactionsData { txns: data })
+            let mut data = vec![];
+            for id in req.ids {
+                data.push(storage.get_transaction(id)?);
+            }
+            Ok(data)
         };
         Box::pin(fut)
     }

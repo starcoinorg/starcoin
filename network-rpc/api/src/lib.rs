@@ -13,7 +13,7 @@ use starcoin_state_tree::StateNode;
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::block::{Block, BlockHeader, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::transaction::{SignedUserTransaction, TransactionInfo};
+use starcoin_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 
 mod remote_chain_state;
 
@@ -22,17 +22,6 @@ pub use remote_chain_state::RemoteChainStateReader;
 
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TransactionsData {
-    pub txns: Vec<SignedUserTransaction>,
-}
-
-impl TransactionsData {
-    pub fn get_txns(&self) -> &[SignedUserTransaction] {
-        self.txns.as_slice()
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
@@ -137,8 +126,23 @@ impl GetBlockHeaders {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetTxns {
-    pub ids: Option<Vec<HashValue>>,
+pub struct GetTxnsWithSize {
+    pub max_size: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTxnsWithHash {
+    pub ids: Vec<HashValue>,
+}
+
+impl GetTxnsWithHash {
+    pub fn len(&self) -> usize {
+        self.ids.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -173,12 +177,18 @@ pub struct Ping {
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
 
-    ///Get txns from txpool TODO rename
+    ///Get txns from txpool
     fn get_txns_from_pool(
         &self,
         peer_id: PeerId,
-        req: GetTxns,
-    ) -> BoxFuture<Result<TransactionsData>>;
+        req: GetTxnsWithSize,
+    ) -> BoxFuture<Result<Vec<SignedUserTransaction>>>;
+
+    fn get_txns(
+        &self,
+        peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> BoxFuture<Result<Vec<Option<Transaction>>>>;
 
     fn get_txn_infos(
         &self,

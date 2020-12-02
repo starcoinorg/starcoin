@@ -3,7 +3,7 @@ use anyhow::{bail, Result};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::{NetworkService, PeerProvider};
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
@@ -101,9 +101,12 @@ impl Inner {
         bail!("fail to sync txn from all peers")
     }
     async fn sync_txn_from_peer(&self, peer_id: PeerId) -> Result<()> {
-        let txn_data = helper::get_txns(&self.rpc_client, peer_id.clone(), GetTxns { ids: None })
-            .await?
-            .txns;
+        let txn_data = helper::get_txns_with_size(
+            &self.rpc_client,
+            peer_id.clone(),
+            GetTxnsWithSize { max_size: 100 },
+        )
+        .await?;
         let import_result = self.pool.add_txns(txn_data);
         let succ_num = import_result.iter().filter(|r| r.is_ok()).count();
         info!("succ to sync {} txn from peer {}", succ_num, peer_id);

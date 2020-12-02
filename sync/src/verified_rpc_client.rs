@@ -7,15 +7,15 @@ use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, BlockBody, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetBlockIds, GetTxns, RawRpcClient, TransactionsData,
+    GetBlockHeadersByNumber, GetBlockIds, GetTxnsWithHash, RawRpcClient,
 };
 use starcoin_state_tree::StateNode;
 use starcoin_sync_api::SyncTarget;
 use starcoin_types::block::Block;
 use starcoin_types::peer_info::PeerInfo;
+use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -78,13 +78,11 @@ impl From<&Vec<BlockNumber>> for RpcEntryVerify<BlockNumber> {
     }
 }
 
-impl From<&GetTxns> for RpcEntryVerify<HashValue> {
-    fn from(data: &GetTxns) -> Self {
+impl From<&GetTxnsWithHash> for RpcEntryVerify<HashValue> {
+    fn from(data: &GetTxnsWithHash) -> Self {
         let mut entries = HashSet::new();
-        if let Some(ids) = data.clone().ids {
-            for hash in ids.into_iter() {
-                entries.insert(hash);
-            }
+        for hash in data.clone().ids.into_iter() {
+            entries.insert(hash);
         }
         Self { entries }
     }
@@ -136,20 +134,33 @@ impl VerifiedRpcClient {
             .ok_or_else(|| format_err!("No peers for send request."))
     }
 
-    pub async fn get_txns(&self, req: GetTxns) -> Result<TransactionsData> {
+    pub async fn get_txns(
+        &self,
+        req: GetTxnsWithHash,
+    ) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
         let peer_id = self.random_peer()?;
-        let data = self.client.get_txns_from_pool(peer_id, req.clone()).await?;
-        if req.ids.is_some() {
-            let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
-            let verified_txns = verify_condition
-                .filter((*data.get_txns()).to_vec(), |txn| -> HashValue {
-                    txn.crypto_hash()
-                });
-            Ok(TransactionsData {
-                txns: verified_txns,
-            })
+        let data = self.client.get_txns(peer_id.clone(), req.clone()).await?;
+        if data.len() == req.len() {
+            let mut none_txn_vec = Vec::new();
+            let mut verified_txns: Vec<Transaction> = Vec::new();
+            for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
+                if data.is_some() {
+                    let txn = data.expect("txn is none.");
+                    if id == txn.id() {
+                        verified_txns.push(txn);
+                        continue;
+                    }
+                }
+                none_txn_vec.push(id);
+            }
+            Ok((none_txn_vec, verified_txns))
         } else {
-            Ok(data)
+            Err(format_err!(
+                "Txn len mismatch {:?} : {:?} from peer : {:?}.",
+                data.len(),
+                req.len(),
+                peer_id
+            ))
         }
     }
 
