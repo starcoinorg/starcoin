@@ -57,6 +57,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
+use network_p2p_types::network_state::NetworkState;
 use starcoin_sync_api::SyncProgressReport;
 
 #[derive(Debug, Clone)]
@@ -830,11 +831,16 @@ impl RpcClient {
             .map_err(map_err)
     }
 
-    pub fn network_connected_peers(&self) -> anyhow::Result<Vec<PeerId>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.network_client.connected_peers().compat().await
-        })
+    pub fn network_known_peers(&self) -> anyhow::Result<Vec<PeerId>> {
+        self.call_rpc_blocking(
+            |inner| async move { inner.network_client.known_peers().compat().await },
+        )
         .map_err(map_err)
+    }
+
+    pub fn network_state(&self) -> anyhow::Result<NetworkState> {
+        self.call_rpc_blocking(|inner| async move { inner.network_client.state().compat().await })
+            .map_err(map_err)
     }
 
     pub fn network_get_address(&self, peer_id: String) -> anyhow::Result<Vec<Multiaddr>> {
