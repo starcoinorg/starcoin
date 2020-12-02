@@ -18,12 +18,11 @@ use starcoin_state_api::{ChainStateAsyncService, StateWithProof};
 use starcoin_state_service::ChainStateService;
 use starcoin_storage::Store;
 use starcoin_types::block::Block;
-use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{
     account_state::AccountState,
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
-    transaction::TransactionInfo,
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use state_tree::StateNode;
 use std::sync::Arc;
@@ -74,24 +73,16 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
         Box::pin(fut)
     }
 
-    fn get_txns_from_storage(
+    fn get_txns(
         &self,
         _peer_id: PeerId,
         req: GetTxnsWithHash,
-    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>> {
+    ) -> BoxFuture<Result<Vec<Option<Transaction>>>> {
         let storage = self.storage.clone();
         let fut = async move {
             let mut data = vec![];
             for id in req.ids {
-                if let Ok(txn) = storage.get_transaction(id) {
-                    if let Some(txn) = txn {
-                        if let Ok(stxn) = txn.as_signed_user_txn() {
-                            data.push(Some(stxn.clone()));
-                            continue;
-                        }
-                    }
-                }
-                data.push(None);
+                data.push(storage.get_transaction(id)?);
             }
             Ok(data)
         };

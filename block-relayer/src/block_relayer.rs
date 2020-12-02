@@ -26,6 +26,7 @@ use starcoin_types::{
     transaction::{SignedUserTransaction, Transaction},
 };
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 use std::iter::FromIterator;
 
 pub struct BlockRelayer {
@@ -99,18 +100,17 @@ impl BlockRelayer {
                 },
             )
             .await?;
-            let fetched_missing_txn_map: HashMap<ShortId, &SignedUserTransaction> = {
+            let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> = {
                 let iter = fetched_missing_txn
-                    .iter()
-                    .map(|txn| (Transaction::UserTransaction(txn.clone()).id(), txn))
-                    .map(|(id, txn)| (ShortId(id), txn));
+                    .into_iter()
+                    .map(|data| (ShortId(data.id()), data.try_into()));
                 HashMap::from_iter(iter)
             };
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {
-                    if let Some(&txn) = fetched_missing_txn_map.get(short_id) {
+                    if let Some(txn) = fetched_missing_txn_map.remove(short_id) {
+                        txns[index] = Some(txn?);
                         BLOCK_RELAYER_METRICS.txns_filled_from_network.inc();
-                        txns[index] = Some(txn.clone());
                     }
                 }
             }

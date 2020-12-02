@@ -7,11 +7,10 @@ use starcoin_network_rpc_api::{
     GetBlockHeadersByNumber, GetTxnsWithHash, GetTxnsWithSize,
 };
 use starcoin_state_tree::StateNode;
-use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
-    transaction::TransactionInfo,
+    transaction::{SignedUserTransaction, Transaction, TransactionInfo},
 };
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -100,13 +99,11 @@ pub async fn get_txns_with_hash(
     client: &NetworkRpcClient,
     peer_id: PeerId,
     req: GetTxnsWithHash,
-) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
-    let data = client
-        .get_txns_from_storage(peer_id.clone(), req.clone())
-        .await?;
+) -> Result<(Vec<HashValue>, Vec<Transaction>)> {
+    let data = client.get_txns(peer_id.clone(), req.clone()).await?;
     if data.len() == req.len() {
         let mut none_txn_vec = Vec::new();
-        let mut verified_txns: Vec<SignedUserTransaction> = Vec::new();
+        let mut verified_txns: Vec<Transaction> = Vec::new();
         for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
             if data.is_some() {
                 let txn = data.expect("txn is none.");
