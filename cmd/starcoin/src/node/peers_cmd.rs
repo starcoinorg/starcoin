@@ -26,6 +26,6 @@ impl CommandAction for PeersCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let peers = client.node_peers()?;
-        Ok(peers.iter().map(|p| p.clone().into()).collect())
+        Ok(peers)
     }
 }
