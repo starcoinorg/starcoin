@@ -24,17 +24,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_state::AccountState;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TransactionsData {
-    pub txns: Vec<SignedUserTransaction>,
-}
-
-impl TransactionsData {
-    pub fn get_txns(&self) -> &[SignedUserTransaction] {
-        self.txns.as_slice()
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GetBlockHeaders {
     pub block_id: HashValue,
     pub max_size: u64,
@@ -137,8 +126,23 @@ impl GetBlockHeaders {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GetTxns {
-    pub ids: Option<Vec<HashValue>>,
+pub struct GetTxnsWithSize {
+    pub max_size: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GetTxnsWithHash {
+    pub ids: Vec<HashValue>,
+}
+
+impl GetTxnsWithHash {
+    pub fn len(&self) -> usize {
+        self.ids.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -173,12 +177,18 @@ pub struct Ping {
 pub trait NetworkRpc: Sized + Send + Sync + 'static {
     fn ping(&self, peer_id: PeerId, req: Ping) -> BoxFuture<Result<String>>;
 
-    ///Get txns from txpool TODO rename
+    ///Get txns from txpool
     fn get_txns_from_pool(
         &self,
         peer_id: PeerId,
-        req: GetTxns,
-    ) -> BoxFuture<Result<TransactionsData>>;
+        req: GetTxnsWithSize,
+    ) -> BoxFuture<Result<Vec<SignedUserTransaction>>>;
+
+    fn get_txns_from_storage(
+        &self,
+        peer_id: PeerId,
+        req: GetTxnsWithHash,
+    ) -> BoxFuture<Result<Vec<Option<SignedUserTransaction>>>>;
 
     fn get_txn_infos(
         &self,

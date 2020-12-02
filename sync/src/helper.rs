@@ -2,12 +2,12 @@ use anyhow::{format_err, Result};
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
 use starcoin_crypto::hash::HashValue;
-use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
-    GetBlockHeadersByNumber, GetTxns, TransactionsData,
+    GetBlockHeadersByNumber, GetTxnsWithHash, GetTxnsWithSize,
 };
 use starcoin_state_tree::StateNode;
+use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -75,13 +75,11 @@ impl From<&Vec<BlockNumber>> for RpcEntryVerify<BlockNumber> {
     }
 }
 
-impl From<&GetTxns> for RpcEntryVerify<HashValue> {
-    fn from(data: &GetTxns) -> Self {
+impl From<&GetTxnsWithHash> for RpcEntryVerify<HashValue> {
+    fn from(data: &GetTxnsWithHash) -> Self {
         let mut entries = HashSet::new();
-        if let Some(ids) = data.clone().ids {
-            for hash in ids.into_iter() {
-                entries.insert(hash);
-            }
+        for hash in data.clone().ids.into_iter() {
+            entries.insert(hash);
         }
         Self { entries }
     }
@@ -98,24 +96,44 @@ impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
     }
 }
 
-pub async fn get_txns(
+pub async fn get_txns_with_hash(
     client: &NetworkRpcClient,
     peer_id: PeerId,
-    req: GetTxns,
-) -> Result<TransactionsData> {
-    let data = client.get_txns_from_pool(peer_id, req.clone()).await?;
-    if req.ids.is_some() {
-        let mut verify_condition: RpcEntryVerify<HashValue> = (&req).into();
-        let verified_txns = verify_condition
-            .filter((*data.get_txns()).to_vec(), |txn| -> HashValue {
-                txn.crypto_hash()
-            });
-        Ok(TransactionsData {
-            txns: verified_txns,
-        })
+    req: GetTxnsWithHash,
+) -> Result<(Vec<HashValue>, Vec<SignedUserTransaction>)> {
+    let data = client
+        .get_txns_from_storage(peer_id.clone(), req.clone())
+        .await?;
+    if data.len() == req.len() {
+        let mut none_txn_vec = Vec::new();
+        let mut verified_txns: Vec<SignedUserTransaction> = Vec::new();
+        for (id, data) in req.ids.into_iter().zip(data.into_iter()) {
+            if data.is_some() {
+                let txn = data.expect("txn is none.");
+                if id == txn.id() {
+                    verified_txns.push(txn);
+                    continue;
+                }
+            }
+            none_txn_vec.push(id);
+        }
+        Ok((none_txn_vec, verified_txns))
     } else {
-        Ok(data)
+        Err(format_err!(
+            "Txn len mismatch {:?} : {:?} from peer : {:?}.",
+            data.len(),
+            req.len(),
+            peer_id
+        ))
     }
+}
+
+pub async fn get_txns_with_size(
+    client: &NetworkRpcClient,
+    peer_id: PeerId,
+    req: GetTxnsWithSize,
+) -> Result<Vec<SignedUserTransaction>> {
+    client.get_txns_from_pool(peer_id, req).await
 }
 
 pub async fn get_txn_infos(
