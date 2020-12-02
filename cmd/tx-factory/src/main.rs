@@ -176,10 +176,6 @@ fn main() {
         }
     };
 
-    let accounts = tx_mocker
-        .get_accounts(account_num)
-        .expect("create accounts should success");
-
     let stopping_signal = Arc::new(AtomicBool::new(false));
     let stopping_signal_clone = stopping_signal.clone();
     ctrlc::set_handler(move || {
@@ -189,6 +185,10 @@ fn main() {
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
             if is_stress {
+                let accounts = tx_mocker
+                    .get_accounts(account_num)
+                    .expect("create accounts should success");
+                info!("stress account: {}", accounts.len());
                 let success = tx_mocker.stress_test(accounts.clone(), round_num);
                 if let Err(e) = success {
                     error!("fail to run stress test, err: {:?}", &e);
@@ -418,11 +418,9 @@ impl TxnMocker {
     }
 
     fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
-        let mut account_list = Vec::new();
+        // first get account from local
         let mut account_local = self.client.account_list()?;
-        if account_local.is_empty() {
-            return self.create_accounts(account_num);
-        }
+        let mut available_list = vec![];
         let mut index = 0;
         while index < account_num {
             if let Some(account) = account_local.pop() {
@@ -434,21 +432,30 @@ impl TxnMocker {
                         self.unlock_duration,
                     )
                     .is_ok()
+                    && self.is_account_exist(&account.address())?
                 {
-                    account_list.push(account);
+                    available_list.push(account);
                     index += 1;
                 }
             } else {
                 break;
             }
         }
-        if (account_list.len() as u32) < account_num {
-            let lack_len = account_num - account_list.len() as u32;
+
+        if (available_list.len() as u32) < account_num {
+            let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
-            let lack = self.create_accounts(lack_len)?;
-            account_list.extend_from_slice(lack.as_slice());
+            let lack = self.create_accounts(lack_len + 20)?;
+            for account in lack {
+                if self.is_account_exist(&account.address())? {
+                    available_list.push(account);
+                    if available_list.len() == account_num as usize {
+                        break;
+                    }
+                }
+            }
         }
-        Ok(account_list)
+        Ok(available_list)
     }
 
     fn create_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
@@ -470,16 +477,15 @@ impl TxnMocker {
                 expiration_timestamp,
             );
             if matches!(result, Ok(_)) {
-                account_list.push(account);
-                i += 1;
+                info!("account transfer submit ok.");
             } else {
-                if self.is_account_exist(&account.address)? {
-                    account_list.push(account);
-                    i += 1;
-                    info!("watch timeout.")
-                }
                 info!("error: {:?}", result);
             }
+            // if self.is_account_exist(&account.address)? {
+            //     info!("account add stress queue ok: {}", &account.address);
+            account_list.push(account);
+            i += 1;
+            // }
         }
         info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)

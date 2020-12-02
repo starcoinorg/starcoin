@@ -247,7 +247,7 @@ impl Inner {
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
 
-        debug!(
+        info!(
             "CreateBlockTemplate, previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",
             previous_header,
             block_gas_limit,
