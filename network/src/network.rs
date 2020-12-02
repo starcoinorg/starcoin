@@ -17,8 +17,8 @@ use network_api::messages::NotificationMessage;
 use network_api::{
     messages::TransactionsMessage, NetworkService, PeerMessageHandler, PeerProvider,
 };
-use network_p2p::Multiaddr;
-use network_p2p_types::PeerId;
+use network_p2p_types::network_state::NetworkState;
+use network_p2p_types::{Multiaddr, PeerId};
 use network_rpc_core::RawRpcClient;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
@@ -154,10 +154,14 @@ impl NetworkAsyncService {
         self.inner.network_service.add_peer(peer)
     }
 
-    pub async fn connected_peers(&self) -> Vec<types::peer_info::PeerId> {
+    pub async fn network_state(&self) -> Result<NetworkState> {
+        self.inner.network_service.network_state().await
+    }
+
+    pub async fn known_peers(&self) -> Vec<types::peer_info::PeerId> {
         self.inner
             .network_service
-            .connected_peers()
+            .known_peers()
             .await
             .into_iter()
             .map(|peer_id| peer_id.into())

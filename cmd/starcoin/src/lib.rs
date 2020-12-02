@@ -67,7 +67,8 @@ pub fn add_command(
                 )
                 .subcommand(
                 Command::with_name("network")
-                    .subcommand(node::network::ConnectedPeersCommand)
+                    .subcommand(node::network::StateCommand)
+                    .subcommand(node::network::KnownPeersCommand)
                     .subcommand(node::network::GetAddressCommand)
                     .subcommand(node::network::AddPeerCommand)
             ),

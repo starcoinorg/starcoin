@@ -13,6 +13,7 @@ use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
     Params, ProtocolId, Secret,
 };
+use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::{is_memory_addr, PeerId, ProtocolRequest, RequestFailure};
 use prometheus::{default_registry, Registry};
 use starcoin_network_rpc::NetworkRpcService;
@@ -166,8 +167,15 @@ impl SNetworkService {
             .map_err(|e| format_err!("{:?}", e))
     }
 
-    pub async fn connected_peers(&self) -> HashSet<PeerId> {
-        self.service().connected_peers().await
+    pub async fn known_peers(&self) -> HashSet<PeerId> {
+        self.service().known_peers().await
+    }
+
+    pub async fn network_state(&self) -> Result<NetworkState> {
+        self.service()
+            .network_state()
+            .await
+            .map_err(|_| format_err!("request cancel."))
     }
 
     pub fn update_chain_status(&self, chain_status: ChainStatus) {

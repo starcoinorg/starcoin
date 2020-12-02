@@ -11,19 +11,20 @@ mod tests {
     use config::{get_random_available_port, BuiltinNetworkID, NetworkConfig, NodeConfig};
     use crypto::hash::HashValue;
     use futures::channel::mpsc;
+    use futures::executor::block_on;
     use futures::{
         channel::mpsc::{UnboundedReceiver, UnboundedSender},
         stream::StreamExt,
     };
     use futures_timer::Delay;
     use network_api::messages::NotificationMessage;
-    use network_api::Multiaddr;
+    use network_api::{Multiaddr, PeerProvider};
     use network_p2p::{identity, DhtEvent, Event};
     use network_p2p::{NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, Secret};
     use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId, PeerId};
-    use std::borrow::Cow;
     use std::future::Future;
     use std::pin::Pin;
+    use std::sync::Arc;
     use std::{thread, time::Duration};
     use types::startup_info::{ChainInfo, ChainStatus};
 
@@ -324,113 +325,59 @@ mod tests {
         test_handle_event(event).await;
     }
 
-    //TOD FIXME  provider a shutdown network method, shutdown first, then start.
+    //TOD FIXME  provider a shutdown network method, quit network worker future
+    // test peer shutdown and reconnect
     #[ignore]
     #[stest::test]
-    fn test_reconnected_nodes() {
-        let protocols: Vec<Cow<'static, str>> = vec![TEST_NOTIF_PROTOCOL_NAME.into()];
-        let mut node_config1 = NodeConfig::random_for_test().network;
-        node_config1.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-            .parse()
-            .unwrap();
+    fn test_reconnected_peers() -> anyhow::Result<()> {
+        let node_config1 = Arc::new(NodeConfig::random_for_test());
+        let node1 = test_helper::run_node_by_config(node_config1.clone())?;
 
-        let chain_info = ChainInfo::new(
-            BuiltinNetworkID::Test.chain_id(),
-            HashValue::random(),
-            ChainStatus::random(),
-        );
+        let node1_network = node1.network();
 
-        let (service1, _net_tx1, _net_rx1, _event_rx1, _command_tx1) =
-            build_network_service(chain_info.clone(), &node_config1, protocols.clone(), None);
+        let peers = block_on(async { node1_network.peer_set().await })?;
+        assert_eq!(peers.len(), 0);
 
-        thread::sleep(Duration::from_secs(1));
+        let mut node_config2 = NodeConfig::random_for_test();
+        node_config2.network.seeds = vec![node_config1.network.self_address()?];
+        let node_config2 = Arc::new(node_config2);
+        let node2 = test_helper::run_node_by_config(node_config2.clone())?;
 
-        let mut node_config2 = NodeConfig::random_for_test().network;
-        let addr1_hex = service1.identify().to_base58();
-        let seed: MultiaddrWithPeerId = format!("{}/p2p/{}", &node_config1.listen, addr1_hex)
-            .parse()
-            .unwrap();
-        node_config2.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-            .parse()
-            .unwrap();
-        node_config2.seeds = vec![seed.clone()];
-        let (service2, net_tx2, net_rx2, event_rx2, command_tx2) =
-            build_network_service(chain_info.clone(), &node_config2, protocols.clone(), None);
+        thread::sleep(Duration::from_secs(2));
 
-        thread::sleep(Duration::from_secs(1));
+        let network_state = block_on(async { node1_network.network_state().await })?;
+        assert_eq!(network_state.connected_peers.len(), 1);
 
-        let mut node_config3 = NodeConfig::random_for_test().network;
-        node_config3.listen = format!("/ip4/127.0.0.1/tcp/{}", config::get_random_available_port())
-            .parse()
-            .unwrap();
-        node_config3.seeds = vec![seed];
-        let (service3, net_tx3, net_rx3, event_rx3, command_tx3) =
-            build_network_service(chain_info.clone(), &node_config3, protocols.clone(), None);
+        let peers = block_on(async { node1_network.peer_set().await })?;
+        assert_eq!(peers.len(), 1);
 
-        thread::sleep(Duration::from_secs(1));
+        // stop node2, node1's peers is empty
+        node2.stop()?;
+        thread::sleep(Duration::from_secs(3));
+        loop {
+            let network_state = block_on(async { node1_network.network_state().await })?;
+            debug!("network_state: {:?}", network_state);
+            if network_state.connected_peers.is_empty() {
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+            //assert_eq!(network_state.connected_peers.len(), 0);
+        }
 
-        let service1_clone = service1.clone();
-        let fut = async move {
-            assert_eq!(
-                service1_clone
-                    .is_connected(service2.identify().clone())
-                    .await
-                    .unwrap(),
-                true
-            );
-            assert_eq!(
-                service1_clone
-                    .is_connected(service3.identify().clone())
-                    .await
-                    .unwrap(),
-                true
-            );
+        let peers = block_on(async { node1_network.peer_set().await })?;
+        assert_eq!(peers.len(), 0);
 
-            drop(service2);
-            drop(service3);
+        //start node2 again.
+        let node2 = test_helper::run_node_by_config(node_config2)?;
+        thread::sleep(Duration::from_secs(2));
 
-            drop(net_tx2);
-            drop(net_rx2);
-            drop(event_rx2);
+        let network_state = block_on(async { node1_network.network_state().await })?;
+        assert_eq!(network_state.connected_peers.len(), 1);
 
-            drop(net_tx3);
-            drop(net_rx3);
-            drop(event_rx3);
-
-            command_tx2.close_channel();
-            command_tx3.close_channel();
-            Delay::new(Duration::from_secs(1)).await;
-        };
-        task::block_on(fut);
-
-        thread::sleep(Duration::from_secs(1));
-
-        let (service2, _net_tx2, _net_rx2, _event_tx2, _command_tx2) =
-            build_network_service(chain_info.clone(), &node_config2, protocols.clone(), None);
-
-        thread::sleep(Duration::from_secs(1));
-
-        let (service3, _net_tx3, _net_rx3, _event_rx3, _command_tx3) =
-            build_network_service(chain_info, &node_config3, protocols.clone(), None);
-
-        thread::sleep(Duration::from_secs(1));
-
-        let fut = async move {
-            assert_eq!(
-                service1
-                    .is_connected(service2.identify().clone())
-                    .await
-                    .unwrap(),
-                true
-            );
-            assert_eq!(
-                service1
-                    .is_connected(service3.identify().clone())
-                    .await
-                    .unwrap(),
-                true
-            );
-        };
-        task::block_on(fut);
+        let peers = block_on(async { node1_network.peer_set().await })?;
+        assert_eq!(peers.len(), 1);
+        node2.stop()?;
+        node1.stop()?;
+        Ok(())
     }
 }

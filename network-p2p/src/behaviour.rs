@@ -158,6 +158,28 @@ impl Behaviour {
         self.discovery.add_known_address(peer_id, addr)
     }
 
+    /// Returns the number of nodes in each Kademlia kbucket for each Kademlia instance.
+    ///
+    /// Identifies Kademlia instances by their [`ProtocolId`] and kbuckets by the base 2 logarithm
+    /// of their lower bound.
+    pub fn num_entries_per_kbucket(
+        &mut self,
+    ) -> impl ExactSizeIterator<Item = (&ProtocolId, Vec<(u32, usize)>)> {
+        self.discovery.num_entries_per_kbucket()
+    }
+
+    /// Returns the number of records in the Kademlia record stores.
+    pub fn num_kademlia_records(&mut self) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+        self.discovery.num_kademlia_records()
+    }
+
+    /// Returns the total size in bytes of all the records in the Kademlia record stores.
+    pub fn kademlia_records_total_size(
+        &mut self,
+    ) -> impl ExactSizeIterator<Item = (&ProtocolId, usize)> {
+        self.discovery.kademlia_records_total_size()
+    }
+
     pub fn get_address(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
         self.discovery.addresses_of_peer(peer_id)
     }

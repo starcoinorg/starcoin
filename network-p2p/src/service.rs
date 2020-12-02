@@ -55,6 +55,7 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
+use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
@@ -448,8 +449,8 @@ impl NetworkWorker {
         self.service.add_reserved_peer(peer)
     }
 
-    /// Returns the list of all the peers we are connected to.
-    pub fn connected_peers(&mut self) -> HashSet<PeerId> {
+    /// Returns the list of all the peers we known.
+    pub fn known_peers(&mut self) -> HashSet<PeerId> {
         self.network_service.known_peers()
     }
 
@@ -596,7 +597,7 @@ impl NetworkService {
     pub async fn broadcast_message(&self, protocol_name: Cow<'static, str>, message: Vec<u8>) {
         debug!("start send broadcast message");
 
-        let peers = self.connected_peers().await;
+        let peers = self.known_peers().await;
         for peer_id in peers {
             self.write_notification(peer_id, protocol_name.clone(), message.clone());
         }
@@ -617,11 +618,19 @@ impl NetworkService {
         }
     }
 
-    pub async fn connected_peers(&self) -> HashSet<PeerId> {
+    pub async fn network_state(&self) -> Result<NetworkState, Canceled> {
         let (tx, rx) = oneshot::channel();
         let _ = self
             .to_worker
-            .unbounded_send(ServiceToWorkerMsg::ConnectedPeers(tx));
+            .unbounded_send(ServiceToWorkerMsg::NetworkState(tx));
+        rx.await
+    }
+
+    pub async fn known_peers(&self) -> HashSet<PeerId> {
+        let (tx, rx) = oneshot::channel();
+        let _ = self
+            .to_worker
+            .unbounded_send(ServiceToWorkerMsg::KnownPeers(tx));
         match rx.await {
             Ok(t) => t,
             Err(e) => {
@@ -951,7 +960,8 @@ enum ServiceToWorkerMsg {
     },
     DisconnectPeer(PeerId),
     IsConnected(PeerId, oneshot::Sender<bool>),
-    ConnectedPeers(oneshot::Sender<HashSet<PeerId>>),
+    NetworkState(oneshot::Sender<NetworkState>),
+    KnownPeers(oneshot::Sender<HashSet<PeerId>>),
     UpdateChainStatus(Box<ChainStatus>),
     AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
     ExistNotifProtocol {
@@ -1062,8 +1072,11 @@ impl Future for NetworkWorker {
                 ServiceToWorkerMsg::IsConnected(who, tx) => {
                     let _ = tx.send(this.is_open(&who));
                 }
-                ServiceToWorkerMsg::ConnectedPeers(tx) => {
-                    let peers = this.connected_peers();
+                ServiceToWorkerMsg::NetworkState(tx) => {
+                    let _ = tx.send(this.network_state());
+                }
+                ServiceToWorkerMsg::KnownPeers(tx) => {
+                    let peers = this.known_peers();
                     let mut result = HashSet::new();
                     for peer in peers {
                         result.insert(peer.clone());
@@ -1437,23 +1450,44 @@ impl Future for NetworkWorker {
                 }
             };
         }
-        //
-        // let num_connected_peers = this
-        //     .network_service
-        //     .user_protocol_mut()
-        //     .num_connected_peers();
 
-        // if let Some(metrics) = this.metrics.as_ref() {
-        //     metrics
-        //         .network_per_sec_bytes
-        //         .with_label_values(&["in"])
-        //         .set(this.service.bandwidth.average_download_per_sec());
-        //     metrics
-        //         .network_per_sec_bytes
-        //         .with_label_values(&["out"])
-        //         .set(this.service.bandwidth.average_upload_per_sec());
-        //     metrics.peers_count.set(num_connected_peers as i64);
-        // }
+        if let Some(metrics) = this.metrics.as_ref() {
+            for (proto, buckets) in this.network_service.num_entries_per_kbucket() {
+                for (lower_ilog2_bucket_bound, num_entries) in buckets {
+                    metrics
+                        .kbuckets_num_nodes
+                        .with_label_values(&[
+                            &proto.as_ref(),
+                            &lower_ilog2_bucket_bound.to_string(),
+                        ])
+                        .set(num_entries as u64);
+                }
+            }
+            for (proto, num_entries) in this.network_service.num_kademlia_records() {
+                metrics
+                    .kademlia_records_count
+                    .with_label_values(&[&proto.as_ref()])
+                    .set(num_entries as u64);
+            }
+            for (proto, num_entries) in this.network_service.kademlia_records_total_size() {
+                metrics
+                    .kademlia_records_sizes_total
+                    .with_label_values(&[&proto.as_ref()])
+                    .set(num_entries as u64);
+            }
+            metrics
+                .peerset_num_discovered
+                .set(this.network_service.user_protocol().num_discovered_peers() as u64);
+            metrics.peerset_num_requested.set(
+                this.network_service
+                    .user_protocol()
+                    .requested_peers()
+                    .count() as u64,
+            );
+            metrics
+                .pending_connections
+                .set(Swarm::network_info(&this.network_service).num_connections_pending as u64);
+        }
 
         Poll::Pending
     }

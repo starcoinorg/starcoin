@@ -6,6 +6,7 @@ use crate::{config, Event, NetworkService, NetworkWorker};
 use crate::{NetworkConfiguration, Params, ProtocolId};
 use async_std::task;
 use crypto::HashValue;
+use futures::executor::block_on;
 use futures::prelude::*;
 use futures::stream::StreamExt;
 use libp2p::PeerId;
@@ -435,7 +436,6 @@ fn test_handshake_fail() {
     let worker1 =
         NetworkWorker::new(Params::new(config1.clone(), protocol.clone(), chain1, None)).unwrap();
     let service1 = worker1.service().clone();
-    let mut stream = service1.event_stream("test");
 
     task::spawn(worker1);
 
@@ -454,31 +454,16 @@ fn test_handshake_fail() {
 
     thread::sleep(Duration::from_secs(1));
 
-    info!(
+    debug!(
         "first peer is {:?},second peer is {:?}",
         service1.peer_id(),
         service2.peer_id()
     );
-    let fut = async move {
-        while let Some(event) = stream.next().await {
-            match event {
-                Event::NotificationStreamClosed { remote } => {
-                    info!("handshake failed from {}", remote);
-                    assert_eq!(remote, service2.local_peer_id());
-                    break;
-                }
-                Event::NotificationStreamOpened { remote, .. } => {
-                    error!("unexpect stream open with {}", remote);
-                    panic!("expect handshake fail, but got stream opened")
-                }
-                _ => {
-                    info!("event is {:?}", event);
-                }
-            }
-        }
-    };
+    let state1 = block_on(async { service1.network_state().await }).unwrap();
+    let state2 = block_on(async { service2.network_state().await }).unwrap();
 
-    task::block_on(fut);
+    assert_eq!(state1.connected_peers.len(), 0);
+    assert_eq!(state2.connected_peers.len(), 0);
 }
 
 fn generate_config(boot_nodes: Vec<MultiaddrWithPeerId>) -> NetworkConfiguration {
