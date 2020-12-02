@@ -15,7 +15,7 @@ crossbeam-channel = "0.5.0"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
-structopt = "0.3.20"
+structopt = "0.3.21"
 starcoin-logger = { path = "../../commons/logger" }
 starcoin-config = { path = "../../config"}
 starcoin-crypto = {path = "../../commons/crypto"}
@@ -44,9 +44,7 @@ starcoin-genesis = { path = "../../core/genesis" }
 starcoin-resource-viewer = { path = "../../vm/resource-viewer" }
 starcoin-service-registry = { path = "../../commons/service-registry" }
 starcoin-move-explain = { path = "../../vm/move-explain" }
-errmapgen = { git = "https://github.com/starcoinorg/libra", rev="cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
-[target.'cfg(not(target_env = "msvc"))'.dependencies]
-jemallocator = "0.3.2"
+errmapgen = { git = "https://github.com/starcoinorg/libra", rev="4236206844fdba73316d036a1f930e0fab63553b" }
 
 [dev-dependencies]
 test-helper= {path = "../../test-helper"}

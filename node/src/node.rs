@@ -5,7 +5,7 @@ use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
 use actix::prelude::*;
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures_timer::Delay;
@@ -31,15 +31,18 @@ use starcoin_service_registry::{
     ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::Storage;
+use starcoin_storage::{BlockStore, Storage};
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
+use starcoin_types::peer_info::RpcInfo;
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -191,7 +194,21 @@ impl NodeService {
             Genesis::init_and_check_storage(config.net(), storage.clone(), config.data_dir())?;
 
         info!("Start node with startup info: {}", startup_info);
+
         let genesis_hash = genesis.block().header().id();
+        let head_block_hash = startup_info.main;
+        let head_block_header = storage
+            .get_block_header_by_hash(head_block_hash)?
+            .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
+        let head_block_info = storage
+            .get_block_info(head_block_hash)?
+            .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
+
+        let chain_info = ChainInfo::new(
+            config.net().chain_id(),
+            genesis_hash,
+            ChainStatus::new(head_block_header, head_block_info.total_difficulty),
+        );
         registry.put_shared(genesis).await?;
 
         let node_service = registry.register::<NodeService>().await?;
@@ -226,11 +243,13 @@ impl NodeService {
 
         let network_rpc_service = registry.register::<NetworkRpcService>().await?;
         let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
+
+        let rpc_info = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
         let network = NetworkAsyncService::start(
             config.clone(),
-            genesis_hash,
+            chain_info,
             bus.clone(),
-            storage.clone(),
+            rpc_info,
             network_rpc_service,
             peer_message_handle,
         )?;

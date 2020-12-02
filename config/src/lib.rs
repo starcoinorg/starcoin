@@ -4,7 +4,7 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
-use libp2p::core::Multiaddr;
+use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use starcoin_crypto::keygen::KeyGen;
@@ -132,7 +132,7 @@ pub struct StarcoinOpt {
 
     #[structopt(long)]
     /// P2P network seed, if want add more seeds, please edit config file.
-    pub seed: Option<Multiaddr>,
+    pub seed: Option<MultiaddrWithPeerId>,
 
     #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.

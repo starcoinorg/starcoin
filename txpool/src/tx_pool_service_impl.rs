@@ -158,6 +158,18 @@ impl TxPoolSyncService for TxPoolService {
             .find(hash)
             .map(move |txn| txn.signed().clone())
     }
+    fn txns_of_sender(
+        &self,
+        sender: &AccountAddress,
+        max_len: Option<usize>,
+    ) -> Vec<SignedUserTransaction> {
+        self.inner
+            .queue
+            .txns_of_sender(sender, max_len.unwrap_or(usize::max_value()))
+            .into_iter()
+            .map(|t| t.signed().clone())
+            .collect()
+    }
 }
 
 pub(crate) type TxnQueue = TransactionQueue;

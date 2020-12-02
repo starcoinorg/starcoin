@@ -92,7 +92,7 @@ impl CommandAction for ExecuteBuildInCommand {
         let node_info = client.node_info()?;
 
         let sender = ctx.state().get_account_or_default(opt.sender)?;
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender.address)?;
 
@@ -124,10 +124,7 @@ impl CommandAction for ExecuteBuildInCommand {
 
         let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let succ = client.submit_transaction(signed_txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
+        client.submit_transaction(signed_txn)?;
         println!("txn {:#x} submitted.", txn_hash);
 
         if opt.blocking {

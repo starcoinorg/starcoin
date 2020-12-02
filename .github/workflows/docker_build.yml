@@ -37,7 +37,7 @@ jobs:
         name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GIT_PACKAGE_TOKEN }}
       -
@@ -49,4 +49,4 @@ jobs:
           push: true
           tags: |
             starcoin/starcoin:latest
-            docker.pkg.github.com/starcoinorg/starcoin/starcoin:latest
+            ghcr.io/starcoinorg/starcoin/starcoin:latest

@@ -5,7 +5,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::hash::PlainCryptoHash;
-use starcoin_crypto::ValidCryptoMaterialStringExt;
+use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_client::RemoteStateReader;
@@ -95,7 +95,7 @@ fn get_account_or_default(
             }
 
             let addr = default_account.clone().unwrap().address;
-            let state_reader = RemoteStateReader::new(&client);
+            let state_reader = RemoteStateReader::new(&client)?;
             let account_state_reader = AccountStateReader::new(&state_reader);
             let mut balance = account_state_reader.get_balance(&addr)?;
             // balance resource has not been created
@@ -236,7 +236,7 @@ impl TxnMocker {
         unlock_duration: Duration,
         watch_timeout: u32,
     ) -> Result<Self> {
-        let state_reader = RemoteStateReader::new(&client);
+        let state_reader = RemoteStateReader::new(&client)?;
         let account_state_reader = AccountStateReader::new(&state_reader);
 
         let account_resource = account_state_reader.get_account_resource(&account_address)?;
@@ -281,7 +281,7 @@ impl TxnMocker {
         self.next_sequence_number = match seq_number_in_pool {
             Some(n) => n,
             None => {
-                let state_reader = RemoteStateReader::new(&self.client);
+                let state_reader = RemoteStateReader::new(&self.client)?;
                 let account_state_reader = AccountStateReader::new(&state_reader);
 
                 let account_resource =
@@ -298,17 +298,17 @@ impl TxnMocker {
         Ok(())
     }
 
-    fn is_account_exist(&mut self, account: &AccountAddress) -> bool {
-        let state_reader = RemoteStateReader::new(&self.client);
+    fn is_account_exist(&mut self, account: &AccountAddress) -> Result<bool> {
+        let state_reader = RemoteStateReader::new(&self.client)?;
         let account_state_reader = AccountStateReader::new(&state_reader);
 
         let account_resource = account_state_reader
             .get_account_resource(account)
             .unwrap_or(None);
-        account_resource.is_some()
+        Ok(account_resource.is_some())
     }
 
-    fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
+    fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<HashValue> {
         let expiration_timestamp = self.fetch_expiration_time();
         let raw_txn = self
             .generator
@@ -331,7 +331,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.crypto_hash();
-        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
+        let result = self.client.submit_transaction(user_txn);
 
         // increase sequence number if added in pool.
         if matches!(result, Ok(_)) {
@@ -378,7 +378,7 @@ impl TxnMocker {
         sequence_number: u64,
         blocking: bool,
         expiration_timestamp: u64,
-    ) -> Result<()> {
+    ) -> Result<HashValue> {
         let raw_txn = self.generator.generate_transfer_txn(
             sequence_number,
             sender,
@@ -406,7 +406,7 @@ impl TxnMocker {
             user_txn.sequence_number(),
         );
         let txn_hash = user_txn.crypto_hash();
-        let result = self.client.submit_transaction(user_txn).and_then(|r| r);
+        let result = self.client.submit_transaction(user_txn);
 
         if matches!(result, Ok(_)) && blocking {
             self.client.watch_txn(
@@ -473,7 +473,7 @@ impl TxnMocker {
                 account_list.push(account);
                 i += 1;
             } else {
-                if self.is_account_exist(&account.address) {
+                if self.is_account_exist(&account.address)? {
                     account_list.push(account);
                     i += 1;
                     info!("watch timeout.")
@@ -529,7 +529,7 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
-                let state_reader = RemoteStateReader::new(&self.client);
+                let state_reader = RemoteStateReader::new(&self.client)?;
                 let account_state_reader = AccountStateReader::new(&state_reader);
 
                 let account_resource = account_state_reader.get_account_resource(&address)?;

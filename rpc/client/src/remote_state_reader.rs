@@ -13,11 +13,17 @@ use starcoin_types::state_set::ChainStateSet;
 pub struct RemoteStateReader<'a> {
     //TODO add cache.
     client: &'a RpcClient,
+    state_root: HashValue,
 }
 
 impl<'a> RemoteStateReader<'a> {
-    pub fn new(client: &'a RpcClient) -> Self {
-        Self { client }
+    pub fn new(client: &'a RpcClient) -> Result<Self> {
+        let state_root = client.state_get_state_root()?;
+        Ok(Self::new_with_root(client, state_root))
+    }
+
+    pub fn new_with_root(client: &'a RpcClient, state_root: HashValue) -> Self {
+        Self { client, state_root }
     }
 }
 
@@ -32,9 +38,7 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 
     fn state_root(&self) -> HashValue {
         //TODO change trait api to return Result<HashValue>
-        self.client
-            .state_get_state_root()
-            .expect("unexpected error.")
+        self.state_root
     }
 
     fn dump(&self) -> Result<ChainStateSet> {
@@ -44,7 +48,11 @@ impl<'a> ChainStateReader for RemoteStateReader<'a> {
 
 impl<'a> StateView for RemoteStateReader<'a> {
     fn get(&self, access_path: &AccessPath) -> Result<Option<Vec<u8>>> {
-        self.client.state_get(access_path.clone())
+        Ok(self
+            .client
+            .state_get_with_proof_by_root(access_path.clone(), self.state_root())?
+            .get_state()
+            .clone())
     }
 
     fn multi_get(&self, _access_paths: &[AccessPath]) -> Result<Vec<Option<Vec<u8>>>> {

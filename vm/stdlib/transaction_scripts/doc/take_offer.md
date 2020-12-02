@@ -16,7 +16,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered: <b>copyable</b>&gt;(signer: &signer, offer_address: address)
+<pre><code><b>public</b> <b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
 </code></pre>
 
 
@@ -25,7 +25,7 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered: <b>copyable</b>&gt;(
+<pre><code><b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered&gt;(
     signer: &signer,
     offer_address: address,
 ) {
@@ -48,7 +48,7 @@
 ### Function `take_offer`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered: <b>copyable</b>&gt;(signer: &signer, offer_address: address)
+<pre><code><b>public</b> <b>fun</b> <a href="take_offer.md#take_offer">take_offer</a>&lt;Offered&gt;(signer: &signer, offer_address: address)
 </code></pre>
 
 

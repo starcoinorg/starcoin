@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
+use starcoin_rpc_api::types::BlockHeaderView;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -30,7 +30,6 @@ impl CommandAction for GetBlockByNumberCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let block = client.chain_get_block_by_number(opt.number)?;
-
-        Ok(block.into())
+        Ok(block.header)
     }
 }

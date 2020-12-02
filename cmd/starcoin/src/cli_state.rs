@@ -5,7 +5,7 @@ use starcoin_account_api::AccountInfo;
 use starcoin_config::{ChainNetworkID, DataDirPath};
 use starcoin_crypto::HashValue;
 use starcoin_node::NodeHandle;
-use starcoin_rpc_api::types::pubsub::ThinHeadBlock;
+use starcoin_rpc_client::chain_watcher::ThinHeadBlock;
 use starcoin_rpc_client::RpcClient;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_vm_types::account_config::association_address;
@@ -114,8 +114,7 @@ impl CliState {
         let block = self.client.watch_txn(txn_hash, Some(self.watch_timeout))?;
         println!(
             "txn mined in block height: {}, hash: {:#x}",
-            block.header().number(),
-            block.header().id()
+            block.header.number, block.header.block_hash
         );
         Ok(block)
     }

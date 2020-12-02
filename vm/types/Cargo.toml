@@ -22,23 +22,23 @@ log = "0.4.11"
 
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
-move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
-move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
-bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
-vm = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366"}
-move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366" }
+move-core-types = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b" }
+move-vm-types = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b" }
+bytecode-verifier = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b" }
+vm = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b"}
+move-ir-types = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b" }
 
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers", optional = true }
 starcoin-crypto = { path = "../../commons/crypto" }
 starcoin-uint = { path = "../../types/uint" }
 starcoin-accumulator = { path = "../../core/accumulator"}
-libp2p = "0.22.0"
+network-p2p-types = { path = "../../network-p2p/types"}
 
 [dev-dependencies]
 proptest = "0.10.1"
 proptest-derive = "0.2.0"
-vm = { git = "https://github.com/starcoinorg/libra", rev = "cafca49a35e073586e5dc0cbbe16120bc9b9f366", features = ["fuzzing"]}
+vm = { git = "https://github.com/starcoinorg/libra", rev = "4236206844fdba73316d036a1f930e0fab63553b", features = ["fuzzing"]}
 starcoin-crypto = { path = "../../commons/crypto", features = ["fuzzing"] }
 starcoin-proptest-helpers = { path = "../../commons/proptest-helpers"}
 

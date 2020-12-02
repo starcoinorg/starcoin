@@ -6,7 +6,8 @@ use anyhow::Result;
 use crypto::HashValue;
 use futures::FutureExt;
 use logger::prelude::*;
-use starcoin_block_relayer_api::{NetCmpctBlockMessage, PeerCmpctBlockEvent};
+use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
+use network_api::NetworkService;
 use starcoin_network::NetworkAsyncService;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxns};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -130,17 +131,16 @@ impl BlockRelayer {
 
     fn handle_block_event(
         &self,
-        cmpct_block_msg: PeerCmpctBlockEvent,
+        compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
         let network = ctx.get_shared::<NetworkAsyncService>()?;
         let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
-        //TODO use VerifiedRpcClient and filter peers, avoid fetch from a no synced peer.
         let rpc_client = NetworkRpcClient::new(network);
         let txpool = self.txpool.clone();
         let fut = async move {
-            let compact_block = cmpct_block_msg.compact_block;
-            let peer_id = cmpct_block_msg.peer_id;
+            let compact_block = compact_block_msg.message.compact_block;
+            let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
             let block = BlockRelayer::fill_compact_block(
                 txpool,
@@ -191,30 +191,55 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
             return;
         }
+        let network = match ctx.get_shared::<NetworkAsyncService>() {
+            Ok(network) => network,
+            Err(e) => {
+                error!("Get network service error: {:?}", e);
+                return;
+            }
+        };
         let compact_block = self.block_into_compact(event.0.get_block().clone());
         let total_difficulty = event.0.get_total_difficulty();
-        let net_cmpct_block_msg = NetCmpctBlockMessage {
+        let compact_block_msg = CompactBlockMessage {
             compact_block,
             total_difficulty,
         };
-        //TODO directly send to network.
-        ctx.broadcast(net_cmpct_block_msg);
+        ctx.spawn(async move {
+            network
+                .broadcast(NotificationMessage::CompactBlock(Box::new(
+                    compact_block_msg,
+                )))
+                .await;
+        });
     }
 }
 
-impl EventHandler<Self, PeerCmpctBlockEvent> for BlockRelayer {
+impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
     fn handle_event(
         &mut self,
-        cmpct_block_msg: PeerCmpctBlockEvent,
+        compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) {
         if !self.is_synced() {
-            debug!("[block-relay] Ignore PeerCmpctBlock event because the node has not been synchronized yet.");
+            debug!("[block-relay] Ignore PeerCompactBlockMessage because the node has not been synchronized yet.");
             return;
         }
-        //TODO filter by total_difficulty and block number, ignore too old block.
-        if let Err(e) = self.handle_block_event(cmpct_block_msg, ctx) {
-            error!("[block-relay] handle PeerCmpctBlock event error: {:?}", e);
+        let sync_status = self
+            .sync_status
+            .as_ref()
+            .expect("Sync status should bean some at here");
+        let current_total_difficulty = sync_status.chain_status().total_difficulty();
+        let block_total_difficulty = compact_block_msg.message.total_difficulty;
+        let block_id = compact_block_msg.message.compact_block.header.id();
+        if current_total_difficulty > block_total_difficulty {
+            debug!("[block-relay] Ignore PeerCompactBlockMessage because node current total_difficulty({}) > block({})'s total_difficulty({}).", current_total_difficulty, block_id, block_total_difficulty);
+            return;
+        }
+        if let Err(e) = self.handle_block_event(compact_block_msg, ctx) {
+            error!(
+                "[block-relay] handle PeerCompactBlockMessage error: {:?}",
+                e
+            );
         }
     }
 }

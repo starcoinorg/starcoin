@@ -7,11 +7,12 @@ use crate::service::{ActorService, ServiceContext, ServiceFactory, ServiceHandle
 use crate::service_cache::ServiceCache;
 use crate::service_registry::ServiceStatusChangeEvent;
 use crate::{
-    EventHandler, RegistryService, ServiceCmd, ServicePing, ServiceQuery, ServiceQueryResult,
-    ServiceRef, ServiceRequest,
+    EventHandler, RegistryService, ServiceCmd, ServiceEventStream, ServicePing, ServiceQuery,
+    ServiceQueryResult, ServiceRef, ServiceRequest,
 };
-use actix::{Actor, Context, Handler, Message, MessageResult, Supervised};
+use actix::{Actor, AsyncContext, Context, Handler, Message, MessageResult, Supervised};
 use anyhow::{format_err, Result};
+use futures::{Stream, StreamExt};
 use log::{debug, error, info};
 use std::fmt::Debug;
 
@@ -202,17 +203,31 @@ where
     }
 }
 
+impl<S, Fut, M> Handler<ServiceEventStream<Fut>> for ServiceActor<S>
+where
+    S: ActorService,
+    S: EventHandler<S, M>,
+    Fut: Stream<Item = M>,
+    M: Send + Debug + 'static,
+{
+    type Result = ();
+
+    fn handle(&mut self, msg: ServiceEventStream<Fut>, ctx: &mut Self::Context) {
+        ctx.add_message_stream(msg.stream.map(EventMessage::new));
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct EventMessage<M>
 where
-    M: Clone + Debug + Send,
+    M: Debug + Send,
 {
     msg: M,
 }
 
 impl<M> EventMessage<M>
 where
-    M: Clone + Debug + Send,
+    M: Debug + Send,
 {
     pub fn new(msg: M) -> Self {
         Self { msg }
@@ -225,14 +240,14 @@ where
 
 impl<M> Message for EventMessage<M>
 where
-    M: Clone + Debug + Send,
+    M: Debug + Send,
 {
     type Result = ();
 }
 
 impl<S, M> Handler<EventMessage<M>> for ServiceActor<S>
 where
-    M: Clone + Debug + Send + 'static,
+    M: Debug + Send + 'static,
     S: ActorService + EventHandler<S, M>,
 {
     type Result = ();
@@ -240,7 +255,7 @@ where
     fn handle(&mut self, msg: EventMessage<M>, ctx: &mut Self::Context) -> Self::Result {
         debug!("{} handle event: {:?}", S::service_name(), &msg.msg);
         if self.proxy.status().is_stopped() {
-            error!("Service {} is stopped", S::service_name());
+            info!("Service {} is already stopped", S::service_name());
             return;
         }
         let mut service_ctx = ServiceContext::new(&mut self.cache, ctx);

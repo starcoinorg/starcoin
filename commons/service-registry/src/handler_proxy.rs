@@ -80,7 +80,7 @@ where
 
     fn stop(&mut self, ctx: &mut ServiceContext<S>) -> Result<()> {
         if self.status().is_stopped() {
-            warn!("Service {} has bean stopped", S::service_name());
+            info!("Service {} has bean stopped", S::service_name());
             return Ok(());
         }
         let service = self.service.take();
@@ -123,7 +123,7 @@ where
 
 impl<S, M> EventHandler<S, M> for ServiceHandlerProxy<S>
 where
-    M: Clone + Debug + Send,
+    M: Debug + Send,
     S: ActorService + EventHandler<S, M>,
 {
     fn handle_event(&mut self, msg: M, ctx: &mut ServiceContext<S>) {
@@ -211,7 +211,7 @@ where
 
 impl<S, M> EventHandler<S, M> for MockHandlerProxy<S>
 where
-    M: Clone + Debug + Send + 'static,
+    M: Debug + Send + 'static,
     S: ActorService + EventHandler<S, M>,
 {
     fn handle_event(&mut self, msg: M, ctx: &mut ServiceContext<S>) {

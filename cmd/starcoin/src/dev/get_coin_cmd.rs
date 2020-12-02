@@ -57,7 +57,7 @@ impl CommandAction for GetCoinCommand {
         })?;
 
         let association_address = account_config::association_address();
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(&association_address)?
@@ -94,10 +94,7 @@ impl CommandAction for GetCoinCommand {
         )?;
         let txn = client.account_sign_txn(raw_txn)?;
         let id = txn.crypto_hash();
-        let ret = client.submit_transaction(txn.clone())?;
-        if let Err(e) = ret {
-            bail!("execute-txn is reject by node, reason: {}", e)
-        }
+        client.submit_transaction(txn.clone())?;
         if !opt.no_blocking {
             ctx.state().watch_txn(id)?;
         }

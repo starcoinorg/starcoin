@@ -1,24 +1,18 @@
-use prometheus::{Error as PrometheusError, IntGauge, Opts};
+use prometheus::Error as PrometheusError;
+use starcoin_metrics::HistogramVec;
 
 #[derive(Clone)]
 pub struct NetworkMetrics {
-    pub request_count: IntGauge,
-    pub request_timeout_count: IntGauge,
+    pub broadcast_duration: HistogramVec,
 }
 
 impl NetworkMetrics {
     pub fn register() -> Result<Self, PrometheusError> {
-        let request_count = register_int_gauge!(
-            Opts::new("request_count", "rpc request count").namespace("starcoin")
+        let broadcast_duration = register_histogram_vec!(
+            "broadcast_duration",
+            "network broadcast message duration by protocol",
+            &["notification_protocol"]
         )?;
-
-        let request_timeout_count =
-            register_int_gauge!(
-                Opts::new("request_timeout_count", "request timeout count").namespace("starcoin")
-            )?;
-        Ok(Self {
-            request_count,
-            request_timeout_count,
-        })
+        Ok(Self { broadcast_duration })
     }
 }

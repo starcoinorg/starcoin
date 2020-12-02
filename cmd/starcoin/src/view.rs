@@ -8,16 +8,18 @@ use starcoin_account_api::AccountInfo;
 use starcoin_config::ChainNetworkID;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_rpc_api::node::NodeInfo;
+use starcoin_rpc_api::types::{BlockHeaderView, TransactionEventView};
 use starcoin_state_api::StateWithProof;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
-use starcoin_types::block::{Block, BlockHeader};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction, U256};
 use starcoin_vm_types::access_path::AccessPath;
+use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{ProposalCreatedEvent, VoteChangedEvent};
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -62,38 +64,38 @@ impl From<StateWithProof> for StateWithProofView {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BlockHeaderView {
-    pub parent_hash: HashValue,
-    pub number: u64,
-    pub id: HashValue,
-    pub author: AccountAddress,
-    pub accumulator_root: HashValue,
-    pub state_root: HashValue,
-    pub gas_used: u64,
-    pub time: u64,
-}
-
-impl From<Block> for BlockHeaderView {
-    fn from(block: Block) -> Self {
-        BlockHeaderView::from(block.header)
-    }
-}
-
-impl From<BlockHeader> for BlockHeaderView {
-    fn from(header: BlockHeader) -> Self {
-        Self {
-            parent_hash: header.parent_hash,
-            number: header.number,
-            id: header.id(),
-            author: header.author,
-            accumulator_root: header.accumulator_root,
-            state_root: header.state_root,
-            gas_used: header.gas_used,
-            time: header.timestamp,
-        }
-    }
-}
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct BlockHeaderView {
+//     pub parent_hash: HashValue,
+//     pub number: u64,
+//     pub id: HashValue,
+//     pub author: AccountAddress,
+//     pub accumulator_root: HashValue,
+//     pub state_root: HashValue,
+//     pub gas_used: u64,
+//     pub time: u64,
+// }
+//
+// impl From<Block> for BlockHeaderView {
+//     fn from(block: Block) -> Self {
+//         BlockHeaderView::from(block.header)
+//     }
+// }
+//
+// impl From<BlockHeader> for BlockHeaderView {
+//     fn from(header: BlockHeader) -> Self {
+//         Self {
+//             parent_hash: header.parent_hash,
+//             number: header.number,
+//             id: header.id(),
+//             author: header.author,
+//             accumulator_root: header.accumulator_root,
+//             state_root: header.state_root,
+//             gas_used: header.gas_used,
+//             time: header.timestamp,
+//         }
+//     }
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TransactionView {
@@ -139,9 +141,9 @@ impl From<TransactionInfo> for TransactionInfoView {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct EventView {
-    pub key: BytesView,
+    pub key: EventKey,
     pub sequence_number: u64,
     pub data: EventDataView,
 }
@@ -181,15 +183,16 @@ pub enum EventDataView {
         agree: bool,
         vote: u128,
     },
+    #[serde(rename = "accept_token")]
+    AcceptToken { token_code: String },
     #[serde(rename = "unknown")]
-    Unknown {},
+    Unknown { type_tag: TypeTag, data: Vec<u8> },
 }
 
-impl From<ContractEvent> for EventView {
-    /// Tries to convert the provided byte array into Event Key.
-    fn from(event: ContractEvent) -> EventView {
-        let event_data = if event.type_tag() == &TypeTag::Struct(DepositEvent::struct_tag()) {
-            if let Ok(received_event) = DepositEvent::try_from_bytes(&event.event_data()) {
+impl EventDataView {
+    pub fn new(event_type_tag: &TypeTag, event_data: &[u8]) -> anyhow::Result<Self> {
+        if event_type_tag == &TypeTag::Struct(DepositEvent::struct_tag()) {
+            if let Ok(received_event) = DepositEvent::try_from_bytes(event_data) {
                 let amount_view = AmountView::new(
                     received_event.amount(),
                     received_event.token_code().to_string(),
@@ -201,8 +204,8 @@ impl From<ContractEvent> for EventView {
             } else {
                 Err(format_err!("Unable to parse ReceivedPaymentEvent"))
             }
-        } else if event.type_tag() == &TypeTag::Struct(WithdrawEvent::struct_tag()) {
-            if let Ok(sent_event) = WithdrawEvent::try_from_bytes(&event.event_data()) {
+        } else if event_type_tag == &TypeTag::Struct(WithdrawEvent::struct_tag()) {
+            if let Ok(sent_event) = WithdrawEvent::try_from_bytes(event_data) {
                 let amount_view =
                     AmountView::new(sent_event.amount(), sent_event.token_code().to_string());
                 Ok(EventDataView::SentPayment {
@@ -212,8 +215,8 @@ impl From<ContractEvent> for EventView {
             } else {
                 Err(format_err!("Unable to parse SentPaymentEvent"))
             }
-        } else if event.type_tag() == &TypeTag::Struct(MintEvent::struct_tag()) {
-            if let Ok(mint_event) = MintEvent::try_from_bytes(&event.event_data()) {
+        } else if event_type_tag == &TypeTag::Struct(MintEvent::struct_tag()) {
+            if let Ok(mint_event) = MintEvent::try_from_bytes(event_data) {
                 let amount_view =
                     AmountView::new(mint_event.amount(), mint_event.token_code().to_string());
                 Ok(EventDataView::Mint {
@@ -222,8 +225,8 @@ impl From<ContractEvent> for EventView {
             } else {
                 Err(format_err!("Unable to parse MintEvent"))
             }
-        } else if event.type_tag() == &TypeTag::Struct(ProposalCreatedEvent::struct_tag()) {
-            if let Ok(event) = ProposalCreatedEvent::try_from_bytes(&event.event_data()) {
+        } else if event_type_tag == &TypeTag::Struct(ProposalCreatedEvent::struct_tag()) {
+            if let Ok(event) = ProposalCreatedEvent::try_from_bytes(event_data) {
                 Ok(EventDataView::ProposalCreated {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
@@ -231,8 +234,8 @@ impl From<ContractEvent> for EventView {
             } else {
                 Err(format_err!("Unable to parse ProposalCreatedEvent"))
             }
-        } else if event.type_tag() == &TypeTag::Struct(VoteChangedEvent::struct_tag()) {
-            if let Ok(event) = VoteChangedEvent::try_from_bytes(&event.event_data()) {
+        } else if event_type_tag == &TypeTag::Struct(VoteChangedEvent::struct_tag()) {
+            if let Ok(event) = VoteChangedEvent::try_from_bytes(event_data) {
                 Ok(EventDataView::VoteChanged {
                     proposal_id: event.proposal_id,
                     proposer: format!("{}", event.proposer),
@@ -243,14 +246,49 @@ impl From<ContractEvent> for EventView {
             } else {
                 Err(format_err!("Unable to parse VoteChangedEvent"))
             }
+        } else if event_type_tag == &TypeTag::Struct(AcceptTokenEvent::struct_tag()) {
+            if let Ok(event) = AcceptTokenEvent::try_from_bytes(event_data) {
+                Ok(EventDataView::AcceptToken {
+                    token_code: event.token_code().to_string(),
+                })
+            } else {
+                Err(format_err!("Unable to parse VoteChangedEvent"))
+            }
         } else {
-            Err(format_err!("Unknown events"))
-        };
+            Ok(EventDataView::Unknown {
+                type_tag: event_type_tag.clone(),
+                data: event_data.to_vec(),
+            })
+        }
+    }
+}
 
+impl From<TransactionEventView> for EventView {
+    fn from(event_view: TransactionEventView) -> Self {
         EventView {
-            key: BytesView::from(event.key().as_bytes()),
+            key: event_view.event_key,
+            sequence_number: event_view.event_seq_number,
+            data: EventDataView::new(&event_view.type_tag, &event_view.data).unwrap_or_else(|_| {
+                EventDataView::Unknown {
+                    data: event_view.data,
+                    type_tag: event_view.type_tag,
+                }
+            }),
+        }
+    }
+}
+
+impl From<ContractEvent> for EventView {
+    /// Tries to convert the provided byte array into Event Key.
+    fn from(event: ContractEvent) -> EventView {
+        let event_data = EventDataView::new(event.type_tag(), event.event_data());
+        EventView {
+            key: *event.key(),
             sequence_number: event.sequence_number(),
-            data: event_data.unwrap_or(EventDataView::Unknown {}),
+            data: event_data.unwrap_or(EventDataView::Unknown {
+                data: event.event_data().to_vec(),
+                type_tag: event.type_tag().clone(),
+            }),
         }
     }
 }
@@ -298,9 +336,9 @@ pub struct PeerInfoView {
 impl From<PeerInfo> for PeerInfoView {
     fn from(peer_info: PeerInfo) -> Self {
         Self {
-            peer_id: peer_info.peer_id,
-            latest_header: peer_info.latest_header.into(),
-            total_difficulty: peer_info.total_difficulty,
+            peer_id: peer_info.peer_id(),
+            latest_header: peer_info.latest_header().clone().into(),
+            total_difficulty: peer_info.total_difficulty(),
         }
     }
 }
@@ -430,44 +468,9 @@ where
     s.serialize_str(&hex::encode(bytes))
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
-pub struct BlockSimpleView {
-    pub id: HashValue,
-    pub number: u64,
-    pub parent_hash: HashValue,
-    pub author: AccountAddress,
-    pub time: u64,
-}
-
-impl From<BlockHeader> for BlockSimpleView {
-    fn from(header: BlockHeader) -> Self {
-        Self {
-            parent_hash: header.parent_hash,
-            number: header.number,
-            id: header.id(),
-            author: header.author,
-            time: header.timestamp,
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct UncleInfo {
-    pub uncle_view: BlockSimpleView,
-    pub uncle_parent_view: BlockSimpleView,
-    pub block_view: BlockSimpleView,
-}
-
-impl UncleInfo {
-    pub fn new(
-        uncle_view: BlockSimpleView,
-        uncle_parent_view: BlockSimpleView,
-        block_view: BlockSimpleView,
-    ) -> Self {
-        Self {
-            uncle_view,
-            uncle_parent_view,
-            block_view,
-        }
-    }
+    pub uncle_view: starcoin_rpc_api::types::BlockHeaderView,
+    pub uncle_parent_view: starcoin_rpc_api::types::BlockHeaderView,
+    pub block_view: starcoin_rpc_api::types::BlockHeaderView,
 }

@@ -5,7 +5,7 @@ use crate::GenerateBlockEvent;
 use anyhow::Result;
 use logger::prelude::*;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
-use tx_relay::PropagateNewTransactions;
+use starcoin_txpool_api::PropagateNewTransactions;
 use types::{
     sync_status::SyncStatus,
     system_events::{NewHeadBlock, SyncStatusChangeEvent},

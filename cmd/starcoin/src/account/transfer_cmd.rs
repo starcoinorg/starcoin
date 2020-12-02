@@ -4,7 +4,7 @@
 use crate::cli_state::CliState;
 use crate::view::{ExecuteResultView, ExecutionOutputView};
 use crate::StarcoinOpt;
-use anyhow::{bail, format_err, Result};
+use anyhow::{format_err, Result};
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{ed25519::Ed25519PublicKey, ValidCryptoMaterialStringExt};
@@ -89,7 +89,7 @@ impl CommandAction for TransferCommand {
         };
         let receiver = opt.receiver;
 
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let receiver_exist_on_chain = account_state_reader
             .get_account_resource(&receiver)?
@@ -137,17 +137,14 @@ impl CommandAction for TransferCommand {
         );
         let txn = client.account_sign_txn(raw_txn)?;
         let txn_hash = txn.crypto_hash();
-        let succ = client.submit_transaction(txn)?;
-        if let Err(e) = succ {
-            bail!("execute-txn is reject by node, reason: {}", &e)
-        }
+        client.submit_transaction(txn)?;
 
         let mut output_view = ExecutionOutputView::new(txn_hash);
 
         if opt.blocking {
             let block = ctx.state().watch_txn(txn_hash)?;
-            output_view.block_number = Some(block.header().number);
-            output_view.block_id = Some(block.header().id());
+            output_view.block_number = Some(block.header.number);
+            output_view.block_id = Some(block.header.block_hash);
         }
         Ok(ExecuteResultView::Run(output_view))
     }

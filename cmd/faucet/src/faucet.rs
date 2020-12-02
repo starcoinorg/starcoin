@@ -31,8 +31,8 @@ impl Faucet {
         amount: u128,
         receiver: AccountAddress,
         public_key: Vec<u8>,
-    ) -> Result<Result<(), anyhow::Error>> {
-        let chain_state_reader = RemoteStateReader::new(&self.client);
+    ) -> Result<()> {
+        let chain_state_reader = RemoteStateReader::new(&self.client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader
             .get_account_resource(self.faucet_account.address())?
@@ -55,7 +55,7 @@ impl Faucet {
             self.client.node_info()?.net.chain_id(),
         );
         let signed_tx = self.client.account_sign_txn(raw_tx)?;
-        let ret = self.client.submit_transaction(signed_tx)?;
-        Ok(ret)
+        self.client.submit_transaction(signed_tx)?;
+        Ok(())
     }
 }

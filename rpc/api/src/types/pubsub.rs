@@ -2,16 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::errors;
+use crate::types::{BlockView, TransactionEventView};
 use jsonrpc_core::error::Error as JsonRpcError;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::{from_value, Value};
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{BlockHeader, BlockNumber};
-use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
 use starcoin_types::filter::Filter;
-use starcoin_types::language_storage::TypeTag;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::convert::TryInto;
@@ -36,10 +34,10 @@ pub enum Kind {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Result {
     /// New block.
-    Block(Box<ThinHeadBlock>),
+    Block(Box<BlockView>),
     /// Transaction hash
     TransactionHash(Vec<HashValue>),
-    Event(Box<Event>),
+    Event(Box<TransactionEventView>),
     MintBlock(Box<MintBlock>),
 }
 
@@ -127,77 +125,6 @@ impl TryInto<Filter> for EventFilter {
             limit: self.limit,
             reverse: true,
         })
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
-pub struct Event {
-    pub block_hash: Option<HashValue>,
-    pub block_number: Option<BlockNumber>,
-    pub transaction_hash: Option<HashValue>,
-    // txn index in block
-    pub transaction_index: Option<u64>,
-
-    pub data: Vec<u8>,
-    pub type_tags: TypeTag,
-    pub event_key: EventKey,
-    pub event_seq_number: u64,
-}
-
-impl From<ContractEventInfo> for Event {
-    fn from(info: ContractEventInfo) -> Self {
-        Event {
-            block_hash: Some(info.block_hash),
-            block_number: Some(info.block_number),
-            transaction_hash: Some(info.transaction_hash),
-            transaction_index: Some(info.transaction_index),
-            data: info.event.event_data().to_vec(),
-            type_tags: info.event.type_tag().clone(),
-            event_key: *info.event.key(),
-            event_seq_number: info.event.sequence_number(),
-        }
-    }
-}
-
-impl Event {
-    pub fn new(
-        block_hash: Option<HashValue>,
-        block_number: Option<BlockNumber>,
-        transaction_hash: Option<HashValue>,
-        transaction_index: Option<u64>,
-        contract_event: &ContractEvent,
-    ) -> Self {
-        Self {
-            block_hash,
-            block_number,
-            transaction_hash,
-            transaction_index,
-            data: contract_event.event_data().to_vec(),
-            type_tags: contract_event.type_tag().clone(),
-            event_key: *contract_event.key(),
-            event_seq_number: contract_event.sequence_number(),
-        }
-    }
-}
-
-/// Block with only txn hashes.
-#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ThinHeadBlock {
-    #[serde(flatten)]
-    header: BlockHeader,
-    txn_hashes: Vec<HashValue>,
-}
-
-impl ThinHeadBlock {
-    pub fn new(header: BlockHeader, txn_hashes: Vec<HashValue>) -> Self {
-        Self { header, txn_hashes }
-    }
-    pub fn header(&self) -> &BlockHeader {
-        &self.header
-    }
-    pub fn body(&self) -> &[HashValue] {
-        &self.txn_hashes
     }
 }
 

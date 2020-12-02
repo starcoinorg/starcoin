@@ -285,9 +285,9 @@ fn main() {
         }
     }
 
+    let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
     if generate_new_version {
         let dest_dir = full_update_with_version(version_number);
-        let new_scripts = compile_scripts_to_bytes(Path::new(TRANSACTION_SCRIPTS));
         if let Some(pre_version) = pre_version {
             let mut pre_version_dir = PathBuf::from(COMPILED_OUTPUT_PATH);
             pre_version_dir.push(format!("{}", pre_version));
@@ -300,6 +300,6 @@ fn main() {
                 &new_scripts,
             );
         }
-        replace_stdlib_by_path(&mut module_path, new_modules, new_scripts);
     }
+    replace_stdlib_by_path(&mut module_path, new_modules, new_scripts);
 }

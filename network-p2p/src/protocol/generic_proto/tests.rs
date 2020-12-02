@@ -17,16 +17,24 @@
 #![cfg(test)]
 
 use crate::protocol::generic_proto::{GenericProto, GenericProtoOut};
-use codec::Encode;
-use futures::{prelude::*, ready};
-use libp2p::core::connection::{ConnectionId, ListenerId};
-use libp2p::core::ConnectedPoint;
-use libp2p::swarm::{IntoProtocolsHandler, ProtocolsHandler, Swarm};
-use libp2p::swarm::{NetworkBehaviour, NetworkBehaviourAction, PollParameters};
+
+use futures::prelude::*;
+use libp2p::core::{
+    connection::{ConnectionId, ListenerId},
+    transport::MemoryTransport,
+    upgrade, ConnectedPoint,
+};
+use libp2p::swarm::{
+    IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
+    ProtocolsHandler, Swarm,
+};
+use libp2p::{identity, noise, yamux};
 use libp2p::{Multiaddr, PeerId, Transport};
-use rand::seq::SliceRandom;
-use std::collections::HashSet;
-use std::{error, io, task::Context, task::Poll, time::Duration};
+use std::{
+    error, io, iter,
+    task::{Context, Poll},
+    time::Duration,
+};
 
 /// Builds two nodes that have each other as bootstrap nodes.
 /// This is to be used only for testing, and a panic will happen if something goes wrong.
@@ -34,7 +42,7 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
     let mut out = Vec::with_capacity(2);
 
     let keypairs: Vec<_> = (0..2)
-        .map(|_| libp2p::identity::Keypair::generate_ed25519())
+        .map(|_| identity::Keypair::generate_ed25519())
         .collect();
     let addrs: Vec<Multiaddr> = (0..2)
         .map(|_| {
@@ -46,30 +54,20 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
 
     for index in 0..2 {
         let keypair = keypairs[index].clone();
-        let transport = libp2p::core::transport::MemoryTransport
-            .and_then(move |out, endpoint| {
-                let secio = libp2p::secio::SecioConfig::new(keypair);
-                libp2p::core::upgrade::apply(
-                    out,
-                    secio,
-                    endpoint,
-                    libp2p::core::upgrade::Version::V1,
-                )
-            })
-            .and_then(move |(peer_id, stream), endpoint| {
-                libp2p::core::upgrade::apply(
-                    stream,
-                    libp2p::yamux::Config::default(),
-                    endpoint,
-                    libp2p::core::upgrade::Version::V1,
-                )
-                .map_ok(|muxer| (peer_id, libp2p::core::muxing::StreamMuxerBox::new(muxer)))
-            })
+        let local_peer_id = keypair.public().into_peer_id();
+
+        let noise_keys = noise::Keypair::<noise::X25519Spec>::new()
+            .into_authentic(&keypair)
+            .unwrap();
+
+        let transport = MemoryTransport
+            .upgrade(upgrade::Version::V1)
+            .authenticate(noise::NoiseConfig::xx(noise_keys).into_authenticated())
+            .multiplex(yamux::YamuxConfig::default())
             .timeout(Duration::from_secs(20))
-            .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
             .boxed();
 
-        let (peerset, _) = peerset::Peerset::from_config(peerset::PeersetConfig {
+        let (peerset, _) = sc_peerset::Peerset::from_config(sc_peerset::PeersetConfig {
             in_peers: 25,
             out_peers: 25,
             bootnodes: if index == 0 {
@@ -86,7 +84,14 @@ fn build_nodes() -> (Swarm<CustomProtoWithAddr>, Swarm<CustomProtoWithAddr>) {
         });
 
         let behaviour = CustomProtoWithAddr {
-            inner: GenericProto::new(&b"test"[..], &[1], peerset, None),
+            inner: GenericProto::new(
+                local_peer_id,
+                "test",
+                &[1],
+                vec![],
+                peerset,
+                iter::once(("/foo".into(), Vec::new())),
+            ),
             addrs: addrs
                 .iter()
                 .enumerate()
@@ -235,114 +240,6 @@ impl NetworkBehaviour for CustomProtoWithAddr {
     fn inject_listener_closed(&mut self, id: ListenerId, reason: Result<(), &io::Error>) {
         self.inner.inject_listener_closed(id, reason);
     }
-}
-
-#[test]
-fn two_nodes_transfer_lots_of_packets() {
-    // We spawn two nodes, then make the first one send lots of packets to the second one. The test
-    // ends when the second one has received all of them.
-
-    // Note that if we go too high, we will reach the limit to the number of simultaneous
-    // substreams allowed by the multiplexer.
-    const NUM_PACKETS: u32 = 5000;
-
-    let (mut service1, mut service2) = build_nodes();
-
-    let fut1 = future::poll_fn(move |cx| -> Poll<()> {
-        loop {
-            match ready!(service1.poll_next_unpin(cx)) {
-                Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
-                    for _n in 0..NUM_PACKETS {
-                        service1._send_packet(&peer_id, vec![]);
-                    }
-                }
-                _ => panic!(),
-            }
-        }
-    });
-
-    let mut packet_counter = 0u32;
-    let fut2 = future::poll_fn(move |cx| loop {
-        match ready!(service2.poll_next_unpin(cx)) {
-            Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
-            Some(GenericProtoOut::LegacyMessage { message: _, .. }) => {
-                packet_counter += 1;
-                if packet_counter == NUM_PACKETS {
-                    return Poll::Ready(());
-                }
-            }
-            _ => panic!(),
-        }
-    });
-
-    futures::executor::block_on(async move {
-        future::select(fut1, fut2).await;
-    });
-}
-
-#[test]
-fn basic_two_nodes_requests_in_parallel() {
-    let (mut service1, mut service2) = build_nodes();
-
-    // Generate random messages with or without a request id.
-    let mut to_send = {
-        let mut to_send = Vec::new();
-        let mut existing_ids = HashSet::new();
-        for _ in 0..200 {
-            // Note: don't make that number too high or the CPU usage will explode.
-            let _req_id = loop {
-                let req_id = rand::random::<u64>();
-
-                // ensure uniqueness - odds of randomly sampling collisions
-                // is unlikely, but possible to cause spurious test failures.
-                if existing_ids.insert(req_id) {
-                    break req_id;
-                }
-            };
-
-            to_send.push(vec![0]);
-        }
-        to_send
-    };
-
-    // Clone `to_send` in `to_receive`. Below we will remove from `to_receive` the messages we
-    // receive, until the list is empty.
-    let mut to_receive = to_send.clone();
-    to_send.shuffle(&mut rand::thread_rng());
-
-    let fut1 = future::poll_fn(move |cx| -> Poll<()> {
-        loop {
-            match ready!(service1.poll_next_unpin(cx)) {
-                Some(GenericProtoOut::CustomProtocolOpen { peer_id, .. }) => {
-                    for msg in to_send.drain(..) {
-                        service1._send_packet(&peer_id, msg.encode());
-                    }
-                }
-                _ => panic!(),
-            }
-        }
-    });
-
-    let fut2 = future::poll_fn(move |cx| loop {
-        match ready!(service2.poll_next_unpin(cx)) {
-            Some(GenericProtoOut::CustomProtocolOpen { .. }) => {}
-            Some(GenericProtoOut::LegacyMessage { message, .. }) => {
-                let pos = to_receive
-                    .iter()
-                    .position(|m| m.encode() == message)
-                    .unwrap();
-                to_receive.remove(pos);
-                if to_receive.is_empty() {
-                    return Poll::Ready(());
-                }
-            }
-            _ => panic!(),
-        }
-    });
-
-    futures::executor::block_on(async move {
-        future::select(fut1, fut2).await;
-    });
 }
 
 #[test]

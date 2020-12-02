@@ -1,27 +1,30 @@
-// Copyright 2018-2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
-// Substrate is free software: you can redistribute it and/or modify
+// Copyright (C) 2018-2020 Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::config::ProtocolId;
 use bytes::BytesMut;
 use futures::prelude::*;
 use futures_codec::Framed;
 use libp2p::core::{upgrade::ProtocolName, Endpoint, InboundUpgrade, OutboundUpgrade, UpgradeInfo};
+use parking_lot::RwLock;
 use std::cmp::Reverse;
 use std::task::{Context, Poll};
-use std::{collections::VecDeque, io, pin::Pin, vec::IntoIter as VecIntoIter};
+use std::{collections::VecDeque, io, pin::Pin, sync::Arc, vec::IntoIter as VecIntoIter};
 use unsigned_varint::codec::UviBytes;
 
 /// Connection upgrade for a single protocol.
@@ -37,15 +40,20 @@ pub struct RegisteredProtocol {
     /// List of protocol versions that we support.
     /// Ordered in descending order so that the best comes first.
     supported_versions: Vec<u8>,
+    /// Handshake to send after the substream is open.
+    handshake_message: Arc<RwLock<Vec<u8>>>,
 }
 
 impl RegisteredProtocol {
-    /// Creates a new `RegisteredProtocol`. The `custom_data` parameter will be
-    /// passed inside the `RegisteredProtocolOutput`.
-    pub fn new(protocol: impl Into<ProtocolId>, versions: &[u8]) -> Self {
+    /// Creates a new `RegisteredProtocol`.
+    pub fn new(
+        protocol: impl Into<ProtocolId>,
+        versions: &[u8],
+        handshake_message: Arc<RwLock<Vec<u8>>>,
+    ) -> Self {
         let protocol = protocol.into();
-        let mut base_name = b"/substrate/".to_vec();
-        base_name.extend_from_slice(protocol.as_bytes());
+        let mut base_name = b"/starcoin/".to_vec();
+        base_name.extend_from_slice(protocol.as_ref().as_bytes());
         base_name.extend_from_slice(b"/");
 
         RegisteredProtocol {
@@ -53,10 +61,16 @@ impl RegisteredProtocol {
             id: protocol,
             supported_versions: {
                 let mut tmp = versions.to_vec();
-                tmp.sort_unstable_by_key(|&b| Reverse(b));
+                tmp.sort_by_key(|&b| Reverse(b));
                 tmp
             },
+            handshake_message,
         }
+    }
+
+    /// Returns the `Arc` to the handshake message that was passed at initialization.
+    pub fn handshake_message(&self) -> &Arc<RwLock<Vec<u8>>> {
+        &self.handshake_message
     }
 }
 
@@ -66,6 +80,7 @@ impl Clone for RegisteredProtocol {
             id: self.id.clone(),
             base_name: self.base_name.clone(),
             supported_versions: self.supported_versions.clone(),
+            handshake_message: self.handshake_message.clone(),
         }
     }
 }
@@ -112,15 +127,6 @@ impl<TSubstream> RegisteredProtocolSubstream<TSubstream> {
         self.is_closing = true;
         self.send_queue.clear();
     }
-
-    /// Sends a message to the substream.
-    pub fn send_message(&mut self, data: Vec<u8>) {
-        if self.is_closing {
-            return;
-        }
-
-        self.send_queue.push_back(From::from(&data[..]));
-    }
 }
 
 /// Event produced by the `RegisteredProtocolSubstream`.
@@ -131,10 +137,7 @@ pub enum RegisteredProtocolEvent {
 
     /// Diagnostic event indicating that the connection is clogged and we should avoid sending too
     /// many messages to it.
-    Clogged {
-        /// Copy of the messages that are within the buffer, for further diagnostic.
-        messages: Vec<Vec<u8>>,
-    },
+    Clogged,
 }
 
 impl<TSubstream> Stream for RegisteredProtocolSubstream<TSubstream>
@@ -168,15 +171,13 @@ where
         }
 
         // Indicating that the remote is clogged if that's the case.
-        if self.send_queue.len() >= 2048 {
+        if self.send_queue.len() >= 1536 {
             if !self.clogged_fuse {
                 // Note: this fuse is important not just for preventing us from flooding the logs;
                 // 	if you remove the fuse, then we will always return early from this function and
                 //	thus never read any message from the network.
                 self.clogged_fuse = true;
-                return Poll::Ready(Some(Ok(RegisteredProtocolEvent::Clogged {
-                    messages: self.send_queue.iter().map(|m| m.clone().to_vec()).collect(),
-                })));
+                return Poll::Ready(Some(Ok(RegisteredProtocolEvent::Clogged)));
             }
         } else {
             self.clogged_fuse = false;
@@ -245,50 +246,77 @@ impl ProtocolName for RegisteredProtocolName {
 
 impl<TSubstream> InboundUpgrade<TSubstream> for RegisteredProtocol
 where
-    TSubstream: AsyncRead + AsyncWrite + Unpin,
+    TSubstream: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
-    type Output = RegisteredProtocolSubstream<TSubstream>;
-    type Future = future::Ready<Result<Self::Output, io::Error>>;
+    type Output = (RegisteredProtocolSubstream<TSubstream>, Vec<u8>);
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Output, io::Error>> + Send>>;
     type Error = io::Error;
 
     fn upgrade_inbound(self, socket: TSubstream, info: Self::Info) -> Self::Future {
-        let framed = {
-            let mut codec = UviBytes::default();
-            codec.set_max_len(16 * 1024 * 1024); // 16 MiB hard limit for packets.
-            Framed::new(socket, codec)
-        };
+        Box::pin(async move {
+            let mut framed = {
+                let mut codec = UviBytes::default();
+                codec.set_max_len(16 * 1024 * 1024); // 16 MiB hard limit for packets.
+                Framed::new(socket, codec)
+            };
 
-        future::ok(RegisteredProtocolSubstream {
-            is_closing: false,
-            endpoint: Endpoint::Listener,
-            send_queue: VecDeque::new(),
-            requires_poll_flush: false,
-            inner: framed.fuse(),
-            protocol_version: info.version,
-            clogged_fuse: false,
+            let handshake = BytesMut::from(&self.handshake_message.read()[..]);
+            framed.send(handshake).await?;
+            let received_handshake = framed
+                .next()
+                .await
+                .ok_or_else(|| io::ErrorKind::UnexpectedEof)??;
+
+            Ok((
+                RegisteredProtocolSubstream {
+                    is_closing: false,
+                    endpoint: Endpoint::Listener,
+                    send_queue: VecDeque::new(),
+                    requires_poll_flush: false,
+                    inner: framed.fuse(),
+                    protocol_version: info.version,
+                    clogged_fuse: false,
+                },
+                received_handshake.to_vec(),
+            ))
         })
     }
 }
 
 impl<TSubstream> OutboundUpgrade<TSubstream> for RegisteredProtocol
 where
-    TSubstream: AsyncRead + AsyncWrite + Unpin,
+    TSubstream: AsyncRead + AsyncWrite + Unpin + Send + 'static,
 {
     type Output = <Self as InboundUpgrade<TSubstream>>::Output;
     type Future = <Self as InboundUpgrade<TSubstream>>::Future;
     type Error = <Self as InboundUpgrade<TSubstream>>::Error;
 
     fn upgrade_outbound(self, socket: TSubstream, info: Self::Info) -> Self::Future {
-        let framed = Framed::new(socket, UviBytes::default());
+        Box::pin(async move {
+            let mut framed = {
+                let mut codec = UviBytes::default();
+                codec.set_max_len(16 * 1024 * 1024); // 16 MiB hard limit for packets.
+                Framed::new(socket, codec)
+            };
 
-        future::ok(RegisteredProtocolSubstream {
-            is_closing: false,
-            endpoint: Endpoint::Dialer,
-            send_queue: VecDeque::new(),
-            requires_poll_flush: false,
-            inner: framed.fuse(),
-            protocol_version: info.version,
-            clogged_fuse: false,
+            let handshake = BytesMut::from(&self.handshake_message.read()[..]);
+            framed.send(handshake).await?;
+            let received_handshake = framed.next().await.ok_or_else(|| {
+                io::Error::new(io::ErrorKind::UnexpectedEof, "Failed to receive handshake")
+            })??;
+
+            Ok((
+                RegisteredProtocolSubstream {
+                    is_closing: false,
+                    endpoint: Endpoint::Dialer,
+                    send_queue: VecDeque::new(),
+                    requires_poll_flush: false,
+                    inner: framed.fuse(),
+                    protocol_version: info.version,
+                    clogged_fuse: false,
+                },
+                received_handshake.to_vec(),
+            ))
         })
     }
 }

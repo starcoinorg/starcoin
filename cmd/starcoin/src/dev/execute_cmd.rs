@@ -171,7 +171,7 @@ impl CommandAction for ExecuteCommand {
 
         let client = ctx.state().client();
         let node_info = client.node_info()?;
-        let chain_state_reader = RemoteStateReader::new(client);
+        let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let account_resource = account_state_reader.get_account_resource(&sender)?;
 
@@ -210,7 +210,7 @@ impl CommandAction for ExecuteCommand {
         let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
         let (vm_status, output) = if opt.local_mode {
-            let state_view = RemoteStateReader::new(client);
+            let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(
                 &state_view,
                 Transaction::UserTransaction(signed_txn.clone()),
@@ -229,18 +229,16 @@ impl CommandAction for ExecuteCommand {
             );
         }
         if !opt.dry_run {
-            let success = client.submit_transaction(signed_txn)?;
-            if let Err(e) = success {
-                bail!("execute-txn is reject by node, reason: {}", &e)
-            }
+            client.submit_transaction(signed_txn)?;
+
             println!("txn {:#x} submitted.", txn_hash);
 
             let mut output_view = ExecutionOutputView::new(txn_hash);
 
             if opt.blocking {
                 let block = ctx.state().watch_txn(txn_hash)?;
-                output_view.block_number = Some(block.header().number);
-                output_view.block_id = Some(block.header().id());
+                output_view.block_number = Some(block.header.number);
+                output_view.block_id = Some(block.header.block_hash);
             }
             Ok(ExecuteResultView::Run(output_view))
         } else {

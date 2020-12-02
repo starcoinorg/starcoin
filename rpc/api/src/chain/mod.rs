@@ -2,64 +2,70 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as ChainClient;
-use crate::types::pubsub::{Event, EventFilter};
+use crate::types::pubsub::EventFilter;
+use crate::types::{
+    BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView, EpochUncleSummaryView,
+    TransactionEventView, TransactionInfoView, TransactionView,
+};
 use crate::FutureResult;
+use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use starcoin_crypto::HashValue;
-use starcoin_types::block::{Block, BlockHeader, BlockNumber, BlockSummary, EpochUncleSummary};
-use starcoin_types::contract_event::ContractEvent;
-use starcoin_types::startup_info::ChainInfo;
+use starcoin_types::block::BlockNumber;
 use starcoin_types::stress_test::TPS;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 
 #[rpc]
 pub trait ChainApi {
-    /// Get chain head info
-    #[rpc(name = "chain.head")]
-    fn head(&self) -> FutureResult<ChainInfo>;
+    #[rpc(name = "chain.id")]
+    fn id(&self) -> Result<ChainId>;
+
+    /// Get main chain info
+    #[rpc(name = "chain.info")]
+    fn info(&self) -> FutureResult<ChainInfoView>;
     /// Get chain block info
     #[rpc(name = "chain.get_block_by_hash")]
-    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Block>;
+    fn get_block_by_hash(&self, block_hash: HashValue) -> FutureResult<BlockView>;
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_number")]
-    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<Block>;
+    fn get_block_by_number(&self, number: BlockNumber) -> FutureResult<BlockView>;
     /// Get latest `count` blocks before `number`. if `number` is absent, use head block number.
     #[rpc(name = "chain.get_blocks_by_number")]
     fn get_blocks_by_number(
         &self,
         number: Option<BlockNumber>,
         count: u64,
-    ) -> FutureResult<Vec<Block>>;
+    ) -> FutureResult<Vec<BlockView>>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction")]
-    fn get_transaction(&self, transaction_id: HashValue) -> FutureResult<Transaction>;
+    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<TransactionView>;
     /// Get chain transactions
     #[rpc(name = "chain.get_transaction_info")]
     fn get_transaction_info(
         &self,
-        transaction_id: HashValue,
-    ) -> FutureResult<Option<TransactionInfo>>;
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionInfoView>>;
 
     /// Get chain transactions infos by block id
     #[rpc(name = "chain.get_block_txn_infos")]
-    fn get_txn_by_block(&self, block_id: HashValue) -> FutureResult<Vec<TransactionInfo>>;
+    fn get_block_txn_infos(&self, block_hash: HashValue) -> FutureResult<Vec<TransactionInfoView>>;
 
     /// Get txn info of a txn at `idx` of block `block_id`
     #[rpc(name = "chain.get_txn_info_by_block_and_index")]
     fn get_txn_info_by_block_and_index(
         &self,
-        block_id: HashValue,
+        block_hash: HashValue,
         idx: u64,
-    ) -> FutureResult<Option<TransactionInfo>>;
+    ) -> FutureResult<Option<TransactionInfoView>>;
 
-    /// FIXME: currently, contract event cannot be deserialized when using json.
-    #[rpc(name = "chain.get_events_by_txn_info_id")]
-    fn get_events_by_txn_info_id(&self, txn_info_id: HashValue)
-        -> FutureResult<Vec<ContractEvent>>;
+    #[rpc(name = "chain.get_events_by_txn_hash")]
+    fn get_events_by_txn_hash(
+        &self,
+        txn_hash: HashValue,
+    ) -> FutureResult<Vec<TransactionEventView>>;
 
     #[rpc(name = "chain.get_events")]
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<Event>>;
+    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>>;
 
     /// Get current epoch info.
     #[rpc(name = "chain.epoch")]
@@ -75,7 +81,7 @@ pub trait ChainApi {
 
     /// Get chain blocks by number
     #[rpc(name = "chain.get_block_by_uncle")]
-    fn get_block_by_uncle(&self, uncle_id: HashValue) -> FutureResult<Option<Block>>;
+    fn get_block_by_uncle(&self, uncle_hash: HashValue) -> FutureResult<Option<BlockView>>;
 
     /// Get tps by block number.
     #[rpc(name = "chain.tps")]
@@ -83,11 +89,14 @@ pub trait ChainApi {
 
     /// Get uncles by number.
     #[rpc(name = "chain.get_epoch_uncles_by_number")]
-    fn get_epoch_uncles_by_number(&self, number: BlockNumber) -> FutureResult<Vec<BlockSummary>>;
+    fn get_epoch_uncles_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<Vec<BlockSummaryView>>;
 
     /// Get headers by ids.
     #[rpc(name = "chain.get_headers")]
-    fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeader>>;
+    fn get_headers(&self, ids: Vec<HashValue>) -> FutureResult<Vec<BlockHeaderView>>;
 
     /// Uncle path.
     #[rpc(name = "chain.uncle_path")]
@@ -95,10 +104,12 @@ pub trait ChainApi {
         &self,
         block_id: HashValue,
         uncle_id: HashValue,
-    ) -> FutureResult<Vec<BlockHeader>>;
+    ) -> FutureResult<Vec<BlockHeaderView>>;
 
     /// Epoch uncle summary by number.
     #[rpc(name = "chain.epoch_uncle_summary_by_number")]
-    fn epoch_uncle_summary_by_number(&self, number: BlockNumber)
-        -> FutureResult<EpochUncleSummary>;
+    fn epoch_uncle_summary_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> FutureResult<EpochUncleSummaryView>;
 }

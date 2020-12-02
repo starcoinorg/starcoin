@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli_state::CliState;
-use crate::view::BlockHeaderView;
 use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_crypto::HashValue;
+use starcoin_rpc_api::types::BlockHeaderView;
 use structopt::StructOpt;
 
 ///Query block by uncle hash
@@ -35,7 +35,7 @@ impl CommandAction for GetBlockByUncleCommand {
         let block = client.chain_get_block_by_uncle(opt.uncle)?;
 
         match block {
-            Some(b) => Ok(Some(b.into())),
+            Some(b) => Ok(Some(b.header)),
             None => Ok(None),
         }
     }

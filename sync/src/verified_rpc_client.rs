@@ -230,8 +230,8 @@ impl VerifiedRpcClient {
         let peer = selector
             .random()
             .ok_or_else(|| format_err!("No peer to request"))?;
-        let peer_id = peer.get_peer_id();
-        let header = peer.get_latest_header();
+        let peer_id = peer.peer_id();
+        let header = peer.latest_header();
         let block_id = header.id();
 
         let block_info = self

@@ -6,9 +6,8 @@ extern crate log;
 #[macro_use]
 extern crate prometheus;
 
-mod helper;
-mod message_processor;
-mod net;
+pub mod helper;
+pub mod net;
 #[cfg(test)]
 mod net_test;
 pub mod network;
@@ -30,6 +29,6 @@ pub use net::NetworkInner;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NetworkMessage {
     pub peer_id: PeerId,
-    pub protocol_name: Cow<'static, [u8]>,
+    pub protocol_name: Cow<'static, str>,
     pub data: Vec<u8>,
 }

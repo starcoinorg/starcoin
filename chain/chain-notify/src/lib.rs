@@ -112,7 +112,7 @@ impl ChainNotifyHandlerService {
         let block_id = block.id();
         let txn_info_ids = store.get_block_txn_info_ids(block_id)?;
         let mut all_events: Vec<Event> = vec![];
-        for (_i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
+        for (i, txn_info_id) in txn_info_ids.into_iter().enumerate().rev() {
             let txn_hash = store
                 .get_transaction_info(txn_info_id)?
                 .map(|info| info.transaction_hash())
@@ -122,7 +122,7 @@ impl ChainNotifyHandlerService {
             all_events.extend(
                 events
                     .into_iter()
-                    .map(|evt| Event::new(block_id, block_number, txn_hash, None, evt)),
+                    .map(|evt| Event::new(block_id, block_number, txn_hash, Some(i as u32), evt)),
             );
         }
         let events = Arc::new(all_events);

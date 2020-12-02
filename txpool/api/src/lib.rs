@@ -19,6 +19,7 @@ pub struct TxPoolStatus {
     pub mem: usize,
     pub mem_max: usize,
     pub senders: usize,
+    pub is_full: bool,
 }
 
 pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
@@ -60,4 +61,24 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     fn status(&self) -> TxPoolStatus;
 
     fn find_txn(&self, hash: &HashValue) -> Option<SignedUserTransaction>;
+    fn txns_of_sender(
+        &self,
+        sender: &AccountAddress,
+        max_len: Option<usize>,
+    ) -> Vec<SignedUserTransaction>;
+}
+
+#[derive(Clone, Debug)]
+pub struct PropagateNewTransactions {
+    txns: Vec<SignedUserTransaction>,
+}
+
+impl PropagateNewTransactions {
+    pub fn propagate_transaction(self) -> Vec<SignedUserTransaction> {
+        self.txns
+    }
+
+    pub fn new(txns: Vec<SignedUserTransaction>) -> Self {
+        Self { txns }
+    }
 }

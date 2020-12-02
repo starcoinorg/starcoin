@@ -5,6 +5,8 @@ use crate::pool::AccountSeqNumberClient;
 use crate::TxStatus;
 use anyhow::Result;
 use crypto::{hash::PlainCryptoHash, keygen::KeyGen};
+use network_api::messages::{PeerTransactionsMessage, TransactionsMessage};
+use network_api::PeerId;
 use parking_lot::RwLock;
 use starcoin_config::NodeConfig;
 use starcoin_executor::{
@@ -19,7 +21,6 @@ use std::time::Duration;
 use std::{collections::HashMap, sync::Arc};
 use stest::actix_export::time::delay_for;
 use storage::BlockStore;
-use tx_relay::PeerTransactions;
 use types::{
     account_address::{self, AccountAddress},
     account_config,
@@ -230,7 +231,10 @@ async fn test_txpool_actor_service() {
     let txn = generate_txn(config, 0);
 
     tx_pool_actor
-        .notify(PeerTransactions::new(vec![txn.clone()]))
+        .notify(PeerTransactionsMessage::new(
+            PeerId::random(),
+            TransactionsMessage::new(vec![txn.clone()]),
+        ))
         .unwrap();
 
     delay_for(Duration::from_millis(200)).await;

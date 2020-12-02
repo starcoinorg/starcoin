@@ -7,6 +7,7 @@ use super::{
     client, listener, local_transactions::LocalTransactionsList, ready, replace, scoring, verifier,
     PendingOrdering, PendingSettings, PrioritizationStrategy, SeqNumber, TxStatus,
 };
+use crate::pool::ready::Expiration;
 use crate::{pool, pool::PoolTransaction};
 use crypto::hash::HashValue;
 use futures_channel::mpsc;
@@ -57,6 +58,15 @@ pub struct Status {
     pub limits: tx_pool::Options,
 }
 
+impl Status {
+    /// helper func to check pool status is full or not.
+    /// should keep sync with Pool::is_full
+    pub fn is_full(&self) -> bool {
+        self.status.transaction_count >= self.limits.max_count
+            || self.status.mem_usage >= self.limits.max_mem_usage
+    }
+}
+
 impl fmt::Display for Status {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
@@ -79,6 +89,7 @@ impl Into<TxPoolStatus> for Status {
             mem: self.status.mem_usage / 1024,
             mem_max: self.limits.max_mem_usage / 1024,
             senders: self.status.senders,
+            is_full: self.is_full(),
         }
     }
 }
@@ -328,6 +339,20 @@ impl TransactionQueue {
             self.cached_pending.write().clear();
         }
         results
+    }
+
+    pub fn txns_of_sender(
+        &self,
+        sender: &Address,
+        max_len: usize,
+    ) -> Vec<Arc<pool::VerifiedTransaction>> {
+        // always ready
+        let ready = Expiration::new(0);
+        self.pool
+            .read()
+            .pending_from_sender(ready, sender)
+            .take(max_len)
+            .collect()
     }
 
     /// Returns current pending transactions ordered by priority.

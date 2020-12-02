@@ -1,50 +1,51 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use libp2p::identity::PublicKey;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_crypto::ed25519::Ed25519PublicKey;
-
 use crate::block::BlockHeader;
 use crate::block::BlockNumber;
+use crate::startup_info::{ChainInfo, ChainStatus};
 use crate::U256;
+use network_p2p_types::identity::PublicKey;
+use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_crypto::ed25519::Ed25519PublicKey;
 use starcoin_crypto::HashValue;
 use std::convert::TryFrom;
 use std::fmt;
 use std::str::FromStr;
 
-pub use libp2p::multiaddr::Multiaddr;
-pub use libp2p::multihash::Multihash;
+pub use network_p2p_types::multiaddr::Multiaddr;
+pub use network_p2p_types::multihash::Multihash;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
-pub struct PeerId(libp2p::PeerId);
+pub struct PeerId(network_p2p_types::PeerId);
 
 impl PeerId {
-    pub fn new(peer_id: libp2p::PeerId) -> Self {
+    pub fn new(peer_id: network_p2p_types::PeerId) -> Self {
         Self(peer_id)
     }
 
     /// Builds a `PeerId` from a public key.
     pub fn from_public_key(key: PublicKey) -> PeerId {
-        Self::new(libp2p::PeerId::from_public_key(key))
+        Self::new(network_p2p_types::PeerId::from_public_key(key))
     }
 
     pub fn from_ed25519_public_key(key: Ed25519PublicKey) -> PeerId {
-        let pub_key = libp2p::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
-            .expect("Decode pubkey must success.");
+        let pub_key =
+            network_p2p_types::identity::ed25519::PublicKey::decode(key.to_bytes().as_ref())
+                .expect("Decode pubkey must success.");
         Self::from_public_key(PublicKey::Ed25519(pub_key))
     }
 
     /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
     /// back the data as an error.
     pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Vec<u8>> {
-        Ok(Self::new(libp2p::PeerId::from_bytes(data)?))
+        Ok(Self::new(network_p2p_types::PeerId::from_bytes(data)?))
     }
 
     /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
     /// returns back the data as an error.
     pub fn from_multihash(data: Multihash) -> Result<PeerId, Multihash> {
-        Ok(Self::new(libp2p::PeerId::from_multihash(data)?))
+        Ok(Self::new(network_p2p_types::PeerId::from_multihash(data)?))
     }
 
     pub fn into_bytes(self) -> Vec<u8> {
@@ -69,18 +70,18 @@ impl PeerId {
     }
 
     pub fn random() -> Self {
-        Self(libp2p::PeerId::random())
+        Self(network_p2p_types::PeerId::random())
     }
 }
 
-impl Into<libp2p::PeerId> for PeerId {
-    fn into(self) -> libp2p::PeerId {
+impl Into<network_p2p_types::PeerId> for PeerId {
+    fn into(self) -> network_p2p_types::PeerId {
         self.0
     }
 }
 
-impl From<libp2p::PeerId> for PeerId {
-    fn from(peer_id: libp2p::PeerId) -> Self {
+impl From<network_p2p_types::PeerId> for PeerId {
+    fn from(peer_id: network_p2p_types::PeerId) -> Self {
         Self(peer_id)
     }
 }
@@ -109,7 +110,7 @@ impl FromStr for PeerId {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(libp2p::PeerId::from_str(s)?))
+        Ok(Self(network_p2p_types::PeerId::from_str(s)?))
     }
 }
 
@@ -121,11 +122,12 @@ impl<'de> Deserialize<'de> for PeerId {
         if deserializer.is_human_readable() {
             //note: if use &str at here, json rpc raise a error: invalid type: string "xx", expected a borrowed string
             let s = <String>::deserialize(deserializer)?;
-            let peer_id = libp2p::PeerId::from_str(s.as_str()).map_err(D::Error::custom)?;
+            let peer_id =
+                network_p2p_types::PeerId::from_str(s.as_str()).map_err(D::Error::custom)?;
             Ok(PeerId(peer_id))
         } else {
             let b = <Vec<u8>>::deserialize(deserializer)?;
-            let peer_id = libp2p::PeerId::from_bytes(b)
+            let peer_id = network_p2p_types::PeerId::from_bytes(b)
                 .map_err(|e| D::Error::custom(format_args!("parse PeerId fail:{:?}", e)))?;
             Ok(PeerId(peer_id))
         }
@@ -153,87 +155,46 @@ impl fmt::Display for PeerId {
 
 #[derive(Eq, PartialEq, Hash, Deserialize, Serialize, Clone, Debug)]
 pub struct PeerInfo {
-    pub peer_id: PeerId,
-    pub latest_header: BlockHeader,
-    pub total_difficulty: U256,
-    pub rpc_protocols: Vec<RpcInfo>,
+    peer_id: PeerId,
+    chain_info: ChainInfo,
 }
 
 impl PeerInfo {
-    pub fn new_for_test(peer_id: PeerId, rpc_protocols: Vec<RpcInfo>) -> Self {
-        PeerInfo {
+    pub fn new(peer_id: PeerId, chain_info: ChainInfo) -> Self {
+        Self {
             peer_id,
-            latest_header: BlockHeader::random(),
-            total_difficulty: U256::zero(),
-            rpc_protocols,
+            chain_info,
         }
     }
 
-    pub fn new_with_proto(
-        peer_id: PeerId,
-        total_difficulty: U256,
-        latest_header: BlockHeader,
-        rpc_protocols: Vec<RpcInfo>,
-    ) -> Self {
-        PeerInfo {
-            peer_id,
-            latest_header,
-            total_difficulty,
-            rpc_protocols,
-        }
-    }
-
-    pub fn new_only_proto(rpc_protocols: Vec<RpcInfo>) -> Self {
-        let mut only_proto = Self::random();
-        only_proto.rpc_protocols = rpc_protocols;
-        only_proto
-    }
-
-    pub fn new_with_peer_info(
-        peer_id: PeerId,
-        total_difficulty: U256,
-        latest_header: BlockHeader,
-        old_peer_info: &PeerInfo,
-    ) -> Self {
-        PeerInfo {
-            peer_id,
-            latest_header,
-            total_difficulty,
-            rpc_protocols: old_peer_info.rpc_protocols.clone(),
-        }
-    }
-
-    pub fn get_peer_id(&self) -> PeerId {
+    pub fn peer_id(&self) -> PeerId {
         self.peer_id.clone()
     }
 
-    pub fn get_block_number(&self) -> BlockNumber {
-        self.latest_header.number()
+    pub fn block_number(&self) -> BlockNumber {
+        self.chain_info.head().number()
     }
 
-    pub fn get_latest_header(&self) -> &BlockHeader {
-        &self.latest_header
+    pub fn latest_header(&self) -> &BlockHeader {
+        self.chain_info.head()
     }
 
-    pub fn get_block_id(&self) -> HashValue {
-        self.latest_header.id()
+    pub fn block_id(&self) -> HashValue {
+        self.chain_info.head().id()
     }
 
-    pub fn get_total_difficulty(&self) -> U256 {
-        self.total_difficulty
+    pub fn total_difficulty(&self) -> U256 {
+        self.chain_info.total_difficulty()
     }
 
-    pub fn register_rpc_proto(&mut self, rpc_info: RpcInfo) {
-        assert!(!rpc_info.is_empty());
-        self.rpc_protocols.push(rpc_info);
+    pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
+        self.chain_info.update_status(chain_status)
     }
 
     pub fn random() -> Self {
         Self {
             peer_id: PeerId::random(),
-            total_difficulty: U256::from(0),
-            latest_header: BlockHeader::random(),
-            rpc_protocols: Vec::new(),
+            chain_info: ChainInfo::random(),
         }
     }
 }
@@ -248,12 +209,21 @@ impl RpcInfo {
         self.paths.is_empty()
     }
 
-    pub fn new(paths: Vec<String>) -> Self {
-        let mut inner = Vec::new();
-        paths.iter().for_each(|path| {
-            inner.retain(|p| p != path);
-            inner.push(path.clone());
-        });
-        Self { paths: inner }
+    pub fn empty() -> Self {
+        Self { paths: vec![] }
+    }
+    pub fn new(mut paths: Vec<String>) -> Self {
+        paths.sort();
+        paths.dedup();
+        Self { paths }
+    }
+}
+
+impl IntoIterator for RpcInfo {
+    type Item = String;
+    type IntoIter = std::vec::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.paths.into_iter()
     }
 }
