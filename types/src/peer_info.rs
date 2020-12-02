@@ -171,6 +171,10 @@ impl PeerInfo {
         self.peer_id.clone()
     }
 
+    pub fn chain_info(&self) -> &ChainInfo {
+        &self.chain_info
+    }
+
     pub fn block_number(&self) -> BlockNumber {
         self.chain_info.head().number()
     }
@@ -189,6 +193,10 @@ impl PeerInfo {
 
     pub fn update_chain_status(&mut self, chain_status: ChainStatus) {
         self.chain_info.update_status(chain_status)
+    }
+
+    pub fn into_inner(self) -> (PeerId, ChainInfo) {
+        (self.peer_id, self.chain_info)
     }
 
     pub fn random() -> Self {

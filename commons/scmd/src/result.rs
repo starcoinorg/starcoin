@@ -19,9 +19,19 @@ impl FromStr for OutputFormat {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "json" => OutputFormat::JSON,
+            "json" | "JSON" => OutputFormat::JSON,
             _ => OutputFormat::TABLE,
         })
+    }
+}
+
+impl std::fmt::Display for OutputFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            OutputFormat::TABLE => "TABLE",
+            OutputFormat::JSON => "JSON",
+        };
+        write!(f, "{}", s)
     }
 }
 
