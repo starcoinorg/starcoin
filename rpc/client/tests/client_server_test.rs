@@ -27,17 +27,17 @@ fn test_multi_client() -> Result<()> {
     std::thread::sleep(Duration::from_millis(300));
 
     let local_client = RpcClient::connect_local(rpc_service_ref)?;
-    let status0 = local_client.node_status()?;
-    info!("local_client status: {}", status0);
+    let status0 = local_client.node_info()?;
+    info!("local_client status: {:?}", status0);
 
     let ipc_client = RpcClient::connect_ipc(ipc_file, &mut rt).expect("connect ipc fail.");
-    let status1 = ipc_client.node_status()?;
-    info!("ipc_client status: {}", status1);
+    let status1 = ipc_client.node_info()?;
+    info!("ipc_client status: {:?}", status1);
 
     let ws_client =
         RpcClient::connect_websocket(url.as_str(), &mut rt).expect("connect websocket fail.");
-    let status = ws_client.node_status()?;
-    info!("ws_client node_status: {}", status);
+    let status = ws_client.node_info()?;
+    info!("ws_client node_status: {:?}", status);
     local_client.close();
     ipc_client.close();
     ws_client.close();
