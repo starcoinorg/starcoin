@@ -19,6 +19,7 @@ pub use rustyline::{
     config::CompletionType, error::ReadlineError, ColorMode, Config as ConsoleConfig, EditMode,
     Editor,
 };
+use std::str::FromStr;
 
 pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
     ConsoleConfig::builder()
@@ -261,25 +262,31 @@ where
             dyn FnOnce(&App, Arc<GlobalOpt>, Arc<State>) -> (ConsoleConfig, Option<PathBuf>),
         >,
         quit_action: Box<dyn FnOnce(App, GlobalOpt, State)>,
-        output_format: OutputFormat,
+        mut output_format: OutputFormat,
     ) {
         //insert version, quit, history command
         let mut app = app
             .subcommand(
                 SubCommand::with_name("version")
                     .help("Print app version.")
-                    .display_order(996),
+                    .display_order(995),
             )
             .subcommand(
-                SubCommand::with_name("quit")
-                    .aliases(&["exit", "q!"])
-                    .help("Quit from console.")
-                    .display_order(997),
+                SubCommand::with_name("output")
+                    .arg(Arg::from_usage("[format] 'Output format: JSON|TABLE'"))
+                    .help("Set console output format.")
+                    .display_order(996),
             )
             .subcommand(
                 SubCommand::with_name("history")
                     .arg(Arg::from_usage("-c, --clear 'Clear console history.'"))
                     .help("Command to show or clear history")
+                    .display_order(997),
+            )
+            .subcommand(
+                SubCommand::with_name("quit")
+                    .aliases(&["exit", "q!"])
+                    .help("Quit from console.")
                     .display_order(998),
             );
 
@@ -359,6 +366,17 @@ where
                         }
                         "version" => {
                             println!("{}", LONG_VERSION.as_str());
+                        }
+                        "output" => {
+                            if params.len() == 1 {
+                                println!("Current format: {}", output_format);
+                            } else if params.len() == 2 {
+                                output_format = OutputFormat::from_str(params[1])
+                                    .unwrap_or(OutputFormat::TABLE);
+                                println!("Set output format to: {}", output_format);
+                            } else {
+                                println!("Usage: output [format] 'Output format: JSON|TABLE'");
+                            }
                         }
                         "console" => continue,
                         "" => continue,
