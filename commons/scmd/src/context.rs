@@ -90,6 +90,7 @@ where
         D: FnOnce(App, GlobalOpt, State) + 'static,
     {
         let mut app = GlobalOpt::clap();
+        //TODO pass version as argument
         app = app
             .version(VERSION)
             .long_version(LONG_VERSION.as_str())

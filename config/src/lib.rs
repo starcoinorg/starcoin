@@ -4,6 +4,7 @@
 use crate::account_vault_config::AccountVaultConfig;
 use crate::sync_config::SyncConfig;
 use anyhow::{ensure, format_err, Result};
+use git_version::git_version;
 use network_p2p_types::MultiaddrWithPeerId;
 use once_cell::sync::Lazy;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -21,6 +22,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
+use structopt::clap::crate_version;
 use structopt::StructOpt;
 
 mod account_vault_config;
@@ -44,6 +46,7 @@ pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
+use names::{Generator, Name};
 pub use network_config::NetworkConfig;
 pub use rpc_config::RpcConfig;
 pub use starcoin_crypto::ed25519::genesis_key_pair;
@@ -55,6 +58,21 @@ pub use starcoin_vm_types::time::{MockTimeService, RealTimeService, TimeService}
 pub use storage_config::StorageConfig;
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
+
+static CRATE_VERSION: &str = crate_version!();
+static GIT_VERSION: &str = git_version!(fallback = "unknown");
+
+pub static APP_NAME: &str = "starcoin";
+pub static APP_VERSION: Lazy<String> = Lazy::new(|| {
+    if GIT_VERSION != "unknown" {
+        format!("{} (build:{})", CRATE_VERSION, GIT_VERSION)
+    } else {
+        CRATE_VERSION.to_string()
+    }
+});
+
+pub static APP_NAME_WITH_VERSION: Lazy<String> =
+    Lazy::new(|| format!("{}/{}", APP_NAME, APP_VERSION.clone()));
 
 /// Default data dir
 pub static DEFAULT_BASE_DATA_DIR: Lazy<PathBuf> = Lazy::new(|| {
@@ -135,6 +153,10 @@ pub struct StarcoinOpt {
     #[structopt(long)]
     /// P2P network seed, if want add more seeds, please edit config file.
     pub seed: Option<MultiaddrWithPeerId>,
+
+    #[structopt(long = "node-name")]
+    /// Node network name, just for display, if absent will generate a random name.
+    pub node_name: Option<String>,
 
     #[structopt(long = "node-key")]
     /// Node network private key, only work for first init.
@@ -235,6 +257,7 @@ impl Default for DataDirPath {
 #[derive(Clone, Debug, PartialEq)]
 pub struct BaseConfig {
     net: ChainNetwork,
+    node_name: String,
     base_data_dir: DataDirPath,
     data_dir: PathBuf,
 }
@@ -263,8 +286,10 @@ impl BaseConfig {
             opt.genesis_config.clone(),
         )?;
         let net = ChainNetwork::new(id, genesis_config);
+        let node_name = opt.node_name.clone().unwrap_or_else(generate_node_name);
         Ok(Self {
             net,
+            node_name,
             base_data_dir,
             data_dir,
         })
@@ -323,6 +348,9 @@ impl BaseConfig {
     }
     pub fn base_data_dir(&self) -> DataDirPath {
         self.base_data_dir.clone()
+    }
+    pub fn node_name(&self) -> &str {
+        self.node_name.as_str()
     }
 }
 
@@ -401,6 +429,10 @@ impl NodeConfig {
 
     pub fn base(&self) -> &BaseConfig {
         self.base.as_ref().expect("Base must exist after init.")
+    }
+
+    pub fn node_name(&self) -> &str {
+        self.base().node_name()
     }
 }
 
@@ -498,6 +530,20 @@ pub fn gen_keypair() -> KeyPair<Ed25519PrivateKey, Ed25519PublicKey> {
         public_key,
     }
 }
+const NODE_NAME_MAX_LENGTH: usize = 64;
+/// Generate a valid random name for the node
+fn generate_node_name() -> String {
+    loop {
+        let node_name = Generator::with_naming(Name::Numbered)
+            .next()
+            .expect("RNG is available on all supported platforms; qed");
+        let count = node_name.chars().count();
+
+        if count < NODE_NAME_MAX_LENGTH {
+            return node_name;
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -510,7 +556,7 @@ mod tests {
             let temp_path = temp_path();
             opt.net = Some(net.into());
             opt.data_dir = Some(temp_path.path().to_path_buf());
-
+            opt.node_name = Some("test-node-1".to_string());
             let config = NodeConfig::load_with_opt(&opt)?;
             let config2 = NodeConfig::load_with_opt(&opt)?;
             assert_eq!(config, config2, "test config for network {} fail.", net);
@@ -525,6 +571,7 @@ mod tests {
         let temp_path = temp_path();
         opt.net = Some(net);
         opt.data_dir = Some(temp_path.path().to_path_buf());
+        opt.node_name = Some("test-node-1".to_string());
         opt.genesis_config = Some(BuiltinNetworkID::Test.to_string());
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;

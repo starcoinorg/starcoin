@@ -134,7 +134,7 @@ mod tests {
             HashValue::random(),
             ChainStatus::random(),
         );
-        for _index in 0..num {
+        for index in 0..num {
             let mut boot_nodes = Vec::new();
 
             if let Some(first_addr) = first_addr.as_ref() {
@@ -155,7 +155,13 @@ mod tests {
             }
             let mut protocols = NotificationMessage::protocols();
             protocols.push(TEST_NOTIF_PROTOCOL_NAME.into());
-            let server = build_network_service(chain_info.clone(), &config, protocols, None);
+            let server = build_network_service(
+                format!("test-node-{}", index),
+                chain_info.clone(),
+                &config,
+                protocols,
+                None,
+            );
             result.push({
                 let c: NetworkComponent = (
                     server.0,
