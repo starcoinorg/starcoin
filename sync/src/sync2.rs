@@ -303,6 +303,9 @@ impl EventHandler<Self, SyncDone> for SyncService2 {
         }
         self.sync_status.sync_done();
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+        // check sync again
+        //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
+        ctx.notify(CheckSyncEvent::new(false, vec![]));
     }
 }
 
