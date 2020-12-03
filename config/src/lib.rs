@@ -24,6 +24,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 mod account_vault_config;
+mod api_config;
 mod available_port;
 mod logger_config;
 mod metrics_config;
@@ -34,10 +35,11 @@ mod storage_config;
 mod sync_config;
 mod txpool_config;
 
+use crate::rpc_config::{HttpConfiguration, IpcConfiguration, TcpConfiguration, WsConfiguration};
+pub use api_config::{Api, ApiSet};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
-
 pub use libra_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
@@ -186,6 +188,15 @@ pub struct StarcoinOpt {
     /// Init chain by a custom genesis config. if want to reuse builtin network config, just pass a builtin network name.
     /// This option only work for node init start.
     pub genesis_config: Option<String>,
+
+    #[structopt(flatten)]
+    pub http: HttpConfiguration,
+    #[structopt(flatten)]
+    pub tcp: TcpConfiguration,
+    #[structopt(flatten)]
+    pub ws: WsConfiguration,
+    #[structopt(flatten)]
+    pub ipc: IpcConfiguration,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -429,7 +440,9 @@ where
     T: Serialize + DeserializeOwned,
     P: AsRef<Path>,
 {
-    let contents = toml::to_vec(c)?;
+    // fix toml table problem, see https://github.com/alexcrichton/toml-rs/issues/142
+    let c = toml::value::Value::try_from(c)?;
+    let contents = toml::to_vec(&c)?;
     let mut file = File::create(output_file)?;
     file.write_all(&contents)?;
     Ok(())

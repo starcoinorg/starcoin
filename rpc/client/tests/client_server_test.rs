@@ -13,9 +13,8 @@ fn test_multi_client() -> Result<()> {
     let mut node_config = NodeConfig::random_for_test();
     node_config.miner.enable_miner_client = false;
     let config = Arc::new(node_config);
-    let ws_address = config.rpc.ws_address.as_ref().unwrap();
     let ipc_file = config.rpc.get_ipc_file().to_path_buf();
-    let url = format!("ws://{}", ws_address.to_string());
+    let url = config.rpc.get_ws_address().unwrap();
     debug!("url:{}", url);
     debug!("data_dir:{:?}", config.data_dir());
 

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::api_registry::{APIType, ApiRegistry};
+use crate::api_registry::ApiRegistry;
 use crate::extractors::{RpcExtractor, WsExtractor};
 use anyhow::Result;
 use failure::format_err;
@@ -17,7 +17,7 @@ use jsonrpc_core_client::{
 use jsonrpc_pubsub::Session;
 use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
-use starcoin_config::NodeConfig;
+use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
@@ -29,6 +29,8 @@ use starcoin_rpc_api::{
     node::NodeApi, pubsub::StarcoinPubSub, state::StateApi, txpool::TxPoolApi,
 };
 use starcoin_service_registry::{ActorService, ServiceContext, ServiceHandler};
+use std::collections::HashSet;
+use std::net::SocketAddr;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -99,65 +101,68 @@ impl RpcService {
     {
         let mut api_registry = ApiRegistry::default();
 
-        api_registry.register(APIType::Public, NodeApi::to_delegate(node_api));
+        api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
         if let Some(node_manager_api) = node_manager_api {
             api_registry.register(
-                APIType::Admin,
+                Api::NodeManager,
                 NodeManagerApi::to_delegate(node_manager_api),
             );
         }
         if let Some(sync_manager_api) = sync_manager_api {
             api_registry.register(
-                APIType::Admin,
+                Api::SyncManager,
                 SyncManagerApi::to_delegate(sync_manager_api),
             )
         }
         if let Some(network_manager_api) = network_manager_api {
             api_registry.register(
-                APIType::Admin,
+                Api::NetworkManager,
                 NetworkManagerApi::to_delegate(network_manager_api),
             )
         }
         if let Some(chain_api) = chain_api {
-            api_registry.register(APIType::Public, ChainApi::to_delegate(chain_api));
+            api_registry.register(Api::Chain, ChainApi::to_delegate(chain_api));
         }
         if let Some(txpool_api) = txpool_api {
-            api_registry.register(APIType::Public, TxPoolApi::to_delegate(txpool_api));
+            api_registry.register(Api::TxPool, TxPoolApi::to_delegate(txpool_api));
         }
         if let Some(account_api) = account_api {
-            api_registry.register(APIType::Personal, AccountApi::to_delegate(account_api));
+            api_registry.register(Api::Account, AccountApi::to_delegate(account_api));
         }
         if let Some(state_api) = state_api {
-            api_registry.register(APIType::Public, StateApi::to_delegate(state_api));
+            api_registry.register(Api::State, StateApi::to_delegate(state_api));
         }
         if let Some(pubsub_api) = pubsub_api {
-            api_registry.register(APIType::Public, StarcoinPubSub::to_delegate(pubsub_api));
+            api_registry.register(Api::PubSub, StarcoinPubSub::to_delegate(pubsub_api));
         }
         if let Some(debug_api) = debug_api {
-            api_registry.register(APIType::Admin, DebugApi::to_delegate(debug_api));
+            api_registry.register(Api::Debug, DebugApi::to_delegate(debug_api));
         }
         if let Some(miner_api) = miner_api {
-            api_registry.register(APIType::Public, MinerApi::to_delegate(miner_api));
+            api_registry.register(Api::Miner, MinerApi::to_delegate(miner_api));
         }
         if let Some(dev_api) = dev_api {
-            api_registry.register(APIType::Public, DevApi::to_delegate(dev_api));
+            api_registry.register(Api::Dev, DevApi::to_delegate(dev_api));
         }
         Self::new(config, api_registry)
     }
 
     #[cfg(not(windows))]
     fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
-        let ipc_file = self.config.rpc.get_ipc_file();
-        let io_handler =
-            self.api_registry
-                .get_apis(&[APIType::Public, APIType::Personal, APIType::Admin]);
+        Ok(if self.config.rpc.ipc.disable {
+            None
+        } else {
+            let ipc_file = self.config.rpc.get_ipc_file();
+            let apis: HashSet<Api> = self.config.rpc.ipc.apis.list_apis();
+            let io_handler = self.api_registry.get_apis(apis);
 
-        info!("Ipc rpc server start at :{:?}", ipc_file);
-        Ok(Some(
-            jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(RpcExtractor)
-                .start(ipc_file.to_str().expect("Path to string should success."))?,
-        ))
+            info!("Ipc rpc server start at :{:?}", ipc_file);
+            Some(
+                jsonrpc_ipc_server::ServerBuilder::new(io_handler)
+                    .session_meta_extractor(RpcExtractor)
+                    .start(ipc_file.to_str().expect("Path to string should success."))?,
+            )
+        })
     }
 
     //IPC raise a error on windows: The filename, directory name, or volume label syntax is incorrect.
@@ -167,52 +172,56 @@ impl RpcService {
     }
 
     fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
-        Ok(match &self.config.rpc.http_address {
-            Some(address) => {
-                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
-                let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-                    .meta_extractor(RpcExtractor)
-                    .cors(DomainsValidation::AllowOnly(vec![
-                        AccessControlAllowOrigin::Null,
-                        AccessControlAllowOrigin::Any,
-                    ]))
-                    .threads(self.config.rpc.threads.unwrap_or_else(num_cpus::get))
-                    .max_request_body_size(self.config.rpc.max_request_body_size)
-                    .health_api(("/status", "status"))
-                    .start_http(address)?;
-                info!("Http rpc server start at :{}", address);
-                Some(http)
-            }
-            None => None,
+        Ok(if self.config.rpc.http.disable {
+            None
+        } else {
+            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.http.port);
+            let apis = self.config.rpc.http.apis.list_apis();
+            let io_handler = self.api_registry.get_apis(apis);
+            let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
+                .meta_extractor(RpcExtractor)
+                .cors(DomainsValidation::AllowOnly(vec![
+                    AccessControlAllowOrigin::Null,
+                    AccessControlAllowOrigin::Any,
+                ]))
+                .threads(self.config.rpc.http.threads.unwrap_or_else(num_cpus::get))
+                .max_request_body_size(self.config.rpc.http.max_request_body_size)
+                .health_api(("/status", "status"))
+                .start_http(&address)?;
+            info!("Rpc: http server start at :{}", address);
+            Some(http)
         })
     }
 
     fn start_tcp(&self) -> Result<Option<jsonrpc_tcp_server::Server>> {
-        Ok(match &self.config.rpc.tcp_address {
-            Some(address) => {
-                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
-                let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(RpcExtractor)
-                    .start(address)?;
-                info!("Rpc: tcp server start at: {}", address);
-                Some(tcp_server)
-            }
-            None => None,
+        Ok(if self.config.rpc.tcp.disable {
+            None
+        } else {
+            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.tcp.port);
+            let apis = self.config.rpc.tcp.apis.list_apis();
+
+            let io_handler = self.api_registry.get_apis(apis);
+            let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
+                .session_meta_extractor(RpcExtractor)
+                .start(&address)?;
+            info!("Rpc: tcp server start at: {}", address);
+            Some(tcp_server)
         })
     }
 
     fn start_ws(&self) -> Result<Option<jsonrpc_ws_server::Server>> {
-        Ok(match &self.config.rpc.ws_address {
-            None => None,
-            Some(address) => {
-                let io_handler = self.api_registry.get_apis(&[APIType::Public]);
-                let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(WsExtractor)
-                    .max_payload(self.config.rpc.max_request_body_size)
-                    .start(address)?;
-                info!("Rpc: websocket server start at: {}", address);
-                Some(ws_server)
-            }
+        Ok(if self.config.rpc.ws.disable {
+            None
+        } else {
+            let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.ws.port);
+            let apis = self.config.rpc.ws.apis.list_apis();
+            let io_handler = self.api_registry.get_apis(apis);
+            let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
+                .session_meta_extractor(WsExtractor)
+                .max_payload(self.config.rpc.ws.max_request_body_size)
+                .start(&address)?;
+            info!("Rpc: websocket server start at: {}", address);
+            Some(ws_server)
         })
     }
 
@@ -261,9 +270,8 @@ pub fn connect_local(
 
 impl ServiceHandler<Self, ConnectLocal> for RpcService {
     fn handle(&mut self, _msg: ConnectLocal, ctx: &mut ServiceContext<RpcService>) -> RpcChannel {
-        let io_handler =
-            self.api_registry
-                .get_apis(&[APIType::Public, APIType::Personal, APIType::Admin]);
+        let apis = ApiSet::All.list_apis();
+        let io_handler = self.api_registry.get_apis(apis);
         //remove middleware.
         let mut local_io_handler = MetaIoHandler::default();
         local_io_handler.extend_with(io_handler.iter().map(|(n, f)| (n.clone(), f.clone())));
