@@ -4437,7 +4437,7 @@ dependencies = [
 
 [[package]]
 name = "network-p2p-types"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "bitflags",
@@ -6957,7 +6957,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-dataformat-generator"
-version = "0.1.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -7295,7 +7295,7 @@ dependencies = [
 
 [[package]]
 name = "starcoin-move-explain"
-version = "0.1.0"
+version = "0.8.0"
 dependencies = [
  "errmapgen",
  "libra-workspace-hack",
