@@ -709,7 +709,7 @@ module Account {
         txn_gas_price: u64,
         txn_max_gas_units: u64,
     ) acquires Account, Balance {
-        assert(Signer::address_of(account) == CoreAddresses::GENESIS_ADDRESS(), Errors::requires_address(EPROLOGUE_ACCOUNT_DOES_NOT_EXIST));
+        CoreAddresses::assert_genesis_address(account);
 
         // FUTURE: Make these error codes sequential
         // Verify that the transaction sender's account exists
