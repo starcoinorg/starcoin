@@ -178,7 +178,7 @@ impl RpcConfig {
         if self.ws.disable {
             return None;
         }
-        Some(format!("ws://{}:{}", self.rpc_address, self.tcp.port))
+        Some(format!("ws://{}:{}", self.rpc_address, self.ws.port))
     }
     pub fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
         base.data_dir().join(DEFAULT_IPC_FILE)

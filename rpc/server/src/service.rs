@@ -198,7 +198,7 @@ impl RpcService {
             None
         } else {
             let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.tcp.port);
-            let apis = self.config.rpc.http.apis.list_apis();
+            let apis = self.config.rpc.tcp.apis.list_apis();
 
             let io_handler = self.api_registry.get_apis(apis);
             let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
@@ -214,7 +214,7 @@ impl RpcService {
             None
         } else {
             let address = SocketAddr::new(self.config.rpc.rpc_address, self.config.rpc.ws.port);
-            let apis = self.config.rpc.http.apis.list_apis();
+            let apis = self.config.rpc.ws.apis.list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let ws_server = jsonrpc_ws_server::ServerBuilder::new(io_handler)
                 .session_meta_extractor(WsExtractor)
