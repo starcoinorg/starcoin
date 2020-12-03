@@ -556,7 +556,7 @@ mod tests {
             let temp_path = temp_path();
             opt.net = Some(net.into());
             opt.data_dir = Some(temp_path.path().to_path_buf());
-
+            opt.node_name = Some("test-node-1".to_string());
             let config = NodeConfig::load_with_opt(&opt)?;
             let config2 = NodeConfig::load_with_opt(&opt)?;
             assert_eq!(config, config2, "test config for network {} fail.", net);
@@ -571,6 +571,7 @@ mod tests {
         let temp_path = temp_path();
         opt.net = Some(net);
         opt.data_dir = Some(temp_path.path().to_path_buf());
+        opt.node_name = Some("test-node-1".to_string());
         opt.genesis_config = Some(BuiltinNetworkID::Test.to_string());
         let config = NodeConfig::load_with_opt(&opt)?;
         let config2 = NodeConfig::load_with_opt(&opt)?;
