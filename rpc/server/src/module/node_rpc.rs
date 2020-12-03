@@ -9,8 +9,8 @@ use network_api::PeerProvider;
 use starcoin_config::NodeConfig;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};
+use starcoin_rpc_api::types::PeerInfoView;
 use starcoin_rpc_api::FutureResult;
-use starcoin_types::peer_info::PeerInfo;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -46,7 +46,7 @@ impl NodeApi for NodeRpcImpl {
             //TODO read consensus_strategy from Epoch.
             let consensus_strategy = net.genesis_config().consensus();
             let node_info = NodeInfo::new(
-                peer_info,
+                peer_info.into(),
                 self_address,
                 net.id().clone(),
                 consensus_strategy,
@@ -57,9 +57,15 @@ impl NodeApi for NodeRpcImpl {
         Box::new(fut.map_err(map_err).boxed().compat())
     }
 
-    fn peers(&self) -> FutureResult<Vec<PeerInfo>> {
+    fn peers(&self) -> FutureResult<Vec<PeerInfoView>> {
         let service = self.service.clone().unwrap();
-        let fut = async move { service.peer_set().await };
+        let fut = async move {
+            let peers = service.peer_set().await?;
+            Ok(peers
+                .into_iter()
+                .map(PeerInfoView::from)
+                .collect::<Vec<_>>())
+        };
         Box::new(fut.map_err(map_err).boxed().compat())
     }
 

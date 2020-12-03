@@ -254,9 +254,7 @@ impl NetworkBehaviour for Protocol {
                 }
             },
             GenericProtoOut::CustomProtocolClosed { peer_id, .. } => {
-                self.on_peer_disconnected(peer_id.clone());
-                // Notify all the notification protocols as closed.
-                CustomMessageOutcome::NotificationStreamClosed { remote: peer_id }
+                self.on_peer_disconnected(peer_id)
             }
             GenericProtoOut::CustomProtocolReplaced {
                 peer_id,
@@ -510,11 +508,17 @@ impl Protocol {
     }
 
     /// Called by peer when it is disconnecting
-    pub fn on_peer_disconnected(&mut self, peer: PeerId) {
+    pub fn on_peer_disconnected(&mut self, peer: PeerId) -> CustomMessageOutcome {
         if self.important_peers.contains(&peer) {
             warn!(target: "network-p2p", "Reserved peer {} disconnected", peer);
         } else {
             trace!(target: "network-p2p", "{} disconnected", peer);
+        }
+        if let Some(_peer_data) = self.context_data.peers.remove(&peer) {
+            // Notify all the notification protocols as closed.
+            CustomMessageOutcome::NotificationStreamClosed { remote: peer }
+        } else {
+            CustomMessageOutcome::None
         }
     }
 

@@ -9,15 +9,15 @@ use starcoin_types::peer_info::PeerId;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt, Default)]
-#[structopt(name = "connected_peers")]
-pub struct ConnectedPeersOpt {}
+#[structopt(name = "known_peers")]
+pub struct KnownPeersOpt {}
 
-pub struct ConnectedPeersCommand;
+pub struct KnownPeersCommand;
 
-impl CommandAction for ConnectedPeersCommand {
+impl CommandAction for KnownPeersCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = ConnectedPeersOpt;
+    type Opt = KnownPeersOpt;
     type ReturnItem = Vec<PeerId>;
 
     fn run(
@@ -25,6 +25,6 @@ impl CommandAction for ConnectedPeersCommand {
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        client.network_connected_peers()
+        client.network_known_peers()
     }
 }

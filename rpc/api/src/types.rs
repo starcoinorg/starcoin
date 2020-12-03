@@ -20,6 +20,7 @@ use starcoin_types::block::{
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
 use starcoin_types::language_storage::TypeTag;
+use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
 use starcoin_types::transaction::RawUserTransaction;
@@ -536,6 +537,22 @@ impl From<ChainInfo> for ChainInfoView {
             genesis_hash,
             head: head.into(),
             total_difficulty,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PeerInfoView {
+    pub peer_id: PeerId,
+    pub chain_info: ChainInfoView,
+}
+
+impl From<PeerInfo> for PeerInfoView {
+    fn from(info: PeerInfo) -> Self {
+        let (peer_id, chain_info) = info.into_inner();
+        Self {
+            peer_id,
+            chain_info: chain_info.into(),
         }
     }
 }

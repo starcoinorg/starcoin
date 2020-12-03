@@ -4754,6 +4754,7 @@ dependencies = [
  "libp2p",
  "rand 0.7.3",
  "serde",
+ "serde_json",
  "starcoin-canonical-serialization",
 ]
 
@@ -6179,9 +6180,9 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.17"
+version = "0.16.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5911690c9b773bab7e657471afc207f3827b249a657241327e3544d79bcabdd"
+checksum = "024a1e66fea74c66c66624ee5622a7ff0e4b73a13b4f5c326ddb50c708944226"
 dependencies = [
  "cc",
  "libc",
@@ -7193,6 +7194,7 @@ dependencies = [
  "forkable-jellyfish-merkle",
  "futures 0.3.8",
  "hex",
+ "network-p2p-types",
  "rand 0.7.3",
  "scmd",
  "serde",
@@ -7910,6 +7912,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
+ "network-p2p-types",
  "serde",
  "serde-helpers",
  "serde_json",
@@ -7947,6 +7950,7 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
+ "network-p2p-types",
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
@@ -8012,6 +8016,7 @@ dependencies = [
  "jsonrpc-ws-server",
  "log 0.4.11",
  "network-api",
+ "network-p2p-types",
  "num_cpus",
  "parking_lot 0.11.1",
  "serde",

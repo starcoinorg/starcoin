@@ -4,6 +4,7 @@
 use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
+use network_p2p_types::network_state::NetworkState;
 use starcoin_network::NetworkAsyncService;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::FutureResult;
@@ -21,10 +22,16 @@ impl NetworkManagerRpcImpl {
 }
 
 impl NetworkManagerApi for NetworkManagerRpcImpl {
-    fn connected_peers(&self) -> FutureResult<Vec<PeerId>> {
+    fn state(&self) -> FutureResult<NetworkState> {
+        let service = self.service.clone();
+        let fut = async move { service.network_state().await }.map_err(map_err);
+        Box::new(fut.boxed().compat())
+    }
+
+    fn known_peers(&self) -> FutureResult<Vec<PeerId>> {
         let service = self.service.clone();
         let fut = async move {
-            let result = service.connected_peers().await;
+            let result = service.known_peers().await;
             Ok(result)
         }
         .map_err(map_err);

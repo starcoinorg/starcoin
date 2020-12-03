@@ -4,28 +4,27 @@
 use crate::cli_state::CliState;
 use crate::StarcoinOpt;
 use anyhow::Result;
+use network_p2p_types::network_state::NetworkState;
 use scmd::{CommandAction, ExecContext};
-use starcoin_rpc_api::types::PeerInfoView;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "peers")]
-pub struct PeersOpt {}
+#[derive(Debug, StructOpt, Default)]
+#[structopt(name = "state")]
+pub struct StateOpt {}
 
-pub struct PeersCommand;
+pub struct StateCommand;
 
-impl CommandAction for PeersCommand {
+impl CommandAction for StateCommand {
     type State = CliState;
     type GlobalOpt = StarcoinOpt;
-    type Opt = PeersOpt;
-    type ReturnItem = Vec<PeerInfoView>;
+    type Opt = StateOpt;
+    type ReturnItem = NetworkState;
 
     fn run(
         &self,
         ctx: &ExecContext<Self::State, Self::GlobalOpt, Self::Opt>,
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
-        let peers = client.node_peers()?;
-        Ok(peers)
+        client.network_state()
     }
 }

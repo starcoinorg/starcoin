@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2
 
 pub use self::gen_client::Client as NodeClient;
+use crate::types::PeerInfoView;
 use crate::FutureResult;
 use jsonrpc_core::Result;
 use jsonrpc_derive::rpc;
 use serde::{Deserialize, Serialize};
-use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::{ChainNetworkID, ConsensusStrategy};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NodeInfo {
     /// Node self peer info
-    pub peer_info: PeerInfo,
+    pub peer_info: PeerInfoView,
     pub self_address: String,
     pub net: ChainNetworkID,
     pub consensus: ConsensusStrategy,
@@ -22,7 +22,7 @@ pub struct NodeInfo {
 
 impl NodeInfo {
     pub fn new(
-        peer_info: PeerInfo,
+        peer_info: PeerInfoView,
         self_address: String,
         net: ChainNetworkID,
         consensus: ConsensusStrategy,
@@ -50,7 +50,7 @@ pub trait NodeApi {
 
     /// Get current node connect peers.
     #[rpc(name = "node.peers")]
-    fn peers(&self) -> FutureResult<Vec<PeerInfo>>;
+    fn peers(&self) -> FutureResult<Vec<PeerInfoView>>;
 
     #[rpc(name = "node.metrics")]
     fn metrics(&self) -> Result<HashMap<String, String>>;

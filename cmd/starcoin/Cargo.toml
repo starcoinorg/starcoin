@@ -29,6 +29,7 @@ starcoin-executor = {path = "../../executor"}
 starcoin-state-api = {path = "../../state/api"}
 starcoin-sync-api = {path = "../../sync/api"}
 starcoin-account-api = {path = "../../account/api"}
+network-p2p-types = {path = "../../network-p2p/types"}
 scmd = { path = "../../commons/scmd" }
 stdlib = {path = "../../vm/stdlib"}
 starcoin-vm-types = {path = "../../vm/types"}
