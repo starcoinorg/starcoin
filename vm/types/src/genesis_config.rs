@@ -977,7 +977,7 @@ pub static PROXIMA_CONFIG: Lazy<GenesisConfig> = Lazy::new(|| {
     vm_config: VMConfig {
         gas_schedule: INITIAL_GAS_SCHEDULE.clone(),
     },
-    publishing_option: VMPublishingOption::Open,
+    publishing_option: VMPublishingOption::CustomScripts,
     gas_constants: DEFAULT_GAS_CONSTANTS.clone(),
     consensus_config: ConsensusConfig {
         uncle_rate_target: UNCLE_RATE_TARGET,
