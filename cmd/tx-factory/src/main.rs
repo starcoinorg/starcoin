@@ -142,6 +142,7 @@ fn main() {
     while matches!(connected, Err(_)) {
         std::thread::sleep(Duration::from_millis(1000));
         connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+        info!("re connecting...");
     }
     let client = connected.unwrap();
 
