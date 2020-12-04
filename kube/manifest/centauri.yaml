@@ -88,7 +88,7 @@ spec:
           - bash
           - -c
         args:
-          - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 100 -t 1
+          - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 400 -t 1 -w 1
         volumeMounts:
           - name: starcoin-stress-volume
             mountPath: /sc-data
