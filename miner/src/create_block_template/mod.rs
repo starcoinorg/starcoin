@@ -229,7 +229,11 @@ impl Inner {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
-        info!("block_gas_limit: {}", block_gas_limit);
+        info!(
+            "block_gas_limit: {}, {:?}",
+            block_gas_limit,
+            self.txpool.status()
+        );
         //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
@@ -266,6 +270,11 @@ impl Inner {
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;
+        info!(
+            "discarded_txns: {:?}, {:?}",
+            excluded_txns.clone().discarded_txns.len(),
+            self.txpool.status()
+        );
         for invalid_txn in excluded_txns.discarded_txns {
             let _ = self.txpool.remove_txn(invalid_txn.id(), true);
         }

@@ -75,12 +75,15 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .get_mut(sender)
             .expect("sender nonce should exists");
         let seq = tx.transaction.sequence_number();
-        debug!("client noce: {}, seq: {}", nonce, seq);
+
         match seq.cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
                 Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
-                _ => tx_pool::Readiness::Future,
+                _ => {
+                    info!("[ready] client noce: {}, seq: {}", nonce, seq);
+                    tx_pool::Readiness::Future
+                }
             },
             cmp::Ordering::Less => tx_pool::Readiness::Stale,
             cmp::Ordering::Equal => {
@@ -132,9 +135,11 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
             Some(transaction::Condition::Number(block)) if block > self.block_number => {
+                info!("[ready] condition blocknumber");
                 tx_pool::Readiness::Future
             }
             Some(transaction::Condition::Timestamp(time)) if time > self.now => {
+                info!("[ready] condition Timestamp");
                 tx_pool::Readiness::Future
             }
             _ => tx_pool::Readiness::Ready,
@@ -172,7 +177,10 @@ impl<C: Fn(&Address) -> Option<SeqNumber>> tx_pool::Ready<VerifiedTransaction>
             state_nonce.unwrap_or_else(|| tx.transaction.sequence_number())
         });
         match tx.transaction.sequence_number().cmp(nonce) {
-            cmp::Ordering::Greater => tx_pool::Readiness::Future,
+            cmp::Ordering::Greater => {
+                info!("[ready] OptionalState");
+                tx_pool::Readiness::Future
+            }
             cmp::Ordering::Less => tx_pool::Readiness::Stale,
             cmp::Ordering::Equal => {
                 *nonce = nonce.saturating_add(1);

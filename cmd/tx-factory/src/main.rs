@@ -552,6 +552,12 @@ impl TxnMocker {
     }
 
     fn stress_test(&mut self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
+        //check node status
+        let sync_status = self.client.sync_status()?;
+        if sync_status.is_syncing() {
+            info!("node syncing, pause stress");
+            return Ok(());
+        }
         //unlock all account and get sequence
         let mut sequences = vec![];
         for account in &accounts {
