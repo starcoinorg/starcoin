@@ -74,7 +74,8 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .nonces
             .get_mut(sender)
             .expect("sender nonce should exists");
-        match tx.transaction.sequence_number().cmp(nonce) {
+        let seq = tx.transaction.sequence_number();
+        match seq.cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
                 Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
