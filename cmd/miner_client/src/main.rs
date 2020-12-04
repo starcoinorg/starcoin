@@ -32,8 +32,7 @@ fn main() {
         }
     };
 
-    let mut rt = tokio_compat::runtime::Runtime::new().unwrap();
-    let client = match RpcClient::connect_websocket(&format!("ws://{}", opts.server), &mut rt) {
+    let client = match RpcClient::connect_websocket(&format!("ws://{}", opts.server)) {
         Ok(c) => c,
         Err(err) => {
             error!(
@@ -48,8 +47,8 @@ fn main() {
         .stop_on_panic(true)
         .name("starcoin-miner")
         .build();
-    let registry = RegistryService::launch();
     if let Err(err) = system.block_on(async move {
+        let registry = RegistryService::launch();
         let job_client = JobRpcClient::new(client);
         registry.put_shared(config).await?;
         registry.put_shared(job_client).await?;

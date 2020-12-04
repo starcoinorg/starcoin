@@ -216,7 +216,7 @@ mod tests {
         let rpc_service = node_handle.rpc_service().unwrap();
         let rpc_client = RpcClient::connect_local(rpc_service).unwrap();
         let node_info = rpc_client.node_info().unwrap();
-        let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None, None);
+        let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None);
         cli_state
             .client()
             .account_unlock(
@@ -444,7 +444,7 @@ mod tests {
         let rpc_service = node_handle.rpc_service().unwrap();
         let rpc_client = RpcClient::connect_local(rpc_service).unwrap();
         let node_info = rpc_client.node_info().unwrap();
-        let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None, None);
+        let cli_state = CliState::new(node_info.net, Arc::new(rpc_client), None, None);
         cli_state
             .client()
             .account_unlock(

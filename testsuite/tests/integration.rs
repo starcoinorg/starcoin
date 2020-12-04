@@ -19,7 +19,6 @@ use std::time::Duration;
 use steps::{
     cmd as steps_cmd, compat, node as steps_node, state as steps_state, sync, transaction,
 };
-use tokio_compat::runtime::Runtime;
 
 mod steps;
 
@@ -35,8 +34,6 @@ pub struct MyWorld {
     txn_account: Option<AccountInfo>,
     node_handle: Option<NodeHandle>,
     value: Option<Value>,
-    rt: Option<Runtime>,
-    rt2: Option<Runtime>,
 }
 impl MyWorld {
     pub fn storage(&self) -> Option<&Storage> {
@@ -67,25 +64,17 @@ pub fn steps() -> Steps<MyWorld> {
         })
         .given("remote rpc client", |world: &mut MyWorld, _step| {
             let rpc_addr = env::var("STARCOIN_WS").unwrap_or_else(|_| "".to_string());
-            let rt = Runtime::new().unwrap();
-            world.rt = Some(rt);
-            if let Some(rt) = &mut world.rt {
-                let client = RpcClient::connect_websocket(rpc_addr.as_ref(), rt).unwrap();
-                info!("rpc client created!");
-                world.default_rpc_client = Some(Arc::new(client))
-            }
+            let client = RpcClient::connect_websocket(rpc_addr.as_ref()).unwrap();
+            info!("rpc client created!");
+            world.default_rpc_client = Some(Arc::new(client))
         })
         .given("ipc rpc client", |world: &mut MyWorld, _step| {
             let node_config = world.node_config.as_ref().take().unwrap();
-            let rt = Runtime::new().unwrap();
-            world.rt = Some(rt);
-            if let Some(rt) = &mut world.rt {
-                let ipc_file = node_config.rpc.get_ipc_file();
-                helper::wait_until_file_created(ipc_file.clone()).expect("ipc file must exist");
-                let client = RpcClient::connect_ipc(ipc_file, rt).expect("Connect by ipc fail.");
-                info!("dev node local rpc client created!");
-                world.default_rpc_client = Some(Arc::new(client))
-            }
+            let ipc_file = node_config.rpc.get_ipc_file();
+            helper::wait_until_file_created(ipc_file.clone()).expect("ipc file must exist");
+            let client = RpcClient::connect_ipc(ipc_file).expect("Connect by ipc fail.");
+            info!("dev node local rpc client created!");
+            world.default_rpc_client = Some(Arc::new(client))
         })
         .given("default account", |world: &mut MyWorld, _step| {
             let client = world.default_rpc_client.as_ref().take().unwrap();

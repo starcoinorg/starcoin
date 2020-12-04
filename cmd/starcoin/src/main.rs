@@ -10,7 +10,7 @@ use starcoin_node::crash_handler;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
-use tokio::time::Duration;
+use std::time::Duration;
 
 /// This exit code means is that the node failed to start and required human intervention.
 /// Node start script can do auto task when meet this exist code.
@@ -21,13 +21,12 @@ fn run() -> Result<()> {
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
-            let mut rt = tokio_compat::runtime::Runtime::new()?;
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
             let (client, node_handle) = match connect {
                 Connect::IPC(ipc_file) => {
                     if let Some(ipc_file) = ipc_file {
                         info!("Try to connect node by ipc: {:?}", ipc_file);
-                        let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
+                        let client = RpcClient::connect_ipc(ipc_file)?;
                         (client, None)
                     } else {
                         info!("Start starcoin node...");
@@ -55,7 +54,7 @@ fn run() -> Result<()> {
                                 }
                                 info!("Starcoin node started.");
                                 info!("Try to connect node by ipc: {:?}", ipc_file);
-                                let client = RpcClient::connect_ipc(ipc_file, &mut rt)?;
+                                let client = RpcClient::connect_ipc(ipc_file)?;
                                 (client, None)
                             }
                         }
@@ -63,7 +62,7 @@ fn run() -> Result<()> {
                 }
                 Connect::WebSocket(address) => {
                     info!("Try to connect node by websocket: {:?}", address);
-                    let client = RpcClient::connect_websocket(address, &mut rt)?;
+                    let client = RpcClient::connect_websocket(address)?;
                     (client, None)
                 }
             };
@@ -74,7 +73,6 @@ fn run() -> Result<()> {
                 Arc::new(client),
                 opt.watch_timeout.map(Duration::from_secs),
                 node_handle,
-                Some(rt),
             );
             Ok(state)
         },

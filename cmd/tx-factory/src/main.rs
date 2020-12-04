@@ -127,7 +127,6 @@ fn get_account_or_default(
 
 fn main() {
     let _logger_handler = starcoin_logger::init();
-    let mut runtime = tokio_compat::runtime::Runtime::new().unwrap();
     let opts: TxFactoryOpt = TxFactoryOpt::from_args();
 
     let account_address = opts.account_address;
@@ -143,10 +142,10 @@ fn main() {
     }
     let watch_timeout = opts.watch_timeout;
 
-    let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+    let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone());
     while matches!(connected, Err(_)) {
         std::thread::sleep(Duration::from_millis(1000));
-        connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+        connected = RpcClient::connect_ipc(opts.ipc_path.clone());
         info!("re connecting...");
     }
     let client = connected.unwrap();
