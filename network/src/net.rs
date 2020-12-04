@@ -277,6 +277,7 @@ const REQUEST_BUFFER_SIZE: usize = 128;
 pub const RPC_PROTOCOL_PREFIX: &str = "/starcoin/rpc/";
 
 pub fn build_network_service(
+    node_name: String,
     chain_info: ChainInfo,
     cfg: &NetworkConfig,
     protocols: Vec<Cow<'static, str>>,
@@ -343,6 +344,8 @@ pub fn build_network_service(
         protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,
+        node_name,
+        client_version: config::APP_NAME_WITH_VERSION.clone(),
         ..NetworkConfiguration::default()
     };
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix

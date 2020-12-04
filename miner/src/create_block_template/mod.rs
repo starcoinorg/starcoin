@@ -229,6 +229,8 @@ impl Inner {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
+        info!("block_gas_limit: {}", block_gas_limit);
+        //TODO use a GasConstant value to replace 200.
         info!(
             "block_gas_limit: {}, {:?}",
             block_gas_limit,

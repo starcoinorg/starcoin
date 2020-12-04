@@ -52,15 +52,15 @@ impl Actor for ChainWatcher {
     type Context = Context<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
         let client = self.inner.clone();
-        async move {
-            client.subscribe_new_block().await
-        }.into_actor(self)
+        async move { client.subscribe_new_block().await }
+            .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
                     Ok(s) => {
                         ctx.add_stream(s.compat());
                     }
                     Err(e) => {
+                        // TODO: figure out why this error cannot printed.
                         error!(target: "chain_watcher", "fail to subscribe new block event, err: {}", &e);
                         ctx.terminate();
                     }

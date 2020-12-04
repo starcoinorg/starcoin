@@ -31,7 +31,7 @@ function start_starcoin() {
   eval $(docker-machine env $host_name)
   docker_rebuild
   docker rm -f $name 1>/dev/null
-  docker run -td --log-opt mode=non-blocking --log-opt max-size=1m --restart=on-failure:10 --network=host -p $port:9840 -p $m_port:9101 -p 9850:9850 -p 9851:9851 -p 9852:9852 -v $cfg_root/$name:/.starcoin --name $name starcoin $net $@
+  docker run -td --log-opt mode=non-blocking --log-opt max-size=1m --restart=on-failure:10 --network=host -p $port:9840 -p $m_port:9101 -p 9850:9850 -p 9860:9860 -p 9870:9870 -v $cfg_root/$name:/.starcoin --name $name starcoin $net $@
   check_errs $? "Docker run starcoin error"
 }
 
@@ -63,7 +63,7 @@ function start_cluster() {
     rpc_address="127.0.0.1"
   fi
 
-  start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} --rpc-address $rpc_address --disable-seed
+  start_starcoin $cluster_name-0 starcoin-0 9840 9101 $net --node-key ${node_keys[0]} --rpc-address 0.0.0.0 --disable-seed
   sleep 5
   seed_peer_id=$(docker-machine ssh $cluster_name-0 grep 'Local\ node\ identity\ is:\ ' $cfg_root/starcoin-0/$net/starcoin.log | awk '{print $8}' | tac | head -n 1)
   seed=/ip4/$seed_host/tcp/9840/p2p/$seed_peer_id
@@ -72,7 +72,7 @@ function start_cluster() {
     if [ -z "$rpc_address" ]; then
       rpc_address="127.0.0.1"
     fi
-    start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed --node-key ${node_keys[$c]} --rpc-address $rpc_address
+    start_starcoin $cluster_name-$c starcoin-$c 9840 9101 $net --seed $seed --node-key ${node_keys[$c]} --rpc-address 0.0.0.0
 
   done
   start_txfactory $cluster_name-0 starcoin-0 txfactory-0 $net

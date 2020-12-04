@@ -196,6 +196,7 @@ impl NetworkAsyncService {
         let has_seed = !config.seeds.is_empty();
 
         let (service, tx, rx, event_rx, tx_command) = build_network_service(
+            node_config.node_name().to_string(),
             chain_info,
             &config,
             NotificationMessage::protocols(),

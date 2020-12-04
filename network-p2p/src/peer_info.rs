@@ -81,7 +81,7 @@ impl PeerInfoBehaviour {
     /// Builds a new `PeerInfoBehaviour`.
     pub fn new(user_agent: String, local_public_key: PublicKey) -> Self {
         let identify = {
-            let proto_version = "/substrate/1.0".to_string();
+            let proto_version = "/starcoin/1.0".to_string();
             Identify::new(proto_version, user_agent, local_public_key)
         };
 
