@@ -1122,7 +1122,6 @@ remove terminated proposal from proposer
         action,
     } = move_from&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>if</b> (proposal_state == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>) {
-        <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&action), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_ACTION_MUST_EXIST">ERR_ACTION_MUST_EXIST</a>));
         <b>let</b> _ = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> action);
     };
     <a href="Option.md#0x1_Option_destroy_none">Option::destroy_none</a>(action);

@@ -651,7 +651,6 @@ module Dao {
             action,
         } = move_from<Proposal<TokenT, ActionT>>(proposer_address);
         if (proposal_state == DEFEATED) {
-            assert(Option::is_some(&action), Errors::invalid_state(ERR_ACTION_MUST_EXIST));
             let _ = Option::extract(&mut action);
         };
         Option::destroy_none(action);
