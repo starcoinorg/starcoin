@@ -145,6 +145,7 @@ impl EventHandler<Self, TxnStatusFullEvent> for TxPoolActorService {
         if txns.is_empty() {
             return;
         }
+        //TODO direct send broadcast message to network.
         ctx.broadcast(PropagateNewTransactions::new(txns));
     }
 }
