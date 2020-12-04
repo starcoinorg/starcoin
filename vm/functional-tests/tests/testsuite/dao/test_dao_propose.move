@@ -40,6 +40,9 @@ script {
     use 0x1::ModifyDaoConfigProposal;
 
     fun proposal_info(_signer: &signer) {
+        let state = Dao::proposal_state<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}}, 0);
+        assert(state == 1, (state as u64));
+
         let (id, start_time, end_time, for_votes, against_votes)
                 = Dao::proposal_info<STC, ModifyDaoConfigProposal::DaoConfigUpdate>({{alice}});
 
@@ -155,6 +158,12 @@ script {
             let balance = Account::balance<STC>(Signer::address_of(signer));
             let balance = Account::withdraw<STC>(signer, balance / 2);
             Dao::cast_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, balance, false);
+        };
+        // revoke while 'against'
+        {
+            let (_, pow) = Dao::vote_of<STC>(Signer::address_of(signer), {{alice}}, 0);
+            let token = Dao::revoke_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, pow / 10);
+            Account::deposit_to_self(signer, token);
         };
         // flip back
         Dao::change_vote<STC, ModifyDaoConfigProposal::DaoConfigUpdate>(signer, {{alice}}, 0, true);

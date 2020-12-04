@@ -21,6 +21,20 @@ script {
 }
 // check: EXECUTED
 
+//plugin can only be invoked by token issuer
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::STC::STC;
+    use 0x1::OnChainConfigDao;
+    use 0x1::TransactionPublishOption;
+
+    fun test_plugin_fail(account: &signer) {
+        OnChainConfigDao::plugin<STC, OnChainConfigDao::OnChainConfigUpdate<TransactionPublishOption::TransactionPublishOption>>(account); //ERR_NOT_AUTHORIZED
+    }
+}
+// check: "Keep(ABORTED { code: 102658"
+
 //! new-transaction
 //! sender: alice
 script {

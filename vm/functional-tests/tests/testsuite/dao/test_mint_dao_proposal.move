@@ -100,6 +100,7 @@ script {
         MyToken::delegate_to_dao(account);
     }
 }
+// check: "Keep(ABORTED { code: 358658"
 
 //! new-transaction
 //! sender: bob
