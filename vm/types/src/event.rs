@@ -185,7 +185,6 @@ impl EventHandle {
         }
     }
 
-    #[cfg(any(test, feature = "fuzzing"))]
     /// Derive a unique handle by using an AccountAddress and a counter.
     pub fn new_from_address(addr: &AccountAddress, salt: u64) -> Self {
         Self {
