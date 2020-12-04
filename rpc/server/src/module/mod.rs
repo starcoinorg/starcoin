@@ -99,6 +99,7 @@ impl From<AccountError> for RpcError {
 
 impl From<TransactionError> for RpcError {
     fn from(err: TransactionError) -> Self {
+        let err_message = err.to_string();
         let (err_code, err_data) = match err {
             TransactionError::AlreadyImported
             | TransactionError::Old
@@ -128,7 +129,7 @@ impl From<TransactionError> for RpcError {
         };
         RpcError(jsonrpc_core::Error {
             code: err_code,
-            message: "".to_string(),
+            message: err_message,
             data: err_data,
         })
     }
