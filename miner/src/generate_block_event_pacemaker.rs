@@ -4,16 +4,27 @@
 use crate::GenerateBlockEvent;
 use anyhow::Result;
 use logger::prelude::*;
-use starcoin_service_registry::{ActorService, EventHandler, ServiceContext};
+use starcoin_config::NodeConfig;
+use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::PropagateNewTransactions;
+use std::sync::Arc;
 use types::{
     sync_status::SyncStatus,
     system_events::{NewHeadBlock, SyncStatusChangeEvent},
 };
 
-#[derive(Default)]
 pub struct GenerateBlockEventPacemaker {
+    config: Arc<NodeConfig>,
     sync_status: Option<SyncStatus>,
+}
+
+impl ServiceFactory<Self> for GenerateBlockEventPacemaker {
+    fn create(ctx: &mut ServiceContext<GenerateBlockEventPacemaker>) -> Result<Self> {
+        Ok(Self {
+            config: ctx.get_shared::<Arc<NodeConfig>>()?,
+            sync_status: None,
+        })
+    }
 }
 
 impl GenerateBlockEventPacemaker {
@@ -33,14 +44,19 @@ impl ActorService for GenerateBlockEventPacemaker {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
         ctx.subscribe::<NewHeadBlock>();
-        ctx.subscribe::<PropagateNewTransactions>();
+        //if mint empty block is disabled, trigger mint event for on demand mint (Dev)
+        if !self.config.miner.enable_mint_empty_block {
+            ctx.subscribe::<PropagateNewTransactions>();
+        }
         Ok(())
     }
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
         ctx.unsubscribe::<NewHeadBlock>();
-        ctx.unsubscribe::<PropagateNewTransactions>();
+        if !self.config.miner.enable_mint_empty_block {
+            ctx.unsubscribe::<PropagateNewTransactions>();
+        }
         Ok(())
     }
 }
