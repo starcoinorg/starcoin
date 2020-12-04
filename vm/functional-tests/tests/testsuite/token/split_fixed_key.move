@@ -35,6 +35,24 @@ script {
 //! block-time: 1000
 //! block-number: 1
 
+// split fixed key with wrong parameter
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Offer;
+    use 0x1::STC::STC;
+    use 0x1::Box;
+    use 0x1::Token;
+
+    fun split_fixed_key(signer: &signer) {
+        let mint_key = Box::take<Token::FixedTimeMintKey<STC>>(signer);
+        let new_mint_key = Token::split_fixed_key<STC>(&mut mint_key, 20000); //ESPLIT
+        Box::put(signer, mint_key);
+        Offer::create<Token::FixedTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+    }
+}
+// check: "Keep(ABORTED { code: 27393"
+
 //! new-transaction
 //! sender: bob
 script {

@@ -12,6 +12,18 @@ fun main(_signer: &signer) {
 //! sender: alice
 
 script {
+    use 0x1::Timestamp;
+
+    fun main(_signer: &signer) {
+        Timestamp::assert_genesis();
+    }
+}
+// check: "Keep(ABORTED { code: 3073"
+
+//! new-transaction
+//! sender: alice
+
+script {
 use 0x1::Timestamp;
 
 fun main(signer: &signer) {

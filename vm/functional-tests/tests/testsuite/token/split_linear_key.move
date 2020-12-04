@@ -35,6 +35,26 @@ script {
 //! block-time: 1000
 //! block-number: 1
 
+// split linear key with wrong parameter
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Offer;
+    use 0x1::STC::STC;
+    use 0x1::Box;
+    use 0x1::Token;
+    use 0x1::Account;
+
+    fun split_linear_key(signer: &signer) {
+        let mint_key = Box::take<Token::LinearTimeMintKey<STC>>(signer);
+        let (tokens, new_mint_key) = Token::split_linear_key<STC>(&mut mint_key, 20000);
+        Account::deposit_to_self(signer, tokens);
+        Box::put(signer, mint_key);
+        Offer::create<Token::LinearTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+    }
+}
+// check: "Keep(ABORTED { code: 27393"
+
 //! new-transaction
 //! sender: bob
 script {
@@ -107,3 +127,84 @@ script {
         Box::put(signer, mint_key);
     }
 }
+
+//! block-prologue
+//! author: bob
+//! block-time: 3000
+//! block-number: 3
+
+// split linear key
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Offer;
+    use 0x1::STC::STC;
+    use 0x1::Box;
+    use 0x1::Token;
+    use 0x1::Account;
+
+    fun split_linear_key_failed(signer: &signer) {
+        let mint_key = Box::take<Token::LinearTimeMintKey<STC>>(signer);
+        assert(!Token::is_empty_key(&mint_key), 99);
+        let (tokens, new_mint_key) = Token::split_linear_key<STC>(&mut mint_key, 10000);//ESPLIT
+        assert(Token::value(&tokens) > 0, 100);
+        assert(Token::value(&tokens) < 10000, 101);
+        Account::deposit_to_self(signer, tokens);
+        Box::put(signer, mint_key);
+        Offer::create<Token::LinearTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+    }
+}
+// check: "Keep(ABORTED { code: 27393"
+
+// split linear key
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Offer;
+    use 0x1::STC::STC;
+    use 0x1::Box;
+    use 0x1::Token;
+    use 0x1::Account;
+
+    fun split_linear_key_failed(signer: &signer) {
+        let mint_key = Box::take<Token::LinearTimeMintKey<STC>>(signer);
+        assert(!Token::is_empty_key(&mint_key), 99);
+        let (tokens, new_mint_key) = Token::split_linear_key<STC>(&mut mint_key, 100);//ESPLIT
+        assert(Token::value(&tokens) > 0, 100);
+        assert(Token::value(&tokens) < 10000, 101);
+        Account::deposit_to_self(signer, tokens);
+        Box::put(signer, mint_key);
+        Offer::create<Token::LinearTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+    }
+}
+
+
+//! block-prologue
+//! author: bob
+//! block-time: 6000
+//! block-number: 4
+
+// split linear key
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::Offer;
+    use 0x1::STC::STC;
+    use 0x1::Box;
+    use 0x1::Token;
+    use 0x1::Account;
+
+    fun split_linear_key_failed(signer: &signer) {
+        let mint_key = Box::take<Token::LinearTimeMintKey<STC>>(signer);
+        assert(!Token::is_empty_key(&mint_key), 99);
+        // key is not empty, but it's time to mint all token, split will be failed
+        let (tokens, new_mint_key) = Token::split_linear_key<STC>(&mut mint_key, 100); //EEMPTY_KEY
+        assert(Token::value(&tokens) > 0, 100);
+        assert(Token::value(&tokens) < 10000, 101);
+        Account::deposit_to_self(signer, tokens);
+        Box::put(signer, mint_key);
+        Offer::create<Token::LinearTimeMintKey<STC>>(signer, new_mint_key, {{alice}}, 0);
+    }
+}
+
+// check: "Keep(ABORTED { code: 27137"

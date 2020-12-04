@@ -21,6 +21,17 @@ pushd ../functional-tests || exit 1
 cargo test
 popd || exit 1
 
+echo "Running cmd tests..."
+pushd ../../cmd/starcoin || exit 1
+cargo test test_upgrade_module
+cargo test test_only_new_module
+popd || exit 1
+
+echo "Running chain tests..."
+pushd ../../chain || exit 1
+cargo test
+popd || exit 1
+
 echo "Converting trace file..."
 echo "---------------------------------------------------------------------------"
 cargo run --bin move-trace-conversion -- -f "$TRACE_PATH" -o trace.mvcov
