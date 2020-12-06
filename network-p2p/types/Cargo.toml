@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.34"
+anyhow = "1.0.35"
 bitflags = "1.2.0"
 bytes = "0.5.0"
 derive_more = "0.99.11"
