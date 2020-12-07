@@ -50,9 +50,11 @@ impl PeerMessageHandler for NodePeerMessageHandler {
             }
             NotificationMessage::CompactBlock(message) => {
                 let header_time = message.compact_block.header.timestamp;
-                NODE_METRICS
-                    .block_latency
-                    .observe((duration_since_epoch().as_millis() - header_time as u128) as f64);
+                NODE_METRICS.block_latency.observe(
+                    duration_since_epoch()
+                        .as_millis()
+                        .saturating_sub(header_time as u128) as f64,
+                );
                 if let Err(e) = self
                     .block_relayer
                     .notify(PeerCompactBlockMessage::new(peer_message.peer_id, *message))
