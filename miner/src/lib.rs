@@ -1,9 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use anyhow::{format_err, Result};
+use crate::metrics::MINER_METRICS;
+use crate::task::MintTask;
+use anyhow::Result;
 use chain::BlockChain;
 use consensus::Consensus;
+use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
@@ -12,6 +15,7 @@ use starcoin_service_registry::{
 use starcoin_storage::Storage;
 use std::sync::Arc;
 use std::time::Duration;
+use traits::ChainReader;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -19,12 +23,8 @@ pub mod job_bus_client;
 mod metrics;
 pub mod task;
 
-use crate::metrics::MINER_METRICS;
-use crate::task::MintTask;
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
-use futures::executor::block_on;
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
-use traits::ChainReader;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -119,13 +119,16 @@ impl MinerService {
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<MinerService>,
     ) -> Result<()> {
-        let task = self.current_task.take().ok_or_else(|| {
-            format_err!(
-                "MintTask is none, but got nonce: {} for minting_blob: {:?}",
-                nonce,
-                minting_blob,
-            )
-        })?;
+        let task = match self.current_task.take() {
+            Some(task) => task,
+            None => {
+                debug!(
+                    "MintTask is none, but got nonce: {} for minting_blob: {:?}, may be mint by other client.",
+                    nonce, minting_blob,
+                );
+                return Ok(());
+            }
+        };
 
         if task.minting_blob != minting_blob {
             info!(
