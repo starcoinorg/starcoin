@@ -41,19 +41,24 @@ impl DBStorage {
             let mut db_cfs_set: HashSet<_> = cf_vec.iter().collect();
             db_cfs_set.remove(&DEFAULT_PREFIX_NAME.to_string());
             ensure!(
-                db_cfs_set.len() == cfs_set.len(),
+                db_cfs_set.len() <= cfs_set.len(),
                 StorageInitError::StorageCheckError(format_err!(
                     "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
                     column_families,
                     cf_vec
                 ))
             );
-            db_cfs_set.retain(|k| cfs_set.contains(&k.as_str()));
+            let mut remove_cf_vec = Vec::new();
+            db_cfs_set.iter().for_each(|k| {
+                if !cfs_set.contains(&k.as_str()) {
+                    remove_cf_vec.push(k.clone());
+                }
+            });
             ensure!(
-                db_cfs_set.len() == cfs_set.len(),
+                remove_cf_vec.is_empty(),
                 StorageInitError::StorageCheckError(format_err!(
-                    "ColumnFamily in db ({:?}) not same as ColumnFamily in code {:?}.",
-                    column_families,
+                    "Can not remove ColumnFamily, ColumnFamily in db ({:?}) not in code {:?}.",
+                    remove_cf_vec,
                     cf_vec
                 ))
             );
