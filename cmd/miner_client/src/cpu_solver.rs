@@ -11,6 +11,7 @@ use starcoin_types::U256;
 use std::ops::Range;
 use std::sync::Arc;
 use std::thread;
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct CpuSolver {
@@ -64,37 +65,40 @@ impl Solver for CpuSolver {
                 let minting_blob = minting_blob.to_owned();
                 let _ = thread::Builder::new()
                     .name(worker_name)
-                    .spawn(move || loop {
-                        if rx.try_next().is_ok() {
-                            break;
-                        }
-                        match strategy {
-                            ConsensusStrategy::Dummy => {
-                                let nonce = strategy.solve_consensus_nonce(
-                                    &minting_blob,
-                                    diff,
-                                    time_service.as_ref(),
-                                );
-                                if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
-                                    error!("Failed to send nonce: {:?}", e);
-                                };
-                                return;
+                    .spawn(move || {
+                        let mut hash_counter = 0u64;
+                        let start = Instant::now();
+                        loop {
+                            if rx.try_next().is_ok() {
+                                break;
                             }
-                            strategy => {
-                                let nonce = Self::nonce_generator(&nonce_range);
-                                if let Ok(pow_hash) =
-                                    strategy.calculate_pow_hash(&minting_blob, nonce)
-                                {
-                                    let pow_hash_u256: U256 = pow_hash.into();
-                                    let target = difficult_to_target(diff);
-                                    if pow_hash_u256 <= target {
-                                        info!("Seal found {:?}", nonce);
-                                        if let Err(e) =
-                                            block_on(nonce_tx.send((minting_blob, nonce)))
-                                        {
-                                            error!("Failed to send nonce: {:?}", e);
-                                        };
-                                        return;
+                            match strategy {
+                                ConsensusStrategy::Dummy => {
+                                    let nonce = strategy.solve_consensus_nonce(
+                                        &minting_blob,
+                                        diff,
+                                        time_service.as_ref(),
+                                    );
+                                    if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
+                                        error!("Failed to send nonce: {:?}", e);
+                                    };
+                                    break;
+                                }
+                                strategy => {
+                                    let nonce = Self::nonce_generator(&nonce_range);
+                                    if let Ok(pow_hash) = strategy.calculate_pow_hash(&minting_blob, nonce) {
+                                        let pow_hash_u256: U256 = pow_hash.into();
+                                        let target = difficult_to_target(diff);
+                                        hash_counter += 1;
+                                        if pow_hash_u256 <= target {
+                                            let elapsed_sec: f64 = start.elapsed().as_nanos() as f64 / 1_000_000_000.0;
+                                            let hash_rate = hash_counter as f64 / elapsed_sec;
+                                            info!("[miner-client-solver-{:?}] New seal found by solver, nonce {:?}, hash rate:{:>10.3}", i, nonce, hash_rate);
+                                            if let Err(e) = block_on(nonce_tx.send((minting_blob, nonce))) {
+                                                error!("[miner-client-solver] Failed to send seal: {:?}", e);
+                                            };
+                                            break;
+                                        }
                                     }
                                 }
                             }
