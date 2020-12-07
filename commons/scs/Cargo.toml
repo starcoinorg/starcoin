@@ -7,7 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.34"
+anyhow = "1.0.35"
 serde = { version = "1.0" }
 lcs = { package="libra-canonical-serialization", git = "https://github.com/starcoinorg/libra", rev="4236206844fdba73316d036a1f930e0fab63553b"}
 
