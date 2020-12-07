@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 serde = { version = "1.0.117", features = ["derive"] }
-serde_json = "1.0.59"
+serde_json = "1.0.60"
 structopt = "0.3.21"
 anyhow = "1.0.35"
 colored-diff = "0.2.2"
