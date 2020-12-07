@@ -23,6 +23,8 @@ use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter, ConnectBlockError, WriteableChainService};
 
+const MAX_ROLL_BACK_BLOCK: usize = 10;
+
 pub struct WriteBlockChainService<P>
 where
     P: TxPoolSyncService,
@@ -123,11 +125,12 @@ where
         let mut map_be_uncles = Vec::new();
         let parent_is_main_head = self.is_main_head(&block_header.parent_hash());
         if branch_total_difficulty > main_total_difficulty {
-            let (enacted_blocks, retracted_blocks) = if !parent_is_main_head {
-                self.find_ancestors_from_accumulator(&new_branch)?
-            } else {
-                (vec![block.clone()], vec![])
-            };
+            let (enacted_count, enacted_blocks, retracted_count, retracted_blocks) =
+                if !parent_is_main_head {
+                    self.find_ancestors_from_accumulator(&new_branch)?
+                } else {
+                    (1, vec![block.clone()], 0, vec![])
+                };
 
             debug_assert!(!enacted_blocks.is_empty());
             debug_assert_eq!(enacted_blocks.last().unwrap(), &block);
@@ -135,7 +138,7 @@ where
             if !parent_is_main_head {
                 WRITE_BLOCK_CHAIN_METRICS
                     .rollback_block_size
-                    .set(retracted_blocks.len() as i64);
+                    .set(retracted_count as i64);
             }
             self.commit_2_txpool(enacted_blocks, retracted_blocks);
             WRITE_BLOCK_CHAIN_METRICS.broadcast_head_count.inc();
@@ -143,6 +146,7 @@ where
                 .net()
                 .time_service()
                 .adjust(GlobalTimeOnChain::new(block.header().timestamp));
+            info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", block_header.id(), block_header.number,branch_total_difficulty, enacted_count, retracted_count);
             self.broadcast_new_head(BlockDetail::new(block, branch_total_difficulty));
         } else {
             //send new branch event
@@ -177,7 +181,7 @@ where
     fn find_ancestors_from_accumulator(
         &self,
         new_branch: &BlockChain,
-    ) -> Result<(Vec<Block>, Vec<Block>)> {
+    ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
         let new_header_number = new_branch.current_header().number();
         let main_header_number = self.get_main().current_header().number();
         let mut number = if new_header_number >= main_header_number {
@@ -212,29 +216,43 @@ where
         );
 
         let ancestor = ancestor.expect("Ancestor is none.");
-        let enacted = self.find_blocks_until(block_enacted, ancestor)?;
-        let retracted = self.find_blocks_until(block_retracted, ancestor)?;
+        let ancestor_block = self
+            .main
+            .get_block(ancestor)?
+            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor))?;
+        let enacted_count = new_branch.current_header().number() - ancestor_block.header().number();
+        let retracted_count =
+            self.main.current_header().number() - ancestor_block.header().number();
+        let enacted = self.find_blocks_until(block_enacted, ancestor, MAX_ROLL_BACK_BLOCK)?;
+        let retracted = self.find_blocks_until(block_retracted, ancestor, MAX_ROLL_BACK_BLOCK)?;
 
         debug!(
-            "commit block num:{}, rollback block num:{}",
-            enacted.len(),
-            retracted.len(),
+            "Commit block count:{}, rollback block count:{}",
+            enacted_count, retracted_count,
         );
-        Ok((enacted, retracted))
+        Ok((enacted_count, enacted, retracted_count, retracted))
     }
 
-    fn find_blocks_until(&self, from: HashValue, until: HashValue) -> Result<Vec<Block>> {
+    fn find_blocks_until(
+        &self,
+        from: HashValue,
+        until: HashValue,
+        max_size: usize,
+    ) -> Result<Vec<Block>> {
         let mut blocks: Vec<Block> = Vec::new();
-        let mut tmp = from;
+        let mut block_id = from;
         loop {
-            if tmp == until {
+            if block_id == until {
                 break;
-            };
+            }
+            if blocks.len() >= max_size {
+                break;
+            }
             let block = self
                 .storage
-                .get_block(tmp)?
-                .ok_or_else(|| format_err!("Can not find block {:?}.", tmp))?;
-            tmp = block.header().parent_hash();
+                .get_block(block_id)?
+                .ok_or_else(|| format_err!("Can not find block {:?}.", block_id))?;
+            block_id = block.header().parent_hash();
             blocks.push(block);
         }
         blocks.reverse();
