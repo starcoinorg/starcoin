@@ -2,7 +2,41 @@
 //! account: alice, 0 0x1::STC::STC
 //! account: bob, 0 0x1::STC::STC
 
+// issue mint key with wrong parameter
+//! sender: genesis
+script {
+    use 0x1::Token;
+    use 0x1::STC::STC;
+    use 0x1::Offer;
+
+    fun create_key(account: &signer) {
+        let cap = Token::remove_mint_capability<STC>(account);
+        let key = Token::issue_fixed_mint_key<STC>(&cap, 0, 5); //amount should large than 0
+        Token::add_mint_capability(account, cap);
+        Offer::create(account, key, {{bob}}, 0);
+    }
+}
+// check: "Keep(ABORTED { code: 4615"
+
+// issue mint key with wrong parameter
+//! new-transaction
+//! sender: genesis
+script {
+    use 0x1::Token;
+    use 0x1::STC::STC;
+    use 0x1::Offer;
+
+    fun create_key(account: &signer) {
+        let cap = Token::remove_mint_capability<STC>(account);
+        let key = Token::issue_fixed_mint_key<STC>(&cap, 10000, 0); //period should large than 0
+        Token::add_mint_capability(account, cap);
+        Offer::create(account, key, {{bob}}, 0);
+    }
+}
+// check: "Keep(ABORTED { code: 4615"
+
 // Minting from a privileged account should work
+//! new-transaction
 //! sender: genesis
 script {
     use 0x1::Token;
@@ -46,18 +80,32 @@ script {
 
     fun mint(account: &signer) {
         let key = Box::take<FixedTimeMintKey<STC>>(account);
-        let token = Token::mint_with_fixed_key(key);
+        let token = Token::mint_with_fixed_key(key); //EMINT_AMOUNT_EQUAL_ZERO
         Account::deposit_to_self(account, token);
     }
 }
 
-// check: ABORTED
+// check: "Keep(ABORTED { code: 27911"
 
 
 //! block-prologue
 //! author: alice
 //! block-time: 5000
 //! block-number: 2
+
+//! new-transaction
+//! sender: bob
+script {
+    use 0x1::STC::STC;
+    use 0x1::Token::{Self, FixedTimeMintKey};
+    use 0x1::Box;
+
+    fun mint(account: &signer) {
+        let key = Box::take<FixedTimeMintKey<STC>>(account);
+        assert(Token::end_time_of_key<STC>(&key) == 5, 1001); //5 seconds
+        Box::put(account,key);
+    }
+}
 
 //! new-transaction
 //! sender: bob

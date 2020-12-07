@@ -5,6 +5,7 @@
 
 
 
+-  [Constants](#@Constants_0)
 -  [Function `empty`](#0x1_Vector_empty)
 -  [Function `length`](#0x1_Vector_length)
 -  [Function `borrow`](#0x1_Vector_borrow)
@@ -22,22 +23,36 @@
 -  [Function `remove`](#0x1_Vector_remove)
 -  [Function `swap_remove`](#0x1_Vector_swap_remove)
 -  [Function `split`](#0x1_Vector_split)
--  [Specification](#@Specification_0)
-    -  [Function `length`](#@Specification_0_length)
-    -  [Function `borrow`](#@Specification_0_borrow)
-    -  [Function `singleton`](#@Specification_0_singleton)
-    -  [Function `reverse`](#@Specification_0_reverse)
-    -  [Function `append`](#@Specification_0_append)
-    -  [Function `is_empty`](#@Specification_0_is_empty)
-    -  [Function `contains`](#@Specification_0_contains)
-    -  [Function `index_of`](#@Specification_0_index_of)
-    -  [Function `remove`](#@Specification_0_remove)
-    -  [Function `swap_remove`](#@Specification_0_swap_remove)
-    -  [Function `split`](#@Specification_0_split)
-    -  [Module specifications](#@Module_specifications_1)
+-  [Specification](#@Specification_1)
+    -  [Function `length`](#@Specification_1_length)
+    -  [Function `borrow`](#@Specification_1_borrow)
+    -  [Function `singleton`](#@Specification_1_singleton)
+    -  [Function `reverse`](#@Specification_1_reverse)
+    -  [Function `append`](#@Specification_1_append)
+    -  [Function `is_empty`](#@Specification_1_is_empty)
+    -  [Function `contains`](#@Specification_1_contains)
+    -  [Function `index_of`](#@Specification_1_index_of)
+    -  [Function `remove`](#@Specification_1_remove)
+    -  [Function `swap_remove`](#@Specification_1_swap_remove)
+    -  [Function `split`](#@Specification_1_split)
+    -  [Module specifications](#@Module_specifications_2)
 
 
 <pre><code></code></pre>
+
+
+
+<a name="@Constants_0"></a>
+
+## Constants
+
+
+<a name="0x1_Vector_EINDEX_OUT_OF_BOUNDS"></a>
+
+
+
+<pre><code><b>const</b> <a href="Vector.md#0x1_Vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>: u64 = 0;
+</code></pre>
 
 
 
@@ -404,7 +419,7 @@
 <pre><code><b>public</b> <b>fun</b> <a href="Vector.md#0x1_Vector_remove">remove</a>&lt;Element&gt;(v: &<b>mut</b> vector&lt;Element&gt;, i: u64): Element {
     <b>let</b> len = <a href="Vector.md#0x1_Vector_length">length</a>(v);
     // i out of bounds; <b>abort</b>
-    <b>if</b> (i &gt;= len) <b>abort</b> 10;
+    <b>if</b> (i &gt;= len) <b>abort</b> <a href="Vector.md#0x1_Vector_EINDEX_OUT_OF_BOUNDS">EINDEX_OUT_OF_BOUNDS</a>;
 
     len = len - 1;
     <b>while</b> (i &lt; len) <a href="Vector.md#0x1_Vector_swap">swap</a>(v, i, { i = i + 1; i });
@@ -496,7 +511,7 @@
 
 </details>
 
-<a name="@Specification_0"></a>
+<a name="@Specification_1"></a>
 
 ## Specification
 
@@ -508,7 +523,7 @@
 
 
 
-<a name="@Specification_0_length"></a>
+<a name="@Specification_1_length"></a>
 
 ### Function `length`
 
@@ -524,7 +539,7 @@
 
 
 
-<a name="@Specification_0_borrow"></a>
+<a name="@Specification_1_borrow"></a>
 
 ### Function `borrow`
 
@@ -540,7 +555,7 @@
 
 
 
-<a name="@Specification_0_singleton"></a>
+<a name="@Specification_1_singleton"></a>
 
 ### Function `singleton`
 
@@ -568,7 +583,7 @@
 
 
 
-<a name="@Specification_0_reverse"></a>
+<a name="@Specification_1_reverse"></a>
 
 ### Function `reverse`
 
@@ -584,7 +599,7 @@
 
 
 
-<a name="@Specification_0_append"></a>
+<a name="@Specification_1_append"></a>
 
 ### Function `append`
 
@@ -600,7 +615,7 @@
 
 
 
-<a name="@Specification_0_is_empty"></a>
+<a name="@Specification_1_is_empty"></a>
 
 ### Function `is_empty`
 
@@ -616,7 +631,7 @@
 
 
 
-<a name="@Specification_0_contains"></a>
+<a name="@Specification_1_contains"></a>
 
 ### Function `contains`
 
@@ -632,7 +647,7 @@
 
 
 
-<a name="@Specification_0_index_of"></a>
+<a name="@Specification_1_index_of"></a>
 
 ### Function `index_of`
 
@@ -648,7 +663,7 @@
 
 
 
-<a name="@Specification_0_remove"></a>
+<a name="@Specification_1_remove"></a>
 
 ### Function `remove`
 
@@ -664,7 +679,7 @@
 
 
 
-<a name="@Specification_0_swap_remove"></a>
+<a name="@Specification_1_swap_remove"></a>
 
 ### Function `swap_remove`
 
@@ -680,7 +695,7 @@
 
 
 
-<a name="@Specification_0_split"></a>
+<a name="@Specification_1_split"></a>
 
 ### Function `split`
 
@@ -697,7 +712,7 @@
 
 
 
-<a name="@Module_specifications_1"></a>
+<a name="@Module_specifications_2"></a>
 
 ### Module specifications
 

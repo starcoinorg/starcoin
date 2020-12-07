@@ -124,3 +124,15 @@ fun main() {
 }
 }
 // check: EXECUTED
+
+//! new-transaction
+//! sender: bob
+script {
+use 0x1::Account;
+use 0x1::Signer;
+fun main(account: &signer) {
+    let seq = Account::sequence_number(Signer::address_of(account));
+    assert(seq == 3, seq);
+}
+}
+// check: EXECUTE

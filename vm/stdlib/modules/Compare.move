@@ -1,10 +1,3 @@
-// Utilities for comparing Move values that return a comparison result `EQUAL`, `LESS_THAN`, or
-// `GREATER_THAN`. Move does not have signed integers, so we cannot use the usual 0, -1, 1
-// convention for this. Instead, we define a new convention using u8 constants:
-// const EQUAL = 0u8
-// const LESS_THAN = 1u8
-// const GREATER_THAN = 2u8
-
 address 0x1 {
 module Compare {
     use 0x1::Vector;
@@ -13,6 +6,10 @@ module Compare {
         pragma verify;
         pragma aborts_if_is_strict;
     }
+
+    const EQUAL: u8 = 0;
+    const LESS_THAN: u8 = 1;
+    const GREATER_THAN: u8 = 2;
 
     // Compare `v1` and `v2` using
     // (1) byte-by-byte comparison from right to left until we reach the end of the shorter vector,
@@ -65,9 +62,9 @@ module Compare {
     }
     // Compare two `u8`'s
     fun cmp_u8(i1: u8, i2: u8): u8 {
-        if (i1 == i2) 0
-        else if (i1 < i2) 1
-        else 2
+        if (i1 == i2) EQUAL
+        else if (i1 < i2) LESS_THAN
+        else GREATER_THAN
     }
 
     spec fun cmp_u8 {
@@ -76,9 +73,9 @@ module Compare {
 
     // Compare two `u64`'s
     fun cmp_u64(i1: u64, i2: u64): u8 {
-        if (i1 == i2) 0
-        else if (i1 < i2) 1
-        else 2
+        if (i1 == i2) EQUAL
+        else if (i1 < i2) LESS_THAN
+        else GREATER_THAN
     }
 
     spec fun cmp_u64 {

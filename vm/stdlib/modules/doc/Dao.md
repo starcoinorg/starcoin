@@ -812,7 +812,7 @@ Let user change their vote during the voting time.
 ) <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>, <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a>, <a href="Dao.md#0x1_Dao_Vote">Vote</a> {
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
-        // only when proposal is active, <b>use</b> can change vote.
+        // only when proposal is active, user can change vote.
         <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     <b>let</b> proposal = borrow_global_mut&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
@@ -903,7 +903,7 @@ Revoke some voting powers from vote on <code>proposal_id</code> of <code>propose
 ): <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenT&gt; <b>acquires</b> <a href="Dao.md#0x1_Dao_Proposal">Proposal</a>, <a href="Dao.md#0x1_Dao_Vote">Vote</a>, <a href="Dao.md#0x1_Dao_DaoGlobalInfo">DaoGlobalInfo</a> {
     {
         <b>let</b> state = <a href="Dao.md#0x1_Dao_proposal_state">proposal_state</a>&lt;TokenT, ActionT&gt;(proposer_address, proposal_id);
-        // only when proposal is active, <b>use</b> can revoke vote.
+        // only when proposal is active, user can revoke vote.
         <b>assert</b>(state == <a href="Dao.md#0x1_Dao_ACTIVE">ACTIVE</a>, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_PROPOSAL_STATE_INVALID">ERR_PROPOSAL_STATE_INVALID</a>));
     };
     // get proposal
@@ -1122,7 +1122,6 @@ remove terminated proposal from proposer
         action,
     } = move_from&lt;<a href="Dao.md#0x1_Dao_Proposal">Proposal</a>&lt;TokenT, ActionT&gt;&gt;(proposer_address);
     <b>if</b> (proposal_state == <a href="Dao.md#0x1_Dao_DEFEATED">DEFEATED</a>) {
-        <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&action), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Dao.md#0x1_Dao_ERR_ACTION_MUST_EXIST">ERR_ACTION_MUST_EXIST</a>));
         <b>let</b> _ = <a href="Option.md#0x1_Option_extract">Option::extract</a>(&<b>mut</b> action);
     };
     <a href="Option.md#0x1_Option_destroy_none">Option::destroy_none</a>(action);

@@ -87,3 +87,61 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
+
+// cancel the upgrade plan
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::PackageTxnManager;
+    fun main(account: &signer) {
+        PackageTxnManager::cancel_upgrade_plan(account);
+    }
+}
+
+// check: EXECUTED
+
+// cancel a none plan will report EUPGRADE_PLAN_IS_NONE
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::PackageTxnManager;
+    fun main(account: &signer) {
+        PackageTxnManager::cancel_upgrade_plan(account);
+    }
+}
+
+// check: "Keep(ABORTED { code: 26113"
+
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::PackageTxnManager;
+    fun main(account: &signer) {
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_arbitrary());
+    }
+}
+
+// check: "Keep(ABORTED { code: 27143"
+
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::PackageTxnManager;
+    fun main(account: &signer) {
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_new_module());
+    }
+}
+
+// check: EXECUTED
+
+
+//! new-transaction
+//! sender: alice
+script {
+    use 0x1::PackageTxnManager;
+    fun main(account: &signer) {
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_freeze());
+    }
+}
+// check: EXECUTED
+

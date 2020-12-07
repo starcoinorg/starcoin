@@ -166,3 +166,29 @@ fun main() {
 }
 
 // check: EXECUTED
+
+//! new-transaction
+script {
+    use 0x1::Account;
+    use 0x1::STC::STC;
+    use 0x1::Authenticator;
+    fun main() {
+        let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a7a8e385f898968d4ecfba49609a13461";
+        let address = Account::create_account<STC>(copy dummy_auth_key);
+        let expected_address = Authenticator::derived_address(dummy_auth_key);
+        assert(Account::exists_at(address), 1000);
+        assert(address == expected_address, 1001);
+    }
+}
+// check: EXECUTED
+
+//! new-transaction
+script {
+    use 0x1::Authenticator;
+    fun main() {
+        let dummy_auth_key = x"91e941f5bc09a285705c092dd654b94a"; // wrong length
+        let _address = Authenticator::derived_address(dummy_auth_key);
+    }
+}
+// check: "Keep(ABORTED { code: 25863"
+

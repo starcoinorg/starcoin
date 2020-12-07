@@ -84,8 +84,17 @@ impl ModuleSummary {
         )?;
 
         for (fn_name, fn_summary) in self.function_summaries.iter() {
-            all_total += fn_summary.total;
-            all_covered += fn_summary.covered;
+            let total = fn_summary.total;
+            // there is a bug that sometimes fn_summary.covered is large than fn_summary.total
+            // use fn_summary.total as fn_summary.covered in the case
+            let covered = if fn_summary.covered <= fn_summary.total {
+                fn_summary.covered
+            } else {
+                fn_summary.total
+            };
+
+            all_total += total;
+            all_covered += covered;
 
             if summarize_function_coverage {
                 let native = if fn_summary.fn_is_native {
@@ -94,12 +103,12 @@ impl ModuleSummary {
                     ""
                 };
                 writeln!(summary_writer, "\t{}fun {}", native, fn_name)?;
-                writeln!(summary_writer, "\t\ttotal: {}", fn_summary.total)?;
-                writeln!(summary_writer, "\t\tcovered: {}", fn_summary.covered)?;
+                writeln!(summary_writer, "\t\ttotal: {}", total)?;
+                writeln!(summary_writer, "\t\tcovered: {}", covered)?;
                 writeln!(
                     summary_writer,
                     "\t\t% coverage: {:.2}",
-                    fn_summary.percent_coverage()
+                    (covered as f64) / (total as f64) * 100f64
                 )?;
             }
         }

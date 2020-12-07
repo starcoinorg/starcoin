@@ -81,6 +81,7 @@ module Token {
     const EEMPTY_KEY: u64 = 106;
     const ESPLIT: u64 = 107;
     const EPERIOD_NEW: u64 = 108;
+    const EMINT_AMOUNT_EQUAL_ZERO: u64 = 109;
 
     /// 2^128 < 10**39
     const MAX_PRECISION: u8 = 38;
@@ -262,7 +263,7 @@ module Token {
 
     public fun mint_with_fixed_key<TokenType>(key: FixedTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_fixed_key(&key);
-        assert(amount > 0, Errors::invalid_argument(EMINT_KEY_TIME_LIMIT));
+        assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
         let FixedTimeMintKey { total, end_time:_} = key;
         do_mint(total)
     }
@@ -276,7 +277,7 @@ module Token {
 
     public fun mint_with_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>): Token<TokenType> acquires TokenInfo {
         let amount = mint_amount_of_linear_key(key);
-        assert(amount > 0, Errors::invalid_argument(EMINT_KEY_TIME_LIMIT));
+        assert(amount > 0, Errors::invalid_argument(EMINT_AMOUNT_EQUAL_ZERO));
         let token = do_mint(amount);
         key.minted = key.minted + amount;
         token
@@ -288,12 +289,10 @@ module Token {
 
     public fun split_linear_key<TokenType>(key: &mut LinearTimeMintKey<TokenType>, amount: u128): (Token<TokenType>, LinearTimeMintKey<TokenType>) acquires TokenInfo {
         let token = Self::mint_with_linear_key(key);
-
         assert(!Self::is_empty_key(key), Errors::invalid_state(EEMPTY_KEY));
         assert((key.minted + amount) <= key.total, Errors::invalid_state(ESPLIT));
         key.total = key.total - amount;
         let start_time = Timestamp::now_seconds();
-        assert((key.start_time + key.period) > start_time, Errors::invalid_state(EPERIOD_NEW));
         let new_period = key.start_time + key.period - start_time;
         let new_key = LinearTimeMintKey<TokenType> {
             total: amount,

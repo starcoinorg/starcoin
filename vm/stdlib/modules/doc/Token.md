@@ -468,6 +468,15 @@ A minting capability allows tokens of type <code>TokenType</code> to be minted
 
 
 
+<a name="0x1_Token_EMINT_AMOUNT_EQUAL_ZERO"></a>
+
+
+
+<pre><code><b>const</b> <a href="Token.md#0x1_Token_EMINT_AMOUNT_EQUAL_ZERO">EMINT_AMOUNT_EQUAL_ZERO</a>: u64 = 109;
+</code></pre>
+
+
+
 <a name="0x1_Token_EMINT_KEY_TIME_LIMIT"></a>
 
 
@@ -890,7 +899,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_fixed_key">mint_with_fixed_key</a>&lt;TokenType&gt;(key: <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_fixed_key">mint_amount_of_fixed_key</a>(&key);
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_AMOUNT_EQUAL_ZERO">EMINT_AMOUNT_EQUAL_ZERO</a>));
     <b>let</b> <a href="Token.md#0x1_Token_FixedTimeMintKey">FixedTimeMintKey</a> { total, end_time:_} = key;
     <a href="Token.md#0x1_Token_do_mint">do_mint</a>(total)
 }
@@ -917,7 +926,7 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_mint_with_linear_key">mint_with_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;): <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt; <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> amount = <a href="Token.md#0x1_Token_mint_amount_of_linear_key">mint_amount_of_linear_key</a>(key);
-    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_KEY_TIME_LIMIT">EMINT_KEY_TIME_LIMIT</a>));
+    <b>assert</b>(amount &gt; 0, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="Token.md#0x1_Token_EMINT_AMOUNT_EQUAL_ZERO">EMINT_AMOUNT_EQUAL_ZERO</a>));
     <b>let</b> token = <a href="Token.md#0x1_Token_do_mint">do_mint</a>(amount);
     key.minted = key.minted + amount;
     token
@@ -945,12 +954,10 @@ Only the Association account can acquire such a reference, and it can do so only
 
 <pre><code><b>public</b> <b>fun</b> <a href="Token.md#0x1_Token_split_linear_key">split_linear_key</a>&lt;TokenType&gt;(key: &<b>mut</b> <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;, amount: u128): (<a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt;) <b>acquires</b> <a href="Token.md#0x1_Token_TokenInfo">TokenInfo</a> {
     <b>let</b> token = <a href="Token.md#0x1_Token_mint_with_linear_key">Self::mint_with_linear_key</a>(key);
-
     <b>assert</b>(!<a href="Token.md#0x1_Token_is_empty_key">Self::is_empty_key</a>(key), <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EEMPTY_KEY">EEMPTY_KEY</a>));
     <b>assert</b>((key.minted + amount) &lt;= key.total, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_ESPLIT">ESPLIT</a>));
     key.total = key.total - amount;
     <b>let</b> start_time = <a href="Timestamp.md#0x1_Timestamp_now_seconds">Timestamp::now_seconds</a>();
-    <b>assert</b>((key.start_time + key.period) &gt; start_time, <a href="Errors.md#0x1_Errors_invalid_state">Errors::invalid_state</a>(<a href="Token.md#0x1_Token_EPERIOD_NEW">EPERIOD_NEW</a>));
     <b>let</b> new_period = key.start_time + key.period - start_time;
     <b>let</b> new_key = <a href="Token.md#0x1_Token_LinearTimeMintKey">LinearTimeMintKey</a>&lt;TokenType&gt; {
         total: amount,

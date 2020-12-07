@@ -365,7 +365,7 @@ module Dao {
     ) acquires Proposal, DaoGlobalInfo, Vote {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
-            // only when proposal is active, use can change vote.
+            // only when proposal is active, user can change vote.
             assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         let proposal = borrow_global_mut<Proposal<TokenT, ActionT>>(proposer_address);
@@ -456,7 +456,7 @@ module Dao {
     ): Token::Token<TokenT> acquires Proposal, Vote, DaoGlobalInfo {
         {
             let state = proposal_state<TokenT, ActionT>(proposer_address, proposal_id);
-            // only when proposal is active, use can revoke vote.
+            // only when proposal is active, user can revoke vote.
             assert(state == ACTIVE, Errors::invalid_state(ERR_PROPOSAL_STATE_INVALID));
         };
         // get proposal
@@ -651,7 +651,6 @@ module Dao {
             action,
         } = move_from<Proposal<TokenT, ActionT>>(proposer_address);
         if (proposal_state == DEFEATED) {
-            assert(Option::is_some(&action), Errors::invalid_state(ERR_ACTION_MUST_EXIST));
             let _ = Option::extract(&mut action);
         };
         Option::destroy_none(action);

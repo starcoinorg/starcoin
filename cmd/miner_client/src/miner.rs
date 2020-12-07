@@ -8,7 +8,6 @@ use futures::channel::mpsc::unbounded;
 use futures::executor::block_on;
 use futures::stream::StreamExt;
 use futures::SinkExt;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use logger::prelude::*;
 use starcoin_config::MinerClientConfig;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -22,31 +21,18 @@ pub struct MinerClient<C: JobClient> {
     nonce_rx: Option<mpsc::UnboundedReceiver<(Vec<u8>, u32)>>,
     nonce_tx: mpsc::UnboundedSender<(Vec<u8>, u32)>,
     job_client: C,
-    pb: Option<ProgressBar>,
     num_seals_found: Mutex<u32>,
     solver: Box<dyn Solver>,
     current_task: Option<mpsc::UnboundedSender<bool>>,
 }
 
 impl<C: JobClient> MinerClient<C> {
-    pub fn new(config: MinerClientConfig, job_client: C, solver: Box<dyn Solver>) -> Result<Self> {
+    pub fn new(_config: MinerClientConfig, job_client: C, solver: Box<dyn Solver>) -> Result<Self> {
         let (nonce_tx, nonce_rx) = mpsc::unbounded();
-        let pb = if config.enable_stderr {
-            let mp = MultiProgress::new();
-            let pb = mp.add(ProgressBar::new(10));
-            pb.set_style(ProgressStyle::default_bar().template("{msg:.green}"));
-            thread::spawn(move || {
-                mp.join().expect("MultiProgress join failed");
-            });
-            Some(pb)
-        } else {
-            None
-        };
         Ok(Self {
             nonce_rx: Some(nonce_rx),
             nonce_tx,
             job_client,
-            pb,
             num_seals_found: Mutex::new(0),
             solver,
             current_task: None,
@@ -63,12 +49,7 @@ impl<C: JobClient> MinerClient<C> {
                 "Miner client Total seals found: {:>3}",
                 *self.num_seals_found.lock().unwrap()
             );
-            if let Some(pb) = self.pb.as_ref() {
-                pb.set_message(&msg);
-                pb.inc(1);
-            } else {
-                info!("{}", msg)
-            }
+            info!("{}", msg)
         }
     }
 
