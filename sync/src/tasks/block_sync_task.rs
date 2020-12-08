@@ -174,6 +174,29 @@ impl BlockCollector {
             event_handle: Box::new(event_handle),
         }
     }
+
+    #[cfg(test)]
+    pub fn apply_block_for_test(&mut self, block: Block) -> Result<()> {
+        self.apply_block(block)
+    }
+
+    fn apply_block(&mut self, block: Block) -> Result<()> {
+        if let Err(err) = self.chain.apply(block.clone()) {
+            return match err.downcast::<ConnectBlockError>() {
+                Ok(e) => {
+                    self.chain.get_storage().save_failed_block(
+                        block.id(),
+                        block,
+                        PeerId::random(),
+                    )?;
+                    Err(e.into())
+                }
+                Err(e) => Err(e.into()),
+            };
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
@@ -193,19 +216,7 @@ impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
                 self.chain.update_chain_head_with_info(block, block_info)?;
             }
             None => {
-                if let Err(err) = self.chain.apply(block.clone()) {
-                    return match err.downcast::<ConnectBlockError>() {
-                        Ok(e) => {
-                            self.chain.get_storage().save_failed_block(
-                                block_id,
-                                block,
-                                PeerId::random(),
-                            )?;
-                            Err(e.into())
-                        }
-                        Err(e) => Err(e.into()),
-                    };
-                }
+                self.apply_block(block.clone())?;
                 self.chain
                     .time_service()
                     .adjust(GlobalTimeOnChain::new(timestamp));
