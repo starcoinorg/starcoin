@@ -8,6 +8,7 @@ use bytes::Bytes;
 use config::NetworkConfig;
 use futures::channel::mpsc::channel;
 use futures::{channel::mpsc, prelude::*};
+use network_api::ReputationChange;
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
     identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
@@ -186,8 +187,8 @@ impl SNetworkService {
         self.service().get_address(peer_id).await
     }
 
-    pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, str>) -> bool {
-        self.service().exist_notif_proto(protocol_name).await
+    pub fn report_peer(&self, peer_id: types::peer_info::PeerId, cost_benefit: ReputationChange) {
+        self.service().report_peer(peer_id.into(), cost_benefit)
     }
 }
 
