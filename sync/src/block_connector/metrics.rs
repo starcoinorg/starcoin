@@ -15,6 +15,7 @@ pub static WRITE_BLOCK_CHAIN_METRICS: Lazy<ChainMetrics> =
 
 #[derive(Clone)]
 pub struct ChainMetrics {
+    //TODO change Int to UInt
     pub try_connect_count: IntCounter,
     pub duplicate_conn_count: IntCounter,
     pub broadcast_head_count: IntCounter,

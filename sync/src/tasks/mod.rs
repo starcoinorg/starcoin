@@ -213,7 +213,7 @@ where
     let target_block_number = target.block_accumulator_info.num_leaves - 1;
     let target_block_accumulator = target.block_accumulator_info;
 
-    let current_block_accumulator_info = current_block_info.block_accumulator_info;
+    let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
 
     let accumulator_task_fetcher = fetcher.clone();
     let block_task_fetcher = fetcher.clone();
@@ -280,7 +280,7 @@ where
                 1,
             );
             let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
-            let block_collector = BlockCollector::new_with_handle(chain, block_event_handle);
+            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle);
             Ok(TaskGenerator::new(
                 block_sync_task,
                 5,
