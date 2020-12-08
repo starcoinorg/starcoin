@@ -10,7 +10,7 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain_api::ChainWriter;
+use starcoin_chain_api::{ChainReader, ChainWriter};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
@@ -143,23 +143,32 @@ impl TaskState for BlockSyncTask {
 }
 
 pub struct BlockCollector {
+    //node's current block info
+    current_block_info: BlockInfo,
+    // the block chain init by ancestor
     chain: BlockChain,
     event_handle: Box<dyn BlockConnectedEventHandle>,
 }
 
 impl BlockCollector {
-    pub fn new(chain: BlockChain) -> Self {
+    pub fn new(current_block_info: BlockInfo, chain: BlockChain) -> Self {
         Self {
+            current_block_info,
             chain,
             event_handle: Box::new(NoOpEventHandle),
         }
     }
 
-    pub fn new_with_handle<H>(chain: BlockChain, event_handle: H) -> Self
+    pub fn new_with_handle<H>(
+        current_block_info: BlockInfo,
+        chain: BlockChain,
+        event_handle: H,
+    ) -> Self
     where
         H: BlockConnectedEventHandle + 'static,
     {
         Self {
+            current_block_info,
             chain,
             event_handle: Box::new(event_handle),
         }
@@ -187,11 +196,15 @@ impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
                 self.chain
                     .time_service()
                     .adjust(GlobalTimeOnChain::new(timestamp));
-                if let Err(e) = self.event_handle.handle(BlockConnectedEvent { block }) {
-                    error!(
-                        "Send BlockConnectedEvent error: {:?}, block_id: {}",
-                        e, block_id
-                    );
+                let total_difficulty = self.chain.get_total_difficulty()?;
+                // only try connect block when sync chain total_difficulty > node's current chain.
+                if total_difficulty > self.current_block_info.total_difficulty {
+                    if let Err(e) = self.event_handle.handle(BlockConnectedEvent { block }) {
+                        error!(
+                            "Send BlockConnectedEvent error: {:?}, block_id: {}",
+                            e, block_id
+                        );
+                    }
                 }
             }
         }
