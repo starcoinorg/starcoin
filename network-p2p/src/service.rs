@@ -719,23 +719,6 @@ impl NetworkService {
         }
     }
 
-    /// Registers a new notifications protocol.
-    ///
-    /// After that, you can call `write_notifications`.
-    ///
-    /// Please call `event_stream` before registering a protocol, otherwise you may miss events
-    /// about the protocol that you have registered.
-    ///
-    /// You are very strongly encouraged to call this method very early on. Any connection open
-    /// will retain the protocols that were registered then, and not any new one.
-    pub fn register_notifications_protocol(&self, protocol_name: impl Into<Cow<'static, str>>) {
-        let _ = self
-            .to_worker
-            .unbounded_send(ServiceToWorkerMsg::RegisterNotifProtocol {
-                protocol_name: protocol_name.into(),
-            });
-    }
-
     /// Report a given peer as either beneficial (+) or costly (-) according to the
     /// given scalar.
     pub fn report_peer(&self, who: PeerId, cost_benefit: ReputationChange) {
@@ -949,9 +932,6 @@ enum ServiceToWorkerMsg {
     PutValue(record::Key, Vec<u8>),
     AddKnownAddress(PeerId, Multiaddr),
     EventStream(out_events::Sender),
-    RegisterNotifProtocol {
-        protocol_name: Cow<'static, str>,
-    },
     Request {
         target: PeerId,
         protocol: Cow<'static, str>,
@@ -1026,10 +1006,6 @@ impl Future for NetworkWorker {
                     this.network_service.add_known_address(peer_id, addr)
                 }
                 ServiceToWorkerMsg::EventStream(sender) => this.event_streams.push(sender),
-                ServiceToWorkerMsg::RegisterNotifProtocol { protocol_name } => {
-                    this.network_service
-                        .register_notifications_protocol(protocol_name);
-                }
                 ServiceToWorkerMsg::Request {
                     target,
                     protocol,
