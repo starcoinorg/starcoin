@@ -128,7 +128,25 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                 let _ = sync_service.notify(CheckSyncEvent::default());
                             }
                         }
-                        e => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
+                        e => {
+                            warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id);
+                            if let Err(err) = self
+                                .chain_service
+                                .get_main()
+                                .get_storage()
+                                .save_failed_block(
+                                    msg.get_block().id(),
+                                    msg.get_block().clone(),
+                                    peer_id,
+                                )
+                            {
+                                warn!(
+                                    "Save FailedBlock err: {:?}, block_id:{:?}.",
+                                    err,
+                                    msg.get_block().id()
+                                );
+                            }
+                        }
                     }
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),

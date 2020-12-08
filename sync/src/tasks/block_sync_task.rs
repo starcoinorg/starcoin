@@ -10,8 +10,9 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain_api::{ChainReader, ChainWriter};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -192,7 +193,19 @@ impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
                 self.chain.update_chain_head_with_info(block, block_info)?;
             }
             None => {
-                self.chain.apply(block.clone())?;
+                if let Err(err) = self.chain.apply(block.clone()) {
+                    return match err.downcast::<ConnectBlockError>() {
+                        Ok(e) => {
+                            self.chain.get_storage().save_failed_block(
+                                block_id,
+                                block,
+                                PeerId::random(),
+                            )?;
+                            Err(e.into())
+                        }
+                        Err(e) => Err(e.into()),
+                    };
+                }
                 self.chain
                     .time_service()
                     .adjust(GlobalTimeOnChain::new(timestamp));
