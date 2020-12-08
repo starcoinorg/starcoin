@@ -320,10 +320,6 @@ pub struct AccountData {
     event_generator: EventHandleGenerator,
 }
 
-fn new_event_handle(count: u64) -> EventHandle {
-    EventHandle::random_handle(count)
-}
-
 impl AccountData {
     /// Creates a new `AccountData` with a new account.
     ///
@@ -393,16 +389,20 @@ impl AccountData {
         } else {
             Some(WithdrawCapability::new(account.addr))
         };
+        let account_address = *account.address();
         Self {
-            event_generator: EventHandleGenerator::new_with_event_count(*account.address(), 2),
+            event_generator: EventHandleGenerator::new_with_event_count(account_address, 3),
             account,
             balances,
             sequence_number,
             key_rotation_capability,
             withdrawal_capability,
-            withdraw_events: new_event_handle(withdraw_events_count),
-            deposit_events: new_event_handle(deposit_events_count),
-            accept_token_events: new_event_handle(accept_token_events_count),
+            withdraw_events: EventHandle::new_from_address(&account_address, withdraw_events_count),
+            deposit_events: EventHandle::new_from_address(&account_address, deposit_events_count),
+            accept_token_events: EventHandle::new_from_address(
+                &account_address,
+                accept_token_events_count,
+            ),
         }
     }
 
