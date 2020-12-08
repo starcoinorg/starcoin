@@ -819,20 +819,6 @@ impl NetworkService {
     pub fn peer_id(&self) -> &PeerId {
         &self.local_peer_id
     }
-
-    pub async fn exist_notif_proto(&self, protocol_name: Cow<'static, str>) -> bool {
-        let (tx, rx) = oneshot::channel();
-        let _ = self
-            .to_worker
-            .unbounded_send(ServiceToWorkerMsg::ExistNotifProtocol { protocol_name, tx });
-        match rx.await {
-            Ok(t) => t,
-            Err(e) => {
-                warn!("sth wrong {}", e);
-                false
-            }
-        }
-    }
 }
 
 /// Trait for providing information about the local network state
@@ -944,10 +930,6 @@ enum ServiceToWorkerMsg {
     KnownPeers(oneshot::Sender<HashSet<PeerId>>),
     UpdateChainStatus(Box<ChainStatus>),
     AddressByPeerID(PeerId, oneshot::Sender<Vec<Multiaddr>>),
-    ExistNotifProtocol {
-        protocol_name: Cow<'static, str>,
-        tx: oneshot::Sender<bool>,
-    },
 }
 
 /// Main network worker. Must be polled in order for the network to advance.
@@ -1066,13 +1048,6 @@ impl Future for NetworkWorker {
                 }
                 ServiceToWorkerMsg::AddressByPeerID(peer_id, tx) => {
                     let _ = tx.send(this.network_service.get_address(&peer_id));
-                }
-                ServiceToWorkerMsg::ExistNotifProtocol { protocol_name, tx } => {
-                    let _ = tx.send(
-                        this.network_service
-                            .user_protocol()
-                            .exist_notif_protocol(protocol_name),
-                    );
                 }
             }
         }
