@@ -45,6 +45,15 @@ impl Into<(Block, PeerId)> for FailedBlock {
     }
 }
 
+impl From<(Block, PeerId)> for FailedBlock {
+    fn from(block: (Block, PeerId)) -> Self {
+        Self {
+            block: block.0,
+            peer_id: block.1,
+        }
+    }
+}
+
 define_storage!(
     BlockInnerStorage,
     HashValue,
@@ -127,6 +136,16 @@ impl ValueCodec for BlockHeader {
 }
 
 impl ValueCodec for BlockBody {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
+impl ValueCodec for FailedBlock {
     fn encode_value(&self) -> Result<Vec<u8>> {
         self.encode()
     }
@@ -305,5 +324,22 @@ impl BlockStorage {
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()> {
         self.block_txn_infos_store.put(block_id, txn_info_ids)
+    }
+
+    pub fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: PeerId,
+    ) -> Result<()> {
+        self.failed_block_storage
+            .put(block_id, (block, peer_id).into())
+    }
+
+    pub fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>> {
+        match self.failed_block_storage.get(block_id)? {
+            Some(failed_block) => Ok(Some(failed_block.into())),
+            None => Ok(None),
+        }
     }
 }

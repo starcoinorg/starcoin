@@ -20,6 +20,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -140,6 +141,10 @@ pub trait BlockStore {
         block_id: HashValue,
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()>;
+
+    fn save_failed_block(&self, block_id: HashValue, block: Block, peer_id: PeerId) -> Result<()>;
+
+    fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>>;
 }
 
 pub trait TransactionInfoStore {
@@ -333,6 +338,15 @@ impl BlockStore for Storage {
     ) -> Result<()> {
         self.block_storage
             .put_transaction_infos(block_id, txn_info_ids)
+    }
+
+    fn save_failed_block(&self, block_id: HashValue, block: Block, peer_id: PeerId) -> Result<()> {
+        self.block_storage
+            .save_failed_block(block_id, block, peer_id)
+    }
+
+    fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>> {
+        self.block_storage.get_failed_block_by_id(block_id)
     }
 }
 
