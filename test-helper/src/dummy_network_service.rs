@@ -3,7 +3,7 @@ use accumulator::AccumulatorNode;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use network_api::messages::NotificationMessage;
-use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider};
+use network_api::{messages::PeerMessage, NetworkService, PeerId, PeerProvider, ReputationChange};
 use network_rpc_core::RawRpcClient;
 use network_rpc_core::Result;
 use starcoin_chain::BlockChain;
@@ -232,6 +232,8 @@ impl NetworkService for DummyNetworkService {
     }
 
     async fn broadcast(&self, _notification: NotificationMessage) {}
+
+    fn report_peer(&self, _peer_id: PeerId, _cost_benefit: ReputationChange) {}
 }
 
 impl RawRpcClient for DummyNetworkService {

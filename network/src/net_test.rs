@@ -285,17 +285,6 @@ mod tests {
     }
 
     #[stest::test]
-    async fn test_network_exist_notify_proto() {
-        let service: NetworkComponent = build_test_network_services(1).into_iter().next().unwrap();
-        assert!(
-            service
-                .0
-                .exist_notif_proto(TEST_NOTIF_PROTOCOL_NAME.into())
-                .await
-        );
-    }
-
-    #[stest::test]
     async fn test_event_dht() {
         let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
         let event = Event::Dht(DhtEvent::ValuePut(random_bytes.clone().into()));

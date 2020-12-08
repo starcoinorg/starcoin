@@ -12,6 +12,7 @@ pub mod network_state;
 pub use libp2p::core::{identity, multiaddr, Multiaddr, PeerId, PublicKey};
 pub use libp2p::request_response::{InboundFailure, OutboundFailure};
 pub use libp2p::{build_multiaddr, multihash};
+pub use sc_peerset::ReputationChange;
 
 /// Parses a string address and splits it into Multiaddress and PeerId, if
 /// valid.
