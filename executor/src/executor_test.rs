@@ -10,7 +10,7 @@ use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_transaction_builder::{StdlibScript, DEFAULT_EXPIRATION_TIME, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
-use starcoin_types::transaction::RawUserTransaction;
+use starcoin_types::transaction::{RawUserTransaction, Script, TransactionArgument};
 use starcoin_types::{
     account_config, block_metadata::BlockMetadata, transaction::Transaction,
     transaction::TransactionPayload, transaction::TransactionStatus,
@@ -33,6 +33,7 @@ use test_helper::executor::{
     prepare_genesis,
 };
 // use test_helper::Account;
+use stdlib::compile_script;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
 #[derive(Default)]
@@ -97,6 +98,33 @@ fn test_consensus_config_get() -> Result<()> {
     let config = ConsensusConfig::deserialize_into_config(r.as_slice())?;
     assert_eq!(config.strategy, 0);
     Ok(())
+}
+
+#[stest::test]
+fn test_gen_accounts() -> Result<()> {
+    let (chain_state, net) = prepare_genesis();
+    let compiled_script =
+        compile_script("../vm/stdlib/transaction_scripts/peer_to_peer_batch.move".parse()?);
+    let alice = Account::new();
+    let bob = Account::new();
+    let mut address_vec = alice.address().to_vec();
+    address_vec.extend_from_slice(bob.address().to_vec().as_slice());
+    let mut auth_key_vec = alice.auth_key().to_vec();
+    auth_key_vec.extend_from_slice(bob.auth_key().to_vec().as_slice());
+    let script = Script::new(
+        compiled_script.to_vec(),
+        vec![stc_type_tag()],
+        vec![
+            TransactionArgument::U8Vector(address_vec),
+            TransactionArgument::U8Vector(auth_key_vec),
+            TransactionArgument::U128(1),
+        ],
+    );
+    association_execute(
+        net.genesis_config(),
+        &chain_state,
+        TransactionPayload::Script(script),
+    )
 }
 
 #[stest::test]
