@@ -59,6 +59,23 @@ impl BlockChain {
         head_block_hash: HashValue,
         storage: Arc<dyn Store>,
     ) -> Result<Self> {
+        Self::new_chain_inner(time_service, head_block_hash, storage, true)
+    }
+
+    pub fn new_chain_without_uncle(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
+    ) -> Result<Self> {
+        Self::new_chain_inner(time_service, head_block_hash, storage, false)
+    }
+
+    fn new_chain_inner(
+        time_service: Arc<dyn TimeService>,
+        head_block_hash: HashValue,
+        storage: Arc<dyn Store>,
+        init_uncle_cache: bool,
+    ) -> Result<Self> {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
@@ -87,7 +104,9 @@ impl BlockChain {
             uncles: HashSet::new(),
             epoch: None,
         };
-        chain.update_epoch_and_uncle_cache()?;
+        if init_uncle_cache {
+            chain.update_epoch_and_uncle_cache()?;
+        }
         Ok(chain)
     }
 
@@ -110,14 +129,13 @@ impl BlockChain {
         }
     }
 
-    pub fn new_chain(&self, head_block_hash: HashValue) -> Result<Self> {
-        let mut chain = Self::new(
+    #[cfg(test)]
+    pub fn new_chain_for_test(&self, head_block_hash: HashValue) -> Result<Self> {
+        Self::new(
             self.time_service.clone(),
             head_block_hash,
             self.storage.clone(),
-        )?;
-        chain.update_epoch_and_uncle_cache()?;
-        Ok(chain)
+        )
     }
 
     pub fn current_epoch_uncles_size(&self) -> u64 {

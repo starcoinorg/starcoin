@@ -85,7 +85,7 @@ impl MinerService {
             Ok(())
         } else {
             debug!("Mint block template: {:?}", block_template);
-            let block_chain = BlockChain::new(
+            let block_chain = BlockChain::new_chain_without_uncle(
                 self.config.net().time_service(),
                 block_template.parent_hash,
                 self.storage.clone(),
