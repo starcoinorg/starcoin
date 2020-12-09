@@ -152,13 +152,18 @@ impl EsSinker {
         bulk_operations.push(BulkOperation::<BlockView>::delete(block_id).index(block_index))?;
 
         // also remove metadata txn
-        bulk_operations.push(BulkOperation::<TransactionData>::delete(
-            Transaction::BlockMetadata(metadata).id().to_string(),
-        ))?;
+        let txn_info_index = self.config.txn_info_index.as_str();
+        bulk_operations.push(
+            BulkOperation::<TransactionData>::delete(
+                Transaction::BlockMetadata(metadata).id().to_string(),
+            )
+            .index(txn_info_index),
+        )?;
         for txn_hash in block_view.body.txn_hashes() {
-            bulk_operations.push(BulkOperation::<TransactionData>::delete(
-                txn_hash.to_string(),
-            ))?;
+            bulk_operations.push(
+                BulkOperation::<TransactionData>::delete(txn_hash.to_string())
+                    .index(txn_info_index),
+            )?;
         }
         let resp = self
             .es
