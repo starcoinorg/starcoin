@@ -36,17 +36,17 @@ impl Into<(Block, BlockState)> for StorageBlock {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct FailedBlock {
     block: Block,
-    peer_id: PeerId,
+    peer_id: Option<PeerId>,
 }
 
-impl Into<(Block, PeerId)> for FailedBlock {
-    fn into(self) -> (Block, PeerId) {
+impl Into<(Block, Option<PeerId>)> for FailedBlock {
+    fn into(self) -> (Block, Option<PeerId>) {
         (self.block, self.peer_id)
     }
 }
 
-impl From<(Block, PeerId)> for FailedBlock {
-    fn from(block: (Block, PeerId)) -> Self {
+impl From<(Block, Option<PeerId>)> for FailedBlock {
+    fn from(block: (Block, Option<PeerId>)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
@@ -194,6 +194,7 @@ impl BlockStorage {
     pub fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
         self.body_store.put(block_id, body)
     }
+
     pub fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
         self.number_store.put(number, block_id)
     }
@@ -330,13 +331,16 @@ impl BlockStorage {
         &self,
         block_id: HashValue,
         block: Block,
-        peer_id: PeerId,
+        peer_id: Option<PeerId>,
     ) -> Result<()> {
         self.failed_block_storage
             .put(block_id, (block, peer_id).into())
     }
 
-    pub fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>> {
+    pub fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>)>> {
         match self.failed_block_storage.get(block_id)? {
             Some(failed_block) => Ok(Some(failed_block.into())),
             None => Ok(None),

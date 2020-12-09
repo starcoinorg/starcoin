@@ -137,7 +137,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                 .save_failed_block(
                                     msg.get_block().id(),
                                     msg.get_block().clone(),
-                                    peer_id,
+                                    Some(peer_id),
                                 )
                             {
                                 warn!(

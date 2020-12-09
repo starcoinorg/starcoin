@@ -19,6 +19,29 @@ use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
+#[derive(Clone, Debug)]
+pub struct SyncBlockData {
+    block: Block,
+    info: Option<BlockInfo>,
+    peer_id: Option<PeerId>,
+}
+
+impl SyncBlockData {
+    pub fn new(block: Block, block_info: Option<BlockInfo>, peer_id: Option<PeerId>) -> Self {
+        Self {
+            block,
+            info: block_info,
+            peer_id,
+        }
+    }
+}
+
+impl Into<(Block, Option<BlockInfo>, Option<PeerId>)> for SyncBlockData {
+    fn into(self) -> (Block, Option<BlockInfo>, Option<PeerId>) {
+        (self.block, self.info, self.peer_id)
+    }
+}
+
 #[derive(Clone)]
 pub struct BlockSyncTask {
     accumulator: Arc<MerkleAccumulator>,
@@ -55,7 +78,7 @@ impl BlockSyncTask {
 }
 
 impl TaskState for BlockSyncTask {
-    type Item = (Block, Option<BlockInfo>);
+    type Item = SyncBlockData;
 
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
@@ -72,8 +95,8 @@ impl TaskState for BlockSyncTask {
                         (vec![], HashMap::new()),
                         |(mut no_exist_block_ids, mut result_map), (block_id, block_with_info)| {
                             match block_with_info {
-                                Some((block, block_info)) => {
-                                    result_map.insert(block_id, (block, block_info));
+                                Some(block_data) => {
+                                    result_map.insert(block_id, block_data);
                                 }
                                 None => {
                                     no_exist_block_ids.push(block_id);
@@ -94,13 +117,13 @@ impl TaskState for BlockSyncTask {
                         .fetch_block(no_exist_block_ids)
                         .await?
                         .into_iter()
-                        .fold(result_map, |mut result_map, block| {
-                            result_map.insert(block.id(), (block, None));
+                        .fold(result_map, |mut result_map, (block, peer_id)| {
+                            result_map.insert(block.id(), SyncBlockData::new(block, None, peer_id));
                             result_map
                         })
                 };
                 //ensure return block's order same as request block_id's order.
-                let result: Result<Vec<(Block, Option<BlockInfo>)>> = block_ids
+                let result: Result<Vec<SyncBlockData>> = block_ids
                     .iter()
                     .map(|block_id| {
                         result_map
@@ -115,7 +138,7 @@ impl TaskState for BlockSyncTask {
                     .fetch_block(block_ids)
                     .await?
                     .into_iter()
-                    .map(|block| (block, None))
+                    .map(|(block, peer_id)| SyncBlockData::new(block, None, peer_id))
                     .collect())
             }
         }
@@ -177,18 +200,16 @@ impl BlockCollector {
 
     #[cfg(test)]
     pub fn apply_block_for_test(&mut self, block: Block) -> Result<()> {
-        self.apply_block(block)
+        self.apply_block(block, None)
     }
 
-    fn apply_block(&mut self, block: Block) -> Result<()> {
+    fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Err(err) = self.chain.apply(block.clone()) {
             return match err.downcast::<ConnectBlockError>() {
                 Ok(e) => {
-                    self.chain.get_storage().save_failed_block(
-                        block.id(),
-                        block,
-                        PeerId::random(),
-                    )?;
+                    self.chain
+                        .get_storage()
+                        .save_failed_block(block.id(), block, peer_id)?;
                     Err(e.into())
                 }
                 Err(e) => Err(e.into()),
@@ -199,14 +220,11 @@ impl BlockCollector {
     }
 }
 
-impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
+impl TaskResultCollector<SyncBlockData> for BlockCollector {
     type Output = BlockChain;
 
-    fn collect(
-        mut self: Pin<&mut Self>,
-        item: (Block, Option<BlockInfo>),
-    ) -> Result<CollectorState> {
-        let (block, block_info) = item;
+    fn collect(mut self: Pin<&mut Self>, item: SyncBlockData) -> Result<CollectorState> {
+        let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp;
         match block_info {
@@ -216,7 +234,7 @@ impl TaskResultCollector<(Block, Option<BlockInfo>)> for BlockCollector {
                 self.chain.update_chain_head_with_info(block, block_info)?;
             }
             None => {
-                self.apply_block(block.clone())?;
+                self.apply_block(block.clone(), peer_id)?;
                 self.chain
                     .time_service()
                     .adjust(GlobalTimeOnChain::new(timestamp));
@@ -274,15 +292,21 @@ mod tests {
     }
 
     impl BlockFetcher for MockBlockFetcher {
-        fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<Result<Vec<Block>>> {
+        fn fetch_block(
+            &self,
+            block_ids: Vec<HashValue>,
+        ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
             let blocks = self.blocks.lock().unwrap();
             let result: Result<Vec<Block>> = block_ids
                 .iter()
                 .map(|block_id| {
-                    blocks
-                        .get(block_id)
-                        .cloned()
-                        .ok_or_else(|| format_err!("Can not find block by id: {:?}", block_id))
+                    (
+                        blocks
+                            .get(block_id)
+                            .cloned()
+                            .ok_or_else(|| format_err!("Can not find block by id: {:?}", block_id)),
+                        None,
+                    )
                 })
                 .collect();
             async {
@@ -310,7 +334,7 @@ mod tests {
 
     #[derive(Default)]
     struct MockLocalBlockStore {
-        store: Mutex<HashMap<HashValue, (Block, Option<BlockInfo>)>>,
+        store: Mutex<HashMap<HashValue, SyncBlockData>>,
     }
 
     impl MockLocalBlockStore {
@@ -326,10 +350,10 @@ mod tests {
                 U256::from(1),
                 AccumulatorInfo::new(HashValue::random(), vec![], 0, 0),
             );
-            self.store
-                .lock()
-                .unwrap()
-                .insert(block.id(), (block.clone(), Some(block_info)));
+            self.store.lock().unwrap().insert(
+                block.id(),
+                SyncBlockData::new(block.clone(), Some(block_info), None),
+            );
         }
     }
 
@@ -337,7 +361,7 @@ mod tests {
         fn get_block_with_info(
             &self,
             block_ids: Vec<HashValue>,
-        ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>> {
+        ) -> Result<Vec<Option<SyncBlockData>>> {
             let store = self.store.lock().unwrap();
             Ok(block_ids.iter().map(|id| store.get(id).cloned()).collect())
         }

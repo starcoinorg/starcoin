@@ -142,9 +142,17 @@ pub trait BlockStore {
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()>;
 
-    fn save_failed_block(&self, block_id: HashValue, block: Block, peer_id: PeerId) -> Result<()>;
+    fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+    ) -> Result<()>;
 
-    fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>>;
+    fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>)>>;
 }
 
 pub trait TransactionInfoStore {
@@ -340,12 +348,20 @@ impl BlockStore for Storage {
             .put_transaction_infos(block_id, txn_info_ids)
     }
 
-    fn save_failed_block(&self, block_id: HashValue, block: Block, peer_id: PeerId) -> Result<()> {
+    fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+    ) -> Result<()> {
         self.block_storage
             .save_failed_block(block_id, block, peer_id)
     }
 
-    fn get_failed_block_by_id(&self, block_id: HashValue) -> Result<Option<(Block, PeerId)>> {
+    fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>)>> {
         self.block_storage.get_failed_block_by_id(block_id)
     }
 }
