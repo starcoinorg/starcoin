@@ -54,15 +54,13 @@ pub trait Consensus {
     /// Construct block with BlockTemplate, this a shortcut method for calculate_next_difficulty + solve_consensus_nonce
     fn create_block(
         &self,
-        reader: &dyn ChainReader,
         block_template: BlockTemplate,
         time_service: &dyn TimeService,
     ) -> Result<Block> {
-        let epoch = reader.epoch_info()?;
-        let difficulty = self.calculate_next_difficulty(reader, &epoch)?;
-        let mining_hash = block_template.as_pow_header_blob(difficulty);
-        let consensus_nonce = self.solve_consensus_nonce(&mining_hash, difficulty, time_service);
-        Ok(block_template.into_block(consensus_nonce, difficulty))
+        let mining_hash = block_template.as_pow_header_blob();
+        let consensus_nonce =
+            self.solve_consensus_nonce(&mining_hash, block_template.difficulty, time_service);
+        Ok(block_template.into_block(consensus_nonce))
     }
     /// Inner helper for verify and unit testing
     fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
