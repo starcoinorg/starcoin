@@ -134,6 +134,7 @@ fn main() {
                         std::process::exit(EXIT_CODE_NEED_HELP);
                     }
                     _ => {
+                        error!("{:?}, exit.", e);
                         std::process::exit(1);
                     }
                 },

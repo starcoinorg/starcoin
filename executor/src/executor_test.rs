@@ -17,7 +17,7 @@ use starcoin_types::{
 };
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::genesis_address;
-use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::genesis_config::{ChainId, StdlibVersion};
 use starcoin_vm_types::on_chain_config::{ConsensusConfig, OnChainConfig};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::token::stc::stc_type_tag;
@@ -103,16 +103,20 @@ fn test_consensus_config_get() -> Result<()> {
 #[stest::test]
 fn test_gen_accounts() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
-    let compiled_script =
-        compile_script("../vm/stdlib/transaction_scripts/peer_to_peer_batch.move".parse()?);
     let alice = Account::new();
     let bob = Account::new();
     let mut address_vec = alice.address().to_vec();
     address_vec.extend_from_slice(bob.address().to_vec().as_slice());
     let mut auth_key_vec = alice.auth_key().to_vec();
     auth_key_vec.extend_from_slice(bob.auth_key().to_vec().as_slice());
+    (1..8).for_each(|_| {
+        let account = Account::new();
+        address_vec.extend_from_slice(account.address().to_vec().as_slice());
+        auth_key_vec.extend_from_slice(account.auth_key().to_vec().as_slice());
+    });
     let script = Script::new(
-        compiled_script.to_vec(),
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeerBatch)
+            .into_vec(),
         vec![stc_type_tag()],
         vec![
             TransactionArgument::U8Vector(address_vec),
