@@ -72,6 +72,47 @@ pub fn build_transfer_txn(
     )
 }
 
+pub fn build_batch_transfer_txn(
+    sender: AccountAddress,
+    receivers: Vec<AccountAddress>,
+    recipient_auth_keys: Vec<AuthenticationKey>,
+    seq_num: u64,
+    amount: u128,
+    gas_price: u64,
+    max_gas: u64,
+    expiration_timestamp_secs: u64,
+    chain_id: ChainId,
+) -> RawUserTransaction {
+    let mut address_vec = vec![];
+    for receiver in receivers {
+        address_vec.extend_from_slice(receiver.to_vec().as_slice());
+    }
+    let mut auth_key_vec = vec![];
+    for auth_key in recipient_auth_keys {
+        auth_key_vec.extend_from_slice(auth_key.to_vec().as_slice());
+    }
+
+    let script = Script::new(
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::PeerToPeerBatch)
+            .into_vec(),
+        vec![stc_type_tag()],
+        vec![
+            TransactionArgument::U8Vector(address_vec),
+            TransactionArgument::U8Vector(auth_key_vec),
+            TransactionArgument::U128(amount),
+        ],
+    );
+    RawUserTransaction::new(
+        sender,
+        seq_num,
+        TransactionPayload::Script(script),
+        max_gas,
+        gas_price,
+        expiration_timestamp_secs,
+        chain_id,
+    )
+}
+
 pub fn build_transfer_txn_by_token_type(
     sender: AccountAddress,
     receiver: AccountAddress,

@@ -14,6 +14,7 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_tx_factory::txn_generator::MockTxnGenerator;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::account_config::association_address;
+use starcoin_types::transaction::RawUserTransaction;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -369,28 +370,12 @@ impl TxnMocker {
         Ok(())
     }
 
-    fn gen_and_submit_transfer_txn(
+    fn submit_txn(
         &mut self,
+        raw_txn: RawUserTransaction,
         sender: AccountAddress,
-        receiver_address: AccountAddress,
-        receiver_public_key: Option<Ed25519PublicKey>,
-        amount: u128,
-        gas_price: u64,
-        sequence_number: u64,
         blocking: bool,
-        expiration_timestamp: u64,
     ) -> Result<HashValue> {
-        let raw_txn = self.generator.generate_transfer_txn(
-            sequence_number,
-            sender,
-            receiver_address,
-            receiver_public_key,
-            amount,
-            gas_price,
-            expiration_timestamp,
-        )?;
-        info!("prepare to sign txn, sender: {}", raw_txn.sender());
-
         // try unlock account
         self.client
             .account_unlock(sender, self.account_password.clone(), self.unlock_duration)?;
@@ -416,6 +401,30 @@ impl TxnMocker {
             )?;
         }
         result
+    }
+
+    fn gen_and_submit_transfer_txn(
+        &mut self,
+        sender: AccountAddress,
+        receiver_address: AccountAddress,
+        receiver_public_key: Option<Ed25519PublicKey>,
+        amount: u128,
+        gas_price: u64,
+        sequence_number: u64,
+        blocking: bool,
+        expiration_timestamp: u64,
+    ) -> Result<HashValue> {
+        let raw_txn = self.generator.generate_transfer_txn(
+            sequence_number,
+            sender,
+            receiver_address,
+            receiver_public_key,
+            amount,
+            gas_price,
+            expiration_timestamp,
+        )?;
+        info!("prepare to sign txn, sender: {}", raw_txn.sender());
+        self.submit_txn(raw_txn, sender, blocking)
     }
 
     fn get_accounts(&mut self, account_num: u32) -> Result<Vec<AccountInfo>> {
@@ -464,29 +473,39 @@ impl TxnMocker {
         let expiration_timestamp = self.fetch_expiration_time();
         let mut account_list = Vec::new();
         let mut i = 0;
+        let batch_size = 50;
+        let mut addr_vec = vec![];
+        let mut auth_key_vec = vec![];
+        let mut sub_account_list = vec![];
         while i < account_num {
             self.recheck_sequence_number()?;
             let account = self.client.account_create(self.account_password.clone())?;
-            let result = self.gen_and_submit_transfer_txn(
-                self.account_address,
-                account.address,
-                account.public_key.as_single(),
-                1000000000,
-                100,
-                self.next_sequence_number,
-                true,
-                expiration_timestamp,
-            );
-            if matches!(result, Ok(_)) {
-                info!("account transfer submit ok.");
-            } else {
-                info!("error: {:?}", result);
+            addr_vec.push(account.address);
+            auth_key_vec.push(account.auth_key());
+            sub_account_list.push(account);
+            if addr_vec.len() >= batch_size {
+                //submit create batch account transaction
+                let txn = self.generator.generate_account_txn(
+                    self.next_sequence_number,
+                    self.account_address,
+                    addr_vec.clone(),
+                    auth_key_vec.clone(),
+                    1000000000,
+                    90000,
+                    expiration_timestamp,
+                )?;
+                let result = self.submit_txn(txn, self.account_address, true);
+                if matches!(result, Ok(_)) {
+                    info!("account transfer submit ok.");
+                } else {
+                    info!("error: {:?}", result);
+                }
+                account_list.extend_from_slice(sub_account_list.as_slice());
+                sub_account_list.clear();
+                addr_vec.clear();
+                auth_key_vec.clear();
             }
-            // if self.is_account_exist(&account.address)? {
-            //     info!("account add stress queue ok: {}", &account.address);
-            account_list.push(account);
             i += 1;
-            // }
         }
         info!("{:?} accounts are created.", Vec::len(&account_list));
         Ok(account_list)
