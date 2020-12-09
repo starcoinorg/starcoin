@@ -19,6 +19,7 @@ use starcoin_types::block::{
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
+use starcoin_types::genesis_config;
 use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
@@ -200,6 +201,30 @@ impl From<BlockMetadata> for BlockMetadataView {
             chain_id: chain_id.id(),
             parent_gas_used,
         }
+    }
+}
+impl Into<BlockMetadata> for BlockMetadataView {
+    fn into(self) -> BlockMetadata {
+        let BlockMetadataView {
+            parent_hash,
+            timestamp,
+            author,
+            author_auth_key,
+            uncles,
+            number,
+            chain_id,
+            parent_gas_used,
+        } = self;
+        BlockMetadata::new(
+            parent_hash,
+            timestamp,
+            author,
+            author_auth_key,
+            uncles,
+            number,
+            genesis_config::ChainId::new(chain_id),
+            parent_gas_used,
+        )
     }
 }
 
