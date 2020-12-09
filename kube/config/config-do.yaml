@@ -1,6 +1,7 @@
 apiVersion: v1
 data:
   seed: /dns4/proxima1.seed.starcoin.org/tcp/9840/p2p/12D3KooW9vHQJk9o69tZPMM2viQ3eWpgp6veDBRz8tTvDFDBejwk
+  halley_seed: /dns4/kube/starcoin-halley-0.halley-svc.default.svc.cluster.local/tcp/9840/p2p/12D3KooW9yQoKZrByqrUjmmPHXtR23qCXRQvF5KowYgoqypuhuCn
   start_disable_seed_node: "false"
 kind: ConfigMap
 metadata:

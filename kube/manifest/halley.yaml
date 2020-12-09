@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: halley-svc
+spec:
+  selector:
+    network: halley
+  ports:
+    -
+      protocol: TCP
+      port: 9840
+      targetPort: 9840
+      name: peer
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: starcoin-halley
+  labels:
+    network: halley
+spec:
+  selector:
+    matchLabels:
+      network: halley
+  serviceName: halley-svc
+  replicas: 3
+  template:
+    metadata:
+      name: starcoin-halley
+      labels:
+        network: halley
+    spec:
+      containers:
+      - name: starcoin
+        image: docker.pkg.github.com/starcoinorg/starcoin/starcoin:latest
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          -
+            rm -rf /sc-data/halley/starcoin.ipc /sc-data/halley/starcoindb/db/starcoindb/LOCK;
+            id=$(echo -e $POD_NAME|awk -F'-' '{print $2}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+            node_key=${node_keys[$id]};
+            if [ ! -z $node_key ]; then
+              node_key_flag="--node-key ${node_key}";
+            fi;
+            if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
+              /starcoin/starcoin -n halley -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+              sleep 5;
+            else
+              /starcoin/starcoin -n halley -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+            fi;
+        ports:
+          - containerPort: 9840
+            hostPort: 9840
+        volumeMounts:
+        - name: halley-volume
+          mountPath: /sc-data
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: NODE_KEYS
+            valueFrom:
+              secretKeyRef:
+                name: node-keys
+                key: halley-node-keys
+          - name: SEED
+            valueFrom:
+              configMapKeyRef:
+                name: starcoin-config
+                key: halley_seed
+          - name: DISABLE_SEED
+            valueFrom:
+              configMapKeyRef:
+                name: starcoin-config
+                key: start_disable_seed_node
+      - name: txfactory
+        image: starcoin/starcoin:v0.9.0
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - /starcoin/starcoin_txfactory --ipc-path /sc-data/halley/starcoin.ipc
+        volumeMounts:
+        - name: halley-volume
+          mountPath: /sc-data
+  volumeClaimTemplates:
+  - metadata:
+      name: halley-volume
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 50Gi
