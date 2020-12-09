@@ -11,6 +11,7 @@ use pin_utils::core_reexport::time::Duration;
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::BlockChain;
 use starcoin_genesis::Genesis;
+use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
@@ -86,15 +87,16 @@ pub async fn test_failed_block() -> Result<()> {
     let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
     let (storage, startup_info, _) = Genesis::init_storage_for_test(&net)?;
 
+    let block_info = storage.get_block_info(startup_info.main)?.unwrap();
     let chain = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
     let (sender, _) = unbounded();
-    let mut block_collector = BlockCollector::new_with_handle(chain, sender);
+    let mut block_collector = BlockCollector::new_with_handle(block_info, chain, sender);
     let mut header = BlockHeader::random();
     header.number = 1;
     let body = BlockBody::new(Vec::new(), None);
     let failed_block = Block::new(header, body);
     let failed_block_id = failed_block.id();
-    if let Err(_) = block_collector.apply_block_for_test(failed_block) {
+    if block_collector.apply_block_for_test(failed_block).is_err() {
         assert!(storage.get_failed_block_by_id(failed_block_id)?.is_some());
         Ok(())
     } else {

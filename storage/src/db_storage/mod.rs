@@ -51,7 +51,7 @@ impl DBStorage {
             let mut remove_cf_vec = Vec::new();
             db_cfs_set.iter().for_each(|k| {
                 if !cfs_set.contains(&k.as_str()) {
-                    remove_cf_vec.push(k.clone());
+                    remove_cf_vec.push(<&std::string::String>::clone(k));
                 }
             });
             ensure!(

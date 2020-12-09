@@ -205,15 +205,15 @@ impl BlockCollector {
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Err(err) = self.chain.apply(block.clone()) {
-            return match err.downcast::<ConnectBlockError>() {
+            match err.downcast::<ConnectBlockError>() {
                 Ok(e) => {
                     self.chain
                         .get_storage()
                         .save_failed_block(block.id(), block, peer_id)?;
                     Err(e.into())
                 }
-                Err(e) => Err(e.into()),
-            };
+                Err(e) => Err(e),
+            }
         } else {
             Ok(())
         }
@@ -297,16 +297,14 @@ mod tests {
             block_ids: Vec<HashValue>,
         ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>> {
             let blocks = self.blocks.lock().unwrap();
-            let result: Result<Vec<Block>> = block_ids
+            let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
                 .iter()
                 .map(|block_id| {
-                    (
-                        blocks
-                            .get(block_id)
-                            .cloned()
-                            .ok_or_else(|| format_err!("Can not find block by id: {:?}", block_id)),
-                        None,
-                    )
+                    if let Some(block) = blocks.get(block_id).cloned() {
+                        Ok((block, None))
+                    } else {
+                        Err(format_err!("Can not find block by id: {:?}", block_id))
+                    }
                 })
                 .collect();
             async {
@@ -386,9 +384,9 @@ mod tests {
         let result = sync_task.await?;
         let last_block_number = result
             .iter()
-            .map(|(block, block_info)| {
-                assert!(block_info.is_none());
-                block.header().number as i64
+            .map(|block_data| {
+                assert!(block_data.info.is_none());
+                block_data.block.header().number as i64
             })
             .fold(-1, |parent, current| {
                 //ensure return block is ordered
@@ -430,13 +428,13 @@ mod tests {
         let result = sync_task.await?;
         let last_block_number = result
             .iter()
-            .map(|(block, block_info)| {
-                if block.header().number() % 2 == 0 {
-                    assert!(block_info.is_some())
+            .map(|block_data| {
+                if block_data.block.header().number() % 2 == 0 {
+                    assert!(block_data.info.is_some())
                 } else {
-                    assert!(block_info.is_none())
+                    assert!(block_data.info.is_none())
                 }
-                block.header().number as i64
+                block_data.block.header().number as i64
             })
             .fold(-1, |parent, current| {
                 //ensure return block is ordered
