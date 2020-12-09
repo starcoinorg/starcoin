@@ -192,16 +192,16 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                         .transactions()
                         .iter()
                         .position(|t| t.id() == txn_hash)
-                        .ok_or_else(|| {
-                            anyhow::anyhow!("cannot find txn {} in block {}", txn_hash, block_hash)
-                        })? as u32;
+                        .map(|i| i + 1)
+                        .unwrap_or_default();
+
                     events
                         .into_iter()
                         .map(|evt| ContractEventInfo {
                             block_hash,
                             block_number: block.header().number,
                             transaction_hash: txn_hash,
-                            transaction_index: index + 1,
+                            transaction_index: index as u32,
                             event: evt,
                         })
                         .collect()
