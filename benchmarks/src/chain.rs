@@ -14,7 +14,6 @@ use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
 use starcoin_storage::Storage;
 use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
-use std::ops::Deref;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter};
 
@@ -75,11 +74,7 @@ impl ChainBencher {
                 )
                 .unwrap();
             let block = ConsensusStrategy::Dummy
-                .create_block(
-                    self.chain.read().deref(),
-                    block_template,
-                    self.net.time_service().as_ref(),
-                )
+                .create_block(block_template, self.net.time_service().as_ref())
                 .unwrap();
             self.chain.write().apply(block).unwrap();
         }

@@ -15,7 +15,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::delay_for;
 use types::{
-    block::BlockTemplate,
     system_events::{GenerateBlockEvent, MintBlockEvent, NewHeadBlock, SubmitSealEvent},
     U256,
 };
@@ -51,8 +50,7 @@ fn test_miner() {
         .unwrap();
         let mined_block = new_block_receiver.await.unwrap().0.get_block().clone();
         assert_eq!(mined_block.header.nonce, nonce);
-        let minting_blob =
-            BlockTemplate::from_block(mined_block).as_pow_header_blob(mint_block_event.difficulty);
+        let minting_blob = mined_block.header.as_pow_header_blob();
         assert_eq!(mint_block_event.minting_blob, minting_blob);
         handle.stop().unwrap();
     };

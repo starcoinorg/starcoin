@@ -86,7 +86,7 @@ pub fn new_block(
         .unwrap();
     block_chain
         .consensus()
-        .create_block(block_chain, block_template, time_service)
+        .create_block(block_template, time_service)
         .unwrap()
 }
 
@@ -142,7 +142,7 @@ fn gen_fork_block_chain(
                 .unwrap();
             let block = block_chain
                 .consensus()
-                .create_block(&block_chain, block_template, net.time_service().as_ref())
+                .create_block(block_template, net.time_service().as_ref())
                 .unwrap();
             parent_id = block.id();
 

@@ -229,6 +229,10 @@ impl BlockChain {
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
+
+        let epoch = self.epoch_info()?;
+        let strategy = epoch.epoch().strategy();
+        let difficulty = strategy.calculate_next_difficulty(self, &epoch)?;
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header,
@@ -237,6 +241,8 @@ impl BlockChain {
             author_auth_key,
             self.time_service.now_millis(),
             uncles,
+            difficulty,
+            strategy,
         )?;
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;

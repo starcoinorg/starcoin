@@ -9,7 +9,7 @@ use starcoin_crypto::{
     HashValue,
 };
 
-use crate::genesis_config::ChainId;
+use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
 use serde::export::Formatter;
@@ -555,23 +555,26 @@ pub struct BlockTemplate {
     pub body: BlockBody,
     /// The chain id
     pub chain_id: ChainId,
+    /// Block difficulty
+    pub difficulty: U256,
+    pub strategy: ConsensusStrategy,
 }
 
 impl BlockTemplate {
     pub fn new(
-        parent_hash: HashValue,
         parent_block_accumulator_root: HashValue,
-        timestamp: u64,
-        number: BlockNumber,
-        author: AccountAddress,
-        author_auth_key: Option<AuthenticationKey>,
         accumulator_root: HashValue,
         state_root: HashValue,
         gas_used: u64,
         body_hash: HashValue,
         body: BlockBody,
         chain_id: ChainId,
+        difficulty: U256,
+        strategy: ConsensusStrategy,
+        block_metadata: BlockMetadata,
     ) -> Self {
+        let (parent_hash, timestamp, author, author_auth_key, _, number, _, _) =
+            block_metadata.into_inner();
         Self {
             parent_hash,
             parent_block_accumulator_root,
@@ -585,10 +588,12 @@ impl BlockTemplate {
             body_hash,
             body,
             chain_id,
+            difficulty,
+            strategy,
         }
     }
 
-    pub fn into_block(self, nonce: u32, difficulty: U256) -> Block {
+    pub fn into_block(self, nonce: u32) -> Block {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -599,7 +604,7 @@ impl BlockTemplate {
             self.accumulator_root,
             self.state_root,
             self.gas_used,
-            difficulty,
+            self.difficulty,
             nonce,
             self.body_hash,
             self.chain_id,
@@ -610,7 +615,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn as_raw_block_header(&self, difficulty: U256) -> RawBlockHeader {
+    pub fn as_raw_block_header(&self) -> RawBlockHeader {
         RawBlockHeader {
             parent_hash: self.parent_hash,
             timestamp: self.timestamp,
@@ -622,17 +627,17 @@ impl BlockTemplate {
             state_root: self.state_root,
             gas_used: self.gas_used,
             body_hash: self.body_hash,
-            difficulty,
+            difficulty: self.difficulty,
             chain_id: self.chain_id,
         }
     }
 
-    pub fn as_pow_header_blob(&self, difficulty: U256) -> Vec<u8> {
+    pub fn as_pow_header_blob(&self) -> Vec<u8> {
         let mut blob = Vec::new();
-        let raw_header = self.as_raw_block_header(difficulty);
+        let raw_header = self.as_raw_block_header();
         let raw_header_hash = raw_header.crypto_hash();
         let mut dh = [0u8; 32];
-        difficulty.to_big_endian(&mut dh);
+        raw_header.difficulty.to_big_endian(&mut dh);
         let extend_and_nonce = [0u8; 12];
 
         blob.extend_from_slice(raw_header_hash.to_vec().as_slice());
@@ -641,7 +646,7 @@ impl BlockTemplate {
         blob
     }
 
-    pub fn into_block_header(self, nonce: u32, difficulty: U256) -> BlockHeader {
+    pub fn into_block_header(self, nonce: u32) -> BlockHeader {
         BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -652,14 +657,14 @@ impl BlockTemplate {
             self.accumulator_root,
             self.state_root,
             self.gas_used,
-            difficulty,
+            self.difficulty,
             nonce,
             self.body_hash,
             self.chain_id,
         )
     }
 
-    pub fn from_block(block: Block) -> Self {
+    pub fn from_block(block: Block, strategy: ConsensusStrategy) -> Self {
         BlockTemplate {
             parent_hash: block.header().parent_hash,
             parent_block_accumulator_root: block.header().parent_block_accumulator_root(),
@@ -673,6 +678,8 @@ impl BlockTemplate {
             body: block.body,
             body_hash: block.header.body_hash,
             chain_id: block.header.chain_id,
+            difficulty: block.header.difficulty,
+            strategy,
         }
     }
 }

@@ -8,7 +8,7 @@ use starcoin_accumulator::{node::AccumulatorStoreType, Accumulator, MerkleAccumu
 use starcoin_executor::{execute_block_transactions, execute_transactions};
 use starcoin_state_api::{ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
-use starcoin_types::genesis_config::ChainId;
+use starcoin_types::genesis_config::{ChainId, ConsensusStrategy};
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::vm_error::KeptVMStatus;
 use starcoin_types::{
@@ -19,6 +19,7 @@ use starcoin_types::{
     transaction::{
         SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput, TransactionStatus,
     },
+    U256,
 };
 use std::{convert::TryInto, sync::Arc};
 use storage::Store;
@@ -36,6 +37,8 @@ pub struct OpenedBlock {
     included_user_txns: Vec<SignedUserTransaction>,
     uncles: Vec<BlockHeader>,
     chain_id: ChainId,
+    difficulty: U256,
+    strategy: ConsensusStrategy,
 }
 
 impl OpenedBlock {
@@ -47,6 +50,8 @@ impl OpenedBlock {
         author_auth_key: Option<AuthenticationKey>,
         block_timestamp: u64,
         uncles: Vec<BlockHeader>,
+        difficulty: U256,
+        strategy: ConsensusStrategy,
     ) -> Result<Self> {
         let previous_block_id = previous_header.id();
         let block_info = storage
@@ -82,6 +87,8 @@ impl OpenedBlock {
             included_user_txns: vec![],
             uncles,
             chain_id,
+            difficulty,
+            strategy,
         };
         opened_block.initialize()?;
         Ok(opened_block)
@@ -233,9 +240,6 @@ impl OpenedBlock {
     pub fn finalize(self) -> Result<BlockTemplate> {
         let accumulator_root = self.txn_accumulator.root_hash();
         let state_root = self.state.state_root();
-        let (parent_id, timestamp, author, author_auth_key, _uncles, number, _, _) =
-            self.block_meta.into_inner();
-
         let uncles = if !self.uncles.is_empty() {
             Some(self.uncles)
         } else {
@@ -243,20 +247,18 @@ impl OpenedBlock {
         };
         let body = BlockBody::new(self.included_user_txns, uncles);
         let block_template = BlockTemplate::new(
-            parent_id,
             self.previous_block_info
                 .block_accumulator_info
                 .accumulator_root,
-            timestamp,
-            number,
-            author,
-            author_auth_key,
             accumulator_root,
             state_root,
             self.gas_used,
             body.hash(),
             body,
             self.chain_id,
+            self.difficulty,
+            self.strategy,
+            self.block_meta,
         );
         Ok(block_template)
     }

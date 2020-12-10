@@ -100,7 +100,7 @@ async fn uncle_block_and_writeable_block_chain(
     let new_block = writeable_block_chain_service
         .get_main()
         .consensus()
-        .create_block(&new_branch, block_template, net.time_service().as_ref())
+        .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     let uncle_block_header = new_block.header().clone();
     (
@@ -129,11 +129,7 @@ fn apply_with_illegal_uncle(
             None,
         )?;
     let consensus_strategy = writeable_block_chain_service.get_main().consensus();
-    let new_block = consensus_strategy.create_block(
-        writeable_block_chain_service.get_main(),
-        block_template,
-        net.time_service().as_ref(),
-    )?;
+    let new_block = consensus_strategy.create_block(block_template, net.time_service().as_ref())?;
 
     let head_id = writeable_block_chain_service
         .get_main()
@@ -163,7 +159,6 @@ fn apply_legal_block(
         .unwrap();
     let new_block = consensus_strategy
         .create_block(
-            writeable_block_chain_service.get_main(),
             block_template,
             writeable_block_chain_service
                 .get_main()
@@ -369,7 +364,7 @@ async fn test_verify_can_not_be_uncle_check_ancestor_failed() {
             .unwrap();
         let new_block = new_branch
             .consensus()
-            .create_block(&new_branch, block_template, net.time_service().as_ref())
+            .create_block(block_template, net.time_service().as_ref())
             .unwrap();
         new_branch.apply(new_block).unwrap();
     }
@@ -445,11 +440,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .unwrap();
     let uncle_block = fork_block_chain
         .consensus()
-        .create_block(
-            &fork_block_chain,
-            block_template,
-            net.time_service().as_ref(),
-        )
+        .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     let mut uncle_block_header = uncle_block.header().clone();
 
@@ -473,11 +464,7 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .unwrap();
     let new_block = main_block_chain
         .consensus()
-        .create_block(
-            &main_block_chain,
-            block_template,
-            net.time_service().as_ref(),
-        )
+        .create_block(block_template, net.time_service().as_ref())
         .unwrap();
 
     main_block_chain.apply(new_block)
@@ -759,11 +746,7 @@ async fn test_verify_uncles_uncle_exist_failed() {
     let new_block = writeable_block_chain_service
         .get_main()
         .consensus()
-        .create_block(
-            writeable_block_chain_service.get_main(),
-            block_template,
-            net.time_service().as_ref(),
-        )
+        .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
         .try_connect(new_block)
@@ -837,11 +820,7 @@ async fn test_verify_uncle_and_parent_number_failed() {
     let new_block = writeable_block_chain_service
         .get_main()
         .consensus()
-        .create_block(
-            writeable_block_chain_service.get_main(),
-            block_template,
-            net.time_service().as_ref(),
-        )
+        .create_block(block_template, net.time_service().as_ref())
         .unwrap();
     writeable_block_chain_service
         .try_connect(new_block)
