@@ -237,8 +237,6 @@ mod tests {
     use elasticsearch::http::Url;
     use elasticsearch::Elasticsearch;
     use starcoin_crypto::HashValue;
-    use starcoin_rpc_api::types::BlockHeaderView;
-    use starcoin_types::account_address::AccountAddress;
     use std::str::FromStr;
 
     #[tokio::test(threaded_scheduler)]
@@ -262,7 +260,8 @@ mod tests {
             block_hash: HashValue::random(),
             block_number: 1,
         };
-        let value = sinker
+
+        let _ = sinker
             .update_local_tip_header(tip_info.block_hash, tip_info.block_number)
             .await
             .unwrap();
