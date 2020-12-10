@@ -10,7 +10,7 @@ thiserror = "1.0"
 actix = "0.10.0"
 rand = "0.7.3"
 pin-utils = "0.1.0"
-async-std = "1.7"
+async-std = "1.8"
 futures = "0.3"
 futures-retry = "0.5.0"
 itertools = { version = "0.9.0", default-features = false }
