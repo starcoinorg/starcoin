@@ -53,7 +53,7 @@ spec:
               /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
               sleep 5;
             else
-              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
