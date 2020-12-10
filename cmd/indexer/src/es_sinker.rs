@@ -11,6 +11,8 @@ use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::BlockView;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::transaction::Transaction;
+use tokio::sync::RwLock;
+
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
     pub block_index: String,
@@ -35,16 +37,22 @@ impl Default for IndexConfig {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct EsSinker {
     es: Elasticsearch,
     config: IndexConfig,
+    state: RwLock<SinkState>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct LocalTipInfo {
-    block_hash: HashValue,
-    block_number: u64,
+#[derive(Clone, Debug, Default)]
+struct SinkState {
+    tip: Option<LocalTipInfo>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct LocalTipInfo {
+    pub block_hash: HashValue,
+    pub block_number: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct BlockWithMetadata {
@@ -55,7 +63,11 @@ struct BlockWithMetadata {
 
 impl EsSinker {
     pub fn new(es: Elasticsearch, config: IndexConfig) -> Self {
-        Self { es, config }
+        Self {
+            es,
+            config,
+            state: Default::default(),
+        }
     }
 
     async fn create_index_if_not_exists(&self, index: &str) -> Result<()> {
@@ -83,6 +95,8 @@ impl EsSinker {
         let txn_info_index = self.config.txn_info_index.as_str();
         self.create_index_if_not_exists(block_index).await?;
         self.create_index_if_not_exists(txn_info_index).await?;
+        let tip = self._get_local_tip_header().await?;
+        self.state.write().await.tip = tip;
         Ok(())
     }
 
@@ -111,10 +125,16 @@ impl EsSinker {
             .await?;
         let resp = resp.error_for_status_code()?;
         let data = resp.json().await?;
+        self.state.write().await.tip = Some(tip_info);
         Ok(data)
     }
 
-    pub async fn get_local_tip_header(&self) -> Result<Option<(HashValue, u64)>> {
+    pub async fn get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
+        let tip = self.state.read().await.tip.clone();
+        Ok(tip)
+    }
+
+    async fn _get_local_tip_header(&self) -> Result<Option<LocalTipInfo>> {
         let block_index = self.config.block_index.as_str();
         let resp_data: Value = self
             .es
@@ -127,7 +147,7 @@ impl EsSinker {
             .await?;
         let v = resp_data[block_index]["mappings"]["_meta"]["tip"].clone();
         let tip_info: Option<LocalTipInfo> = serde_json::from_value(v)?;
-        Ok(tip_info.map(|t| (t.block_hash, t.block_number)))
+        Ok(tip_info)
     }
 
     pub async fn rollback_to_last_block(&self) -> Result<()> {
@@ -137,7 +157,7 @@ impl EsSinker {
         }
         let tip_header = tip_header.unwrap();
         let block_index = self.config.block_index.as_str();
-        let block_id = tip_header.0.to_string();
+        let block_id = tip_header.block_hash.to_string();
         let data: Value = self
             .es
             .get(GetParts::IndexId(block_index, block_id.as_str()))
@@ -271,6 +291,7 @@ mod tests {
         let sinker = EsSinker {
             es,
             config: IndexConfig::default(),
+            state: Default::default(),
         };
         let v = sinker.get_local_tip_header().await.unwrap();
         assert!(v.is_none());
@@ -286,7 +307,6 @@ mod tests {
             .unwrap();
 
         let v = sinker.get_local_tip_header().await.unwrap().unwrap();
-        assert_eq!(v.0, tip_info.block_hash);
-        assert_eq!(v.1, tip_info.block_number);
+        assert_eq!(v, tip_info);
     }
 }

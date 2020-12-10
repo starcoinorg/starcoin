@@ -1,7 +1,7 @@
 mod block_client;
 mod es_sinker;
 pub use block_client::BlockClient;
-pub use es_sinker::{EsSinker, IndexConfig};
+pub use es_sinker::{EsSinker, IndexConfig, LocalTipInfo};
 
 use serde::{Deserialize, Serialize};
 use starcoin_rpc_api::types::{

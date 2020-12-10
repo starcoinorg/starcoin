@@ -54,7 +54,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
         .map_err(|(e, _)| e)?;
 
         let next_block_number = match local_tip_header.as_ref() {
-            Some(local_tip_header) => local_tip_header.1 + 1,
+            Some(local_tip_header) => local_tip_header.block_number + 1,
             None => 0,
         };
         if next_block_number > remote_tip_header.number {
@@ -77,7 +77,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
 
             // fork occurs
             if let Some(local_tip_header) = local_tip_header.as_ref() {
-                if next_block.block.header.parent_hash != local_tip_header.0 {
+                if next_block.block.header.parent_hash != local_tip_header.block_hash {
                     info!("Fork detected, rollbacking...");
                     FutureRetry::new(
                         || sinker.rollback_to_last_block(),
