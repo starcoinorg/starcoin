@@ -364,7 +364,10 @@ impl VerifiedRpcClient {
         self.client.get_block_ids(peer_id, request).await
     }
 
-    pub async fn get_blocks(&self, ids: Vec<HashValue>) -> Result<Vec<Option<Block>>> {
+    pub async fn get_blocks(
+        &self,
+        ids: Vec<HashValue>,
+    ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
         let peer_id = self.random_peer()?;
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
@@ -381,7 +384,7 @@ impl VerifiedRpcClient {
                         );
                         None
                     } else {
-                        Some(block)
+                        Some((block, Some(peer_id.clone())))
                     }
                 } else {
                     None

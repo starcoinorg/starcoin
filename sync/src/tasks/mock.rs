@@ -14,6 +14,7 @@ use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::Block;
+use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
@@ -137,13 +138,18 @@ impl BlockIdFetcher for SyncNodeMocker {
 }
 
 impl BlockFetcher for SyncNodeMocker {
-    fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<'_, Result<Vec<Block>>> {
-        let result: Result<Vec<Block>> = block_ids
+    fn fetch_block(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
+        let result: Result<Vec<(Block, Option<PeerId>)>> = block_ids
             .into_iter()
             .map(|block_id| {
-                self.chain()
-                    .get_block(block_id)?
-                    .ok_or_else(|| format_err!("Can not find block by id: {}", block_id))
+                if let Some(block) = self.chain().get_block(block_id)? {
+                    Ok((block, None))
+                } else {
+                    Err(format_err!("Can not find block by id: {}", block_id))
+                }
             })
             .collect();
         async move {
