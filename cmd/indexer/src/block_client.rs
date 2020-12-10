@@ -32,19 +32,19 @@ impl BlockClient {
         let mut txns_data = vec![];
 
         {
-            let blockmeta_info = txn_infos.remove(0);
+            let txn_info = txn_infos.remove(0);
             let txn: TransactionView = self
                 .node_client
-                .get_transaction(blockmeta_info.transaction_hash)
+                .get_transaction(txn_info.transaction_hash)
                 .compat()
                 .await?;
             let events: Vec<TransactionEventView> = self
                 .node_client
-                .get_events_by_txn_hash(blockmeta_info.transaction_hash)
+                .get_events_by_txn_hash(txn_info.transaction_hash)
                 .compat()
                 .await?;
             txns_data.push(TransactionData {
-                info: blockmeta_info,
+                info: txn_info,
                 block_metadata: txn.block_metadata,
                 user_transaction: txn.user_transaction,
                 events,
@@ -54,12 +54,16 @@ impl BlockClient {
             BlockTransactionsView::Hashes(_) => unreachable!(),
             BlockTransactionsView::Full(txns) => txns.clone(),
         };
-        for (txn_info, user_txn) in txn_infos.into_iter().zip(user_transactions) {
-            let events: Vec<TransactionEventView> = self
-                .node_client
-                .get_events_by_txn_hash(txn_info.transaction_hash)
-                .compat()
-                .await?;
+        let fetch_events_tasks = txn_infos
+            .iter()
+            .map(|txn_info| txn_info.transaction_hash)
+            .map(|txn_hash| self.node_client.get_events_by_txn_hash(txn_hash).compat());
+
+        let events = futures_util::future::try_join_all(fetch_events_tasks).await?;
+
+        for ((txn_info, events), user_txn) in
+            txn_infos.into_iter().zip(events).zip(user_transactions)
+        {
             txns_data.push(TransactionData {
                 info: txn_info,
                 events,

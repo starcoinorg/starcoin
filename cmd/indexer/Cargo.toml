@@ -19,6 +19,7 @@ starcoin-crypto = {path = "../../commons/crypto" }
 starcoin-types = {path= "../../types" }
 starcoin-rpc-client = { path= "../../rpc/client" }
 starcoin-rpc-api = {path = "../../rpc/api" }
+starcoin-logger = {path = "../../commons/logger"}
 jsonrpc-core-client="~15"
 tokio={version="0.2", features=["full"]}
 tokio-compat = "0.1.6"

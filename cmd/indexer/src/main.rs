@@ -8,10 +8,10 @@ use futures_retry::{FutureRetry, RetryPolicy};
 use futures_util::TryFutureExt;
 use jsonrpc_core_client::transports::http;
 use starcoin_indexer::{BlockClient, BlockData, EsSinker, IndexConfig};
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::chain::ChainClient;
 use std::time::Duration;
 use tokio_compat::runtime;
-
 #[derive(Clap, Debug, Clone)]
 #[clap(version = "0.1.0", author = "Starcoin Core Dev <dev@starcoin.org>")]
 pub struct Options {
@@ -34,7 +34,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
         let remote_tip_header = FutureRetry::new(
             || block_client.get_chain_head().map_err(|e| e.compat()),
             |e| {
-                println!("[Retry]: get chain head, err: {}", &e);
+                warn!("[Retry]: get chain head, err: {}", &e);
                 RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
             },
         )
@@ -45,7 +45,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
         let local_tip_header = FutureRetry::new(
             || sinker.get_local_tip_header(),
             |e| {
-                println!("[Retry]: get local tip header, err: {}", &e);
+                warn!("[Retry]: get local tip header, err: {}", &e);
                 RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
             },
         )
@@ -67,7 +67,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
                         .map_err(|e| e.compat())
                 },
                 |e| {
-                    println!("[Retry]: get chain block data, err: {}", &e);
+                    warn!("[Retry]: get chain block data, err: {}", &e);
                     RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
                 },
             )
@@ -78,10 +78,11 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
             // fork occurs
             if let Some(local_tip_header) = local_tip_header.as_ref() {
                 if next_block.block.header.parent_hash != local_tip_header.0 {
+                    info!("Fork detected, rollbacking...");
                     FutureRetry::new(
                         || sinker.rollback_to_last_block(),
                         |e| {
-                            println!("[Retry]: rollback to last block, err: {}", &e);
+                            warn!("[Retry]: rollback to last block, err: {}", &e);
                             RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
                         },
                     )
@@ -89,7 +90,6 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
                     .map(|(d, _)| d)
                     .map_err(|(e, _)| e)?;
 
-                    println!("forked detected, rollbacking...");
                     continue;
                 }
             }
@@ -98,7 +98,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
             FutureRetry::new(
                 || sinker.write_next_block(next_block.clone()),
                 |e: anyhow::Error| {
-                    println!("[Retry]: write next block, err: {}", e);
+                    warn!("[Retry]: write next block, err: {}", e);
                     RetryPolicy::<anyhow::Error>::WaitRetry(Duration::from_secs(1))
                 },
             )
@@ -106,7 +106,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
             .map(|(d, _)| d)
             .map_err(|(e, _)| e)?;
 
-            println!(
+            info!(
                 "Indexing block {}, height: {} done",
                 next_block.block.header.block_hash, next_block.block.header.number
             );
@@ -115,8 +115,9 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
 }
 
 fn main() -> anyhow::Result<()> {
+    let _log_handle = starcoin_logger::init();
     let opts: Options = Options::parse();
-    println!("opts: {:?}", &opts);
+    info!("opts: {:?}", &opts);
     let mut rt = runtime::Builder::new()
         .name_prefix("starcoin-indexer")
         .build()?;

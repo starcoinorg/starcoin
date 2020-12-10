@@ -7,10 +7,10 @@ use elasticsearch::{BulkOperation, BulkOperations, BulkParts, Elasticsearch, Get
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use starcoin_crypto::HashValue;
+use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::BlockView;
 use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::transaction::Transaction;
-
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
     pub block_index: String,
@@ -50,7 +50,7 @@ struct LocalTipInfo {
 struct BlockWithMetadata {
     #[serde(flatten)]
     block: BlockView,
-    metadata: BlockMetadata,
+    metadata: Option<BlockMetadata>,
 }
 
 impl EsSinker {
@@ -161,12 +161,17 @@ impl EsSinker {
 
         // also remove metadata txn
         let txn_info_index = self.config.txn_info_index.as_str();
-        bulk_operations.push(
-            BulkOperation::<TransactionData>::delete(
-                Transaction::BlockMetadata(metadata).id().to_string(),
-            )
-            .index(txn_info_index),
-        )?;
+
+        // remove metadata txn if exists.
+        if let Some(metadata) = metadata {
+            bulk_operations.push(
+                BulkOperation::<TransactionData>::delete(
+                    Transaction::BlockMetadata(metadata).id().to_string(),
+                )
+                .index(txn_info_index),
+            )?;
+        }
+
         for txn_hash in block_view.body.txn_hashes() {
             bulk_operations.push(
                 BulkOperation::<TransactionData>::delete(txn_hash.to_string())
@@ -184,9 +189,15 @@ impl EsSinker {
         if let Some(ex) = exception {
             anyhow::bail!("{}", serde_json::to_string(&ex)?);
         }
+
         // rollback tip header
-        self.update_local_tip_header(block_view.header.parent_hash, block_view.header.number - 1)
+        let rollback_to = (block_view.header.parent_hash, block_view.header.number - 1);
+        self.update_local_tip_header(rollback_to.0, rollback_to.1)
             .await?;
+        info!(
+            "Rollback to block: {}, height: {}",
+            rollback_to.0, rollback_to.1
+        );
         Ok(())
     }
 
@@ -207,7 +218,7 @@ impl EsSinker {
         bulk_operations.push(
             BulkOperation::index(BlockWithMetadata {
                 block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone().unwrap().into(),
+                metadata: txns_data[0].block_metadata.clone().map(Into::into),
             })
             .id(block.header.block_hash.to_string())
             .index(block_index),
