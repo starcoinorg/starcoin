@@ -103,11 +103,14 @@ fn get_account_or_default(
             while balance.is_none() {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = account_state_reader.get_balance(&addr)?;
+                info!("account balance is null.");
             }
             // account has enough STC
-            while balance.unwrap() < INITIAL_BALANCE * account_num as u128 {
+            let start_blance = INITIAL_BALANCE * account_num as u128;
+            while balance.unwrap() < start_blance {
                 std::thread::sleep(Duration::from_millis(1000));
                 balance = account_state_reader.get_balance(&addr)?;
+                info!("account balance is {:?}, min is: {}", balance, start_blance);
             }
 
             default_account.unwrap()
@@ -268,7 +271,7 @@ impl TxnMocker {
 }
 
 impl TxnMocker {
-    fn fetch_expiration_time(&mut self) -> u64 {
+    fn fetch_expiration_time(&self) -> u64 {
         let node_info = self
             .client
             .node_info()
@@ -298,16 +301,6 @@ impl TxnMocker {
             }
         };
         Ok(())
-    }
-
-    fn is_account_exist(&mut self, account: &AccountAddress) -> Result<bool> {
-        let state_reader = RemoteStateReader::new(&self.client)?;
-        let account_state_reader = AccountStateReader::new(&state_reader);
-
-        let account_resource = account_state_reader
-            .get_account_resource(account)
-            .unwrap_or(None);
-        Ok(account_resource.is_some())
     }
 
     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<HashValue> {
@@ -371,7 +364,7 @@ impl TxnMocker {
     }
 
     fn submit_txn(
-        &mut self,
+        &self,
         raw_txn: RawUserTransaction,
         sender: AccountAddress,
         blocking: bool,
@@ -404,7 +397,7 @@ impl TxnMocker {
     }
 
     fn gen_and_submit_transfer_txn(
-        &mut self,
+        &self,
         sender: AccountAddress,
         receiver_address: AccountAddress,
         receiver_public_key: Option<Ed25519PublicKey>,
@@ -432,6 +425,8 @@ impl TxnMocker {
         let mut account_local = self.client.account_list()?;
         let mut available_list = vec![];
         let mut index = 0;
+        let state_reader = RemoteStateReader::new(&self.client)?;
+        let account_state_reader = AccountStateReader::new(&state_reader);
         while index < account_num {
             if let Some(account) = account_local.pop() {
                 if self
@@ -442,11 +437,15 @@ impl TxnMocker {
                         self.unlock_duration,
                     )
                     .is_ok()
-                    && self.is_account_exist(&account.address())?
                 {
-                    available_list.push(account);
-                    index += 1;
+                    let account_resource = account_state_reader
+                        .get_account_resource(&account.address())
+                        .unwrap_or(None);
+                    if account_resource.is_some() {
+                        available_list.push(account);
+                    }
                 }
+                index += 1;
             } else {
                 break;
             }
@@ -456,8 +455,13 @@ impl TxnMocker {
             let lack_len = account_num - available_list.len() as u32;
             info!("account lack: {}", lack_len);
             let lack = self.create_accounts(lack_len + 20)?;
+            let state_reader = RemoteStateReader::new(&self.client)?;
+            let account_state_reader = AccountStateReader::new(&state_reader);
             for account in lack {
-                if self.is_account_exist(&account.address())? {
+                let account_resource = account_state_reader
+                    .get_account_resource(&account.address())
+                    .unwrap_or(None);
+                if account_resource.is_some() {
                     available_list.push(account);
                     if available_list.len() == account_num as usize {
                         break;
@@ -511,43 +515,12 @@ impl TxnMocker {
         Ok(account_list)
     }
 
-    fn _transfer_to_accounts(
-        &mut self,
-        accounts: &[AccountInfo],
-        expiration_timestamp: u64,
-    ) -> Result<()> {
-        self.unlock_account()?;
-        self.recheck_sequence_number()?;
-        let length = accounts.len();
-        let mut i = 0;
-        while i < length {
-            let result = self.gen_and_submit_transfer_txn(
-                self.account_address,
-                accounts[i].address,
-                accounts[i].public_key.as_single(),
-                100000,
-                100,
-                self.next_sequence_number,
-                false,
-                expiration_timestamp,
-            );
-            if matches!(result, Ok(_)) {
-                self.next_sequence_number += 1;
-                i += 1;
-            } else {
-                info!(
-                    "submit txn failed. error: {:?}. try again after 200ms.",
-                    result
-                );
-                std::thread::sleep(Duration::from_millis(200));
-            }
-        }
-        Ok(())
-    }
-
-    fn sequence_number(&mut self, address: AccountAddress) -> Result<Option<u64>> {
+    fn sequence_number(
+        &self,
+        account_state_reader: &AccountStateReader,
+        address: AccountAddress,
+    ) -> Result<Option<u64>> {
         let seq_number_in_pool = self.client.next_sequence_number_in_txpool(address)?;
-
         info!(
             "seq_number_in_pool for address {:?} is {:?}",
             address, seq_number_in_pool
@@ -555,9 +528,6 @@ impl TxnMocker {
         let result = match seq_number_in_pool {
             Some(n) => Some(n),
             None => {
-                let state_reader = RemoteStateReader::new(&self.client)?;
-                let account_state_reader = AccountStateReader::new(&state_reader);
-
                 let account_resource = account_state_reader.get_account_resource(&address)?;
                 match account_resource {
                     None => None,
@@ -571,22 +541,24 @@ impl TxnMocker {
         Ok(result)
     }
 
-    fn stress_test(&mut self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
+    fn stress_test(&self, accounts: Vec<AccountInfo>, round_num: u32) -> Result<()> {
         //check node status
         let sync_status = self.client.sync_status()?;
         if sync_status.is_syncing() {
             info!("node syncing, pause stress");
             return Ok(());
         }
+        let state_reader = RemoteStateReader::new(&self.client)?;
+        let account_state_reader = AccountStateReader::new(&state_reader);
+
         //unlock all account and get sequence
         let mut sequences = vec![];
         for account in &accounts {
-            self.client.account_unlock(
-                account.address,
-                self.account_password.clone(),
-                self.unlock_duration,
-            )?;
-            sequences.push(self.sequence_number(account.address).unwrap().unwrap());
+            sequences.push(
+                self.sequence_number(&account_state_reader, account.address)
+                    .unwrap()
+                    .unwrap(),
+            );
         }
         //get  of all account
         let expiration_timestamp = self.fetch_expiration_time();
