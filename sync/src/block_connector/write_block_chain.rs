@@ -303,11 +303,13 @@ where
         remote_chain_state: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
         let block_id = block.id();
-        if self.main.current_header().id() == block.id() {
+        if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(());
         }
-        if self.main.current_header().id() == block.header().parent_hash() {
+        if self.main.current_header().id() == block.header().parent_hash()
+            && !self.block_exist(block_id)
+        {
             let connected = if execute {
                 self.main.apply(block.clone())
             } else {
@@ -322,50 +324,49 @@ where
             } else {
                 self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
             }
-            connected
-        } else {
-            let (block_exist, fork) = self.find_or_fork(block.header())?;
-            match (block_exist, fork) {
-                //block has bean processed, so just trigger a head select.
-                (true, Some(branch)) => {
-                    debug!(
-                        "Block {} has bean processed, trigger head select, total_difficulty: {}",
-                        block_id,
-                        branch.get_total_difficulty()?
-                    );
-                    WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
-                    self.select_head(branch)?;
-                    Ok(())
-                }
-                (true, None) => {
-                    self.main.update_chain_head(block.clone())?;
-                    self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
-                    Ok(())
-                }
-                (false, Some(mut branch)) => {
-                    let timer = WRITE_BLOCK_CHAIN_METRICS
-                        .exe_block_time
-                        .with_label_values(&["time"])
-                        .start_timer();
-                    let connected = if execute {
-                        branch.apply(block)
-                    } else {
-                        branch.apply_without_execute(
-                            block,
-                            remote_chain_state.expect("remote chain state not set"),
-                        )
-                    };
-                    timer.observe_duration();
-                    if connected.is_err() {
-                        debug!("connected failed {:?}", block_id);
-                        WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
-                    } else {
-                        self.select_head(branch)?;
-                    }
-                    connected
-                }
-                (_, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+            return connected;
+        }
+        let (block_exist, fork) = self.find_or_fork(block.header())?;
+        match (block_exist, fork) {
+            //block has bean processed, so just trigger a head select.
+            (true, Some(branch)) => {
+                debug!(
+                    "Block {} has bean processed, trigger head select, total_difficulty: {}",
+                    block_id,
+                    branch.get_total_difficulty()?
+                );
+                WRITE_BLOCK_CHAIN_METRICS.duplicate_conn_count.inc();
+                self.select_head(branch)?;
+                Ok(())
             }
+            (true, None) => {
+                self.main.update_chain_head(block.clone())?;
+                self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
+                Ok(())
+            }
+            (false, Some(mut branch)) => {
+                let timer = WRITE_BLOCK_CHAIN_METRICS
+                    .exe_block_time
+                    .with_label_values(&["time"])
+                    .start_timer();
+                let connected = if execute {
+                    branch.apply(block)
+                } else {
+                    branch.apply_without_execute(
+                        block,
+                        remote_chain_state.expect("remote chain state not set"),
+                    )
+                };
+                timer.observe_duration();
+                if connected.is_err() {
+                    debug!("connected failed {:?}", block_id);
+                    WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
+                } else {
+                    self.select_head(branch)?;
+                }
+                connected
+            }
+            (_, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
     }
 }
