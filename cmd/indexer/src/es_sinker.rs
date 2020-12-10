@@ -14,14 +14,22 @@ use starcoin_types::transaction::Transaction;
 #[derive(Clone, Debug)]
 pub struct IndexConfig {
     pub block_index: String,
-    pub uncle_block_index: String,
     pub txn_info_index: String,
 }
+
+impl IndexConfig {
+    pub fn new_with_prefix(prefix: impl AsRef<str>) -> Self {
+        Self {
+            block_index: format!("{}.blocks", prefix.as_ref()),
+            txn_info_index: format!("{}.txn_infos", prefix.as_ref()),
+        }
+    }
+}
+
 impl Default for IndexConfig {
     fn default() -> Self {
         Self {
             block_index: "blocks".to_string(),
-            uncle_block_index: "uncle_blocks".to_string(),
             txn_info_index: "txn_infos".to_string(),
         }
     }

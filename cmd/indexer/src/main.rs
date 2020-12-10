@@ -23,6 +23,8 @@ pub struct Options {
         default_value = "http://localhost:9850"
     )]
     node_url: String,
+    #[clap(long, about = "es index prefix", default_value = "starcoin")]
+    es_index_prefix: String,
 }
 
 async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
@@ -127,7 +129,7 @@ fn main() -> anyhow::Result<()> {
     )
     .build()?;
     let es = Elasticsearch::new(transport);
-    let index_config = IndexConfig::default();
+    let index_config = IndexConfig::new_with_prefix(opts.es_index_prefix.as_str());
     let sinker = EsSinker::new(es, index_config);
 
     rt.block_on_std(start_loop(block_client, sinker))?;
