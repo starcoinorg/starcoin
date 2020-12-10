@@ -43,6 +43,7 @@ members = [
     "chain/mock",
     "chain/chain-notify",
     "chain/service",
+    "chain/benchmark",
     "devtools/x",
     "node/api",
     "node",

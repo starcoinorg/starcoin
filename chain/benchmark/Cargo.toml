@@ -1,0 +1,23 @@
+[package]
+name = "starcoin-chain-benchmark"
+version = "0.9.0"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+anyhow = "1.0.35"
+types = { path = "../../types", package = "starcoin-types" }
+starcoin-storage = { path = "../../storage" }
+starcoin-config = { path = "../../config"}
+starcoin-chain = { path = "../../chain" }
+starcoin-consensus = { path = "../../consensus" }
+starcoin-genesis = {path = "../../core/genesis"}
+starcoin-vm-types = { path = "../../vm/types" }
+traits = { path = "../../core/traits", package = "starcoin-traits" }
+starcoin-account-api = { path = "../../account/api"}
+rand = "0.7.3"
+parking_lot = "0.11"
+structopt = "0.3.21"
+[features]
