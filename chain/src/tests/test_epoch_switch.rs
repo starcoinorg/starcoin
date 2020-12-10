@@ -44,7 +44,7 @@ pub fn create_new_block(
     )?;
     chain
         .consensus()
-        .create_block(chain, template, chain.time_service().as_ref())
+        .create_block(template, chain.time_service().as_ref())
 }
 
 pub fn build_transaction(
@@ -215,10 +215,9 @@ pub fn modify_on_chain_config_by_dao_block(
             vec![],
             None,
         )?;
-        let block1 =
-            chain
-                .consensus()
-                .create_block(&chain, template, chain.time_service().as_ref())?;
+        let block1 = chain
+            .consensus()
+            .create_block(template, chain.time_service().as_ref())?;
 
         chain.apply(block1)?;
     }

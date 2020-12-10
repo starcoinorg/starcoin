@@ -20,6 +20,7 @@ use starcoin_accumulator::AccumulatorTreeStore;
 use starcoin_state_store_api::{StateNode, StateNodeStore};
 use starcoin_types::block::BlockState;
 use starcoin_types::contract_event::ContractEvent;
+use starcoin_types::peer_info::PeerId;
 use starcoin_types::transaction::Transaction;
 use starcoin_types::{
     block::{Block, BlockBody, BlockHeader, BlockInfo},
@@ -66,6 +67,7 @@ pub const TRANSACTION_PREFIX_NAME: ColumnFamilyName = "transaction";
 pub const TRANSACTION_INFO_PREFIX_NAME: ColumnFamilyName = "transaction_info";
 pub const TRANSACTION_INFO_HASH_PREFIX_NAME: ColumnFamilyName = "transaction_info_hash";
 pub const CONTRACT_EVENT_PREFIX_NAME: ColumnFamilyName = "contract_event";
+pub const FAILED_BLOCK_PREFIX_NAME: ColumnFamilyName = "failed_block";
 
 ///db storage use prefix_name vec to init
 /// Please note that adding a prefix needs to be added in vec simultaneously, remember！！
@@ -87,6 +89,7 @@ pub static VEC_PREFIX_NAME: Lazy<Vec<ColumnFamilyName>> = Lazy::new(|| {
         TRANSACTION_INFO_PREFIX_NAME,
         TRANSACTION_INFO_HASH_PREFIX_NAME,
         CONTRACT_EVENT_PREFIX_NAME,
+        FAILED_BLOCK_PREFIX_NAME,
     ]
 });
 
@@ -138,6 +141,19 @@ pub trait BlockStore {
         block_id: HashValue,
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()>;
+
+    fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+        failed: String,
+    ) -> Result<()>;
+
+    fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>, String)>>;
 }
 
 pub trait TransactionInfoStore {
@@ -331,6 +347,24 @@ impl BlockStore for Storage {
     ) -> Result<()> {
         self.block_storage
             .put_transaction_infos(block_id, txn_info_ids)
+    }
+
+    fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+        failed: String,
+    ) -> Result<()> {
+        self.block_storage
+            .save_failed_block(block_id, block, peer_id, failed)
+    }
+
+    fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
+        self.block_storage.get_failed_block_by_id(block_id)
     }
 }
 

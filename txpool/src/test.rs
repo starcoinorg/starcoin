@@ -181,13 +181,15 @@ async fn test_rollback() -> Result<()> {
             Some(AuthenticationKey::ed25519(&public_key)),
             (start_timestamp + 60 * 10) * 1000,
             vec![],
+            U256::from(1024u64),
+            config.net().genesis_config().consensus(),
         )?;
         let excluded_txns = open_block.push_txns(vec![txn])?;
         assert_eq!(excluded_txns.discarded_txns.len(), 0);
         assert_eq!(excluded_txns.untouched_txns.len(), 0);
 
         let block_template = open_block.finalize()?;
-        let block = block_template.into_block(0, U256::from(1024u64));
+        let block = block_template.into_block(0);
         Ok::<_, anyhow::Error>(block)
     };
 

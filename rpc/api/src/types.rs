@@ -219,17 +219,20 @@ impl TransactionView {
         let transaction_hash = txn.id();
         let block_hash = block.id();
         let block_number = block.header.number;
-        let transaction_index = block
-            .transactions()
-            .iter()
-            .position(|t| t.id() == transaction_hash)
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "cannot find txn {} in block {}",
-                    transaction_hash,
-                    block_hash
-                )
-            })? as u32;
+        let transaction_index = match &txn {
+            Transaction::BlockMetadata(_) => 0,
+            _ => block
+                .transactions()
+                .iter()
+                .position(|t| t.id() == transaction_hash)
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "cannot find txn {} in block {}",
+                        transaction_hash,
+                        block_hash
+                    )
+                })? as u32,
+        };
 
         let (meta, txn) = match txn {
             Transaction::BlockMetadata(meta) => (Some(meta.into()), None),
@@ -354,22 +357,18 @@ impl TransactionInfoView {
     pub fn new(txn_info: TransactionInfo, txn_block: &Block) -> anyhow::Result<Self> {
         let block_hash = txn_block.id();
         let transaction_hash = txn_info.transaction_hash();
+
+        // if not found in block, it means it's block meta txn.
         let index = txn_block
             .transactions()
             .iter()
-            .position(|t| t.id() == transaction_hash)
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "cannot find txn {} in block {}",
-                    transaction_hash,
-                    block_hash
-                )
-            })? as u32;
+            .position(|t| t.id() == transaction_hash);
+
         Ok(TransactionInfoView {
             block_hash,
             block_number: txn_block.header().number,
             transaction_hash,
-            transaction_index: index + 1,
+            transaction_index: index.map(|i| i + 1).unwrap_or_default() as u32,
             state_root_hash: txn_info.state_root_hash(),
             event_root_hash: txn_info.event_root_hash(),
             gas_used: txn_info.gas_used(),

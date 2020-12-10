@@ -141,14 +141,19 @@ impl BlockRelayer {
             let compact_block = compact_block_msg.message.compact_block;
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
-            let block = BlockRelayer::fill_compact_block(
-                txpool,
-                rpc_client,
-                compact_block,
-                peer_id.clone(),
-            )
-            .await?;
-            block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
+            let block_id = compact_block.header.id();
+            if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
+                debug!("Block is failed block : {:?}", block_id);
+            } else {
+                let block = BlockRelayer::fill_compact_block(
+                    txpool.clone(),
+                    rpc_client,
+                    compact_block,
+                    peer_id.clone(),
+                )
+                .await?;
+                block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
+            }
             Ok(())
         };
         ctx.spawn(fut.then(|result: Result<()>| async move {

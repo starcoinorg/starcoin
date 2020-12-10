@@ -4,18 +4,14 @@
 use crate::metrics::MINER_METRICS;
 use crate::task::MintTask;
 use anyhow::Result;
-use chain::BlockChain;
-use consensus::Consensus;
 use futures::executor::block_on;
 use logger::prelude::*;
 use starcoin_config::NodeConfig;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
-use starcoin_storage::Storage;
 use std::sync::Arc;
 use std::time::Duration;
-use traits::ChainReader;
 
 mod create_block_template;
 pub mod generate_block_event_pacemaker;
@@ -29,7 +25,6 @@ pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, S
 
 pub struct MinerService {
     config: Arc<NodeConfig>,
-    storage: Arc<Storage>,
     current_task: Option<MintTask>,
     create_block_template_service: ServiceRef<CreateBlockTemplateService>,
 }
@@ -37,12 +32,10 @@ pub struct MinerService {
 impl ServiceFactory<MinerService> for MinerService {
     fn create(ctx: &mut ServiceContext<MinerService>) -> Result<MinerService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
-        let storage = ctx.get_shared::<Arc<Storage>>()?;
         let create_block_template_service =
             ctx.service_ref::<CreateBlockTemplateService>()?.clone();
         Ok(MinerService {
             config,
-            storage,
             current_task: None,
             create_block_template_service,
         })
@@ -85,17 +78,9 @@ impl MinerService {
             Ok(())
         } else {
             debug!("Mint block template: {:?}", block_template);
-            let block_chain = BlockChain::new(
-                self.config.net().time_service(),
-                block_template.parent_hash,
-                self.storage.clone(),
-            )?;
-            let epoch = block_chain.epoch_info()?;
-            let difficulty = epoch
-                .epoch()
-                .strategy()
-                .calculate_next_difficulty(&block_chain, &epoch)?;
-            let task = MintTask::new(block_template, difficulty);
+            let difficulty = block_template.difficulty;
+            let strategy = block_template.strategy;
+            let task = MintTask::new(block_template);
             let mining_blob = task.minting_blob.clone();
             if let Some(current_task) = self.current_task.as_ref() {
                 debug!(
@@ -104,11 +89,7 @@ impl MinerService {
                 );
             }
             self.current_task = Some(task);
-            ctx.broadcast(MintBlockEvent::new(
-                block_chain.consensus(),
-                mining_blob,
-                difficulty,
-            ));
+            ctx.broadcast(MintBlockEvent::new(strategy, mining_blob, difficulty));
             Ok(())
         }
     }

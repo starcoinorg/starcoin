@@ -97,11 +97,7 @@ fn test_switch_main() {
 
         let block = main
             .consensus()
-            .create_block(
-                &main,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
 
         let block_header = block.header().clone();
@@ -144,11 +140,7 @@ fn test_switch_main() {
 
         let block = new_main
             .consensus()
-            .create_block(
-                &new_main,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
 
         new_main.apply(block.clone()).unwrap();
@@ -207,11 +199,7 @@ fn test_do_uncles() {
 
         let block = main
             .consensus()
-            .create_block(
-                &main,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         head_id = block.id();
         main.apply(block.clone()).unwrap();
@@ -235,11 +223,7 @@ fn test_do_uncles() {
         let block_template = inner.create_block_template().unwrap();
         let uncle_block = branch
             .consensus()
-            .create_block(
-                &branch,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         let uncle_block_header = uncle_block.header().clone();
         branch.apply(uncle_block).unwrap();
@@ -261,11 +245,7 @@ fn test_do_uncles() {
             .unwrap();
         let block = main
             .consensus()
-            .create_block(
-                &main,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         if i == 0 {
             assert_eq!(block.uncles().unwrap().len(), times);
@@ -308,11 +288,7 @@ fn test_new_head() {
         let block = main_inner
             .chain
             .consensus()
-            .create_block(
-                &main_inner.chain,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         (&mut main_inner.chain).apply(block.clone()).unwrap();
         if i % 2 == 0 {
@@ -353,11 +329,7 @@ fn test_new_branch() {
         let block = main_inner
             .chain
             .consensus()
-            .create_block(
-                &main_inner.chain,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         (&mut main_inner.chain).apply(block.clone()).unwrap();
     }
@@ -379,11 +351,7 @@ fn test_new_branch() {
         let block_template = inner.create_block_template().unwrap();
         let new_block = branch
             .consensus()
-            .create_block(
-                &branch,
-                block_template,
-                node_config.net().time_service().as_ref(),
-            )
+            .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         new_head_id = new_block.id();
         branch.apply(new_block.clone()).unwrap();
