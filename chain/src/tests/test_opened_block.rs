@@ -10,7 +10,7 @@ use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::AccountStateReader;
 use starcoin_traits::ChainReader;
 use starcoin_types::transaction::authenticator::AuthenticationKey;
-use starcoin_types::{account_address, account_config};
+use starcoin_types::{account_address, account_config, U256};
 use std::{convert::TryInto, sync::Arc};
 
 #[stest::test]
@@ -30,6 +30,8 @@ pub fn test_open_block() -> Result<()> {
             Some(miner_account.public_key.auth_key()),
             config.net().time_service().now_millis(),
             vec![],
+            U256::from(0),
+            chain.consensus(),
         )?
     };
 

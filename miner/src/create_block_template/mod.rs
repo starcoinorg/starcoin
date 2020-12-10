@@ -3,6 +3,7 @@
 
 use anyhow::{format_err, Result};
 use chain::BlockChain;
+use consensus::Consensus;
 use crypto::hash::HashValue;
 use futures::executor::block_on;
 use logger::prelude::*;
@@ -261,6 +262,10 @@ impl Inner {
             txns.len()
         );
 
+        let epoch = self.chain.epoch_info()?;
+        let strategy = epoch.epoch().strategy();
+        let difficulty = strategy.calculate_next_difficulty(&self.chain, &epoch)?;
+
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),
             previous_header,
@@ -269,6 +274,8 @@ impl Inner {
             author_auth_key,
             self.chain.time_service().now_millis(),
             uncles,
+            difficulty,
+            strategy,
         )?;
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;

@@ -16,6 +16,7 @@ use lru::LruCache;
 use network_api::messages::NotificationMessage;
 use network_api::{
     messages::TransactionsMessage, NetworkService, PeerMessageHandler, PeerProvider,
+    ReputationChange,
 };
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::{Multiaddr, PeerId};
@@ -92,6 +93,12 @@ impl NetworkService for NetworkAsyncService {
                 );
             }
         });
+    }
+
+    fn report_peer(&self, peer_id: types::peer_info::PeerId, cost_benefit: ReputationChange) {
+        self.inner
+            .network_service
+            .report_peer(peer_id, cost_benefit);
     }
 }
 

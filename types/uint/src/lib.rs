@@ -148,7 +148,7 @@ fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
         let non_zero = bytes.iter().take_while(|b| **b == 0).count();
         let bytes = &bytes[non_zero..];
         if bytes.is_empty() {
-            return "0".into();
+            return "00".into();
         } else {
             bytes
         }
@@ -186,8 +186,9 @@ mod tests {
             serde_json::to_string_pretty(&U256::from(1024)).unwrap()
         );
         assert_eq!(
-            "\"0\"",
+            "\"00\"",
             serde_json::to_string_pretty(&U256::from(0)).unwrap()
         );
+        assert_eq!(U256::from(0), serde_json::from_str("\"00\"").unwrap());
     }
 }

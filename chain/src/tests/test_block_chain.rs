@@ -171,7 +171,7 @@ fn product_a_block(branch: &BlockChain, miner: &AccountInfo, uncles: Vec<BlockHe
         .unwrap();
     branch
         .consensus()
-        .create_block(branch, block_template, branch.time_service().as_ref())
+        .create_block(block_template, branch.time_service().as_ref())
         .unwrap()
 }
 
@@ -336,11 +336,9 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
 
-    let block_b1 = block_chain.consensus().create_block(
-        &block_chain,
-        template_b1,
-        config.net().time_service().as_ref(),
-    )?;
+    let block_b1 = block_chain
+        .consensus()
+        .create_block(template_b1, config.net().time_service().as_ref())?;
     block_chain.apply(block_b1.clone())?;
 
     let mut block_chain2 = block_chain.new_chain(block_b1.id()).unwrap();
@@ -370,11 +368,9 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b2 = block_chain.consensus().create_block(
-        &block_chain,
-        template_b2,
-        config.net().time_service().as_ref(),
-    )?;
+    let block_b2 = block_chain
+        .consensus()
+        .create_block(template_b2, config.net().time_service().as_ref())?;
 
     block_chain.apply(block_b2)?;
     let (template_b3, excluded) = block_chain2.create_block_template(
@@ -386,11 +382,9 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
         None,
     )?;
     assert!(excluded.discarded_txns.is_empty(), "txn is discarded.");
-    let block_b3 = block_chain2.consensus().create_block(
-        &block_chain2,
-        template_b3,
-        config.net().time_service().as_ref(),
-    )?;
+    let block_b3 = block_chain2
+        .consensus()
+        .create_block(template_b3, config.net().time_service().as_ref())?;
     block_chain2.apply(block_b3)?;
 
     let vec_txn = block_chain2

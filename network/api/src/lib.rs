@@ -12,6 +12,7 @@ mod peer_provider;
 
 pub use network_p2p_types::Multiaddr;
 pub use network_p2p_types::MultiaddrWithPeerId;
+pub use network_p2p_types::ReputationChange;
 pub use peer_message_handler::PeerMessageHandler;
 pub use peer_provider::{PeerProvider, PeerSelector};
 pub use starcoin_types::peer_info::{PeerId, PeerInfo};
@@ -24,4 +25,6 @@ pub trait NetworkService:
     async fn send_peer_message(&self, msg: PeerMessage) -> Result<()>;
     /// Broadcast notification to all connected peers
     async fn broadcast(&self, notification: NotificationMessage);
+
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange);
 }

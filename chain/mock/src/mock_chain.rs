@@ -112,7 +112,7 @@ impl MockChain {
         )?;
         self.head
             .consensus()
-            .create_block(&self.head, template, self.net.time_service().as_ref())
+            .create_block(template, self.net.time_service().as_ref())
     }
 
     pub fn apply(&mut self, block: Block) -> Result<()> {
