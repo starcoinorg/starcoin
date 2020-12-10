@@ -133,7 +133,8 @@ fn main() {
                         error!("{:?}, please clean your data dir.", e);
                         std::process::exit(EXIT_CODE_NEED_HELP);
                     }
-                    _ => {
+                    NodeStartError::Other(e) => {
+                        error!("Node exit for an unexpected error: {:?}", e);
                         std::process::exit(1);
                     }
                 },
