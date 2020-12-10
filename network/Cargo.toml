@@ -29,7 +29,7 @@ crypto = { package="starcoin-crypto", path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 fnv = "1.0.6"
-zeroize = "1.1.1"
+zeroize = "1.2.0"
 bitflags = "1.2.0"
 smallvec = "1.5.0"
 
