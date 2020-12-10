@@ -138,6 +138,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                     msg.get_block().id(),
                                     msg.get_block().clone(),
                                     Some(peer_id),
+                                    format!("{:?}", e),
                                 )
                             {
                                 warn!(

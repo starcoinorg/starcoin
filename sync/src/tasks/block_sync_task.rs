@@ -206,12 +206,20 @@ impl BlockCollector {
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
         if let Err(err) = self.chain.apply(block.clone()) {
             match err.downcast::<ConnectBlockError>() {
-                Ok(e) => {
-                    self.chain
-                        .get_storage()
-                        .save_failed_block(block.id(), block, peer_id)?;
-                    Err(e.into())
-                }
+                Ok(connect_error) => match connect_error {
+                    ConnectBlockError::FutureBlock(block) => {
+                        Err(ConnectBlockError::FutureBlock(block).into())
+                    }
+                    e => {
+                        self.chain.get_storage().save_failed_block(
+                            block.id(),
+                            block,
+                            peer_id,
+                            format!("{:?}", e),
+                        )?;
+                        Err(e.into())
+                    }
+                },
                 Err(e) => Err(e),
             }
         } else {

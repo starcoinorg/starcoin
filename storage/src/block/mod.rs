@@ -37,19 +37,21 @@ impl Into<(Block, BlockState)> for StorageBlock {
 pub struct FailedBlock {
     block: Block,
     peer_id: Option<PeerId>,
+    failed: String,
 }
 
-impl Into<(Block, Option<PeerId>)> for FailedBlock {
-    fn into(self) -> (Block, Option<PeerId>) {
-        (self.block, self.peer_id)
+impl Into<(Block, Option<PeerId>, String)> for FailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String) {
+        (self.block, self.peer_id, self.failed)
     }
 }
 
-impl From<(Block, Option<PeerId>)> for FailedBlock {
-    fn from(block: (Block, Option<PeerId>)) -> Self {
+impl From<(Block, Option<PeerId>, String)> for FailedBlock {
+    fn from(block: (Block, Option<PeerId>, String)) -> Self {
         Self {
             block: block.0,
             peer_id: block.1,
+            failed: block.2,
         }
     }
 }
@@ -332,15 +334,16 @@ impl BlockStorage {
         block_id: HashValue,
         block: Block,
         peer_id: Option<PeerId>,
+        failed: String,
     ) -> Result<()> {
         self.failed_block_storage
-            .put(block_id, (block, peer_id).into())
+            .put(block_id, (block, peer_id, failed).into())
     }
 
     pub fn get_failed_block_by_id(
         &self,
         block_id: HashValue,
-    ) -> Result<Option<(Block, Option<PeerId>)>> {
+    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
         match self.failed_block_storage.get(block_id)? {
             Some(failed_block) => Ok(Some(failed_block.into())),
             None => Ok(None),
