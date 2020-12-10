@@ -575,7 +575,6 @@ checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
 name = "benchmarks"
 version = "0.9.0"
 dependencies = [
- "actix",
  "anyhow",
  "criterion",
  "forkable-jellyfish-merkle",
@@ -7093,7 +7092,6 @@ dependencies = [
  "starcoin-vm-runtime",
  "starcoin-vm-types",
  "structopt 0.3.21",
- "tokio 0.2.23",
 ]
 
 [[package]]
