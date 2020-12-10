@@ -54,23 +54,32 @@ where
 }
 
 pub trait BlockFetcher: Send + Sync {
-    fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<Result<Vec<Block>>>;
+    fn fetch_block(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<(Block, Option<PeerId>)>>>;
 }
 
 impl<T> BlockFetcher for Arc<T>
 where
     T: BlockFetcher,
 {
-    fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<'_, Result<Vec<Block>>> {
+    fn fetch_block(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         BlockFetcher::fetch_block(self.as_ref(), block_ids)
     }
 }
 
 impl BlockFetcher for VerifiedRpcClient {
-    fn fetch_block(&self, block_ids: Vec<HashValue>) -> BoxFuture<'_, Result<Vec<Block>>> {
+    fn fetch_block(
+        &self,
+        block_ids: Vec<HashValue>,
+    ) -> BoxFuture<'_, Result<Vec<(Block, Option<PeerId>)>>> {
         self.get_blocks(block_ids.clone())
             .and_then(|blocks| async move {
-                let results: Result<Vec<Block>> = block_ids
+                let results: Result<Vec<(Block, Option<PeerId>)>> = block_ids
                     .iter()
                     .zip(blocks)
                     .map(|(id, block)| {
@@ -102,24 +111,18 @@ where
 }
 
 pub trait BlockLocalStore: Send + Sync {
-    fn get_block_with_info(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>>;
+    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>>;
 }
 
 impl BlockLocalStore for Arc<dyn Store> {
-    fn get_block_with_info(
-        &self,
-        block_ids: Vec<HashValue>,
-    ) -> Result<Vec<Option<(Block, Option<BlockInfo>)>>> {
+    fn get_block_with_info(&self, block_ids: Vec<HashValue>) -> Result<Vec<Option<SyncBlockData>>> {
         self.get_blocks(block_ids)?
             .into_iter()
             .map(|block| match block {
                 Some(block) => {
                     let id = block.id();
                     let block_info = self.get_block_info(id)?;
-                    Ok(Some((block, block_info)))
+                    Ok(Some(SyncBlockData::new(block, block_info, None)))
                 }
                 None => Ok(None),
             })
@@ -177,9 +180,11 @@ pub(crate) mod mock;
 #[cfg(test)]
 mod tests;
 
+use crate::tasks::block_sync_task::SyncBlockData;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use starcoin_types::peer_info::PeerId;
 
 pub fn full_sync_task<H, F>(
     current_block_id: HashValue,
