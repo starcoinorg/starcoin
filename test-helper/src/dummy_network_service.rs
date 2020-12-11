@@ -17,7 +17,6 @@ use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::sync::Arc;
-use std::time::Duration;
 
 const MAX_SIZE: usize = 10;
 

@@ -1,30 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{NetworkMessage, PeerEvent};
 use anyhow::*;
 use bitflags::_core::time::Duration;
-use bytes::Bytes;
-use config::NetworkConfig;
 use config::NodeConfig;
 use futures::channel::mpsc::channel;
-use futures::{channel::mpsc, prelude::*};
-use network_api::ReputationChange;
+use futures::prelude::*;
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
 use network_p2p::{
-    identity, Event, Multiaddr, NetworkConfiguration, NetworkService, NetworkWorker, NodeKeyConfig,
-    Params, ProtocolId, Secret,
+    identity, NetworkConfiguration, NetworkWorker, NodeKeyConfig, Params, ProtocolId, Secret,
 };
-use network_p2p_types::network_state::NetworkState;
-use network_p2p_types::{is_memory_addr, PeerId, ProtocolRequest, RequestFailure};
-use prometheus::{default_registry, Registry};
+use network_p2p_types::{is_memory_addr, ProtocolRequest};
+use prometheus::default_registry;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::RpcInfo;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::startup_info::ChainInfo;
 use std::borrow::Cow;
-use std::collections::HashSet;
-use std::sync::Arc;
 
 const MAX_REQUEST_SIZE: u64 = 1024 * 1024;
 const MAX_RESPONSE_SIZE: u64 = 1024 * 1024 * 64;
@@ -48,7 +40,6 @@ pub fn build_network_worker(
             wasm_external_transport: None,
         }
     };
-    //let rpc_info: Vec<String> = starcoin_network_rpc_api::gen_client::get_rpc_info();
     //TODO define RequestResponseConfig by rpc api
     let rpc_protocols = match rpc_service {
         Some((rpc_info, rpc_service)) => rpc_info
@@ -80,9 +71,25 @@ pub fn build_network_worker(
             .collect::<Vec<_>>(),
         None => vec![],
     };
+    let self_peer_id = node_config.network.self_peer_id()?;
+    let boot_nodes = if node_config.network.disable_seed {
+        vec![]
+    } else {
+        let mut boot_nodes = node_config.network.seeds.clone();
+        boot_nodes.extend(node_config.net().boot_nodes().iter().cloned());
+        boot_nodes.retain(|node| {
+            if &node.peer_id == self_peer_id.origin() {
+                warn!("Self peer_id({}) contains in boot nodes.", self_peer_id);
+                false
+            } else {
+                true
+            }
+        });
+        boot_nodes
+    };
     let config = NetworkConfiguration {
         listen_addresses: vec![node_config.network.listen.clone()],
-        boot_nodes: node_config.network.seeds.clone(),
+        boot_nodes,
         node_key: {
             let secret = identity::ed25519::SecretKey::from_bytes(
                 &mut node_config.network.network_keypair().private_key.to_bytes(),

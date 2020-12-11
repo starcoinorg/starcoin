@@ -61,6 +61,10 @@ impl PeerId {
         self.0.to_base58()
     }
 
+    pub fn origin(&self) -> &network_p2p_types::PeerId {
+        &self.0
+    }
+
     /// Checks whether the public key passed as parameter matches the public key of this `PeerId`.
     ///
     /// Returns `None` if this `PeerId`s hash algorithm is not supported when encoding the

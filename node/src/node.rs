@@ -6,7 +6,7 @@ use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
 use actix::prelude::*;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures_timer::Delay;
@@ -32,17 +32,15 @@ use starcoin_service_registry::{
     ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
-use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::Storage;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;

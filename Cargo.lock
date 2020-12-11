@@ -8654,6 +8654,7 @@ dependencies = [
  "futures 0.3.8",
  "futures-timer",
  "network-api",
+ "network-p2p-types",
  "network-rpc-core",
  "rand 0.7.3",
  "starcoin-account-api",

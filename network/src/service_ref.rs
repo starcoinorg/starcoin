@@ -1,42 +1,24 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::network_metrics::NetworkMetrics;
 use crate::service::NetworkActorService;
-use crate::worker::{build_network_worker, RPC_PROTOCOL_PREFIX};
-use crate::{NetworkMessage, PeerEvent, PeerMessage};
+use crate::worker::RPC_PROTOCOL_PREFIX;
+use crate::PeerMessage;
 use anyhow::{format_err, Result};
-use async_trait::async_trait;
-use bytes::Bytes;
-use config::NodeConfig;
 use futures::future::BoxFuture;
-use futures::lock::Mutex;
-use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
 use futures::{FutureExt, TryFutureExt};
-use lru::LruCache;
 use network_api::messages::NotificationMessage;
-use network_api::{
-    messages::TransactionsMessage, NetworkService, PeerMessageHandler, PeerProvider,
-    ReputationChange,
-};
+use network_api::{messages::TransactionsMessage, NetworkService, PeerProvider, ReputationChange};
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::Multiaddr;
 use network_rpc_core::RawRpcClient;
-use starcoin_crypto::HashValue;
-use starcoin_network_rpc::NetworkRpcService;
-use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_txpool_api::PropagateNewTransactions;
 use starcoin_types::peer_info::PeerId;
-use starcoin_types::peer_info::{PeerInfo, RpcInfo};
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, Ordering};
+use starcoin_types::peer_info::PeerInfo;
 use std::sync::Arc;
-use std::time::Duration;
 
 //TODO Service registry should support custom service ref.
 #[derive(Clone)]

@@ -3,7 +3,6 @@
 
 use crate::build_network_worker;
 use crate::network_metrics::NetworkMetrics;
-use crate::service_ref::{Inner, Peer};
 use anyhow::{format_err, Result};
 use bytes::Bytes;
 use config::NodeConfig;
@@ -15,10 +14,9 @@ use network_api::messages::{
     ReportReputation, TransactionsMessage,
 };
 use network_api::{NetworkActor, PeerMessageHandler};
-use network_p2p::{Event, NetworkConfiguration, NetworkService, NetworkWorker, ProtocolId};
+use network_p2p::{Event, NetworkWorker};
 use smallvec::alloc::borrow::Cow;
 use starcoin_crypto::HashValue;
-use starcoin_metrics::Registry;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
@@ -29,7 +27,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NetworkActorService {
-    config: Arc<NodeConfig>,
     worker: Option<NetworkWorker>,
     inner: Inner,
     network_worker_handle: Option<AbortHandle>,
@@ -57,7 +54,6 @@ impl NetworkActorService {
         let self_info = PeerInfo::new(config.network.self_peer_id()?, chain_info);
         let inner = Inner::new(self_info, service, peer_message_handler)?;
         Ok(Self {
-            config,
             worker: Some(worker),
             inner,
             network_worker_handle: None,
@@ -289,7 +285,7 @@ impl Inner {
                 }
             }
 
-            let peer_message = PeerMessage::new(peer_id.into(), notification);
+            let peer_message = PeerMessage::new(peer_id, notification);
             self.peer_message_handler.handle_message(peer_message);
         } else {
             error!(
@@ -303,7 +299,7 @@ impl Inner {
     pub(crate) fn on_peer_connected(&mut self, peer_id: PeerId, chain_info: ChainInfo) {
         self.peers
             .entry(peer_id.clone())
-            .or_insert_with(|| Peer::new(PeerInfo::new(peer_id.into(), chain_info)));
+            .or_insert_with(|| Peer::new(PeerInfo::new(peer_id, chain_info)));
     }
 
     pub(crate) fn on_peer_disconnected(&mut self, peer_id: PeerId) {
@@ -331,7 +327,7 @@ impl Inner {
                 let id = msg.compact_block.header.id();
                 let block_header = msg.compact_block.header.clone();
                 let total_difficulty = msg.total_difficulty;
-                let chain_status = ChainStatus::new(block_header.clone(), total_difficulty);
+                let chain_status = ChainStatus::new(block_header, total_difficulty);
                 debug!(
                     "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, self.self_peer.peer_info
