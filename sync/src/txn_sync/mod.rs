@@ -3,7 +3,7 @@ use anyhow::{bail, Result};
 use logger::prelude::*;
 use network::NetworkAsyncService;
 use network_api::{NetworkService, PeerProvider};
-use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize};
+use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::peer_info::PeerId;
@@ -39,7 +39,7 @@ impl ServiceFactory<Self> for TxnSyncService {
 impl TxnSyncService {
     pub fn new<N>(txpool: TxPoolService, network: N) -> Self
     where
-        N: NetworkService + 'static,
+        N: NetworkService + RawRpcClient + 'static,
     {
         Self {
             inner: Inner {

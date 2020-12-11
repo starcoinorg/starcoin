@@ -208,13 +208,9 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             compact_block,
             total_difficulty,
         };
-        ctx.spawn(async move {
-            network
-                .broadcast(NotificationMessage::CompactBlock(Box::new(
-                    compact_block_msg,
-                )))
-                .await;
-        });
+        network.broadcast(NotificationMessage::CompactBlock(Box::new(
+            compact_block_msg,
+        )));
     }
 }
 

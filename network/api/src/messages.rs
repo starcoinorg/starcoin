@@ -1,10 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::ReputationChange;
 use anyhow::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_types::peer_info::PeerId;
+use starcoin_service_registry::ServiceRequest;
+use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
@@ -35,6 +37,7 @@ pub struct CompactBlockMessage {
     pub total_difficulty: U256,
 }
 
+/// Network notification protocol message, change this type, maybe break the network protocol compatibility.
 #[derive(Clone, Debug)]
 pub enum NotificationMessage {
     Transactions(TransactionsMessage),
@@ -131,6 +134,10 @@ impl PeerMessage {
     }
 }
 
+impl ServiceRequest for PeerMessage {
+    type Response = Result<()>;
+}
+
 /// Message for combine PeerId and TransactionsMessage
 #[derive(Clone, Debug)]
 pub struct PeerTransactionsMessage {
@@ -173,4 +180,34 @@ impl Into<PeerMessage> for PeerCompactBlockMessage {
 pub enum PeerEvent {
     Open(PeerId, Box<ChainInfo>),
     Close(PeerId),
+}
+
+/// Network service message
+#[derive(Clone, Debug)]
+pub struct ReportReputation {
+    pub peer_id: PeerId,
+    pub change: ReputationChange,
+}
+
+#[derive(Clone, Debug)]
+pub struct GetPeerSet;
+
+impl ServiceRequest for GetPeerSet {
+    type Response = Vec<PeerInfo>;
+}
+
+#[derive(Clone, Debug)]
+pub struct GetPeerById {
+    pub peer_id: PeerId,
+}
+
+impl ServiceRequest for GetPeerById {
+    type Response = Option<PeerInfo>;
+}
+
+#[derive(Clone, Debug)]
+pub struct GetSelfPeer;
+
+impl ServiceRequest for GetSelfPeer {
+    type Response = PeerInfo;
 }

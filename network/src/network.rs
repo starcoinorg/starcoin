@@ -1,13 +1,14 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::net::{build_network_service, SNetworkService, RPC_PROTOCOL_PREFIX};
+use crate::net::{build_network_worker, RPC_PROTOCOL_PREFIX};
 use crate::network_metrics::NetworkMetrics;
+use crate::service::NetworkActorService;
 use crate::{NetworkMessage, PeerEvent, PeerMessage};
-use anyhow::Result;
+use anyhow::{format_err, Result};
 use async_trait::async_trait;
+use bytes::Bytes;
 use config::NodeConfig;
-use crypto::HashValue;
 use futures::future::BoxFuture;
 use futures::lock::Mutex;
 use futures::{channel::mpsc, sink::SinkExt, stream::StreamExt};
@@ -19,50 +20,52 @@ use network_api::{
     ReputationChange,
 };
 use network_p2p_types::network_state::NetworkState;
-use network_p2p_types::{Multiaddr, PeerId};
+use network_p2p_types::Multiaddr;
 use network_rpc_core::RawRpcClient;
+use starcoin_crypto::HashValue;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
 };
 use starcoin_txpool_api::PropagateNewTransactions;
+use starcoin_types::peer_info::PeerId;
+use starcoin_types::peer_info::{PeerInfo, RpcInfo};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use types::peer_info::{PeerInfo, RpcInfo};
-use types::startup_info::{ChainInfo, ChainStatus};
 
 const LRU_CACHE_SIZE: usize = 1024;
 
+//TODO rename this service
 #[derive(Clone)]
 pub struct NetworkAsyncService {
-    /// TODO: tx is unused?
-    tx: mpsc::UnboundedSender<NetworkMessage>,
-    peer_id: PeerId,
-    inner: Arc<Inner>,
+    //hold a network_p2p's network_service for directly send message to NetworkWorker.
+    network_service: Arc<network_p2p::NetworkService>,
+    service_ref: ServiceRef<NetworkActorService>,
 }
 
-struct Inner {
-    network_service: SNetworkService,
-    bus: ServiceRef<BusService>,
-    peers: Arc<Mutex<HashMap<PeerId, PeerInfoNet>>>,
-    connected_tx: mpsc::Sender<PeerEvent>,
-    need_send_event: AtomicBool,
+pub(crate) struct Inner {
+    //network_service: SNetworkService,
+    pub(crate) network_service: Arc<network_p2p::NetworkService>,
+    pub(crate) self_peer: Peer,
+    pub(crate) peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     metrics: Option<NetworkMetrics>,
 }
 
 #[derive(Debug)]
-pub struct PeerInfoNet {
+pub struct Peer {
     peer_info: PeerInfo,
     known_transactions: LruCache<HashValue, ()>,
     /// Holds a set of blocks known to this peer.
     known_blocks: LruCache<HashValue, ()>,
 }
 
-impl PeerInfoNet {
+impl Peer {
     fn new(peer_info: PeerInfo) -> Self {
         Self {
             peer_info,
@@ -76,98 +79,74 @@ impl PeerInfoNet {
     }
 }
 
-#[async_trait]
 impl NetworkService for NetworkAsyncService {
-    async fn send_peer_message(&self, msg: PeerMessage) -> Result<()> {
-        self.inner.send_peer_message(msg).await
+    fn send_peer_message(&self, msg: PeerMessage) {
+        self.service_ref.send_peer_message(msg)
     }
 
-    async fn broadcast(&self, notification: NotificationMessage) {
-        let inner = self.inner.clone();
-        async_std::task::spawn(async move {
-            let protocol = notification.protocol_name();
-            if let Err(e) = inner.broadcast(notification).await {
-                warn!(
-                    "[network-broadcast] Broadcast {} message error: {:?}",
-                    protocol, e
-                );
-            }
-        });
+    fn broadcast(&self, notification: NotificationMessage) {
+        self.service_ref.broadcast(notification)
     }
 
-    fn report_peer(&self, peer_id: types::peer_info::PeerId, cost_benefit: ReputationChange) {
-        self.inner
-            .network_service
-            .report_peer(peer_id, cost_benefit);
+    fn report_peer(&self, peer_id: PeerId, cost_benefit: ReputationChange) {
+        self.service_ref.report_peer(peer_id, cost_benefit)
     }
 }
 
 impl PeerProvider for NetworkAsyncService {
-    fn identify(&self) -> types::peer_info::PeerId {
-        self.peer_id.clone().into()
-    }
-
     fn peer_set(&self) -> BoxFuture<Result<Vec<PeerInfo>>> {
-        self.get_peer_set().boxed()
+        self.service_ref.peer_set()
     }
 
-    fn get_peer(&self, peer_id: types::peer_info::PeerId) -> BoxFuture<Result<Option<PeerInfo>>> {
-        async move { self.get_peer_by_id(&peer_id.into()).await }.boxed()
+    fn get_peer(&self, peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>> {
+        self.service_ref.get_peer(peer_id)
+    }
+
+    fn get_self_peer(&self) -> BoxFuture<'_, Result<PeerInfo>> {
+        self.service_ref.get_self_peer()
     }
 }
 
 impl RawRpcClient for NetworkAsyncService {
     fn send_raw_request(
         &self,
-        peer_id: network_api::PeerId,
+        peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        _timeout: Duration,
     ) -> BoxFuture<Result<Vec<u8>>> {
         let protocol = format!("{}{}", RPC_PROTOCOL_PREFIX, rpc_path);
-        self.inner
-            .network_service
-            .request(peer_id, protocol, message)
+        self.network_service
+            .request(peer_id.into(), protocol, message)
             .map_err(|e| e.into())
             .boxed()
     }
 }
 
 impl NetworkAsyncService {
-    async fn get_peer_set(&self) -> Result<Vec<PeerInfo>> {
-        let mut result = vec![];
-
-        for (peer_id, peer) in self.inner.peers.lock().await.iter() {
-            if self.peer_id.eq(peer_id) {
-                continue;
-            }
-            result.push(peer.peer_info.clone());
-        }
-        Ok(result)
-    }
-
-    async fn get_peer_by_id(&self, peer_id: &PeerId) -> Result<Option<PeerInfo>> {
-        match self.inner.peers.lock().await.get(peer_id) {
-            Some(peer) => Ok(Some(peer.peer_info.clone())),
-            None => Ok(None),
+    pub fn new(
+        network_service: Arc<network_p2p::NetworkService>,
+        service_ref: ServiceRef<NetworkActorService>,
+    ) -> Self {
+        Self {
+            network_service,
+            service_ref,
         }
     }
-
-    pub fn peers(&self) -> Arc<Mutex<HashMap<PeerId, PeerInfoNet>>> {
-        self.inner.peers.clone()
-    }
-
     pub fn add_peer(&self, peer: String) -> Result<()> {
-        self.inner.network_service.add_peer(peer)
+        self.network_service
+            .add_reserved_peer(peer)
+            .map_err(|e| format_err!("{:?}", e))
     }
 
     pub async fn network_state(&self) -> Result<NetworkState> {
-        self.inner.network_service.network_state().await
+        self.network_service
+            .network_state()
+            .await
+            .map_err(|_| format_err!("request cancel."))
     }
 
-    pub async fn known_peers(&self) -> Vec<types::peer_info::PeerId> {
-        self.inner
-            .network_service
+    pub async fn known_peers(&self) -> Vec<PeerId> {
+        self.network_service
             .known_peers()
             .await
             .into_iter()
@@ -175,139 +154,119 @@ impl NetworkAsyncService {
             .collect()
     }
 
-    pub async fn get_address(&self, peer_id: types::peer_info::PeerId) -> Vec<Multiaddr> {
-        self.inner.network_service.get_address(peer_id.into()).await
+    pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
+        self.network_service.get_address(peer_id.into()).await
     }
 
-    pub fn start<H>(
-        node_config: Arc<NodeConfig>,
-        chain_info: ChainInfo,
-        bus: ServiceRef<BusService>,
-        rpc_info: RpcInfo,
-        network_rpc_service: ServiceRef<NetworkRpcService>,
-        peer_message_handler: H,
-    ) -> Result<NetworkAsyncService>
-    where
-        H: PeerMessageHandler + 'static,
-    {
-        let peer_id = node_config.network.self_peer_id()?;
-
-        let self_info = PeerInfo::new(peer_id, chain_info.clone());
-
-        // merge seeds from chain config
-        let mut config = node_config.network.clone();
-        if !node_config.network.disable_seed {
-            let seeds = node_config.net().boot_nodes().to_vec();
-            config.seeds.extend(seeds);
-        }
-        let has_seed = !config.seeds.is_empty();
-
-        let (service, tx, rx, event_rx, tx_command) = build_network_service(
-            node_config.node_name().to_string(),
-            chain_info,
-            &config,
-            NotificationMessage::protocols(),
-            Some((rpc_info, network_rpc_service)),
-        );
-        info!(
-            "network started at {} with seed {},network address is {}",
-            &node_config.network.listen,
-            &node_config
-                .network
-                .seeds
-                .iter()
-                .fold(String::new(), |acc, arg| acc + arg.to_string().as_str()),
-            service.identify()
-        );
-
-        let peer_id = service.identify().clone();
-
-        let mut peers = HashMap::new();
-        peers.insert(self_info.peer_id().into(), PeerInfoNet::new(self_info));
-        let peers = Arc::new(Mutex::new(peers));
-
-        let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
-        let need_send_event = AtomicBool::new(false);
-
-        if has_seed && !node_config.network.disable_seed {
-            need_send_event.swap(true, Ordering::Acquire);
-        }
-
-        let metrics = NetworkMetrics::register().ok();
-
-        let inner = Inner {
-            network_service: service,
-            bus,
-            peers,
-            connected_tx,
-            need_send_event,
-            peer_message_handler: Arc::new(peer_message_handler),
-            metrics,
-        };
-        let inner = Arc::new(inner);
-
-        // TODO: unify all async runtimes into one.
-        async_std::task::spawn(Inner::start(inner.clone(), rx, event_rx, tx_command));
-
-        if has_seed {
-            info!("Seed was in configuration and not ignored.So wait for connection open event.");
-            futures::executor::block_on(async move {
-                if let Some(event) = connected_rx.next().await {
-                    info!("Receive event {:?}, network started.", event);
-                } else {
-                    error!("Wait peer event return None.");
-                }
-            });
-        }
-
-        Ok(NetworkAsyncService { tx, peer_id, inner })
-    }
+    // pub fn start<H>(
+    //     node_config: Arc<NodeConfig>,
+    //     chain_info: ChainInfo,
+    //     bus: ServiceRef<BusService>,
+    //     rpc_info: RpcInfo,
+    //     network_rpc_service: ServiceRef<NetworkRpcService>,
+    //     peer_message_handler: H,
+    // ) -> Result<NetworkAsyncService>
+    // where
+    //     H: PeerMessageHandler + 'static,
+    // {
+    //     let peer_id = node_config.network.self_peer_id()?;
+    //
+    //     let self_info = PeerInfo::new(peer_id, chain_info.clone());
+    //
+    //     // merge seeds from chain config
+    //     let mut config = node_config.network.clone();
+    //     if !node_config.network.disable_seed {
+    //         let seeds = node_config.net().boot_nodes().to_vec();
+    //         config.seeds.extend(seeds);
+    //     }
+    //     let has_seed = !config.seeds.is_empty();
+    //
+    //     let (service, tx, rx, event_rx, tx_command) = build_network_service(
+    //         node_config.node_name().to_string(),
+    //         chain_info,
+    //         &config,
+    //         NotificationMessage::protocols(),
+    //         Some((rpc_info, network_rpc_service)),
+    //     );
+    //     info!(
+    //         "network started at {} with seed {},network address is {}",
+    //         &node_config.network.listen,
+    //         &node_config
+    //             .network
+    //             .seeds
+    //             .iter()
+    //             .fold(String::new(), |acc, arg| acc + arg.to_string().as_str()),
+    //         service.identify()
+    //     );
+    //
+    //     let (connected_tx, mut connected_rx) = futures::channel::mpsc::channel(1);
+    //     let need_send_event = AtomicBool::new(false);
+    //
+    //     if has_seed && !node_config.network.disable_seed {
+    //         need_send_event.swap(true, Ordering::Acquire);
+    //     }
+    //
+    //     let metrics = NetworkMetrics::register().ok();
+    //
+    //     let inner = Inner {
+    //         network_service: service,
+    //         self_peer_info: Peer::new(self_info),
+    //         bus,
+    //         peers: Arc::new(Mutex::new(HashMap::new())),
+    //         connected_tx,
+    //         need_send_event,
+    //         peer_message_handler: Arc::new(peer_message_handler),
+    //         metrics,
+    //     };
+    //     let inner = Arc::new(inner);
+    //
+    //     // TODO: unify all async runtimes into one.
+    //     async_std::task::spawn(Inner::start(inner.clone(), rx, event_rx, tx_command));
+    //
+    //     if has_seed {
+    //         info!("Seed was in configuration and not ignored.So wait for connection open event.");
+    //         futures::executor::block_on(async move {
+    //             if let Some(event) = connected_rx.next().await {
+    //                 info!("Receive event {:?}, network started.", event);
+    //             } else {
+    //                 error!("Wait peer event return None.");
+    //             }
+    //         });
+    //     }
+    //
+    //     Ok(NetworkAsyncService { tx, inner })
+    // }
 }
 
 impl Inner {
-    async fn start(
-        inner: Arc<Inner>,
-        net_rx: mpsc::UnboundedReceiver<NetworkMessage>,
-        event_rx: mpsc::UnboundedReceiver<PeerEvent>,
-        close_tx: mpsc::UnboundedSender<()>,
-    ) {
-        let mut net_rx = net_rx.fuse();
-        let mut event_rx = event_rx.fuse();
+    pub fn new<H>(
+        self_info: PeerInfo,
+        network_service: Arc<network_p2p::NetworkService>,
+        peer_message_handler: H,
+    ) -> Result<Inner>
+    where
+        H: PeerMessageHandler + 'static,
+    {
+        let metrics = NetworkMetrics::register().ok();
 
-        loop {
-            futures::select! {
-                message = net_rx.select_next_some()=>{
-                    async_std::task::spawn(Inner::handle_network_receive(inner.clone(),message));
-                },
-                event = event_rx.select_next_some()=>{
-                    async_std::task::spawn(Inner::handle_event_receive(inner.clone(),event));
-                },
-                complete => {
-                    close_tx.unbounded_send(()).unwrap();
-                    debug!("all stream are complete");
-                    break;
-                }
-            }
-        }
+        Ok(Inner {
+            network_service,
+            self_peer: Peer::new(self_info),
+            peers: HashMap::new(),
+            peer_message_handler: Arc::new(peer_message_handler),
+            metrics,
+        })
     }
 
-    async fn handle_network_receive(inner: Arc<Inner>, network_msg: NetworkMessage) {
-        debug!(
-            "Receive network_message from peer: {:?}",
-            network_msg.peer_id,
-        );
-        if let Err(e) = inner.handle_network_message(network_msg).await {
-            error!("Handle_network_message error: {:?}", e);
-        }
-    }
-
-    async fn handle_network_message(&self, network_msg: NetworkMessage) -> Result<()> {
-        let peer_id = network_msg.peer_id;
-        if let Some(peer_info) = self.peers.lock().await.get_mut(&peer_id) {
-            let notification = NotificationMessage::decode_notification(
-                network_msg.protocol_name,
-                network_msg.data.as_slice(),
-            )?;
+    pub(crate) fn handle_network_message(
+        &mut self,
+        peer_id: PeerId,
+        protocol: Cow<'static, str>,
+        message: Bytes,
+    ) -> Result<()> {
+        if let Some(peer_info) = self.peers.get_mut(&peer_id) {
+            let notification =
+                NotificationMessage::decode_notification(protocol, message.as_ref())?;
             match &notification {
                 NotificationMessage::Transactions(peer_transactions) => {
                     for txn in &peer_transactions.txns {
@@ -339,162 +298,134 @@ impl Inner {
         } else {
             error!(
                 "Receive NetworkMessage from unknown peer {}, protocol: {}",
-                peer_id, network_msg.protocol_name
+                peer_id, protocol
             )
         }
         Ok(())
     }
 
-    async fn handle_event_receive(inner: Arc<Inner>, event: PeerEvent) {
-        if let Err(e) = inner.do_handle_event_receive(event).await {
-            warn!("Handle peer event error: {}", e);
-        }
-    }
-
-    async fn do_handle_event_receive(&self, event: PeerEvent) -> Result<()> {
-        debug!("handle_event_receive {:?}", event);
-        match event.clone() {
-            PeerEvent::Open(peer_id, chain_info) => {
-                self.on_peer_connected(peer_id.into(), *chain_info).await?;
-                if self.need_send_event.load(Ordering::Acquire) {
-                    let mut connected_tx = self.connected_tx.clone();
-                    connected_tx.send(event.clone()).await?;
-                    self.need_send_event.swap(false, Ordering::Acquire);
-                }
-            }
-            PeerEvent::Close(peer_id) => {
-                self.on_peer_disconnected(peer_id.into()).await;
-            }
-        }
-        self.bus.broadcast(event)?;
-        Ok(())
-    }
-
-    async fn on_peer_connected(&self, peer_id: PeerId, chain_info: ChainInfo) -> Result<()> {
+    pub(crate) fn on_peer_connected(&mut self, peer_id: PeerId, chain_info: ChainInfo) {
         self.peers
-            .lock()
-            .await
             .entry(peer_id.clone())
-            .or_insert_with(|| PeerInfoNet::new(PeerInfo::new(peer_id.into(), chain_info)));
-
-        Ok(())
+            .or_insert_with(|| Peer::new(PeerInfo::new(peer_id.into(), chain_info)));
     }
 
-    async fn on_peer_disconnected(&self, peer_id: PeerId) {
-        self.peers.lock().await.remove(&peer_id);
+    pub(crate) fn on_peer_disconnected(&mut self, peer_id: PeerId) {
+        self.peers.remove(&peer_id);
     }
 
-    async fn send_peer_message(&self, msg: PeerMessage) -> Result<()> {
-        let peer_id = msg.peer_id;
-        let (protocol_name, data) = msg.notification.encode_notification()?;
+    pub(crate) fn send_peer_message(&self, peer_id: PeerId, notification: NotificationMessage) {
+        let (protocol_name, data) = notification
+            .encode_notification()
+            .expect("Encode notification message should ok");
         self.network_service
-            .send_message(peer_id.into(), protocol_name, data)
-            .await?;
-        Ok(())
+            .write_notification(peer_id.into(), protocol_name, data);
     }
 
-    async fn broadcast(&self, notification: NotificationMessage) -> Result<()> {
-        let protocol_name = notification.protocol_name();
+    pub(crate) fn broadcast(&mut self, notification: NotificationMessage) {
         let _timer = self.metrics.as_ref().map(|metrics| {
             metrics
                 .broadcast_duration
-                .with_label_values(&[protocol_name.as_ref()])
+                .with_label_values(&[notification.protocol_name().as_ref()])
                 .start_timer()
         });
-        let self_id = self.network_service.identify();
+
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
                 let id = msg.compact_block.header.id();
                 let block_header = msg.compact_block.header.clone();
                 let total_difficulty = msg.total_difficulty;
-                if let Some(peer_info) = self.peers.lock().await.get_mut(self_id) {
-                    debug!(
-                        "update self network chain status, total_difficulty is {}, peer_info is {:?}",
-                        total_difficulty, peer_info
-                    );
+                let chain_status = ChainStatus::new(block_header.clone(), total_difficulty);
+                debug!(
+                    "update self network chain status, total_difficulty is {}, peer_info is {:?}",
+                    total_difficulty, self.self_peer.peer_info
+                );
 
-                    let chain_status = ChainStatus::new(block_header.clone(), total_difficulty);
-                    peer_info
-                        .peer_info
-                        .update_chain_status(chain_status.clone());
-                    self.network_service.update_chain_status(chain_status);
-                } else {
-                    error!("Can not find self peer info {:?}", self_id);
-                }
-
-                let send_futures = self.peers.lock().await.iter_mut().filter_map(|(peer_id, peer_info)|{
-                    if peer_id == self_id {
-                        return None
-                    }
-                    if peer_info.known_blocks.contains(&id)
-                        || peer_info.peer_info.total_difficulty() >= total_difficulty
+                self.self_peer
+                    .peer_info
+                    .update_chain_status(chain_status.clone());
+                self.network_service.update_chain_status(chain_status);
+                let mut send_peer_count: usize = 0;
+                let (protocol_name, message) = notification
+                    .encode_notification()
+                    .expect("Encode notification message should ok");
+                for (peer_id, peer) in &mut self.peers {
+                    if peer.known_blocks.contains(&id)
+                        || peer.peer_info.total_difficulty() >= total_difficulty
                     {
                         debug!("peer({:?})'s total_difficulty is >= block({:?})'s total_difficulty or it know this block, so do not broadcast. ", peer_id, id);
-                        None
-                    }else{
-                        peer_info.known_blocks.put(id, ());
-                        Some(self
-                            .send_peer_message(
-                                PeerMessage::new(peer_id.clone().into(), notification.clone())
-                            ))
+                    } else {
+                        send_peer_count += 1;
+                        peer.known_blocks.put(id, ());
+
+                        self.network_service.write_notification(
+                            peer_id.clone().into(),
+                            protocol_name.clone(),
+                            message.clone(),
+                        )
                     }
-                }).collect::<Vec<_>>();
+                }
+
                 debug!(
                     "[network] broadcast new compact block message {:?} to {} peers",
-                    id,
-                    send_futures.len()
+                    id, send_peer_count
                 );
-                if !send_futures.is_empty() {
-                    futures::future::join_all(send_futures)
-                        .await
-                        .into_iter()
-                        .collect::<Result<_>>()?;
-                }
-                Ok(())
             }
             NotificationMessage::Transactions(msg) => {
-                let send_futures = self
-                    .peers
-                    .lock()
-                    .await
-                    .iter_mut()
-                    .filter_map(|(peer_id, peer_info)| {
-                        if peer_id == self_id {
-                            return None;
-                        }
-                        let mut txns_unhandled = Vec::new();
-                        for txn in &msg.txns {
+                let (protocol_name, origin_message) = notification
+                    .encode_notification()
+                    .expect("Encode notification message should ok");
+                let origin_txn_len = msg.txns.len();
+                let mut send_peer_count: usize = 0;
+                for (peer_id, peer) in &mut self.peers {
+                    let txns_unhandled = msg
+                        .txns
+                        .iter()
+                        .filter(|txn| {
                             let id = txn.id();
-                            if !peer_info.known_transactions.contains(&id) {
-                                peer_info.known_transactions.put(id, ());
-                                txns_unhandled.push(txn.clone());
+                            if !peer.known_transactions.contains(&id) {
+                                peer.known_transactions.put(id, ());
+                                true
+                            } else {
+                                false
                             }
-                        }
-                        if txns_unhandled.is_empty() {
-                            debug!(
-                                "{} known all transactions, ignore broadcast message.",
-                                peer_id
-                            );
-                            return None;
-                        }
-                        Some(self.send_peer_message(PeerMessage::new_transactions(
+                        })
+                        .collect::<Vec<_>>();
+
+                    if txns_unhandled.is_empty() {
+                        debug!(
+                            "{} known all transactions, ignore broadcast message.",
+                            peer_id
+                        );
+                        continue;
+                    }
+                    send_peer_count += 1;
+                    // if txn after known_transactions filter is same length with origin, just send origin message for avoid encode data again.
+                    if txns_unhandled.len() == origin_txn_len {
+                        self.network_service.write_notification(
                             peer_id.clone().into(),
-                            TransactionsMessage::new(txns_unhandled),
-                        )))
-                    })
-                    .collect::<Vec<_>>();
+                            protocol_name.clone(),
+                            origin_message.clone(),
+                        )
+                    } else {
+                        let notification_after_filter = NotificationMessage::Transactions(
+                            TransactionsMessage::new(txns_unhandled.into_iter().cloned().collect()),
+                        );
+                        let (protocol_name, data) = notification_after_filter
+                            .encode_notification()
+                            .expect("Encode notification message should ok");
+                        self.network_service.write_notification(
+                            peer_id.clone().into(),
+                            protocol_name,
+                            data,
+                        );
+                    }
+                }
                 debug!(
                     "[network] broadcast new {} transactions to {} peers",
                     msg.txns.len(),
-                    send_futures.len()
+                    send_peer_count
                 );
-                if !send_futures.is_empty() {
-                    futures::future::join_all(send_futures)
-                        .await
-                        .into_iter()
-                        .collect::<Result<_>>()?;
-                }
-                Ok(())
             }
         }
     }
@@ -538,7 +469,7 @@ impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService 
     fn handle_event(
         &mut self,
         msg: PropagateNewTransactions,
-        ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
+        _ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
     ) {
         let txns = msg.propagate_transaction();
         if txns.is_empty() {
@@ -546,14 +477,9 @@ impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService 
             return;
         }
         debug!("propagate new txns, len: {}", txns.len());
-
-        let network_service = self.network.clone();
-        ctx.spawn(async move {
-            network_service
-                .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
-                    txns,
-                )))
-                .await;
-        });
+        self.network
+            .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
+                txns,
+            )));
     }
 }

@@ -4473,6 +4473,7 @@ dependencies = [
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
+ "starcoin-logger",
  "starcoin-service-registry",
  "starcoin-types",
 ]

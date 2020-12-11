@@ -12,19 +12,18 @@ pub mod net;
 mod net_test;
 pub mod network;
 mod network_metrics;
+mod service;
 
 pub use network::PeerMsgBroadcasterService;
 pub use network_api::messages::*;
 
 pub use helper::get_unix_ts;
 
-pub use net::{build_network_service, SNetworkService};
+pub use net::build_network_worker;
 pub use network::NetworkAsyncService;
 use network_p2p::PeerId;
+pub use service::NetworkActorService;
 use std::borrow::Cow;
-
-#[cfg(test)]
-pub use net::NetworkInner;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct NetworkMessage {
