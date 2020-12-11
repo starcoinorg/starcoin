@@ -189,12 +189,12 @@ fn main() {
     })
     .unwrap();
     let handle = std::thread::spawn(move || {
+        let accounts = tx_mocker
+            .get_accounts(account_num)
+            .expect("create accounts should success");
         while !stopping_signal.load(Ordering::SeqCst) {
             if tx_mocker.get_factory_status() {
                 if is_stress {
-                    let accounts = tx_mocker
-                        .get_accounts(account_num)
-                        .expect("create accounts should success");
                     info!("stress account: {}", accounts.len());
                     let success = tx_mocker.stress_test(accounts.clone(), round_num);
                     if let Err(e) = success {
