@@ -279,6 +279,7 @@ mod tests {
     use std::str::FromStr;
 
     #[tokio::test(threaded_scheduler)]
+    #[ignore]
     async fn test_update_tip_header() {
         let es_url = "http://localhost:9200";
         let transport = elasticsearch::http::transport::TransportBuilder::new(
