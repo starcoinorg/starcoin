@@ -12,7 +12,7 @@ use anyhow::{format_err, Result};
 use config::NodeConfig;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network::NetworkAsyncService;
+use network::NetworkServiceRef;
 use network_api::PeerProvider;
 use starcoin_chain_service::ChainReaderService;
 use starcoin_crypto::HashValue;
@@ -65,7 +65,7 @@ impl DownloadService {
         node_config: Arc<NodeConfig>,
         peer_id: PeerId,
         chain_reader: ServiceRef<ChainReaderService>,
-        network: NetworkAsyncService,
+        network: NetworkServiceRef,
         bus: ServiceRef<BusService>,
         storage: Arc<dyn Store>,
         txpool: TxPoolService,
@@ -109,7 +109,7 @@ impl ServiceFactory<Self> for DownloadService {
         let startup_info = storage
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let peer_id = node_config.network.self_peer_id()?;
         Ok(Self::new(
             node_config,

@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::net::build_network_worker;
+    use crate::worker::build_network_worker;
     use crate::NetworkMessage;
     use crate::PeerEvent;
     use async_std::task;

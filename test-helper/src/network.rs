@@ -21,7 +21,7 @@ use std::sync::{Arc, Mutex};
 use actix::clock::Duration;
 use futures_timer::Delay;
 use starcoin_network::NetworkActorService;
-pub use starcoin_network::NetworkAsyncService;
+pub use starcoin_network::NetworkServiceRef;
 use starcoin_node::network_service_factory::NetworkServiceFactory;
 
 #[derive(Clone, Default)]
@@ -39,7 +39,7 @@ pub async fn build_network(
     seed: Option<MultiaddrWithPeerId>,
     rpc_service_mocker: (RpcInfo, impl MockHandler<NetworkRpcService> + 'static),
 ) -> Result<(
-    NetworkAsyncService,
+    NetworkServiceRef,
     MockPeerMessageHandler,
     Arc<NodeConfig>,
     Arc<Storage>,
@@ -64,7 +64,7 @@ pub async fn build_network(
         .register_by_factory::<NetworkActorService, MockNetworkServiceFactory>()
         .await?;
     Delay::new(Duration::from_millis(200)).await;
-    let service = registry.get_shared::<NetworkAsyncService>().await?;
+    let service = registry.get_shared::<NetworkServiceRef>().await?;
     let peer_message_handle = registry.get_shared::<MockPeerMessageHandler>().await?;
     Ok((service, peer_message_handle, node_config, storage, registry))
 }
@@ -102,7 +102,7 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
             peer_message_handle.clone(),
         )?;
         let network_service = actor_service.network_service();
-        let network_async_service = NetworkAsyncService::new(network_service, ctx.self_ref());
+        let network_async_service = NetworkServiceRef::new(network_service, ctx.self_ref());
         ctx.put_shared(network_async_service)?;
         ctx.put_shared(peer_message_handle)?;
         Ok(actor_service)

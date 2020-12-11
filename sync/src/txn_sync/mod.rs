@@ -1,7 +1,7 @@
 use crate::helper;
 use anyhow::{bail, Result};
 use logger::prelude::*;
-use network::NetworkAsyncService;
+use network::NetworkServiceRef;
 use network_api::{NetworkService, PeerProvider};
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithSize, RawRpcClient};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
@@ -31,7 +31,7 @@ impl ActorService for TxnSyncService {
 impl ServiceFactory<Self> for TxnSyncService {
     fn create(ctx: &mut ServiceContext<TxnSyncService>) -> Result<TxnSyncService> {
         let txpool = ctx.get_shared::<TxPoolService>()?;
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         Ok(Self::new(txpool, network))
     }
 }

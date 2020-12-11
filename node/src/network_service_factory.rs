@@ -6,7 +6,7 @@ use anyhow::{format_err, Result};
 use starcoin_block_relayer::BlockRelayer;
 use starcoin_config::NodeConfig;
 use starcoin_genesis::Genesis;
-use starcoin_network::{NetworkActorService, NetworkAsyncService};
+use starcoin_network::{NetworkActorService, NetworkServiceRef};
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{ServiceContext, ServiceFactory};
 use starcoin_storage::block_info::BlockInfoStore;
@@ -56,7 +56,7 @@ impl ServiceFactory<NetworkActorService> for NetworkServiceFactory {
             peer_message_handle,
         )?;
         let network_service = actor_service.network_service();
-        let network_async_service = NetworkAsyncService::new(network_service, ctx.self_ref());
+        let network_async_service = NetworkServiceRef::new(network_service, ctx.self_ref());
         ctx.put_shared(network_async_service)?;
         Ok(actor_service)
     }

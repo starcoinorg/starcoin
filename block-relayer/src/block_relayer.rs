@@ -8,7 +8,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::NetworkService;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithHash};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::BlockConnectorService;
@@ -133,7 +133,7 @@ impl BlockRelayer {
         compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let rpc_client = NetworkRpcClient::new(network);
         let txpool = self.txpool.clone();
@@ -195,7 +195,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
             return;
         }
-        let network = match ctx.get_shared::<NetworkAsyncService>() {
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
             Err(e) => {
                 error!("Get network service error: {:?}", e);
