@@ -5,7 +5,6 @@ use crate::build_network_worker;
 use crate::network_metrics::NetworkMetrics;
 use anyhow::{format_err, Result};
 use bytes::Bytes;
-use config::NodeConfig;
 use futures::future::{abortable, AbortHandle};
 use futures::FutureExt;
 use lru::LruCache;
@@ -16,6 +15,7 @@ use network_api::messages::{
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use smallvec::alloc::borrow::Cow;
+use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{

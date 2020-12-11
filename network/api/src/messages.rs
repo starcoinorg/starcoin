@@ -15,7 +15,7 @@ use std::borrow::Cow;
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionsMessage {
     pub txns: Vec<SignedUserTransaction>,
 }
@@ -31,14 +31,14 @@ impl TransactionsMessage {
 }
 
 /// Message of sending or receive block notification to network
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
     pub total_difficulty: U256,
 }
 
 /// Network notification protocol message, change this type, maybe break the network protocol compatibility.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum NotificationMessage {
     Transactions(TransactionsMessage),
     CompactBlock(Box<CompactBlockMessage>),
@@ -95,7 +95,7 @@ impl NotificationMessage {
 }
 
 /// Message for send or receive from peer
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PeerMessage {
     pub peer_id: PeerId,
     pub notification: NotificationMessage,

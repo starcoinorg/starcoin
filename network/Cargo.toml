@@ -18,7 +18,7 @@ log = "0.4.11"
 hex = "0.4.2"
 bytes = "0.5.0"
 
-config = {path = "../config", package="starcoin-config"}
+starcoin-config = {path = "../config"}
 starcoin-types = {path = "../types"}
 starcoin-txpool-api = {path = "../txpool/api"}
 network-p2p-types = {path = "../network-p2p/types"}

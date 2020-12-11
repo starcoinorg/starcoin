@@ -3,7 +3,6 @@
 
 use anyhow::*;
 use bitflags::_core::time::Duration;
-use config::NodeConfig;
 use futures::channel::mpsc::channel;
 use futures::prelude::*;
 use network_p2p::config::{RequestResponseConfig, TransportConfig};
@@ -12,6 +11,7 @@ use network_p2p::{
 };
 use network_p2p_types::{is_memory_addr, ProtocolRequest};
 use prometheus::default_registry;
+use starcoin_config::NodeConfig;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::RpcInfo;
@@ -101,7 +101,7 @@ pub fn build_network_worker(
         request_response_protocols: rpc_protocols,
         transport: transport_config,
         node_name: node_name.to_string(),
-        client_version: config::APP_NAME_WITH_VERSION.clone(),
+        client_version: starcoin_config::APP_NAME_WITH_VERSION.clone(),
         ..NetworkConfiguration::default()
     };
     // protocol id is chain/{chain_id}, `RegisteredProtocol` will append `/starcoin` prefix

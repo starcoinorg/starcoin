@@ -24,14 +24,31 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::sync::{Arc, Mutex};
 
+use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 pub use starcoin_network::NetworkServiceRef;
+
 #[derive(Clone, Default)]
 pub struct MockPeerMessageHandler {
-    pub messages: Arc<Mutex<Vec<PeerMessage>>>,
+    messages: Arc<Mutex<Vec<PeerMessage>>>,
+    senders: Arc<Mutex<Vec<UnboundedSender<PeerMessage>>>>,
+}
+
+impl MockPeerMessageHandler {
+    pub fn channel(&self) -> UnboundedReceiver<PeerMessage> {
+        let (sender, receiver) = unbounded::<PeerMessage>();
+        self.senders.lock().unwrap().push(sender);
+        receiver
+    }
+    pub fn messages(&self) -> Vec<PeerMessage> {
+        self.messages.lock().unwrap().clone()
+    }
 }
 
 impl PeerMessageHandler for MockPeerMessageHandler {
     fn handle_message(&self, peer_message: PeerMessage) {
+        for sender in self.senders.lock().unwrap().iter() {
+            sender.unbounded_send(peer_message.clone()).unwrap();
+        }
         self.messages.lock().unwrap().push(peer_message);
     }
 }
@@ -83,6 +100,12 @@ pub struct TestNetworkService {
     pub message_handler: MockPeerMessageHandler,
     pub config: Arc<NodeConfig>,
     pub registry: ServiceRef<RegistryService>,
+}
+
+impl TestNetworkService {
+    pub fn peer_id(&self) -> PeerId {
+        self.config.network.self_peer_id().unwrap()
+    }
 }
 
 pub async fn build_network_pair() -> Result<(TestNetworkService, TestNetworkService)> {

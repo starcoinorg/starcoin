@@ -1,17 +1,18 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::worker::build_network_worker;
 use async_std::task;
-use config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
-use futures::executor::block_on;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
-use network_api::messages::NotificationMessage;
-use network_api::{Multiaddr, PeerProvider};
+use logger::prelude::*;
+use network_api::messages::{NotificationMessage, PeerMessage, TransactionsMessage};
+use network_api::{Multiaddr, NetworkService};
 use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId};
+use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
+use starcoin_network::build_network_worker;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
 use std::{thread, time::Duration};
 
@@ -153,69 +154,15 @@ fn test_connected_nodes() {
 //     test_handle_event(event).await;
 // }
 
-// #[stest::test]
-// async fn test_event_notify_receive() {
-//     let mut data = Vec::new();
-//     data.push(Bytes::from(&b"hello"[..]));
-//     let event = Event::NotificationsReceived {
-//         remote: PeerId::random(),
-//         protocol: TEST_NOTIF_PROTOCOL_NAME.into(),
-//         messages: data,
-//     };
-//     test_handle_event(event).await;
-// }
-
-//TOD FIXME  provider a shutdown network method, quit network worker future
-// test peer shutdown and reconnect
 #[stest::test]
-fn test_reconnected_peers() -> anyhow::Result<()> {
-    let node_config1 = Arc::new(NodeConfig::random_for_test());
-    let node1 = test_helper::run_node_by_config(node_config1.clone())?;
-
-    let node1_network = node1.network();
-
-    let peers = block_on(async { node1_network.peer_set().await })?;
-    assert_eq!(peers.len(), 0);
-
-    let mut node_config2 = NodeConfig::random_for_test();
-    node_config2.network.seeds = vec![node_config1.network.self_address()?];
-    let node_config2 = Arc::new(node_config2);
-    let node2 = test_helper::run_node_by_config(node_config2.clone())?;
-
-    thread::sleep(Duration::from_secs(2));
-
-    let network_state = block_on(async { node1_network.network_state().await })?;
-    assert_eq!(network_state.connected_peers.len(), 1);
-
-    let peers = block_on(async { node1_network.peer_set().await })?;
-    assert_eq!(peers.len(), 1);
-
-    // stop node2, node1's peers is empty
-    node2.stop()?;
-    thread::sleep(Duration::from_secs(3));
-    loop {
-        let network_state = block_on(async { node1_network.network_state().await })?;
-        debug!("network_state: {:?}", network_state);
-        if network_state.connected_peers.is_empty() {
-            break;
-        }
-        thread::sleep(Duration::from_secs(1));
-        //assert_eq!(network_state.connected_peers.len(), 0);
-    }
-
-    let peers = block_on(async { node1_network.peer_set().await })?;
-    assert_eq!(peers.len(), 0);
-
-    //start node2 again.
-    let node2 = test_helper::run_node_by_config(node_config2)?;
-    thread::sleep(Duration::from_secs(2));
-
-    let network_state = block_on(async { node1_network.network_state().await })?;
-    assert_eq!(network_state.connected_peers.len(), 1);
-
-    let peers = block_on(async { node1_network.peer_set().await })?;
-    assert_eq!(peers.len(), 1);
-    node2.stop()?;
-    node1.stop()?;
-    Ok(())
+async fn test_event_notify_receive() {
+    let (network1, network2) = test_helper::build_network_pair().await.unwrap();
+    let msg = PeerMessage::new_transactions(
+        network2.peer_id(),
+        TransactionsMessage::new(vec![SignedUserTransaction::mock()]),
+    );
+    let mut receiver = network2.message_handler.channel();
+    network1.service_ref.send_peer_message(msg.clone());
+    let msg2 = receiver.next().await.unwrap();
+    assert_eq!(msg.notification, msg2.notification);
 }

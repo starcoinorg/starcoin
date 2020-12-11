@@ -12,6 +12,9 @@ use starcoin_types::peer_info::RpcInfo;
 use test_helper::build_network;
 use test_helper::network::MockRpcHandler;
 
+#[cfg(test)]
+mod network_service_test;
+
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct TestRequest {
     pub data: HashValue,
