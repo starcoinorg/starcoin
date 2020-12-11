@@ -303,9 +303,28 @@ where
         remote_chain_state: Option<&dyn ChainStateReader>,
     ) -> Result<()> {
         let block_id = block.id();
-        if self.main.current_header().id() == block.id() {
+        if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
             return Ok(());
+        }
+        if self.main.current_header().id() == block.header().parent_hash()
+            && !self.block_exist(block_id)
+        {
+            let connected = if execute {
+                self.main.apply(block.clone())
+            } else {
+                self.main.apply_without_execute(
+                    block.clone(),
+                    remote_chain_state.expect("remote chain state not set"),
+                )
+            };
+            if connected.is_err() {
+                debug!("connected failed {:?}", block_id);
+                WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
+            } else {
+                self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
+            }
+            return connected;
         }
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         match (block_exist, fork) {
