@@ -370,6 +370,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-compression"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb1ff21a63d3262af46b9f33a826a8d134e2d0d9b2179c86034948b732ea8b2a"
+dependencies = [
+ "bytes 0.5.6",
+ "flate2",
+ "futures-core",
+ "memchr",
+ "pin-project-lite 0.1.11",
+]
+
+[[package]]
 name = "async-executor"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -573,6 +586,12 @@ dependencies = [
 
 [[package]]
 name = "base64"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b41b7ea54a0c9d92199de89e20e58d49f02f8e699814ef3fdf266f6f748d15c7"
+
+[[package]]
+name = "base64"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
@@ -651,7 +670,7 @@ dependencies = [
  "cexpr",
  "cfg-if 0.1.10",
  "clang-sys",
- "clap",
+ "clap 2.33.3",
  "env_logger 0.7.1",
  "lazy_static",
  "lazycell",
@@ -1069,6 +1088,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "3.0.0-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bd1061998a501ee7d4b6d449020df3266ca3124b941ec56cf2005c3779ca142"
+dependencies = [
+ "atty",
+ "bitflags",
+ "clap_derive",
+ "indexmap",
+ "lazy_static",
+ "os_str_bytes",
+ "strsim 0.10.0",
+ "termcolor",
+ "textwrap 0.12.1",
+ "unicode-width",
+ "vec_map",
+]
+
+[[package]]
+name = "clap_derive"
+version = "3.0.0-beta.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "370f715b81112975b1b69db93e0b56ea4cd4e5002ac43b2da8474106a54096a1"
+dependencies = [
+ "heck",
+ "proc-macro-error",
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.51",
+]
+
+[[package]]
 name = "cli-table"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1253,7 +1304,7 @@ checksum = "70daa7ceec6cf143990669a04c7df13391d55fb27bd4079d252fca774ba244d8"
 dependencies = [
  "atty",
  "cast",
- "clap",
+ "clap 2.33.3",
  "criterion-plot",
  "csv",
  "itertools 0.9.0",
@@ -1507,7 +1558,7 @@ version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ff266b008aaa8250f1f8f58b820da30270ca572bee708ac21c7dbcd52a82e02"
 dependencies = [
- "clap",
+ "clap 2.33.3",
  "gherkin_rust 0.6.0",
  "globwalk",
  "pathdiff 0.1.0",
@@ -1857,6 +1908,25 @@ name = "either"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
+
+[[package]]
+name = "elasticsearch"
+version = "7.10.0-alpha.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "178d260175cbe5578029036dad1a7411eb5c669dcf12e9c3f50e699e6ca3ef7b"
+dependencies = [
+ "base64 0.11.0",
+ "bytes 0.5.6",
+ "dyn-clone",
+ "percent-encoding 2.1.0",
+ "reqwest",
+ "rustc_version",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "url 2.2.0",
+ "void",
+]
 
 [[package]]
 name = "encode_unicode"
@@ -4218,7 +4288,7 @@ dependencies = [
  "async-trait",
  "bytecode",
  "bytecode-source-map",
- "clap",
+ "clap 2.33.3",
  "codespan",
  "codespan-reporting",
  "datatest-stable",
@@ -4782,6 +4852,12 @@ checksum = "3741934be594d77de1c8461ebcbbe866f585ea616a9753aa78f2bdc69f0e4579"
 dependencies = [
  "num-traits",
 ]
+
+[[package]]
+name = "os_str_bytes"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afb2e1c3ee07430c2cf76151675e583e0f19985fa6efae47d6848a3e2c824f85"
 
 [[package]]
 name = "parity-codec"
@@ -5863,6 +5939,7 @@ version = "0.10.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb15d6255c792356a0f578d8a645c677904dc02e862bebe2ecc18e0c01b9a0ce"
 dependencies = [
+ "async-compression",
  "base64 0.13.0",
  "bytes 0.5.6",
  "encoding_rs",
@@ -5882,6 +5959,7 @@ dependencies = [
  "percent-encoding 2.1.0",
  "pin-project-lite 0.2.0",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "tokio 0.2.23",
  "tokio-tls 0.3.1",
@@ -6143,7 +6221,7 @@ name = "scmd"
 version = "0.9.0"
 dependencies = [
  "anyhow",
- "clap",
+ "clap 2.33.3",
  "cli-table",
  "ctrlc",
  "git-version",
@@ -6334,6 +6412,28 @@ dependencies = [
  "itoa",
  "ryu",
  "serde",
+]
+
+[[package]]
+name = "serde_with"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15f6201e064705553ece353a736a64be975680bd244908cf63e8fa71e478a51a"
+dependencies = [
+ "serde",
+ "serde_with_macros",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1197ff7de45494f290c1e3e1a6f80e108974681984c87a3e480991ef3d0f1950"
+dependencies = [
+ "darling 0.10.2",
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.51",
 ]
 
 [[package]]
@@ -7221,6 +7321,29 @@ dependencies = [
  "stest",
  "structopt 0.3.21",
  "thiserror",
+]
+
+[[package]]
+name = "starcoin-indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "clap 3.0.0-beta.2",
+ "elasticsearch",
+ "failure",
+ "futures-retry",
+ "futures-util",
+ "jsonrpc-core-client",
+ "serde",
+ "serde_json",
+ "starcoin-crypto",
+ "starcoin-logger",
+ "starcoin-rpc-api",
+ "starcoin-rpc-client",
+ "starcoin-types",
+ "tokio 0.2.23",
+ "tokio-compat",
 ]
 
 [[package]]
@@ -8231,7 +8354,7 @@ version = "0.9.0"
 dependencies = [
  "anyhow",
  "bytecode-verifier",
- "clap",
+ "clap 2.33.3",
  "datatest-stable",
  "fs_extra",
  "include_dir",
@@ -8331,12 +8454,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6446ced80d6c486436db5c078dde11a9f73d42b57fb273121e160b84f63d894c"
 
 [[package]]
+name = "strsim"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
 name = "structopt"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16c2cdbf9cc375f15d1b4141bc48aeef444806655cd0e904207edc8d68d86ed7"
 dependencies = [
- "clap",
+ "clap 2.33.3",
  "structopt-derive 0.2.18",
 ]
 
@@ -8346,7 +8475,7 @@ version = "0.3.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5277acd7ee46e63e5168a80734c9f6ee81b1367a7d8772a2d765df2a3705d28c"
 dependencies = [
- "clap",
+ "clap 2.33.3",
  "lazy_static",
  "structopt-derive 0.4.14",
 ]
@@ -8587,7 +8716,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
- "clap",
+ "clap 2.33.3",
  "cucumber_rust",
  "data-encoding",
  "gherkin_rust 0.8.3",
