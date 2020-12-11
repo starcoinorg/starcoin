@@ -8,6 +8,7 @@ use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_crypto::{HashValue, ValidCryptoMaterialStringExt};
 use starcoin_executor::DEFAULT_EXPIRATION_TIME;
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::types::FactoryAction;
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_rpc_client::RpcClient;
 use starcoin_state_api::AccountStateReader;
@@ -189,28 +190,32 @@ fn main() {
     .unwrap();
     let handle = std::thread::spawn(move || {
         while !stopping_signal.load(Ordering::SeqCst) {
-            if is_stress {
-                let accounts = tx_mocker
-                    .get_accounts(account_num)
-                    .expect("create accounts should success");
-                info!("stress account: {}", accounts.len());
-                let success = tx_mocker.stress_test(accounts.clone(), round_num);
-                if let Err(e) = success {
-                    error!("fail to run stress test, err: {:?}", &e);
-                    // if txn is rejected, recheck sequence number, and start over
-                    if let Err(e) = tx_mocker.recheck_sequence_number() {
-                        error!("fail to start over, err: {:?}", e);
+            if tx_mocker.get_factory_status() {
+                if is_stress {
+                    let accounts = tx_mocker
+                        .get_accounts(account_num)
+                        .expect("create accounts should success");
+                    info!("stress account: {}", accounts.len());
+                    let success = tx_mocker.stress_test(accounts.clone(), round_num);
+                    if let Err(e) = success {
+                        error!("fail to run stress test, err: {:?}", &e);
+                        // if txn is rejected, recheck sequence number, and start over
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
+                            error!("fail to start over, err: {:?}", e);
+                        }
+                    }
+                } else {
+                    let success = tx_mocker.gen_and_submit_txn(false);
+                    if let Err(e) = success {
+                        error!("fail to generate/submit mock txn, err: {:?}", &e);
+                        // if txn is rejected, recheck sequence number, and start over
+                        if let Err(e) = tx_mocker.recheck_sequence_number() {
+                            error!("fail to start over, err: {:?}", e);
+                        }
                     }
                 }
             } else {
-                let success = tx_mocker.gen_and_submit_txn(false);
-                if let Err(e) = success {
-                    error!("fail to generate/submit mock txn, err: {:?}", &e);
-                    // if txn is rejected, recheck sequence number, and start over
-                    if let Err(e) = tx_mocker.recheck_sequence_number() {
-                        error!("fail to start over, err: {:?}", e);
-                    }
-                }
+                info!("txfactory is stop.");
             }
 
             std::thread::sleep(interval);
@@ -277,6 +282,11 @@ impl TxnMocker {
             .node_info()
             .expect("node_info() should not failed");
         node_info.now_seconds + DEFAULT_EXPIRATION_TIME
+    }
+    fn get_factory_status(&self) -> bool {
+        self.client
+            .debug_txfactory_status(FactoryAction::Status)
+            .unwrap()
     }
     fn recheck_sequence_number(&mut self) -> Result<()> {
         let seq_number_in_pool = self

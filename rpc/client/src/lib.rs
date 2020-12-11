@@ -19,7 +19,7 @@ use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView,
-    ContractCall, EpochUncleSummaryView, PeerInfoView, SignedUserTransactionView,
+    ContractCall, EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView,
     TransactionInfoView, TransactionView,
 };
 use starcoin_rpc_api::{
@@ -500,6 +500,13 @@ impl RpcClient {
     pub fn debug_panic(&self) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move { inner.debug_client.panic().compat().await })
             .map_err(map_err)
+    }
+
+    pub fn debug_txfactory_status(&self, action: FactoryAction) -> anyhow::Result<bool> {
+        self.call_rpc_blocking(|inner| async move {
+            inner.debug_client.txfactory_status(action).compat().await
+        })
+        .map_err(map_err)
     }
 
     pub fn sleep(&self, time: u64) -> anyhow::Result<()> {

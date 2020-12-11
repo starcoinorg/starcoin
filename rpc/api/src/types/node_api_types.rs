@@ -1,5 +1,9 @@
+// Copyright (c) The Starcoin Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
 use serde::{Deserialize, Serialize};
 use starcoin_vm_types::genesis_config::ChainNetworkID;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChainId {
@@ -19,5 +23,23 @@ impl From<&ChainNetworkID> for ChainId {
                 id: t.chain_id().id(),
             },
         }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum FactoryAction {
+    Status,
+    Stop,
+    Start,
+}
+impl FromStr for FactoryAction {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "stop" => FactoryAction::Stop,
+            "start" => FactoryAction::Start,
+            _ => FactoryAction::Status, //default is status action
+        })
     }
 }
