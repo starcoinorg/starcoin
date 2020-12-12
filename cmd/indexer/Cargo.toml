@@ -26,3 +26,7 @@ tokio-compat = "0.1.6"
 futures-util = "~0.3"
 futures-retry="~0.5"
 failure = "~0.1"
+
+[[bin]]
+name="starcoin_indexer"
+path="src/main.rs"
