@@ -258,12 +258,35 @@ impl Inner {
     ) -> Result<()> {
         if let Some(peer_info) = self.peers.get_mut(&peer_id) {
             let notification =
-                NotificationMessage::decode_notification(protocol, message.as_ref())?;
-            match &notification {
+                NotificationMessage::decode_notification(protocol.as_ref(), message.as_ref())?;
+            let notification = match &notification {
                 NotificationMessage::Transactions(peer_transactions) => {
                     for txn in &peer_transactions.txns {
                         let id = txn.id();
                         peer_info.known_transactions.put(id, ());
+                    }
+                    let txns_after_filter = peer_transactions
+                        .txns
+                        .iter()
+                        .filter(|txn| {
+                            let txn_id = txn.id();
+                            if !self.self_peer.known_transactions.contains(&txn_id) {
+                                self.self_peer.known_transactions.put(txn_id, ());
+                                true
+                            } else {
+                                false
+                            }
+                        })
+                        .collect::<Vec<_>>();
+
+                    if txns_after_filter.len() == peer_transactions.txns.len() {
+                        Some(notification)
+                    } else if txns_after_filter.is_empty() {
+                        None
+                    } else {
+                        Some(NotificationMessage::Transactions(TransactionsMessage::new(
+                            txns_after_filter.into_iter().cloned().collect(),
+                        )))
                     }
                 }
                 NotificationMessage::CompactBlock(compact_block_message) => {
@@ -282,11 +305,25 @@ impl Inner {
                     peer_info
                         .peer_info
                         .update_chain_status(ChainStatus::new(block_header, total_difficulty));
-                }
-            }
 
-            let peer_message = PeerMessage::new(peer_id, notification);
-            self.peer_message_handler.handle_message(peer_message);
+                    if self.self_peer.known_blocks.contains(&block_id) {
+                        None
+                    } else {
+                        self.self_peer.known_blocks.put(block_id, ());
+                        Some(notification)
+                    }
+                }
+            };
+
+            if let Some(notification) = notification {
+                let peer_message = PeerMessage::new(peer_id, notification);
+                self.peer_message_handler.handle_message(peer_message);
+            } else {
+                debug!(
+                    "Receive repeat message from peer {}, protocol:{}, ignore.",
+                    peer_id, protocol
+                );
+            }
         } else {
             error!(
                 "Receive NetworkMessage from unknown peer {}, protocol: {}",

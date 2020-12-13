@@ -124,10 +124,6 @@ impl BlockRelayer {
         Ok(block)
     }
 
-    fn block_into_compact(&self, block: Block) -> CompactBlock {
-        CompactBlock::new(&block, vec![])
-    }
-
     fn handle_block_event(
         &self,
         compact_block_msg: PeerCompactBlockMessage,
@@ -202,7 +198,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
                 return;
             }
         };
-        let compact_block = self.block_into_compact(event.0.get_block().clone());
+        let compact_block = event.0.get_block().clone().into();
         let total_difficulty = event.0.get_total_difficulty();
         let compact_block_msg = CompactBlockMessage {
             compact_block,

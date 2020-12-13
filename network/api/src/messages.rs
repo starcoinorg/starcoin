@@ -37,6 +37,15 @@ pub struct CompactBlockMessage {
     pub total_difficulty: U256,
 }
 
+impl CompactBlockMessage {
+    pub fn new(compact_block: CompactBlock, total_difficulty: U256) -> Self {
+        Self {
+            compact_block,
+            total_difficulty,
+        }
+    }
+}
+
 /// Network notification protocol message, change this type, maybe break the network protocol compatibility.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum NotificationMessage {
@@ -45,8 +54,8 @@ pub enum NotificationMessage {
 }
 
 impl NotificationMessage {
-    pub fn decode_notification(protocol_name: Cow<'static, str>, bytes: &[u8]) -> Result<Self> {
-        Ok(match protocol_name.as_ref() {
+    pub fn decode_notification(protocol_name: &str, bytes: &[u8]) -> Result<Self> {
+        Ok(match protocol_name {
             TXN_PROTOCOL_NAME => {
                 NotificationMessage::Transactions(TransactionsMessage::decode(bytes)?)
             }

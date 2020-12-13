@@ -5,12 +5,16 @@ use async_std::task;
 use futures::stream::StreamExt;
 use futures_timer::Delay;
 use logger::prelude::*;
-use network_api::messages::{NotificationMessage, PeerMessage, TransactionsMessage};
+use network_api::messages::{
+    CompactBlockMessage, NotificationMessage, PeerMessage, TransactionsMessage,
+};
 use network_api::{Multiaddr, NetworkService};
 use network_p2p_types::{random_memory_addr, MultiaddrWithPeerId};
 use starcoin_config::{BuiltinNetworkID, NetworkConfig, NodeConfig};
 use starcoin_crypto::hash::HashValue;
 use starcoin_network::build_network_worker;
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::cmpact_block::CompactBlock;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::transaction::SignedUserTransaction;
 use std::sync::Arc;
@@ -130,39 +134,106 @@ fn test_connected_nodes() {
     task::block_on(fut);
 }
 
-// #[stest::test]
-// async fn test_event_dht() {
-//     let random_bytes: Vec<u8> = (0..10240).map(|_| rand::random::<u8>()).collect();
-//     let event = Event::Dht(DhtEvent::ValuePut(random_bytes.clone().into()));
-//     test_handle_event(event).await;
-// }
-//
-// #[stest::test]
-// async fn test_event_notify_open() {
-//     let event = Event::NotificationStreamOpened {
-//         remote: PeerId::random(),
-//         info: Box::new(ChainInfo::random()),
-//     };
-//     test_handle_event(event).await;
-// }
-//
-// #[stest::test]
-// async fn test_event_notify_close() {
-//     let event = Event::NotificationStreamClosed {
-//         remote: PeerId::random(),
-//     };
-//     test_handle_event(event).await;
-// }
-
 #[stest::test]
 async fn test_event_notify_receive() {
     let (network1, network2) = test_helper::build_network_pair().await.unwrap();
-    let msg = PeerMessage::new_transactions(
+    // transaction
+    let msg_send = PeerMessage::new_transactions(
         network2.peer_id(),
         TransactionsMessage::new(vec![SignedUserTransaction::mock()]),
     );
     let mut receiver = network2.message_handler.channel();
-    network1.service_ref.send_peer_message(msg.clone());
-    let msg2 = receiver.next().await.unwrap();
-    assert_eq!(msg.notification, msg2.notification);
+    network1.service_ref.send_peer_message(msg_send.clone());
+    let msg_receive = receiver.next().await.unwrap();
+    assert_eq!(msg_send.notification, msg_receive.notification);
+
+    //block
+    let msg_send = PeerMessage::new_compact_block(
+        network2.peer_id(),
+        CompactBlockMessage::new(
+            CompactBlock::new(
+                Block::new(BlockHeader::random(), BlockBody::new_empty()),
+                vec![],
+            ),
+            1.into(),
+        ),
+    );
+    let mut receiver = network2.message_handler.channel();
+    network1.service_ref.send_peer_message(msg_send.clone());
+    let msg_receive = receiver.next().await.unwrap();
+    assert_eq!(msg_send.notification, msg_receive.notification);
+}
+
+#[stest::test]
+async fn test_event_notify_receive_repeat_block() {
+    let (network1, network2) = test_helper::build_network_pair().await.unwrap();
+
+    let block = Block::new(BlockHeader::random(), BlockBody::new_empty());
+
+    let msg_send1 = PeerMessage::new_compact_block(
+        network2.peer_id(),
+        CompactBlockMessage::new(CompactBlock::new(block.clone(), vec![]), 1.into()),
+    );
+
+    let msg_send2 = PeerMessage::new_compact_block(
+        network2.peer_id(),
+        CompactBlockMessage::new(CompactBlock::new(block.clone(), vec![]), 1.into()),
+    );
+
+    let mut receiver = network2.message_handler.channel();
+    network1.service_ref.send_peer_message(msg_send1.clone());
+    network1.service_ref.send_peer_message(msg_send2.clone());
+    let msg_receive1 = receiver.next().await.unwrap();
+    assert_eq!(msg_send1.notification, msg_receive1.notification);
+
+    //repeat message is filter, so expect timeout error.
+    let msg_receive2 = async_std::future::timeout(Duration::from_secs(2), receiver.next()).await;
+    assert!(msg_receive2.is_err());
+}
+
+#[stest::test]
+async fn test_event_notify_receive_repeat_transaction() {
+    let (network1, network2) = test_helper::build_network_pair().await.unwrap();
+
+    let txn1 = SignedUserTransaction::mock();
+    let txn2 = SignedUserTransaction::mock();
+    let txn3 = SignedUserTransaction::mock();
+
+    let msg_send1 = PeerMessage::new_transactions(
+        network2.peer_id(),
+        TransactionsMessage::new(vec![txn1.clone(), txn2.clone()]),
+    );
+
+    let msg_send2 = PeerMessage::new_transactions(
+        network2.peer_id(),
+        TransactionsMessage::new(vec![txn2.clone(), txn3.clone()]),
+    );
+
+    let msg_send3 = PeerMessage::new_transactions(
+        network2.peer_id(),
+        TransactionsMessage::new(vec![txn1.clone(), txn3.clone()]),
+    );
+
+    let mut receiver = network2.message_handler.channel();
+    network1.service_ref.send_peer_message(msg_send1.clone());
+    network1.service_ref.send_peer_message(msg_send2.clone());
+    network1.service_ref.send_peer_message(msg_send3.clone());
+    let msg_receive1 = receiver.next().await.unwrap();
+    assert_eq!(msg_send1.notification, msg_receive1.notification);
+
+    // msg2 only contains 1 txn after filter.
+    let msg_receive2 = receiver.next().await.unwrap();
+    assert_eq!(
+        1,
+        msg_receive2
+            .notification
+            .into_transactions()
+            .unwrap()
+            .txns
+            .len()
+    );
+
+    //msg3 is empty after filter, so expect timeout error.
+    let msg_receive3 = async_std::future::timeout(Duration::from_secs(2), receiver.next()).await;
+    assert!(msg_receive3.is_err());
 }
