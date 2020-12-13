@@ -234,6 +234,41 @@ async fn test_event_notify_receive_repeat_transaction() {
     );
 
     //msg3 is empty after filter, so expect timeout error.
-    let msg_receive3 = async_std::future::timeout(Duration::from_secs(2), receiver.next()).await;
+    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver.next()).await;
+    assert!(msg_receive3.is_err());
+}
+
+#[stest::test]
+async fn test_event_broadcast() {
+    let mut nodes = test_helper::build_network_cluster(3).await.unwrap();
+    let node3 = nodes.pop().unwrap();
+    let node2 = nodes.pop().unwrap();
+    let node1 = nodes.pop().unwrap();
+
+    let mut receiver1 = node1.message_handler.channel();
+    let mut receiver2 = node2.message_handler.channel();
+    let mut receiver3 = node3.message_handler.channel();
+
+    let block = Block::new(BlockHeader::random(), BlockBody::new_empty());
+    let notification = NotificationMessage::CompactBlock(Box::new(CompactBlockMessage::new(
+        CompactBlock::new(block.clone(), vec![]),
+        //difficulty should > genesis block difficulty.
+        10.into(),
+    )));
+    node1.service_ref.broadcast(notification.clone());
+
+    let msg_receive2 = receiver2.next().await.unwrap();
+    assert_eq!(notification, msg_receive2.notification);
+
+    let msg_receive3 = receiver3.next().await.unwrap();
+    assert_eq!(notification, msg_receive3.notification);
+
+    //repeat broadcast
+    node2.service_ref.broadcast(notification.clone());
+
+    let msg_receive1 = async_std::future::timeout(Duration::from_secs(1), receiver1.next()).await;
+    assert!(msg_receive1.is_err());
+
+    let msg_receive3 = async_std::future::timeout(Duration::from_secs(1), receiver3.next()).await;
     assert!(msg_receive3.is_err());
 }

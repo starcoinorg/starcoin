@@ -23,12 +23,15 @@ use starcoin_service_registry::{
 };
 use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::SyncStatusChangeEvent;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 pub struct NetworkActorService {
     worker: Option<NetworkWorker>,
     inner: Inner,
+
     network_worker_handle: Option<AbortHandle>,
 }
 
@@ -67,6 +70,7 @@ impl NetworkActorService {
 
 impl ActorService for NetworkActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.subscribe::<SyncStatusChangeEvent>();
         let worker = self
             .worker
             .take()
@@ -85,11 +89,18 @@ impl ActorService for NetworkActorService {
         Ok(())
     }
 
-    fn stopped(&mut self, _ctx: &mut ServiceContext<Self>) -> Result<()> {
+    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.unsubscribe::<SyncStatusChangeEvent>();
         if let Some(abort_handle) = self.network_worker_handle.take() {
             abort_handle.abort();
         }
         Ok(())
+    }
+}
+
+impl EventHandler<Self, SyncStatusChangeEvent> for NetworkActorService {
+    fn handle_event(&mut self, msg: SyncStatusChangeEvent, _ctx: &mut ServiceContext<Self>) {
+        self.inner.update_sync_status(msg.0);
     }
 }
 
@@ -227,6 +238,7 @@ pub(crate) struct Inner {
     self_peer: Peer,
     peers: HashMap<PeerId, Peer>,
     peer_message_handler: Arc<dyn PeerMessageHandler>,
+    sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
 }
 
@@ -246,8 +258,25 @@ impl Inner {
             self_peer: Peer::new(self_info),
             peers: HashMap::new(),
             peer_message_handler: Arc::new(peer_message_handler),
+            sync_status: None,
             metrics,
         })
+    }
+
+    pub(crate) fn is_synced(&self) -> bool {
+        match self.sync_status.as_ref() {
+            Some(sync_status) => sync_status.is_synced(),
+            None => false,
+        }
+    }
+
+    pub(crate) fn update_sync_status(&mut self, sync_status: SyncStatus) {
+        let chain_status = sync_status.chain_status().clone();
+        self.self_peer
+            .peer_info
+            .update_chain_status(chain_status.clone());
+        self.network_service.update_chain_status(chain_status);
+        self.sync_status = Some(sync_status);
     }
 
     pub(crate) fn handle_network_message(
@@ -316,17 +345,21 @@ impl Inner {
             };
 
             if let Some(notification) = notification {
-                let peer_message = PeerMessage::new(peer_id, notification);
-                self.peer_message_handler.handle_message(peer_message);
+                if self.is_synced() {
+                    let peer_message = PeerMessage::new(peer_id, notification);
+                    self.peer_message_handler.handle_message(peer_message);
+                } else {
+                    debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
+                }
             } else {
                 debug!(
-                    "Receive repeat message from peer {}, protocol:{}, ignore.",
+                    "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
             }
         } else {
             error!(
-                "Receive NetworkMessage from unknown peer {}, protocol: {}",
+                "Receive NetworkMessage from unknown peer: {}, protocol: {}",
                 peer_id, protocol
             )
         }
@@ -343,10 +376,22 @@ impl Inner {
         self.peers.remove(&peer_id);
     }
 
-    pub(crate) fn send_peer_message(&self, peer_id: PeerId, notification: NotificationMessage) {
+    pub(crate) fn send_peer_message(&mut self, peer_id: PeerId, notification: NotificationMessage) {
         let (protocol_name, data) = notification
             .encode_notification()
             .expect("Encode notification message should ok");
+        match notification {
+            NotificationMessage::Transactions(txn_message) => {
+                txn_message.txns.iter().for_each(|txn| {
+                    self.self_peer.known_transactions.put(txn.id(), ());
+                })
+            }
+            NotificationMessage::CompactBlock(block) => {
+                self.self_peer
+                    .known_blocks
+                    .put(block.compact_block.header.id(), ());
+            }
+        };
         self.network_service
             .write_notification(peer_id.into(), protocol_name, data);
     }
@@ -362,18 +407,12 @@ impl Inner {
         match &notification {
             NotificationMessage::CompactBlock(msg) => {
                 let id = msg.compact_block.header.id();
-                let block_header = msg.compact_block.header.clone();
                 let total_difficulty = msg.total_difficulty;
-                let chain_status = ChainStatus::new(block_header, total_difficulty);
                 debug!(
                     "update self network chain status, total_difficulty is {}, peer_info is {:?}",
                     total_difficulty, self.self_peer.peer_info
                 );
-
-                self.self_peer
-                    .peer_info
-                    .update_chain_status(chain_status.clone());
-                self.network_service.update_chain_status(chain_status);
+                self.self_peer.known_blocks.put(id, ());
                 let mut send_peer_count: usize = 0;
                 let (protocol_name, message) = notification
                     .encode_notification()
@@ -404,6 +443,9 @@ impl Inner {
                 let (protocol_name, origin_message) = notification
                     .encode_notification()
                     .expect("Encode notification message should ok");
+                msg.txns.iter().for_each(|txn| {
+                    self.self_peer.known_transactions.put(txn.id(), ());
+                });
                 let origin_txn_len = msg.txns.len();
                 let mut send_peer_count: usize = 0;
                 for (peer_id, peer) in &mut self.peers {

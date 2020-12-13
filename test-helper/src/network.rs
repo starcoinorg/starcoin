@@ -26,6 +26,8 @@ use std::sync::{Arc, Mutex};
 
 use futures::channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 pub use starcoin_network::NetworkServiceRef;
+use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::SyncStatusChangeEvent;
 
 #[derive(Clone, Default)]
 pub struct MockPeerMessageHandler {
@@ -109,9 +111,21 @@ impl TestNetworkService {
 }
 
 pub async fn build_network_pair() -> Result<(TestNetworkService, TestNetworkService)> {
-    let service1 = build_network(None, None).await?;
-    let service2 = build_network(Some(service1.config.network.self_address()?), None).await?;
-    Ok((service1, service2))
+    let mut nodes = build_network_cluster(2).await?;
+    let second = nodes.pop().unwrap();
+    let first = nodes.pop().unwrap();
+    Ok((first, second))
+}
+
+pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> {
+    let seed_service = build_network(None, None).await?;
+    let seed = seed_service.config.network.self_address()?;
+    let mut nodes = vec![seed_service];
+    for _i in 1..n {
+        let service = build_network(Some(seed.clone()), None).await?;
+        nodes.push(service);
+    }
+    Ok(nodes)
 }
 
 pub async fn build_network(
@@ -170,16 +184,18 @@ impl ServiceFactory<NetworkActorService> for MockNetworkServiceFactory {
         let head_block_info = storage
             .get_block_info(head_block_hash)?
             .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-
-        let chain_info = ChainInfo::new(
-            config.net().chain_id(),
-            genesis_hash,
-            ChainStatus::new(head_block_header, head_block_info.total_difficulty),
-        );
+        let chain_status = ChainStatus::new(head_block_header, head_block_info.total_difficulty);
+        let chain_info =
+            ChainInfo::new(config.net().chain_id(), genesis_hash, chain_status.clone());
         let actor_service =
             NetworkActorService::new(config, chain_info, rpc, peer_message_handle.clone())?;
         let network_service = actor_service.network_service();
         let network_async_service = NetworkServiceRef::new(network_service, ctx.self_ref());
+        // set self sync status to synced for test.
+        let mut sync_status = SyncStatus::new(chain_status);
+        sync_status.sync_done();
+        ctx.notify(SyncStatusChangeEvent(sync_status));
+
         ctx.put_shared(network_async_service)?;
         ctx.put_shared(peer_message_handle)?;
         Ok(actor_service)

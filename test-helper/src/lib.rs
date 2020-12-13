@@ -12,7 +12,7 @@ pub mod txpool;
 
 pub use chain::gen_blockchain_for_test;
 pub use dummy_network_service::DummyNetworkService;
-pub use network::{build_network, build_network_pair};
+pub use network::{build_network, build_network_cluster, build_network_pair};
 pub use node::{run_node_by_config, run_test_node};
 pub use starcoin_executor::Account;
 pub use starcoin_genesis::{Genesis, GenesisOpt};
