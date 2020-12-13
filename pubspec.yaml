@@ -67,6 +67,8 @@ flutter:
     - assets/images/starcoin-balance.png
     - assets/images/starcoin-block-number.png
     - assets/images/starcoin-difficulty.png
+    - assets/images/starcoin-logo-fonts.png
+    - assets/images/starcoin-miner.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

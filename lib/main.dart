@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -18,32 +16,31 @@ void main() async {
 }
 
 class App extends StatelessWidget {
-
   final Store<AppState> store;
 
   App({this.store});
 
   @override
   Widget build(BuildContext context) {
-        return  StoreProvider(
-            store: store,
-            child: new StoreBuilder<AppState>(builder: (context, store) {
-              bool needLoadingVisible = store.state.loadingVisible;
-              return Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Opacity(
-                    opacity: needLoadingVisible ? 1.0 : 0.0,
-                    child: _buildGlobalLoading(context),
-                  ),
-                  new MaterialApp(
-                    theme: store.state.theme.themeData,
-                    routes: _buildRoutes(),
-                    home: new MainPage(),
-                  ),
-                ],
-              );
-            }));
+    return StoreProvider(
+        store: store,
+        child: new StoreBuilder<AppState>(builder: (context, store) {
+          bool needLoadingVisible = store.state.loadingVisible;
+          return Stack(
+            alignment: Alignment.center,
+            children: <Widget>[
+              Opacity(
+                opacity: needLoadingVisible ? 1.0 : 0.0,
+                child: _buildGlobalLoading(context),
+              ),
+              new MaterialApp(
+                theme: store.state.theme.themeData,
+                routes: _buildRoutes(),
+                home: new MainPage(),
+              ),
+            ],
+          );
+        }));
   }
 
   Map<String, WidgetBuilder> _buildRoutes() {
