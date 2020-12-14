@@ -13,7 +13,6 @@ pub mod service_ref;
 pub mod worker;
 
 pub use network_api::messages::*;
-pub use service_ref::PeerMsgBroadcasterService;
 
 pub use helper::get_unix_ts;
 pub use service::NetworkActorService;

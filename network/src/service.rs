@@ -21,6 +21,7 @@ use starcoin_network_rpc::NetworkRpcService;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceHandler, ServiceRef, ServiceRequest,
 };
+use starcoin_txpool_api::PropagateNewTransactions;
 use starcoin_types::peer_info::{PeerId, PeerInfo, RpcInfo};
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::sync_status::SyncStatus;
@@ -71,6 +72,7 @@ impl NetworkActorService {
 impl ActorService for NetworkActorService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.subscribe::<SyncStatusChangeEvent>();
+        ctx.subscribe::<PropagateNewTransactions>();
         let worker = self
             .worker
             .take()
@@ -91,6 +93,7 @@ impl ActorService for NetworkActorService {
 
     fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
         ctx.unsubscribe::<SyncStatusChangeEvent>();
+        ctx.unsubscribe::<PropagateNewTransactions>();
         if let Some(abort_handle) = self.network_worker_handle.take() {
             abort_handle.abort();
         }
@@ -169,6 +172,26 @@ impl EventHandler<Self, NotificationMessage> for NetworkActorService {
 impl EventHandler<Self, PeerMessage> for NetworkActorService {
     fn handle_event(&mut self, msg: PeerMessage, _ctx: &mut ServiceContext<NetworkActorService>) {
         self.inner.send_peer_message(msg.peer_id, msg.notification);
+    }
+}
+
+// handle txn relayer
+impl EventHandler<Self, PropagateNewTransactions> for NetworkActorService {
+    fn handle_event(
+        &mut self,
+        msg: PropagateNewTransactions,
+        _ctx: &mut ServiceContext<NetworkActorService>,
+    ) {
+        let txns = msg.propagate_transaction();
+        debug_assert!(
+            !txns.is_empty(),
+            "broadcast PropagateNewTransactions is empty."
+        );
+        debug!("propagate new txns, len: {}", txns.len());
+        self.inner
+            .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
+                txns,
+            )));
     }
 }
 

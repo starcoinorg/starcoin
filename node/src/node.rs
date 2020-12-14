@@ -21,7 +21,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
-use starcoin_network::{NetworkActorService, PeerMsgBroadcasterService};
+use starcoin_network::NetworkActorService;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
@@ -231,8 +231,9 @@ impl NodeService {
         registry
             .register_by_factory::<NetworkActorService, NetworkServiceFactory>()
             .await?;
+        //wait Network service init
+        Delay::new(Duration::from_millis(200)).await;
 
-        registry.register::<PeerMsgBroadcasterService>().await?;
         registry.register::<TxnSyncService>().await?;
 
         let peer_id = config.network.self_peer_id()?;

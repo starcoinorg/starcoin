@@ -8,14 +8,11 @@ use anyhow::{format_err, Result};
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use network_api::messages::NotificationMessage;
-use network_api::{messages::TransactionsMessage, NetworkService, PeerProvider, ReputationChange};
+use network_api::{NetworkService, PeerProvider, ReputationChange};
 use network_p2p_types::network_state::NetworkState;
 use network_p2p_types::Multiaddr;
 use network_rpc_core::RawRpcClient;
-use starcoin_service_registry::{
-    ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceRef,
-};
-use starcoin_txpool_api::PropagateNewTransactions;
+use starcoin_service_registry::ServiceRef;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::peer_info::PeerInfo;
 use std::sync::Arc;
@@ -105,58 +102,5 @@ impl NetworkServiceRef {
 
     pub async fn get_address(&self, peer_id: PeerId) -> Vec<Multiaddr> {
         self.network_service.get_address(peer_id.into()).await
-    }
-}
-
-// TODO: figure out a better place for the actor.
-/// Used to manage broadcast new txn to other network peers.
-pub struct PeerMsgBroadcasterService {
-    network: NetworkServiceRef,
-}
-
-impl PeerMsgBroadcasterService {
-    pub fn new(network: NetworkServiceRef) -> Self {
-        Self { network }
-    }
-}
-
-impl ServiceFactory<Self> for PeerMsgBroadcasterService {
-    fn create(
-        ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
-    ) -> Result<PeerMsgBroadcasterService> {
-        let network = ctx.get_shared::<NetworkServiceRef>()?;
-        Ok(Self::new(network))
-    }
-}
-
-impl ActorService for PeerMsgBroadcasterService {
-    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.subscribe::<PropagateNewTransactions>();
-        Ok(())
-    }
-
-    fn stopped(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
-        ctx.unsubscribe::<PropagateNewTransactions>();
-        Ok(())
-    }
-}
-
-// handle txn relayer
-impl EventHandler<Self, PropagateNewTransactions> for PeerMsgBroadcasterService {
-    fn handle_event(
-        &mut self,
-        msg: PropagateNewTransactions,
-        _ctx: &mut ServiceContext<PeerMsgBroadcasterService>,
-    ) {
-        let txns = msg.propagate_transaction();
-        if txns.is_empty() {
-            error!("broadcast PropagateNewTransactions is empty.");
-            return;
-        }
-        debug!("propagate new txns, len: {}", txns.len());
-        self.network
-            .broadcast(NotificationMessage::Transactions(TransactionsMessage::new(
-                txns,
-            )));
     }
 }
