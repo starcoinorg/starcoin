@@ -30,6 +30,7 @@ executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-account-api = { path = "../../account/api" }
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="839ae2573a36810cd474b8095bdfb4eeb984d5d2" }
 
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}

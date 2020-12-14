@@ -19,8 +19,7 @@ use std::path::{Path, PathBuf};
 pub use move_lang::{
     compiled_unit::{verify_units, CompiledUnit},
     errors::*,
-    move_compile_and_report, move_compile,
-    MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+    move_compile, move_compile_and_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
 
 mod contract;
