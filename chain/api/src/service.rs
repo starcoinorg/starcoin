@@ -8,7 +8,6 @@ use starcoin_service_registry::{ActorService, ServiceHandler, ServiceRef};
 use starcoin_types::block::{BlockState, BlockSummary, EpochUncleSummary};
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::filter::Filter;
-use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::stress_test::TPS;
 use starcoin_types::transaction::{Transaction, TransactionInfo};
@@ -69,12 +68,6 @@ pub trait ReadableChainService {
 /// Writeable block chain service trait
 pub trait WriteableChainService: Send + Sync {
     fn try_connect(&mut self, block: Block) -> Result<()>;
-
-    fn try_connect_without_execute(
-        &mut self,
-        block: Block,
-        remote_peer_id_to_read_state: PeerId,
-    ) -> Result<()>;
 }
 
 #[async_trait::async_trait]

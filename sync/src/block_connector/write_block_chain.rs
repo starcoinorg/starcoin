@@ -7,15 +7,12 @@ use chain::BlockChain;
 use config::NodeConfig;
 use logger::prelude::*;
 use starcoin_crypto::HashValue;
-use starcoin_network_rpc_api::RemoteChainStateReader;
 use starcoin_service_registry::bus::{Bus, BusService};
 use starcoin_service_registry::ServiceRef;
-use starcoin_state_api::ChainStateReader;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
     block::{Block, BlockDetail, BlockHeader},
-    peer_info::PeerId,
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
@@ -35,7 +32,6 @@ where
     storage: Arc<dyn Store>,
     txpool: P,
     bus: ServiceRef<BusService>,
-    remote_chain_state: Option<RemoteChainStateReader>,
 }
 
 impl<P> WriteableChainService for WriteBlockChainService<P>
@@ -43,16 +39,7 @@ where
     P: TxPoolSyncService + 'static,
 {
     fn try_connect(&mut self, block: Block) -> Result<()> {
-        self.connect_inner(block, true, None)
-    }
-
-    fn try_connect_without_execute(&mut self, block: Block, remote_peer_id: PeerId) -> Result<()> {
-        let remote_chain_state = self
-            .remote_chain_state
-            .clone()
-            .expect("Remote chain state reader must set")
-            .with(remote_peer_id, block.header.state_root);
-        self.connect_inner(block, false, Some(&remote_chain_state))
+        self.connect_inner(block)
     }
 }
 
@@ -66,7 +53,6 @@ where
         storage: Arc<dyn Store>,
         txpool: P,
         bus: ServiceRef<BusService>,
-        remote_chain_state: Option<RemoteChainStateReader>,
     ) -> Result<Self> {
         let net = config.net();
         let main = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
@@ -77,7 +63,6 @@ where
             storage,
             txpool,
             bus,
-            remote_chain_state,
         })
     }
 
@@ -296,12 +281,7 @@ where
         }
     }
 
-    fn connect_inner(
-        &mut self,
-        block: Block,
-        execute: bool,
-        remote_chain_state: Option<&dyn ChainStateReader>,
-    ) -> Result<()> {
+    fn connect_inner(&mut self, block: Block) -> Result<()> {
         let block_id = block.id();
         if self.main.current_header().id() == block_id {
             debug!("Repeat connect, current header is {} already.", block_id);
@@ -310,14 +290,7 @@ where
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.block_exist(block_id)
         {
-            let connected = if execute {
-                self.main.apply(block.clone())
-            } else {
-                self.main.apply_without_execute(
-                    block.clone(),
-                    remote_chain_state.expect("remote chain state not set"),
-                )
-            };
+            let connected = self.main.apply(block.clone());
             if connected.is_err() {
                 debug!("connected failed {:?}", block_id);
                 WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
@@ -349,14 +322,7 @@ where
                     .exe_block_time
                     .with_label_values(&["time"])
                     .start_timer();
-                let connected = if execute {
-                    branch.apply(block)
-                } else {
-                    branch.apply_without_execute(
-                        block,
-                        remote_chain_state.expect("remote chain state not set"),
-                    )
-                };
+                let connected = branch.apply(block);
                 timer.observe_duration();
                 if connected.is_err() {
                     debug!("connected failed {:?}", block_id);
@@ -366,7 +332,7 @@ where
                 }
                 connected
             }
-            (_, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
+            (false, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }
     }
 }

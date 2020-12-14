@@ -37,7 +37,6 @@ pub async fn create_writeable_block_chain() -> (
             storage.clone(),
             txpool_service,
             bus,
-            None,
         )
         .unwrap(),
         node_config,

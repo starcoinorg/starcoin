@@ -42,14 +42,14 @@ impl ConfigModule for SyncConfig {
         if let Some(sync_mode) = opt.sync_mode {
             self.sync_mode = sync_mode;
         }
-        if self.sync_mode == SyncMode::LIGHT {
+        if self.sync_mode == SyncMode::LIGHT || self.sync_mode == SyncMode::FAST {
             bail!("{} is not supported yet.", self.sync_mode);
         }
         info!("sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
         Ok(())
     }
 }
-
+//TODO remove SyncMode.
 #[allow(non_camel_case_types)]
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(tag = "type")]

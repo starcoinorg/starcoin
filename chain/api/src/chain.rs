@@ -57,13 +57,6 @@ pub trait ChainWriter {
     /// execute and insert block to current chain.
     fn apply(&mut self, block: Block) -> Result<()>;
 
-    /// insert block to current chain.
-    fn apply_without_execute(
-        &mut self,
-        block: Block,
-        remote_state_chain: &dyn ChainStateReader,
-    ) -> Result<()>;
-
     fn chain_state(&mut self) -> &dyn ChainState;
 }
 
