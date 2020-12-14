@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter_redux/flutter_redux.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:starcoin_node/pages/main_page.dart';
 import 'package:starcoin_node/style/themes.dart';
 
@@ -10,15 +11,22 @@ import 'pages/routes/page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  final sharedPrefs = await SharedPreferences.getInstance();
+  final userName = sharedPrefs.getString("user_name");
+
   Store<AppState> store = new Store(appReducer,
       initialState: new AppState(theme: kLightTheme, loadingVisible: false));
-  runApp(new App(store: store));
+  runApp(new App(
+    store: store,
+    userName: userName,
+  ));
 }
 
 class App extends StatelessWidget {
   final Store<AppState> store;
+  String userName;
 
-  App({this.store});
+  App({this.store, this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +44,7 @@ class App extends StatelessWidget {
               new MaterialApp(
                 theme: store.state.theme.themeData,
                 routes: _buildRoutes(),
-                home: new MainPage(),
+                home: new MainPage(userName),
               ),
             ],
           );
