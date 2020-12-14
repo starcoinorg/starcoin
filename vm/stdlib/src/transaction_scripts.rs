@@ -1,8 +1,8 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Rust representation of a Move transaction script that can be executed on the Libra blockchain.
-//! Libra does not allow arbitrary transaction scripts; only scripts whose hashes are present in
+//! Rust representation of a Move transaction script that can be executed on the Diem blockchain.
+//! Diem does not allow arbitrary transaction scripts; only scripts whose hashes are present in
 //! the on-chain script whitelist. The genesis whitelist is derived from this file, and the
 //! `Stdlib` script enum will be modified to reflect changes in the on-chain whitelist as time goes
 //! on.
@@ -120,7 +120,7 @@ impl VersionedStdlibScript {
             .is_ok()
     }
 }
-/// All of the Move transaction scripts that can be executed on the Libra blockchain
+/// All of the Move transaction scripts that can be executed on the Diem blockchain
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum StdlibScript {
     AcceptToken,

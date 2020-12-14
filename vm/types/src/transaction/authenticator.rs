@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
@@ -21,9 +21,9 @@ use std::{convert::TryFrom, fmt, str::FromStr};
 /// (1) How to check its signature against a message and public key
 /// (2) How to convert its public key into an `AuthenticationKeyPreimage` structured as
 /// (public_key | signaure_scheme_id).
-/// Each on-chain `LibraAccount` must store an `AuthenticationKey` (computed via a sha3 hash of an
+/// Each on-chain `DiemAccount` must store an `AuthenticationKey` (computed via a sha3 hash of an
 /// `AuthenticationKeyPreimage`).
-/// Each transaction submitted to the Libra blockchain contains a `TransactionAuthenticator`. During
+/// Each transaction submitted to the Diem blockchain contains a `TransactionAuthenticator`. During
 /// transaction execution, the executor will check if the `TransactionAuthenticator`'s signature on
 /// the transaction hash is well-formed (1) and whether the sha3 hash of the
 /// `TransactionAuthenticator`'s `AuthenticationKeyPreimage` matches the `AuthenticationKey` stored

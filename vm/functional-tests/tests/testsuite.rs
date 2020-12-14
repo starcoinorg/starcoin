@@ -1,10 +1,10 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::{bail, Result};
 use starcoin_functional_tests::compiler::{Compiler, ScriptOrModule};
 use starcoin_functional_tests::testsuite;
 use starcoin_move_compiler::{
-    compiled_unit::CompiledUnit, move_compile_no_report, shared::Address, test_utils::read_bool_var,
+    compiled_unit::CompiledUnit, move_compile, shared::Address, test_utils::read_bool_var,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use std::{convert::TryFrom, fmt, io::Write, path::Path};
@@ -53,7 +53,7 @@ impl Compiler for MoveSourceCompiler {
 
         let targets = &vec![cur_path.clone()];
         let sender = Some(sender_addr);
-        let (files, units_or_errors) = move_compile_no_report(targets, &self.deps, sender, None)?;
+        let (files, units_or_errors) = move_compile(targets, &self.deps, sender, None)?;
         let unit = match units_or_errors {
             Err(errors) => {
                 let error_buffer = if read_bool_var(testsuite::PRETTY) {

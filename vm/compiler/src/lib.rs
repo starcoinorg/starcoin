@@ -19,8 +19,8 @@ use std::path::{Path, PathBuf};
 pub use move_lang::{
     compiled_unit::{verify_units, CompiledUnit},
     errors::*,
-    move_check, move_check_no_report, move_compile, move_compile_no_report,
-    move_compile_to_expansion_no_report, MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
+    move_compile_and_report, move_compile,
+    MOVE_COMPILED_EXTENSION, MOVE_EXTENSION,
 };
 
 mod contract;
@@ -52,7 +52,7 @@ pub mod shared {
 }
 
 pub mod test_utils {
-    pub use move_lang::test_utils::*;
+    pub use move_lang_test_utils::*;
 }
 
 /// Substitutes the placeholders variables.
@@ -133,7 +133,7 @@ pub fn compile_source_string_no_report(
         .to_str()
         .expect("temp file path must is str.")
         .to_string()];
-    move_compile_no_report(&targets, deps, Some(sender), None).map(|(f, u)| {
+    move_compile(&targets, deps, Some(sender), None).map(|(f, u)| {
         let compiled_result = u.map(|mut us| us.pop().expect("At least one compiled_unit"));
         (f, compiled_result)
     })

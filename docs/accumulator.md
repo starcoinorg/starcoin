@@ -25,7 +25,7 @@ As the figure shows above, the value of the merkle root has changed after a new 
 It’s worth noting that because of the irreversible nature of blockchain the left side of the transaction accumulator is deemed to be finalized (h1, h2, and the parent). The value of these 3 nodes won’t be changed again in the event of new leaves being added so they could be saved to the disk.
 When a node has all its descendants being non-placeholder — it becomes “Frozen”.
 
-For writing to disk, Libra nodes write all the children of a node before the parent by their post-order position. In this way, the physical representation of the tree is append-only. Once written to physical storage, nodes won’t be either modified or deleted. Here, nodes with post-order position 1 to 3 are now frozen in the disk and the next node that will be written to the disk must be with position 4.
+For writing to disk, Diem nodes write all the children of a node before the parent by their post-order position. In this way, the physical representation of the tree is append-only. Once written to physical storage, nodes won’t be either modified or deleted. Here, nodes with post-order position 1 to 3 are now frozen in the disk and the next node that will be written to the disk must be with position 4.
 Now, another new transaction h4 arrives.
 ![image-3](images/accumulator3.png)
 The placeholder was replaced by h4 and the merkle root has changed again. Also, the whole tree is now considered as frozen and the rest of the tree can be written to the disk in the order of post-order position

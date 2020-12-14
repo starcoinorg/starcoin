@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! # Code generator for Move script builders
@@ -41,9 +41,9 @@ struct Options {
     #[structopt(long)]
     target_source_dir: Option<PathBuf>,
 
-    /// Also install the libra types described by the given YAML file, along with the LCS runtime.
+    /// Also install the diem types described by the given YAML file, along with the LCS runtime.
     #[structopt(long)]
-    with_libra_types: Option<PathBuf>,
+    with_diem_types: Option<PathBuf>,
 
     /// Module name for the transaction builders installed in the `target_source_dir`.
     /// Rust crates may contain a version number, e.g. "test:1.2.0".
@@ -55,14 +55,14 @@ struct Options {
     #[structopt(long)]
     serde_package_name: Option<String>,
 
-    /// Optional version number for the `libra_types` module (useful in Rust).
-    /// If `--with-libra-types` is passed, this will be the version of the generated `libra_types` module.
+    /// Optional version number for the `diem_types` module (useful in Rust).
+    /// If `--with-diem-types` is passed, this will be the version of the generated `diem_types` module.
     #[structopt(long, default_value = "0.1.0")]
-    libra_version_number: String,
+    diem_version_number: String,
 
-    /// Optional package name where to find the `libra_types` module (useful in Python).
+    /// Optional package name where to find the `diem_types` module (useful in Python).
     #[structopt(long)]
-    libra_package_name: Option<String>,
+    diem_package_name: Option<String>,
 }
 
 fn main() {
@@ -108,8 +108,8 @@ fn main() {
         Some(dir) => dir,
     };
 
-    // Libra types
-    if let Some(registry_file) = options.with_libra_types {
+    // Diem types
+    if let Some(registry_file) = options.with_diem_types {
         let installer: Box<dyn serdegen::SourceInstaller<Error = Box<dyn std::error::Error>>> =
             match options.language {
                 Language::Python3 => Box::new(serdegen::python3::Installer::new(
@@ -134,10 +134,10 @@ fn main() {
         let registry = serde_yaml::from_str::<Registry>(content.as_str()).unwrap();
         let name = match options.language {
             Language::Rust => {
-                if options.libra_version_number == "0.1.0" {
+                if options.diem_version_number == "0.1.0" {
                     "starcoin-types".to_string()
                 } else {
-                    format!("starcoin-types:{}", options.libra_version_number)
+                    format!("starcoin-types:{}", options.diem_version_number)
                 }
             }
             Language::Java => "org.starcoin.types".to_string(),
@@ -154,11 +154,11 @@ fn main() {
             Language::Python3 => Box::new(buildgen::python3::Installer::new(
                 install_dir,
                 options.serde_package_name,
-                options.libra_package_name,
+                options.diem_package_name,
             )),
             Language::Rust => Box::new(buildgen::rust::Installer::new(
                 install_dir,
-                options.libra_version_number,
+                options.diem_version_number,
             )),
             Language::Cpp => Box::new(buildgen::cpp::Installer::new(install_dir)),
             Language::Java => Box::new(buildgen::java::Installer::new(install_dir)),
