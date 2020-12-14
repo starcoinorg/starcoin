@@ -70,7 +70,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     if (!startRequest) {
       onclick = () async {
         process = await Process.start(
-            '/Users/fanngyuan/Documents/workspace/starcoin/target/debug/starcoin',
+            'starcoin/starcoin',
             [
               "-n",
               "dev",
@@ -332,15 +332,15 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   }
 
   takescrshot() async {
-    RenderRepaintBoundary boundary =
-        previewContainer.currentContext.findRenderObject();
-    var image = await boundary.toImage();
-    var byteData = await image.toByteData(format: ImageByteFormat.png);
-    var pngBytes = byteData.buffer.asUint8List();
-    String fileName = DateTime.now().toIso8601String();
-    var path =
-        '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    final file = File(path);
-    await file.writeAsBytes(pngBytes);
+    // RenderRepaintBoundary boundary =
+    //     previewContainer.currentContext.findRenderObject();
+    // var image = await boundary.toImage();
+    // var byteData = await image.toByteData(format: ImageByteFormat.png);
+    // var pngBytes = byteData.buffer.asUint8List();
+    // String fileName = DateTime.now().toIso8601String();
+    // var path =
+    //     '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
+    // final file = File(path);
+    // await file.writeAsBytes(pngBytes);
   }
 }

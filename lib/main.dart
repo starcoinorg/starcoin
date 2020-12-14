@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,6 +13,10 @@ import 'pages/routes/page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  Directory appDocDir = await getApplicationSupportDirectory();
+  String appDocPath = appDocDir.path;
+  print(appDocPath);
 
   final sharedPrefs = await SharedPreferences.getInstance();
   final userName = sharedPrefs.getString("user_name");

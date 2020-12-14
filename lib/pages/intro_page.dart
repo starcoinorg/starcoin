@@ -40,7 +40,6 @@ class IntroPage extends StatelessWidget {
                             await SharedPreferences.getInstance();
                         final name = nameController.text;
                         await sharedPrefs.setString("user_name", name);
-                        Navigator.pushNamed(context, NodePage.routeName);
                         Navigator.of(context)
                             .push(new MaterialPageRoute(builder: (_) {
                           return new NodePage(name);
