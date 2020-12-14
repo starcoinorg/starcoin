@@ -33,6 +33,7 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use starcoin_chain::verifier::NoneVerifier;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID};
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -258,8 +259,12 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
-        let mut genesis_chain = BlockChain::init_empty_chain(net.time_service(), storage.clone());
-        genesis_chain.apply(self.block.clone())?;
+        let mut genesis_chain = BlockChain::init_empty_chain(
+            net.time_service(),
+            net.genesis_config().genesis_epoch(),
+            storage.clone(),
+        );
+        genesis_chain.apply_with_verifier::<NoneVerifier>(self.block.clone())?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)

@@ -12,7 +12,8 @@ use starcoin_vm_types::on_chain_resource::EpochInfo;
 use std::convert::TryInto;
 
 /// Get the target of next pow work
-pub fn get_next_work_required(chain: &dyn ChainReader, epoch: &EpochInfo) -> Result<U256> {
+pub fn get_next_work_required(chain: &dyn ChainReader) -> Result<U256> {
+    let epoch = chain.epoch();
     let current_header = chain.current_header();
     if current_header.number <= 1 {
         return Ok(difficult_to_target(current_header.difficulty));

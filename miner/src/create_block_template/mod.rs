@@ -255,9 +255,9 @@ impl Inner {
             txns.len()
         );
 
-        let epoch = self.chain.epoch_info()?;
-        let strategy = epoch.epoch().strategy();
-        let difficulty = strategy.calculate_next_difficulty(&self.chain, &epoch)?;
+        let epoch = self.chain.epoch();
+        let strategy = epoch.strategy();
+        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),

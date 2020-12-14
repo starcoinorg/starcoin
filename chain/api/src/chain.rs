@@ -4,15 +4,20 @@
 use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_state_api::{ChainState, ChainStateReader};
+use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::stress_test::TPS;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockInfo, BlockNumber},
     transaction::{Transaction, TransactionInfo},
     U256,
 };
-use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::on_chain_resource::{Epoch, EpochInfo, GlobalTimeOnChain};
+use starcoin_vm_types::time::TimeService;
+use std::collections::HashSet;
 
 pub trait ChainReader {
+    fn info(&self) -> ChainInfo;
+    fn status(&self) -> ChainStatus;
     fn head_block(&self) -> Block;
     fn current_header(&self) -> BlockHeader;
     fn get_header(&self, hash: HashValue) -> Result<Option<BlockHeader>>;
@@ -34,6 +39,7 @@ pub trait ChainReader {
     fn get_total_difficulty(&self) -> Result<U256>;
     fn exist_block(&self, block_id: HashValue) -> bool;
     fn epoch_info(&self) -> Result<EpochInfo>;
+    fn epoch(&self) -> &Epoch;
     fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo>;
     fn get_global_time_by_number(&self, number: BlockNumber) -> Result<GlobalTimeOnChain>;
     /// Get block id vec by BlockNumber, `start_number`'s block id is include.
@@ -51,6 +57,14 @@ pub trait ChainReader {
     ) -> Result<u64>;
     /// Get tps for an epoch. The epoch includes the block given by `number`. If `number` is absent, return tps for the latest epoch
     fn tps(&self, number: Option<BlockNumber>) -> Result<TPS>;
+    fn time_service(&self) -> &dyn TimeService;
+    fn fork(&self, block_id: HashValue) -> Result<Self>
+    where
+        Self: Sized;
+    fn epoch_uncles(&self) -> &HashSet<HashValue>;
+    fn can_be_uncle(&self, header: &BlockHeader) -> bool;
+    /// Verify block base current chain
+    fn verify(&self, block: &Block) -> Result<()>;
 }
 
 pub trait ChainWriter {

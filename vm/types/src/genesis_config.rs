@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::account_config::genesis_address;
+use crate::event::{EventHandle, EventKey};
 use crate::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
 };
@@ -8,6 +10,7 @@ use crate::on_chain_config::DaoConfig;
 use crate::on_chain_config::{
     ConsensusConfig, VMConfig, VMPublishingOption, Version, INITIAL_GAS_SCHEDULE,
 };
+use crate::on_chain_resource::Epoch;
 use crate::time::{TimeService, TimeServiceType};
 use crate::token::stc::STCUnit;
 use crate::token::token_value::TokenValue;
@@ -748,6 +751,24 @@ impl GenesisConfig {
     pub fn consensus(&self) -> ConsensusStrategy {
         ConsensusStrategy::try_from(self.consensus_config.strategy)
             .expect("consensus strategy config error.")
+    }
+
+    pub fn genesis_epoch(&self) -> Epoch {
+        Epoch::new(
+            0,
+            self.timestamp,
+            0,
+            self.consensus_config.epoch_block_count,
+            self.consensus_config.base_block_time_target,
+            self.consensus_config.base_reward_per_block,
+            self.consensus_config.base_reward_per_uncle_percent,
+            self.consensus_config.base_block_difficulty_window,
+            self.consensus_config.base_max_uncles_per_block,
+            self.consensus_config.base_block_gas_limit,
+            self.consensus_config.strategy,
+            //TODO conform new Epoch events salt value.
+            EventHandle::new_from_address(&genesis_address(), 0),
+        )
     }
 }
 
