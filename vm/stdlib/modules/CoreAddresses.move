@@ -30,7 +30,7 @@ module CoreAddresses {
         include AbortsIfNotGenesisAddress;
     }
 
-    /// Specifies that a function aborts if the account does not have the Libra root address.
+    /// Specifies that a function aborts if the account does not have the Diem root address.
     spec schema AbortsIfNotGenesisAddress {
         account: signer;
         aborts_if Signer::spec_address_of(account) != SPEC_GENESIS_ADDRESS();

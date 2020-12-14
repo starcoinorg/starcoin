@@ -6,7 +6,7 @@
 //! SCS defines a deterministic means for translating a message or data structure into bytes
 //! irrespective of platform, architecture, or programming language.
 
-// Just a wrap to Libra Canonical Serialization (LCS) currently.
+// Just a wrap to Diem Canonical Serialization (LCS) currently.
 use anyhow::Result;
 pub use lcs::MAX_SEQUENCE_LENGTH;
 use serde::{Deserialize, Serialize};

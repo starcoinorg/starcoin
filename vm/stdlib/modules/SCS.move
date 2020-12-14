@@ -1,4 +1,4 @@
-// Utility for converting a Move value to its binary representation in SCS (Libra Canonical
+// Utility for converting a Move value to its binary representation in SCS (Diem Canonical
 // Serialization). SCS is the binary encoding for Move resources and other non-module values
 // published on-chain.
 

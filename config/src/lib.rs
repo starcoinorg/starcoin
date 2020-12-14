@@ -43,7 +43,7 @@ pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
-pub use libra_temppath::TempPath;
+pub use diem_temppath::TempPath;
 pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};

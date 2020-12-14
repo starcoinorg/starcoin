@@ -1,7 +1,7 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! Test infrastructure for modeling Libra accounts.
+//! Test infrastructure for modeling Diem accounts.
 
 use crate::{create_signed_txn_with_association_account, DEFAULT_MAX_GAS_AMOUNT};
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey};
@@ -39,10 +39,10 @@ use stdlib::transaction_scripts::StdlibScript;
 // TTL is 86400s. Initial time was set to 0.
 pub const DEFAULT_EXPIRATION_TIME: u64 = 40_000;
 
-/// Details about a Libra account.
+/// Details about a Diem account.
 ///
 /// Tests will typically create a set of `Account` instances to run transactions on. This type
-/// encodes the logic to operate on and verify operations on any Libra account.
+/// encodes the logic to operate on and verify operations on any Diem account.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Account {
     addr: AccountAddress,
@@ -53,7 +53,7 @@ impl Account {
     /// Creates a new account in memory.
     ///
     /// The account returned by this constructor is a purely logical entity, meaning that it does
-    /// not automatically get added to the Libra store. To add an account to the store, use
+    /// not automatically get added to the Diem store. To add an account to the store, use
     /// [`AccountData`] instances with
     /// [`FakeExecutor::add_account_data`][crate::executor::FakeExecutor::add_account_data].
     /// This function returns distinct values upon every call.

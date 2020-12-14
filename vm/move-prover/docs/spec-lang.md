@@ -608,7 +608,7 @@ spec module {
 
 Notice that the mechanism we described for [module level invariants](#invariant-condition-on-modules) cannot provide
 this semantics. It only applies to public function, and does not allow to exclude special functions, like
-`initialize` which is a private function used in a special way in Libra genesis. Module invariants can also
+`initialize` which is a private function used in a special way in Diem genesis. Module invariants can also
 not deal with generic functions, which `apply` can.
 
 > The `apply` operator need to be handled with care, because it is easy to get something wrong

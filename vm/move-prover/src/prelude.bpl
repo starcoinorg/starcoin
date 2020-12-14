@@ -1293,7 +1293,7 @@ function {:inline} $Hash_$sha3_256(val: $Value): $Value {
 }
 
 // ==================================================================================
-// Native libra_account
+// Native diem_account
 
 procedure {:inline 1} $Account_create_signer(
   addr: $Value

@@ -3,7 +3,7 @@
 
 use crate::multi_ed25519::multi_shard::MultiEd25519KeyShard;
 use crate::test_utils::TEST_SEED;
-pub use libra_crypto::multi_ed25519::*;
+pub use diem_crypto::multi_ed25519::*;
 use rand::SeedableRng;
 
 pub mod multi_shard;

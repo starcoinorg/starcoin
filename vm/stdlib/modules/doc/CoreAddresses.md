@@ -203,7 +203,7 @@ Specification version of <code><a href="CoreAddresses.md#0x1_CoreAddresses_VM_RE
 </code></pre>
 
 
-Specifies that a function aborts if the account does not have the Libra root address.
+Specifies that a function aborts if the account does not have the Diem root address.
 
 
 <a name="0x1_CoreAddresses_AbortsIfNotGenesisAddress"></a>

@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -11,50 +11,50 @@ use std::path::Path;
 use structopt::StructOpt;
 
 pub mod bench {
-    pub use libra_x::bench::*;
+    pub use diem_x::bench::*;
 }
 
 pub mod check {
-    pub use libra_x::check::*;
+    pub use diem_x::check::*;
 }
 pub mod clippy {
-    pub use libra_x::clippy::*;
+    pub use diem_x::clippy::*;
 }
 pub mod config {
-    pub use libra_x::config::*;
+    pub use diem_x::config::*;
 }
 pub mod context {
-    pub use libra_x::context::*;
+    pub use diem_x::context::*;
 }
 pub mod diff_summary {
-    pub use libra_x::diff_summary::*;
+    pub use diem_x::diff_summary::*;
 }
 pub mod fix {
-    pub use libra_x::fix::*;
+    pub use diem_x::fix::*;
 }
 pub mod fmt {
-    pub use libra_x::fmt::*;
+    pub use diem_x::fmt::*;
 }
 pub mod generate_summaries {
-    pub use libra_x::generate_summaries::*;
+    pub use diem_x::generate_summaries::*;
 }
 pub mod installer {
-    pub use libra_x::installer::*;
+    pub use diem_x::installer::*;
 }
 
 pub mod lint {
-    pub use libra_x::lint::*;
+    pub use diem_x::lint::*;
 }
 pub mod test;
 
 pub mod cargo;
 
 pub mod tools {
-    pub use libra_x::tools::*;
+    pub use diem_x::tools::*;
 }
 
 pub mod utils {
-    pub use libra_x::utils::*;
+    pub use diem_x::utils::*;
 }
 
 pub fn project_root() -> &'static Path {

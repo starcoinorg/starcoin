@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::STC_TOKEN_CODE_STR;
@@ -617,7 +617,7 @@ impl TransactionInfo {
     }
 }
 
-/// `Transaction` will be the transaction type used internally in the libra node to represent the
+/// `Transaction` will be the transaction type used internally in the diem node to represent the
 /// transaction to be processed and persisted.
 ///
 /// We suppress the clippy warning here as we would expect most of the transaction to be user
