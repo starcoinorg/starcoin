@@ -1,11 +1,11 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use move_lang::command_line::read_bool_env_var;
 use starcoin_config::temp_path;
 use starcoin_move_compiler::test_utils::error;
 use starcoin_move_compiler::{
-    compiled_unit::verify_units, errors::report_errors_to_buffer, move_compile,
-    shared::Address, test_utils::*,
+    compiled_unit::verify_units, errors::report_errors_to_buffer, move_compile, shared::Address,
 };
 use std::{fs, path::Path};
 
@@ -57,7 +57,7 @@ fn sanity_check_testsuite_impl(
         vec![]
     };
 
-    let save_errors = read_bool_var(KEEP_TMP);
+    let save_errors = read_bool_env_var(KEEP_TMP);
 
     fs::write(out_path.clone(), error_buffer)?;
     let rendered_errors = fs::read_to_string(out_path.clone())?;

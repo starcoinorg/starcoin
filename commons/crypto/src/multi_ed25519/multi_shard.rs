@@ -404,8 +404,7 @@ mod tests {
         MultiEd25519KeyShard::generate(&mut rng, n, threshold).unwrap()
     }
 
-    static MESSAGE: Lazy<TestDiemCrypto> =
-        Lazy::new(|| TestDiemCrypto("Test Message".to_string()));
+    static MESSAGE: Lazy<TestDiemCrypto> = Lazy::new(|| TestDiemCrypto("Test Message".to_string()));
     fn message() -> &'static TestDiemCrypto {
         &MESSAGE
     }
