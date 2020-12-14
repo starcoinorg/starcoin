@@ -23,7 +23,7 @@ module TestMarketCapGeneric {
         }
     }
 
-    // A resource representing the Libra coin
+    // A resource representing the Diem coin
     resource struct T<X> {
         // The value of the coin. May be zero
         value: u64,

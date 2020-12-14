@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -9,7 +9,7 @@ use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 pub use starcoin_config::StdlibVersion;
 use starcoin_crypto::HashValue;
-use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile, shared::Address};
+use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile_and_report, shared::Address};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::BuiltinNetworkID;
@@ -203,7 +203,7 @@ pub fn init_script_files() -> Vec<String> {
 
 pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
     let (_, compiled_units) =
-        move_compile(&stdlib_files(), &[], Some(Address::LIBRA_CORE), None).unwrap();
+        move_compile_and_report(&stdlib_files(), &[], Some(Address::DIEM_CORE), None).unwrap();
     let mut modules = BTreeMap::new();
     for (i, compiled_unit) in compiled_units.into_iter().enumerate() {
         let name = compiled_unit.name();
@@ -223,10 +223,10 @@ pub fn build_stdlib() -> BTreeMap<String, CompiledModule> {
 }
 
 pub fn compile_script(source_file_str: String) -> Vec<u8> {
-    let (_, mut compiled_program) = move_compile(
+    let (_, mut compiled_program) = move_compile_and_report(
         &[source_file_str],
         &stdlib_files(),
-        Some(Address::LIBRA_CORE),
+        Some(Address::DIEM_CORE),
         None,
     )
     .unwrap();

@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::common::type_not_allowed;
@@ -23,9 +23,9 @@ fn output_with_optional_packages(
     out: &mut dyn Write,
     abis: &[ScriptABI],
     serde_package_name: Option<String>,
-    libra_package_name: Option<String>,
+    diem_package_name: Option<String>,
 ) -> Result<()> {
-    output_preamble(out, serde_package_name, libra_package_name)?;
+    output_preamble(out, serde_package_name, diem_package_name)?;
     for abi in abis {
         output_builder(out, abi)?;
     }
@@ -49,7 +49,7 @@ fn quote_from_package_and_module(package_name: Option<String>, module_name: &str
 fn output_preamble(
     out: &mut dyn Write,
     serde_package_name: Option<String>,
-    libra_package_name: Option<String>,
+    diem_package_name: Option<String>,
 ) -> Result<()> {
     writeln!(
         out,
@@ -58,7 +58,7 @@ fn output_preamble(
 {}import Script, TypeTag, AccountAddress, TransactionArgument__Bool, TransactionArgument__U8, TransactionArgument__U64, TransactionArgument__U128, TransactionArgument__Address, TransactionArgument__U8Vector
 "#,
         quote_from_package(serde_package_name),
-        quote_from_package_and_module(libra_package_name, "starcoin_types"),
+        quote_from_package_and_module(diem_package_name, "starcoin_types"),
     )
 }
 
@@ -180,19 +180,19 @@ fn make_transaction_argument(type_tag: &TypeTag, name: &str) -> String {
 pub struct Installer {
     install_dir: PathBuf,
     serde_package_name: Option<String>,
-    libra_package_name: Option<String>,
+    diem_package_name: Option<String>,
 }
 
 impl Installer {
     pub fn new(
         install_dir: PathBuf,
         serde_package_name: Option<String>,
-        libra_package_name: Option<String>,
+        diem_package_name: Option<String>,
     ) -> Self {
         Installer {
             install_dir,
             serde_package_name,
-            libra_package_name,
+            diem_package_name,
         }
     }
 
@@ -216,7 +216,7 @@ impl crate::SourceInstaller for Installer {
             &mut file,
             abis,
             self.serde_package_name.clone(),
-            self.libra_package_name.clone(),
+            self.diem_package_name.clone(),
         )?;
         Ok(())
     }

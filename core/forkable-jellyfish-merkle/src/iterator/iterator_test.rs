@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// // Copyright (c) The Libra Core Contributors
+// // Copyright (c) The Diem Core Contributors
 // // SPDX-License-Identifier: Apache-2.0
 //
 // use crate::{
@@ -9,8 +9,8 @@
 //     JellyfishMerkleTree,
 // };
 // use anyhow::Result;
-// use libra_crypto::HashValue;
-// use libra_types::{account_state_blob::AccountStateBlob, transaction::Version};
+// use diem_crypto::HashValue;
+// use diem_types::{account_state_blob::AccountStateBlob, transaction::Version};
 // use rand::{rngs::StdRng, SeedableRng};
 // use std::{collections::BTreeMap, sync::Arc};
 //
