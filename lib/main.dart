@@ -14,10 +14,6 @@ import 'pages/routes/page.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Directory appDocDir = await getApplicationSupportDirectory();
-  String appDocPath = appDocDir.path;
-  print(appDocPath);
-
   final sharedPrefs = await SharedPreferences.getInstance();
   final userName = sharedPrefs.getString("user_name");
 
