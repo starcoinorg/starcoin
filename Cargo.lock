@@ -3214,9 +3214,9 @@ dependencies = [
 
 [[package]]
 name = "jsonrpc-derive"
-version = "15.1.0"
+version = "16.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99a847f9ec7bb52149b2786a17c9cb260d6effc6b8eeb8c16b343a487a7563a3"
+checksum = "f4b6a15924a4b7ae582079c5e78cc5d692ec8ebe5167e660ee1755509a59b551"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2 1.0.24",
