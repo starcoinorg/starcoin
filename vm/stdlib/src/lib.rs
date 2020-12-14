@@ -9,7 +9,9 @@ use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
 pub use starcoin_config::StdlibVersion;
 use starcoin_crypto::HashValue;
-use starcoin_move_compiler::{compiled_unit::CompiledUnit, move_compile_and_report, shared::Address};
+use starcoin_move_compiler::{
+    compiled_unit::CompiledUnit, move_compile_and_report, shared::Address,
+};
 use starcoin_vm_types::bytecode_verifier::{verify_module, DependencyChecker};
 use starcoin_vm_types::file_format::CompiledModule;
 use starcoin_vm_types::genesis_config::BuiltinNetworkID;

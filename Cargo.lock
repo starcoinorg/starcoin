@@ -7340,6 +7340,7 @@ dependencies = [
  "anyhow",
  "datatest-stable",
  "mirai-annotations",
+ "move-lang",
  "once_cell",
  "regex",
  "starcoin-account-api",
