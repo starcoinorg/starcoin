@@ -7,28 +7,14 @@ extern crate log;
 extern crate prometheus;
 
 pub mod helper;
-pub mod net;
-#[cfg(test)]
-mod net_test;
-pub mod network;
 mod network_metrics;
+mod service;
+pub mod service_ref;
+pub mod worker;
 
-pub use network::PeerMsgBroadcasterService;
 pub use network_api::messages::*;
 
 pub use helper::get_unix_ts;
-
-pub use net::{build_network_service, SNetworkService};
-pub use network::NetworkAsyncService;
-use network_p2p::PeerId;
-use std::borrow::Cow;
-
-#[cfg(test)]
-pub use net::NetworkInner;
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct NetworkMessage {
-    pub peer_id: PeerId,
-    pub protocol_name: Cow<'static, str>,
-    pub data: Vec<u8>,
-}
+pub use service::NetworkActorService;
+pub use service_ref::NetworkServiceRef;
+pub use worker::build_network_worker;

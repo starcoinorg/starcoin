@@ -8,7 +8,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::NetworkService;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithHash};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::BlockConnectorService;
@@ -124,16 +124,12 @@ impl BlockRelayer {
         Ok(block)
     }
 
-    fn block_into_compact(&self, block: Block) -> CompactBlock {
-        CompactBlock::new(&block, vec![])
-    }
-
     fn handle_block_event(
         &self,
         compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let rpc_client = NetworkRpcClient::new(network);
         let txpool = self.txpool.clone();
@@ -195,26 +191,22 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
             return;
         }
-        let network = match ctx.get_shared::<NetworkAsyncService>() {
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
             Err(e) => {
                 error!("Get network service error: {:?}", e);
                 return;
             }
         };
-        let compact_block = self.block_into_compact(event.0.get_block().clone());
+        let compact_block = event.0.get_block().clone().into();
         let total_difficulty = event.0.get_total_difficulty();
         let compact_block_msg = CompactBlockMessage {
             compact_block,
             total_difficulty,
         };
-        ctx.spawn(async move {
-            network
-                .broadcast(NotificationMessage::CompactBlock(Box::new(
-                    compact_block_msg,
-                )))
-                .await;
-        });
+        network.broadcast(NotificationMessage::CompactBlock(Box::new(
+            compact_block_msg,
+        )));
     }
 }
 

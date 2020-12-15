@@ -5,18 +5,18 @@ use crate::module::map_err;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use network_p2p_types::network_state::NetworkState;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::FutureResult;
 use starcoin_types::peer_info::{Multiaddr, PeerId};
 use std::str::FromStr;
 
 pub struct NetworkManagerRpcImpl {
-    service: NetworkAsyncService,
+    service: NetworkServiceRef,
 }
 
 impl NetworkManagerRpcImpl {
-    pub fn new(service: NetworkAsyncService) -> Self {
+    pub fn new(service: NetworkServiceRef) -> Self {
         Self { service }
     }
 }

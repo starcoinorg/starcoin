@@ -9,7 +9,7 @@ use starcoin_chain_service::ChainReaderService;
 use starcoin_config::{NodeConfig, StarcoinOpt};
 use starcoin_genesis::Genesis;
 use starcoin_logger::prelude::*;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::NodeRequest;
 use starcoin_node_api::node_service::NodeAsyncService;
@@ -26,6 +26,7 @@ use tokio::runtime::Runtime;
 
 pub mod crash_handler;
 mod metrics;
+pub mod network_service_factory;
 pub mod node;
 pub mod peer_message_handler;
 pub mod rpc_service_factory;
@@ -134,9 +135,9 @@ impl NodeHandle {
         block_on(async { self.registry.service_ref::<BusService>().await })
     }
 
-    pub fn network(&self) -> NetworkAsyncService {
+    pub fn network(&self) -> NetworkServiceRef {
         self.registry
-            .get_shared_sync::<NetworkAsyncService>()
+            .get_shared_sync::<NetworkServiceRef>()
             .expect("NetworkAsyncService must exist.")
     }
 

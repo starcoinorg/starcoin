@@ -3,7 +3,7 @@
 
 use crate::PeerId;
 use crate::PeerInfo;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use itertools::Itertools;
@@ -12,8 +12,6 @@ use rand::prelude::SliceRandom;
 use starcoin_types::block::BlockNumber;
 
 pub trait PeerProvider: Send + Sync {
-    fn identify(&self) -> PeerId;
-
     fn best_peer(&self) -> BoxFuture<Result<Option<PeerInfo>>> {
         self.peer_selector()
             .and_then(|selector| async move { Ok(selector.bests().random().cloned()) })
@@ -25,14 +23,7 @@ pub trait PeerProvider: Send + Sync {
 
     fn get_peer(&self, peer_id: PeerId) -> BoxFuture<Result<Option<PeerInfo>>>;
 
-    fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>> {
-        let peer_id = self.identify();
-        self.get_peer(peer_id)
-            .and_then(|result| async move {
-                result.ok_or_else(|| format_err!("Can not find peer by self id"))
-            })
-            .boxed()
-    }
+    fn get_self_peer(&self) -> BoxFuture<Result<PeerInfo>>;
 
     fn peer_selector(&self) -> BoxFuture<Result<PeerSelector>> {
         self.peer_set()

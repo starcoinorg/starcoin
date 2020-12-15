@@ -18,14 +18,14 @@ log = "0.4.11"
 hex = "0.4.2"
 bytes = "0.5.0"
 
-config = {path = "../config", package="starcoin-config"}
-types = {path = "../types", package="starcoin-types"}
+starcoin-config = {path = "../config"}
+starcoin-types = {path = "../types"}
 starcoin-txpool-api = {path = "../txpool/api"}
 network-p2p-types = {path = "../network-p2p/types"}
 network-p2p = {path = "../network-p2p"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-crypto = {path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 fnv = "1.0.6"

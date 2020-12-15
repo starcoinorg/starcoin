@@ -80,10 +80,11 @@ pub fn start_server(host: String, port: u16) {
             .enable_io()
             .build()
             .unwrap();
-        rt.block_on(async {
+        if let Err(e) = rt.block_on(async {
             let server = Server::bind(&addr).serve(make_service);
             server.await
-        })
-        .unwrap();
+        }) {
+            error!("Start metric server failed: {:?}", e);
+        }
     });
 }

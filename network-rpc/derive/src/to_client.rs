@@ -81,22 +81,12 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
         pub struct NetworkRpcClient
         {
             raw_client: Arc<dyn RawRpcClient + Send + Sync>,
-            timeout: Duration,
         }
 
         impl NetworkRpcClient {
             pub fn new<C>(raw_rpc_client: C) -> Self where C: RawRpcClient + Send + Sync +'static {
                 Self {
                     raw_client: Arc::new(raw_rpc_client),
-                    //TODO support custom timeout.
-                    timeout: Duration::from_secs(15),
-                }
-            }
-
-             pub fn new_with_timeout<C>(raw_rpc_client: C, timeout: Duration) -> Self where C: RawRpcClient + Send + Sync +'static {
-                Self {
-                    raw_client: Arc::new(raw_rpc_client),
-                    timeout,
                 }
             }
         }
@@ -108,7 +98,6 @@ pub fn generate_client_module(rpc_trait: &ItemTrait) -> anyhow::Result<TokenStre
                         peer_id,
                         path,
                         request,
-                        self.timeout,
                     )
                     .await
             }
