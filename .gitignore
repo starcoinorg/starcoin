@@ -74,3 +74,5 @@
 # auto generated files.
 .flutter-plugins-dependencies
 pubspec.lock
+
+starcoin
