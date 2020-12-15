@@ -17,8 +17,8 @@ serde-generate = {git="https://github.com/starcoinorg/serde-reflection" , rev="1
 serde-reflection = {git="https://github.com/starcoinorg/serde-reflection" , rev="128903725d0e057f1c8675b413995cf2e4bdf26d"}
 
 starcoin-vm-types = { path = "../types"}
-diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="839ae2573a36810cd474b8095bdfb4eeb984d5d2" }
-move-core-types = {git = "https://github.com/starcoinorg/diem", rev="839ae2573a36810cd474b8095bdfb4eeb984d5d2" }
+diem-workspace-hack = { git = "https://github.com/starcoinorg/diem", rev="5fb42e263241f5d3db5a3a53ca4eadd6f1bcdb78" }
+move-core-types = {git = "https://github.com/starcoinorg/diem", rev="5fb42e263241f5d3db5a3a53ca4eadd6f1bcdb78" }
 lcs = { version = "0.1.0", package = "libra-canonical-serialization" }
 
 [dev-dependencies]
