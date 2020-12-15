@@ -1,10 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::ReputationChange;
 use anyhow::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
-use starcoin_types::peer_info::PeerId;
+use starcoin_service_registry::ServiceRequest;
+use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
 use starcoin_types::{cmpact_block::CompactBlock, U256};
@@ -13,7 +15,7 @@ use std::borrow::Cow;
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
 pub const BLOCK_PROTOCOL_NAME: &str = "/starcoin/block/1";
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionsMessage {
     pub txns: Vec<SignedUserTransaction>,
 }
@@ -29,21 +31,31 @@ impl TransactionsMessage {
 }
 
 /// Message of sending or receive block notification to network
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
     pub total_difficulty: U256,
 }
 
-#[derive(Clone, Debug)]
+impl CompactBlockMessage {
+    pub fn new(compact_block: CompactBlock, total_difficulty: U256) -> Self {
+        Self {
+            compact_block,
+            total_difficulty,
+        }
+    }
+}
+
+/// Network notification protocol message, change this type, maybe break the network protocol compatibility.
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum NotificationMessage {
     Transactions(TransactionsMessage),
     CompactBlock(Box<CompactBlockMessage>),
 }
 
 impl NotificationMessage {
-    pub fn decode_notification(protocol_name: Cow<'static, str>, bytes: &[u8]) -> Result<Self> {
-        Ok(match protocol_name.as_ref() {
+    pub fn decode_notification(protocol_name: &str, bytes: &[u8]) -> Result<Self> {
+        Ok(match protocol_name {
             TXN_PROTOCOL_NAME => {
                 NotificationMessage::Transactions(TransactionsMessage::decode(bytes)?)
             }
@@ -92,7 +104,7 @@ impl NotificationMessage {
 }
 
 /// Message for send or receive from peer
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PeerMessage {
     pub peer_id: PeerId,
     pub notification: NotificationMessage,
@@ -129,6 +141,10 @@ impl PeerMessage {
             .into_compact_block()
             .map(|message| PeerCompactBlockMessage { peer_id, message })
     }
+}
+
+impl ServiceRequest for PeerMessage {
+    type Response = Result<()>;
 }
 
 /// Message for combine PeerId and TransactionsMessage
@@ -173,4 +189,34 @@ impl Into<PeerMessage> for PeerCompactBlockMessage {
 pub enum PeerEvent {
     Open(PeerId, Box<ChainInfo>),
     Close(PeerId),
+}
+
+/// Network service message
+#[derive(Clone, Debug)]
+pub struct ReportReputation {
+    pub peer_id: PeerId,
+    pub change: ReputationChange,
+}
+
+#[derive(Clone, Debug)]
+pub struct GetPeerSet;
+
+impl ServiceRequest for GetPeerSet {
+    type Response = Vec<PeerInfo>;
+}
+
+#[derive(Clone, Debug)]
+pub struct GetPeerById {
+    pub peer_id: PeerId,
+}
+
+impl ServiceRequest for GetPeerById {
+    type Response = Option<PeerInfo>;
+}
+
+#[derive(Clone, Debug)]
+pub struct GetSelfPeer;
+
+impl ServiceRequest for GetSelfPeer {
+    type Response = PeerInfo;
 }

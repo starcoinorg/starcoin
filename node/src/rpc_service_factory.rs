@@ -10,7 +10,7 @@ use starcoin_dev::playground::PlaygroudService;
 use starcoin_genesis::Genesis;
 use starcoin_logger::LoggerHandle;
 use starcoin_miner::MinerService;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_server::module::{
     AccountRpcImpl, ChainRpcImpl, DebugRpcImpl, DevRpcImpl, MinerRpcImpl, NetworkManagerRpcImpl,
     NodeManagerRpcImpl, NodeRpcImpl, PubSubImpl, PubSubService, StateRpcImpl, SyncManagerRpcImpl,
@@ -34,7 +34,7 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let bus = ctx.bus_ref().clone();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
-        let network_service = ctx.get_shared::<NetworkAsyncService>()?;
+        let network_service = ctx.get_shared::<NetworkServiceRef>()?;
         let node_api = NodeRpcImpl::new(config.clone(), Some(network_service.clone()));
         let node_manager_api = ctx
             .service_ref_opt::<NodeService>()?

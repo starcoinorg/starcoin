@@ -1,11 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::network_service_factory::NetworkServiceFactory;
 use crate::peer_message_handler::NodePeerMessageHandler;
 use crate::rpc_service_factory::RpcServiceFactory;
 use crate::NodeHandle;
 use actix::prelude::*;
-use anyhow::{format_err, Result};
+use anyhow::Result;
 use futures::channel::oneshot;
 use futures::executor::block_on;
 use futures_timer::Delay;
@@ -20,7 +21,7 @@ use starcoin_logger::LoggerHandle;
 use starcoin_miner::generate_block_event_pacemaker::GenerateBlockEventPacemaker;
 use starcoin_miner::job_bus_client::JobBusClient;
 use starcoin_miner::{CreateBlockTemplateService, MinerClientService, MinerService};
-use starcoin_network::{NetworkAsyncService, PeerMsgBroadcasterService};
+use starcoin_network::NetworkActorService;
 use starcoin_network_rpc::NetworkRpcService;
 use starcoin_node_api::errors::NodeStartError;
 use starcoin_node_api::message::{NodeRequest, NodeResponse};
@@ -31,18 +32,15 @@ use starcoin_service_registry::{
     ServiceHandler, ServiceRef,
 };
 use starcoin_state_service::ChainStateService;
-use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::errors::StorageInitError;
 use starcoin_storage::storage::StorageInstance;
-use starcoin_storage::{BlockStore, Storage};
+use starcoin_storage::Storage;
 use starcoin_sync::block_connector::BlockConnectorService;
 use starcoin_sync::sync2::SyncService2;
 use starcoin_sync::txn_sync::TxnSyncService;
 use starcoin_txpool::TxPoolActorService;
-use starcoin_types::peer_info::RpcInfo;
-use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::system_events::SystemStarted;
 use std::sync::Arc;
 use std::time::Duration;
@@ -195,20 +193,6 @@ impl NodeService {
 
         info!("Start node with startup info: {}", startup_info);
 
-        let genesis_hash = genesis.block().header().id();
-        let head_block_hash = startup_info.main;
-        let head_block_header = storage
-            .get_block_header_by_hash(head_block_hash)?
-            .ok_or_else(|| format_err!("can't get block by hash {}", head_block_hash))?;
-        let head_block_info = storage
-            .get_block_info(head_block_hash)?
-            .ok_or_else(|| format_err!("can't get block info by hash {}", head_block_hash))?;
-
-        let chain_info = ChainInfo::new(
-            config.net().chain_id(),
-            genesis_hash,
-            ChainStatus::new(head_block_header, head_block_info.total_difficulty),
-        );
         registry.put_shared(genesis).await?;
 
         let node_service = registry.register::<NodeService>().await?;
@@ -241,21 +225,15 @@ impl NodeService {
 
         let block_relayer = registry.register::<BlockRelayer>().await?;
 
-        let network_rpc_service = registry.register::<NetworkRpcService>().await?;
-        let peer_message_handle = NodePeerMessageHandler::new(txpool_service, block_relayer);
+        registry.register::<NetworkRpcService>().await?;
+        NodePeerMessageHandler::new(txpool_service, block_relayer);
 
-        let rpc_info = RpcInfo::new(starcoin_network_rpc_api::gen_client::get_rpc_info());
-        let network = NetworkAsyncService::start(
-            config.clone(),
-            chain_info,
-            bus.clone(),
-            rpc_info,
-            network_rpc_service,
-            peer_message_handle,
-        )?;
-        registry.put_shared(network.clone()).await?;
+        registry
+            .register_by_factory::<NetworkActorService, NetworkServiceFactory>()
+            .await?;
+        //wait Network service init
+        Delay::new(Duration::from_millis(200)).await;
 
-        registry.register::<PeerMsgBroadcasterService>().await?;
         registry.register::<TxnSyncService>().await?;
 
         let peer_id = config.network.self_peer_id()?;

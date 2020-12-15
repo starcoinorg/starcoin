@@ -4,7 +4,6 @@
 use anyhow::Result;
 use config::*;
 use futures::executor::block_on;
-use network_api::PeerProvider;
 use starcoin_logger::prelude::*;
 use starcoin_network_rpc_api::{
     gen_client as starcoin_gen_client, GetBlockHeadersByNumber, GetBlockIds, GetStateWithProof,
@@ -27,16 +26,15 @@ fn test_network_rpc() {
     };
 
     let network_1 = handle1.network();
-    let handle2 = {
+    let (handle2, peer_id_2) = {
         let mut config_2 = NodeConfig::random_for_test();
         config_2.network.seeds = vec![net_addr_1];
-        gen_chain_env(config_2).unwrap()
+        let peer_id_2 = config_2.network.self_peer_id().unwrap();
+        (gen_chain_env(config_2).unwrap(), peer_id_2)
     };
     handle2.generate_block().unwrap();
 
-    let network_2 = handle2.network();
     // network rpc client for chain 1
-    let peer_id_2 = network_2.identify();
     let client = starcoin_gen_client::NetworkRpcClient::new(network_1);
 
     let access_path = access_path::AccessPath::new(genesis_address(), Epoch::resource_path());

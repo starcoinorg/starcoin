@@ -33,10 +33,10 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
     opt.data_dir = Some(temp_path.path().to_path_buf());
 
     let node_config = Arc::new(NodeConfig::load_with_opt(&opt).unwrap());
-    let (storage, startup_info, genesis_id) =
+    let (storage, startup_info, genesis) =
         StarcoinGenesis::init_storage_for_test(node_config.net())
             .expect("init storage by genesis fail.");
-
+    let genesis_id = genesis.block().id();
     //TODO mock txpool after refactor txpool by service reigstry.
     let chain_header = storage
         .get_block_header_by_hash(startup_info.main)
@@ -64,8 +64,9 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
 #[stest::test(timeout = 120)]
 fn test_switch_main() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
+    let genesis_id = genesis.block().id();
     let times = 10;
 
     let miner_account = AccountInfo::random();
@@ -166,8 +167,9 @@ fn test_switch_main() {
 #[stest::test]
 fn test_do_uncles() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
+    let genesis_id = genesis.block().id();
     let times = 2;
 
     let miner_account = AccountInfo::random();
@@ -261,8 +263,9 @@ fn test_do_uncles() {
 #[stest::test(timeout = 120)]
 fn test_new_head() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
+    let genesis_id = genesis.block().id();
     let times = 10;
 
     let miner_account = AccountInfo::random();
@@ -301,8 +304,9 @@ fn test_new_head() {
 #[stest::test(timeout = 120)]
 fn test_new_branch() {
     let node_config = Arc::new(NodeConfig::random_for_test());
-    let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
+    let genesis_id = genesis.block().id();
     let times = 5;
 
     let chain_header = storage
@@ -369,9 +373,9 @@ async fn test_create_block_template_actor() {
     let registry = RegistryService::launch();
     registry.put_shared(node_config.clone()).await.unwrap();
 
-    let (storage, _, genesis_id) = StarcoinGenesis::init_storage_for_test(node_config.net())
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())
         .expect("init storage by genesis fail.");
-
+    let genesis_id = genesis.block().id();
     let chain_header = storage
         .get_block_header_by_hash(genesis_id)
         .unwrap()

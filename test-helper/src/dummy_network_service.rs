@@ -17,7 +17,6 @@ use starcoin_types::peer_info::PeerInfo;
 use starcoin_types::transaction::TransactionInfo;
 use state_tree::StateNode;
 use std::sync::Arc;
-use std::time::Duration;
 
 const MAX_SIZE: usize = 10;
 
@@ -159,7 +158,6 @@ impl DummyNetworkService {
         _peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        _time_out: Duration,
     ) -> Result<Vec<u8>> {
         //TODO refactor this, do not use string to match method.
         match rpc_path.to_lowercase().as_str() {
@@ -217,9 +215,8 @@ impl DummyNetworkService {
         peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        time_out: Duration,
     ) -> anyhow::Result<Vec<u8>> {
-        self.handle_request(peer_id, rpc_path, message, time_out)
+        self.handle_request(peer_id, rpc_path, message)
             .then(|result| async move { Ok(scs::to_bytes(&result).unwrap()) })
             .await
     }
@@ -227,11 +224,9 @@ impl DummyNetworkService {
 
 #[async_trait::async_trait]
 impl NetworkService for DummyNetworkService {
-    async fn send_peer_message(&self, _msg: PeerMessage) -> anyhow::Result<()> {
-        Ok(())
-    }
+    fn send_peer_message(&self, _msg: PeerMessage) {}
 
-    async fn broadcast(&self, _notification: NotificationMessage) {}
+    fn broadcast(&self, _notification: NotificationMessage) {}
 
     fn report_peer(&self, _peer_id: PeerId, _cost_benefit: ReputationChange) {}
 }
@@ -242,23 +237,21 @@ impl RawRpcClient for DummyNetworkService {
         peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        timeout: Duration,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
-        self.send_request_bytes(peer_id, rpc_path, message, timeout)
-            .boxed()
+        self.send_request_bytes(peer_id, rpc_path, message).boxed()
     }
 }
 
 impl PeerProvider for DummyNetworkService {
-    fn identify(&self) -> PeerId {
-        self.peer_id.clone()
-    }
-
     fn peer_set(&self) -> BoxFuture<anyhow::Result<Vec<PeerInfo>>> {
         futures::future::ready(Ok(self.peers.clone())).boxed()
     }
 
     fn get_peer(&self, _peer_id: PeerId) -> BoxFuture<anyhow::Result<Option<PeerInfo>>> {
+        unimplemented!()
+    }
+
+    fn get_self_peer(&self) -> BoxFuture<'_, anyhow::Result<PeerInfo>> {
         unimplemented!()
     }
 }

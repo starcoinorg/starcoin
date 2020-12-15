@@ -108,6 +108,14 @@ where
         })
     }
 
+    pub fn put_shared<T>(&self, shared: T) -> Result<()>
+    where
+        T: Send + Sync + Clone + 'static,
+    {
+        let registry_ref = self.registry_ref();
+        registry_ref.put_shared_sync(shared)
+    }
+
     pub fn subscribe<M>(&mut self)
     where
         M: Send + Clone + Debug + 'static,

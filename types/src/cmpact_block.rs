@@ -23,20 +23,26 @@ pub struct PrefiledTxn {
 pub struct ShortId(pub HashValue);
 
 impl CompactBlock {
-    pub fn new(block: &Block, prefilled_txn: Vec<PrefiledTxn>) -> Self {
-        let header = block.header.clone();
+    pub fn new(block: Block, prefilled_txn: Vec<PrefiledTxn>) -> Self {
+        let header = block.header;
         let short_ids: Vec<ShortId> = block
-            .transactions()
-            .iter()
-            .map(|tx| Transaction::UserTransaction(tx.clone()).id())
+            .body
+            .transactions
+            .into_iter()
+            .map(|tx| Transaction::UserTransaction(tx).id())
             .map(ShortId)
             .collect();
-        let uncles = block.uncles().map(|b| b.to_vec());
         CompactBlock {
             header,
             short_ids,
             prefilled_txn,
-            uncles,
+            uncles: block.body.uncles,
         }
+    }
+}
+
+impl From<Block> for CompactBlock {
+    fn from(block: Block) -> Self {
+        CompactBlock::new(block, vec![])
     }
 }

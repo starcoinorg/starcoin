@@ -8,7 +8,6 @@ use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain::BlockChain;
 use starcoin_config::{genesis_key_pair, ChainNetwork};
-use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_state_api::ChainState;
 use starcoin_statedb::ChainStateDB;
@@ -352,13 +351,12 @@ impl Genesis {
 
     pub fn init_storage_for_test(
         net: &ChainNetwork,
-    ) -> Result<(Arc<Storage>, StartupInfo, HashValue)> {
+    ) -> Result<(Arc<Storage>, StartupInfo, Genesis)> {
         debug!("init storage by genesis for test.");
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_instance())?);
         let genesis = Genesis::load(net)?;
-        let genesis_hash = genesis.block.header().id();
         let startup_info = genesis.execute_genesis_block(net, storage.clone())?;
-        Ok((storage, startup_info, genesis_hash))
+        Ok((storage, startup_info, genesis))
     }
 }
 
