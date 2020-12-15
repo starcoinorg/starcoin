@@ -8028,7 +8028,6 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "dyn-clone",
  "forkable-jellyfish-merkle",
  "futures 0.3.8",
  "futures-retry",

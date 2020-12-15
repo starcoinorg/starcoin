@@ -47,7 +47,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let chain_service =
-            WriteBlockChainService::new(config, startup_info, storage, txpool, bus, None)?;
+            WriteBlockChainService::new(config, startup_info, storage, txpool, bus)?;
 
         Ok(Self::new(chain_service))
     }
