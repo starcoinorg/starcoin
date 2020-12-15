@@ -2,15 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_ports, ApiSet, BaseConfig, ConfigModule,
-    StarcoinOpt,
+    get_available_port_from, get_random_available_ports, parse_key_val, ApiSet, BaseConfig,
+    ConfigModule, StarcoinOpt,
 };
-use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use anyhow::{bail, Result};
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_logger::prelude::*;
 use std::net::IpAddr;
+use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use structopt::StructOpt;
+
 const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 //10M
 const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
@@ -143,9 +147,110 @@ impl Default for IpcConfiguration {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct ApiQuotaConfig {
+    pub max_burst: NonZeroU32,
+    pub duration: QuotaDuration,
+}
+
+impl std::fmt::Display for ApiQuotaConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}/{}", self.max_burst, self.duration)
+    }
+}
+
+impl FromStr for ApiQuotaConfig {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.splitn(2, '/').collect();
+        if parts.len() != 2 {
+            bail!("invalid quota format");
+        }
+        let max_burst = parts[0].parse::<NonZeroU32>()?;
+        let quota_duration = parts[1].parse::<QuotaDuration>()?;
+        Ok(ApiQuotaConfig {
+            max_burst,
+            duration: quota_duration,
+        })
+    }
+}
+
+impl Serialize for ApiQuotaConfig {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+impl<'de> Deserialize<'de> for ApiQuotaConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+        s.parse::<ApiQuotaConfig>().map_err(D::Error::custom)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum QuotaDuration {
+    Second,
+    Minute,
+    Hour,
+}
+
+impl std::fmt::Display for QuotaDuration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            QuotaDuration::Second => "s",
+            QuotaDuration::Minute => "m",
+            QuotaDuration::Hour => "h",
+        };
+        write!(f, "{}", s)
+    }
+}
+impl FromStr for QuotaDuration {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let quota_duration = match s {
+            "s" => QuotaDuration::Second,
+            "m" => QuotaDuration::Minute,
+            "h" => QuotaDuration::Hour,
+            _ => bail!("invalid quota duration"),
+        };
+        Ok(quota_duration)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+pub struct ApiQuotaConfiguration {
+    #[structopt(long, help = "default api quota, eg: 1000/s", default_value = "1000/s")]
+    pub default_api_quota: ApiQuotaConfig,
+
+    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    // my_program -D a=1 -D b=2
+    #[structopt(long, help="customize api quota, eg: node.info=100/s", parse(try_from_str = parse_key_val), number_of_values = 1)]
+    pub custom_api_quota: Vec<(String, ApiQuotaConfig)>,
+}
+
+impl Default for ApiQuotaConfiguration {
+    fn default() -> Self {
+        Self {
+            default_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(1000).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_api_quota: vec![],
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RpcConfig {
+    pub api_quota: ApiQuotaConfiguration,
     pub tcp: TcpConfiguration,
     pub http: HttpConfiguration,
     pub ws: WsConfiguration,
@@ -198,6 +303,7 @@ impl ConfigModule for RpcConfig {
             tcp: opt.tcp.clone(),
             http: opt.http.clone(),
             ipc: opt.ipc.clone(),
+            api_quota: opt.api_quotas.clone(),
             rpc_address,
         };
 
@@ -226,5 +332,18 @@ impl ConfigModule for RpcConfig {
         info!("TCP rpc address: {:?}", self.get_tcp_address());
         info!("Websocket rpc address: {:?}", self.get_ws_address());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::rpc_config::{ApiQuotaConfig, QuotaDuration};
+
+    #[test]
+    fn test_api_quota_config() {
+        let config = "1000/s".parse::<ApiQuotaConfig>().unwrap();
+        assert_eq!(config.max_burst.get(), 1000u32);
+        assert_eq!(config.duration, QuotaDuration::Second);
+        assert_eq!("1000/s", config.to_string().as_str());
     }
 }

@@ -37,7 +37,6 @@ mod storage_config;
 mod sync_config;
 mod txpool_config;
 
-use crate::rpc_config::{HttpConfiguration, IpcConfiguration, TcpConfiguration, WsConfiguration};
 pub use api_config::{Api, ApiSet};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
@@ -48,7 +47,10 @@ pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 use names::{Generator, Name};
 pub use network_config::NetworkConfig;
-pub use rpc_config::RpcConfig;
+pub use rpc_config::{
+    ApiQuotaConfig, ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, QuotaDuration,
+    RpcConfig, TcpConfiguration, WsConfiguration,
+};
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::genesis_config::{
     BuiltinNetworkID, ChainNetwork, ChainNetworkID, ConsensusStrategy, GenesisConfig,
@@ -97,6 +99,23 @@ pub fn temp_path_with_dir(dir: PathBuf) -> DataDirPath {
     let temp_path = TempPath::new_with_temp_dir(dir);
     temp_path.create_as_dir().expect("Create temp dir fail.");
     DataDirPath::TempPath(Arc::from(temp_path))
+}
+
+/// Parse a single key-value pair
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn std::error::Error>>
+where
+    T: std::str::FromStr,
+    T::Err: Into<Box<dyn std::error::Error + 'static>>,
+    U: std::str::FromStr,
+    U::Err: Into<Box<dyn std::error::Error + 'static>>,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+    Ok((
+        s[..pos].parse().map_err(Into::into)?,
+        s[pos + 1..].parse().map_err(Into::into)?,
+    ))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -219,6 +238,8 @@ pub struct StarcoinOpt {
     pub ws: WsConfiguration,
     #[structopt(flatten)]
     pub ipc: IpcConfiguration,
+    #[structopt(flatten)]
+    pub api_quotas: ApiQuotaConfiguration,
 }
 
 #[derive(Clone, Debug, PartialEq)]

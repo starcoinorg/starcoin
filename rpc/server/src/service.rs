@@ -99,7 +99,7 @@ impl RpcService {
         M: MinerApi,
         DEV: DevApi,
     {
-        let mut api_registry = ApiRegistry::default();
+        let mut api_registry = ApiRegistry::new(config.rpc.api_quota.clone());
 
         api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
         if let Some(node_manager_api) = node_manager_api {
