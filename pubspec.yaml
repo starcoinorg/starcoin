@@ -43,6 +43,8 @@ dependencies:
   path: 1.8.0-nullsafety.3
   date_format: 1.0.9
   path_provider: 1.6.24
+  image: ^2.1.14
+  image_picker: ^0.6.7+4  
   starcoin_wallet:
     #git:
     #  url: git://github.com/starcoinorg/starcoin.dart
@@ -75,6 +77,7 @@ flutter:
     - assets/images/starcoin-save.png
     - assets/images/starcoin-start-mint.png
     - assets/images/starcoin-stop-mint.png
+    - assets/images/starcoin-share-template.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
