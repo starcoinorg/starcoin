@@ -507,6 +507,11 @@ impl RpcClient {
             .map_err(map_err)
     }
 
+    pub fn gen_block(&self) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move { inner.miner_client.gen_block().compat().await })
+            .map_err(map_err)
+    }
+
     pub fn chain_id(&self) -> anyhow::Result<ChainId> {
         self.call_rpc_blocking(|inner| async move { inner.chain_client.id().compat().await })
             .map_err(map_err)

@@ -3,7 +3,7 @@
 
 use crate::module::map_err;
 use jsonrpc_core::Result;
-use starcoin_miner::MinerService;
+use starcoin_miner::{GenerateBlockEvent, MinerService};
 use starcoin_rpc_api::miner::MinerApi;
 use starcoin_service_registry::ServiceRef;
 use starcoin_types::system_events::SubmitSealEvent;
@@ -25,6 +25,12 @@ impl MinerApi for MinerRpcImpl {
                 nonce,
                 minting_blob,
             })
+            .map_err(|e| map_err(e.into()))
+    }
+
+    fn gen_block(&self) -> Result<()> {
+        self.miner_service
+            .notify(GenerateBlockEvent::new(false))
             .map_err(|e| map_err(e.into()))
     }
 }

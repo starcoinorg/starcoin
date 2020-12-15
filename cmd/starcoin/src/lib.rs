@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::debug::{SleepCommand, TxPoolStatusCommand};
+use crate::debug::{GenBlockCommand, SleepCommand, TxPoolStatusCommand};
 use scmd::{CmdContext, Command};
 
 pub mod account;
@@ -131,6 +131,7 @@ pub fn add_command(
                 .subcommand(debug::GetBlockByUncleCommand)
                 .subcommand(TxPoolStatusCommand)
                 .subcommand(SleepCommand)
+                .subcommand(GenBlockCommand)
                 .subcommand(debug::MoveExplain),
         )
 }
