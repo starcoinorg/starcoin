@@ -18,7 +18,7 @@ proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
 prost = "0.6"
 rand = "0.7.3"
-rand_core = { version = "0.5.1", default-features = false }
+rand_core = { version = "0.6.0", default-features = false }
 ref-cast = "1.0"
 serde = { version = "1.0", default-features = false }
 thiserror = "1.0.22"
