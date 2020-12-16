@@ -19,8 +19,6 @@ futures = { version = "0.3", features = ["compat"] }
 futures01 = "0.1.30"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-metrics = { path = "../../commons/metrics"}
-governor = {version="0.3.1", features=["dashmap"]}
-dashmap = "~3.11"
 [dev-dependencies]
 stest = { path = "../../commons/stest"}
 rand = "0.7.3"

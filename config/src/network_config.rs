@@ -48,7 +48,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
 
     #[structopt(
-        name = "default-global-p2prpc-quota",
+        name = "default-user-p2prpc-quota",
         long,
         help = "default p2p rpc quota of a peer, eg: 1000/s",
         default_value = "1000/s"
@@ -56,7 +56,7 @@ pub struct NetworkRpcQuotaConfiguration {
     pub default_user_api_quota: ApiQuotaConfig,
 
     #[structopt(
-        name = "custom-global-p2prpc-quota",
+        name = "custom-user-p2prpc-quota",
         long,
         help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
         parse(try_from_str = parse_key_val),

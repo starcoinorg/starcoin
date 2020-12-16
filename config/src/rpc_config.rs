@@ -46,6 +46,14 @@ pub struct HttpConfiguration {
     pub max_request_body_size: usize,
     #[structopt(name = "http-threads", long, help = "threads to use")]
     pub threads: Option<usize>,
+    #[structopt(
+        name = "http-ip-headers",
+        long,
+        use_delimiter = true,
+        help = "list of http header which identify a ip",
+        default_value = "X-Real-IP,X-Forwarded-For"
+    )]
+    pub ip_headers: Option<Vec<String>>,
 }
 
 impl Default for HttpConfiguration {
@@ -56,6 +64,7 @@ impl Default for HttpConfiguration {
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
             port: DEFAULT_HTTP_PORT,
+            ip_headers: None,
         }
     }
 }
@@ -167,17 +176,17 @@ pub struct ApiQuotaConfiguration {
     pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
 
     #[structopt(
-        name = "default-global-jsonrpc-quota",
+        name = "default-user-jsonrpc-quota",
         long,
-        help = "default api quota, eg: 1000/s",
+        help = "default api quota of user, eg: 1000/s",
         default_value = "1000/s"
     )]
     pub default_user_api_quota: ApiQuotaConfig,
 
     #[structopt(
-        name = "custom-global-jsonrpc-quota",
+        name = "custom-user-jsonrpc-quota",
         long,
-        help = "customize api quota, eg: node.info=100/s",
+        help = "customize api quota of user, eg: node.info=100/s",
         number_of_values = 1,
         parse(try_from_str = parse_key_val)
     )]
@@ -280,7 +289,10 @@ impl ConfigModule for RpcConfig {
         Ok(config)
     }
 
-    fn after_load(&mut self, _opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+        if self.http.ip_headers.is_none() {
+            self.http.ip_headers = opt.http.ip_headers.clone();
+        }
         info!("Ipc file path: {:?}", self.ipc.ipc_file_path);
         info!("Http rpc address: {:?}", self.get_http_address());
         info!("TCP rpc address: {:?}", self.get_tcp_address());
