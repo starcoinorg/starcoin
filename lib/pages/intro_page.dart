@@ -10,6 +10,7 @@ class IntroPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final blue = Color.fromARGB(255, 0, 255, 255);
     return Scaffold(
         body: Container(
             alignment: Alignment(0, 0),
@@ -28,11 +29,19 @@ class IntroPage extends StatelessWidget {
                           style: TextStyle(color: Colors.white),
                           controller: nameController,
                           decoration: InputDecoration(
-                              border: OutlineInputBorder(),
-                              hintText: 'Enter Name'),
+                              border: OutlineInputBorder(
+                                borderSide: const BorderSide(
+                                    color: Colors.blue, width: 1),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(4)),
+                                borderSide: BorderSide(width: 1, color: blue),
+                              ),
+                              hintText: '创建昵称'),
                         )),
                     SizedBox(
-                      height: 10,
+                      height: 20,
                     ),
                     RaisedButton(
                       onPressed: () async {
@@ -45,8 +54,11 @@ class IntroPage extends StatelessWidget {
                           return new NodePage(name);
                         }));
                       },
-                      child:
-                          const Text('Confirm', style: TextStyle(fontSize: 30)),
+                      child: const Text('确认', style: TextStyle(fontSize: 30)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: new BorderRadius.circular(20.0),
+                        side: BorderSide(color: blue),
+                      ),
                     )
                   ]),
             )));
