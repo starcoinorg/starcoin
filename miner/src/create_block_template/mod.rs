@@ -224,7 +224,7 @@ impl Inner {
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplate> {
-        let on_chain_block_gas_limit = self.chain.get_on_chain_block_gas_limit()?;
+        let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))

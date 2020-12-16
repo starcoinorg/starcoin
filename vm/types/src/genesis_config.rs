@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::genesis_address;
-use crate::event::{EventHandle, EventKey};
+use crate::event::EventHandle;
 use crate::gas_schedule::{
     AbstractMemorySize, GasAlgebra, GasCarrier, GasConstants, GasPrice, GasUnits,
 };

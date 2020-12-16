@@ -20,10 +20,7 @@ use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::{ChainInfo, ChainStatus};
 use starcoin_types::{
     account_address::AccountAddress,
-    block::{
-        Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate,
-        ALLOWED_FUTURE_BLOCKTIME,
-    },
+    block::{Block, BlockHeader, BlockInfo, BlockNumber, BlockState, BlockTemplate},
     contract_event::ContractEvent,
     error::BlockExecutorError,
     stress_test::TPS,
@@ -48,7 +45,7 @@ pub struct BlockChain {
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     uncles: HashSet<HashValue>,
-    epoch: Option<Epoch>,
+    epoch: Epoch,
 }
 
 impl BlockChain {
@@ -67,6 +64,8 @@ impl BlockChain {
         let state_root = head.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
+        let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
+        let epoch = get_epoch_from_statedb(&chain_state)?;
         let mut chain = Self {
             time_service,
             txn_accumulator: info_2_accumulator(
@@ -80,12 +79,12 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             head: Some(head),
-            chain_state: ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root)),
+            chain_state,
             storage,
             uncles: HashSet::new(),
-            epoch: None,
+            epoch,
         };
-        chain.update_epoch_and_uncle_cache()?;
+        chain.update_uncle_cache()?;
         Ok(chain)
     }
 
@@ -108,7 +107,7 @@ impl BlockChain {
             chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
             storage,
             uncles: HashSet::new(),
-            epoch: Some(genesis_epoch),
+            epoch: genesis_epoch,
         }
     }
 
@@ -118,7 +117,7 @@ impl BlockChain {
             head_block_hash,
             self.storage.clone(),
         )?;
-        chain.update_epoch_and_uncle_cache()?;
+        chain.update_uncle_cache()?;
         Ok(chain)
     }
 
@@ -127,24 +126,19 @@ impl BlockChain {
     }
 
     pub fn consensus(&self) -> ConsensusStrategy {
-        self.epoch.as_ref().unwrap().strategy()
+        self.epoch.strategy()
     }
     pub fn time_service(&self) -> Arc<dyn TimeService> {
         self.time_service.clone()
     }
 
-    pub fn update_epoch_and_uncle_cache(&mut self) -> Result<()> {
-        let epoch_resource = self.get_epoch_resource_by_number(None)?;
-        self.uncles = self
-            .epoch_uncles(&epoch_resource)?
-            .iter()
-            .cloned()
-            .collect();
-        self.epoch = Some(epoch_resource);
+    pub fn update_uncle_cache(&mut self) -> Result<()> {
+        self.uncles = self.epoch_uncles()?.iter().cloned().collect();
         Ok(())
     }
 
-    fn epoch_uncles(&self, epoch_resource: &Epoch) -> Result<Vec<HashValue>> {
+    fn epoch_uncles(&self) -> Result<Vec<HashValue>> {
+        let epoch = &self.epoch;
         let mut uncles = Vec::new();
         let mut block = self.head_block();
         let mut number = block.header().number();
@@ -160,9 +154,7 @@ impl BlockChain {
 
             number -= 1;
 
-            if epoch_resource.start_block_number() > number
-                || epoch_resource.end_block_number() <= number
-            {
+            if epoch.start_block_number() > number || epoch.end_block_number() <= number {
                 break;
             }
 
@@ -217,7 +209,7 @@ impl BlockChain {
         uncles: Vec<BlockHeader>,
         block_gas_limit: Option<u64>,
     ) -> Result<(BlockTemplate, ExcludedTxns)> {
-        let on_chain_block_gas_limit = self.get_on_chain_block_gas_limit()?;
+        let on_chain_block_gas_limit = self.epoch.block_gas_limit();
         let final_block_gas_limit = block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
@@ -239,13 +231,6 @@ impl BlockChain {
         let excluded_txns = opened_block.push_txns(user_txns)?;
         let template = opened_block.finalize()?;
         Ok((template, excluded_txns))
-    }
-
-    pub fn get_on_chain_block_gas_limit(&self) -> Result<u64> {
-        self.epoch
-            .as_ref()
-            .map(|epoch| epoch.block_gas_limit())
-            .ok_or_else(|| format_err!("Chain EpochResource is empty."))
     }
 
     pub fn find_block_by_number(&self, number: u64) -> Result<HashValue> {
@@ -295,18 +280,19 @@ impl BlockChain {
     }
 
     fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<Epoch> {
-        if let Some(block) = self.block_with_number(number)? {
-            let chain_state = ChainStateDB::new(
-                self.storage.clone().into_super_arc(),
-                Some(block.header().state_root()),
-            );
-            let account_reader = AccountStateReader::new(&chain_state);
-            let epoch = account_reader
-                .get_resource::<Epoch>(genesis_address())?
-                .ok_or_else(|| format_err!("Epoch is none."))?;
-            Ok(epoch)
-        } else {
-            Err(format_err!("Block is none when query epoch resource."))
+        match number {
+            None => get_epoch_from_statedb(&self.chain_state),
+            Some(number) => {
+                if let Some(header) = self.get_header_by_number(number)? {
+                    let chain_state = ChainStateDB::new(
+                        self.storage.clone().into_super_arc(),
+                        Some(header.state_root()),
+                    );
+                    get_epoch_from_statedb(&chain_state)
+                } else {
+                    Err(format_err!("Block is none when query epoch resource."))
+                }
+            }
         }
     }
 
@@ -322,6 +308,13 @@ impl BlockChain {
             .as_ref()
             .expect("head block must some after chain init.")
     }
+}
+
+fn get_epoch_from_statedb(statedb: &ChainStateDB) -> Result<Epoch> {
+    let account_reader = AccountStateReader::new(statedb);
+    account_reader
+        .get_resource::<Epoch>(genesis_address())?
+        .ok_or_else(|| format_err!("Epoch is none."))
 }
 
 impl ChainReader for BlockChain {
@@ -483,7 +476,7 @@ impl ChainReader for BlockChain {
     }
 
     fn epoch(&self) -> &Epoch {
-        self.epoch.as_ref().expect("Epoch should exist")
+        &self.epoch
     }
 
     fn get_epoch_info_by_number(&self, number: Option<BlockNumber>) -> Result<EpochInfo> {
@@ -596,7 +589,7 @@ impl ChainReader for BlockChain {
     }
 
     fn can_be_uncle(&self, block_header: &BlockHeader) -> bool {
-        let epoch = self.epoch.as_ref().expect("epoch is none.");
+        let epoch = &self.epoch;
         epoch.start_block_number() <= block_header.number()
             && epoch.end_block_number() > block_header.number()
             && self.exist_block(block_header.parent_hash())
@@ -891,7 +884,8 @@ impl BlockChain {
 
         // update cache
         if switch_epoch {
-            self.update_epoch_and_uncle_cache()?;
+            self.epoch = get_epoch_from_statedb(&self.chain_state)?;
+            self.update_uncle_cache()?;
         } else if let Some(block_uncles) = uncles {
             block_uncles.iter().for_each(|header| {
                 self.uncles.insert(header.id());
@@ -929,16 +923,9 @@ impl BlockChain {
         );
         self.chain_state =
             ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
-        if self.epoch.is_some()
-            && self
-                .epoch
-                .as_ref()
-                .expect("epoch resource is none.")
-                .end_block_number()
-                == block.header().number()
-        {
+        if self.epoch.end_block_number() == block.header().number() {
             self.head = Some(block);
-            self.update_epoch_and_uncle_cache()?;
+            self.update_uncle_cache()?;
         } else {
             if let Some(block_uncles) = block.uncles() {
                 block_uncles.iter().for_each(|header| {
