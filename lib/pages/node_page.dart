@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -7,10 +8,11 @@ import 'package:starcoin_wallet/starcoin/starcoin.dart';
 import 'package:starcoin_wallet/wallet/node.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'directory_service.dart';
 import 'routes/routes.dart';
 import 'package:date_format/date_format.dart';
-import "package:path/path.dart" show dirname, join;
-import 'package:image/image.dart' as ui;
+import "package:path/path.dart" show join;
+import 'package:image/image.dart' as img;
 
 const LOCALURL = "http://localhost:9850";
 
@@ -31,7 +33,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   Process process;
   String text = "";
   double balance = 0;
-  String difficulty = "2981";
+  String difficulty = "0";
   int blocks = 0;
   int maxLines = 5;
   String time = "";
@@ -53,19 +55,17 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final current = Directory.current;
-    time = current.path;
-
+    //final current = Directory.current;
+    //time = current.path;
     final double iconSize = 60.0;
     final double buttonIconSize = 40.0;
     final blue = Color.fromARGB(255, 0, 255, 255);
 
-    print(blue.toString());
     final blueTextstyle = TextStyle(color: blue, fontSize: 25);
     final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 25);
     final edgeTexts = EdgeInsets.only(left: 30, right: 30);
     final dateTime = DateTime.now();
-    //time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+    time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
     //freshTime();
     final boxDecoration = new BoxDecoration(
       //设置四周圆角 角度
@@ -77,8 +77,11 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     if (!startRequest) {
       onclick = () async {
         // 用Directory.current 也不对
+        final current = await DirectoryService.getCurrentDirectory();
+        final time = current;
+        final dir = Directory.fromUri(Uri.parse(current)).parent;
         process = await Process.start(
-            join(dirname(Platform.script.path), 'starcoin/starcoin'),
+            join(dir.path, 'starcoin/starcoin'),
             [
               "-n",
               "dev",
@@ -341,26 +344,39 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   }
 
   takescrshot() async {
-    // RenderRepaintBoundary boundary =
-    //     previewContainer.currentContext.findRenderObject();
-    // var image = await boundary.toImage();
-    // var byteData = await image.toByteData(format: ImageByteFormat.png);
-    // var pngBytes = byteData.buffer.asUint8List();
+    RenderRepaintBoundary boundary =
+        previewContainer.currentContext.findRenderObject();
+    var image = await boundary.toImage();
+    var byteData = await image.toByteData(format: ImageByteFormat.png);
+    var pngBytes = byteData.buffer.asUint8List();
+    img.Image background = img.decodeImage(pngBytes);
+
+    final qrFile = File("assets/images/starcoin-qr.png");
+    img.Image qr = img.decodeImage(qrFile.readAsBytesSync());
+
+    img.drawImage(background, qr, dstX: 40, dstY: 450, dstH: 120, dstW: 120);
     // String fileName = DateTime.now().toIso8601String();
     // var path =
     //     '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    // final file = File(path);
-    // await file.writeAsBytes(pngBytes);
+    // //final file = File(path);
+    // //await file.writeAsBytes(wmImage);
+    // File(path)..writeAsBytesSync(ui.encodePng(Img));
 
-    final _originalImage = File("assets/images/starcoin-share-template.png");
-    ui.Image Img = ui.decodeImage(_originalImage.readAsBytesSync());
-    ui.drawString(Img, ui.arial_48, 800, 400, 'Add Text 123',
-        color: 0xff00ffff);
+    //String fileName = DateTime.now().toIso8601String();
+    //var path =
+    //    '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
+    //final file = File(path);
+    //await file.writeAsBytes(pngBytes);
+
+    // final _originalImage = File("assets/images/starcoin-share-template.png");
+    // ui.Image Img = ui.decodeImage(_originalImage.readAsBytesSync());
+    // ui.drawString(Img, ui.arial_48, 800, 400, 'Add Text 123',
+    //     color: 0xff00ffff);
     String fileName = DateTime.now().toIso8601String();
     var path =
         '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    //final file = File(path);
-    //await file.writeAsBytes(wmImage);
-    File(path)..writeAsBytesSync(ui.encodePng(Img));
+    // //final file = File(path);
+    // //await file.writeAsBytes(wmImage);
+    File(path)..writeAsBytesSync(img.encodePng(background));
   }
 }

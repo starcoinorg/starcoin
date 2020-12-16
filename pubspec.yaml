@@ -30,7 +30,6 @@ dependencies:
   provider: ^3.1.0+1
   hex: ^0.1.2
   shared_preferences: ^0.5.6+1
-  web_socket_channel: ^1.1.0
   intl: ^0.16.1
   flutter_spinkit: "^4.1.1+1"
   flutter_hooks: ^0.9.0
@@ -38,13 +37,9 @@ dependencies:
   built_collection: ^4.3.2
   flutter_redux: ^0.5.2
   font_awesome_flutter: ^8.2.0
-  optional: '5.0.0'
-  sqflite: ^1.3.0
   path: 1.8.0-nullsafety.3
   date_format: 1.0.9
-  path_provider: 1.6.24
   image: ^2.1.14
-  image_picker: ^0.6.7+4  
   starcoin_wallet:
     #git:
     #  url: git://github.com/starcoinorg/starcoin.dart
@@ -78,6 +73,7 @@ flutter:
     - assets/images/starcoin-start-mint.png
     - assets/images/starcoin-stop-mint.png
     - assets/images/starcoin-share-template.png
+    - assets/images/starcoin-qr.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
