@@ -7,8 +7,11 @@ import 'package:starcoin_wallet/starcoin/starcoin.dart';
 import 'package:starcoin_wallet/wallet/node.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'directory_service.dart';
 import 'routes/routes.dart';
 import 'package:date_format/date_format.dart';
+import "package:path/path.dart" show join;
+import 'package:image/image.dart' as img;
 
 const LOCALURL = "http://localhost:9850";
 
@@ -51,17 +54,18 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    Directory current = Directory.current;
-
     final double iconSize = 60.0;
     final double buttonIconSize = 40.0;
     final blue = Color.fromARGB(255, 0, 255, 255);
+
     final blueTextstyle = TextStyle(color: blue, fontSize: 25);
     final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 25);
     final edgeTexts = EdgeInsets.only(left: 30, right: 30);
     final dateTime = DateTime.now();
-    time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
-    freshTime();
+    Directory current = Directory.current;
+    time = current.path;
+    //time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+    //freshTime();
     final boxDecoration = new BoxDecoration(
       //设置四周圆角 角度
       borderRadius: BorderRadius.all(Radius.circular(10.0)),
@@ -71,8 +75,19 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     var onclick;
     if (!startRequest) {
       onclick = () async {
-        process = await Process.start(
-            current.path+'/starcoin/starcoin',
+        // 用Directory.current 也不对
+        var command ="";
+        if (Platform.isMacOS){
+          final current = await DirectoryService.getCurrentDirectory();
+          final dir = Directory.fromUri(Uri.parse(current)).parent;
+           command = join(dir.path, 'starcoin/starcoin');
+        }
+        if (Platform.isWindows){
+          Directory current = Directory.current;
+          command= join(current.path,'starcoin/starcoin');
+        }
+        final process = await Process.start(command
+            ,
             [
               "-n",
               "dev",
@@ -80,7 +95,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
               "all",
               "--disable-mint-empty-block",
               "false"
-            ],runInShell: false,workingDirectory: current.path);
+            ],
+            runInShell: false);
         process.stderr.transform(utf8.decoder).listen((data) {
           lines.add(data);
           if (data.contains("Mint new block")) {
@@ -175,8 +191,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                             width: 50,
                           ),
                           Text(
-                            "星际争霸 第一期",
-                            style: TextStyle(color: Colors.white, fontSize: 15),
+                            "参与测试网挖矿 瓜分万U!",
+                            style: TextStyle(color: Colors.white, fontSize: 20),
                           ),
                           Expanded(
                               flex: 1,
@@ -203,8 +219,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                               alignment: Alignment.centerRight,
                               child: Text(
                                 time,
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 15),
+                                style: TextStyle(color: blue, fontSize: 15),
                               )),
                           Container(
                               padding: EdgeInsets.only(
@@ -334,15 +349,50 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   }
 
   takescrshot() async {
-    // RenderRepaintBoundary boundary =
-    //     previewContainer.currentContext.findRenderObject();
-    // var image = await boundary.toImage();
-    // var byteData = await image.toByteData(format: ImageByteFormat.png);
-    // var pngBytes = byteData.buffer.asUint8List();
+    RenderRepaintBoundary boundary =
+        previewContainer.currentContext.findRenderObject();
+    var image = await boundary.toImage();
+    var byteData = await image.toByteData(format: ImageByteFormat.png);
+    var pngBytes = byteData.buffer.asUint8List();
+    img.Image background = img.decodeImage(pngBytes);
+
+    final qrFile = File("assets/images/starcoin-qr.png");
+    img.Image qr = img.decodeImage(qrFile.readAsBytesSync());
+
+    img.drawImage(background, qr, dstX: 40, dstY: 450, dstH: 120, dstW: 120);
     // String fileName = DateTime.now().toIso8601String();
     // var path =
     //     '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    // final file = File(path);
-    // await file.writeAsBytes(pngBytes);
+    // //final file = File(path);
+    // //await file.writeAsBytes(wmImage);
+    // File(path)..writeAsBytesSync(ui.encodePng(Img));
+
+    //String fileName = DateTime.now().toIso8601String();
+    //var path =
+    //    '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
+    //final file = File(path);
+    //await file.writeAsBytes(pngBytes);
+
+    // final _originalImage = File("assets/images/starcoin-share-template.png");
+    // ui.Image Img = ui.decodeImage(_originalImage.readAsBytesSync());
+    // ui.drawString(Img, ui.arial_48, 800, 400, 'Add Text 123',
+    //     color: 0xff00ffff);
+    int fileName = DateTime.now().microsecondsSinceEpoch;
+
+    var dir;
+    if (Platform.isMacOS){
+        final current = await DirectoryService.getCurrentDirectory();
+        dir = Directory.fromUri(Uri.parse(current)).parent.path;
+    
+    }
+    if (Platform.isWindows){
+        Directory current = Directory.current;
+        dir = current.path;
+    }
+
+    var path =join(dir,'$fileName.png');
+    // //final file = File(path);
+    // //await file.writeAsBytes(wmImage);
+    File(path)..writeAsBytesSync(img.encodePng(background));
   }
 }
