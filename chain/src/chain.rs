@@ -41,7 +41,7 @@ pub struct BlockChain {
     txn_accumulator: MerkleAccumulator,
     block_accumulator: MerkleAccumulator,
     head: Option<Block>,
-    chain_state: ChainStateDB,
+    statedb: ChainStateDB,
     storage: Arc<dyn Store>,
     time_service: Arc<dyn TimeService>,
     uncles: HashSet<HashValue>,
@@ -79,7 +79,7 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             head: Some(head),
-            chain_state,
+            statedb: chain_state,
             storage,
             uncles: HashSet::new(),
             epoch,
@@ -104,7 +104,7 @@ impl BlockChain {
             txn_accumulator,
             block_accumulator,
             head: None,
-            chain_state: ChainStateDB::new(storage.clone().into_super_arc(), None),
+            statedb: ChainStateDB::new(storage.clone().into_super_arc(), None),
             storage,
             uncles: HashSet::new(),
             epoch: genesis_epoch,
@@ -281,7 +281,7 @@ impl BlockChain {
 
     fn get_epoch_resource_by_number(&self, number: Option<BlockNumber>) -> Result<Epoch> {
         match number {
-            None => get_epoch_from_statedb(&self.chain_state),
+            None => get_epoch_from_statedb(&self.statedb),
             Some(number) => {
                 if let Some(header) = self.get_header_by_number(number)? {
                     let chain_state = ChainStateDB::new(
@@ -442,7 +442,7 @@ impl ChainReader for BlockChain {
     }
 
     fn chain_state_reader(&self) -> &dyn ChainStateReader {
-        &self.chain_state
+        &self.statedb
     }
 
     fn get_block_info(&self, block_id: Option<HashValue>) -> Result<Option<BlockInfo>> {
@@ -805,7 +805,7 @@ impl BlockChain {
         };
 
         let executed_data =
-            starcoin_executor::block_execute(&self.chain_state, txns.clone(), block_gas_limit)?;
+            starcoin_executor::block_execute(&self.statedb, txns.clone(), block_gas_limit)?;
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
@@ -847,7 +847,7 @@ impl BlockChain {
         self.txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
-        self.chain_state
+        self.statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
 
@@ -884,7 +884,7 @@ impl BlockChain {
 
         // update cache
         if switch_epoch {
-            self.epoch = get_epoch_from_statedb(&self.chain_state)?;
+            self.epoch = get_epoch_from_statedb(&self.statedb)?;
             self.update_uncle_cache()?;
         } else if let Some(block_uncles) = uncles {
             block_uncles.iter().for_each(|header| {
@@ -921,8 +921,7 @@ impl BlockChain {
             AccumulatorStoreType::Block,
             self.storage.as_ref(),
         );
-        self.chain_state =
-            ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
+        self.statedb = ChainStateDB::new(self.storage.clone().into_super_arc(), Some(state_root));
         if self.epoch.end_block_number() == block.header().number() {
             self.head = Some(block);
             self.update_uncle_cache()?;
@@ -947,7 +946,7 @@ impl BlockChain {
         self.storage.commit_block(block.clone(), block_state)?;
         self.storage.save_block_info(block_info)?;
         self.head = Some(block);
-        self.chain_state = ChainStateDB::new(
+        self.statedb = ChainStateDB::new(
             self.storage.clone().into_super_arc(),
             Some(self.head_block().header().state_root()),
         );
@@ -963,7 +962,7 @@ impl ChainWriter for BlockChain {
     }
 
     fn chain_state(&mut self) -> &dyn ChainState {
-        &self.chain_state
+        &self.statedb
     }
 }
 
