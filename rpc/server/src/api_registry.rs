@@ -29,9 +29,9 @@ impl From<ApiQuotaConfig> for QuotaWrapper {
 
 impl ApiRegistry {
     pub fn new(api_config: ApiQuotaConfiguration) -> ApiRegistry {
-        let default_api_quota: QuotaWrapper = api_config.default_api_quota.into();
+        let default_api_quota: QuotaWrapper = api_config.default_global_api_quota.into();
         let custom_api_quotas: HashMap<_, Quota> = api_config
-            .custom_api_quota
+            .custom_global_api_quota
             .into_iter()
             .map(|(k, v)| (k, Into::<QuotaWrapper>::into(v).0))
             .collect();

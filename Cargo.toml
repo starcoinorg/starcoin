@@ -15,6 +15,7 @@ members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/api-limiter",
     "types",
     "types/uint",
     "core/traits",
