@@ -185,8 +185,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                             width: 50,
                           ),
                           Text(
-                            "星际争霸 第一期",
-                            style: TextStyle(color: Colors.white, fontSize: 15),
+                            "参与测试网挖矿 瓜分万U!",
+                            style: TextStyle(color: Colors.white, fontSize: 20),
                           ),
                           Expanded(
                               flex: 1,
@@ -213,8 +213,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                               alignment: Alignment.centerRight,
                               child: Text(
                                 time,
-                                style: TextStyle(
-                                    color: Colors.white, fontSize: 15),
+                                style: TextStyle(color: blue, fontSize: 15),
                               )),
                           Container(
                               padding: EdgeInsets.only(
