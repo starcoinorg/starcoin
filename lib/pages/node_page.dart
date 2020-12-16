@@ -29,7 +29,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   Process process;
   String text = "";
   double balance = 0;
-  String difficulty = "2981";
+  String difficulty = "0";
   int blocks = 0;
   int maxLines = 5;
   String time = "";
@@ -51,10 +51,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final result=Process.runSync("pwd", []);
-
     Directory current = Directory.current;
-    time=result.stdout;
 
     final double iconSize = 60.0;
     final double buttonIconSize = 40.0;
@@ -63,8 +60,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 25);
     final edgeTexts = EdgeInsets.only(left: 30, right: 30);
     final dateTime = DateTime.now();
-    //time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
-    //freshTime();
+    time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+    freshTime();
     final boxDecoration = new BoxDecoration(
       //设置四周圆角 角度
       borderRadius: BorderRadius.all(Radius.circular(10.0)),
@@ -75,7 +72,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     if (!startRequest) {
       onclick = () async {
         process = await Process.start(
-            'starcoin/starcoin',
+            current.path+'/starcoin/starcoin',
             [
               "-n",
               "dev",
@@ -83,7 +80,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
               "all",
               "--disable-mint-empty-block",
               "false"
-            ],runInShell: true,workingDirectory: current.path);
+            ],runInShell: false,workingDirectory: current.path);
         process.stderr.transform(utf8.decoder).listen((data) {
           lines.add(data);
           if (data.contains("Mint new block")) {
