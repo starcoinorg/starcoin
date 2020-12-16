@@ -62,10 +62,8 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     final whiteTextstyle = TextStyle(color: Colors.white, fontSize: 25);
     final edgeTexts = EdgeInsets.only(left: 30, right: 30);
     final dateTime = DateTime.now();
-    Directory current = Directory.current;
-    time = current.path;
-    //time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
-    //freshTime();
+    time = formatDate(dateTime, [yyyy, '/', mm, '/', dd, ' ', HH, ':', nn]);
+    freshTime();
     final boxDecoration = new BoxDecoration(
       //设置四周圆角 角度
       borderRadius: BorderRadius.all(Radius.circular(10.0)),
@@ -76,18 +74,18 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     if (!startRequest) {
       onclick = () async {
         // 用Directory.current 也不对
-        var command ="";
-        if (Platform.isMacOS){
+        var command = "";
+        if (Platform.isMacOS) {
           final current = await DirectoryService.getCurrentDirectory();
           final dir = Directory.fromUri(Uri.parse(current)).parent;
-           command = join(dir.path, 'starcoin/starcoin');
+          command = join(dir.path, 'starcoin/starcoin');
         }
-        if (Platform.isWindows){
+        if (Platform.isWindows) {
           Directory current = Directory.current;
-          command= join(current.path,'starcoin/starcoin');
+          command = join(current.path, 'starcoin/starcoin');
         }
-        final process = await Process.start(command
-            ,
+        final process = await Process.start(
+            command,
             [
               "-n",
               "dev",
@@ -380,17 +378,16 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     int fileName = DateTime.now().microsecondsSinceEpoch;
 
     var dir;
-    if (Platform.isMacOS){
-        final current = await DirectoryService.getCurrentDirectory();
-        dir = Directory.fromUri(Uri.parse(current)).parent.path;
-    
+    if (Platform.isMacOS) {
+      final current = await DirectoryService.getCurrentDirectory();
+      dir = Directory.fromUri(Uri.parse(current)).parent.path;
     }
-    if (Platform.isWindows){
-        Directory current = Directory.current;
-        dir = current.path;
+    if (Platform.isWindows) {
+      Directory current = Directory.current;
+      dir = current.path;
     }
 
-    var path =join(dir,'$fileName.png');
+    var path = join(dir, '$fileName.png');
     // //final file = File(path);
     // //await file.writeAsBytes(wmImage);
     File(path)..writeAsBytesSync(img.encodePng(background));
