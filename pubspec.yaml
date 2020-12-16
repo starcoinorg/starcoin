@@ -41,9 +41,9 @@ dependencies:
   date_format: 1.0.9
   image: ^2.1.14
   starcoin_wallet:
-    #git:
-    #  url: git://github.com/starcoinorg/starcoin.dart
-    path: /Users/fanngyuan/Documents/workspace/starcoin_wallet.dart
+    git:
+      url: git://github.com/starcoinorg/starcoin.dart
+    #path: /Users/fanngyuan/Documents/workspace/starcoin_wallet.dart
 
 dev_dependencies:
   flutter_test:
