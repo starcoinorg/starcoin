@@ -307,6 +307,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c0df63cb2955042487fad3aefd2c6e3ae7389ac5dc1beb28921de0b69f779d4"
 
 [[package]]
+name = "api-limiter"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dashmap",
+ "governor",
+]
+
+[[package]]
 name = "arc-swap"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7625,6 +7634,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "api-limiter",
  "bytes 0.5.6",
  "futures 0.3.8",
  "futures-timer",
@@ -7890,11 +7900,9 @@ name = "starcoin-rpc-middleware"
 version = "0.9.1"
 dependencies = [
  "anyhow",
- "dashmap",
  "failure",
  "futures 0.3.8",
  "futures01",
- "governor",
  "jsonrpc-core",
  "once_cell",
  "rand 0.7.3",
@@ -7911,10 +7919,12 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "api-limiter",
  "dashmap",
  "failure",
  "futures 0.3.8",
  "futures-channel",
+ "governor",
  "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",

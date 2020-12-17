@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_ports, parse_key_val, ApiSet, BaseConfig,
-    ConfigModule, StarcoinOpt,
+    get_available_port_from, get_random_available_ports, parse_key_val, ApiQuotaConfig, ApiSet,
+    BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
-use anyhow::{bail, Result};
-use serde::de::Error;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use structopt::StructOpt;
 
 const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
@@ -48,6 +46,14 @@ pub struct HttpConfiguration {
     pub max_request_body_size: usize,
     #[structopt(name = "http-threads", long, help = "threads to use")]
     pub threads: Option<usize>,
+    #[structopt(
+        name = "http-ip-headers",
+        long,
+        use_delimiter = true,
+        help = "list of http header which identify a ip",
+        default_value = "X-Real-IP,X-Forwarded-For"
+    )]
+    pub ip_headers: Option<Vec<String>>,
 }
 
 impl Default for HttpConfiguration {
@@ -58,6 +64,7 @@ impl Default for HttpConfiguration {
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
             port: DEFAULT_HTTP_PORT,
+            ip_headers: None,
         }
     }
 }
@@ -147,102 +154,58 @@ impl Default for IpcConfiguration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ApiQuotaConfig {
-    pub max_burst: NonZeroU32,
-    pub duration: QuotaDuration,
-}
-
-impl std::fmt::Display for ApiQuotaConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}/{}", self.max_burst, self.duration)
-    }
-}
-
-impl FromStr for ApiQuotaConfig {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.splitn(2, '/').collect();
-        if parts.len() != 2 {
-            bail!("invalid quota format");
-        }
-        let max_burst = parts[0].parse::<NonZeroU32>()?;
-        let quota_duration = parts[1].parse::<QuotaDuration>()?;
-        Ok(ApiQuotaConfig {
-            max_burst,
-            duration: quota_duration,
-        })
-    }
-}
-
-impl Serialize for ApiQuotaConfig {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_str())
-    }
-}
-impl<'de> Deserialize<'de> for ApiQuotaConfig {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = <String>::deserialize(deserializer)?;
-        s.parse::<ApiQuotaConfig>().map_err(D::Error::custom)
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum QuotaDuration {
-    Second,
-    Minute,
-    Hour,
-}
-
-impl std::fmt::Display for QuotaDuration {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            QuotaDuration::Second => "s",
-            QuotaDuration::Minute => "m",
-            QuotaDuration::Hour => "h",
-        };
-        write!(f, "{}", s)
-    }
-}
-impl FromStr for QuotaDuration {
-    type Err = anyhow::Error;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let quota_duration = match s {
-            "s" => QuotaDuration::Second,
-            "m" => QuotaDuration::Minute,
-            "h" => QuotaDuration::Hour,
-            _ => bail!("invalid quota duration"),
-        };
-        Ok(quota_duration)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct ApiQuotaConfiguration {
-    #[structopt(long, help = "default api quota, eg: 1000/s", default_value = "1000/s")]
-    pub default_api_quota: ApiQuotaConfig,
+    #[structopt(
+        name = "default-global-jsonrpc-quota",
+        long,
+        help = "default api quota, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_global_api_quota: ApiQuotaConfig,
 
     // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
     // my_program -D a=1 -D b=2
-    #[structopt(long, help="customize api quota, eg: node.info=100/s", parse(try_from_str = parse_key_val), number_of_values = 1)]
-    pub custom_api_quota: Vec<(String, ApiQuotaConfig)>,
+    #[structopt(
+        name = "custom-global-jsonrpc-quota",
+        long,
+        help = "customize api quota, eg: node.info=100/s",
+        number_of_values = 1,
+        parse(try_from_str = parse_key_val)
+    )]
+    pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
+
+    #[structopt(
+        name = "default-user-jsonrpc-quota",
+        long,
+        help = "default api quota of user, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_user_api_quota: ApiQuotaConfig,
+
+    #[structopt(
+        name = "custom-user-jsonrpc-quota",
+        long,
+        help = "customize api quota of user, eg: node.info=100/s",
+        number_of_values = 1,
+        parse(try_from_str = parse_key_val)
+    )]
+    pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
 }
 
 impl Default for ApiQuotaConfiguration {
     fn default() -> Self {
         Self {
-            default_api_quota: ApiQuotaConfig {
+            default_global_api_quota: ApiQuotaConfig {
                 max_burst: NonZeroU32::new(1000).unwrap(),
                 duration: QuotaDuration::Second,
             },
-            custom_api_quota: vec![],
+            custom_global_api_quota: vec![],
+            default_user_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(50).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_user_api_quota: vec![],
         }
     }
 }
@@ -326,7 +289,10 @@ impl ConfigModule for RpcConfig {
         Ok(config)
     }
 
-    fn after_load(&mut self, _opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+        if self.http.ip_headers.is_none() {
+            self.http.ip_headers = opt.http.ip_headers.clone();
+        }
         info!("Ipc file path: {:?}", self.ipc.ipc_file_path);
         info!("Http rpc address: {:?}", self.get_http_address());
         info!("TCP rpc address: {:?}", self.get_tcp_address());

@@ -27,6 +27,7 @@ use structopt::StructOpt;
 
 mod account_vault_config;
 mod api_config;
+mod api_quota;
 mod available_port;
 mod logger_config;
 mod metrics_config;
@@ -38,6 +39,7 @@ mod sync_config;
 mod txpool_config;
 
 pub use api_config::{Api, ApiSet};
+pub use api_quota::{ApiQuotaConfig, QuotaDuration};
 pub use available_port::{
     get_available_port_from, get_random_available_port, get_random_available_ports,
 };
@@ -46,10 +48,10 @@ pub use logger_config::LoggerConfig;
 pub use metrics_config::MetricsConfig;
 pub use miner_config::{MinerClientConfig, MinerConfig};
 use names::{Generator, Name};
-pub use network_config::NetworkConfig;
+pub use network_config::{NetworkConfig, NetworkRpcQuotaConfiguration};
 pub use rpc_config::{
-    ApiQuotaConfig, ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, QuotaDuration,
-    RpcConfig, TcpConfiguration, WsConfiguration,
+    ApiQuotaConfiguration, HttpConfiguration, IpcConfiguration, RpcConfig, TcpConfiguration,
+    WsConfiguration,
 };
 pub use starcoin_crypto::ed25519::genesis_key_pair;
 pub use starcoin_vm_types::genesis_config::{
@@ -240,6 +242,8 @@ pub struct StarcoinOpt {
     pub ipc: IpcConfiguration,
     #[structopt(flatten)]
     pub api_quotas: ApiQuotaConfiguration,
+    #[structopt(flatten)]
+    pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 }
 
 #[derive(Clone, Debug, PartialEq)]

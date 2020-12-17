@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    decode_key, get_available_port_from, get_random_available_port, load_key, BaseConfig,
-    ConfigModule, StarcoinOpt,
+    decode_key, get_available_port_from, get_random_available_port, load_key, parse_key_val,
+    ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::{bail, format_err, Result};
 use network_p2p_types::{
@@ -19,10 +19,68 @@ use starcoin_crypto::{
 use starcoin_logger::prelude::*;
 use starcoin_types::peer_info::PeerId;
 use std::net::Ipv4Addr;
+use std::num::NonZeroU32;
 use std::sync::Arc;
+use structopt::StructOpt;
 
 pub static DEFAULT_NETWORK_PORT: u16 = 9840;
 static NETWORK_KEY_FILE: &str = "network_key";
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+pub struct NetworkRpcQuotaConfiguration {
+    #[structopt(
+        name = "default-global-p2prpc-quota",
+        long,
+        help = "default global p2p rpc quota, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_global_api_quota: ApiQuotaConfig,
+
+    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    // my_program -D a=1 -D b=2
+    #[structopt(
+        name = "custom-global-p2prpc-quota",
+        long,
+        help = "customize global p2p rpc quota, eg: get_block=100/s",
+        number_of_values = 1,
+        parse(try_from_str = parse_key_val)
+    )]
+    pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
+
+    #[structopt(
+        name = "default-user-p2prpc-quota",
+        long,
+        help = "default p2p rpc quota of a peer, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_user_api_quota: ApiQuotaConfig,
+
+    #[structopt(
+        name = "custom-user-p2prpc-quota",
+        long,
+        help = "customize p2p rpc quota of a peer, eg: get_block=10/s",
+        parse(try_from_str = parse_key_val),
+        number_of_values = 1
+    )]
+    pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
+}
+
+impl Default for NetworkRpcQuotaConfiguration {
+    fn default() -> Self {
+        Self {
+            default_global_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(1000).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_global_api_quota: vec![],
+            default_user_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(50).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_user_api_quota: vec![],
+        }
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -37,6 +95,8 @@ pub struct NetworkConfig {
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
     pub self_address: Option<MultiaddrWithPeerId>,
+
+    pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 }
 
 impl NetworkConfig {
@@ -122,6 +182,7 @@ impl ConfigModule for NetworkConfig {
             self_peer_id: None,
             self_address: None,
             disable_seed: opt.disable_seed,
+            network_rpc_quotas: opt.network_rpc_quotas.clone(),
         })
     }
 
