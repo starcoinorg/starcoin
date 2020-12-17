@@ -143,7 +143,7 @@ impl SyncService2 {
 
         let network = ctx.get_shared::<NetworkServiceRef>()?;
         let peer_selector = PeerSelector::new(target.peers.clone());
-        let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+        let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
         let connector_service = ctx.service_ref::<BlockConnectorService>()?;
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
@@ -152,6 +152,7 @@ impl SyncService2 {
             self.storage.clone(),
             connector_service.clone(),
             rpc_client,
+            network,
         )?;
         let target_id_number =
             BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);

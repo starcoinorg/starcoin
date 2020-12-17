@@ -7,6 +7,8 @@ use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
+use network::NetworkServiceRef;
+use network_api::NetworkService;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
@@ -137,7 +139,7 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                 .save_failed_block(
                                     msg.get_block().id(),
                                     msg.get_block().clone(),
-                                    Some(peer_id),
+                                    Some(peer_id.clone()),
                                     format!("{:?}", e),
                                 )
                             {
@@ -146,6 +148,13 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                     err,
                                     msg.get_block().id()
                                 );
+                            }
+
+                            if let Err(e1) = ctx
+                                .get_shared::<NetworkServiceRef>()
+                                .map(|network| network.report_peer(peer_id, (&e).into()))
+                            {
+                                warn!("Get NetworkServiceRef err: {:?}.", e1);
                             }
                         }
                     }

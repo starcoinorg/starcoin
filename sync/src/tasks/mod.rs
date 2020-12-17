@@ -184,15 +184,17 @@ use crate::tasks::block_sync_task::SyncBlockData;
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
+use network_api::NetworkService;
 use starcoin_types::peer_info::PeerId;
 
-pub fn full_sync_task<H, F>(
+pub fn full_sync_task<H, F, N>(
     current_block_id: HashValue,
     target: BlockInfo,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     block_event_handle: H,
     fetcher: F,
+    network: N,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
@@ -201,6 +203,7 @@ pub fn full_sync_task<H, F>(
 where
     H: BlockConnectedEventHandle + 'static,
     F: BlockIdFetcher + BlockFetcher + 'static,
+    N: NetworkService + 'static,
 {
     let fetcher = Arc::new(fetcher);
     let current_block_header = storage
@@ -285,7 +288,7 @@ where
                 1,
             );
             let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
-            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle);
+            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle, network);
             Ok(TaskGenerator::new(
                 block_sync_task,
                 5,
