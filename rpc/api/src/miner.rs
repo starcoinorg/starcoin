@@ -10,8 +10,4 @@ pub trait MinerApi {
     /// submit mining seal
     #[rpc(name = "mining.submit")]
     fn submit(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()>;
-
-    /// gen a block
-    #[rpc(name = "mining.gen_block")]
-    fn gen_block(&self) -> Result<()>;
 }
