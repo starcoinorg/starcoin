@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Error;
+use network_api::ReputationChange;
 use starcoin_types::block::{Block, BlockHeader};
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
@@ -57,4 +58,10 @@ pub enum ConnectBlockError {
     ParentNotExist(Box<BlockHeader>),
     #[error("Verify block {0} failed: {1:?}")]
     VerifyBlockFailed(VerifyBlockField, Error),
+}
+
+impl Into<ReputationChange> for &ConnectBlockError {
+    fn into(self) -> ReputationChange {
+        ReputationChange::new(i32::min_value() / 2, stringify!(self))
+    }
 }

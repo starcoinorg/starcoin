@@ -9,6 +9,7 @@ use chain::BlockChain;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
+use network_api::NetworkService;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
@@ -166,27 +167,31 @@ impl TaskState for BlockSyncTask {
     }
 }
 
-pub struct BlockCollector {
+pub struct BlockCollector<N>
+where
+    N: NetworkService + 'static,
+{
     //node's current block info
     current_block_info: BlockInfo,
     // the block chain init by ancestor
     chain: BlockChain,
     event_handle: Box<dyn BlockConnectedEventHandle>,
+    network: N,
 }
 
-impl BlockCollector {
-    pub fn new(current_block_info: BlockInfo, chain: BlockChain) -> Self {
-        Self {
-            current_block_info,
-            chain,
-            event_handle: Box::new(NoOpEventHandle),
-        }
+impl<N> BlockCollector<N>
+where
+    N: NetworkService + 'static,
+{
+    pub fn new(current_block_info: BlockInfo, chain: BlockChain, network: N) -> Self {
+        Self::new_with_handle(current_block_info, chain, NoOpEventHandle, network)
     }
 
     pub fn new_with_handle<H>(
         current_block_info: BlockInfo,
         chain: BlockChain,
         event_handle: H,
+        network: N,
     ) -> Self
     where
         H: BlockConnectedEventHandle + 'static,
@@ -195,6 +200,7 @@ impl BlockCollector {
             current_block_info,
             chain,
             event_handle: Box::new(event_handle),
+            network,
         }
     }
 
@@ -214,9 +220,13 @@ impl BlockCollector {
                         self.chain.get_storage().save_failed_block(
                             block.id(),
                             block,
-                            peer_id,
+                            peer_id.clone(),
                             format!("{:?}", e),
                         )?;
+                        if let Some(peer) = peer_id {
+                            self.network.report_peer(peer, (&e).into());
+                        }
+
                         Err(e.into())
                     }
                 },
@@ -228,7 +238,10 @@ impl BlockCollector {
     }
 }
 
-impl TaskResultCollector<SyncBlockData> for BlockCollector {
+impl<N> TaskResultCollector<SyncBlockData> for BlockCollector<N>
+where
+    N: NetworkService + 'static,
+{
     type Output = BlockChain;
 
     fn collect(mut self: Pin<&mut Self>, item: SyncBlockData) -> Result<CollectorState> {
