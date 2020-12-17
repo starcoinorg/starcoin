@@ -32,6 +32,40 @@ use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, Transac
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::convert::{TryFrom, TryInto};
 
+#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct TransactionRequest {
+    /// Sender's address.
+    pub sender: Option<AccountAddress>,
+    // Sequence number of this transaction corresponding to sender's account.
+    pub sequence_number: Option<u64>,
+    // The transaction script to execute.
+    pub script: ScriptData,
+    // Maximal total gas specified by wallet to spend for this transaction.
+    pub max_gas_amount: Option<u64>,
+    // Maximal price can be paid per gas.
+    pub gas_unit_price: Option<u64>,
+    // The token code for pay transaction gas, Default is STC token code.
+    pub gas_token_code: Option<String>,
+    // Expiration timestamp for this transaction. timestamp is represented
+    // as u64 in seconds from Unix Epoch. If storage is queried and
+    // the time returned is greater than or equal to this time and this
+    // transaction has not been included, you can be certain that it will
+    // never be included.
+    // A transaction that doesn't expire is represented by a very large value like
+    // u64::max_value().
+    pub expiration_timestamp_secs: Option<u64>,
+    pub chain_id: Option<genesis_config::ChainId>,
+}
+
+#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct ScriptData {
+    pub code: String,
+    #[serde(default)]
+    pub type_args: Vec<String>,
+    #[serde(default)]
+    pub args: Vec<String>,
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BlockHeaderView {
     pub block_hash: HashValue,

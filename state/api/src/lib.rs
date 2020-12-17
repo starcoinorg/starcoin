@@ -12,7 +12,9 @@ use starcoin_types::{
 pub use chain_state::{
     AccountStateReader, ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
 };
+use serde::de::DeserializeOwned;
 pub use starcoin_state_tree::StateNodeStore;
+use starcoin_vm_types::move_resource::MoveResource;
 pub use starcoin_vm_types::state_view::StateView;
 
 mod chain_state;
@@ -24,6 +26,18 @@ pub trait ChainStateAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn get(self, access_path: AccessPath) -> Result<Option<Vec<u8>>>;
 
     async fn get_with_proof(self, access_path: AccessPath) -> Result<StateWithProof>;
+
+    async fn get_resource<R>(self, address: AccountAddress) -> Result<Option<R>>
+    where
+        R: MoveResource + DeserializeOwned,
+    {
+        let access_path = AccessPath::new(address, R::resource_path());
+        let r = self.get(access_path).await.and_then(|state| match state {
+            Some(state) => Ok(Some(scs::from_bytes::<R>(state.as_slice())?)),
+            None => Ok(None),
+        })?;
+        Ok(r)
+    }
 
     async fn get_account_state(self, address: AccountAddress) -> Result<Option<AccountState>>;
 
