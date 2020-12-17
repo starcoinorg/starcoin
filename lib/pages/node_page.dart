@@ -88,11 +88,11 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             command,
             [
               "-n",
-              "dev",
+              "Proxima",
               "--http-apis",
               "all",
-              "--disable-mint-empty-block",
-              "false"
+              //"--disable-mint-empty-block",
+              //"false"
             ],
             runInShell: false);
         process.stderr.transform(utf8.decoder).listen((data) {
