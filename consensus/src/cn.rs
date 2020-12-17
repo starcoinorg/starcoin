@@ -7,9 +7,7 @@ use anyhow::Result;
 use cryptonight::cryptonight_r;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
-use starcoin_vm_types::on_chain_resource::EpochInfo;
 
 #[derive(Default)]
 pub struct CryptoNightConsensus {}

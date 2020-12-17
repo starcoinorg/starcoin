@@ -48,7 +48,7 @@ fn test_miner() {
             minting_blob: mint_block_event.minting_blob.clone(),
         })
         .unwrap();
-        let mined_block = new_block_receiver.await.unwrap().0.get_block().clone();
+        let mined_block = new_block_receiver.await.unwrap().0.block().clone();
         assert_eq!(mined_block.header.nonce, nonce);
         let minting_blob = mined_block.header.as_pow_header_blob();
         assert_eq!(mint_block_event.minting_blob, minting_blob);

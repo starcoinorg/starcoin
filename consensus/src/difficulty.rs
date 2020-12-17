@@ -8,7 +8,6 @@ use anyhow::{bail, format_err, Result};
 use logger::prelude::*;
 use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
-use starcoin_vm_types::on_chain_resource::EpochInfo;
 use std::convert::TryInto;
 
 /// Get the target of next pow work

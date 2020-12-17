@@ -4,7 +4,7 @@
 use anyhow::{format_err, Error, Result};
 use starcoin_chain::BlockChain;
 use starcoin_chain_api::message::{ChainRequest, ChainResponse};
-use starcoin_chain_api::{ChainReader, ReadableChainService};
+use starcoin_chain_api::{ChainReader, ChainWriter, ReadableChainService};
 use starcoin_config::NodeConfig;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
@@ -12,7 +12,7 @@ use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
 };
 use starcoin_storage::{BlockStore, Storage, Store};
-use starcoin_types::block::{BlockSummary, EpochUncleSummary, UncleSummary};
+use starcoin_types::block::{BlockSummary, EpochUncleSummary, ExecutedBlock, UncleSummary};
 use starcoin_types::contract_event::ContractEventInfo;
 use starcoin_types::filter::Filter;
 use starcoin_types::stress_test::TPS;
@@ -68,14 +68,13 @@ impl ActorService for ChainReaderService {
 
 impl EventHandler<Self, NewHeadBlock> for ChainReaderService {
     fn handle_event(&mut self, event: NewHeadBlock, _ctx: &mut ServiceContext<ChainReaderService>) {
-        let new_head = event.0.get_block().header();
-        let old_head = self.inner.get_main().current_header().id();
-        if let Err(e) = if new_head.parent_hash() == old_head {
-            self.inner.update_chain_head(event.0.get_block().clone())
+        let new_head = event.0.block().header();
+        if let Err(e) = if self.inner.get_main().can_connect(event.0.as_ref()) {
+            self.inner.update_chain_head(event.0.as_ref().clone())
         } else {
             self.inner.switch_main(new_head.id())
         } {
-            warn!("err: {:?}", e);
+            warn!("ChainReaderService handle NewHeadBlock err: {:?}", e);
         }
     }
 }
@@ -274,38 +273,14 @@ impl ChainReaderServiceInner {
         &self.main
     }
 
-    pub fn update_chain_head(&mut self, block: Block) -> Result<()> {
-        self.main.update_chain_head(block)
+    pub fn update_chain_head(&mut self, block: ExecutedBlock) -> Result<()> {
+        self.main.connect(block)?;
+        Ok(())
     }
 
     pub fn switch_main(&mut self, new_head_id: HashValue) -> Result<()> {
-        let old_head_id = self.get_main().current_header().id();
-        if old_head_id != new_head_id {
-            let old_difficulty = self
-                .storage
-                .get_block_info(old_head_id)?
-                .ok_or_else(|| {
-                    format_err!("block info not exist by old block id {:?}.", old_head_id)
-                })?
-                .get_total_difficulty();
-            let new_difficulty = self
-                .storage
-                .get_block_info(new_head_id)?
-                .ok_or_else(|| {
-                    format_err!("block info not exist by new block id {:?}.", new_head_id)
-                })?
-                .get_total_difficulty();
-            if new_difficulty <= old_difficulty {
-                return Err(format_err!(
-                    "Can not switch main branch with difficulty {:?} : {:?}.",
-                    new_difficulty,
-                    old_difficulty
-                ));
-            }
-
-            let net = self.config.net();
-            self.main = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
-        }
+        let net = self.config.net();
+        self.main = BlockChain::new(net.time_service(), new_head_id, self.storage.clone())?;
         Ok(())
     }
 

@@ -20,9 +20,9 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
-use traits::ChainReader;
+use traits::{ChainReader, ChainWriter};
 use types::{
-    block::{Block, BlockHeader, BlockTemplate},
+    block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
 
@@ -99,7 +99,7 @@ impl EventHandler<Self, NewHeadBlock> for CreateBlockTemplateService {
         msg: NewHeadBlock,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) {
-        if let Err(e) = self.inner.update_chain(msg.0.get_block().clone()) {
+        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }
@@ -179,16 +179,19 @@ impl Inner {
         })
     }
 
-    pub fn update_chain(&mut self, block: Block) -> Result<()> {
+    pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
-        if block.header().parent_hash() != current_id {
-            self.chain =
-                BlockChain::new(self.chain.time_service(), block.id(), self.storage.clone())?;
+        if self.chain.can_connect(&block) {
+            self.chain.connect(block)?;
+        } else {
+            self.chain = BlockChain::new(
+                self.chain.time_service(),
+                block.header().id(),
+                self.storage.clone(),
+            )?;
             //current block possible bean uncle.
             self.uncles.insert(current_id, current_header);
-        } else {
-            self.chain.update_chain_head(block)?;
         }
         Ok(())
     }

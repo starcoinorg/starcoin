@@ -1,18 +1,16 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::BlockChain;
 use anyhow::Result;
 use consensus::{Consensus, ConsensusVerifyError};
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifiedBlock,
-    VerifyBlockField,
+    verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::collections::HashSet;
 
 const MAX_UNCLE_COUNT_PER_BLOCK: usize = 2;
-
+//TODO this trait should move to consensus?
 pub trait BlockVerifier {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where

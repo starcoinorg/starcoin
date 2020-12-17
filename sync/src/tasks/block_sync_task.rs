@@ -11,7 +11,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
@@ -252,7 +252,7 @@ where
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.update_chain_head_with_info(block, block_info)?;
+                self.chain.connect(ExecutedBlock { block, block_info })?;
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;

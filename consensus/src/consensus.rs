@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{difficult_to_target, generate_nonce, ChainReader};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use starcoin_crypto::HashValue;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
     U256,
 };
-use starcoin_vm_types::on_chain_resource::EpochInfo;
 use starcoin_vm_types::time::TimeService;
 use thiserror::Error;
 

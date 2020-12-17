@@ -27,13 +27,12 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use traits::{ChainReader, ChainWriter};
+use traits::ChainReader;
 
 mod errors;
 
 pub use errors::GenesisError;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
-use starcoin_chain::verifier::NoneVerifier;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID};
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";

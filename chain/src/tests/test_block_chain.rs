@@ -1,12 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::BlockChain as BlockChainNotMock;
 use anyhow::Result;
 use consensus::Consensus;
-use crypto::HashValue;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
-use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_config::NodeConfig;
@@ -14,14 +11,11 @@ use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
@@ -143,6 +137,34 @@ fn test_dev_consensus() {
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
+}
+
+#[stest::test]
+fn test_find_ancestor_genesis() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain.produce_and_apply_times(3)?;
+
+    let mut mock_chain2 = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain2.produce_and_apply_times(4)?;
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().number, 0);
+    Ok(())
+}
+
+#[stest::test]
+fn test_find_ancestor_fork() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain.produce_and_apply_times(3)?;
+    let header = mock_chain.head().current_header();
+    let mut mock_chain2 = mock_chain.fork(None)?;
+    mock_chain.produce_and_apply_times(2)?;
+    mock_chain2.produce_and_apply_times(3)?;
+
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().id, header.id());
+    Ok(())
 }
 
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {

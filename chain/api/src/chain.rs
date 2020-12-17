@@ -18,10 +18,7 @@ use std::collections::HashSet;
 
 pub struct VerifiedBlock(pub Block);
 
-pub struct ExecutedBlock {
-    pub block: Block,
-    pub block_info: BlockInfo,
-}
+pub use starcoin_types::block::ExecutedBlock;
 
 pub trait ChainReader {
     fn info(&self) -> ChainInfo;
@@ -77,11 +74,12 @@ pub trait ChainReader {
 }
 
 pub trait ChainWriter {
+    fn can_connect(&self, executed_block: &ExecutedBlock) -> bool;
     /// Connect a executed block to current chain.
-    fn connect(&mut self, block: ExecutedBlock) -> Result<()>;
+    fn connect(&mut self, executed_block: ExecutedBlock) -> Result<ExecutedBlock>;
 
     /// Verify, Execute and Connect block to current chain.
-    fn apply(&mut self, block: Block) -> Result<()>;
+    fn apply(&mut self, block: Block) -> Result<ExecutedBlock>;
 
     fn chain_state(&mut self) -> &dyn ChainState;
 }

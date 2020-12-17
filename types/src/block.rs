@@ -685,25 +685,26 @@ impl BlockTemplate {
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct BlockDetail {
-    block: Block,
-    total_difficulty: U256,
+pub struct ExecutedBlock {
+    pub block: Block,
+    pub block_info: BlockInfo,
 }
 
-impl BlockDetail {
-    pub fn new(block: Block, total_difficulty: U256) -> Self {
-        BlockDetail {
-            block,
-            total_difficulty,
-        }
+impl ExecutedBlock {
+    pub fn new(block: Block, block_info: BlockInfo) -> Self {
+        ExecutedBlock { block, block_info }
     }
 
-    pub fn get_total_difficulty(&self) -> U256 {
-        self.total_difficulty
+    pub fn total_difficulty(&self) -> U256 {
+        self.block_info.total_difficulty
     }
 
-    pub fn get_block(&self) -> &Block {
+    pub fn block(&self) -> &Block {
         &self.block
+    }
+
+    pub fn block_info(&self) -> &BlockInfo {
+        &self.block_info
     }
 
     pub fn header(&self) -> &BlockHeader {

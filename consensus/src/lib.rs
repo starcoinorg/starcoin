@@ -14,7 +14,6 @@ use starcoin_traits::ChainReader;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::U256;
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
-use starcoin_vm_types::on_chain_resource::EpochInfo;
 use starcoin_vm_types::time::TimeService;
 
 pub mod argon;

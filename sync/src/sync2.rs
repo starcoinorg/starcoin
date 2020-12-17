@@ -315,7 +315,7 @@ impl EventHandler<Self, NewHeadBlock> for SyncService2 {
         let NewHeadBlock(block) = msg;
         if self.sync_status.update_chain_status(ChainStatus::new(
             block.header().clone(),
-            block.get_total_difficulty(),
+            block.total_difficulty(),
         )) {
             ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         }

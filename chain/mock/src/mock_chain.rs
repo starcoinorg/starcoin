@@ -116,7 +116,8 @@ impl MockChain {
     }
 
     pub fn apply(&mut self, block: Block) -> Result<()> {
-        self.head.apply(block)
+        self.head.apply(block)?;
+        Ok(())
     }
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {
