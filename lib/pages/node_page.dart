@@ -77,18 +77,19 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
         var command = "";
         if (Platform.isMacOS) {
           final current = await DirectoryService.getCurrentDirectory();
-          final dir = Directory.fromUri(Uri.parse(current)).parent;
-          command = join(dir.path, 'starcoin/starcoin');
+          final dir = Directory.fromUri(Uri.parse(current));
+          command = join(dir.path, 'Contents/Resources/starcoin');
+          //command = 'Contents/Resources/starcoin';
         }
         if (Platform.isWindows) {
           Directory current = Directory.current;
           command = join(current.path, 'starcoin/starcoin');
         }
-        final process = await Process.start(
+        process = await Process.start(
             command,
             [
               "-n",
-              "Proxima",
+              "proxima",
               "--http-apis",
               "all",
               //"--disable-mint-empty-block",
