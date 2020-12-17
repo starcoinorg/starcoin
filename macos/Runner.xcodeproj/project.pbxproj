@@ -33,6 +33,7 @@
 		D73912F222F3801D000D13A0 /* App.framework in Bundle Framework */ = {isa = PBXBuildFile; fileRef = D73912EF22F37F9E000D13A0 /* App.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EF1C281E258B4C1200B00C59 /* starcoin in Resources */ = {isa = PBXBuildFile; fileRef = EFC5059D258B14F70049ECEE /* starcoin */; };
 		EFC505B0258B37760049ECEE /* starcoin in Copy Files */ = {isa = PBXBuildFile; fileRef = EFC5059D258B14F70049ECEE /* starcoin */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		EFEC56FE258BA4F900CD10C8 /* starcoin-qr.png in Resources */ = {isa = PBXBuildFile; fileRef = EFEC56FD258BA4F900CD10C8 /* starcoin-qr.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +97,7 @@
 		D73912EF22F37F9E000D13A0 /* App.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = App.framework; path = Flutter/ephemeral/App.framework; sourceTree = SOURCE_ROOT; };
 		EFC50599258B131D0049ECEE /* Runner copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "Runner copy-Info.plist"; path = "/Users/fanngyuan/Documents/workspace/starcoin_node_gui/macos/Runner copy-Info.plist"; sourceTree = "<absolute>"; };
 		EFC5059D258B14F70049ECEE /* starcoin */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = starcoin; sourceTree = "<group>"; };
+		EFEC56FD258BA4F900CD10C8 /* starcoin-qr.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "starcoin-qr.png"; path = "../assets/images/starcoin-qr.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,6 +128,7 @@
 		33CC10E42044A3C60003C045 = {
 			isa = PBXGroup;
 			children = (
+				EFEC56FD258BA4F900CD10C8 /* starcoin-qr.png */,
 				EFC505A7258B31D00049ECEE /* starcoin */,
 				33FAB671232836740065AC1E /* Runner */,
 				33CEB47122A05771004F2AC0 /* Flutter */,
@@ -286,6 +289,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EFEC56FE258BA4F900CD10C8 /* starcoin-qr.png in Resources */,
 				EF1C281E258B4C1200B00C59 /* starcoin in Resources */,
 				33CC10F32044A3C60003C045 /* Assets.xcassets in Resources */,
 				33CC10F62044A3C60003C045 /* MainMenu.xib in Resources */,

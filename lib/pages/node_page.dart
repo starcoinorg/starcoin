@@ -160,7 +160,6 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
         onPressed: onStop,
       ),
     );
-    final node = Node(LOCALURL);
     return RepaintBoundary(
         key: previewContainer,
         child: Scaffold(
@@ -355,27 +354,23 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     var pngBytes = byteData.buffer.asUint8List();
     img.Image background = img.decodeImage(pngBytes);
 
-    final qrFile = File("assets/images/starcoin-qr.png");
+    var filePath;
+    if (Platform.isMacOS) {
+      final current = await DirectoryService.getCurrentDirectory();
+      final dir = Directory.fromUri(Uri.parse(current)).path;
+      filePath = join(dir, 'Contents/Resources/starcoin-qr.png');
+    }
+    if (Platform.isWindows) {
+      Directory current = Directory.current;
+      final dir = current.path;
+      filePath = join(dir, 'starcoin/starcoin-qr.png');
+    }
+    final qrFile = File(filePath);
+
     img.Image qr = img.decodeImage(qrFile.readAsBytesSync());
 
     img.drawImage(background, qr, dstX: 40, dstY: 450, dstH: 120, dstW: 120);
-    // String fileName = DateTime.now().toIso8601String();
-    // var path =
-    //     '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    // //final file = File(path);
-    // //await file.writeAsBytes(wmImage);
-    // File(path)..writeAsBytesSync(ui.encodePng(Img));
 
-    //String fileName = DateTime.now().toIso8601String();
-    //var path =
-    //    '/Users/fanngyuan/Documents/workspace/starcoin_node_gui/$fileName.png';
-    //final file = File(path);
-    //await file.writeAsBytes(pngBytes);
-
-    // final _originalImage = File("assets/images/starcoin-share-template.png");
-    // ui.Image Img = ui.decodeImage(_originalImage.readAsBytesSync());
-    // ui.drawString(Img, ui.arial_48, 800, 400, 'Add Text 123',
-    //     color: 0xff00ffff);
     int fileName = DateTime.now().microsecondsSinceEpoch;
 
     var dir;
