@@ -133,7 +133,7 @@ impl ServiceHandler<Self, ChainRequest> for ChainReaderService {
                 self.inner.main_startup_info(),
             ))),
             ChainRequest::GetHeadChainStatus() => Ok(ChainResponse::ChainStatus(Box::new(
-                self.inner.main.get_chain_status()?,
+                self.inner.main.status(),
             ))),
             ChainRequest::GetTransaction(hash) => Ok(ChainResponse::Transaction(Box::new(
                 self.inner

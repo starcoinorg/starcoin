@@ -9,7 +9,7 @@ use serde::export::TryFrom;
 use serde::{Deserialize, Serialize};
 
 /// The Epoch resource held under an account.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Epoch {
     number: u64,
     //milli_seconds

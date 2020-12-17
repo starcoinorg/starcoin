@@ -220,6 +220,11 @@ impl ChainStateDB {
         }
     }
 
+    /// Fork a new statedb base current statedb
+    pub fn fork(&self) -> Self {
+        Self::new(self.store.clone(), Some(self.state_root()))
+    }
+
     //TODO implements a change_root ChainStateReader
     pub fn change_root(&self, root_hash: HashValue) -> Self {
         Self {

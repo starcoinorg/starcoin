@@ -5,7 +5,8 @@ use crate::BlockChain;
 use anyhow::Result;
 use consensus::{Consensus, ConsensusVerifyError};
 use starcoin_chain_api::{
-    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
+    verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifiedBlock,
+    VerifyBlockField,
 };
 use starcoin_types::block::{Block, BlockHeader, ALLOWED_FUTURE_BLOCKTIME};
 use std::collections::HashSet;
@@ -16,7 +17,7 @@ pub trait BlockVerifier {
     fn verify_header<R>(current_chain: &R, new_block_header: &BlockHeader) -> Result<()>
     where
         R: ChainReader;
-    fn verify_block<R>(current_chain: &R, new_block: &Block) -> Result<()>
+    fn verify_block<R>(current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
     where
         R: ChainReader,
     {
@@ -39,7 +40,7 @@ pub trait BlockVerifier {
             new_block.uncles().unwrap_or_default(),
             new_block_header,
         )?;
-        Ok(())
+        Ok(VerifiedBlock(new_block))
     }
 
     fn verify_uncles<R>(
@@ -92,7 +93,7 @@ pub trait BlockVerifier {
 
             verify_block!(
                 VerifyBlockField::Uncle,
-                current_chain.can_be_uncle(uncle),
+                Self::can_be_uncle(current_chain, uncle)?,
                 "invalid block: block {} can not be uncle.",
                 uncle_id
             );
@@ -102,6 +103,20 @@ pub trait BlockVerifier {
             uncle_ids.insert(uncle_id);
         }
         Ok(())
+    }
+
+    fn can_be_uncle<R>(current_chain: &R, block_header: &BlockHeader) -> Result<bool>
+    where
+        R: ChainReader,
+    {
+        let epoch = current_chain.epoch();
+        let uncles = current_chain.epoch_uncles();
+        Ok(epoch.start_block_number() <= block_header.number()
+            && epoch.end_block_number() > block_header.number()
+            && current_chain.exist_block(block_header.parent_hash())?
+            && !current_chain.exist_block(block_header.id())?
+            && !uncles.contains(&block_header.id())
+            && block_header.number() <= current_chain.current_header().number())
     }
 }
 
@@ -246,11 +261,11 @@ impl BlockVerifier for NoneVerifier {
         Ok(())
     }
 
-    fn verify_block<R>(_current_chain: &R, _new_block: &Block) -> Result<()>
+    fn verify_block<R>(_current_chain: &R, new_block: Block) -> Result<VerifiedBlock>
     where
         R: ChainReader,
     {
-        Ok(())
+        Ok(VerifiedBlock(new_block))
     }
 
     fn verify_uncles<R>(

@@ -201,7 +201,7 @@ impl Inner {
                     if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
                         break;
                     }
-                    if self.chain.can_be_uncle(maybe_uncle) {
+                    if self.chain.can_be_uncle(maybe_uncle).unwrap_or_default() {
                         new_uncle.push(maybe_uncle.clone())
                     }
                 }

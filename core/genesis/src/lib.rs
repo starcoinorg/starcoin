@@ -259,12 +259,12 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
-        let mut genesis_chain = BlockChain::init_empty_chain(
+        let genesis_chain = BlockChain::new_with_genesis(
             net.time_service(),
-            net.genesis_config().genesis_epoch(),
             storage.clone(),
-        );
-        genesis_chain.apply_with_verifier::<NoneVerifier>(self.block.clone())?;
+            net.genesis_config().genesis_epoch(),
+            self.block.clone(),
+        )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)

@@ -68,25 +68,37 @@ pub fn convert_prologue_runtime_error(error: VMError) -> Result<(), VMStatus> {
                 (INVALID_ARGUMENT, PROLOGUE_SCRIPT_NOT_ALLOWED) => StatusCode::UNKNOWN_SCRIPT,
                 (REQUIRES_ADDRESS, ENOT_GENESIS_ACCOUNT) => StatusCode::NO_ACCOUNT_ROLE,
                 (INVALID_STATE, ENOT_GENESIS) => {
+                    warn!("prologue runtime : INVALID_STATE, ENOT_GENESIS");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST) => {
+                    warn!("prologue runtime : INVALID_STATE, ECONFIG_VALUE_DOES_NOT_EXIST");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_ARGUMENT, EINVALID_TIMESTAMP) => {
+                    warn!("prologue runtime : INVALID_ARGUMENT, EINVALID_TIMESTAMP");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO) => {
+                    warn!("prologue runtime : INVALID_ARGUMENT, ECOIN_DEPOSIT_IS_ZERO");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_STATE, EDESTROY_TOKEN_NON_ZERO) => {
+                    warn!("prologue runtime : INVALID_STATE, EDESTROY_TOKEN_NON_ZERO");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 (INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH) => {
+                    warn!("prologue runtime : INVALID_ARGUMENT, EBLOCK_NUMBER_MISMATCH");
                     StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
                 }
                 // ToDo add corresponding error code into StatusCode
-                (_, _) => StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION,
+                (category, reason) => {
+                    warn!(
+                        "prologue runtime unknown: category({}), reason:({})",
+                        category, reason
+                    );
+                    StatusCode::UNEXPECTED_ERROR_FROM_KNOWN_MOVE_FUNCTION
+                }
             };
             VMStatus::Error(new_major_status)
         }

@@ -191,49 +191,28 @@ where
         &self,
         new_branch: &BlockChain,
     ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
-        let new_header_number = new_branch.current_header().number();
-        let main_header_number = self.get_main().current_header().number();
-        let mut number = if new_header_number >= main_header_number {
-            main_header_number
-        } else {
-            new_header_number
-        };
+        let ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
+            format_err!(
+                "Can not find ancestors between main chain: {:?} and branch: {:?}",
+                self.main.status(),
+                new_branch.status()
+            )
+        })?;
 
-        let block_enacted = new_branch.current_header().id();
-        let block_retracted = self.get_main().current_header().id();
-
-        let mut ancestor = None;
-        loop {
-            let block_id_1 = new_branch.find_block_by_number(number)?;
-            let block_id_2 = self.get_main().find_block_by_number(number)?;
-
-            if block_id_1 == block_id_2 {
-                ancestor = Some(block_id_1);
-                break;
-            }
-
-            if number == 0 {
-                break;
-            }
-
-            number -= 1;
-        }
-
-        ensure!(
-            ancestor.is_some(),
-            "Can not find ancestors from block accumulator."
-        );
-
-        let ancestor = ancestor.expect("Ancestor is none.");
         let ancestor_block = self
             .main
-            .get_block(ancestor)?
-            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor))?;
+            .get_block(ancestor.id)?
+            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor.id))?;
         let enacted_count = new_branch.current_header().number() - ancestor_block.header().number();
         let retracted_count =
             self.main.current_header().number() - ancestor_block.header().number();
-        let enacted = self.find_blocks_until(block_enacted, ancestor, MAX_ROLL_BACK_BLOCK)?;
-        let retracted = self.find_blocks_until(block_retracted, ancestor, MAX_ROLL_BACK_BLOCK)?;
+
+        let block_enacted = new_branch.current_header().id();
+        let block_retracted = self.main.current_header().id();
+
+        let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let retracted =
+            self.find_blocks_until(block_retracted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
 
         debug!(
             "Commit block count:{}, rollback block count:{}",
