@@ -176,7 +176,8 @@ async fn test_verify_gas_limit(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.gas_used = u64::MAX;
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -194,7 +195,8 @@ async fn test_verify_body_hash(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.body_hash = HashValue::random();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -212,7 +214,8 @@ async fn test_verify_parent_id(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.parent_hash = HashValue::random();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -235,7 +238,8 @@ async fn test_verify_timestamp(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.timestamp = main.current_header().timestamp();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -257,7 +261,8 @@ async fn test_verify_future_timestamp(succ: bool) -> Result<()> {
             .as_secs()
             + 1000;
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -275,7 +280,8 @@ async fn test_verify_consensus(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.difficulty = U256::from(1024u64);
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -467,7 +473,8 @@ async fn test_verify_illegal_uncle_consensus(succ: bool) -> Result<()> {
         .create_block(block_template, net.time_service().as_ref())
         .unwrap();
 
-    main_block_chain.apply(new_block)
+    main_block_chain.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -485,7 +492,8 @@ async fn test_verify_state_root(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.state_root = HashValue::random();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -503,7 +511,8 @@ async fn test_verify_block_used_gas(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.gas_used = 1;
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 360)]
@@ -537,7 +546,8 @@ async fn test_verify_accumulator_root(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.accumulator_root = HashValue::random();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]
@@ -555,7 +565,8 @@ async fn test_verify_block_accumulator_root(succ: bool) -> Result<()> {
     if !succ {
         new_block.header.parent_block_accumulator_root = HashValue::random();
     }
-    main.apply(new_block)
+    main.apply(new_block)?;
+    Ok(())
 }
 
 #[stest::test(timeout = 120)]

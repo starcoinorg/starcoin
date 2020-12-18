@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod chain;
+pub mod verifier;
 
 pub use chain::BlockChain;
 

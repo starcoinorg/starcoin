@@ -75,7 +75,7 @@ impl EventHandler<Self, NewHeadBlock> for ChainNotifyHandlerService {
     ) {
         if self.is_synced() {
             let NewHeadBlock(block_detail) = item;
-            let block = block_detail.get_block();
+            let block = block_detail.block();
             // notify header.
             self.notify_new_block(block, ctx);
 

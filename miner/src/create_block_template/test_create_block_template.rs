@@ -102,8 +102,8 @@ fn test_switch_main() {
             .unwrap();
 
         let block_header = block.header().clone();
-        main.apply(block.clone()).unwrap();
-        tmp_inner.update_chain(block).unwrap();
+        let executed_block = main.apply(block.clone()).unwrap();
+        tmp_inner.update_chain(executed_block).unwrap();
         main_inner = Some(tmp_inner);
 
         if i != (times - 1) {
@@ -144,19 +144,27 @@ fn test_switch_main() {
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
 
-        new_main.apply(block.clone()).unwrap();
+        let executed_block = new_main.apply(block.clone()).unwrap();
 
         head_id = block.id();
         if i == 0 {
             let block_header = block.header().clone();
             assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 1);
-            main_inner.as_mut().unwrap().update_chain(block).unwrap();
+            main_inner
+                .as_mut()
+                .unwrap()
+                .update_chain(executed_block)
+                .unwrap();
             main_inner.as_mut().unwrap().insert_uncle(block_header);
         } else if i == 1 {
             assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 2);
             assert!(block.body.uncles.is_some());
             assert_eq!(block.body.uncles.as_ref().unwrap().len(), 1);
-            main_inner.as_mut().unwrap().update_chain(block).unwrap();
+            main_inner
+                .as_mut()
+                .unwrap()
+                .update_chain(executed_block)
+                .unwrap();
         } else if i == 2 {
             assert_eq!(main_inner.as_ref().unwrap().uncles.len(), 2);
             assert!(block.body.uncles.is_none());
@@ -204,8 +212,8 @@ fn test_do_uncles() {
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         head_id = block.id();
-        main.apply(block.clone()).unwrap();
-        tmp_inner.update_chain(block).unwrap();
+        let executed_block = main.apply(block.clone()).unwrap();
+        tmp_inner.update_chain(executed_block).unwrap();
         main_inner = Some(tmp_inner);
     }
 
@@ -255,8 +263,12 @@ fn test_do_uncles() {
             assert!(block.uncles().is_none());
         }
         head_id = block.id();
-        main.apply(block.clone()).unwrap();
-        main_inner.as_mut().unwrap().update_chain(block).unwrap();
+        let executed_block = main.apply(block.clone()).unwrap();
+        main_inner
+            .as_mut()
+            .unwrap()
+            .update_chain(executed_block)
+            .unwrap();
     }
 }
 
@@ -293,9 +305,9 @@ fn test_new_head() {
             .consensus()
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
-        (&mut main_inner.chain).apply(block.clone()).unwrap();
+        let executed_block = (&mut main_inner.chain).apply(block.clone()).unwrap();
         if i % 2 == 0 {
-            main_inner.update_chain(block).unwrap();
+            main_inner.update_chain(executed_block).unwrap();
         }
         assert_eq!(main_inner.chain.current_header().number(), i + 1);
     }
@@ -358,10 +370,10 @@ fn test_new_branch() {
             .create_block(block_template, node_config.net().time_service().as_ref())
             .unwrap();
         new_head_id = new_block.id();
-        branch.apply(new_block.clone()).unwrap();
+        let executed_block = branch.apply(new_block.clone()).unwrap();
 
         if i > times {
-            main_inner.update_chain(new_block).unwrap();
+            main_inner.update_chain(executed_block).unwrap();
             assert_eq!(main_inner.chain.current_header().number(), i + 1);
         }
     }

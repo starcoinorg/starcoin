@@ -26,10 +26,10 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::block::BlockHeader;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
+use starcoin_types::system_events::NewHeadBlock;
 use starcoin_types::system_events::{MintBlockEvent, SyncStatusChangeEvent};
 use starcoin_types::transaction::authenticator::AuthenticationKey;
 use starcoin_types::{account_address, U256};
-use starcoin_types::{block::BlockDetail, system_events::NewHeadBlock};
 use starcoin_vm_types::genesis_config::ConsensusStrategy;
 use std::sync::Arc;
 use tokio::time::timeout;
@@ -72,7 +72,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let new_block = block_chain
         .consensus()
         .create_block(block_template, net.time_service().as_ref())?;
-    block_chain.apply(new_block.clone())?;
+    let executed_block = block_chain.apply(new_block.clone())?;
 
     let reader = AccountStateReader::new(block_chain.chain_state_reader());
     let balance = reader.get_balance(&account_address)?;
@@ -123,7 +123,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     assert_eq!(resp, Some(response.to_owned()));
 
     // send block
-    let block_detail = Arc::new(BlockDetail::new(new_block, 0.into()));
+    let block_detail = Arc::new(executed_block);
     bus.broadcast(NewHeadBlock(block_detail))?;
 
     let mut receiver = receiver.compat();

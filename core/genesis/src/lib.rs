@@ -27,7 +27,7 @@ use std::fs::{create_dir_all, File};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::sync::Arc;
-use traits::{ChainReader, ChainWriter};
+use traits::ChainReader;
 
 mod errors;
 
@@ -258,8 +258,12 @@ impl Genesis {
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
     ) -> Result<StartupInfo> {
-        let mut genesis_chain = BlockChain::init_empty_chain(net.time_service(), storage.clone());
-        genesis_chain.apply(self.block.clone())?;
+        let genesis_chain = BlockChain::new_with_genesis(
+            net.time_service(),
+            storage.clone(),
+            net.genesis_config().genesis_epoch(),
+            self.block.clone(),
+        )?;
         let startup_info = StartupInfo::new(genesis_chain.current_header().id());
         storage.save_startup_info(startup_info.clone())?;
         Ok(startup_info)

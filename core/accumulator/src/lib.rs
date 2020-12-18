@@ -101,6 +101,11 @@ impl MerkleAccumulator {
             tree: Mutex::new(AccumulatorTree::new_empty(node_store)),
         }
     }
+
+    /// Fork a new accumulator base on current accumulator
+    pub fn fork(&self) -> MerkleAccumulator {
+        Self::new_with_info(self.get_info(), self.tree.lock().store.clone())
+    }
 }
 
 impl Accumulator for MerkleAccumulator {

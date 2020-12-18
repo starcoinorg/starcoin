@@ -209,6 +209,7 @@ impl<'a, T: 'a + StateView> IntoSuper<dyn StateView + 'a> for T {
     }
 }
 
+///TODO change AccountStateReader to a trait, and auto implements to ChainStateReader
 /// `AccountStateReader` is a helper struct for read account state.
 pub struct AccountStateReader<'a> {
     //TODO add a cache.

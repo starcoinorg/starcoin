@@ -1,12 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::BlockChain as BlockChainNotMock;
 use anyhow::Result;
 use consensus::Consensus;
-use crypto::HashValue;
 use crypto::{ed25519::Ed25519PrivateKey, hash::PlainCryptoHash, Genesis, PrivateKey};
-use logger::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_config::NodeConfig;
@@ -14,14 +11,11 @@ use starcoin_executor::{build_transfer_from_association, DEFAULT_EXPIRATION_TIME
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_types::account_address;
 use starcoin_types::block::{Block, BlockHeader};
-use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::filter::Filter;
-use starcoin_types::transaction::{Transaction, TransactionInfo};
 use starcoin_vm_types::account_config::genesis_address;
+use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
-use starcoin_vm_types::language_storage::TypeTag;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use starcoin_vm_types::{event::EventKey, vm_status::KeptVMStatus};
 use std::sync::Arc;
 
 #[stest::test(timeout = 120)]
@@ -108,12 +102,18 @@ fn test_chain_filter_events() {
     }
 }
 
-#[stest::test(timeout = 120)]
-fn test_block_chain_head() {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
-    let times = 10;
-    mock_chain.produce_and_apply_times(times).unwrap();
-    assert_eq!(mock_chain.head().current_header().number, times);
+#[stest::test]
+fn test_block_chain() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+    let block = mock_chain.produce()?;
+    assert_eq!(block.header().number(), 1);
+    mock_chain.apply(block)?;
+    assert_eq!(mock_chain.head().current_header().number, 1);
+    let block = mock_chain.produce()?;
+    assert_eq!(block.header().number(), 2);
+    mock_chain.apply(block)?;
+    assert_eq!(mock_chain.head().current_header().number, 2);
+    Ok(())
 }
 
 #[stest::test(timeout = 480)]
@@ -137,6 +137,34 @@ fn test_dev_consensus() {
     let times = 20;
     mock_chain.produce_and_apply_times(times).unwrap();
     assert_eq!(mock_chain.head().current_header().number, times);
+}
+
+#[stest::test]
+fn test_find_ancestor_genesis() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain.produce_and_apply_times(3)?;
+
+    let mut mock_chain2 = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain2.produce_and_apply_times(4)?;
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().number, 0);
+    Ok(())
+}
+
+#[stest::test]
+fn test_find_ancestor_fork() -> Result<()> {
+    let mut mock_chain = MockChain::new(ChainNetwork::new_test())?;
+    mock_chain.produce_and_apply_times(3)?;
+    let header = mock_chain.head().current_header();
+    let mut mock_chain2 = mock_chain.fork(None)?;
+    mock_chain.produce_and_apply_times(2)?;
+    mock_chain2.produce_and_apply_times(3)?;
+
+    let ancestor = mock_chain.head().find_ancestor(mock_chain2.head())?;
+    assert!(ancestor.is_some());
+    assert_eq!(ancestor.unwrap().id, header.id());
+    Ok(())
 }
 
 fn gen_uncle() -> (MockChain, BlockChain, BlockHeader) {
@@ -396,83 +424,4 @@ async fn test_block_chain_txn_info_fork_mapping() -> Result<()> {
     assert!(txn_info.is_some());
     assert_eq!(txn_info.unwrap().transaction_hash(), tnx_hash);
     Ok(())
-}
-
-fn test_save(txn_infos: (Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)) -> Result<()> {
-    let mut mock_chain = MockChain::new(ChainNetwork::new_test()).unwrap();
-    mock_chain.produce_and_apply_times(10).unwrap();
-    let block = mock_chain.head().head_block();
-    let parent_block_header = mock_chain
-        .head()
-        .get_header(block.header().parent_hash())
-        .unwrap()
-        .unwrap();
-    let block_metadata = block.to_metadata(parent_block_header.gas_used());
-    let mut txns = vec![Transaction::BlockMetadata(block_metadata)];
-    txns.extend(
-        block
-            .transactions()
-            .iter()
-            .cloned()
-            .map(Transaction::UserTransaction),
-    );
-    let head = mock_chain.head();
-    let mut main = BlockChainNotMock::new(
-        head.time_service(),
-        block.header().parent_hash(),
-        mock_chain.head().get_storage(),
-    )
-    .unwrap();
-    main.save_fot_test(block.id(), txns, txn_infos)
-}
-
-#[stest::test]
-fn test_save_txn_len_failed() {
-    let txn_infos = Vec::new();
-    let events = Vec::new();
-    let result = test_save((txn_infos, events));
-    assert!(result.is_err());
-    error!("verify txns failed : {:?}", result);
-}
-
-#[stest::test]
-fn test_save_event_len_failed() {
-    let mut txn_infos = Vec::new();
-    let txn_info = TransactionInfo::new(
-        HashValue::random(),
-        HashValue::random(),
-        Vec::new().as_slice(),
-        100,
-        KeptVMStatus::Executed,
-    );
-    txn_infos.push(txn_info);
-
-    let events = Vec::new();
-    let result = test_save((txn_infos, events));
-    assert!(result.is_err());
-    error!("verify txns failed : {:?}", result);
-}
-
-#[stest::test]
-fn test_save_succ() {
-    let mut txn_infos = Vec::new();
-    let txn_info = TransactionInfo::new(
-        HashValue::random(),
-        HashValue::random(),
-        Vec::new().as_slice(),
-        100,
-        KeptVMStatus::Executed,
-    );
-    txn_infos.push(txn_info);
-
-    let mut events = Vec::new();
-    let mut event = Vec::new();
-    let mut data: Vec<u8> = Vec::new();
-    data.push(1);
-    let e = ContractEvent::new(EventKey::random(), 10, TypeTag::U64, data);
-    event.push(e);
-    events.push(event);
-
-    let result = test_save((txn_infos, events));
-    assert!(result.is_ok());
 }
