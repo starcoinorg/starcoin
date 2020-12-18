@@ -95,7 +95,7 @@ pub struct NetworkConfig {
     pub self_peer_id: Option<PeerId>,
     #[serde(skip)]
     pub self_address: Option<MultiaddrWithPeerId>,
-
+    #[serde(default)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 }
 
