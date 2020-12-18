@@ -148,6 +148,7 @@ impl SyncService2 {
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
             target.block_info.clone(),
+            self.config.sync.skip_pow_verify_when_sync,
             self.config.net().time_service(),
             self.storage.clone(),
             connector_service.clone(),
