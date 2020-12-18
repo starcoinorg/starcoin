@@ -7,6 +7,8 @@ use lru::LruCache;
 use merkle_tree::proof::SparseMerkleProof;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use scs::SCSCodec;
+use serde::{Deserialize, Serialize};
+use starcoin_crypto::hash::CryptoHasher;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_state_tree::mock::MockStateNodeStore;
@@ -52,6 +54,28 @@ impl CacheItem {
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
+struct SubStateBlob {
+    access_path: AccessPath,
+    value: Vec<u8>,
+}
+
+impl SubStateBlob {
+    fn value(element_bytes: Option<Vec<u8>>) -> Result<Option<Vec<u8>>> {
+        match element_bytes {
+            Some(bytes) => {
+                let blob: SubStateBlob = scs::from_bytes(bytes.as_slice())?;
+                Ok(Some(blob.value))
+            }
+            None => Ok(None),
+        }
+    }
+
+    fn blob(access_path: AccessPath, value: Vec<u8>) -> Result<Vec<u8>> {
+        let blob = SubStateBlob { access_path, value };
+        scs::to_bytes(&blob)
+    }
+}
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
     address: AccountAddress,
@@ -96,7 +120,9 @@ impl AccountStateObject {
     pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
         let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
-            Some(tree) => tree.get(key_hash),
+            Some(tree) => tree
+                .get(key_hash)
+                .map(SubStateBlob::value)?,
             None => Ok(None),
         }
     }
@@ -110,12 +136,21 @@ impl AccountStateObject {
     ) -> Result<(Option<Vec<u8>>, SparseMerkleProof)> {
         let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
-            Some(tree) => tree.get_with_proof(key_hash),
+            Some(tree) => {
+                let (bytes, proof) = tree.get_with_proof(key_hash)?;
+                Ok((SubStateBlob::value(bytes)?, proof))
+            }
             None => Ok((None, SparseMerkleProof::new(None, vec![]))),
         }
     }
 
-    pub fn set(&self, data_type: DataType, key_hash: HashValue, value: Vec<u8>) {
+    pub fn set(
+        &self,
+        data_type: DataType,
+        key_hash: HashValue,
+        access_path: AccessPath,
+        value: Vec<u8>,
+    ) -> Result<()> {
         let mut trees = self.trees.lock();
         if trees[data_type.storage_index()].as_ref().is_none() {
             trees[data_type.storage_index()] = Some(StateTree::new(self.store.clone(), None));
@@ -123,7 +158,8 @@ impl AccountStateObject {
         let tree = trees[data_type.storage_index()]
             .as_ref()
             .expect("state tree must exist after set.");
-        tree.put(key_hash, value);
+        tree.put(key_hash, SubStateBlob::blob(access_path, value)?);
+        Ok(())
     }
 
     pub fn remove(&self, data_type: DataType, key_hash: &HashValue) -> Result<()> {
@@ -470,7 +506,12 @@ impl ChainStateWriter for ChainStateDB {
                 WriteOp::Value(value) => {
                     let account_state_object =
                         self.get_account_state_object(&account_address, true)?;
-                    account_state_object.set(data_type, key_hash, value.clone());
+                    account_state_object.set(
+                        data_type,
+                        key_hash,
+                        access_path.clone(),
+                        value.clone(),
+                    )?;
                 }
                 WriteOp::Deletion => {
                     let account_state_object =
@@ -538,10 +579,12 @@ mod tests {
         assert!(state1.is_some());
         assert_eq!(state0, state1.unwrap());
         let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
+        let bytes = SubStateBlob::blob(access_path.clone(), state_with_proof.state.unwrap())?;
+
         state_with_proof.proof.verify(
             state_root,
             access_path,
-            state_with_proof.state.as_deref(),
+            Some(bytes).as_deref(),
         )?;
         Ok(())
     }

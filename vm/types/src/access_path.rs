@@ -46,10 +46,12 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
-use starcoin_crypto::hash::HashValue;
+use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue};
 use std::convert::TryFrom;
 use std::fmt;
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+#[derive(
+    Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHasher, CryptoHash,
+)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct AccessPath {
     pub address: AccountAddress,
@@ -190,9 +192,9 @@ impl DataType {
 
 pub fn into_inner(access_path: AccessPath) -> Result<(AccountAddress, DataType, HashValue)> {
     let address = access_path.address;
-    let path = access_path.path;
+    let path = &access_path.path;
     let data_type = DataType::try_from(path[0])?;
-    let hash = HashValue::from_slice(&path[0..HashValue::LENGTH])?;
+    let hash = access_path.hash();
     Ok((address, data_type, hash))
 }
 
