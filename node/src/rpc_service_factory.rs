@@ -50,12 +50,25 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             });
         let txpool_service = ctx.get_shared::<TxPoolService>()?;
         let txpool_api = Some(TxPoolRpcImpl::new(txpool_service.clone()));
-        let account_api = ctx
-            .service_ref_opt::<AccountService>()?
-            .map(|service_ref| AccountRpcImpl::new(service_ref.clone()));
+
         let state_api = ctx
             .service_ref_opt::<ChainStateService>()?
             .map(|service_ref| StateRpcImpl::new(service_ref.clone()));
+
+        let account_api = {
+            let chain_state_ref = ctx.service_ref::<ChainStateService>()?.clone();
+            let chain_ref = ctx.service_ref::<ChainReaderService>()?.clone();
+            ctx.service_ref_opt::<AccountService>()?.map(|service_ref| {
+                AccountRpcImpl::new(
+                    config.clone(),
+                    service_ref.clone(),
+                    txpool_service.clone(),
+                    chain_state_ref,
+                    chain_ref,
+                )
+            })
+        };
+
         let pubsub_service = PubSubService::new(bus, txpool_service);
         let pubsub_api = Some(PubSubImpl::new(pubsub_service));
         let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));

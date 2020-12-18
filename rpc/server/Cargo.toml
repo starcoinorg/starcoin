@@ -58,6 +58,7 @@ starcoin-vm-types = { path = "../../vm/types"}
 starcoin-consensus= {path = "../../consensus"}
 starcoin-dev = { path = "../../vm/dev" }
 starcoin-miner = { path = "../../miner" }
+stdlib = {path = "../../vm/stdlib"}
 starcoin-service-registry = { path = "../../commons/service-registry" }
 network-api = { path = "../../network/api" }
 starcoin-node-api = { path = "../../node/api"}
