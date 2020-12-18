@@ -213,10 +213,15 @@ impl Default for ApiQuotaConfiguration {
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RpcConfig {
+    #[serde(default)]
     pub api_quota: ApiQuotaConfiguration,
+    #[serde(default)]
     pub tcp: TcpConfiguration,
+    #[serde(default)]
     pub http: HttpConfiguration,
+    #[serde(default)]
     pub ws: WsConfiguration,
+    #[serde(default)]
     pub ipc: IpcConfiguration,
     pub rpc_address: IpAddr,
 }
