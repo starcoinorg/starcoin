@@ -65,6 +65,19 @@ jobs:
         with:
           command: test
           args: --test integration -- -e cmd
+      - name: build-release
+        # only build release on master branch
+        if: github.ref == 'refs/heads/master'
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all
+      - uses: actions/upload-artifact@v2
+        # only upload master branch artifact.
+        if: github.ref == 'refs/heads/master'
+        with:
+          name: starcoin-artifact
+          path: target/release/starcoin*
       - name: deploy node
         # only deploy master branch build.
         if: github.ref == 'refs/heads/master'
