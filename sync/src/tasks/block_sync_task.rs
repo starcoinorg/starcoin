@@ -5,7 +5,7 @@ use crate::tasks::{
     BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore, NoOpEventHandle,
 };
 use anyhow::{format_err, Result};
-use chain::BlockChain;
+use chain::{verifier::BasicVerifier, BlockChain};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -177,14 +177,26 @@ where
     chain: BlockChain,
     event_handle: Box<dyn BlockConnectedEventHandle>,
     network: N,
+    skip_pow_verify_when_sync: bool,
 }
 
 impl<N> BlockCollector<N>
 where
     N: NetworkService + 'static,
 {
-    pub fn new(current_block_info: BlockInfo, chain: BlockChain, network: N) -> Self {
-        Self::new_with_handle(current_block_info, chain, NoOpEventHandle, network)
+    pub fn new(
+        current_block_info: BlockInfo,
+        chain: BlockChain,
+        network: N,
+        skip_pow_verify_when_sync: bool,
+    ) -> Self {
+        Self::new_with_handle(
+            current_block_info,
+            chain,
+            NoOpEventHandle,
+            network,
+            skip_pow_verify_when_sync,
+        )
     }
 
     pub fn new_with_handle<H>(
@@ -192,6 +204,7 @@ where
         chain: BlockChain,
         event_handle: H,
         network: N,
+        skip_pow_verify_when_sync: bool,
     ) -> Self
     where
         H: BlockConnectedEventHandle + 'static,
@@ -201,6 +214,7 @@ where
             chain,
             event_handle: Box::new(event_handle),
             network,
+            skip_pow_verify_when_sync,
         }
     }
 
@@ -210,7 +224,12 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if let Err(err) = self.chain.apply(block.clone()) {
+        if let Err(err) = if self.skip_pow_verify_when_sync {
+            self.chain
+                .apply_with_verifier::<BasicVerifier>(block.clone())
+        } else {
+            self.chain.apply(block.clone())
+        } {
             match err.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => match connect_error {
                     ConnectBlockError::FutureBlock(block) => {
