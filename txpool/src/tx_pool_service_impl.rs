@@ -62,7 +62,6 @@ impl TxPoolService {
         Self { inner }
     }
 
-    #[cfg(test)]
     pub fn get_store(&self) -> Arc<dyn Store> {
         self.inner.storage.clone()
     }

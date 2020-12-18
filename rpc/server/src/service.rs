@@ -99,7 +99,7 @@ impl RpcService {
         M: MinerApi,
         DEV: DevApi,
     {
-        let mut api_registry = ApiRegistry::default();
+        let mut api_registry = ApiRegistry::new(config.rpc.api_quota.clone());
 
         api_registry.register(Api::Node, NodeApi::to_delegate(node_api));
         if let Some(node_manager_api) = node_manager_api {
@@ -159,7 +159,15 @@ impl RpcService {
             info!("Ipc rpc server start at :{:?}", ipc_file);
             Some(
                 jsonrpc_ipc_server::ServerBuilder::new(io_handler)
-                    .session_meta_extractor(RpcExtractor)
+                    .session_meta_extractor(RpcExtractor {
+                        http_ip_headers: self
+                            .config
+                            .rpc
+                            .http
+                            .ip_headers
+                            .clone()
+                            .unwrap_or_default(),
+                    })
                     .start(ipc_file.to_str().expect("Path to string should success."))?,
             )
         })
@@ -179,7 +187,7 @@ impl RpcService {
             let apis = self.config.rpc.http.apis.list_apis();
             let io_handler = self.api_registry.get_apis(apis);
             let http = jsonrpc_http_server::ServerBuilder::new(io_handler)
-                .meta_extractor(RpcExtractor)
+                .meta_extractor(RpcExtractor::default())
                 .cors(DomainsValidation::AllowOnly(vec![
                     AccessControlAllowOrigin::Null,
                     AccessControlAllowOrigin::Any,
@@ -202,7 +210,7 @@ impl RpcService {
 
             let io_handler = self.api_registry.get_apis(apis);
             let tcp_server = jsonrpc_tcp_server::ServerBuilder::new(io_handler)
-                .session_meta_extractor(RpcExtractor)
+                .session_meta_extractor(RpcExtractor::default())
                 .start(&address)?;
             info!("Rpc: tcp server start at: {}", address);
             Some(tcp_server)

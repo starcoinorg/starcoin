@@ -55,6 +55,7 @@ COPY --from=builder $RELEASE_PATH/starcoin \
      $RELEASE_PATH/starcoin_txfactory \
      $RELEASE_PATH/starcoin_faucet \
      $RELEASE_PATH/starcoin_generator \
+     $RELEASE_PATH/starcoin_indexer \
      /starcoin/
      
 CMD ["/starcoin/starcoin"]

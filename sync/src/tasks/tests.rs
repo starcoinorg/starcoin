@@ -1,16 +1,22 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::full_sync_task;
 use crate::tasks::mock::SyncNodeMocker;
-use anyhow::Result;
+use crate::tasks::{full_sync_task, BlockCollector};
+use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
 use futures_timer::Delay;
 use logger::prelude::*;
 use pin_utils::core_reexport::time::Duration;
 use starcoin_chain_api::ChainReader;
+use starcoin_chain_mock::BlockChain;
+use starcoin_genesis::Genesis;
+use starcoin_storage::block_info::BlockInfoStore;
+use starcoin_storage::BlockStore;
+use starcoin_types::block::{Block, BlockBody, BlockHeader};
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::sync::Arc;
+use test_helper::DummyNetworkService;
 
 #[stest::test]
 pub async fn test_full_sync_new_node() -> Result<()> {
@@ -37,6 +43,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -61,6 +68,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -75,6 +83,29 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         .for_each(|report| debug!("reports: {}", report));
 
     Ok(())
+}
+
+#[stest::test]
+pub async fn test_failed_block() -> Result<()> {
+    let net = ChainNetwork::new_builtin(BuiltinNetworkID::Halley);
+    let (storage, startup_info, _) = Genesis::init_storage_for_test(&net)?;
+
+    let block_info = storage.get_block_info(startup_info.main)?.unwrap();
+    let chain = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
+    let (sender, _) = unbounded();
+    let mut block_collector =
+        BlockCollector::new_with_handle(block_info, chain, sender, DummyNetworkService);
+    let mut header = BlockHeader::random();
+    header.number = 1;
+    let body = BlockBody::new(Vec::new(), None);
+    let failed_block = Block::new(header, body);
+    let failed_block_id = failed_block.id();
+    if block_collector.apply_block_for_test(failed_block).is_err() {
+        assert!(storage.get_failed_block_by_id(failed_block_id)?.is_some());
+        Ok(())
+    } else {
+        Err(format_err!("test FailedBlock fail."))
+    }
 }
 
 #[stest::test]
@@ -102,6 +133,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -128,6 +160,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
         storage,
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -170,6 +203,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -221,6 +255,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -249,6 +284,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -294,6 +330,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         storage.clone(),
         sender,
         arc_node1.clone(),
+        DummyNetworkService,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);

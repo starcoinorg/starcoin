@@ -23,6 +23,7 @@ pub use derive_account_address_cmd::*;
 pub use execute_cmd::*;
 pub use generate_multisig_txn_cmd::*;
 pub use get_coin_cmd::*;
+pub use sign_txn_helper::sign_txn_with_account_by_rpc_client;
 pub use submit_multisig_txn_cmd::*;
 pub use subscribe_cmd::*;
 pub use upgrade_module_exe_cmd::*;

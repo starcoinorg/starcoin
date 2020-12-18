@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block_sync::BlockIdAndNumber;
 use crate::tasks::BlockIdFetcher;
 use anyhow::{ensure, Result};
 use futures::future::BoxFuture;
@@ -10,7 +9,7 @@ use logger::prelude::*;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
-use starcoin_types::block::BlockNumber;
+use starcoin_types::block::{BlockIdAndNumber, BlockNumber};
 use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};

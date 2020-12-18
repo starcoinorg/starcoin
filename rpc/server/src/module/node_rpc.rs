@@ -7,7 +7,7 @@ use futures::FutureExt;
 use jsonrpc_core::Result;
 use network_api::PeerProvider;
 use starcoin_config::NodeConfig;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_rpc_api::node::{NodeApi, NodeInfo};
 use starcoin_rpc_api::types::PeerInfoView;
 use starcoin_rpc_api::FutureResult;
@@ -16,11 +16,11 @@ use std::sync::Arc;
 
 pub struct NodeRpcImpl {
     config: Arc<NodeConfig>,
-    service: Option<NetworkAsyncService>,
+    service: Option<NetworkServiceRef>,
 }
 
 impl NodeRpcImpl {
-    pub fn new(config: Arc<NodeConfig>, service: Option<NetworkAsyncService>) -> Self {
+    pub fn new(config: Arc<NodeConfig>, service: Option<NetworkServiceRef>) -> Self {
         Self { config, service }
     }
 }

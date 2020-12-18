@@ -7,6 +7,8 @@ use crate::tasks::BlockConnectedEvent;
 use anyhow::{format_err, Result};
 use config::NodeConfig;
 use logger::prelude::*;
+use network::NetworkServiceRef;
+use network_api::NetworkService;
 use starcoin_chain_api::{ConnectBlockError, WriteableChainService};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_storage::{BlockStore, Storage};
@@ -47,7 +49,7 @@ impl ServiceFactory<Self> for BlockConnectorService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let chain_service =
-            WriteBlockChainService::new(config, startup_info, storage, txpool, bus, None)?;
+            WriteBlockChainService::new(config, startup_info, storage, txpool, bus)?;
 
         Ok(Self::new(chain_service))
     }
@@ -128,7 +130,33 @@ impl EventHandler<Self, PeerNewBlock> for BlockConnectorService {
                                 let _ = sync_service.notify(CheckSyncEvent::default());
                             }
                         }
-                        e => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),
+                        e => {
+                            warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id);
+                            if let Err(err) = self
+                                .chain_service
+                                .get_main()
+                                .get_storage()
+                                .save_failed_block(
+                                    msg.get_block().id(),
+                                    msg.get_block().clone(),
+                                    Some(peer_id.clone()),
+                                    format!("{:?}", e),
+                                )
+                            {
+                                warn!(
+                                    "Save FailedBlock err: {:?}, block_id:{:?}.",
+                                    err,
+                                    msg.get_block().id()
+                                );
+                            }
+
+                            if let Err(e1) = ctx
+                                .get_shared::<NetworkServiceRef>()
+                                .map(|network| network.report_peer(peer_id, (&e).into()))
+                            {
+                                warn!("Get NetworkServiceRef err: {:?}.", e1);
+                            }
+                        }
                     }
                 }
                 Err(e) => warn!("BlockConnector fail: {:?}, peer_id:{:?}", e, peer_id),

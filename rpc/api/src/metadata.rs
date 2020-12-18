@@ -11,12 +11,14 @@ pub struct Metadata {
     // pub origin: Origin,
     /// Request PubSub Session
     pub session: Option<Arc<Session>>,
+    pub user: Option<String>,
 }
 
 impl Metadata {
     pub fn new(session: Arc<Session>) -> Self {
         Self {
             session: Some(session),
+            user: None,
         }
     }
 }

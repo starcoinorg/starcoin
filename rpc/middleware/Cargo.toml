@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-rpc-middleware"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -19,7 +19,6 @@ futures = { version = "0.3", features = ["compat"] }
 futures01 = "0.1.30"
 starcoin-logger = { path = "../../commons/logger"}
 starcoin-metrics = { path = "../../commons/metrics"}
-
 [dev-dependencies]
 stest = { path = "../../commons/stest"}
 rand = "0.7.3"

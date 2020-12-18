@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-accumulator"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -17,12 +17,12 @@ logger = {path = "../../commons/logger", package="starcoin-logger"}
 starcoin-crypto = { package="starcoin-crypto", path = "../../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../../commons/scs"}
 serde = { version = "1.0" }
-lru = "0.6.1"
+lru = "0.6.2"
 parking_lot = "0.11.1"
 
 [dev-dependencies]
 rand = "0.7.3"
-rand_core = { version = "0.5.1", default-features = false }
+rand_core = { version = "0.6.0", default-features = false }
 proptest = "0.10.1"
 proptest-derive = "0.2.0"
 

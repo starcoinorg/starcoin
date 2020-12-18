@@ -1,6 +1,6 @@
 [package]
 name = "network-api"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 edition = "2018"
 
@@ -13,6 +13,7 @@ rand = "0.7.3"
 itertools = "0.9.0"
 async-trait = "0.1.42"
 
+starcoin-logger = { path = "../../commons/logger"}
 starcoin-types = { path = "../../types" }
 starcoin-crypto = { path = "../../commons/crypto" }
 scs = { package = "starcoin-canonical-serialization", path = "../../commons/scs" }

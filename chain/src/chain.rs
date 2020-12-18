@@ -11,7 +11,6 @@ use starcoin_accumulator::{
 use starcoin_chain_api::{
     verify_block, ChainReader, ChainWriter, ConnectBlockError, ExcludedTxns, VerifyBlockField,
 };
-use starcoin_executor::BlockExecutedData;
 use starcoin_open_block::OpenedBlock;
 use starcoin_state_api::{AccountStateReader, ChainState, ChainStateReader, ChainStateWriter};
 use starcoin_statedb::ChainStateDB;
@@ -688,7 +687,7 @@ impl BlockChain {
         &mut self,
         block_id: HashValue,
         transactions: Vec<Transaction>,
-        txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>,
+        txn_infos: (Vec<TransactionInfo>, Vec<Vec<ContractEvent>>),
     ) -> Result<()> {
         self.save(block_id, transactions, txn_infos)
     }
@@ -697,26 +696,24 @@ impl BlockChain {
         &mut self,
         block_id: HashValue,
         transactions: Vec<Transaction>,
-        txn_infos: Option<(Vec<TransactionInfo>, Vec<Vec<ContractEvent>>)>,
+        txn_infos: (Vec<TransactionInfo>, Vec<Vec<ContractEvent>>),
     ) -> Result<()> {
-        if txn_infos.is_some() {
-            let (txn_infos, txn_events) = txn_infos.expect("txn infos is none.");
-            ensure!(
-                transactions.len() == txn_infos.len(),
-                "block txns' length should be equal to txn infos' length"
-            );
-            ensure!(
-                txn_events.len() == txn_infos.len(),
-                "events' length should be equal to txn infos' length"
-            );
-            let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
-            for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
-                self.storage.save_contract_events(*info_id, events)?;
-            }
-            self.storage
-                .save_block_txn_info_ids(block_id, txn_info_ids)?;
-            self.storage.save_transaction_infos(txn_infos)?;
+        let (txn_infos, txn_events) = txn_infos;
+        ensure!(
+            transactions.len() == txn_infos.len(),
+            "block txns' length should be equal to txn infos' length"
+        );
+        ensure!(
+            txn_events.len() == txn_infos.len(),
+            "events' length should be equal to txn infos' length"
+        );
+        let txn_info_ids: Vec<_> = txn_infos.iter().map(|info| info.id()).collect();
+        for (info_id, events) in txn_info_ids.iter().zip(txn_events.into_iter()) {
+            self.storage.save_contract_events(*info_id, events)?;
         }
+        self.storage
+            .save_block_txn_info_ids(block_id, txn_info_ids)?;
+        self.storage.save_transaction_infos(txn_infos)?;
 
         let txn_id_vec = transactions
             .iter()
@@ -893,12 +890,7 @@ impl BlockChain {
         Ok(())
     }
 
-    fn apply_inner(
-        &mut self,
-        block: Block,
-        execute: bool,
-        state_reader: Option<&dyn ChainStateReader>,
-    ) -> Result<()> {
+    fn apply_inner(&mut self, block: Block) -> Result<()> {
         let header = block.header().clone();
         let block_id = header.id();
         let is_genesis = header.is_genesis();
@@ -918,15 +910,12 @@ impl BlockChain {
             VerifyBlockField::Header,
             block.body.hash() == header.body_hash(),
             "verify block:{:?} body hash fail.",
-            header.id(),
+            block_id,
         );
 
         let mut switch_epoch = false;
         if !is_genesis {
-            let account_reader = match state_reader {
-                Some(state_reader) => AccountStateReader::new(state_reader),
-                None => AccountStateReader::new(&self.chain_state),
-            };
+            let account_reader = AccountStateReader::new(&self.chain_state);
             let epoch_info = account_reader.get_epoch_info()?;
             self.verify_header(&header, false, &epoch_info)?;
 
@@ -1001,18 +990,15 @@ impl BlockChain {
             t
         };
 
-        let executed_data = if execute {
-            starcoin_executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?
-        } else {
-            self.verify_txns(block_id, txns.as_slice())?
-        };
+        let executed_data =
+            starcoin_executor::block_execute(&self.chain_state, txns.clone(), gas_limit)?;
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
             VerifyBlockField::Header,
             state_root == header.state_root(),
             "verify block:{:?} state_root fail",
-            header.id(),
+            block_id,
         );
         let block_gas_used = vec_transaction_info
             .iter()
@@ -1062,32 +1048,23 @@ impl BlockChain {
             }
         };
 
-        self.block_accumulator.append(&[block.id()])?;
+        self.block_accumulator.append(&[block_id])?;
         self.block_accumulator.flush()?;
         let txn_accumulator_info: AccumulatorInfo = self.txn_accumulator.get_info();
         let block_accumulator_info: AccumulatorInfo = self.block_accumulator.get_info();
         let block_info = BlockInfo::new_with_accumulator_info(
-            header.id(),
+            block_id,
             txn_accumulator_info,
             block_accumulator_info,
             total_difficulty,
         );
         // save block's transaction relationship and save transaction
         self.save(
-            header.id(),
+            block_id,
             txns,
-            //TODO refactor this, there some weird
-            if execute {
-                Some((executed_data.txn_infos, executed_data.txn_events))
-            } else {
-                None
-            },
+            (executed_data.txn_infos, executed_data.txn_events),
         )?;
-        let block_state = if execute {
-            BlockState::Executed
-        } else {
-            BlockState::Verified
-        };
+        let block_state = BlockState::Executed;
         let uncles = block.uncles();
         self.commit(block.clone(), block_info, block_state)?;
 
@@ -1152,46 +1129,6 @@ impl BlockChain {
         Ok(())
     }
 
-    #[cfg(test)]
-    pub fn verify_txns_for_test(
-        &self,
-        block_id: HashValue,
-        txns: &[Transaction],
-    ) -> Result<BlockExecutedData> {
-        self.verify_txns(block_id, txns)
-    }
-
-    fn verify_txns(&self, block_id: HashValue, txns: &[Transaction]) -> Result<BlockExecutedData> {
-        let mut block_executed_data = BlockExecutedData::default();
-
-        let txn_infos = self.storage.get_block_transaction_infos(block_id)?;
-
-        verify_block!(
-            VerifyBlockField::Body,
-            txn_infos.len() == txns.len(),
-            "txn infos len ({:?}) is not equals txns len ({:?}).",
-            txn_infos.len(),
-            txns.len()
-        );
-        let mut state_root = None;
-        for i in 0..txns.len() {
-            let id = txns[i].id();
-            verify_block!(
-                VerifyBlockField::Body,
-                id == txn_infos[i].transaction_hash(),
-                "txn {:?} is not match with txn_info ({:?}).",
-                id,
-                txn_infos[i]
-            );
-            state_root = Some(txn_infos[i].state_root_hash());
-        }
-        block_executed_data.state_root =
-            state_root.expect("txn infos is not empty, state root must not been None");
-        block_executed_data.txn_infos = txn_infos;
-        //TODO event?
-        Ok(block_executed_data)
-    }
-
     fn commit(
         &mut self,
         block: Block,
@@ -1216,18 +1153,7 @@ impl ChainWriter for BlockChain {
         if let Some(uncles) = block.uncles() {
             self.verify_uncles(uncles, &block.header)?;
         }
-        self.apply_inner(block, true, None)
-    }
-
-    fn apply_without_execute(
-        &mut self,
-        block: Block,
-        remote_chain_state: &dyn ChainStateReader,
-    ) -> Result<()> {
-        if let Some(uncles) = block.uncles() {
-            self.verify_uncles(uncles, &block.header)?;
-        }
-        self.apply_inner(block, false, Some(remote_chain_state))
+        self.apply_inner(block)
     }
 
     fn chain_state(&mut self) -> &dyn ChainState {

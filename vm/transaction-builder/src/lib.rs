@@ -510,3 +510,9 @@ pub fn build_module_upgrade_queue(proposal_address: AccountAddress, proposal_id:
         ],
     )
 }
+
+pub fn build_empty_script() -> Script {
+    let empty_script =
+        compiled_transaction_script(StdlibVersion::Latest, StdlibScript::EmptyScript).into_vec();
+    Script::new(empty_script, vec![], vec![])
+}

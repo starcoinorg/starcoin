@@ -8,7 +8,7 @@ use anyhow::{format_err, Result};
 use config::NodeConfig;
 use futures::FutureExt;
 use logger::prelude::*;
-use network::NetworkAsyncService;
+use network::NetworkServiceRef;
 use network::PeerEvent;
 use network_api::{PeerProvider, PeerSelector};
 use starcoin_chain_api::ChainReader;
@@ -86,7 +86,7 @@ impl SyncService2 {
                 return Ok(());
             }
         }
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let self_ref = ctx.self_ref();
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
@@ -141,9 +141,9 @@ impl SyncService2 {
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let current_block_id = startup_info.main;
 
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let peer_selector = PeerSelector::new(target.peers.clone());
-        let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+        let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
         let connector_service = ctx.service_ref::<BlockConnectorService>()?;
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
@@ -152,6 +152,7 @@ impl SyncService2 {
             self.storage.clone(),
             connector_service.clone(),
             rpc_client,
+            network,
         )?;
         let target_id_number =
             BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);

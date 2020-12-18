@@ -1,0 +1,32 @@
+[package]
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+edition = "2018"
+license = "Apache-2.0"
+name = "starcoin-indexer"
+publish = false
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "~1"
+async-trait = "~0.1"
+clap = "3.0.0-beta.2"
+elasticsearch = "7.10.0-alpha.1"
+serde = "~1"
+serde_json = "~1"
+starcoin-crypto = {path = "../../commons/crypto" }
+starcoin-types = {path= "../../types" }
+starcoin-rpc-client = { path= "../../rpc/client" }
+starcoin-rpc-api = {path = "../../rpc/api" }
+starcoin-logger = {path = "../../commons/logger"}
+jsonrpc-core-client="~15"
+tokio={version="0.2", features=["full"]}
+tokio-compat = "0.1.6"
+futures-util = "~0.3"
+futures-retry="~0.5"
+failure = "~0.1"
+
+[[bin]]
+name="starcoin_indexer"
+path="src/main.rs"

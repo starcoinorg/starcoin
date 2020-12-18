@@ -4,7 +4,7 @@ use crate::define_storage;
 use crate::storage::{CodecKVStore, StorageInstance, ValueCodec};
 use crate::{
     BLOCK_BODY_PREFIX_NAME, BLOCK_HEADER_PREFIX_NAME, BLOCK_NUM_PREFIX_NAME, BLOCK_PREFIX_NAME,
-    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME,
+    BLOCK_TRANSACTIONS_PREFIX_NAME, BLOCK_TRANSACTION_INFOS_PREFIX_NAME, FAILED_BLOCK_PREFIX_NAME,
     TRANSACTION_BLOCK_PREFIX_NAME,
 };
 use anyhow::{bail, Result};
@@ -13,6 +13,7 @@ use logger::prelude::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockNumber, BlockState};
+use starcoin_types::peer_info::PeerId;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct StorageBlock {
@@ -29,6 +30,29 @@ impl StorageBlock {
 impl Into<(Block, BlockState)> for StorageBlock {
     fn into(self) -> (Block, BlockState) {
         (self.block, self.state)
+    }
+}
+
+#[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct FailedBlock {
+    block: Block,
+    peer_id: Option<PeerId>,
+    failed: String,
+}
+
+impl Into<(Block, Option<PeerId>, String)> for FailedBlock {
+    fn into(self) -> (Block, Option<PeerId>, String) {
+        (self.block, self.peer_id, self.failed)
+    }
+}
+
+impl From<(Block, Option<PeerId>, String)> for FailedBlock {
+    fn from(block: (Block, Option<PeerId>, String)) -> Self {
+        Self {
+            block: block.0,
+            peer_id: block.1,
+            failed: block.2,
+        }
     }
 }
 
@@ -62,7 +86,6 @@ define_storage!(
     Vec<HashValue>,
     BLOCK_TRANSACTIONS_PREFIX_NAME
 );
-
 define_storage!(
     BlockTransactionInfosStorage,
     HashValue,
@@ -75,6 +98,12 @@ define_storage!(
     HashValue,
     TRANSACTION_BLOCK_PREFIX_NAME
 );
+define_storage!(
+    FailedBlockStorage,
+    HashValue,
+    FailedBlock,
+    FAILED_BLOCK_PREFIX_NAME
+);
 
 #[derive(Clone)]
 pub struct BlockStorage {
@@ -85,6 +114,7 @@ pub struct BlockStorage {
     block_txns_store: BlockTransactionsStorage,
     txn_block_store: TransactionBlockStorage,
     block_txn_infos_store: BlockTransactionInfosStorage,
+    failed_block_storage: FailedBlockStorage,
 }
 
 impl ValueCodec for StorageBlock {
@@ -117,6 +147,16 @@ impl ValueCodec for BlockBody {
     }
 }
 
+impl ValueCodec for FailedBlock {
+    fn encode_value(&self) -> Result<Vec<u8>> {
+        self.encode()
+    }
+
+    fn decode_value(data: &[u8]) -> Result<Self> {
+        Self::decode(data)
+    }
+}
+
 impl BlockStorage {
     pub fn new(instance: StorageInstance) -> Self {
         BlockStorage {
@@ -126,7 +166,8 @@ impl BlockStorage {
             number_store: BlockNumberStorage::new(instance.clone()),
             block_txns_store: BlockTransactionsStorage::new(instance.clone()),
             txn_block_store: TransactionBlockStorage::new(instance.clone()),
-            block_txn_infos_store: BlockTransactionInfosStorage::new(instance),
+            block_txn_infos_store: BlockTransactionInfosStorage::new(instance.clone()),
+            failed_block_storage: FailedBlockStorage::new(instance),
         }
     }
     pub fn save(&self, block: Block, state: BlockState) -> Result<()> {
@@ -155,6 +196,7 @@ impl BlockStorage {
     pub fn save_body(&self, block_id: HashValue, body: BlockBody) -> Result<()> {
         self.body_store.put(block_id, body)
     }
+
     pub fn save_number(&self, number: BlockNumber, block_id: HashValue) -> Result<()> {
         self.number_store.put(number, block_id)
     }
@@ -285,5 +327,26 @@ impl BlockStorage {
         txn_info_ids: Vec<HashValue>,
     ) -> Result<()> {
         self.block_txn_infos_store.put(block_id, txn_info_ids)
+    }
+
+    pub fn save_failed_block(
+        &self,
+        block_id: HashValue,
+        block: Block,
+        peer_id: Option<PeerId>,
+        failed: String,
+    ) -> Result<()> {
+        self.failed_block_storage
+            .put(block_id, (block, peer_id, failed).into())
+    }
+
+    pub fn get_failed_block_by_id(
+        &self,
+        block_id: HashValue,
+    ) -> Result<Option<(Block, Option<PeerId>, String)>> {
+        match self.failed_block_storage.get(block_id)? {
+            Some(failed_block) => Ok(Some(failed_block.into())),
+            None => Ok(None),
+        }
     }
 }

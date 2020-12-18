@@ -20,7 +20,7 @@ use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView,
     ContractCall, EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView,
-    TransactionInfoView, TransactionView,
+    TransactionInfoView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
@@ -340,6 +340,25 @@ impl RpcClient {
                 .await
         })
         .map_err(map_err)
+    }
+
+    pub fn account_sign_txn_request(
+        &self,
+        txn_request: TransactionRequest,
+    ) -> anyhow::Result<SignedUserTransaction> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .account_client
+                .sign_txn_request(txn_request)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+        .and_then(|d: String| {
+            hex::decode(d.as_str().strip_prefix("0x").unwrap_or_else(|| d.as_str()))
+                .map_err(anyhow::Error::new)
+                .and_then(|d| scs::from_bytes::<SignedUserTransaction>(d.as_slice()))
+        })
     }
 
     pub fn account_sign_txn(

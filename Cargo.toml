@@ -15,6 +15,7 @@ members = [
     "commons/timeout-join-handler",
     "commons/serde-helpers",
     "commons/stream-task",
+    "commons/api-limiter",
     "types",
     "types/uint",
     "core/traits",
@@ -85,6 +86,7 @@ members = [
     "cmd/miner_client",
     "cmd/generator",
     "dataformat-generator",
+    "cmd/indexer"
 ]
 
 [profile.dev]

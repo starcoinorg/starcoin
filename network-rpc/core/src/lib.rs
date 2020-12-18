@@ -7,7 +7,6 @@ pub mod server;
 use futures::future::BoxFuture;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
 
 pub mod prelude {
     pub use crate::NetRpcError;
@@ -40,6 +39,7 @@ pub enum RpcErrorCode {
     BadRequest = 400,
     Forbidden = 403,
     MethodNotFound = 404,
+    RateLimited = 410,
     InternalError = 500,
     ServerUnavailable = 503,
     Unknown = 1000,
@@ -133,7 +133,6 @@ pub trait RawRpcClient {
         peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        timeout: Duration,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>>;
 }
 
@@ -158,7 +157,6 @@ impl RawRpcClient for InmemoryRpcClient {
         _peer_id: PeerId,
         rpc_path: String,
         message: Vec<u8>,
-        _timeout: Duration,
     ) -> BoxFuture<anyhow::Result<Vec<u8>>> {
         Box::pin(
             self.server

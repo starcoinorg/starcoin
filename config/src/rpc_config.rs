@@ -2,15 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
-    get_available_port_from, get_random_available_ports, ApiSet, BaseConfig, ConfigModule,
-    StarcoinOpt,
+    get_available_port_from, get_random_available_ports, parse_key_val, ApiQuotaConfig, ApiSet,
+    BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use starcoin_logger::prelude::*;
 use std::net::IpAddr;
+use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
+
 const DEFAULT_MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 //10M
 const DEFAULT_IPC_FILE: &str = "starcoin.ipc";
@@ -44,6 +46,14 @@ pub struct HttpConfiguration {
     pub max_request_body_size: usize,
     #[structopt(name = "http-threads", long, help = "threads to use")]
     pub threads: Option<usize>,
+    #[structopt(
+        name = "http-ip-headers",
+        long,
+        use_delimiter = true,
+        help = "list of http header which identify a ip",
+        default_value = "X-Real-IP,X-Forwarded-For"
+    )]
+    pub ip_headers: Option<Vec<String>>,
 }
 
 impl Default for HttpConfiguration {
@@ -54,6 +64,7 @@ impl Default for HttpConfiguration {
             max_request_body_size: DEFAULT_MAX_REQUEST_BODY_SIZE,
             threads: None,
             port: DEFAULT_HTTP_PORT,
+            ip_headers: None,
         }
     }
 }
@@ -143,12 +154,74 @@ impl Default for IpcConfiguration {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
+pub struct ApiQuotaConfiguration {
+    #[structopt(
+        name = "default-global-jsonrpc-quota",
+        long,
+        help = "default api quota, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_global_api_quota: ApiQuotaConfig,
+
+    // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
+    // my_program -D a=1 -D b=2
+    #[structopt(
+        name = "custom-global-jsonrpc-quota",
+        long,
+        help = "customize api quota, eg: node.info=100/s",
+        number_of_values = 1,
+        parse(try_from_str = parse_key_val)
+    )]
+    pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
+
+    #[structopt(
+        name = "default-user-jsonrpc-quota",
+        long,
+        help = "default api quota of user, eg: 1000/s",
+        default_value = "1000/s"
+    )]
+    pub default_user_api_quota: ApiQuotaConfig,
+
+    #[structopt(
+        name = "custom-user-jsonrpc-quota",
+        long,
+        help = "customize api quota of user, eg: node.info=100/s",
+        number_of_values = 1,
+        parse(try_from_str = parse_key_val)
+    )]
+    pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
+}
+
+impl Default for ApiQuotaConfiguration {
+    fn default() -> Self {
+        Self {
+            default_global_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(1000).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_global_api_quota: vec![],
+            default_user_api_quota: ApiQuotaConfig {
+                max_burst: NonZeroU32::new(50).unwrap(),
+                duration: QuotaDuration::Second,
+            },
+            custom_user_api_quota: vec![],
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RpcConfig {
+    #[serde(default)]
+    pub api_quota: ApiQuotaConfiguration,
+    #[serde(default)]
     pub tcp: TcpConfiguration,
+    #[serde(default)]
     pub http: HttpConfiguration,
+    #[serde(default)]
     pub ws: WsConfiguration,
+    #[serde(default)]
     pub ipc: IpcConfiguration,
     pub rpc_address: IpAddr,
 }
@@ -198,6 +271,7 @@ impl ConfigModule for RpcConfig {
             tcp: opt.tcp.clone(),
             http: opt.http.clone(),
             ipc: opt.ipc.clone(),
+            api_quota: opt.api_quotas.clone(),
             rpc_address,
         };
 
@@ -220,11 +294,27 @@ impl ConfigModule for RpcConfig {
         Ok(config)
     }
 
-    fn after_load(&mut self, _opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+    fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
+        if self.http.ip_headers.is_none() {
+            self.http.ip_headers = opt.http.ip_headers.clone();
+        }
         info!("Ipc file path: {:?}", self.ipc.ipc_file_path);
         info!("Http rpc address: {:?}", self.get_http_address());
         info!("TCP rpc address: {:?}", self.get_tcp_address());
         info!("Websocket rpc address: {:?}", self.get_ws_address());
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::rpc_config::{ApiQuotaConfig, QuotaDuration};
+
+    #[test]
+    fn test_api_quota_config() {
+        let config = "1000/s".parse::<ApiQuotaConfig>().unwrap();
+        assert_eq!(config.max_burst.get(), 1000u32);
+        assert_eq!(config.duration, QuotaDuration::Second);
+        assert_eq!("1000/s", config.to_string().as_str());
     }
 }

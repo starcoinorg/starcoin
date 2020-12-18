@@ -8,7 +8,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network_api::messages::{CompactBlockMessage, NotificationMessage, PeerCompactBlockMessage};
 use network_api::NetworkService;
-use starcoin_network::NetworkAsyncService;
+use starcoin_network::NetworkServiceRef;
 use starcoin_network_rpc_api::{gen_client::NetworkRpcClient, GetTxnsWithHash};
 use starcoin_service_registry::{ActorService, EventHandler, ServiceContext, ServiceFactory};
 use starcoin_sync::block_connector::BlockConnectorService;
@@ -124,16 +124,12 @@ impl BlockRelayer {
         Ok(block)
     }
 
-    fn block_into_compact(&self, block: Block) -> CompactBlock {
-        CompactBlock::new(&block, vec![])
-    }
-
     fn handle_block_event(
         &self,
         compact_block_msg: PeerCompactBlockMessage,
         ctx: &mut ServiceContext<BlockRelayer>,
     ) -> Result<()> {
-        let network = ctx.get_shared::<NetworkAsyncService>()?;
+        let network = ctx.get_shared::<NetworkServiceRef>()?;
         let block_connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
         let rpc_client = NetworkRpcClient::new(network);
         let txpool = self.txpool.clone();
@@ -141,14 +137,19 @@ impl BlockRelayer {
             let compact_block = compact_block_msg.message.compact_block;
             let peer_id = compact_block_msg.peer_id;
             debug!("Receive peer compact block event from peer id:{}", peer_id);
-            let block = BlockRelayer::fill_compact_block(
-                txpool,
-                rpc_client,
-                compact_block,
-                peer_id.clone(),
-            )
-            .await?;
-            block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
+            let block_id = compact_block.header.id();
+            if let Ok(Some(_)) = txpool.get_store().get_failed_block_by_id(block_id) {
+                debug!("Block is failed block : {:?}", block_id);
+            } else {
+                let block = BlockRelayer::fill_compact_block(
+                    txpool.clone(),
+                    rpc_client,
+                    compact_block,
+                    peer_id.clone(),
+                )
+                .await?;
+                block_connector_service.notify(PeerNewBlock::new(peer_id, block))?;
+            }
             Ok(())
         };
         ctx.spawn(fut.then(|result: Result<()>| async move {
@@ -190,26 +191,22 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
             return;
         }
-        let network = match ctx.get_shared::<NetworkAsyncService>() {
+        let network = match ctx.get_shared::<NetworkServiceRef>() {
             Ok(network) => network,
             Err(e) => {
                 error!("Get network service error: {:?}", e);
                 return;
             }
         };
-        let compact_block = self.block_into_compact(event.0.get_block().clone());
+        let compact_block = event.0.get_block().clone().into();
         let total_difficulty = event.0.get_total_difficulty();
         let compact_block_msg = CompactBlockMessage {
             compact_block,
             total_difficulty,
         };
-        ctx.spawn(async move {
-            network
-                .broadcast(NotificationMessage::CompactBlock(Box::new(
-                    compact_block_msg,
-                )))
-                .await;
-        });
+        network.broadcast(NotificationMessage::CompactBlock(Box::new(
+            compact_block_msg,
+        )));
     }
 }
 

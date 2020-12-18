@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-network"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -18,14 +18,14 @@ log = "0.4.11"
 hex = "0.4.2"
 bytes = "0.5.0"
 
-config = {path = "../config", package="starcoin-config"}
-types = {path = "../types", package="starcoin-types"}
+starcoin-config = {path = "../config"}
+starcoin-types = {path = "../types"}
 starcoin-txpool-api = {path = "../txpool/api"}
 network-p2p-types = {path = "../network-p2p/types"}
 network-p2p = {path = "../network-p2p"}
 logger = {path = "../commons/logger",package="starcoin-logger"}
 
-crypto = { package="starcoin-crypto", path = "../commons/crypto"}
+starcoin-crypto = {path = "../commons/crypto"}
 scs = { package="starcoin-canonical-serialization", path = "../commons/scs"}
 
 fnv = "1.0.6"
@@ -36,7 +36,7 @@ smallvec = "1.5.0"
 tempfile = "3.1.0"
 rand = "0.7.3"
 parking_lot = "0.11.1"
-lru = "0.6.1"
+lru = "0.6.2"
 
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version="1.0", features = ["arbitrary_precision"]}
