@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:starcoin_node/pages/node_page.dart';
 import 'package:starcoin_node/pages/routes/routes.dart';
 
+import 'localizations.dart';
+
 class IntroPage extends StatelessWidget {
   static const String routeName = Routes.main + "/intro";
 
@@ -38,7 +40,8 @@ class IntroPage extends StatelessWidget {
                                     BorderRadius.all(Radius.circular(4)),
                                 borderSide: BorderSide(width: 1, color: blue),
                               ),
-                              hintText: '创建昵称'),
+                              hintText: StarcoinLocalizations.of(context)
+                                  .createNickyName),
                         )),
                     SizedBox(
                       height: 20,
@@ -54,7 +57,8 @@ class IntroPage extends StatelessWidget {
                           return new NodePage(name);
                         }));
                       },
-                      child: const Text('确认', style: TextStyle(fontSize: 30)),
+                      child: Text(StarcoinLocalizations.of(context).confirm,
+                          style: TextStyle(fontSize: 30)),
                       shape: RoundedRectangleBorder(
                         borderRadius: new BorderRadius.circular(20.0),
                         side: BorderSide(color: blue),

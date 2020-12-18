@@ -8,6 +8,7 @@ import 'package:starcoin_wallet/wallet/node.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'directory_service.dart';
+import 'localizations.dart';
 import 'routes/routes.dart';
 import 'package:date_format/date_format.dart';
 import "package:path/path.dart" show join;
@@ -38,6 +39,9 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   String time = "";
   List<String> lines = List();
   String address = "0x0fb6d936ddc01ecb151d73d43c545251";
+
+  String taskName = "";
+  String percent = "";
 
   String userName;
 
@@ -188,23 +192,32 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                             'assets/images/starcoin-miner.png',
                             width: 50,
                           ),
-                          Text(
-                            "参与测试网挖矿 瓜分万U!",
-                            style: TextStyle(color: Colors.white, fontSize: 20),
-                          ),
+                          Column(children: <Widget>[
+                            Text(StarcoinLocalizations.of(context).slogon,
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 15)),
+                            Text(
+                                StarcoinLocalizations.of(context)
+                                        .offcialWebSite +
+                                    ': starcoin.org',
+                                style: TextStyle(color: blue, fontSize: 15)),
+                          ]),
                           Expanded(
                               flex: 1,
                               child: Container(
                                   margin: EdgeInsets.only(right: 20),
                                   alignment: Alignment.centerRight,
-                                  child: IconButton(
-                                    icon: Image.asset(
-                                        'assets/images/starcoin-save.png'),
-                                    iconSize: 60,
-                                    onPressed: () async {
-                                      await takescrshot();
-                                    },
-                                  ))),
+                                  child: Tooltip(
+                                      message: StarcoinLocalizations.of(context)
+                                          .generatePoster,
+                                      child: IconButton(
+                                        icon: Image.asset(
+                                            'assets/images/starcoin-save.png'),
+                                        iconSize: 60,
+                                        onPressed: () async {
+                                          await takescrshot();
+                                        },
+                                      )))),
                         ],
                       ),
                       Container(
@@ -212,13 +225,32 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                         alignment: Alignment(0, 0),
                         child: Center(
                             child: Column(children: <Widget>[
-                          Container(
-                              margin: EdgeInsets.only(bottom: 10),
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                time,
-                                style: TextStyle(color: blue, fontSize: 15),
-                              )),
+                          Row(children: <Widget>[
+                            Container(
+                                margin: EdgeInsets.only(bottom: 10),
+                                child: Text(
+                                  StarcoinLocalizations.of(context)
+                                          .currentTask +
+                                      "：$taskName",
+                                  style: TextStyle(color: blue, fontSize: 13),
+                                )),
+                            Container(
+                                margin: EdgeInsets.only(bottom: 10, left: 10),
+                                child: Text(
+                                  StarcoinLocalizations.of(context).progress +
+                                      "：$percent%",
+                                  style: TextStyle(color: blue, fontSize: 13),
+                                )),
+                            Expanded(
+                                child: Container(
+                                    margin: EdgeInsets.only(bottom: 10),
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      time,
+                                      style:
+                                          TextStyle(color: blue, fontSize: 13),
+                                    )))
+                          ]),
                           Container(
                               padding: EdgeInsets.only(
                                   left: 20, right: 20, top: 10, bottom: 10),
@@ -251,7 +283,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                                     height: iconSize,
                                   ),
                                   Text(
-                                    "当前余额",
+                                    StarcoinLocalizations.of(context).balance,
                                     style: blueTextstyle,
                                   ),
                                   Container(
@@ -272,14 +304,18 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                                     height: iconSize,
                                   ),
                                   Text(
-                                    "已挖块数",
+                                    StarcoinLocalizations.of(context)
+                                        .minedBlocks,
                                     style: blueTextstyle,
                                   ),
                                   Container(
                                       padding: edgeTexts,
                                       child: Text("$blocks",
                                           style: whiteTextstyle)),
-                                  Text("块", style: blueTextstyle)
+                                  Text(
+                                      StarcoinLocalizations.of(context)
+                                          .blockUnit,
+                                      style: blueTextstyle)
                                 ],
                               )),
                           SizedBox(height: 5),
@@ -292,7 +328,10 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                                     width: iconSize,
                                     height: iconSize,
                                   ),
-                                  Text("当前难度", style: blueTextstyle),
+                                  Text(
+                                      StarcoinLocalizations.of(context)
+                                          .currentDiff,
+                                      style: blueTextstyle),
                                   Container(
                                       padding: edgeTexts,
                                       child: Text(difficulty,
@@ -337,10 +376,15 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
         final totalDifficulty =
             nodeInfo['peer_info']['chain_info']['total_difficulty'];
 
+        final syncProgress = await node.syncProgress();
+        final taskNames = syncProgress['current']['task_name'].split("::");
+
         setState(() {
           this.address = address.toString();
           this.balance = balance.toBigInt() / BigInt.from(1000000000);
           this.difficulty = totalDifficulty;
+          this.taskName = taskNames[taskNames.length - 1];
+          this.percent = syncProgress['current']['percent'].toStringAsFixed(2);
         });
       }
     });

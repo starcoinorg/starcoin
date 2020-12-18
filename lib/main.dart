@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:redux/redux.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:starcoin_node/pages/localizations.dart';
 import 'package:starcoin_node/pages/main_page.dart';
 import 'package:starcoin_node/style/themes.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'config/states.dart';
 import 'pages/routes/page.dart';
@@ -42,6 +44,17 @@ class App extends StatelessWidget {
                 child: _buildGlobalLoading(context),
               ),
               new MaterialApp(
+                localizationsDelegates: [
+                  // 本地化的代理类
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  StarcoinLocalizationsDelegate(),
+                ],
+                supportedLocales: [
+                  const Locale('en', 'US'), // 美国英语
+                  const Locale('zh', 'CN'), // 中文简体
+                  //其它Locales
+                ],
                 theme: store.state.theme.themeData,
                 routes: _buildRoutes(),
                 home: new MainPage(userName),
