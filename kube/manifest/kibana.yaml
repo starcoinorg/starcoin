@@ -1,0 +1,16 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: starcoin-kibana
+spec:
+  version: 7.10.1
+  count: 1
+  elasticsearchRef:
+    name: starcoin-elasticsearch
+  http:
+    service:
+      spec:
+        type: LoadBalancer
+    tls:
+      selfSignedCertificate:
+        disabled: true
