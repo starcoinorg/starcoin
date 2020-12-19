@@ -89,8 +89,7 @@ pub struct NetworkConfig {
     pub listen: Multiaddr,
     pub seeds: Vec<MultiaddrWithPeerId>,
     pub enable_mdns: bool,
-    // Do not persistence this flag to config.
-    #[serde(skip)]
+    //TODO skip this field, do not persistence this flag to config. this change will break network config.
     pub disable_seed: bool,
     #[serde(skip)]
     network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
