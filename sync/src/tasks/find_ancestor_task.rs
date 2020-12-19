@@ -7,7 +7,6 @@ use futures::future::BoxFuture;
 use futures::FutureExt;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_types::block::{BlockIdAndNumber, BlockNumber};
-use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -91,7 +90,7 @@ impl AncestorCollector {
 impl TaskResultCollector<BlockIdAndNumber> for AncestorCollector {
     type Output = BlockIdAndNumber;
 
-    fn collect(mut self: Pin<&mut Self>, item: BlockIdAndNumber) -> Result<CollectorState> {
+    fn collect(&mut self, item: BlockIdAndNumber) -> Result<CollectorState> {
         let block_id = self
             .accumulator
             .get_leaf(item.number)?
@@ -208,11 +207,11 @@ mod tests {
         accumulator2.flush()?;
 
         assert_ne!(accumulator.get_info(), accumulator2.get_info());
-
+        let batch_size = 7;
         let task_state = FindAncestorTask::new(
             accumulator2.num_leaves() - 1,
             accumulator.num_leaves() - 1,
-            7,
+            batch_size,
             fetcher.clone(),
         );
         let event_handle = Arc::new(TaskEventCounterHandle::new());
@@ -223,6 +222,8 @@ mod tests {
         assert_eq!(ancestor.number, info0.num_leaves - 1);
         let report = event_handle.get_reports().pop().unwrap();
         debug!("report: {}", report);
+        //sub task not all finished, the collector return enough.
+        assert!(report.ok < report.sub_task);
         assert_eq!(report.processed_items, 100 + 1);
         Ok(())
     }
