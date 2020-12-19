@@ -5,7 +5,7 @@ use crate::{
     decode_key, get_available_port_from, get_random_available_port, load_key, parse_key_val,
     ApiQuotaConfig, BaseConfig, ConfigModule, QuotaDuration, StarcoinOpt,
 };
-use anyhow::{bail, format_err, Result};
+use anyhow::{bail, Result};
 use network_p2p_types::{
     is_memory_addr, memory_addr,
     multiaddr::{Multiaddr, Protocol},
@@ -88,33 +88,31 @@ pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
     pub listen: Multiaddr,
     pub seeds: Vec<MultiaddrWithPeerId>,
+    pub enable_mdns: bool,
+    // Do not persistence this flag to config.
+    #[serde(skip)]
     pub disable_seed: bool,
     #[serde(skip)]
-    pub network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
+    network_keypair: Option<Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>>>,
     #[serde(skip)]
-    pub self_peer_id: Option<PeerId>,
+    self_peer_id: Option<PeerId>,
     #[serde(skip)]
-    pub self_address: Option<MultiaddrWithPeerId>,
+    self_address: Option<MultiaddrWithPeerId>,
     #[serde(default)]
     pub network_rpc_quotas: NetworkRpcQuotaConfiguration,
 }
 
 impl NetworkConfig {
     pub fn network_keypair(&self) -> Arc<KeyPair<Ed25519PrivateKey, Ed25519PublicKey>> {
-        self.network_keypair.clone().unwrap()
+        self.network_keypair.clone().expect("Config should init.")
     }
 
-    pub fn self_address(&self) -> Result<MultiaddrWithPeerId> {
-        self.self_address
-            .as_ref()
-            .cloned()
-            .ok_or_else(|| format_err!("Config not init."))
+    pub fn self_address(&self) -> MultiaddrWithPeerId {
+        self.self_address.clone().expect("Config should init.")
     }
 
-    pub fn self_peer_id(&self) -> Result<PeerId> {
-        self.self_peer_id
-            .clone()
-            .ok_or_else(|| format_err!("Self peer_id has not init."))
+    pub fn self_peer_id(&self) -> PeerId {
+        self.self_peer_id.clone().expect("Config should init.")
     }
 
     fn prepare_peer_id(&mut self) {
@@ -178,10 +176,11 @@ impl ConfigModule for NetworkConfig {
         Ok(Self {
             listen,
             seeds,
+            enable_mdns: opt.enable_mdns,
+            disable_seed: opt.disable_seed,
             network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
             self_peer_id: None,
             self_address: None,
-            disable_seed: opt.disable_seed,
             network_rpc_quotas: opt.network_rpc_quotas.clone(),
         })
     }

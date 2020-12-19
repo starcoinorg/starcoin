@@ -59,7 +59,7 @@ fn build_nodes_one_proto() -> (
 
     let (node1, events_stream1) = build_test_full_node(config::NetworkConfiguration {
         //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
-        protocols: vec![From::from(PROTOCOL_NAME)],
+        notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr.clone()],
         transport: config::TransportConfig::MemoryOnly,
         ..config::NetworkConfiguration::new_local()
@@ -67,7 +67,7 @@ fn build_nodes_one_proto() -> (
 
     let (node2, events_stream2) = build_test_full_node(config::NetworkConfiguration {
         //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
-        protocols: vec![From::from(PROTOCOL_NAME)],
+        notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![],
         reserved_nodes: vec![config::MultiaddrWithPeerId {
             multiaddr: listen_addr,
@@ -85,7 +85,7 @@ fn lots_of_incoming_peers_works() {
     let listen_addr = config::build_multiaddr![Memory(rand::random::<u64>())];
 
     let (main_node, _) = build_test_full_node(config::NetworkConfiguration {
-        protocols: vec![From::from(PROTOCOL_NAME)],
+        notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr.clone()],
         in_peers: u32::max_value(),
         transport: config::TransportConfig::MemoryOnly,
@@ -102,7 +102,7 @@ fn lots_of_incoming_peers_works() {
         let main_node_peer_id = main_node_peer_id.clone();
 
         let (_dialing_node, event_stream) = build_test_full_node(config::NetworkConfiguration {
-            protocols: vec![From::from(PROTOCOL_NAME)],
+            notifications_protocols: vec![From::from(PROTOCOL_NAME)],
             listen_addresses: vec![],
             reserved_nodes: vec![config::MultiaddrWithPeerId {
                 multiaddr: listen_addr.clone(),
@@ -471,7 +471,7 @@ fn generate_config(boot_nodes: Vec<MultiaddrWithPeerId>) -> NetworkConfiguration
 
     config::NetworkConfiguration {
         //notifications_protocols: vec![(ENGINE_ID, From::from("/foo"))],
-        protocols: vec![From::from(PROTOCOL_NAME)],
+        notifications_protocols: vec![From::from(PROTOCOL_NAME)],
         listen_addresses: vec![listen_addr],
         transport: config::TransportConfig::MemoryOnly,
         boot_nodes,

@@ -104,10 +104,7 @@ pub struct NetworkConfiguration {
 
     pub transport: TransportConfig,
 
-    pub disable_seed: bool,
-
-    pub protocols: Vec<Cow<'static, str>>,
-
+    pub notifications_protocols: Vec<Cow<'static, str>>,
     pub request_response_protocols: Vec<RequestResponseConfig>,
     /// Should we insert non-global addresses into the DHT?
     pub allow_non_globals_in_dht: bool,
@@ -162,8 +159,7 @@ impl Default for NetworkConfiguration {
                 allow_private_ipv4: false,
                 wasm_external_transport: None,
             },
-            disable_seed: false,
-            protocols: vec![],
+            notifications_protocols: vec![],
             request_response_protocols: vec![],
             allow_non_globals_in_dht: false,
             kademlia_disjoint_query_paths: false,
@@ -183,8 +179,6 @@ impl NetworkConfiguration {
             public_addresses: Vec::new(),
             boot_nodes: Vec::new(),
             node_key,
-            //notifications_protocols: Vec::new(),
-            //request_response_protocols: Vec::new(),
             in_peers: 25,
             out_peers: 75,
             reserved_nodes: Vec::new(),
@@ -196,8 +190,7 @@ impl NetworkConfiguration {
                 allow_private_ipv4: true,
                 wasm_external_transport: None,
             },
-            disable_seed: false,
-            protocols: vec![],
+            notifications_protocols: vec![],
             request_response_protocols: vec![],
             allow_non_globals_in_dht: false,
             kademlia_disjoint_query_paths: false,

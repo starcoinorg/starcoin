@@ -34,9 +34,8 @@ pub fn build_network_worker(
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
-            //TODO support enable mdns by config.
-            enable_mdns: false,
-            allow_private_ipv4: false,
+            enable_mdns: node_config.network.enable_mdns,
+            allow_private_ipv4: true,
             wasm_external_transport: None,
         }
     };
@@ -71,7 +70,7 @@ pub fn build_network_worker(
             .collect::<Vec<_>>(),
         None => vec![],
     };
-    let self_peer_id = node_config.network.self_peer_id()?;
+    let self_peer_id = node_config.network.self_peer_id();
     let boot_nodes = if node_config.network.disable_seed {
         vec![]
     } else {
@@ -97,7 +96,7 @@ pub fn build_network_worker(
             .expect("decode network node key should success.");
             NodeKeyConfig::Ed25519(Secret::Input(secret))
         },
-        protocols,
+        notifications_protocols: protocols,
         request_response_protocols: rpc_protocols,
         transport: transport_config,
         node_name: node_name.to_string(),

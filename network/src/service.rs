@@ -55,7 +55,7 @@ impl NetworkActorService {
             rpc,
         )?;
         let service = worker.service().clone();
-        let self_info = PeerInfo::new(config.network.self_peer_id()?, chain_info);
+        let self_info = PeerInfo::new(config.network.self_peer_id(), chain_info);
         let inner = Inner::new(self_info, service, peer_message_handler)?;
         Ok(Self {
             worker: Some(worker),
