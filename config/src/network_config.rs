@@ -87,7 +87,9 @@ impl Default for NetworkRpcQuotaConfiguration {
 pub struct NetworkConfig {
     // The address that this node is listening on for new connections.
     pub listen: Multiaddr,
+    #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
+    #[serde(default)]
     pub enable_mdns: bool,
     //TODO skip this field, do not persistence this flag to config. this change will break network config.
     pub disable_seed: bool,
