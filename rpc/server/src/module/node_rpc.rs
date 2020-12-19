@@ -33,13 +33,7 @@ impl NodeApi for NodeRpcImpl {
 
     fn info(&self) -> FutureResult<NodeInfo> {
         let service = self.service.clone().unwrap();
-        let self_address = self
-            .config
-            .network
-            .self_address
-            .as_ref()
-            .expect("self address must exist in runtime.")
-            .to_string();
+        let self_address = self.config.network.self_address().to_string();
         let net = self.config.net().clone();
         let fut = async move {
             let peer_info = service.get_self_peer().await?;

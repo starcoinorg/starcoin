@@ -236,17 +236,10 @@ impl NodeService {
 
         registry.register::<TxnSyncService>().await?;
 
-        let peer_id = config.network.self_peer_id()?;
+        let peer_id = config.network.self_peer_id();
 
         info!("Self peer_id is: {}", peer_id.to_base58());
-        info!(
-            "Self address is: {}",
-            config
-                .network
-                .self_address
-                .as_ref()
-                .expect("Self connect address must has been set.")
-        );
+        info!("Self address is: {}", config.network.self_address());
 
         registry.register::<CreateBlockTemplateService>().await?;
         registry.register::<MinerService>().await?;

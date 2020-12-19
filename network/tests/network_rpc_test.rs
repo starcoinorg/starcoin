@@ -28,13 +28,13 @@ async fn test_network_raw_rpc() {
     let service1 = build_network(None, Some((rpc_info.clone(), MockRpcHandler::echo())))
         .await
         .unwrap();
-    let peer_id_1 = service1.config.network.self_peer_id().unwrap();
-    let seed = service1.config.network.self_address().unwrap();
+    let peer_id_1 = service1.config.network.self_peer_id();
+    let seed = service1.config.network.self_address();
 
     let service2 = build_network(Some(seed), Some((rpc_info, MockRpcHandler::echo())))
         .await
         .unwrap();
-    let peer_id_2 = service2.config.network.self_peer_id().unwrap();
+    let peer_id_2 = service2.config.network.self_peer_id();
     Delay::new(Duration::from_secs(1)).await;
     let request = TestRequest {
         data: HashValue::random(),

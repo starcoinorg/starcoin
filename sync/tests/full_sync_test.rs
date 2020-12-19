@@ -20,10 +20,7 @@ fn test_full_sync() {
 #[stest::test(timeout = 120)]
 fn test_sync_by_notification() {
     let first_config = Arc::new(NodeConfig::random_for_test());
-    info!(
-        "first peer : {:?}",
-        first_config.network.self_peer_id().unwrap()
-    );
+    info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     let first_chain = first_node.chain_service().unwrap();
 
@@ -31,11 +28,8 @@ fn test_sync_by_notification() {
     sleep(Duration::from_millis(1000));
 
     let mut second_config = NodeConfig::random_for_test();
-    info!(
-        "second peer : {:?}",
-        second_config.network.self_peer_id().unwrap()
-    );
-    second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
+    info!("second peer : {:?}", second_config.network.self_peer_id());
+    second_config.network.seeds = vec![first_config.network.self_address()];
     second_config.miner.enable_miner_client = false;
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();
@@ -79,10 +73,7 @@ fn test_sync_by_notification() {
 #[stest::test(timeout = 120)]
 fn test_broadcast_with_difficulty() {
     let first_config = Arc::new(NodeConfig::random_for_test());
-    info!(
-        "first peer : {:?}",
-        first_config.network.self_peer_id().unwrap()
-    );
+    info!("first peer : {:?}", first_config.network.self_peer_id());
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     let first_chain = first_node.chain_service().unwrap();
     let count = 5;
@@ -94,11 +85,8 @@ fn test_broadcast_with_difficulty() {
     let number_1 = block_1.header().number();
 
     let mut second_config = NodeConfig::random_for_test();
-    info!(
-        "second peer : {:?}",
-        second_config.network.self_peer_id().unwrap()
-    );
-    second_config.network.seeds = vec![first_config.network.self_address().unwrap()];
+    info!("second peer : {:?}", second_config.network.self_peer_id());
+    second_config.network.seeds = vec![first_config.network.self_address()];
     //second_config.miner.enable_miner_client = false;
     second_config.sync.set_mode(SyncMode::FULL);
 

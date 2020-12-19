@@ -12,17 +12,11 @@ use std::str::FromStr;
 #[serde(deny_unknown_fields)]
 pub struct SyncConfig {
     sync_mode: SyncMode,
-    //Do not persistence this flag to config file.
-    #[serde(skip)]
-    pub skip_pow_verify_when_sync: bool,
 }
 
 impl SyncConfig {
     pub fn new(sync_mode: SyncMode) -> Self {
-        Self {
-            sync_mode,
-            skip_pow_verify_when_sync: false,
-        }
+        Self { sync_mode }
     }
 
     pub fn set_mode(&mut self, sync_mode: SyncMode) {
@@ -41,10 +35,7 @@ impl SyncConfig {
 impl ConfigModule for SyncConfig {
     fn default_with_opt(opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
         let sync_mode = opt.sync_mode.unwrap_or_else(|| SyncMode::FULL);
-        Ok(SyncConfig {
-            sync_mode,
-            skip_pow_verify_when_sync: opt.skip_pow_verify_when_sync,
-        })
+        Ok(SyncConfig { sync_mode })
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
@@ -54,11 +45,7 @@ impl ConfigModule for SyncConfig {
         if self.sync_mode == SyncMode::LIGHT || self.sync_mode == SyncMode::FAST {
             bail!("{} is not supported yet.", self.sync_mode);
         }
-        self.skip_pow_verify_when_sync = opt.skip_pow_verify_when_sync;
-        info!(
-            "Sync mode : {:?} : {:?}, skip_pow_verify_when_sync: {}",
-            opt.sync_mode, self.sync_mode, self.skip_pow_verify_when_sync
-        );
+        info!("Sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
         Ok(())
     }
 }

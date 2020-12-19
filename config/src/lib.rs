@@ -216,13 +216,12 @@ pub struct StarcoinOpt {
     pub disable_miner_client: bool,
 
     #[structopt(long = "disable-seed")]
-    /// Disable seed for seed node.
+    /// Do not connect to seed node, include builtin and config seed.
     pub disable_seed: bool,
 
-    #[structopt(long = "skip-pow-verify-when-sync")]
-    /// Don't verify pwd nonce and difficulty when sync, if you trust the peers.
-    /// Note: This flag may speed up the sync process, but may introduce security risks.
-    pub skip_pow_verify_when_sync: bool,
+    #[structopt(long = "enable-mdns")]
+    /// Enable p2p mdns discovery, for automatically discover the peer from the local network.
+    pub enable_mdns: bool,
 
     #[structopt(long = "disable-mint-empty-block")]
     /// Do not mint empty block, default is true in Dev network.

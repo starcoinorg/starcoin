@@ -190,7 +190,7 @@ use starcoin_types::peer_info::PeerId;
 pub fn full_sync_task<H, F, N>(
     current_block_id: HashValue,
     target: BlockInfo,
-    skip_pow_verify_when_sync: bool,
+    skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     block_event_handle: H,
@@ -289,7 +289,7 @@ where
                 1,
             );
             let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
-            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle, network, skip_pow_verify_when_sync);
+            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle, network, skip_pow_verify);
             Ok(TaskGenerator::new(
                 block_sync_task,
                 10,
