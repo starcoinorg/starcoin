@@ -177,7 +177,7 @@ where
     chain: BlockChain,
     event_handle: Box<dyn BlockConnectedEventHandle>,
     network: N,
-    skip_pow_verify_when_sync: bool,
+    skip_pow_verify: bool,
 }
 
 impl<N> BlockCollector<N>
@@ -214,7 +214,7 @@ where
             chain,
             event_handle: Box::new(event_handle),
             network,
-            skip_pow_verify_when_sync,
+            skip_pow_verify: skip_pow_verify_when_sync,
         }
     }
 
@@ -224,7 +224,7 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if let Err(err) = if self.skip_pow_verify_when_sync {
+        if let Err(err) = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())
         } else {

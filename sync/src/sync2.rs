@@ -71,6 +71,7 @@ impl SyncService2 {
         &self,
         force: bool,
         peers: Vec<PeerId>,
+        skip_pow_verify: bool,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         if let Some(task_handle) = self.task_handle.as_ref() {
@@ -91,6 +92,7 @@ impl SyncService2 {
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
             if peer_selector.is_empty() {
+                //TODO wait peers.
                 info!("[sync] No peers to sync.");
                 return Ok(());
             }
@@ -108,7 +110,10 @@ impl SyncService2 {
             }
             let rpc_client = VerifiedRpcClient::new(peer_selector, network);
             let target = rpc_client.get_sync_target().await?;
-            self_ref.notify(StartSyncEvent { target })?;
+            self_ref.notify(StartSyncEvent {
+                target,
+                skip_pow_verify,
+            })?;
             Ok(())
         };
         ctx.spawn(fut.then(|result: Result<(), anyhow::Error>| async move {
@@ -122,6 +127,7 @@ impl SyncService2 {
     pub fn start_sync_task(
         &mut self,
         target: SyncTarget,
+        skip_pow_verify: bool,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
         if let Some(task_handle) = self.task_handle.as_ref() {
@@ -148,7 +154,7 @@ impl SyncService2 {
         let (fut, task_handle, task_event_handle) = full_sync_task(
             current_block_id,
             target.block_info.clone(),
-            self.config.sync.skip_pow_verify_when_sync,
+            skip_pow_verify,
             self.config.net().time_service(),
             self.storage.clone(),
             connector_service.clone(),
@@ -242,6 +248,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
 #[derive(Debug, Clone)]
 pub struct StartSyncEvent {
     target: SyncTarget,
+    skip_pow_verify: bool,
 }
 
 impl EventHandler<Self, StartSyncEvent> for SyncService2 {
@@ -253,7 +260,7 @@ impl EventHandler<Self, StartSyncEvent> for SyncService2 {
             debug!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), ignore StartSyncEvent.", target_block_header.number, target_total_difficulty, current_total_difficulty);
             return;
         }
-        if let Err(e) = self.start_sync_task(msg.target, ctx) {
+        if let Err(e) = self.start_sync_task(msg.target, msg.skip_pow_verify, ctx) {
             error!(
                 "[sync] Start sync task error: {:?}, target: {:?}",
                 e, target_block_header
@@ -267,17 +274,23 @@ pub struct CheckSyncEvent {
     force: bool,
     /// check sync with special peers
     peers: Vec<PeerId>,
+
+    skip_pow_verify: bool,
 }
 
 impl CheckSyncEvent {
-    pub fn new(force: bool, peers: Vec<PeerId>) -> Self {
-        Self { force, peers }
+    pub fn new(force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
+        Self {
+            force,
+            peers,
+            skip_pow_verify,
+        }
     }
 }
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_sync(msg.force, msg.peers, ctx) {
+        if let Err(e) = self.check_sync(msg.force, msg.peers, msg.skip_pow_verify, ctx) {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -307,7 +320,7 @@ impl EventHandler<Self, SyncDone> for SyncService2 {
         ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
         // check sync again
         //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
-        ctx.notify(CheckSyncEvent::new(false, vec![]));
+        ctx.notify(CheckSyncEvent::default());
     }
 }
 
@@ -373,7 +386,11 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
         msg: SyncStartRequest,
         ctx: &mut ServiceContext<SyncService2>,
     ) -> Result<()> {
-        ctx.notify(CheckSyncEvent::new(msg.force, msg.peers));
+        ctx.notify(CheckSyncEvent::new(
+            msg.force,
+            msg.peers,
+            msg.skip_pow_verify,
+        ));
         Ok(())
     }
 }

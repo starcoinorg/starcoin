@@ -15,6 +15,11 @@ pub struct StartOpt {
     /// if force is set, will cancel current sync task.
     force: bool,
 
+    #[structopt(long = "skip-pow-verify-when-sync")]
+    /// Don't verify pwd nonce and difficulty when sync, if you trust the peers.
+    /// Note: This flag may speed up the sync process, but may introduce security risks.
+    skip_pow_verify: bool,
+
     /// if peers is not empty, will try sync with the special peers.
     #[structopt(short = "p", long = "peer")]
     peers: Option<Vec<PeerId>>,
@@ -36,6 +41,7 @@ impl CommandAction for StartCommand {
         client.sync_start(
             ctx.opt().force,
             ctx.opt().peers.as_ref().cloned().unwrap_or_default(),
+            ctx.opt().skip_pow_verify,
         )
     }
 }

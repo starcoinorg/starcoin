@@ -219,11 +219,6 @@ pub struct StarcoinOpt {
     /// Disable seed for seed node.
     pub disable_seed: bool,
 
-    #[structopt(long = "skip-pow-verify-when-sync")]
-    /// Don't verify pwd nonce and difficulty when sync, if you trust the peers.
-    /// Note: This flag may speed up the sync process, but may introduce security risks.
-    pub skip_pow_verify_when_sync: bool,
-
     #[structopt(long = "disable-mint-empty-block")]
     /// Do not mint empty block, default is true in Dev network.
     pub disable_mint_empty_block: Option<bool>,

@@ -16,7 +16,7 @@ pub trait SyncAsyncService: Clone + std::marker::Unpin + Send + Sync {
     async fn cancel(&self) -> Result<()>;
     /// if `force` is true, will cancel current task and start a new task.
     /// if peers is not empty, will try sync with the special peers.
-    async fn start(&self, force: bool, peers: Vec<PeerId>) -> Result<()>;
+    async fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Result<()>;
 }
 
 pub trait SyncServiceHandler:
@@ -45,7 +45,12 @@ where
         self.send(SyncCancelRequest).await
     }
 
-    async fn start(&self, force: bool, peers: Vec<PeerId>) -> Result<()> {
-        self.send(SyncStartRequest { force, peers }).await?
+    async fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Result<()> {
+        self.send(SyncStartRequest {
+            force,
+            peers,
+            skip_pow_verify,
+        })
+        .await?
     }
 }

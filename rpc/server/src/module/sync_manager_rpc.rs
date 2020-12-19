@@ -50,10 +50,10 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn start(&self, force: bool, peers: Vec<PeerId>) -> FutureResult<()> {
+    fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> FutureResult<()> {
         let service = self.service.clone();
         let fut = async move {
-            service.start(force, peers).await?;
+            service.start(force, peers, skip_pow_verify).await?;
             Ok(())
         }
         .map_err(map_err);
