@@ -15,7 +15,7 @@ pub struct StartOpt {
     /// if force is set, will cancel current sync task.
     force: bool,
 
-    #[structopt(long = "skip-pow-verify-when-sync")]
+    #[structopt(long = "skip-pow-verify")]
     /// Don't verify pwd nonce and difficulty when sync, if you trust the peers.
     /// Note: This flag may speed up the sync process, but may introduce security risks.
     skip_pow_verify: bool,
