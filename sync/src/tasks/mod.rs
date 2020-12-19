@@ -9,7 +9,7 @@ use futures::future::BoxFuture;
 use futures::{FutureExt, TryFutureExt};
 use logger::prelude::*;
 use starcoin_accumulator::node::AccumulatorStoreType;
-use starcoin_accumulator::{Accumulator, MerkleAccumulator};
+use starcoin_accumulator::MerkleAccumulator;
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::{ActorService, EventHandler, ServiceRef};
 use starcoin_storage::Store;
@@ -17,7 +17,40 @@ use starcoin_types::block::{Block, BlockIdAndNumber, BlockInfo, BlockNumber};
 use starcoin_vm_types::time::TimeService;
 use std::sync::mpsc::Sender;
 use std::sync::Arc;
-use stream_task::{Generator, TaskError, TaskEventCounterHandle, TaskGenerator, TaskHandle};
+use stream_task::{
+    Generator, TaskError, TaskEventCounterHandle, TaskFuture, TaskGenerator, TaskHandle,
+};
+
+pub trait FetcherFactory<F, N>: Send + Sync
+where
+    F: BlockIdFetcher + BlockFetcher,
+    N: NetworkService + 'static,
+{
+    fn create(&self, peers: Vec<PeerInfo>) -> F;
+
+    fn network(&self) -> N;
+}
+
+pub struct VerifiedRpcClientFactory {
+    network: NetworkServiceRef,
+}
+
+impl VerifiedRpcClientFactory {
+    pub fn new(network: NetworkServiceRef) -> Self {
+        Self { network }
+    }
+}
+
+impl FetcherFactory<VerifiedRpcClient, NetworkServiceRef> for VerifiedRpcClientFactory {
+    fn create(&self, peers: Vec<PeerInfo>) -> VerifiedRpcClient {
+        let peer_selector = PeerSelector::new(peers);
+        VerifiedRpcClient::new(peer_selector, self.network.clone())
+    }
+
+    fn network(&self) -> NetworkServiceRef {
+        self.network.clone()
+    }
+}
 
 pub trait BlockIdFetcher: Send + Sync {
     fn fetch_block_ids(
@@ -26,6 +59,22 @@ pub trait BlockIdFetcher: Send + Sync {
         reverse: bool,
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn fetch_block_ids_from_peer(
+        &self,
+        peer: Option<PeerId>,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
+    ) -> BoxFuture<Result<Vec<HashValue>>>;
+
+    fn fetch_block_infos_from_peer(
+        &self,
+        peer_id: Option<PeerId>,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockInfo>>>;
+
+    fn find_best_peer(&self) -> Option<PeerInfo>;
 }
 
 impl BlockIdFetcher for VerifiedRpcClient {
@@ -36,6 +85,29 @@ impl BlockIdFetcher for VerifiedRpcClient {
         max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.get_block_ids(start_number, reverse, max_size).boxed()
+    }
+
+    fn fetch_block_ids_from_peer(
+        &self,
+        peer: Option<PeerId>,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        self.get_block_ids_from_peer(peer, start_number, reverse, max_size)
+            .boxed()
+    }
+
+    fn fetch_block_infos_from_peer(
+        &self,
+        peer_id: Option<PeerId>,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+        self.get_block_infos_from_peer(peer_id, hashes).boxed()
+    }
+
+    fn find_best_peer(&self) -> Option<PeerInfo> {
+        self.best_peer()
     }
 }
 
@@ -50,6 +122,34 @@ where
         max_size: u64,
     ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
         BlockIdFetcher::fetch_block_ids(self.as_ref(), start_number, reverse, max_size)
+    }
+
+    fn fetch_block_ids_from_peer(
+        &self,
+        peer: Option<PeerId>,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        BlockIdFetcher::fetch_block_ids_from_peer(
+            self.as_ref(),
+            peer,
+            start_number,
+            reverse,
+            max_size,
+        )
+    }
+
+    fn fetch_block_infos_from_peer(
+        &self,
+        peer_id: Option<PeerId>,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+        BlockIdFetcher::fetch_block_infos_from_peer(self.as_ref(), peer_id, hashes)
+    }
+
+    fn find_best_peer(&self) -> Option<PeerInfo> {
+        BlockIdFetcher::find_best_peer(self.as_ref())
     }
 }
 
@@ -135,7 +235,7 @@ pub struct BlockConnectedEvent {
     pub block: Block,
 }
 
-pub trait BlockConnectedEventHandle: Send {
+pub trait BlockConnectedEventHandle: Send + Clone + std::marker::Unpin {
     fn handle(&mut self, event: BlockConnectedEvent) -> Result<()>;
 }
 
@@ -149,6 +249,40 @@ where
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct AncestorEvent {
+    pub ancestor: BlockIdAndNumber,
+}
+
+pub trait AncestorEventHandle: Send + Clone + std::marker::Unpin {
+    fn handle(&mut self, event: AncestorEvent) -> Result<()>;
+}
+
+impl AncestorEventHandle for Sender<AncestorEvent> {
+    fn handle(&mut self, event: AncestorEvent) -> Result<()> {
+        self.send(event)?;
+        Ok(())
+    }
+}
+
+impl AncestorEventHandle for UnboundedSender<AncestorEvent> {
+    fn handle(&mut self, event: AncestorEvent) -> Result<()> {
+        self.start_send(event)?;
+        Ok(())
+    }
+}
+
+impl<S> AncestorEventHandle for ServiceRef<S>
+where
+    S: ActorService + EventHandler<S, AncestorEvent>,
+{
+    fn handle(&mut self, event: AncestorEvent) -> Result<()> {
+        self.notify(event)?;
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
 pub struct NoOpEventHandle;
 
 impl BlockConnectedEventHandle for NoOpEventHandle {
@@ -175,38 +309,43 @@ impl BlockConnectedEventHandle for UnboundedSender<BlockConnectedEvent> {
 mod accumulator_sync_task;
 mod block_sync_task;
 mod find_ancestor_task;
+mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
 #[cfg(test)]
 mod tests;
 
 use crate::tasks::block_sync_task::SyncBlockData;
+use crate::tasks::inner_sync_task::{FindSubTargetTask, InnerSyncTask};
 pub use accumulator_sync_task::{AccumulatorCollector, BlockAccumulatorSyncTask};
 pub use block_sync_task::{BlockCollector, BlockSyncTask};
 pub use find_ancestor_task::{AncestorCollector, FindAncestorTask};
-use network_api::NetworkService;
-use starcoin_types::peer_info::PeerId;
+use network::NetworkServiceRef;
+use network_api::{NetworkService, PeerSelector};
+use starcoin_types::peer_info::{PeerId, PeerInfo};
+use traits::ChainReader;
 
-pub fn full_sync_task<H, F, N>(
+pub fn full_sync_task<H, A, F, N>(
     current_block_id: HashValue,
     target: BlockInfo,
     skip_pow_verify: bool,
     time_service: Arc<dyn TimeService>,
     storage: Arc<dyn Store>,
     block_event_handle: H,
-    fetcher: F,
-    network: N,
+    peers: Vec<PeerInfo>,
+    ancestor_event_handle: A,
+    fetcher_factory: Arc<dyn FetcherFactory<F, N>>,
 ) -> Result<(
     BoxFuture<'static, Result<BlockChain, TaskError>>,
     TaskHandle,
     Arc<TaskEventCounterHandle>,
 )>
 where
-    H: BlockConnectedEventHandle + 'static,
+    H: BlockConnectedEventHandle + Sync + 'static,
+    A: AncestorEventHandle + Sync + 'static,
     F: BlockIdFetcher + BlockFetcher + 'static,
     N: NetworkService + 'static,
 {
-    let fetcher = Arc::new(fetcher);
     let current_block_header = storage
         .get_block_header_by_hash(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block header by id: {}", current_block_id))?;
@@ -215,7 +354,6 @@ where
     let current_block_info = storage
         .get_block_info(current_block_id)?
         .ok_or_else(|| format_err!("Can not find block info by id: {}", current_block_id))?;
-    let current_block_id_number = BlockIdAndNumber::new(current_block_id, current_block_number);
 
     let event_handle = Arc::new(TaskEventCounterHandle::new());
 
@@ -224,82 +362,87 @@ where
 
     let current_block_accumulator_info = current_block_info.block_accumulator_info.clone();
 
-    let accumulator_task_fetcher = fetcher.clone();
-    let block_task_fetcher = fetcher.clone();
-    let chain_storage = storage.clone();
     let max_retry_times = 15;
     let delay_milliseconds_on_error = 100;
-    let sync_task =
-        TaskGenerator::new(
-            FindAncestorTask::new(current_block_number, target_block_number, 10, fetcher),
-            3,
-            max_retry_times,
-            delay_milliseconds_on_error,
-            AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
-                current_block_accumulator_info,
-                storage.get_accumulator_store(AccumulatorStoreType::Block),
-            ))),
-            event_handle.clone(),
-        )
-        .and_then(move |ancestor, event_handle| {
-            info!("[sync] Find ancestor: {:?}", ancestor);
-            let ancestor_block_info = storage.get_block_info(ancestor.id)?.ok_or_else(|| {
-                format_err!(
-                    "[sync] Can not find ancestor block info by id: {}",
-                    ancestor.id
-                )
-            })?;
+    let sync_task = TaskGenerator::new(
+        FindAncestorTask::new(
+            current_block_number,
+            target_block_number,
+            10,
+            fetcher_factory.create(peers.clone()),
+        ),
+        3,
+        max_retry_times,
+        delay_milliseconds_on_error,
+        AncestorCollector::new(Arc::new(MerkleAccumulator::new_with_info(
+            current_block_accumulator_info,
+            storage.get_accumulator_store(AccumulatorStoreType::Block),
+        ))),
+        event_handle.clone(),
+    )
+    .generate();
+    let (fut, _) = sync_task.with_handle();
 
-            let accumulator_sync_task = BlockAccumulatorSyncTask::new(
-                // start_number is include, so start from ancestor.number + 1
-                ancestor.number + 1,
-                target_block_accumulator.clone(),
-                accumulator_task_fetcher,
-                100,
+    let event_handle_clone = event_handle.clone();
+    let all_fut = async move {
+        let ancestor = fut.await?;
+        let mut ancestor_event_handle = ancestor_event_handle;
+        if let Err(e) = ancestor_event_handle.handle(AncestorEvent { ancestor }) {
+            error!(
+                "Send AncestorEvent error: {:?}, ancestor: {:?}",
+                e, ancestor
             );
-            Ok(TaskGenerator::new(
-                accumulator_sync_task,
-                5,
-                max_retry_times,
-                delay_milliseconds_on_error,
-                AccumulatorCollector::new(
-                    storage.get_accumulator_store(AccumulatorStoreType::Block),
-                    ancestor,
-                    ancestor_block_info.block_accumulator_info,
-                    target_block_accumulator,
-                ),
-                event_handle,
-            ))
-        })
-        .and_then(move |(ancestor, accumulator), event_handle| {
-            //start_number is include, so start from ancestor.number + 1
-            let start_number = ancestor.number + 1;
-            // if current block == ancestor, it means target is at current main chain's future, so do not check local store.
-            // otherwise, we need to check if the block has already been executed to avoid wasting the results of previously interrupted task execution.
-            let check_local_store = ancestor != current_block_id_number;
-            info!(
-            "[sync] Start sync block, ancestor: {:?}, start_number: {}, check_local_store: {:?}, target_number: {}", 
-            ancestor, start_number, check_local_store, accumulator.num_leaves() -1 );
-            let block_sync_task = BlockSyncTask::new(
-                accumulator,
-                start_number,
-                block_task_fetcher,
-                check_local_store,
-                chain_storage.clone(),
-                1,
+        }
+        let mut latest_ancestor = ancestor;
+        let mut latest_block_chain;
+        let mut latest_peers = peers;
+        loop {
+            // sub target
+            let target_number = latest_ancestor.number + 1000;
+            let sub_target_task = FindSubTargetTask::new(
+                latest_peers.clone(),
+                fetcher_factory.clone().create(latest_peers.clone()),
+                target_number,
             );
-            let chain = BlockChain::new(time_service, ancestor.id, chain_storage)?;
-            let block_collector = BlockCollector::new_with_handle(current_block_info, chain, block_event_handle, network, skip_pow_verify);
-            Ok(TaskGenerator::new(
-                block_sync_task,
-                10,
-                max_retry_times,
-                delay_milliseconds_on_error,
-                block_collector,
-                event_handle,
-            ))
-        })
-        .generate();
-    let (fut, handle) = sync_task.with_handle();
+            let (peers, sub_target) = sub_target_task
+                .sub_target()
+                .await
+                .map_err(TaskError::BreakError)?;
+            latest_peers = peers;
+            let fetcher = Arc::new(fetcher_factory.clone().create(latest_peers.clone()));
+
+            let real_target = match sub_target {
+                None => target_block_accumulator.clone(),
+                Some((_, target)) => target,
+            };
+            let inner = InnerSyncTask::new(
+                latest_ancestor,
+                real_target,
+                storage.clone(),
+                block_event_handle.clone(),
+                fetcher,
+                event_handle_clone.clone(),
+                time_service.clone(),
+                fetcher_factory.clone().network(),
+            );
+            let (block_chain, _) = inner
+                .do_sync(
+                    current_block_info.clone(),
+                    5,
+                    max_retry_times,
+                    delay_milliseconds_on_error,
+                    skip_pow_verify,
+                )
+                .await?;
+            latest_block_chain = block_chain;
+            if target_block_accumulator == latest_block_chain.current_block_accumulator_info() {
+                break;
+            }
+            latest_ancestor = latest_block_chain.current_header().into();
+        }
+        Ok(latest_block_chain)
+    };
+    let task = TaskFuture::new(all_fut.boxed());
+    let (fut, handle) = task.with_handle();
     Ok((fut, handle, event_handle))
 }

@@ -142,6 +142,10 @@ impl BlockChain {
         self.uncles.len() as u64
     }
 
+    pub fn current_block_accumulator_info(&self) -> AccumulatorInfo {
+        self.block_accumulator.get_info()
+    }
+
     pub fn consensus(&self) -> ConsensusStrategy {
         self.epoch.strategy()
     }

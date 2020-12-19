@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::mock::SyncNodeMocker;
+use crate::tasks::mock::{SyncNodeMocker, SyncNodeMockerFactory};
 use crate::tasks::{full_sync_task, BlockCollector};
 use anyhow::{format_err, Result};
 use futures::channel::mpsc::unbounded;
@@ -14,6 +14,7 @@ use starcoin_genesis::Genesis;
 use starcoin_storage::block_info::BlockInfoStore;
 use starcoin_storage::BlockStore;
 use starcoin_types::block::{Block, BlockBody, BlockHeader};
+use starcoin_types::peer_info::PeerInfo;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetwork};
 use std::sync::Arc;
 use test_helper::DummyNetworkService;
@@ -35,18 +36,25 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let current_block_header = node2.chain().current_header();
 
     let storage = node2.chain().get_storage();
-    let (sender, receiver) = unbounded();
+    let (sender_1, receiver_1) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
         false,
         net2.time_service(),
         storage.clone(),
-        sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        sender_1,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
+    let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
@@ -59,7 +67,12 @@ pub async fn test_full_sync_new_node() -> Result<()> {
 
     Arc::get_mut(&mut arc_node1).unwrap().produce_block(20)?;
 
-    let (sender, receiver) = unbounded();
+    let (sender_1, receiver_1) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let fetcher_factory_2 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     //sync again
     let target = arc_node1.chain().get_block_info(None)?.unwrap();
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
@@ -68,11 +81,12 @@ pub async fn test_full_sync_new_node() -> Result<()> {
         false,
         net2.time_service(),
         storage.clone(),
-        sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        sender_1,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_2,
     )?;
-    let join_handle = node2.process_block_connect_event(receiver).await;
+    let join_handle = node2.process_block_connect_event(receiver_1).await;
     let branch = sync_task.await?;
     let node2 = join_handle.await;
     let current_block_header = node2.chain().current_header();
@@ -128,6 +142,12 @@ pub async fn test_full_sync_fork() -> Result<()> {
 
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -135,8 +155,9 @@ pub async fn test_full_sync_fork() -> Result<()> {
         net2.time_service(),
         storage.clone(),
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -156,6 +177,12 @@ pub async fn test_full_sync_fork() -> Result<()> {
 
     let (sender, receiver) = unbounded();
     let target = arc_node1.chain().get_block_info(None)?.unwrap();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -163,8 +190,9 @@ pub async fn test_full_sync_fork() -> Result<()> {
         net2.time_service(),
         storage,
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -200,6 +228,12 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
 
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -207,8 +241,9 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
         net2.time_service(),
         storage.clone(),
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -253,6 +288,12 @@ pub async fn test_full_sync_continue() -> Result<()> {
 
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -260,8 +301,9 @@ pub async fn test_full_sync_continue() -> Result<()> {
         net2.time_service(),
         storage.clone(),
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let branch = sync_task.await?;
@@ -283,6 +325,12 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let (sender, receiver) = unbounded();
     //continue sync
     //TODO find a way to verify continue sync will reuse previous task local block.
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -290,8 +338,9 @@ pub async fn test_full_sync_continue() -> Result<()> {
         net2.time_service(),
         storage.clone(),
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
 
     let join_handle = node2.process_block_connect_event(receiver).await;
@@ -330,6 +379,12 @@ pub async fn test_full_sync_cancel() -> Result<()> {
 
     let storage = node2.chain().get_storage();
     let (sender, receiver) = unbounded();
+    let (sender_2, _receiver_2) = unbounded();
+    let peers: Vec<PeerInfo> = Vec::new();
+    let fetcher_factory_1 = Arc::new(SyncNodeMockerFactory::new(
+        DummyNetworkService,
+        arc_node1.clone(),
+    ));
     let (sync_task, task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
@@ -337,8 +392,9 @@ pub async fn test_full_sync_cancel() -> Result<()> {
         net2.time_service(),
         storage.clone(),
         sender,
-        arc_node1.clone(),
-        DummyNetworkService,
+        peers.clone(),
+        sender_2,
+        fetcher_factory_1,
     )?;
     let join_handle = node2.process_block_connect_event(receiver).await;
     let sync_join_handle = tokio::task::spawn(sync_task);

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::tasks::full_sync_task;
+use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use chain::BlockChain;
@@ -11,7 +11,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::{PeerProvider, PeerSelector};
+use network_api::PeerProvider;
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -33,6 +33,7 @@ use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
     target: SyncTarget,
+    task_begin: Option<BlockIdAndNumber>,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
 }
@@ -245,6 +246,14 @@ impl ActorService for SyncService2 {
     }
 }
 
+impl EventHandler<Self, AncestorEvent> for SyncService2 {
+    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService2>) {
+        if let Some(handle) = self.task_handle.as_mut() {
+            handle.task_begin = Some(msg.ancestor);
+        }
+    }
+}
+
 impl EventHandler<Self, PeerEvent> for SyncService2 {
     fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<Self>) {
         if self.sync_status.is_prepare() {
@@ -434,11 +443,17 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         _ctx: &mut ServiceContext<SyncService2>,
     ) -> Option<SyncProgressReport> {
         self.task_handle().and_then(|handle| {
-            handle
-                .task_event_handle
-                .get_report()
-                .map(|report| SyncProgressReport {
+            handle.task_event_handle.total_report().map(|mut report| {
+                if let Some(begin) = handle.task_begin.as_ref() {
+                    report.fix_percent(handle.target.block_header.number - begin.number);
+                }
+
+                SyncProgressReport {
                     target_id: handle.target.block_header.id(),
+                    begin_number: handle
+                        .task_begin
+                        .as_ref()
+                        .map(|begin| -> u64 { begin.number }),
                     target_number: handle.target.block_header.number,
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle
@@ -448,7 +463,8 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                         .map(|peer| peer.peer_id())
                         .collect(),
                     current: report,
-                })
+                }
+            })
         })
     }
 }
