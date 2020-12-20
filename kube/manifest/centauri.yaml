@@ -11,6 +11,11 @@ spec:
       port: 9840
       targetPort: 9840
       name: peer
+    -
+      protocol: TCP
+      port: 9101
+      targetPort: 9101
+      name: metrics
   clusterIP: None
 ---
 apiVersion: apps/v1
@@ -50,10 +55,10 @@ spec:
               node_key_flag="--node-key ${node_key}";
             fi;
             if [ $POD_NAME = "starcoin-stress-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
-              sleep 5;
+              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+            sleep 5;
             else
-              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+              /starcoin/starcoin  -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
             fi;
         ports:
           - containerPort: 9840
@@ -70,7 +75,7 @@ spec:
             valueFrom:
               secretKeyRef:
                 name: node-keys
-                key: node-keys
+                key: stress-keys
           - name: SEED
             valueFrom:
               configMapKeyRef:
@@ -80,7 +85,7 @@ spec:
             valueFrom:
               configMapKeyRef:
                 name: starcoin-config
-                key: start_disable_seed_node
+                key: start_stress_seed_node
       - name: txfactory
         image: starcoin/starcoin:stress
         imagePullPolicy: Always
@@ -88,7 +93,7 @@ spec:
           - bash
           - -c
         args:
-          - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 1000 -t 1 -w 1
+          - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 1500 -t 1 -w 1 -i 4
         volumeMounts:
           - name: starcoin-stress-volume
             mountPath: /sc-data
@@ -96,8 +101,7 @@ spec:
   - metadata:
       name: starcoin-stress-volume
     spec:
-      storageClassName: alicloud-disk-essd
-      accessModes: [ "ReadWriteMany" ]
+      accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 50Gi
