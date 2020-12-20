@@ -159,20 +159,13 @@ where
                 })
                 .flatten()
                 .map_err(SinkError::StreamTaskError);
-            let mut sink = FutureTaskSink::new(self.collector, event_handle.clone());
-            let sink_result = sink.send_all(&mut buffered_stream).await;
-            if let Err(sink_err) = sink_result {
-                match sink_err {
-                    SinkError::StreamTaskError(e) => return Err(e),
-                    SinkError::CollectorError(e) => return Err(TaskError::CollectorError(e)),
-                    SinkError::CollectorEnough => {
-                        //continue
-                    }
-                }
-            }
-            let collector = sink.into_collector();
+            let mut sink =
+                FutureTaskSink::new(self.collector, self.buffer_size, event_handle.clone());
+            SinkError::map_result(sink.send_all(&mut buffered_stream).await)?;
+            SinkError::map_result(sink.close().await)?;
+            let output = sink.wait_output().await?;
             event_handle.on_finish(task_name.to_string());
-            collector.finish().map_err(TaskError::CollectorError)
+            Ok(output)
         }
         .boxed();
 

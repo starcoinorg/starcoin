@@ -416,11 +416,33 @@ mod tests {
         assert!(result.is_err());
         let task_err = result.err().unwrap();
         assert!(task_err.is_break_error());
-        assert_eq!(break_at, counter.load(Ordering::SeqCst));
+        assert_eq!(break_at, counter.load(Ordering::SeqCst) + 1);
 
         let report = event_handle.get_reports().pop().unwrap();
         debug!("{}", report);
         assert!(report.processed_items > 0);
         assert!(report.processed_items < max);
+    }
+
+    #[stest::test]
+    async fn test_collect_enough() {
+        let max = 100;
+        let collector_max = 50;
+        let config = MockTestConfig::new_with_max(max);
+        let mock_state = MockTaskState::new(config);
+
+        let event_handle = Arc::new(TaskEventCounterHandle::new());
+        let result = TaskGenerator::new(
+            mock_state.clone(),
+            10,
+            0,
+            0,
+            CounterCollector::new_with_max(collector_max),
+            event_handle,
+        )
+        .generate()
+        .await;
+        //assert!(result.is_ok());
+        assert_eq!(result.unwrap(), collector_max);
     }
 }
