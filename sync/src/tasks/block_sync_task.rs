@@ -16,7 +16,6 @@ use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
 use std::collections::HashMap;
-use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -263,7 +262,7 @@ where
 {
     type Output = BlockChain;
 
-    fn collect(mut self: Pin<&mut Self>, item: SyncBlockData) -> Result<CollectorState> {
+    fn collect(&mut self, item: SyncBlockData) -> Result<CollectorState> {
         let (block, block_info, peer_id) = item.into();
         let block_id = block.id();
         let timestamp = block.header().timestamp;

@@ -10,7 +10,6 @@ use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_accumulator::{Accumulator, AccumulatorTreeStore, MerkleAccumulator};
 use starcoin_crypto::HashValue;
 use starcoin_types::block::{BlockIdAndNumber, BlockNumber};
-use std::pin::Pin;
 use std::sync::Arc;
 use stream_task::{CollectorState, TaskResultCollector, TaskState};
 
@@ -105,18 +104,14 @@ impl AccumulatorCollector {
 impl TaskResultCollector<HashValue> for AccumulatorCollector {
     type Output = (BlockIdAndNumber, MerkleAccumulator);
 
-    fn collect(self: Pin<&mut Self>, item: HashValue) -> Result<CollectorState> {
+    fn collect(&mut self, item: HashValue) -> Result<CollectorState> {
         self.accumulator.append(&[item])?;
+        self.accumulator.flush()?;
         if self.accumulator.num_leaves() == self.target.num_leaves {
             Ok(CollectorState::Enough)
         } else {
             Ok(CollectorState::Need)
         }
-    }
-
-    fn flush(self: Pin<&mut Self>) -> Result<CollectorState> {
-        self.accumulator.flush()?;
-        Ok(CollectorState::Need)
     }
 
     fn finish(self) -> Result<Self::Output> {

@@ -3,9 +3,13 @@
 
 use crate::{TaskError, TaskEventHandle};
 use anyhow::{Error, Result};
+use async_std::task::JoinHandle;
+use futures::channel::mpsc::{channel, Sender};
 use futures::task::{Context, Poll};
-use futures::Sink;
+use futures::{Sink, StreamExt};
+use log::debug;
 use pin_project::pin_project;
+use pin_utils::core_reexport::option::Option::Some;
 use std::pin::Pin;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -22,10 +26,7 @@ pub enum CollectorState {
 pub trait TaskResultCollector<Item>: std::marker::Send + Unpin {
     type Output: std::marker::Send;
 
-    fn collect(self: Pin<&mut Self>, item: Item) -> Result<CollectorState>;
-    fn flush(self: Pin<&mut Self>) -> Result<CollectorState> {
-        Ok(CollectorState::Need)
-    }
+    fn collect(&mut self, item: Item) -> Result<CollectorState>;
     fn finish(self) -> Result<Self::Output>;
 }
 
@@ -36,8 +37,8 @@ where
 {
     type Output = ();
 
-    fn collect(self: Pin<&mut Self>, item: Item) -> Result<CollectorState> {
-        self.get_mut()(item)?;
+    fn collect(&mut self, item: Item) -> Result<CollectorState> {
+        (self)(item)?;
         Ok(CollectorState::Need)
     }
 
@@ -52,8 +53,8 @@ where
 {
     type Output = Self;
 
-    fn collect(self: Pin<&mut Self>, item: Item) -> Result<CollectorState> {
-        self.get_mut().push(item);
+    fn collect(&mut self, item: Item) -> Result<CollectorState> {
+        self.push(item);
         Ok(CollectorState::Need)
     }
 
@@ -62,18 +63,35 @@ where
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct CounterCollector {
     counter: Arc<AtomicU64>,
+    max: u64,
+}
+
+impl Default for CounterCollector {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CounterCollector {
     pub fn new() -> Self {
-        Self::default()
+        Self::new_with_counter(Arc::new(AtomicU64::default()))
     }
 
     pub fn new_with_counter(counter: Arc<AtomicU64>) -> Self {
-        Self { counter }
+        Self {
+            counter,
+            max: u64::max_value(),
+        }
+    }
+
+    pub fn new_with_max(max: u64) -> Self {
+        Self {
+            counter: Arc::new(AtomicU64::default()),
+            max,
+        }
     }
 }
 
@@ -83,9 +101,15 @@ where
 {
     type Output = u64;
 
-    fn collect(self: Pin<&mut Self>, _item: Item) -> Result<CollectorState, Error> {
+    fn collect(&mut self, _item: Item) -> Result<CollectorState, Error> {
         self.counter.fetch_add(1, Ordering::SeqCst);
-        Ok(CollectorState::Need)
+        let count = self.counter.load(Ordering::SeqCst);
+        debug!("collect item, count: {}", count);
+        if count >= self.max {
+            Ok(CollectorState::Enough)
+        } else {
+            Ok(CollectorState::Need)
+        }
     }
 
     fn finish(self) -> Result<Self::Output> {
@@ -97,77 +121,99 @@ where
 pub(crate) enum SinkError {
     #[error("{0:?}")]
     StreamTaskError(TaskError),
-    #[error("{0:?}")]
-    CollectorError(anyhow::Error),
     #[error("Collector is enough.")]
     CollectorEnough,
 }
 
-#[pin_project]
-pub(crate) struct FutureTaskSink<C> {
-    #[pin]
-    collector: C,
-    event_handle: Arc<dyn TaskEventHandle>,
-}
-
-impl<C> FutureTaskSink<C> {
-    pub fn new<Item>(collector: C, event_handle: Arc<dyn TaskEventHandle>) -> Self
-    where
-        C: TaskResultCollector<Item>,
-    {
-        Self {
-            collector,
-            event_handle,
-        }
-    }
-
-    pub fn into_collector(self) -> C {
-        self.collector
-    }
-
-    fn flush_inner<Item>(self: Pin<&mut Self>) -> Poll<Result<(), SinkError>>
-    where
-        C: TaskResultCollector<Item>,
-    {
-        let this = self.project();
-        match this.collector.flush() {
-            Err(e) => Poll::Ready(Err(SinkError::CollectorError(e))),
-            Ok(state) => match state {
-                CollectorState::Need => Poll::Ready(Ok(())),
-                CollectorState::Enough => Poll::Ready(Err(SinkError::CollectorEnough)),
+impl SinkError {
+    pub fn map_result(result: Result<(), SinkError>) -> Result<(), TaskError> {
+        match result {
+            Err(err) => match err {
+                SinkError::StreamTaskError(err) => Err(err),
+                //SinkError::CollectorError(err) => Err(TaskError::CollectorError(err)),
+                SinkError::CollectorEnough => Ok(()),
             },
+            Ok(()) => Ok(()),
         }
     }
 }
 
-impl<C, Item> Sink<Item> for FutureTaskSink<C>
-where
-    C: TaskResultCollector<Item>,
-{
+#[pin_project]
+pub(crate) struct FutureTaskSink<Item, Output> {
+    #[pin]
+    sender: Sender<Item>,
+    #[pin]
+    task_handle: JoinHandle<Result<Output, TaskError>>,
+}
+
+impl<Item, Output> FutureTaskSink<Item, Output> {
+    pub fn new<C>(
+        mut collector: C,
+        buffer_size: usize,
+        event_handle: Arc<dyn TaskEventHandle>,
+    ) -> Self
+    where
+        Item: Send + 'static,
+        Output: Send + 'static,
+        C: TaskResultCollector<Item, Output = Output> + 'static,
+    {
+        let (sender, receiver) = channel(buffer_size);
+        let task_handle = async_std::task::spawn(async move {
+            let mut receiver = receiver.fuse();
+            while let Some(item) = receiver.next().await {
+                event_handle.on_item();
+                let collector_state = collector.collect(item).map_err(TaskError::CollectorError)?;
+                match collector_state {
+                    CollectorState::Enough => break,
+                    CollectorState::Need => {
+                        //continue
+                    }
+                }
+            }
+            collector.finish().map_err(TaskError::CollectorError)
+        });
+        Self {
+            sender,
+            task_handle,
+        }
+    }
+
+    pub async fn wait_output(self) -> Result<Output, TaskError> {
+        self.task_handle.await
+    }
+}
+
+impl<Item, Output> Sink<Item> for FutureTaskSink<Item, Output> {
     type Error = SinkError;
 
-    fn poll_ready(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        Poll::Ready(Ok(()))
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        let this = self.project();
+        //if the sender is disconnect, means the task is finished, so map error to CollectorEnough, and close the sink.
+        this.sender
+            .poll_ready(cx)
+            .map_err(|_| SinkError::CollectorEnough)
     }
 
     fn start_send(self: Pin<&mut Self>, item: Item) -> Result<(), Self::Error> {
         let this = self.project();
-        this.event_handle.on_item();
-        let collector_state = this
-            .collector
-            .collect(item)
-            .map_err(SinkError::CollectorError)?;
-        match collector_state {
-            CollectorState::Enough => Err(SinkError::CollectorEnough),
-            CollectorState::Need => Ok(()),
-        }
+        //ignore sender error, because if send error, may bean task is finished
+        this.sender
+            .start_send(item)
+            .map_err(|_| SinkError::CollectorEnough)
     }
 
-    fn poll_flush(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.flush_inner()
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        let this = self.as_mut().project();
+        this.sender
+            .poll_flush(cx)
+            .map_err(|_| SinkError::CollectorEnough)
     }
 
-    fn poll_close(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.flush_inner()
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        debug!("FutureTaskSink poll_close");
+        let this = self.as_mut().project();
+        this.sender
+            .poll_close(cx)
+            .map_err(|_| SinkError::CollectorEnough)
     }
 }
