@@ -74,15 +74,11 @@ impl<C: AccountSeqNumberClient> tx_pool::Ready<VerifiedTransaction> for State<C>
             .nonces
             .get_mut(sender)
             .expect("sender nonce should exists");
-        let seq = tx.transaction.sequence_number();
-        match seq.cmp(nonce) {
+        match tx.transaction.sequence_number().cmp(nonce) {
             // Before marking as future check for stale ids
             cmp::Ordering::Greater => match self.stale_id {
                 Some(id) if tx.insertion_id() < id => tx_pool::Readiness::Stale,
-                _ => {
-                    info!("[ready] client noce: {}, seq: {}", nonce, seq);
-                    tx_pool::Readiness::Future
-                }
+                _ => tx_pool::Readiness::Future,
             },
             cmp::Ordering::Less => tx_pool::Readiness::Stale,
             cmp::Ordering::Equal => {
@@ -106,9 +102,7 @@ impl Expiration {
 
 impl tx_pool::Ready<VerifiedTransaction> for Expiration {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
-        let expire = tx.transaction.transaction.expiration_timestamp_secs();
-        if expire <= self.now {
-            debug!("Expiration tx: {}, now: {}", expire, self.now);
+        if tx.transaction.transaction.expiration_timestamp_secs() <= self.now {
             tx_pool::Readiness::Stale
         } else {
             tx_pool::Readiness::Ready
@@ -134,11 +128,9 @@ impl tx_pool::Ready<VerifiedTransaction> for Condition {
     fn is_ready(&mut self, tx: &VerifiedTransaction) -> tx_pool::Readiness {
         match tx.transaction.condition {
             Some(transaction::Condition::Number(block)) if block > self.block_number => {
-                info!("[ready] condition blocknumber");
                 tx_pool::Readiness::Future
             }
             Some(transaction::Condition::Timestamp(time)) if time > self.now => {
-                info!("[ready] condition Timestamp");
                 tx_pool::Readiness::Future
             }
             _ => tx_pool::Readiness::Ready,
@@ -176,10 +168,7 @@ impl<C: Fn(&Address) -> Option<SeqNumber>> tx_pool::Ready<VerifiedTransaction>
             state_nonce.unwrap_or_else(|| tx.transaction.sequence_number())
         });
         match tx.transaction.sequence_number().cmp(nonce) {
-            cmp::Ordering::Greater => {
-                info!("[ready] OptionalState");
-                tx_pool::Readiness::Future
-            }
+            cmp::Ordering::Greater => tx_pool::Readiness::Future,
             cmp::Ordering::Less => tx_pool::Readiness::Stale,
             cmp::Ordering::Equal => {
                 *nonce = nonce.saturating_add(1);

@@ -19,8 +19,8 @@ pub struct TxPoolConfig {
 impl ConfigModule for TxPoolConfig {
     fn default_with_opt(_opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
         Ok(Self {
-            max_count: 2048,
-            max_per_sender: 64,
+            max_count: 4096,
+            max_per_sender: 128,
             max_mem_usage: 128 * 1024 * 1024, // 128M
         })
     }
