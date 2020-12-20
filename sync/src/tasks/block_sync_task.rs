@@ -5,13 +5,13 @@ use crate::tasks::{
     BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore, NoOpEventHandle,
 };
 use anyhow::{format_err, Result};
-use chain::BlockChain;
+use chain::{verifier::BasicVerifier, BlockChain};
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use logger::prelude::*;
 use network_api::NetworkService;
 use starcoin_accumulator::{Accumulator, MerkleAccumulator};
-use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError};
+use starcoin_chain_api::{ChainReader, ChainWriter, ConnectBlockError, ExecutedBlock};
 use starcoin_types::block::{Block, BlockInfo, BlockNumber};
 use starcoin_types::peer_info::PeerId;
 use starcoin_vm_types::on_chain_config::GlobalTimeOnChain;
@@ -177,14 +177,26 @@ where
     chain: BlockChain,
     event_handle: Box<dyn BlockConnectedEventHandle>,
     network: N,
+    skip_pow_verify: bool,
 }
 
 impl<N> BlockCollector<N>
 where
     N: NetworkService + 'static,
 {
-    pub fn new(current_block_info: BlockInfo, chain: BlockChain, network: N) -> Self {
-        Self::new_with_handle(current_block_info, chain, NoOpEventHandle, network)
+    pub fn new(
+        current_block_info: BlockInfo,
+        chain: BlockChain,
+        network: N,
+        skip_pow_verify_when_sync: bool,
+    ) -> Self {
+        Self::new_with_handle(
+            current_block_info,
+            chain,
+            NoOpEventHandle,
+            network,
+            skip_pow_verify_when_sync,
+        )
     }
 
     pub fn new_with_handle<H>(
@@ -192,6 +204,7 @@ where
         chain: BlockChain,
         event_handle: H,
         network: N,
+        skip_pow_verify_when_sync: bool,
     ) -> Self
     where
         H: BlockConnectedEventHandle + 'static,
@@ -201,6 +214,7 @@ where
             chain,
             event_handle: Box::new(event_handle),
             network,
+            skip_pow_verify: skip_pow_verify_when_sync,
         }
     }
 
@@ -210,7 +224,12 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
-        if let Err(err) = self.chain.apply(block.clone()) {
+        if let Err(err) = if self.skip_pow_verify {
+            self.chain
+                .apply_with_verifier::<BasicVerifier>(block.clone())
+        } else {
+            self.chain.apply(block.clone())
+        } {
             match err.downcast::<ConnectBlockError>() {
                 Ok(connect_error) => match connect_error {
                     ConnectBlockError::FutureBlock(block) => {
@@ -252,7 +271,7 @@ where
             Some(block_info) => {
                 //If block_info exists, it means that this block was already executed and try connect in the previous sync, but the sync task was interrupted.
                 //So, we just need to update chain and continue
-                self.chain.update_chain_head_with_info(block, block_info)?;
+                self.chain.connect(ExecutedBlock { block, block_info })?;
             }
             None => {
                 self.apply_block(block.clone(), peer_id)?;

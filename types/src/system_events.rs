@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockDetail, BlockHeader};
+use crate::block::{Block, BlockHeader, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use actix::prelude::*;
@@ -12,7 +12,7 @@ use std::sync::Arc;
 //TODO this type should at another crate and avoid starcoin-types dependency actix ?.
 #[derive(Clone, Debug, Message)]
 #[rtype(result = "()")]
-pub struct NewHeadBlock(pub Arc<BlockDetail>);
+pub struct NewHeadBlock(pub Arc<ExecutedBlock>);
 
 /// may be uncle block
 #[derive(Clone, Debug, Message)]

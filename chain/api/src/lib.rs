@@ -14,6 +14,6 @@ pub struct ExcludedTxns {
     pub untouched_txns: Vec<SignedUserTransaction>,
 }
 
-pub use chain::{Chain, ChainReader, ChainWriter};
+pub use chain::{Chain, ChainReader, ChainWriter, ExecutedBlock, VerifiedBlock};
 pub use errors::*;
 pub use service::{ChainAsyncService, ReadableChainService, WriteableChainService};

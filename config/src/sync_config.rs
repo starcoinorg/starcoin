@@ -45,7 +45,7 @@ impl ConfigModule for SyncConfig {
         if self.sync_mode == SyncMode::LIGHT || self.sync_mode == SyncMode::FAST {
             bail!("{} is not supported yet.", self.sync_mode);
         }
-        info!("sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
+        info!("Sync mode : {:?} : {:?}", opt.sync_mode, self.sync_mode);
         Ok(())
     }
 }

@@ -62,7 +62,7 @@ impl MockChain {
             Some(id) => id,
             None => self.head.current_header().id(),
         };
-        assert!(self.head.exist_block(block_id));
+        assert!(self.head.exist_block(block_id)?);
         BlockChain::new(self.head.time_service(), block_id, self.head.get_storage())
     }
 
@@ -116,7 +116,8 @@ impl MockChain {
     }
 
     pub fn apply(&mut self, block: Block) -> Result<()> {
-        self.head.apply(block)
+        self.head.apply(block)?;
+        Ok(())
     }
 
     pub fn produce_and_apply(&mut self) -> Result<BlockHeader> {

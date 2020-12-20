@@ -16,7 +16,7 @@ use txpool::TxPoolService;
 fn test_txn_sync_actor() {
     let mut first_config = NodeConfig::random_for_test();
     first_config.miner.enable_miner_client = false;
-    let first_network_address = first_config.network.self_address().unwrap();
+    let first_network_address = first_config.network.self_address();
     let first_config = Arc::new(first_config);
     let first_node = run_node_by_config(first_config.clone()).unwrap();
     let txpool_1 = first_node

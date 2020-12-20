@@ -185,7 +185,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
     fn handle_event(&mut self, event: NewHeadBlock, ctx: &mut ServiceContext<BlockRelayer>) {
         debug!(
             "[block-relay] Handle new head block event, block_id: {:?}",
-            event.0.get_block().id()
+            event.0.block().id()
         );
         if !self.is_synced() {
             debug!("[block-relay] Ignore NewHeadBlock event because the node has not been synchronized yet.");
@@ -198,8 +198,8 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
                 return;
             }
         };
-        let compact_block = event.0.get_block().clone().into();
-        let total_difficulty = event.0.get_total_difficulty();
+        let compact_block = event.0.block().clone().into();
+        let total_difficulty = event.0.total_difficulty();
         let compact_block_msg = CompactBlockMessage {
             compact_block,
             total_difficulty,

@@ -19,7 +19,7 @@ pub trait SyncManagerApi {
     #[rpc(name = "sync.start")]
     /// if `force` is true, will cancel current task and start a new task.
     /// if peers is not empty, will try sync with the special peers.
-    fn start(&self, force: bool, peers: Vec<PeerId>) -> FutureResult<()>;
+    fn start(&self, force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> FutureResult<()>;
 
     #[rpc(name = "sync.progress")]
     fn progress(&self) -> FutureResult<Option<SyncProgressReport>>;

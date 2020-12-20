@@ -26,7 +26,7 @@ pub struct AccumulatorTree {
     /// The index cache
     index_cache: LruCache<NodeCacheKey, HashValue>,
     /// The storage of accumulator.
-    store: Arc<dyn AccumulatorTreeStore>,
+    pub(crate) store: Arc<dyn AccumulatorTreeStore>,
     /// The temp update nodes
     update_nodes: HashMap<HashValue, AccumulatorNode>,
 }

@@ -110,7 +110,7 @@ impl ServiceFactory<Self> for DownloadService {
             .get_startup_info()?
             .ok_or_else(|| format_err!("Startup info should exist."))?;
         let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let peer_id = node_config.network.self_peer_id()?;
+        let peer_id = node_config.network.self_peer_id();
         Ok(Self::new(
             node_config,
             peer_id,

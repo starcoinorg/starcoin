@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::metrics::WRITE_BLOCK_CHAIN_METRICS;
-use anyhow::{ensure, format_err, Result};
+use anyhow::{format_err, Result};
 use chain::BlockChain;
 use config::NodeConfig;
 use logger::prelude::*;
@@ -12,7 +12,7 @@ use starcoin_service_registry::ServiceRef;
 use starcoin_storage::Store;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::{
-    block::{Block, BlockDetail, BlockHeader},
+    block::{Block, BlockHeader, ExecutedBlock},
     startup_info::StartupInfo,
     system_events::{NewBranch, NewHeadBlock},
 };
@@ -120,9 +120,14 @@ where
                 } else {
                     (1, vec![block.clone()], 0, vec![])
                 };
+            //TODO refactor this.
+            let block_info = new_branch
+                .get_block_info(Some(block.id()))?
+                .expect("head block's block info should exist.");
             self.main = new_branch;
+
             self.do_new_head(
-                block,
+                ExecutedBlock::new(block, block_info),
                 enacted_count,
                 enacted_blocks,
                 retracted_count,
@@ -139,15 +144,15 @@ where
 
     pub fn do_new_head(
         &mut self,
-        new_head_block: Block,
+        executed_block: ExecutedBlock,
         enacted_count: u64,
         enacted_blocks: Vec<Block>,
         retracted_count: u64,
         retracted_blocks: Vec<Block>,
     ) -> Result<()> {
         debug_assert!(!enacted_blocks.is_empty());
-        debug_assert_eq!(enacted_blocks.last().unwrap(), &new_head_block);
-        self.startup_info.update_main(new_head_block.header());
+        debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
+        self.startup_info.update_main(executed_block.header());
         if retracted_count > 0 {
             WRITE_BLOCK_CHAIN_METRICS
                 .rollback_block_size
@@ -158,17 +163,10 @@ where
         self.config
             .net()
             .time_service()
-            .adjust(GlobalTimeOnChain::new(new_head_block.header().timestamp));
-        let block_info = self
-            .storage
-            .get_block_info(new_head_block.id())?
-            .ok_or_else(|| format_err!("Can not find block info by id {}", new_head_block.id()))?;
-        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", new_head_block.id(), new_head_block.header().number, block_info.total_difficulty, enacted_count, retracted_count);
+            .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp));
+        info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number, executed_block.block_info().total_difficulty, enacted_count, retracted_count);
 
-        self.broadcast_new_head(BlockDetail::new(
-            new_head_block,
-            block_info.total_difficulty,
-        ));
+        self.broadcast_new_head(executed_block);
         Ok(())
     }
 
@@ -191,49 +189,28 @@ where
         &self,
         new_branch: &BlockChain,
     ) -> Result<(u64, Vec<Block>, u64, Vec<Block>)> {
-        let new_header_number = new_branch.current_header().number();
-        let main_header_number = self.get_main().current_header().number();
-        let mut number = if new_header_number >= main_header_number {
-            main_header_number
-        } else {
-            new_header_number
-        };
+        let ancestor = self.main.find_ancestor(new_branch)?.ok_or_else(|| {
+            format_err!(
+                "Can not find ancestors between main chain: {:?} and branch: {:?}",
+                self.main.status(),
+                new_branch.status()
+            )
+        })?;
 
-        let block_enacted = new_branch.current_header().id();
-        let block_retracted = self.get_main().current_header().id();
-
-        let mut ancestor = None;
-        loop {
-            let block_id_1 = new_branch.find_block_by_number(number)?;
-            let block_id_2 = self.get_main().find_block_by_number(number)?;
-
-            if block_id_1 == block_id_2 {
-                ancestor = Some(block_id_1);
-                break;
-            }
-
-            if number == 0 {
-                break;
-            }
-
-            number -= 1;
-        }
-
-        ensure!(
-            ancestor.is_some(),
-            "Can not find ancestors from block accumulator."
-        );
-
-        let ancestor = ancestor.expect("Ancestor is none.");
         let ancestor_block = self
             .main
-            .get_block(ancestor)?
-            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor))?;
+            .get_block(ancestor.id)?
+            .ok_or_else(|| format_err!("Can not find block by id:{}", ancestor.id))?;
         let enacted_count = new_branch.current_header().number() - ancestor_block.header().number();
         let retracted_count =
             self.main.current_header().number() - ancestor_block.header().number();
-        let enacted = self.find_blocks_until(block_enacted, ancestor, MAX_ROLL_BACK_BLOCK)?;
-        let retracted = self.find_blocks_until(block_retracted, ancestor, MAX_ROLL_BACK_BLOCK)?;
+
+        let block_enacted = new_branch.current_header().id();
+        let block_retracted = self.main.current_header().id();
+
+        let enacted = self.find_blocks_until(block_enacted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
+        let retracted =
+            self.find_blocks_until(block_retracted, ancestor.id, MAX_ROLL_BACK_BLOCK)?;
 
         debug!(
             "Commit block count:{}, rollback block count:{}",
@@ -269,7 +246,7 @@ where
         Ok(blocks)
     }
 
-    fn broadcast_new_head(&self, block: BlockDetail) {
+    fn broadcast_new_head(&self, block: ExecutedBlock) {
         if let Err(e) = self.bus.broadcast(NewHeadBlock(Arc::new(block))) {
             error!("Broadcast NewHeadBlock error: {:?}", e);
         }
@@ -290,14 +267,13 @@ where
         if self.main.current_header().id() == block.header().parent_hash()
             && !self.block_exist(block_id)
         {
-            let connected = self.main.apply(block.clone());
-            if connected.is_err() {
-                debug!("connected failed {:?}", block_id);
+            let executed_block = self.main.apply(block).map_err(|e| {
                 WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
-            } else {
-                self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
-            }
-            return connected;
+                e
+            })?;
+            let enacted_blocks = vec![executed_block.block().clone()];
+            self.do_new_head(executed_block, 1, enacted_blocks, 0, vec![])?;
+            return Ok(());
         }
         let (block_exist, fork) = self.find_or_fork(block.header())?;
         match (block_exist, fork) {
@@ -313,8 +289,8 @@ where
                 Ok(())
             }
             (true, None) => {
-                self.main.update_chain_head(block.clone())?;
-                self.do_new_head(block.clone(), 1, vec![block], 0, vec![])?;
+                let executed_block = self.main.update_chain_head(block.clone())?;
+                self.do_new_head(executed_block, 1, vec![block], 0, vec![])?;
                 Ok(())
             }
             (false, Some(mut branch)) => {
@@ -322,15 +298,13 @@ where
                     .exe_block_time
                     .with_label_values(&["time"])
                     .start_timer();
-                let connected = branch.apply(block);
-                timer.observe_duration();
-                if connected.is_err() {
-                    debug!("connected failed {:?}", block_id);
+                let _executed_block = branch.apply(block).map_err(|e| {
                     WRITE_BLOCK_CHAIN_METRICS.verify_fail_count.inc();
-                } else {
-                    self.select_head(branch)?;
-                }
-                connected
+                    e
+                })?;
+                timer.observe_duration();
+                self.select_head(branch)?;
+                Ok(())
             }
             (false, None) => Err(ConnectBlockError::FutureBlock(Box::new(block)).into()),
         }

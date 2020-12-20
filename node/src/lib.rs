@@ -179,7 +179,7 @@ impl NodeHandle {
             {
                 //wait for new block event to been processed.
                 Delay::new(Duration::from_millis(100)).await;
-                event.0.get_block().clone()
+                event.0.block().clone()
             } else {
                 let latest_head = chain_service.main_head_block().await?;
                 debug!("generate_block: latest block: {:?}", latest_head.header);

@@ -214,7 +214,7 @@ impl NetworkWorker {
         let num_connected = Arc::new(AtomicUsize::new(0));
         let is_major_syncing = Arc::new(AtomicBool::new(false));
 
-        let notif_protocols = params.network_config.protocols.clone();
+        let notif_protocols = params.network_config.notifications_protocols.clone();
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,

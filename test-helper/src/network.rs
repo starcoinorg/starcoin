@@ -106,7 +106,7 @@ pub struct TestNetworkService {
 
 impl TestNetworkService {
     pub fn peer_id(&self) -> PeerId {
-        self.config.network.self_peer_id().unwrap()
+        self.config.network.self_peer_id()
     }
 }
 
@@ -119,7 +119,7 @@ pub async fn build_network_pair() -> Result<(TestNetworkService, TestNetworkServ
 
 pub async fn build_network_cluster(n: usize) -> Result<Vec<TestNetworkService>> {
     let seed_service = build_network(None, None).await?;
-    let seed = seed_service.config.network.self_address()?;
+    let seed = seed_service.config.network.self_address();
     let mut nodes = vec![seed_service];
     for _i in 1..n {
         let service = build_network(Some(seed.clone()), None).await?;

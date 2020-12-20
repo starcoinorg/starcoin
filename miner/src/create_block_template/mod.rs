@@ -20,9 +20,9 @@ use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
-use traits::ChainReader;
+use traits::{ChainReader, ChainWriter};
 use types::{
-    block::{Block, BlockHeader, BlockTemplate},
+    block::{BlockHeader, BlockTemplate, ExecutedBlock},
     system_events::{NewBranch, NewHeadBlock},
 };
 
@@ -99,7 +99,7 @@ impl EventHandler<Self, NewHeadBlock> for CreateBlockTemplateService {
         msg: NewHeadBlock,
         _ctx: &mut ServiceContext<CreateBlockTemplateService>,
     ) {
-        if let Err(e) = self.inner.update_chain(msg.0.get_block().clone()) {
+        if let Err(e) = self.inner.update_chain(msg.0.as_ref().clone()) {
             error!("err : {:?}", e)
         }
     }
@@ -179,16 +179,19 @@ impl Inner {
         })
     }
 
-    pub fn update_chain(&mut self, block: Block) -> Result<()> {
+    pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
         let current_header = self.chain.current_header();
         let current_id = current_header.id();
-        if block.header().parent_hash() != current_id {
-            self.chain =
-                BlockChain::new(self.chain.time_service(), block.id(), self.storage.clone())?;
+        if self.chain.can_connect(&block) {
+            self.chain.connect(block)?;
+        } else {
+            self.chain = BlockChain::new(
+                self.chain.time_service(),
+                block.header().id(),
+                self.storage.clone(),
+            )?;
             //current block possible bean uncle.
             self.uncles.insert(current_id, current_header);
-        } else {
-            self.chain.update_chain_head(block)?;
         }
         Ok(())
     }
@@ -201,7 +204,7 @@ impl Inner {
                     if new_uncle.len() >= MAX_UNCLE_COUNT_PER_BLOCK {
                         break;
                     }
-                    if self.chain.can_be_uncle(maybe_uncle) {
+                    if self.chain.can_be_uncle(maybe_uncle).unwrap_or_default() {
                         new_uncle.push(maybe_uncle.clone())
                     }
                 }
@@ -224,7 +227,7 @@ impl Inner {
     }
 
     pub fn create_block_template(&self) -> Result<BlockTemplate> {
-        let on_chain_block_gas_limit = self.chain.get_on_chain_block_gas_limit()?;
+        let on_chain_block_gas_limit = self.chain.epoch().block_gas_limit();
         let block_gas_limit = self
             .local_block_gas_limit
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
@@ -262,9 +265,9 @@ impl Inner {
             txns.len()
         );
 
-        let epoch = self.chain.epoch_info()?;
-        let strategy = epoch.epoch().strategy();
-        let difficulty = strategy.calculate_next_difficulty(&self.chain, &epoch)?;
+        let epoch = self.chain.epoch();
+        let strategy = epoch.strategy();
+        let difficulty = strategy.calculate_next_difficulty(&self.chain)?;
 
         let mut opened_block = OpenedBlock::new(
             self.storage.clone(),

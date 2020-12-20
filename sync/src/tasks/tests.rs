@@ -39,6 +39,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -64,6 +65,7 @@ pub async fn test_full_sync_new_node() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -94,7 +96,7 @@ pub async fn test_failed_block() -> Result<()> {
     let chain = BlockChain::new(net.time_service(), startup_info.main, storage.clone())?;
     let (sender, _) = unbounded();
     let mut block_collector =
-        BlockCollector::new_with_handle(block_info, chain, sender, DummyNetworkService);
+        BlockCollector::new_with_handle(block_info, chain, sender, DummyNetworkService, true);
     let mut header = BlockHeader::random();
     header.number = 1;
     let body = BlockBody::new(Vec::new(), None);
@@ -129,6 +131,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -156,6 +159,7 @@ pub async fn test_full_sync_fork() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage,
         sender,
@@ -199,6 +203,7 @@ pub async fn test_full_sync_fork_from_genesis() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -251,6 +256,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -280,6 +286,7 @@ pub async fn test_full_sync_continue() -> Result<()> {
     let (sync_task, _task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
@@ -326,6 +333,7 @@ pub async fn test_full_sync_cancel() -> Result<()> {
     let (sync_task, task_handle, task_event_counter) = full_sync_task(
         current_block_header.id(),
         target.clone(),
+        false,
         net2.time_service(),
         storage.clone(),
         sender,
