@@ -33,7 +33,6 @@ use test_helper::executor::{
     prepare_genesis,
 };
 // use test_helper::Account;
-use stdlib::compile_script;
 use vm_runtime::starcoin_vm::StarcoinVM;
 
 #[derive(Default)]

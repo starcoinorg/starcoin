@@ -13,8 +13,7 @@ fn main() {
     let mut rt = Runtime::new().unwrap();
     let ipc_file = &args[1];
     let client = Arc::new(RpcClient::connect_ipc(ipc_file, &mut rt).expect("Connect by ipc fail."));
-    let chain_info = client.clone().chain_info().unwrap();
-    // println!("chain_info: {:?}", chain_info);
+    let chain_info = client.chain_info().unwrap();
     let end_number = chain_info.head.number;
     let epoch_count = end_number / 240 + 1;
     // get tps
