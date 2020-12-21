@@ -187,14 +187,14 @@ where
         current_block_info: BlockInfo,
         chain: BlockChain,
         network: N,
-        skip_pow_verify_when_sync: bool,
+        skip_pow_verify: bool,
     ) -> Self {
         Self::new_with_handle(
             current_block_info,
             chain,
             NoOpEventHandle,
             network,
-            skip_pow_verify_when_sync,
+            skip_pow_verify,
         )
     }
 
@@ -203,7 +203,7 @@ where
         chain: BlockChain,
         event_handle: H,
         network: N,
-        skip_pow_verify_when_sync: bool,
+        skip_pow_verify: bool,
     ) -> Self
     where
         H: BlockConnectedEventHandle + 'static,
@@ -213,7 +213,7 @@ where
             chain,
             event_handle: Box::new(event_handle),
             network,
-            skip_pow_verify: skip_pow_verify_when_sync,
+            skip_pow_verify,
         }
     }
 

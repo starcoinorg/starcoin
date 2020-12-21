@@ -157,7 +157,7 @@ impl std::fmt::Display for TaskProgressReport {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct TaskEventCounterHandle {
     current_counter: Mutex<Option<TaskEventCounter>>,
     previous_counters: Mutex<Vec<TaskEventCounter>>,
