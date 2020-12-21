@@ -5,6 +5,9 @@ metadata:
 spec:
   version: 7.10.1
   http:
+    service:
+      spec:
+        type: LoadBalancer
     tls:
       selfSignedCertificate:
         disabled: true
