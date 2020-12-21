@@ -31,7 +31,6 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
     fn create(ctx: &mut ServiceContext<RpcService>) -> Result<RpcService> {
         let config = ctx.get_shared::<Arc<NodeConfig>>()?;
         let genesis = ctx.get_shared::<Genesis>()?;
-        let bus = ctx.bus_ref().clone();
         let storage = ctx.get_shared::<Arc<Storage>>()?;
         let log_handler = ctx.get_shared::<Arc<LoggerHandle>>()?;
         let network_service = ctx.get_shared::<NetworkServiceRef>()?;
@@ -69,7 +68,8 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             })
         };
 
-        let pubsub_service = PubSubService::new(bus, txpool_service);
+        let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();
+
         let pubsub_api = Some(PubSubImpl::new(pubsub_service));
         let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));
         let miner_api = ctx

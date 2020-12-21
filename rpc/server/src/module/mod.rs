@@ -23,7 +23,7 @@ pub use self::miner_rpc::MinerRpcImpl;
 pub use self::network_manager_rpc::NetworkManagerRpcImpl;
 pub use self::node_manager_rpc::NodeManagerRpcImpl;
 pub use self::node_rpc::NodeRpcImpl;
-pub use self::pubsub::{PubSubImpl, PubSubService};
+pub use self::pubsub::{PubSubImpl, PubSubService, PubSubServiceFactory};
 pub use self::state_rpc::StateRpcImpl;
 pub use self::sync_manager_rpc::SyncManagerRpcImpl;
 pub use self::txfactory_rpc::TxFactoryStatusHandle;
