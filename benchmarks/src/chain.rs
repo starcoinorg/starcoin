@@ -6,7 +6,7 @@ use parking_lot::RwLock;
 use rand::prelude::*;
 use starcoin_account_api::AccountInfo;
 use starcoin_chain::BlockChain;
-use starcoin_config::{temp_path, DataDirPath};
+use starcoin_config::{temp_path, DataDirPath, RocksdbConfig};
 use starcoin_consensus::Consensus;
 use starcoin_genesis::Genesis;
 use starcoin_storage::cache_storage::CacheStorage;
@@ -33,7 +33,11 @@ impl ChainBencher {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(temp_path.path().join("starcoindb")).unwrap(),
+                DBStorage::new(
+                    temp_path.path().join("starcoindb"),
+                    RocksdbConfig::default(),
+                )
+                .unwrap(),
             ))
             .unwrap(),
         );

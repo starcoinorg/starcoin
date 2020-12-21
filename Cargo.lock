@@ -6850,6 +6850,7 @@ dependencies = [
  "starcoin-account-api",
  "starcoin-canonical-serialization",
  "starcoin-chain-notify",
+ "starcoin-config",
  "starcoin-crypto",
  "starcoin-decrypt",
  "starcoin-logger",

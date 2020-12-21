@@ -1,12 +1,12 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// use crate::LibraDB;
 use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::{Storage, TransactionStore};
 use proptest::{collection::vec, prelude::*};
+use starcoin_config::RocksdbConfig;
 use starcoin_types::{
     proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen},
     transaction::Transaction,
@@ -47,7 +47,7 @@ proptest! {
         let tmpdir = starcoin_config::temp_path();
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(tmpdir.path()).unwrap(),
+            DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
         ))
         .unwrap();
         let txns = init_store(universe, gens, &storage);

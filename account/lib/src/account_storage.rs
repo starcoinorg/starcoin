@@ -6,6 +6,7 @@ use scs::SCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
 use starcoin_account_api::{AccountPrivateKey, AccountPublicKey, Setting};
+use starcoin_config::RocksdbConfig;
 use starcoin_crypto::ValidCryptoMaterial;
 use starcoin_decrypt::{decrypt, encrypt};
 use starcoin_storage::cache_storage::CacheStorage;
@@ -186,7 +187,7 @@ pub struct AccountStorage {
 }
 
 impl AccountStorage {
-    pub fn create_from_path(p: impl AsRef<Path>) -> Result<Self> {
+    pub fn create_from_path(p: impl AsRef<Path>, rocksdb_config: RocksdbConfig) -> Result<Self> {
         let db = DBStorage::open_with_cfs(
             p,
             vec![
@@ -197,6 +198,7 @@ impl AccountStorage {
                 GLOBAL_PREFIX_NAME,
             ],
             false,
+            rocksdb_config,
         )?;
         let storage_instance =
             StorageInstance::new_cache_and_db_instance(CacheStorage::default(), db);

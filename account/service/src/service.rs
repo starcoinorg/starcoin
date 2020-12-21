@@ -163,7 +163,8 @@ mod tests {
         let config = Arc::new(NodeConfig::random_for_test());
         let registry = RegistryService::launch();
         let vault_config = &config.vault;
-        let account_storage = AccountStorage::create_from_path(vault_config.dir())?;
+        let account_storage =
+            AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config)?;
         registry.put_shared(config).await?;
         registry.put_shared(account_storage).await?;
         let service_ref = registry.register::<AccountService>().await?;
