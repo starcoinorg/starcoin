@@ -18,6 +18,8 @@ pub mod account_config {
 }
 
 pub mod account_state;
+
+#[allow(clippy::too_many_arguments)]
 pub mod block;
 pub mod cmpact_block;
 

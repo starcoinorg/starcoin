@@ -7,6 +7,7 @@ use anyhow::Result;
 use argon2::{self, Config};
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::U256;
 
 #[derive(Default)]
@@ -24,8 +25,13 @@ impl Consensus for ArgonConsensus {
         Ok(target_to_difficulty(target))
     }
 
-    fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
-        let mix_hash = set_header_nonce(mining_hash, nonce);
+    fn calculate_pow_hash(
+        &self,
+        mining_hash: &[u8],
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<HashValue> {
+        let mix_hash = set_header_nonce(mining_hash, nonce, extra);
         let config = Config {
             mem_cost: 1024,
             ..Default::default()

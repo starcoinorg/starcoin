@@ -7,7 +7,7 @@ use logger::prelude::*;
 use rand::Rng;
 use starcoin_crypto::HashValue;
 use starcoin_traits::ChainReader;
-use starcoin_types::block::BlockHeader;
+use starcoin_types::block::{BlockHeader, BlockHeaderExtra};
 use starcoin_types::U256;
 use starcoin_vm_types::time::TimeService;
 
@@ -51,7 +51,12 @@ impl Consensus for DummyConsensus {
         Ok(())
     }
 
-    fn calculate_pow_hash(&self, _mining_hash: &[u8], _nonce: u32) -> Result<HashValue> {
+    fn calculate_pow_hash(
+        &self,
+        _mining_hash: &[u8],
+        _nonce: u32,
+        _extra: BlockHeaderExtra,
+    ) -> Result<HashValue> {
         unreachable!()
     }
 }

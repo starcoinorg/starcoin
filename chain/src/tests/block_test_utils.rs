@@ -10,6 +10,7 @@ use starcoin_executor::{block_execute, DEFAULT_EXPIRATION_TIME};
 use starcoin_genesis::Genesis;
 use starcoin_statedb::ChainStateDB;
 use starcoin_traits::ChainWriter;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::genesis_config::{ChainNetwork, StdlibVersion};
 use starcoin_types::proptest_types::{AccountInfoUniverse, Index, SignatureCheckedTransactionGen};
 use starcoin_types::transaction::{Script, SignedUserTransaction, Transaction, TransactionPayload};
@@ -78,6 +79,7 @@ fn gen_header(
         0,
         body_hash,
         parent_header.chain_id,
+        BlockHeaderExtra::new([0u8; 4]),
     )
 }
 
