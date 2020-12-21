@@ -1,59 +1,107 @@
-kind: PersistentVolumeClaim
 apiVersion: v1
+kind: Service
 metadata:
-  name: starcoin-stress-txfactory
+  name: centauri-factory-svc
 spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 50Gi
+  selector:
+    app: starcoin-stress-factory
+  ports:
+    -
+      protocol: TCP
+      port: 9840
+      targetPort: 9840
+      name: peer
+    -
+      protocol: TCP
+      port: 9101
+      targetPort: 9101
+      name: metrics
+  clusterIP: None
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
+  name: starcoin-stress-factory
   labels:
-    app: txfactory
-  name: txfactory
+    app: starcoin-stress-factory
+    network: centauri
 spec:
-  volumes:
-    - name: starcoin-stress-txfactory
-      persistentVolumeClaim:
-        claimName: starcoin-stress-txfactory
-  containers:
-  - name: starcoin
-    image: starcoin/starcoin:v0.8.1
-    imagePullPolicy: Always
-    command:
-      - bash
-      - -c
-    args:
-      - rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
-        /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data  --rpc-address 0.0.0.0 --seed $(SEED);
-    ports:
-    - containerPort: 9840
-      hostPort: 9840
-    volumeMounts:
-      - name: starcoin-stress-txfactory
-        mountPath: /sc-data
-    env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: SEED
-          valueFrom:
-            configMapKeyRef:
-              name: starcoin-config
-              key: centauri_seed
-  - name: txfactory
-    image: starcoin/starcoin:v0.8.1
-    imagePullPolicy: IfNotPresent
-    command:
-      - bash
-      - -c
-    args:
-      - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 60 -t 1
-    volumeMounts:
-    - name: starcoin-stress-txfactory
-      mountPath: /sc-data
+  selector:
+    matchLabels:
+      app: starcoin-stress-factory
+      network: centauri
+  serviceName: centauri-factory-svc
+  replicas: 3
+  template:
+    metadata:
+      name: starcoin-stress-factory
+      labels:
+        app: starcoin-stress-factory
+        network: centauri
+    spec:
+      containers:
+        - name: starcoin
+          image: starcoin/starcoin:stress
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -c
+          args:
+            -
+              rm -rf /sc-data/centauri/starcoin.ipc /sc-data/centauri/starcoindb/db/starcoindb/LOCK;
+              id=$(echo -e $POD_NAME|awk -F'-' '{print $3}') && IFS='; ' read -r -a node_keys <<< $NODE_KEYS &&
+              node_key=${node_keys[$id]};
+              if [ ! -z $node_key ]; then
+              node_key_flag="--node-key ${node_key}";
+              fi;
+              if [ $POD_NAME = "starcoin-stress-0" ] && [ $DISABLE_SEED = "true" ]; then
+              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
+              sleep 5;
+              else
+              /starcoin/starcoin -n centauri:1 --genesis-config proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
+              fi;
+          ports:
+            - containerPort: 9840
+              hostPort: 9840
+          volumeMounts:
+            - name: starcoin-stress-volume
+              mountPath: /sc-data
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: node-keys
+                  key: node-keys
+            - name: SEED
+              valueFrom:
+                configMapKeyRef:
+                  name: starcoin-config
+                  key: centauri_seed
+            - name: DISABLE_SEED
+              valueFrom:
+                configMapKeyRef:
+                  name: starcoin-config
+                  key: start_disable_seed_node
+        - name: txfactory
+          image: starcoin/starcoin:stress
+          imagePullPolicy: Always
+          command:
+            - bash
+            - -c
+          args:
+            - /starcoin/starcoin_txfactory --ipc-path /sc-data/centauri/starcoin.ipc --stress -n 1500 -t 1 -w 1 -i 4
+          volumeMounts:
+            - name: starcoin-stress-volume
+              mountPath: /sc-data
+  volumeClaimTemplates:
+    - metadata:
+        name: starcoin-stress-volume
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 50Gi

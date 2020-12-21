@@ -7,6 +7,7 @@ mod log_cmd;
 mod move_explain;
 mod panic_cmd;
 mod sleep_cmd;
+mod txfactory_cmd;
 mod txpool_status;
 
 pub use gen_block_cmd::*;
@@ -15,4 +16,5 @@ pub use log_cmd::*;
 pub use move_explain::*;
 pub use panic_cmd::*;
 pub use sleep_cmd::*;
+pub use txfactory_cmd::*;
 pub use txpool_status::*;

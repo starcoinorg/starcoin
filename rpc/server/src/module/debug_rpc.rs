@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::to_invalid_param_err;
+use crate::module::txfactory_rpc::TxFactoryStatusHandle;
 use jsonrpc_core::Result;
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::LevelFilter;
 use starcoin_logger::{LogPattern, LoggerHandle};
 use starcoin_rpc_api::debug::DebugApi;
+use starcoin_rpc_api::types::FactoryAction;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -60,5 +62,9 @@ impl DebugApi for DebugRpcImpl {
         self.config.net().time_service().sleep(time);
 
         Ok(())
+    }
+
+    fn txfactory_status(&self, action: FactoryAction) -> Result<bool> {
+        Ok(TxFactoryStatusHandle::handle_action(action))
     }
 }

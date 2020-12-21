@@ -6,6 +6,7 @@ use jsonrpc_derive::rpc;
 use starcoin_logger::LogPattern;
 
 pub use self::gen_client::Client as DebugClient;
+use crate::types::FactoryAction;
 
 #[rpc]
 pub trait DebugApi {
@@ -24,4 +25,8 @@ pub trait DebugApi {
     ///Only can used under dev net.
     #[rpc(name = "debug.sleep")]
     fn sleep(&self, time: u64) -> Result<()>;
+
+    /// Get and set txn factory status.
+    #[rpc(name = "txfactory.status")]
+    fn txfactory_status(&self, action: FactoryAction) -> Result<bool>;
 }

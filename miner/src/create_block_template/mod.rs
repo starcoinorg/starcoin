@@ -233,9 +233,15 @@ impl Inner {
             .map(|block_gas_limit| min(block_gas_limit, on_chain_block_gas_limit))
             .unwrap_or(on_chain_block_gas_limit);
 
-        //TODO use a GasConstant value to replace 600.
+        //TODO use a GasConstant value to replace 200.
+        info!(
+            "block_gas_limit: {}, {:?}",
+            block_gas_limit,
+            self.txpool.status()
+        );
+        //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
-        let max_txns = (block_gas_limit / 600) * 2;
+        let max_txns = (block_gas_limit / 200) * 2;
 
         let txns = self.txpool.get_pending_txns(Some(max_txns), None);
 
@@ -250,7 +256,7 @@ impl Inner {
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
 
-        debug!(
+        info!(
             "CreateBlockTemplate, previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",
             previous_header,
             block_gas_limit,
