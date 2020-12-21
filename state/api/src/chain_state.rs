@@ -9,6 +9,7 @@ use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
     access_path::{self, AccessPath},
+    access_resource_blob::AccessResourceBlob,
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,
@@ -54,7 +55,7 @@ impl StateProof {
         access_path: AccessPath,
         access_resource_blob: Option<&[u8]>,
     ) -> Result<()> {
-        let (account_address, data_type, ap_hash) = access_path::into_inner(access_path)?;
+        let (account_address, data_type, ap_hash) = access_path::into_inner(access_path.clone())?;
         match self.account_state.as_ref() {
             None => {
                 ensure!(
@@ -72,7 +73,18 @@ impl StateProof {
                         );
                     }
                     Some(expected_hash) => {
-                        let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
+                        let blob = access_resource_blob.map(|data| {
+                            let bytes = AccessResourceBlob::new(access_path.clone(), data.to_vec())
+                                .into_bytes()
+                                .unwrap_or_else(|_| {
+                                    unreachable!(
+                                        "Failed to wrap {:?}, {:?} into AccessResourceBlob",
+                                        access_path.clone(),
+                                        data.to_vec()
+                                    )
+                                });
+                            Blob::from(bytes)
+                        });
                         self.account_state_proof
                             .verify(expected_hash, ap_hash, blob.as_ref())?;
                     }

@@ -11,6 +11,10 @@ pub mod access_path {
     };
 }
 
+pub mod access_resource_blob {
+    pub use starcoin_vm_types::access_resource_blob::*;
+}
+
 pub mod account_address;
 
 pub use starcoin_uint::*;

@@ -127,6 +127,7 @@ pub mod bytecode_verifier {
 }
 
 pub mod access_path;
+pub mod access_resource_blob;
 pub mod account_config;
 pub mod block_metadata;
 pub mod event;

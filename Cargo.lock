@@ -302,9 +302,18 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.35"
+version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c0df63cb2955042487fad3aefd2c6e3ae7389ac5dc1beb28921de0b69f779d4"
+checksum = "68803225a7b13e47191bab76f2687382b60d259e8cf37f6e1893658b84bb9479"
+
+[[package]]
+name = "api-limiter"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "dashmap",
+ "governor",
+]
 
 [[package]]
 name = "arc-swap"
@@ -2798,6 +2807,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "governor"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "36f302dc68f4035178051bff107a8181379b8baa3354654672c2f1e7134af983"
+dependencies = [
+ "dashmap",
+ "futures 0.3.8",
+ "futures-timer",
+ "no-std-compat",
+ "nonzero_ext",
+ "parking_lot 0.11.1",
+ "quanta",
+ "rand 0.7.3",
+]
+
+[[package]]
 name = "guppy"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2922,6 +2947,16 @@ dependencies = [
  "quick-error 2.0.0",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e91b62f79061a0bc2e046024cb7ba44b08419ed238ecbd9adbd787434b9e8c25"
+dependencies = [
+ "ahash 0.3.8",
+ "autocfg 1.0.1",
 ]
 
 [[package]]
@@ -3277,7 +3312,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
 dependencies = [
  "autocfg 1.0.1",
- "hashbrown",
+ "hashbrown 0.9.1",
 ]
 
 [[package]]
@@ -4066,24 +4101,27 @@ checksum = "a94d21414c1f4a51209ad204c1776a3d0765002c76c6abcb602a6f09f1e881c7"
 
 [[package]]
 name = "log4rs"
-version = "0.13.0"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e1ad45e4584824d760c35d71868dd7e6e5acd8f5195a9573743b369fc86cd6"
+checksum = "d1572a880d1115ff867396eee7ae2bc924554225e67a0d3c85c745b3e60ca211"
 dependencies = [
+ "anyhow",
  "arc-swap",
  "chrono",
+ "derivative",
  "flate2",
  "fnv",
- "humantime 1.3.0",
+ "humantime 2.0.1",
  "libc",
  "log 0.4.11",
  "log-mdc",
  "parking_lot 0.11.1",
+ "regex",
  "serde",
  "serde-value",
- "serde_derive",
  "serde_json",
  "serde_yaml",
+ "thiserror",
  "thread-id",
  "typemap",
  "winapi 0.3.9",
@@ -4095,7 +4133,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3abe07af102235a56ac9a6dd904aab1e05483e2e8afdfffec3598be55b1b7606"
 dependencies = [
- "hashbrown",
+ "hashbrown 0.9.1",
 ]
 
 [[package]]
@@ -4742,6 +4780,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "no-std-compat"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b93853da6d84c2e3c7d730d6473e8817692dd89be387eb01b94d7f108ecb5b8c"
+dependencies = [
+ "hashbrown 0.8.2",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4762,6 +4809,12 @@ dependencies = [
  "memchr",
  "version_check 0.9.2",
 ]
+
+[[package]]
+name = "nonzero_ext"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44a1290799eababa63ea60af0cbc3f03363e328e58f32fb0294798ed3e85f444"
 
 [[package]]
 name = "num"
@@ -4964,9 +5017,9 @@ dependencies = [
 
 [[package]]
 name = "ordered-float"
-version = "1.1.1"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3305af35278dd29f46fcdd139e0b1fbfae2153f0e5928b39b035542dd31e37b7"
+checksum = "dacdec97876ef3ede8c50efc429220641a0b11ba0048b4b0c357bccbc47c5204"
 dependencies = [
  "num-traits",
 ]
@@ -5680,6 +5733,16 @@ dependencies = [
  "num_cpus",
  "once_cell",
  "thiserror",
+]
+
+[[package]]
+name = "quanta"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d98dc777a7a39b76b1a26ae9d3f691f4c1bc0455090aa0b64dfa8cb7fc34c135"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -6501,9 +6564,9 @@ dependencies = [
 
 [[package]]
 name = "serde-value"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a65a7291a8a568adcae4c10a677ebcedbc6c9cec91c054dee2ce40b0e3290eb"
+checksum = "f3a1a3341211875ef120e117ea7fd5228530ae7e7036a779fdc9117be6b3282c"
 dependencies = [
  "ordered-float",
  "serde",
@@ -7046,6 +7109,7 @@ dependencies = [
  "async-trait",
  "dashmap",
  "futures 0.3.8",
+ "network-api",
  "rand 0.7.3",
  "rand_core 0.6.0",
  "serde",
@@ -7237,6 +7301,7 @@ dependencies = [
  "starcoin-types",
  "starcoin-vm-types",
  "stest",
+ "thiserror",
 ]
 
 [[package]]
@@ -7697,6 +7762,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "api-limiter",
  "bytes 0.5.6",
  "futures 0.3.8",
  "futures-timer",
@@ -7925,6 +7991,7 @@ dependencies = [
  "failure",
  "futures 0.1.30",
  "futures 0.3.8",
+ "hex",
  "jsonrpc-client-transports",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -7981,10 +8048,12 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "api-limiter",
  "dashmap",
  "failure",
  "futures 0.3.8",
  "futures-channel",
+ "governor",
  "hex",
  "jsonrpc-core",
  "jsonrpc-core-client",
@@ -8036,6 +8105,7 @@ dependencies = [
  "starcoin-txpool-mock-service",
  "starcoin-types",
  "starcoin-vm-types",
+ "stdlib",
  "stest",
  "test-helper",
  "thiserror",
@@ -9380,9 +9450,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75cf45bb0bef80604d001caaec0d09da99611b3c0fd39d3080468875cdb65645"
+checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
 dependencies = [
  "serde",
 ]

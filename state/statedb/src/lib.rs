@@ -7,14 +7,13 @@ use lru::LruCache;
 use merkle_tree::proof::SparseMerkleProof;
 use parking_lot::{Mutex, MutexGuard, RwLock};
 use scs::SCSCodec;
-use serde::{Deserialize, Serialize};
-use starcoin_crypto::hash::CryptoHasher;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_logger::prelude::*;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::{
     access_path::{self, AccessPath, DataType},
+    access_resource_blob::AccessResourceBlob,
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
@@ -54,28 +53,6 @@ impl CacheItem {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Serialize, Deserialize, CryptoHasher)]
-struct SubStateBlob {
-    access_path: AccessPath,
-    value: Vec<u8>,
-}
-
-impl SubStateBlob {
-    fn value(element_bytes: Option<Vec<u8>>) -> Result<Option<Vec<u8>>> {
-        match element_bytes {
-            Some(bytes) => {
-                let blob: SubStateBlob = scs::from_bytes(bytes.as_slice())?;
-                Ok(Some(blob.value))
-            }
-            None => Ok(None),
-        }
-    }
-
-    fn blob(access_path: AccessPath, value: Vec<u8>) -> Result<Vec<u8>> {
-        let blob = SubStateBlob { access_path, value };
-        scs::to_bytes(&blob)
-    }
-}
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
     address: AccountAddress,
@@ -120,9 +97,7 @@ impl AccountStateObject {
     pub fn get(&self, data_type: DataType, key_hash: &HashValue) -> Result<Option<Vec<u8>>> {
         let trees = self.trees.lock();
         match trees[data_type.storage_index()].as_ref() {
-            Some(tree) => tree
-                .get(key_hash)
-                .map(SubStateBlob::value)?,
+            Some(tree) => tree.get(key_hash).map(AccessResourceBlob::value)?,
             None => Ok(None),
         }
     }
@@ -138,7 +113,7 @@ impl AccountStateObject {
         match trees[data_type.storage_index()].as_ref() {
             Some(tree) => {
                 let (bytes, proof) = tree.get_with_proof(key_hash)?;
-                Ok((SubStateBlob::value(bytes)?, proof))
+                Ok((AccessResourceBlob::value(bytes)?, proof))
             }
             None => Ok((None, SparseMerkleProof::new(None, vec![]))),
         }
@@ -158,7 +133,10 @@ impl AccountStateObject {
         let tree = trees[data_type.storage_index()]
             .as_ref()
             .expect("state tree must exist after set.");
-        tree.put(key_hash, SubStateBlob::blob(access_path, value)?);
+        tree.put(
+            key_hash,
+            AccessResourceBlob::new(access_path, value).into_bytes()?,
+        );
         Ok(())
     }
 
@@ -579,12 +557,10 @@ mod tests {
         assert!(state1.is_some());
         assert_eq!(state0, state1.unwrap());
         let state_with_proof = chain_state_db.get_with_proof(&access_path)?;
-        let bytes = SubStateBlob::blob(access_path.clone(), state_with_proof.state.unwrap())?;
-
         state_with_proof.proof.verify(
             state_root,
             access_path,
-            Some(bytes).as_deref(),
+            state_with_proof.state.as_deref(),
         )?;
         Ok(())
     }
