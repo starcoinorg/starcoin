@@ -21,6 +21,19 @@ use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 /// Type for block number.
 pub type BlockNumber = u64;
 
+/// Type for block header extra
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
+pub struct BlockHeaderExtra([u8; 4]);
+
+impl BlockHeaderExtra {
+    pub fn new(extra: [u8; 4]) -> Self {
+        Self(extra)
+    }
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
 pub struct BlockIdAndNumber {
     pub id: HashValue,
@@ -64,6 +77,8 @@ pub struct BlockHeader {
     pub body_hash: HashValue,
     /// The chain id
     pub chain_id: ChainId,
+    /// block header extra
+    pub extra: BlockHeaderExtra,
 }
 
 impl BlockHeader {
@@ -80,6 +95,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> BlockHeader {
         Self::new_with_auth(
             parent_hash,
@@ -95,6 +111,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         )
     }
 
@@ -112,6 +129,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> BlockHeader {
         BlockHeader {
             parent_hash,
@@ -127,6 +145,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         }
     }
 
@@ -206,6 +225,7 @@ impl BlockHeader {
         nonce: u32,
         body_hash: HashValue,
         chain_id: ChainId,
+        extra: BlockHeaderExtra,
     ) -> Self {
         Self {
             parent_hash,
@@ -221,6 +241,7 @@ impl BlockHeader {
             nonce,
             body_hash,
             chain_id,
+            extra,
         }
     }
 
@@ -239,6 +260,7 @@ impl BlockHeader {
             nonce: 0,
             body_hash: HashValue::random(),
             chain_id: ChainId::test(),
+            extra: BlockHeaderExtra([0u8; 4]),
         }
     }
 }
@@ -386,6 +408,7 @@ impl Block {
         state_root: HashValue,
         difficulty: U256,
         nonce: u32,
+        extra: BlockHeaderExtra,
         genesis_txn: SignedUserTransaction,
     ) -> Self {
         let chain_id = genesis_txn.chain_id();
@@ -399,6 +422,7 @@ impl Block {
             nonce,
             block_body.hash(),
             chain_id,
+            extra,
         );
         Self {
             header,
@@ -557,6 +581,7 @@ pub struct BlockTemplate {
     pub chain_id: ChainId,
     /// Block difficulty
     pub difficulty: U256,
+    /// Block consensus strategy
     pub strategy: ConsensusStrategy,
 }
 
@@ -593,7 +618,7 @@ impl BlockTemplate {
         }
     }
 
-    pub fn into_block(self, nonce: u32) -> Block {
+    pub fn into_block(self, nonce: u32, extra: BlockHeaderExtra) -> Block {
         let header = BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -608,6 +633,7 @@ impl BlockTemplate {
             nonce,
             self.body_hash,
             self.chain_id,
+            extra,
         );
         Block {
             header,
@@ -646,7 +672,7 @@ impl BlockTemplate {
         blob
     }
 
-    pub fn into_block_header(self, nonce: u32) -> BlockHeader {
+    pub fn into_block_header(self, nonce: u32, extra: BlockHeaderExtra) -> BlockHeader {
         BlockHeader::new_with_auth(
             self.parent_hash,
             self.parent_block_accumulator_root,
@@ -661,6 +687,7 @@ impl BlockTemplate {
             nonce,
             self.body_hash,
             self.chain_id,
+            extra,
         )
     }
 

@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::block::{Block, BlockHeader, ExecutedBlock};
+use crate::block::{Block, BlockHeader, BlockHeaderExtra, ExecutedBlock};
 use crate::sync_status::SyncStatus;
 use crate::U256;
 use actix::prelude::*;
@@ -61,14 +61,21 @@ pub struct MintBlockEvent {
     pub strategy: ConsensusStrategy,
     pub minting_blob: Vec<u8>,
     pub difficulty: U256,
+    pub block_number: u64,
 }
 
 impl MintBlockEvent {
-    pub fn new(strategy: ConsensusStrategy, minting_blob: Vec<u8>, difficulty: U256) -> Self {
+    pub fn new(
+        strategy: ConsensusStrategy,
+        minting_blob: Vec<u8>,
+        difficulty: U256,
+        block_number: u64,
+    ) -> Self {
         Self {
             strategy,
             minting_blob,
             difficulty,
+            block_number,
         }
     }
 }
@@ -77,14 +84,16 @@ impl MintBlockEvent {
 #[rtype(result = "Result<()>")]
 pub struct SubmitSealEvent {
     pub nonce: u32,
+    pub extra: BlockHeaderExtra,
     pub minting_blob: Vec<u8>,
 }
 
 impl SubmitSealEvent {
-    pub fn new(minting_blob: Vec<u8>, nonce: u32) -> Self {
+    pub fn new(minting_blob: Vec<u8>, nonce: u32, extra: BlockHeaderExtra) -> Self {
         Self {
             minting_blob,
             nonce,
+            extra,
         }
     }
 }

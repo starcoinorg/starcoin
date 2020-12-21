@@ -263,8 +263,9 @@ impl EventHandler<MintBlockEvent> for NewMintBlockHandler {
     fn handle(&self, msg: MintBlockEvent) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         vec![Ok(pubsub::Result::MintBlock(Box::new(MintBlock {
             strategy: msg.strategy,
-            minting_blob: msg.minting_blob,
+            minting_blob: hex::encode(msg.minting_blob),
             difficulty: msg.difficulty,
+            block_number: msg.block_number,
         })))]
     }
 }

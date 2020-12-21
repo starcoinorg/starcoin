@@ -9,5 +9,5 @@ use jsonrpc_derive::rpc;
 pub trait MinerApi {
     /// submit mining seal
     #[rpc(name = "mining.submit")]
-    fn submit(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()>;
+    fn submit(&self, minting_blob: String, nonce: u32, extra: String) -> Result<()>;
 }

@@ -21,6 +21,7 @@ pub mod task;
 
 pub use create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService};
 pub use starcoin_miner_client::miner::{MinerClient, MinerClientService};
+pub use types::block::BlockHeaderExtra;
 pub use types::system_events::{GenerateBlockEvent, MinedBlock, MintBlockEvent, SubmitSealEvent};
 
 pub struct MinerService {
@@ -58,7 +59,8 @@ impl ActorService for MinerService {
 
 impl EventHandler<Self, SubmitSealEvent> for MinerService {
     fn handle_event(&mut self, event: SubmitSealEvent, ctx: &mut ServiceContext<MinerService>) {
-        if let Err(e) = self.finish_task(event.nonce, event.minting_blob.clone(), ctx) {
+        if let Err(e) = self.finish_task(event.nonce, event.extra, event.minting_blob.clone(), ctx)
+        {
             error!("Process SubmitSealEvent {:?} fail: {:?}", event, e);
         }
     }
@@ -80,6 +82,7 @@ impl MinerService {
             debug!("Mint block template: {:?}", block_template);
             let difficulty = block_template.difficulty;
             let strategy = block_template.strategy;
+            let number = block_template.number;
             let task = MintTask::new(block_template);
             let mining_blob = task.minting_blob.clone();
             if let Some(current_task) = self.current_task.as_ref() {
@@ -89,7 +92,12 @@ impl MinerService {
                 );
             }
             self.current_task = Some(task);
-            ctx.broadcast(MintBlockEvent::new(strategy, mining_blob, difficulty));
+            ctx.broadcast(MintBlockEvent::new(
+                strategy,
+                mining_blob,
+                difficulty,
+                number,
+            ));
             Ok(())
         }
     }
@@ -97,6 +105,7 @@ impl MinerService {
     pub fn finish_task(
         &mut self,
         nonce: u32,
+        extra: BlockHeaderExtra,
         minting_blob: Vec<u8>,
         ctx: &mut ServiceContext<MinerService>,
     ) -> Result<()> {
@@ -104,8 +113,8 @@ impl MinerService {
             Some(task) => task,
             None => {
                 debug!(
-                    "MintTask is none, but got nonce: {} for minting_blob: {:?}, may be mint by other client.",
-                    nonce, minting_blob,
+                    "MintTask is none, but got nonce: {}, extra:{:?} for minting_blob: {:?}, may be mint by other client.",
+                    nonce, extra, minting_blob,
                 );
                 return Ok(());
             }
@@ -120,7 +129,7 @@ impl MinerService {
             self.current_task = Some(task);
             return Ok(());
         }
-        let block = task.finish(nonce);
+        let block = task.finish(nonce, extra);
         info!("Mint new block: {}", block);
         ctx.broadcast(MinedBlock(Arc::new(block)));
         MINER_METRICS.block_mint_count.inc();

@@ -1,4 +1,4 @@
-use crate::{MintBlockEvent, SubmitSealEvent};
+use crate::{BlockHeaderExtra, MintBlockEvent, SubmitSealEvent};
 use anyhow::Result;
 use futures::executor::block_on;
 use futures::stream::BoxStream;
@@ -27,9 +27,14 @@ impl JobClient for JobBusClient {
         block_on(async move { bus.channel::<MintBlockEvent>().await.map(|s| s.boxed()) })
     }
 
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
+    fn submit_seal(
+        &self,
+        minting_blob: Vec<u8>,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<()> {
         self.bus
-            .broadcast(SubmitSealEvent::new(minting_blob, nonce))?;
+            .broadcast(SubmitSealEvent::new(minting_blob, nonce, extra))?;
         Ok(())
     }
 

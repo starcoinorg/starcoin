@@ -33,6 +33,7 @@ mod errors;
 
 pub use errors::GenesisError;
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_vm_types::genesis_config::{BuiltinNetworkID, ChainNetworkID};
 
 pub static GENESIS_GENERATED_DIR: &str = "generated";
@@ -159,6 +160,7 @@ impl Genesis {
             transaction_info.state_root_hash(),
             genesis_config.difficulty,
             genesis_config.nonce,
+            BlockHeaderExtra::new(genesis_config.extra),
             txn,
         ))
     }
@@ -336,7 +338,7 @@ impl Genesis {
                         }
                     }
                     Ok(None) => {
-                        return Err(GenesisError::GenesisNotExist("database".to_owned()).into())
+                        return Err(GenesisError::GenesisNotExist("database".to_owned()).into());
                     }
                     Err(e) => return Err(GenesisError::GenesisLoadFailure(e).into()),
                 }

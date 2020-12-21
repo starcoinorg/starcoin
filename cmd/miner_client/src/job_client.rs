@@ -5,6 +5,7 @@ use futures::{stream::StreamExt, TryStreamExt};
 use logger::prelude::*;
 use starcoin_config::{RealTimeService, TimeService};
 use starcoin_rpc_client::RpcClient;
+use starcoin_types::block::BlockHeaderExtra;
 use starcoin_types::system_events::MintBlockEvent;
 use std::sync::Arc;
 
@@ -29,11 +30,21 @@ impl JobClient for JobRpcClient {
         Ok(stream
             .filter_map(|r| async move {
                 match r {
-                    Ok(b) => Some(MintBlockEvent::new(
-                        b.strategy,
-                        b.minting_blob,
-                        b.difficulty,
-                    )),
+                    Ok(b) => {
+                        let blob = match hex::decode(b.minting_blob) {
+                            Ok(b) => b,
+                            Err(e) => {
+                                error!("Decode minting blob failed:{:?}", e);
+                                return None;
+                            }
+                        };
+                        Some(MintBlockEvent::new(
+                            b.strategy,
+                            blob,
+                            b.difficulty,
+                            b.block_number,
+                        ))
+                    }
                     Err(e) => {
                         error!("Failed to subscribe mint block:{}", e);
                         None
@@ -43,8 +54,17 @@ impl JobClient for JobRpcClient {
             .boxed())
     }
 
-    fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) -> Result<()> {
-        self.rpc_client.miner_submit(minting_blob, nonce)
+    fn submit_seal(
+        &self,
+        minting_blob: Vec<u8>,
+        nonce: u32,
+        extra: BlockHeaderExtra,
+    ) -> Result<()> {
+        self.rpc_client.miner_submit(
+            hex::encode(minting_blob),
+            nonce,
+            hex::encode(extra.to_vec()),
+        )
     }
 
     fn time_service(&self) -> Arc<dyn TimeService> {
