@@ -138,8 +138,7 @@ where
             map_be_uncles.push(block_header);
             self.broadcast_new_branch(map_be_uncles);
         }
-
-        self.save_startup()
+        Ok(())
     }
 
     pub fn do_new_head(
@@ -152,7 +151,7 @@ where
     ) -> Result<()> {
         debug_assert!(!enacted_blocks.is_empty());
         debug_assert_eq!(enacted_blocks.last().unwrap(), executed_block.block());
-        self.startup_info.update_main(executed_block.header());
+        self.update_startup_info(executed_block.header())?;
         if retracted_count > 0 {
             WRITE_BLOCK_CHAIN_METRICS
                 .rollback_block_size
@@ -165,7 +164,6 @@ where
             .time_service()
             .adjust(GlobalTimeOnChain::new(executed_block.header().timestamp));
         info!("[chain] Select new head, id: {}, number: {}, total_difficulty: {}, enacted_block_count: {}, retracted_block_count: {}", executed_block.header().id(), executed_block.header().number, executed_block.block_info().total_difficulty, enacted_count, retracted_count);
-
         self.broadcast_new_head(executed_block);
         Ok(())
     }
@@ -174,9 +172,9 @@ where
         parent_id == &self.startup_info.main
     }
 
-    fn save_startup(&self) -> Result<()> {
-        let startup_info = self.startup_info.clone();
-        self.storage.save_startup_info(startup_info)
+    fn update_startup_info(&mut self, man_head: &BlockHeader) -> Result<()> {
+        self.startup_info.update_main(man_head);
+        self.storage.save_startup_info(self.startup_info.clone())
     }
 
     fn commit_2_txpool(&self, enacted: Vec<Block>, retracted: Vec<Block>) {

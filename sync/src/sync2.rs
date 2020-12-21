@@ -22,7 +22,7 @@ use starcoin_sync_api::{
     SyncCancelRequest, SyncProgressReport, SyncProgressRequest, SyncServiceHandler,
     SyncStartRequest, SyncStatusRequest, SyncTarget,
 };
-use starcoin_types::block::{BlockHeader, BlockIdAndNumber};
+use starcoin_types::block::BlockIdAndNumber;
 use starcoin_types::peer_info::PeerId;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
@@ -41,6 +41,7 @@ pub enum SyncStage {
     NotStart,
     Checking,
     Synchronizing(Box<SyncTaskHandle>),
+    Canceling,
     Done,
 }
 
@@ -77,7 +78,6 @@ impl SyncService2 {
 
     pub fn check_and_start_sync(
         &mut self,
-        force: bool,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
         ctx: &mut ServiceContext<Self>,
@@ -86,8 +86,8 @@ impl SyncService2 {
             SyncStage::NotStart | SyncStage::Done => {
                 //continue
                 info!(
-                    "[sync] Start checking sync, force: {}, skip_pow_verify:{}, special peers: {:?}",
-                    force, skip_pow_verify, peers
+                    "[sync] Start checking sync,skip_pow_verify:{}, special peers: {:?}",
+                    skip_pow_verify, peers
                 );
             }
             SyncStage::Checking => {
@@ -95,19 +95,17 @@ impl SyncService2 {
                 return Ok(());
             }
             SyncStage::Synchronizing(task_handle) => {
-                if force {
-                    info!("[sync] Cancel previous sync task, because receive force sync request.");
-                    task_handle.task_handle.cancel();
-                //continue checking
-                } else {
-                    debug!("[sync] Sync stage is already in Synchronizing");
-                    if let Some(report) = task_handle.task_event_handle.get_report() {
-                        info!("[sync] report: {}", report);
-                    }
-                    //restore to Synchronizing
-                    self.stage = SyncStage::Synchronizing(task_handle);
-                    return Ok(());
+                info!("[sync] Sync stage is already in Synchronizing");
+                if let Some(report) = task_handle.task_event_handle.get_report() {
+                    info!("[sync] report: {}", report);
                 }
+                //restore to Synchronizing
+                self.stage = SyncStage::Synchronizing(task_handle);
+                return Ok(());
+            }
+            SyncStage::Canceling => {
+                info!("[sync] Sync task is in canceling.");
+                return Ok(());
             }
         }
 
@@ -210,6 +208,16 @@ impl SyncService2 {
             _ => None,
         }
     }
+
+    fn cancel_task(&mut self) {
+        match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
+            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            stage => {
+                //restore state machine state.
+                self.stage = stage;
+            }
+        }
+    }
 }
 
 impl ServiceFactory<Self> for SyncService2 {
@@ -249,7 +257,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("[sync] disconnect peer: {:?}", close_peer_id);
-                if let Some(task_handle) = self.task_handle().as_ref() {
+                if let Some(task_handle) = self.task_handle() {
                     if task_handle
                         .target
                         .peers
@@ -311,6 +319,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
                 }
             }
             SyncStage::Synchronizing(previous_handle) => {
+                //this should not happen.
                 warn!(
                     "[sync] Unexpect SyncBeginEvent, current stage is Synchronizing(target: {:?})",
                     previous_handle.target
@@ -319,13 +328,16 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
                 self.stage = SyncStage::Synchronizing(previous_handle);
                 task_handle.cancel();
             }
+            SyncStage::Canceling => {
+                self.stage = SyncStage::Canceling;
+                task_handle.cancel();
+            }
         }
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct CheckSyncEvent {
-    force: bool,
     /// check sync with special peers
     peers: Vec<PeerId>,
 
@@ -333,9 +345,8 @@ pub struct CheckSyncEvent {
 }
 
 impl CheckSyncEvent {
-    pub fn new(force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
+    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
         Self {
-            force,
             peers,
             skip_pow_verify,
         }
@@ -344,7 +355,7 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_and_start_sync(msg.force, msg.peers, msg.skip_pow_verify, ctx) {
+        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, ctx) {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -365,23 +376,14 @@ pub struct SyncDoneEvent {
 }
 
 impl EventHandler<Self, SyncDoneEvent> for SyncService2 {
-    fn handle_event(&mut self, msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
+    fn handle_event(&mut self, _msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
         match std::mem::replace(&mut self.stage, SyncStage::Done) {
             SyncStage::NotStart | SyncStage::Done => {
-                //ignore cancel sync done event, because sync stage is set before cancel.
-                if !msg.cancel {
-                    warn!("[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent");
-                }
+                warn!(
+                    "[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent"
+                );
             }
-            SyncStage::Checking => {
-                // task is canceled in checking, so restore stage.
-                if msg.cancel {
-                    self.stage = SyncStage::Checking;
-                    info!("[sync] Previous sync task is cancel in checking")
-                } else {
-                    info!("[sync] Sync task is failed in checking.")
-                }
-            }
+            SyncStage::Checking => debug!("[sync] Sync task is Done in checking stage."),
             SyncStage::Synchronizing(task_handle) => {
                 if !task_handle.task_handle.is_done() {
                     warn!(
@@ -393,6 +395,11 @@ impl EventHandler<Self, SyncDoneEvent> for SyncService2 {
                 // check sync again
                 //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
                 ctx.notify(CheckSyncEvent::default());
+            }
+            SyncStage::Canceling => {
+                //continue
+                self.sync_status.sync_done();
+                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
             }
         }
     }
@@ -426,7 +433,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         _msg: SyncProgressRequest,
         _ctx: &mut ServiceContext<SyncService2>,
     ) -> Option<SyncProgressReport> {
-        self.task_handle().as_ref().and_then(|handle| {
+        self.task_handle().and_then(|handle| {
             handle
                 .task_event_handle
                 .get_report()
@@ -448,9 +455,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
 
 impl ServiceHandler<Self, SyncCancelRequest> for SyncService2 {
     fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService2>) {
-        if let Some(handle) = self.task_handle().as_ref() {
-            handle.task_handle.cancel()
-        }
+        self.cancel_task();
     }
 }
 
@@ -460,11 +465,11 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
         msg: SyncStartRequest,
         ctx: &mut ServiceContext<SyncService2>,
     ) -> Result<()> {
-        ctx.notify(CheckSyncEvent::new(
-            msg.force,
-            msg.peers,
-            msg.skip_pow_verify,
-        ));
+        if msg.force {
+            info!("[sync] Try to cancel previous sync task, because receive force sync request.");
+            self.cancel_task();
+        }
+        ctx.notify(CheckSyncEvent::new(msg.peers, msg.skip_pow_verify));
         Ok(())
     }
 }

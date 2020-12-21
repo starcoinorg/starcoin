@@ -3,6 +3,7 @@
 
 use crate::{difficult_to_target, generate_nonce, ChainReader};
 use anyhow::Result;
+use logger::prelude::*;
 use starcoin_crypto::HashValue;
 use starcoin_types::{
     block::{Block, BlockHeader, BlockTemplate},
@@ -70,6 +71,10 @@ pub trait Consensus {
     }
     /// Inner helper for verify and unit testing
     fn verify_header_difficulty(&self, difficulty: U256, header: &BlockHeader) -> Result<()> {
+        debug!(
+            "verify_header_difficulty, calculate target:{}, header target: {}, nonce: {}",
+            difficulty, header.difficulty, header.nonce
+        );
         if header.difficulty() != difficulty {
             return Err(ConsensusVerifyError::VerifyDifficultyError {
                 expect: difficulty,
