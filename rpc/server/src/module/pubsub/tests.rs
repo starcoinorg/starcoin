@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::module::{PubSubImpl, PubSubService};
+use crate::module::{PubSubImpl, PubSubService, PubSubServiceFactory};
 use anyhow::Result;
 use futures::{compat::Future01CompatExt, compat::Stream01CompatExt, StreamExt};
 use jsonrpc_core::{futures as futures01, MetaIoHandler};
@@ -89,7 +89,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     let mut sync_status = SyncStatus::new(ChainStatus::new(BlockHeader::random(), U256::from(1)));
     sync_status.sync_done();
     notify_service.notify(SyncStatusChangeEvent(sync_status))?;
-    let service = PubSubService::new(bus.clone(), txpool_service);
+    let service = registry
+        .register_by_factory::<PubSubService, PubSubServiceFactory>()
+        .await?;
 
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
@@ -152,8 +154,9 @@ pub async fn test_subscribe_to_events() -> Result<()> {
 pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
     // given
     let (txpool_service, _, config, _, registry) = test_helper::start_txpool().await;
-    let bus = registry.service_ref::<BusService>().await?;
-    let service = PubSubService::new(bus, txpool_service.clone());
+    let service = registry
+        .register_by_factory::<PubSubService, PubSubServiceFactory>()
+        .await?;
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 
@@ -215,7 +218,9 @@ pub async fn test_subscribe_to_pending_transactions() -> Result<()> {
 pub async fn test_subscribe_to_mint_block() -> Result<()> {
     let (txpool_service, .., registry) = test_helper::start_txpool().await;
     let bus = registry.service_ref::<BusService>().await?;
-    let service = PubSubService::new(bus.clone(), txpool_service.clone());
+    let service = registry
+        .register_by_factory::<PubSubService, PubSubServiceFactory>()
+        .await?;
     let pubsub = PubSubImpl::new(service);
     let pubsub = pubsub.to_delegate();
 

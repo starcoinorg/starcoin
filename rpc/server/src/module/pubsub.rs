@@ -1,11 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::Result;
 use futures::channel::mpsc;
 use futures::compat::Sink01CompatExt;
 use futures::future::AbortHandle;
-use futures::{compat::Future01CompatExt, StreamExt};
-use jsonrpc_core::Result;
+use futures::StreamExt;
 use jsonrpc_pubsub::typed::Subscriber;
 use jsonrpc_pubsub::SubscriptionId;
 use parking_lot::RwLock;
@@ -15,8 +15,10 @@ use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{BlockView, TransactionEventView};
 use starcoin_rpc_api::{errors, pubsub::StarcoinPubSub, types::pubsub};
-use starcoin_service_registry::bus::{Bus, BusService};
-use starcoin_service_registry::ServiceRef;
+use starcoin_service_registry::{
+    ActorService, EventHandler as ActorEventHandler, ServiceContext, ServiceFactory,
+    ServiceHandler, ServiceRef, ServiceRequest,
+};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::filter::Filter;
@@ -24,18 +26,117 @@ use starcoin_types::system_events::MintBlockEvent;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fmt::Debug;
+use std::sync::mpsc::TrySendError;
 use std::sync::{atomic, Arc};
 
 #[cfg(test)]
 pub mod tests;
 
 pub struct PubSubImpl {
-    service: PubSubService,
+    service: ServiceRef<PubSubService>,
 }
 
 impl PubSubImpl {
-    pub fn new(s: PubSubService) -> Self {
+    pub fn new(s: ServiceRef<PubSubService>) -> Self {
         Self { service: s }
+    }
+}
+fn map_send_err<T>(err: &TrySendError<T>) -> jsonrpc_core::Error {
+    match err {
+        TrySendError::Full(_) => jsonrpc_core::Error {
+            code: jsonrpc_core::ErrorCode::InternalError,
+            message: "pubsub service is overloaded".to_string(),
+            data: None,
+        },
+        TrySendError::Disconnected(_) => jsonrpc_core::Error {
+            code: jsonrpc_core::ErrorCode::InternalError,
+            message: "pubsub service is down".to_string(),
+            data: None,
+        },
+    }
+}
+impl PubSubImpl {
+    fn inner_subscribe(
+        &self,
+        _meta: Metadata,
+        subscriber: Subscriber<pubsub::Result>,
+        kind: pubsub::Kind,
+        params: Option<pubsub::Params>,
+    ) -> Result<(), (Subscriber<pubsub::Result>, jsonrpc_core::Error)> {
+        match (kind, params) {
+            (pubsub::Kind::NewHeads, None) => self
+                .service
+                .try_send(SubscribeNewHeads(subscriber))
+                .map_err(|e| {
+                    let msg = map_send_err(&e);
+                    (
+                        match e {
+                            TrySendError::Disconnected(t) => t.0,
+                            TrySendError::Full(t) => t.0,
+                        },
+                        msg,
+                    )
+                }),
+            (pubsub::Kind::NewHeads, _) => Err((
+                subscriber,
+                errors::invalid_params("newHeads", "Expected no parameters."),
+            )),
+            (pubsub::Kind::NewPendingTransactions, None) => self
+                .service
+                .try_send(SubscribeNewPendingTxns { subscriber })
+                .map_err(|e| {
+                    let msg = map_send_err(&e);
+                    (
+                        match e {
+                            TrySendError::Disconnected(t) => t.subscriber,
+                            TrySendError::Full(t) => t.subscriber,
+                        },
+                        msg,
+                    )
+                }),
+            (pubsub::Kind::NewPendingTransactions, _) => Err((
+                subscriber,
+                errors::invalid_params("newPendingTransactions", "Expected no parameters."),
+            )),
+            (pubsub::Kind::Events, Some(pubsub::Params::Events(filter))) => {
+                match filter.try_into() {
+                    Ok(f) => self
+                        .service
+                        .try_send(SubscribeEvents {
+                            subscriber,
+                            filter: f,
+                        })
+                        .map_err(|e| {
+                            let msg = map_send_err(&e);
+                            (
+                                match e {
+                                    TrySendError::Disconnected(t) => t.subscriber,
+                                    TrySendError::Full(t) => t.subscriber,
+                                },
+                                msg,
+                            )
+                        }),
+                    Err(e) => Err((subscriber, e)),
+                }
+            }
+            (pubsub::Kind::Events, _) => Err((
+                subscriber,
+                errors::invalid_params("events", "Expected a filter object."),
+            )),
+            (pubsub::Kind::NewMintBlock, _) => self
+                .service
+                .try_send(SubscribeMintBlock(subscriber))
+                .map_err(|e| {
+                    let msg = map_send_err(&e);
+                    (
+                        match e {
+                            TrySendError::Disconnected(t) => t.0,
+                            TrySendError::Full(t) => t.0,
+                        },
+                        msg,
+                    )
+                }),
+        }
     }
 }
 
@@ -48,183 +149,265 @@ impl StarcoinPubSub for PubSubImpl {
         kind: pubsub::Kind,
         params: Option<pubsub::Params>,
     ) {
-        let error = match (kind, params) {
-            (pubsub::Kind::NewHeads, None) => {
-                self.service.add_new_header_subscription(subscriber);
-                return;
-            }
-            (pubsub::Kind::NewHeads, _) => {
-                errors::invalid_params("newHeads", "Expected no parameters.")
-            }
-            (pubsub::Kind::NewPendingTransactions, None) => {
-                self.service.add_new_txn_subscription(subscriber);
-                return;
-            }
-            (pubsub::Kind::NewPendingTransactions, _) => {
-                errors::invalid_params("newPendingTransactions", "Expected no parameters.")
-            }
-            (pubsub::Kind::Events, Some(pubsub::Params::Events(filter))) => {
-                match filter.try_into() {
-                    Ok(f) => {
-                        self.service.add_event_subscription(subscriber, f);
-                        return;
-                    }
-                    Err(e) => e,
-                }
-            }
-            (pubsub::Kind::Events, _) => {
-                errors::invalid_params("events", "Expected a filter object.")
-            }
-            (pubsub::Kind::NewMintBlock, _) => {
-                self.service.add_mint_block_subscription(subscriber);
-                return;
-            }
-        };
-
-        let _ = subscriber.reject(error);
-    }
-
-    fn unsubscribe(&self, _: Option<Self::Metadata>, id: SubscriptionId) -> Result<bool> {
-        self.service.unsubscribe(id)
-    }
-}
-
-//TODO refactor this to ActorService
-#[derive(Clone)]
-pub struct PubSubService {
-    subscriber_id: Arc<atomic::AtomicU64>,
-    bus: ServiceRef<BusService>,
-    subscribers: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
-    txpool: TxPoolService,
-    spawner: actix_rt::Arbiter,
-}
-
-impl PubSubService {
-    pub fn new(bus: ServiceRef<BusService>, txpool: TxPoolService) -> Self {
-        let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
-        Self {
-            spawner: actix_rt::Arbiter::new(),
-            subscriber_id,
-            bus,
-            subscribers: Arc::new(RwLock::new(HashMap::new())),
-            txpool,
+        if let Err((subscriber, error)) = self.inner_subscribe(_meta, subscriber, kind, params) {
+            let _ = subscriber.reject(error);
         }
     }
 
-    fn start_subscription<M, Handler>(
+    fn unsubscribe(
         &self,
-        msg_channel: mpsc::UnboundedReceiver<M>,
-        subscriber: Subscriber<pubsub::Result>,
-        event_handler: Handler,
-    ) where
-        M: Send + 'static,
-        Handler: EventHandler<M> + Send + 'static,
-    {
-        let subscriber_id = self.next_id();
+        _: Option<Self::Metadata>,
+        id: SubscriptionId,
+    ) -> jsonrpc_core::Result<bool> {
+        match self.service.try_send(Unsubscribe(id)) {
+            Ok(()) => Ok(true),
+            Err(TrySendError::Full(_)) => Err(jsonrpc_core::Error {
+                code: jsonrpc_core::ErrorCode::InternalError,
+                message: "pubsub service is overloaded".to_string(),
+                data: None,
+            }),
+            Err(TrySendError::Disconnected(_)) => Err(jsonrpc_core::Error {
+                code: jsonrpc_core::ErrorCode::InternalError,
+                message: "pubsub service is down".to_string(),
+                data: None,
+            }),
+        }
+    }
+}
 
-        // TODO: should we use assgin_id_async?
-        if let Ok(sink) = subscriber.assign_id(subscriber_id.clone()) {
-            let subscribers = self.subscribers.clone();
-            let subscribers_clone = subscribers.clone();
-            let subscriber_id_clone = subscriber_id.clone();
-            let sink = sink.sink_compat();
-            let (f, abort_handle) = futures::future::abortable(async move {
-                let forward = msg_channel
-                    .flat_map(move |m| {
-                        let r = event_handler.handle(m);
-                        futures::stream::iter(
-                            r.into_iter().map(Ok::<_, jsonrpc_pubsub::TransportError>),
-                        )
-                    })
-                    .forward(sink)
-                    .await;
-                if let Err(e) = forward {
-                    log::warn!(target: "rpc", "Unable to send notification: {}", e);
-                    // if any error happen, we need to remove self from subscribers.
-                    subscribers_clone.write().remove(&subscriber_id_clone);
-                }
-            });
+pub struct PubSubServiceFactory;
+impl ServiceFactory<PubSubService> for PubSubServiceFactory {
+    fn create(ctx: &mut ServiceContext<PubSubService>) -> Result<PubSubService> {
+        Ok(PubSubService::new(ctx.get_shared::<TxPoolService>()?))
+    }
+}
 
-            self.spawner.send(Box::pin(async move {
-                let _ = f.await;
-            }));
-            subscribers.write().insert(subscriber_id, abort_handle);
+pub struct PubSubService {
+    subscriber_id: Arc<atomic::AtomicU64>,
+    txpool: TxPoolService,
+
+    new_header_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewHeadNotification>>,
+    new_event_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<NewEventNotification>>,
+    mint_block_subscribers: HashMap<SubscriptionId, mpsc::UnboundedSender<MintBlockEvent>>,
+    new_pending_txn_tasks: Arc<RwLock<HashMap<SubscriptionId, AbortHandle>>>,
+}
+impl PubSubService {
+    fn new(txpool: TxPoolService) -> Self {
+        let subscriber_id = Arc::new(atomic::AtomicU64::new(0));
+        Self {
+            subscriber_id,
+            txpool,
+            new_event_subscribers: Default::default(),
+            new_header_subscribers: Default::default(),
+            mint_block_subscribers: Default::default(),
+            new_pending_txn_tasks: Arc::new(RwLock::new(HashMap::default())),
         }
     }
     fn next_id(&self) -> SubscriptionId {
         let id = self.subscriber_id.fetch_add(1, atomic::Ordering::SeqCst);
         SubscriptionId::Number(id)
     }
+}
+type NewHeadNotification = Notification<ThinBlock>;
+type NewEventNotification = Notification<Arc<Vec<Event>>>;
+// type NewTxns = Arc<Vec<HashValue>>;
 
-    pub fn add_new_txn_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
-        let txn_events = self.txpool.subscribe_pending_txn();
-        self.start_subscription(txn_events, subscriber, TxnEventHandler);
+impl ActorService for PubSubService {
+    fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
+        ctx.set_mailbox_capacity(1024);
+        ctx.subscribe::<NewHeadNotification>();
+        ctx.subscribe::<NewEventNotification>();
+        ctx.subscribe::<MintBlockEvent>();
+        Ok(())
+    }
+}
+
+impl ActorEventHandler<Self, NewHeadNotification> for PubSubService {
+    fn handle_event(&mut self, msg: NewHeadNotification, _ctx: &mut ServiceContext<PubSubService>) {
+        send_to_all(&mut self.new_header_subscribers, msg);
+    }
+}
+impl ActorEventHandler<Self, NewEventNotification> for PubSubService {
+    fn handle_event(
+        &mut self,
+        msg: NewEventNotification,
+        _ctx: &mut ServiceContext<PubSubService>,
+    ) {
+        send_to_all(&mut self.new_event_subscribers, msg);
+    }
+}
+impl ActorEventHandler<Self, MintBlockEvent> for PubSubService {
+    fn handle_event(&mut self, msg: MintBlockEvent, _ctx: &mut ServiceContext<PubSubService>) {
+        send_to_all(&mut self.mint_block_subscribers, msg);
+    }
+}
+
+#[derive(Debug)]
+struct SubscribeNewHeads(Subscriber<pubsub::Result>);
+impl ServiceRequest for SubscribeNewHeads {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, SubscribeNewHeads> for PubSubService {
+    fn handle(&mut self, msg: SubscribeNewHeads, ctx: &mut ServiceContext<Self>) {
+        let SubscribeNewHeads(sink) = msg;
+        let (sender, receiver) = mpsc::unbounded();
+        let subscriber_id = self.next_id();
+        self.new_header_subscribers
+            .insert(subscriber_id.clone(), sender);
+        ctx.spawn(run_subscription(
+            receiver,
+            subscriber_id,
+            sink,
+            NewHeadHandler,
+        ));
+    }
+}
+#[derive(Debug)]
+struct SubscribeMintBlock(Subscriber<pubsub::Result>);
+impl ServiceRequest for SubscribeMintBlock {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, SubscribeMintBlock> for PubSubService {
+    fn handle(&mut self, msg: SubscribeMintBlock, ctx: &mut ServiceContext<Self>) {
+        let SubscribeMintBlock(subscriber) = msg;
+        let (sender, receiver) = mpsc::unbounded();
+        let subscriber_id = self.next_id();
+        self.mint_block_subscribers
+            .insert(subscriber_id.clone(), sender);
+        ctx.spawn(run_subscription(
+            receiver,
+            subscriber_id,
+            subscriber,
+            NewMintBlockHandler,
+        ));
+    }
+}
+#[derive(Debug)]
+struct SubscribeEvents {
+    subscriber: Subscriber<pubsub::Result>,
+    filter: Filter,
+}
+impl ServiceRequest for SubscribeEvents {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, SubscribeEvents> for PubSubService {
+    fn handle(&mut self, msg: SubscribeEvents, ctx: &mut ServiceContext<Self>) {
+        let SubscribeEvents { subscriber, filter } = msg;
+        let (sender, receiver) = mpsc::unbounded();
+        let subscriber_id = self.next_id();
+        self.new_event_subscribers
+            .insert(subscriber_id.clone(), sender);
+        ctx.spawn(run_subscription(
+            receiver,
+            subscriber_id,
+            subscriber,
+            ContractEventHandler { filter },
+        ));
+    }
+}
+
+#[derive(Debug)]
+struct SubscribeNewPendingTxns {
+    subscriber: Subscriber<pubsub::Result>,
+}
+impl ServiceRequest for SubscribeNewPendingTxns {
+    type Response = ();
+}
+
+impl ServiceHandler<Self, SubscribeNewPendingTxns> for PubSubService {
+    fn handle(&mut self, msg: SubscribeNewPendingTxns, ctx: &mut ServiceContext<Self>) {
+        let SubscribeNewPendingTxns { subscriber } = msg;
+        let subscriber_id = self.next_id();
+        let tasks = self.new_pending_txn_tasks.clone();
+        let subscriber_id_clone = subscriber_id.clone();
+        let receiver = self.txpool.subscribe_pending_txn();
+        let (f, abort_handle) = futures::future::abortable(async move {
+            run_subscription(
+                receiver,
+                subscriber_id_clone.clone(),
+                subscriber,
+                TxnEventHandler,
+            )
+            .await;
+            // remove self from task list.
+            tasks.write().remove(&subscriber_id_clone);
+        });
+
+        ctx.spawn(async move {
+            let _ = f.await;
+        });
+
+        self.new_pending_txn_tasks
+            .write()
+            .insert(subscriber_id, abort_handle);
+    }
+}
+#[derive(Debug)]
+struct Unsubscribe(SubscriptionId);
+impl ServiceRequest for Unsubscribe {
+    type Response = ();
+}
+impl ServiceHandler<Self, Unsubscribe> for PubSubService {
+    fn handle(&mut self, msg: Unsubscribe, _ctx: &mut ServiceContext<Self>) {
+        self.new_header_subscribers.remove(&msg.0);
+        self.new_event_subscribers.remove(&msg.0);
+        self.mint_block_subscribers.remove(&msg.0);
+        if let Some(h) = self.new_pending_txn_tasks.write().remove(&msg.0) {
+            h.abort();
+        }
+    }
+}
+
+fn send_to_all<T: Clone>(
+    subscriptions: &mut HashMap<SubscriptionId, mpsc::UnboundedSender<T>>,
+    msg: T,
+) {
+    let mut remove_outdated = vec![];
+
+    for (id, ch) in subscriptions.iter() {
+        if let Err(err) = ch.unbounded_send(msg.clone()) {
+            if err.is_disconnected() {
+                remove_outdated.push(id.clone());
+            } else if err.is_full() {
+                log::error!(
+                    "subscription {:?} fail to new messages, channel is full",
+                    id
+                );
+            }
+        }
     }
 
-    pub fn add_new_header_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
-        let myself = self.clone();
-        self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.channel().await;
-            match channel {
-                Err(_e) => {
-                    let _ = subscriber
-                        .reject_async(jsonrpc_core::Error::internal_error())
-                        .compat()
-                        .await;
-                }
-                Ok(receiver) => {
-                    myself.start_subscription(receiver, subscriber, NewHeadHandler);
-                }
-            }
-        }));
+    // drop outdated subscribers.
+    for id in remove_outdated {
+        subscriptions.remove(&id);
     }
+}
 
-    pub fn add_mint_block_subscription(&self, subscriber: Subscriber<pubsub::Result>) {
-        let myself = self.clone();
-        self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.channel().await;
-            match channel {
-                Err(_e) => {
-                    let _ = subscriber
-                        .reject_async(jsonrpc_core::Error::internal_error())
-                        .compat()
-                        .await;
-                }
-                Ok(receiver) => {
-                    myself.start_subscription(receiver, subscriber, NewMintBlockHandler);
-                }
-            }
-        }));
-    }
+async fn run_subscription<M, Handler>(
+    msg_channel: mpsc::UnboundedReceiver<M>,
+    subscriber_id: SubscriptionId,
+    subscriber: Subscriber<pubsub::Result>,
+    event_handler: Handler,
+) where
+    M: Send + 'static,
+    Handler: EventHandler<M> + Send + 'static,
+{
+    // TODO: should we use assgin_id_async?
+    if let Ok(sink) = subscriber.assign_id(subscriber_id.clone()) {
+        let sink = sink.sink_compat();
 
-    pub fn add_event_subscription(&self, subscriber: Subscriber<pubsub::Result>, filter: Filter) {
-        let myself = self.clone();
-        self.spawner.send(Box::pin(async move {
-            let channel = myself.bus.channel().await;
-            match channel {
-                Err(_) => {
-                    let _ = subscriber
-                        .reject_async(jsonrpc_core::Error::internal_error())
-                        .compat()
-                        .await;
-                }
-                Ok(receiver) => {
-                    myself.start_subscription(
-                        receiver,
-                        subscriber,
-                        ContractEventHandler { filter },
-                    );
-                }
-            }
-        }));
-    }
-    pub fn unsubscribe(&self, id: SubscriptionId) -> Result<bool> {
-        match self.subscribers.write().remove(&id) {
-            Some(handle) => {
-                handle.abort();
-                Ok(true)
-            }
-            None => Ok(false),
+        let forward = msg_channel
+            .flat_map(move |m| {
+                let r = event_handler.handle(m);
+                futures::stream::iter(r.into_iter().map(Ok::<_, jsonrpc_pubsub::TransportError>))
+            })
+            .forward(sink)
+            .await;
+        if let Err(e) = forward {
+            log::warn!(target: "rpc", "Unable to send notification: {}", e);
         }
     }
 }
