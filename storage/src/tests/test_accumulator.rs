@@ -7,11 +7,16 @@ use crate::Storage;
 use crypto::HashValue;
 use starcoin_accumulator::node_index::NodeIndex;
 use starcoin_accumulator::{AccumulatorNode, AccumulatorTreeStore};
+use starcoin_config::RocksdbConfig;
 
 #[test]
 fn test_storage() {
     let storage = Storage::new(StorageInstance::new_db_instance(
-        DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
+        DBStorage::new(
+            starcoin_config::temp_path().as_ref(),
+            RocksdbConfig::default(),
+        )
+        .unwrap(),
     ))
     .unwrap();
 

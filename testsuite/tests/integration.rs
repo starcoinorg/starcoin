@@ -5,7 +5,7 @@ use cucumber::{after, before, cucumber, Steps, StepsBuilder};
 use serde_json::Value;
 use starcoin_account_api::AccountInfo;
 use starcoin_cmd::helper;
-use starcoin_config::NodeConfig;
+use starcoin_config::{NodeConfig, RocksdbConfig};
 use starcoin_logger::prelude::*;
 use starcoin_node::NodeHandle;
 use starcoin_rpc_client::RpcClient;
@@ -55,7 +55,11 @@ pub fn steps() -> Steps<MyWorld> {
         .given("a storage", |world: &mut MyWorld, _step| {
             let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
+                DBStorage::new(
+                    starcoin_config::temp_path().as_ref(),
+                    RocksdbConfig::default(),
+                )
+                .unwrap(),
             ))
             .unwrap();
             info!("storage created!");

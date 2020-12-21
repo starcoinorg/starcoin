@@ -5,6 +5,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use crypto::hash::*;
 use forkable_jellyfish_merkle::blob::Blob;
 use rand::{rngs::StdRng, SeedableRng};
+use starcoin_config::NodeConfig::RocksdbConfig;
 use starcoin_state_store_api::StateNodeStore;
 use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::StateTree;
@@ -114,7 +115,10 @@ fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
 }
 
 fn new_empty_store<P: AsRef<Path> + Clone>(p: P) -> Arc<Storage> {
-    let store = Storage::new(StorageInstance::new_db_instance(DBStorage::new(p).unwrap())).unwrap();
+    let store = Storage::new(StorageInstance::new_db_instance(
+        DBStorage::new(p, RockdbConfig::Default()).unwrap(),
+    ))
+    .unwrap();
     Arc::new(store)
 }
 
