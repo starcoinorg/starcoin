@@ -227,7 +227,18 @@ impl VerifiedRpcClient {
     }
 
     pub async fn get_block_infos(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockInfo>> {
-        let peer_id = self.random_peer()?;
+        self.get_block_infos_from_peer(None, hashes).await
+    }
+
+    pub async fn get_block_infos_from_peer(
+        &self,
+        peer_id: Option<PeerId>,
+        hashes: Vec<HashValue>,
+    ) -> Result<Vec<BlockInfo>> {
+        let peer_id = match peer_id {
+            None => self.random_peer()?,
+            Some(p) => p,
+        };
         let mut verify_condition: RpcEntryVerify<HashValue> = (&hashes).into();
         let data = self.client.get_block_infos(peer_id, hashes).await?;
         let verified_infos =
@@ -355,7 +366,21 @@ impl VerifiedRpcClient {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>> {
-        let peer_id = self.random_peer()?;
+        self.get_block_ids_from_peer(None, start_number, reverse, max_size)
+            .await
+    }
+
+    pub async fn get_block_ids_from_peer(
+        &self,
+        peer_id: Option<PeerId>,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
+    ) -> Result<Vec<HashValue>> {
+        let peer_id = match peer_id {
+            None => self.random_peer()?,
+            Some(p) => p,
+        };
         let request = GetBlockIds {
             start_number,
             reverse,

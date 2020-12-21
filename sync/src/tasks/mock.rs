@@ -1,7 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher};
+use crate::tasks::{BlockConnectedEvent, BlockFetcher, BlockIdFetcher, FetcherFactory};
 use anyhow::{format_err, Result};
 use async_std::task::JoinHandle;
 use futures::channel::mpsc::UnboundedReceiver;
@@ -13,11 +13,12 @@ use starcoin_accumulator::{Accumulator, MerkleAccumulator};
 use starcoin_chain_api::ChainReader;
 use starcoin_chain_mock::{BlockChain, MockChain};
 use starcoin_crypto::HashValue;
-use starcoin_types::block::Block;
-use starcoin_types::peer_info::PeerId;
+use starcoin_types::block::{Block, BlockInfo, BlockNumber};
+use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_vm_types::genesis_config::ChainNetwork;
 use std::sync::Arc;
 use std::time::Duration;
+use test_helper::DummyNetworkService;
 
 #[derive(Clone)]
 pub struct MockBlockIdFetcher {
@@ -54,6 +55,49 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     ) -> BoxFuture<Result<Vec<HashValue>>> {
         self.fetch_block_ids_async(start_number, reverse, max_size)
             .boxed()
+    }
+
+    fn fetch_block_ids_from_peer(
+        &self,
+        _peer: Option<PeerId>,
+        _start_number: BlockNumber,
+        _reverse: bool,
+        _max_size: u64,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
+        unimplemented!()
+    }
+
+    fn fetch_block_infos_from_peer(
+        &self,
+        _peer_id: Option<PeerId>,
+        _hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+        unimplemented!()
+    }
+
+    fn find_best_peer(&self) -> Option<PeerInfo> {
+        unimplemented!()
+    }
+}
+
+pub struct SyncNodeMockerFactory {
+    network: DummyNetworkService,
+    fetch: Arc<SyncNodeMocker>,
+}
+
+impl SyncNodeMockerFactory {
+    pub fn new(network: DummyNetworkService, fetch: Arc<SyncNodeMocker>) -> Self {
+        Self { network, fetch }
+    }
+}
+
+impl FetcherFactory<Arc<SyncNodeMocker>, DummyNetworkService> for SyncNodeMockerFactory {
+    fn create(&self, _peers: Vec<PeerInfo>) -> Arc<SyncNodeMocker> {
+        self.fetch.clone()
+    }
+
+    fn network(&self) -> DummyNetworkService {
+        self.network.clone()
     }
 }
 
@@ -127,6 +171,16 @@ impl BlockIdFetcher for SyncNodeMocker {
         reverse: bool,
         max_size: u64,
     ) -> BoxFuture<'_, Result<Vec<HashValue>>> {
+        self.fetch_block_ids_from_peer(None, start_number, reverse, max_size)
+    }
+
+    fn fetch_block_ids_from_peer(
+        &self,
+        _peer: Option<PeerId>,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
+    ) -> BoxFuture<Result<Vec<HashValue>>> {
         let result = self.chain().get_block_ids(start_number, reverse, max_size);
         async move {
             self.delay().await;
@@ -134,6 +188,27 @@ impl BlockIdFetcher for SyncNodeMocker {
             result
         }
         .boxed()
+    }
+
+    fn fetch_block_infos_from_peer(
+        &self,
+        _peer_id: Option<PeerId>,
+        hashes: Vec<HashValue>,
+    ) -> BoxFuture<Result<Vec<BlockInfo>>> {
+        let mut result: Vec<BlockInfo> = Vec::new();
+        hashes.into_iter().for_each(|hash| {
+            result.push(self.chain().get_block_info(Some(hash)).unwrap().unwrap());
+        });
+        async move {
+            self.delay().await;
+            self.random_err()?;
+            Ok(result)
+        }
+        .boxed()
+    }
+
+    fn find_best_peer(&self) -> Option<PeerInfo> {
+        Some(PeerInfo::random())
     }
 }
 

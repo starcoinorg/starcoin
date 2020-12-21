@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use anyhow::format_err;
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
@@ -108,6 +110,51 @@ pub struct TaskProgressReport {
     pub percent: Option<f64>,
 }
 
+impl TryFrom<Vec<TaskProgressReport>> for TaskProgressReport {
+    type Error = anyhow::Error;
+    fn try_from(reports: Vec<TaskProgressReport>) -> Result<Self, Self::Error> {
+        let task_name = reports
+            .as_slice()
+            .first()
+            .ok_or_else(|| format_err!("Reports can not be empty.",))?
+            .task_name
+            .clone();
+        let mut sub_task: u64 = 0;
+        let mut error: u64 = 0;
+        let mut ok: u64 = 0;
+        let mut retry: u64 = 0;
+        let mut total_items: u64 = 0;
+        let mut processed_items: u64 = 0;
+        let mut use_seconds: u64 = 0;
+        for report in reports.into_iter() {
+            sub_task += report.sub_task;
+            error += report.error;
+            ok += report.ok;
+            retry += report.retry;
+            if let Some(items) = report.total_items {
+                total_items += items;
+            }
+            processed_items += report.processed_items;
+            use_seconds += report.use_seconds;
+        }
+        Ok(TaskProgressReport {
+            task_name,
+            sub_task,
+            error,
+            ok,
+            retry,
+            total_items: if total_items == 0 {
+                None
+            } else {
+                Some(total_items)
+            },
+            processed_items,
+            use_seconds,
+            percent: None,
+        })
+    }
+}
+
 impl TaskProgressReport {
     pub fn new(
         task_name: String,
@@ -131,6 +178,11 @@ impl TaskProgressReport {
             percent: total_items
                 .map(|total_items| (processed_items as f64 / total_items as f64) * 100f64),
         }
+    }
+
+    pub fn fix_percent(&mut self, total: u64) {
+        self.total_items = Some(total);
+        self.percent = Some((self.processed_items as f64 / total as f64) * 100f64);
     }
 }
 impl std::fmt::Display for TaskProgressReport {
@@ -176,10 +228,30 @@ impl TaskEventCounterHandle {
             .iter()
             .map(|counter| counter.get_report())
             .collect::<Vec<_>>();
-        if let Some(counter) = self.current_counter.lock().unwrap().take() {
+        if let Some(counter) = self.current_counter.lock().unwrap().as_ref().take() {
             reports.push(counter.get_report());
         }
         reports
+    }
+
+    pub fn total_report(&self) -> Option<TaskProgressReport> {
+        info!("total_report");
+        if let Some(current_counter) = self.current_counter.lock().unwrap().as_ref().take() {
+            let task_name = current_counter.task_name.clone();
+            let mut reports = self
+                .previous_counters
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|task| task.task_name == task_name)
+                .map(|counter| counter.get_report())
+                .collect::<Vec<_>>();
+            reports.push(current_counter.get_report());
+            if let Ok(report) = TaskProgressReport::try_from(reports) {
+                return Some(report);
+            }
+        };
+        None
     }
 
     pub fn get_report(&self) -> Option<TaskProgressReport> {

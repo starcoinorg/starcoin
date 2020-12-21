@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::block_connector::BlockConnectorService;
-use crate::tasks::full_sync_task;
+use crate::tasks::{full_sync_task, AncestorEvent, VerifiedRpcClientFactory};
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
 use chain::BlockChain;
@@ -11,7 +11,7 @@ use futures::FutureExt;
 use logger::prelude::*;
 use network::NetworkServiceRef;
 use network::PeerEvent;
-use network_api::{PeerProvider, PeerSelector};
+use network_api::PeerProvider;
 use starcoin_chain_api::ChainReader;
 use starcoin_service_registry::{
     ActorService, EventHandler, ServiceContext, ServiceFactory, ServiceHandler,
@@ -33,6 +33,7 @@ use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
     target: SyncTarget,
+    task_begin: Option<BlockIdAndNumber>,
     task_handle: TaskHandle,
     task_event_handle: Arc<TaskEventCounterHandle>,
 }
@@ -150,8 +151,8 @@ impl SyncService2 {
                 info!("[sync] Current is already bast.");
                 return Ok(None);
             }
-            let peer_selector = PeerSelector::new(target.peers.clone());
-            let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
+
+            let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
 
             let (fut, task_handle, task_event_handle) = full_sync_task(
                 current_block_id,
@@ -160,8 +161,9 @@ impl SyncService2 {
                 config.net().time_service(),
                 storage.clone(),
                 connector_service.clone(),
-                rpc_client,
-                network,
+                target.peers.clone(),
+                self_ref.clone(),
+                fetcher_factory,
             )?;
 
             self_ref.notify(SyncBeginEvent {
@@ -245,6 +247,19 @@ impl ActorService for SyncService2 {
     }
 }
 
+impl EventHandler<Self, AncestorEvent> for SyncService2 {
+    fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService2>) {
+        match &mut self.stage {
+            SyncStage::Synchronizing(handle) => {
+                handle.task_begin = Some(msg.ancestor);
+            }
+            _ => {
+                warn!("[sync] Invalid state, Receive AncestorEvent, but sync state is not Synchronizing.");
+            }
+        }
+    }
+}
+
 impl EventHandler<Self, PeerEvent> for SyncService2 {
     fn handle_event(&mut self, msg: PeerEvent, ctx: &mut ServiceContext<Self>) {
         if self.sync_status.is_prepare() {
@@ -288,6 +303,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
             (msg.target, msg.task_handle, msg.task_event_handle);
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
+            task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
         };
@@ -434,11 +450,17 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         _ctx: &mut ServiceContext<SyncService2>,
     ) -> Option<SyncProgressReport> {
         self.task_handle().and_then(|handle| {
-            handle
-                .task_event_handle
-                .get_report()
-                .map(|report| SyncProgressReport {
+            handle.task_event_handle.total_report().map(|mut report| {
+                if let Some(begin) = handle.task_begin.as_ref() {
+                    report.fix_percent(handle.target.block_header.number - begin.number);
+                }
+
+                SyncProgressReport {
                     target_id: handle.target.block_header.id(),
+                    begin_number: handle
+                        .task_begin
+                        .as_ref()
+                        .map(|begin| -> u64 { begin.number }),
                     target_number: handle.target.block_header.number,
                     target_difficulty: handle.target.block_info.total_difficulty,
                     target_peers: handle
@@ -448,7 +470,8 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
                         .map(|peer| peer.peer_id())
                         .collect(),
                     current: report,
-                })
+                }
+            })
         })
     }
 }

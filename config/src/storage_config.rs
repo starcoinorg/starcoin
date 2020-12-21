@@ -48,6 +48,7 @@ pub struct StorageConfig {
     #[serde(skip)]
     absolute_dir: Option<PathBuf>,
     /// Rocksdb-specific configurations
+    #[serde(default)]
     pub rocksdb_config: RocksdbConfig,
 }
 
