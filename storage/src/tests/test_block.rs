@@ -10,6 +10,7 @@ use crate::cache_storage::CacheStorage;
 use crate::db_storage::DBStorage;
 use crate::storage::StorageInstance;
 use crate::Storage;
+use starcoin_config::RocksdbConfig;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{Block, BlockBody, BlockHeader, BlockState};
 use starcoin_types::genesis_config::ChainId;
@@ -21,7 +22,7 @@ fn test_block() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()).unwrap(),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
     ))
     .unwrap();
     let dt = Local::now();
@@ -82,7 +83,7 @@ fn test_block_number() {
     let tmpdir = starcoin_config::temp_path();
     let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
         CacheStorage::new(),
-        DBStorage::new(tmpdir.path()).unwrap(),
+        DBStorage::new(tmpdir.path(), RocksdbConfig::default()).unwrap(),
     ))
     .unwrap();
     let dt = Local::now();

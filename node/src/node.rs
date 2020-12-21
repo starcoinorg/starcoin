@@ -186,7 +186,7 @@ impl NodeService {
         let bus = registry.service_ref::<BusService>().await?;
         let storage = Arc::new(Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(config.storage.dir())?,
+            DBStorage::new(config.storage.dir(), config.storage.rocksdb_config)?,
         ))?);
         registry.put_shared(storage.clone()).await?;
         let (startup_info, genesis) =
@@ -201,7 +201,8 @@ impl NodeService {
         registry.register::<ChainStateService>().await?;
 
         let vault_config = &config.vault;
-        let account_storage = AccountStorage::create_from_path(vault_config.dir())?;
+        let account_storage =
+            AccountStorage::create_from_path(vault_config.dir(), config.storage.rocksdb_config)?;
         registry
             .put_shared::<AccountStorage>(account_storage.clone())
             .await?;

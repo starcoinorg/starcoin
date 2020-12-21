@@ -6,6 +6,7 @@ use crate::Account;
 use crate::AccountManager;
 use anyhow::Result;
 use starcoin_account_api::error::AccountError;
+use starcoin_config::RocksdbConfig;
 use starcoin_crypto::{SigningKey, ValidCryptoMaterial};
 use starcoin_types::access_path::AccessPath;
 use starcoin_types::account_address::AccountAddress;
@@ -20,7 +21,7 @@ use std::time::Duration;
 #[test]
 pub fn test_import_account() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
-    let storage = AccountStorage::create_from_path(tempdir.path())?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
     let manager = AccountManager::new(storage)?;
 
     // should success
@@ -43,7 +44,7 @@ pub fn test_import_account() -> Result<()> {
 #[test]
 pub fn test_wallet() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
-    let storage = AccountStorage::create_from_path(tempdir.path())?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
     let manager = AccountManager::new(storage.clone())?;
 
     // should success
@@ -76,7 +77,7 @@ pub fn test_wallet() -> Result<()> {
 #[test]
 pub fn test_wallet_unlock() -> Result<()> {
     let tempdir = tempfile::tempdir()?;
-    let storage = AccountStorage::create_from_path(tempdir.path())?;
+    let storage = AccountStorage::create_from_path(tempdir.path(), RocksdbConfig::default())?;
     let manager = AccountManager::new(storage)?;
 
     let wallet = manager.create_account("hello")?;

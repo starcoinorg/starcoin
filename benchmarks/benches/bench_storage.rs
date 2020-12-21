@@ -4,6 +4,7 @@ use benchmarks::storage::StorageBencher;
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use crypto::HashValue;
 use starcoin_accumulator::{accumulator_info::AccumulatorInfo, Accumulator, MerkleAccumulator};
+use starcoin_config::RocksdbConfig;
 use starcoin_storage::cache_storage::CacheStorage;
 use starcoin_storage::db_storage::DBStorage;
 use starcoin_storage::storage::StorageInstance;
@@ -18,7 +19,11 @@ fn storage_transaction(c: &mut Criterion) {
     c.bench_function("storage_transaction", |b| {
         let storage = Storage::new(StorageInstance::new_cache_and_db_instance(
             CacheStorage::new(),
-            DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
+            DBStorage::new(
+                starcoin_config::temp_path().as_ref(),
+                RocksdbConfig::default(),
+            )
+            .unwrap(),
         ))
         .unwrap();
         let bencher = StorageBencher::new(storage);
@@ -33,7 +38,11 @@ fn accumulator_append(c: &mut Criterion) {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(starcoin_config::temp_path().as_ref()).unwrap(),
+                DBStorage::new(
+                    starcoin_config::temp_path().as_ref(),
+                    RocksdbConfig::default(),
+                )
+                .unwrap(),
             ))
             .unwrap(),
         );

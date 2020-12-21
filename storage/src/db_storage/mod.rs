@@ -7,7 +7,8 @@ use crate::metrics::{record_metrics, STORAGE_ITER_BYTES};
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{Options, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use starcoin_config::RocksdbConfig;
 use std::collections::HashSet;
 use std::path::Path;
 
@@ -17,15 +18,19 @@ pub struct DBStorage {
 }
 
 impl DBStorage {
-    pub fn new<P: AsRef<Path> + Clone>(db_root_path: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path> + Clone>(
+        db_root_path: P,
+        rocksdb_config: RocksdbConfig,
+    ) -> Result<Self> {
         let path = db_root_path.as_ref().join("starcoindb");
-        Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false)
+        Self::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), false, rocksdb_config)
     }
 
     pub fn open_with_cfs(
         root_path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
         readonly: bool,
+        rocksdb_config: RocksdbConfig,
     ) -> Result<Self> {
         let path = root_path.as_ref();
 
@@ -64,16 +69,14 @@ impl DBStorage {
             );
         }
 
+        let mut rocksdb_opts = Self::gen_rocksdb_options(&rocksdb_config);
+
         let db = if readonly {
-            Self::open_readonly(path, column_families.clone())?
+            Self::open_readonly(&rocksdb_opts, path, column_families.clone())?
         } else {
-            let mut db_opts = rocksdb::Options::default();
-            db_opts.create_if_missing(true);
-            db_opts.create_missing_column_families(true);
-            // For now we set the max total WAL size to be 1G. This config can be useful when column
-            // families are updated at non-uniform frequencies.
-            db_opts.set_max_total_wal_size(1 << 30);
-            Self::open_inner(&db_opts, path, column_families.clone())?
+            rocksdb_opts.create_if_missing(true);
+            rocksdb_opts.create_missing_column_families(true);
+            Self::open_inner(&rocksdb_opts, path, column_families.clone())?
         };
 
         Ok(DBStorage {
@@ -83,7 +86,7 @@ impl DBStorage {
     }
 
     fn open_inner(
-        opts: &rocksdb::Options,
+        opts: &Options,
         path: impl AsRef<Path>,
         column_families: Vec<ColumnFamilyName>,
     ) -> Result<DB> {
@@ -99,8 +102,11 @@ impl DBStorage {
         Ok(inner)
     }
 
-    fn open_readonly(path: impl AsRef<Path>, column_families: Vec<ColumnFamilyName>) -> Result<DB> {
-        let db_opts = rocksdb::Options::default();
+    fn open_readonly(
+        db_opts: &Options,
+        path: impl AsRef<Path>,
+        column_families: Vec<ColumnFamilyName>,
+    ) -> Result<DB> {
         let error_if_log_file_exists = false;
         let inner = rocksdb::DB::open_cf_for_read_only(
             &db_opts,
@@ -151,6 +157,13 @@ impl DBStorage {
         let mut opts = WriteOptions::new();
         opts.set_sync(true);
         opts
+    }
+
+    fn gen_rocksdb_options(config: &RocksdbConfig) -> Options {
+        let mut db_opts = Options::default();
+        db_opts.set_max_open_files(config.max_open_files);
+        db_opts.set_max_total_wal_size(config.max_total_wal_size);
+        db_opts
     }
 }
 
