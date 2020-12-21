@@ -151,8 +151,8 @@ impl SyncService2 {
                 info!("[sync] Current is already bast.");
                 return Ok(None);
             }
-            let peer_selector = PeerSelector::new(target.peers.clone());
-            let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
+
+            let fetcher_factory = Arc::new(VerifiedRpcClientFactory::new(network));
 
             let (fut, task_handle, task_event_handle) = full_sync_task(
                 current_block_id,
@@ -161,8 +161,9 @@ impl SyncService2 {
                 config.net().time_service(),
                 storage.clone(),
                 connector_service.clone(),
-                rpc_client,
-                network,
+                target.peers.clone(),
+                self_ref.clone(),
+                fetcher_factory,
             )?;
 
             self_ref.notify(SyncBeginEvent {
@@ -248,8 +249,13 @@ impl ActorService for SyncService2 {
 
 impl EventHandler<Self, AncestorEvent> for SyncService2 {
     fn handle_event(&mut self, msg: AncestorEvent, _ctx: &mut ServiceContext<SyncService2>) {
-        if let Some(handle) = self.task_handle.as_mut() {
-            handle.task_begin = Some(msg.ancestor);
+        match &mut self.stage {
+            SyncStage::Synchronizing(handle) => {
+                handle.task_begin = Some(msg.ancestor);
+            }
+            _ => {
+                warn!("[sync] Invalid state, Receive AncestorEvent, but sync state is not Synchronizing.");
+            }
         }
     }
 }
@@ -297,6 +303,7 @@ impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
             (msg.target, msg.task_handle, msg.task_event_handle);
         let sync_task_handle = SyncTaskHandle {
             target: target.clone(),
+            task_begin: None,
             task_handle: task_handle.clone(),
             task_event_handle,
         };
