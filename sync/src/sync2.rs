@@ -5,6 +5,7 @@ use crate::block_connector::BlockConnectorService;
 use crate::tasks::full_sync_task;
 use crate::verified_rpc_client::VerifiedRpcClient;
 use anyhow::{format_err, Result};
+use chain::BlockChain;
 use config::NodeConfig;
 use futures::FutureExt;
 use logger::prelude::*;
@@ -27,7 +28,7 @@ use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent, SystemStarted};
 use std::sync::Arc;
-use stream_task::{TaskEventCounterHandle, TaskHandle};
+use stream_task::{TaskError, TaskEventCounterHandle, TaskHandle};
 
 //TODO combine task_handle and task_event_handle in stream_task
 pub struct SyncTaskHandle {
@@ -36,11 +37,19 @@ pub struct SyncTaskHandle {
     task_event_handle: Arc<TaskEventCounterHandle>,
 }
 
+pub enum SyncStage {
+    NotStart,
+    Checking,
+    Synchronizing(Box<SyncTaskHandle>),
+    Canceling,
+    Done,
+}
+
 pub struct SyncService2 {
     sync_status: SyncStatus,
+    stage: SyncStage,
     config: Arc<NodeConfig>,
     storage: Arc<Storage>,
-    task_handle: Option<SyncTaskHandle>,
 }
 
 impl SyncService2 {
@@ -61,40 +70,57 @@ impl SyncService2 {
                 head_block.header,
                 head_block_info.total_difficulty,
             )),
+            stage: SyncStage::NotStart,
             config,
             storage,
-            task_handle: None,
         })
     }
 
-    pub fn check_sync(
-        &self,
-        force: bool,
+    pub fn check_and_start_sync(
+        &mut self,
         peers: Vec<PeerId>,
         skip_pow_verify: bool,
         ctx: &mut ServiceContext<Self>,
     ) -> Result<()> {
-        if let Some(task_handle) = self.task_handle.as_ref() {
-            let task_running = !task_handle.task_handle.is_done();
-            if task_running && force {
-                info!("[sync] Cancel previous sync task.");
-                task_handle.task_handle.cancel();
-            } else if task_running && !force {
-                debug!("[sync] Sync task is running");
+        match std::mem::replace(&mut self.stage, SyncStage::Checking) {
+            SyncStage::NotStart | SyncStage::Done => {
+                //continue
+                info!(
+                    "[sync] Start checking sync,skip_pow_verify:{}, special peers: {:?}",
+                    skip_pow_verify, peers
+                );
+            }
+            SyncStage::Checking => {
+                info!("[sync] Sync stage is already in Checking");
+                return Ok(());
+            }
+            SyncStage::Synchronizing(task_handle) => {
+                info!("[sync] Sync stage is already in Synchronizing");
                 if let Some(report) = task_handle.task_event_handle.get_report() {
-                    info!("[sync]{}", report);
+                    info!("[sync] report: {}", report);
                 }
+                //restore to Synchronizing
+                self.stage = SyncStage::Synchronizing(task_handle);
+                return Ok(());
+            }
+            SyncStage::Canceling => {
+                info!("[sync] Sync task is in canceling.");
                 return Ok(());
             }
         }
+
         let network = ctx.get_shared::<NetworkServiceRef>()?;
+        let storage = self.storage.clone();
         let self_ref = ctx.self_ref();
+        let connector_service = ctx.service_ref::<BlockConnectorService>()?.clone();
+        let config = self.config.clone();
         let fut = async move {
             let peer_selector = network.peer_selector().await?;
             if peer_selector.is_empty() {
                 //TODO wait peers.
-                info!("[sync] No peers to sync.");
-                return Ok(());
+                //info!("[sync] No peers to sync.");
+                //return Ok(());
+                return Err(format_err!("[sync] No peers to sync."));
             }
             let peer_selector = if !peers.is_empty() {
                 peer_selector
@@ -105,88 +131,92 @@ impl SyncService2 {
                 peer_selector
             };
             if peer_selector.is_empty() {
-                info!("[sync] No peers to sync.");
-                return Ok(());
+                //info!("[sync] No peers to sync.");
+                return Err(format_err!("[sync] No peers to sync."));
             }
-            let rpc_client = VerifiedRpcClient::new(peer_selector, network);
+            let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
             let target = rpc_client.get_sync_target().await?;
-            self_ref.notify(StartSyncEvent {
-                target,
-                skip_pow_verify,
-            })?;
-            Ok(())
-        };
-        ctx.spawn(fut.then(|result: Result<(), anyhow::Error>| async move {
-            if let Err(e) = result {
-                error!("[sync] Find best target task error: {}", e);
+
+            let startup_info = storage
+                .get_startup_info()?
+                .ok_or_else(|| format_err!("Startup info should exist."))?;
+            let current_block_id = startup_info.main;
+            let current_block_info =
+                storage.get_block_info(current_block_id)?.ok_or_else(|| {
+                    format_err!("Can not find block info by id: {}", current_block_id)
+                })?;
+            info!("[sync] Find target({}), total_difficulty:{}, current head({})'s total_difficulty({})", target.block_header.id(), target.block_info.total_difficulty, current_block_id, current_block_info.total_difficulty);
+            if current_block_info.total_difficulty >= target.block_info.total_difficulty {
+                info!("[sync] Current is already bast.");
+                return Ok(None);
             }
-        }));
+            let peer_selector = PeerSelector::new(target.peers.clone());
+            let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
+
+            let (fut, task_handle, task_event_handle) = full_sync_task(
+                current_block_id,
+                target.block_info.clone(),
+                skip_pow_verify,
+                config.net().time_service(),
+                storage.clone(),
+                connector_service.clone(),
+                rpc_client,
+                network,
+            )?;
+
+            self_ref.notify(SyncBeginEvent {
+                target,
+                task_handle,
+                task_event_handle,
+            })?;
+            Ok(Some(fut.await?))
+            //Ok(())
+        };
+        let self_ref = ctx.self_ref();
+        ctx.spawn(fut.then(
+            |result: Result<Option<BlockChain>, anyhow::Error>| async move {
+                let cancel = match result {
+                    Ok(Some(chain)) => {
+                        info!("[sync] Sync to latest block: {:?}", chain.current_header());
+                        false
+                    }
+                    Ok(None) => {
+                        debug!("[sync] Check sync task return none, do not need sync.");
+                        false
+                    }
+                    Err(err) => {
+                        if let Some(task_err) = err.downcast_ref::<TaskError>() {
+                            info!("[sync] Sync task is cancel");
+                            task_err.is_canceled()
+                        } else {
+                            error!("[sync] Sync task error: {:?}", err);
+                            false
+                        }
+                    }
+                };
+                if let Err(e) = self_ref.notify(SyncDoneEvent { cancel }) {
+                    error!("[sync] Broadcast SyncDone event error: {:?}", e);
+                }
+            },
+        ));
         Ok(())
     }
 
-    pub fn start_sync_task(
-        &mut self,
-        target: SyncTarget,
-        skip_pow_verify: bool,
-        ctx: &mut ServiceContext<Self>,
-    ) -> Result<()> {
-        if let Some(task_handle) = self.task_handle.as_ref() {
-            let task_running = !task_handle.task_handle.is_done();
-            if task_running {
-                //TODO replace old task with new task at some condition.
-                info!(
-                    "[sync] A sync task is running，current target: {:?}, ignore new sync target: {:?}",
-                    task_handle.target, target
-                );
-                return Ok(());
+    fn task_handle(&self) -> Option<&SyncTaskHandle> {
+        match &self.stage {
+            SyncStage::Synchronizing(handle) => Some(handle),
+            _ => None,
+        }
+    }
+
+    fn cancel_task(&mut self) {
+        match std::mem::replace(&mut self.stage, SyncStage::Canceling) {
+            SyncStage::Synchronizing(handle) => handle.task_handle.cancel(),
+            stage => {
+                //restore state machine state.
+                self.stage = stage;
             }
         }
-        let startup_info = self
-            .storage
-            .get_startup_info()?
-            .ok_or_else(|| format_err!("Startup info should exist."))?;
-        let current_block_id = startup_info.main;
-
-        let network = ctx.get_shared::<NetworkServiceRef>()?;
-        let peer_selector = PeerSelector::new(target.peers.clone());
-        let rpc_client = VerifiedRpcClient::new(peer_selector, network.clone());
-        let connector_service = ctx.service_ref::<BlockConnectorService>()?;
-        let (fut, task_handle, task_event_handle) = full_sync_task(
-            current_block_id,
-            target.block_info.clone(),
-            skip_pow_verify,
-            self.config.net().time_service(),
-            self.storage.clone(),
-            connector_service.clone(),
-            rpc_client,
-            network,
-        )?;
-        let target_id_number =
-            BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);
-        self.sync_status
-            .sync_begin(target_id_number, target.block_info.total_difficulty);
-
-        self.task_handle = Some(SyncTaskHandle {
-            target,
-            task_handle,
-            task_event_handle,
-        });
-
-        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
-
-        let self_ref = ctx.self_ref();
-        ctx.spawn(fut.then(|result| async move {
-            match result {
-                Ok(chain) => info!("[sync] Sync to latest block: {:?}", chain.current_header()),
-                Err(err) => {
-                    error!("[sync] Sync task error: {:?}", err);
-                }
-            }
-            if let Err(e) = self_ref.notify(SyncDone) {
-                error!("[sync] Broadcast SyncDone event error: {:?}", e);
-            }
-        }));
-        Ok(())
     }
 }
 
@@ -227,7 +257,7 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
             }
             PeerEvent::Close(close_peer_id) => {
                 debug!("[sync] disconnect peer: {:?}", close_peer_id);
-                if let Some(task_handle) = self.task_handle.as_mut() {
+                if let Some(task_handle) = self.task_handle() {
                     if task_handle
                         .target
                         .peers
@@ -246,32 +276,68 @@ impl EventHandler<Self, PeerEvent> for SyncService2 {
 }
 
 #[derive(Debug, Clone)]
-pub struct StartSyncEvent {
+pub struct SyncBeginEvent {
     target: SyncTarget,
-    skip_pow_verify: bool,
+    task_handle: TaskHandle,
+    task_event_handle: Arc<TaskEventCounterHandle>,
 }
 
-impl EventHandler<Self, StartSyncEvent> for SyncService2 {
-    fn handle_event(&mut self, msg: StartSyncEvent, ctx: &mut ServiceContext<Self>) {
-        let target_block_header = msg.target.block_header.clone();
-        let target_total_difficulty = msg.target.block_info.total_difficulty;
-        let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
-        if target_total_difficulty <= current_total_difficulty {
-            debug!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), ignore StartSyncEvent.", target_block_header.number, target_total_difficulty, current_total_difficulty);
-            return;
-        }
-        if let Err(e) = self.start_sync_task(msg.target, msg.skip_pow_verify, ctx) {
-            error!(
-                "[sync] Start sync task error: {:?}, target: {:?}",
-                e, target_block_header
-            );
+impl EventHandler<Self, SyncBeginEvent> for SyncService2 {
+    fn handle_event(&mut self, msg: SyncBeginEvent, ctx: &mut ServiceContext<Self>) {
+        let (target, task_handle, task_event_handle) =
+            (msg.target, msg.task_handle, msg.task_event_handle);
+        let sync_task_handle = SyncTaskHandle {
+            target: target.clone(),
+            task_handle: task_handle.clone(),
+            task_event_handle,
+        };
+        match std::mem::replace(
+            &mut self.stage,
+            SyncStage::Synchronizing(Box::new(sync_task_handle)),
+        ) {
+            SyncStage::NotStart | SyncStage::Done => {
+                warn!(
+                    "[sync] Unexpect SyncBeginEvent, current stage is NotStart|Done, expect: Checking."
+                );
+                //TODO should cancel task and restore state.
+                //self.stage = SyncStage::NotStart;
+                //task_handle.cancel();
+            }
+            SyncStage::Checking => {
+                let target_total_difficulty = target.block_info.total_difficulty;
+                let current_total_difficulty = self.sync_status.chain_status().total_difficulty();
+                if target_total_difficulty <= current_total_difficulty {
+                    info!("[sync] target block({})'s total_difficulty({}) is <= current's total_difficulty({}), cancel sync task.", target.block_header.number, target_total_difficulty, current_total_difficulty);
+                    self.stage = SyncStage::Done;
+                    task_handle.cancel();
+                } else {
+                    let target_id_number =
+                        BlockIdAndNumber::new(target.block_header.id(), target.block_header.number);
+                    self.sync_status
+                        .sync_begin(target_id_number, target.block_info.total_difficulty);
+                    ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                }
+            }
+            SyncStage::Synchronizing(previous_handle) => {
+                //this should not happen.
+                warn!(
+                    "[sync] Unexpect SyncBeginEvent, current stage is Synchronizing(target: {:?})",
+                    previous_handle.target
+                );
+                //restore to previous and cancel new handle.
+                self.stage = SyncStage::Synchronizing(previous_handle);
+                task_handle.cancel();
+            }
+            SyncStage::Canceling => {
+                self.stage = SyncStage::Canceling;
+                task_handle.cancel();
+            }
         }
     }
 }
 
 #[derive(Debug, Clone, Default)]
 pub struct CheckSyncEvent {
-    force: bool,
     /// check sync with special peers
     peers: Vec<PeerId>,
 
@@ -279,9 +345,8 @@ pub struct CheckSyncEvent {
 }
 
 impl CheckSyncEvent {
-    pub fn new(force: bool, peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
+    pub fn new(peers: Vec<PeerId>, skip_pow_verify: bool) -> Self {
         Self {
-            force,
             peers,
             skip_pow_verify,
         }
@@ -290,7 +355,7 @@ impl CheckSyncEvent {
 
 impl EventHandler<Self, CheckSyncEvent> for SyncService2 {
     fn handle_event(&mut self, msg: CheckSyncEvent, ctx: &mut ServiceContext<Self>) {
-        if let Err(e) = self.check_sync(msg.force, msg.peers, msg.skip_pow_verify, ctx) {
+        if let Err(e) = self.check_and_start_sync(msg.peers, msg.skip_pow_verify, ctx) {
             error!("[sync] Check sync error: {:?}", e);
         };
     }
@@ -306,21 +371,37 @@ impl EventHandler<Self, SystemStarted> for SyncService2 {
 }
 
 #[derive(Clone, Debug)]
-pub struct SyncDone;
+pub struct SyncDoneEvent {
+    cancel: bool,
+}
 
-impl EventHandler<Self, SyncDone> for SyncService2 {
-    fn handle_event(&mut self, _msg: SyncDone, ctx: &mut ServiceContext<Self>) {
-        if !self.sync_status.is_syncing() {
-            warn!(
-                "[sync] Current SyncStatus is invalid, expect Synchronizing, but got: {:?}",
-                self.sync_status.sync_status()
-            )
+impl EventHandler<Self, SyncDoneEvent> for SyncService2 {
+    fn handle_event(&mut self, _msg: SyncDoneEvent, ctx: &mut ServiceContext<Self>) {
+        match std::mem::replace(&mut self.stage, SyncStage::Done) {
+            SyncStage::NotStart | SyncStage::Done => {
+                warn!(
+                    "[sync] Unexpect sync stage, current is NotStart|Done, but got SyncDoneEvent"
+                );
+            }
+            SyncStage::Checking => debug!("[sync] Sync task is Done in checking stage."),
+            SyncStage::Synchronizing(task_handle) => {
+                if !task_handle.task_handle.is_done() {
+                    warn!(
+                        "[sync] Current SyncStatus is invalid, receive sync done event ,but sync task not done.",
+                    )
+                }
+                self.sync_status.sync_done();
+                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+                // check sync again
+                //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
+                ctx.notify(CheckSyncEvent::default());
+            }
+            SyncStage::Canceling => {
+                //continue
+                self.sync_status.sync_done();
+                ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
+            }
         }
-        self.sync_status.sync_done();
-        ctx.broadcast(SyncStatusChangeEvent(self.sync_status.clone()));
-        // check sync again
-        //TODO do not broadcast SyncDone, if node still not synchronized after check sync.
-        ctx.notify(CheckSyncEvent::default());
     }
 }
 
@@ -352,7 +433,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
         _msg: SyncProgressRequest,
         _ctx: &mut ServiceContext<SyncService2>,
     ) -> Option<SyncProgressReport> {
-        self.task_handle.as_ref().and_then(|handle| {
+        self.task_handle().and_then(|handle| {
             handle
                 .task_event_handle
                 .get_report()
@@ -374,9 +455,7 @@ impl ServiceHandler<Self, SyncProgressRequest> for SyncService2 {
 
 impl ServiceHandler<Self, SyncCancelRequest> for SyncService2 {
     fn handle(&mut self, _msg: SyncCancelRequest, _ctx: &mut ServiceContext<SyncService2>) {
-        if let Some(handle) = self.task_handle.as_ref() {
-            handle.task_handle.cancel()
-        }
+        self.cancel_task();
     }
 }
 
@@ -386,11 +465,11 @@ impl ServiceHandler<Self, SyncStartRequest> for SyncService2 {
         msg: SyncStartRequest,
         ctx: &mut ServiceContext<SyncService2>,
     ) -> Result<()> {
-        ctx.notify(CheckSyncEvent::new(
-            msg.force,
-            msg.peers,
-            msg.skip_pow_verify,
-        ));
+        if msg.force {
+            info!("[sync] Try to cancel previous sync task, because receive force sync request.");
+            self.cancel_task();
+        }
+        ctx.notify(CheckSyncEvent::new(msg.peers, msg.skip_pow_verify));
         Ok(())
     }
 }
