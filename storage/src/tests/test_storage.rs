@@ -48,7 +48,13 @@ fn test_open_read_only() {
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_ok());
     let path = tmpdir.as_ref().join("starcoindb");
-    let db = DBStorage::open_with_cfs(path, VEC_PREFIX_NAME.to_vec(), true).unwrap();
+    let db = DBStorage::open_with_cfs(
+        path,
+        VEC_PREFIX_NAME.to_vec(),
+        true,
+        RocksdbConfig::default(),
+    )
+    .unwrap();
     let result = db.put(DEFAULT_PREFIX_NAME, key.to_vec(), value.to_vec());
     assert!(result.is_err());
     let result = db.get(DEFAULT_PREFIX_NAME, key.to_vec()).unwrap();
