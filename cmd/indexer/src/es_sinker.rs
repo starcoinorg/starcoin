@@ -1,4 +1,4 @@
-use crate::BlockData;
+use crate::{BlockData, BlockWithMetadata};
 use anyhow::Result;
 use elasticsearch::indices::{
     IndicesCreateParts, IndicesExistsParts, IndicesGetMappingParts, IndicesPutMappingParts,
@@ -11,8 +11,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
-use starcoin_rpc_api::types::BlockView;
-use starcoin_types::block_metadata::BlockMetadata;
 use tokio::sync::RwLock;
 
 #[derive(Clone, Debug)]
@@ -55,12 +53,6 @@ struct SinkState {
 pub struct LocalTipInfo {
     pub block_hash: HashValue,
     pub block_number: u64,
-}
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct BlockWithMetadata {
-    #[serde(flatten)]
-    block: BlockView,
-    metadata: Option<BlockMetadata>,
 }
 
 impl EsSinker {
@@ -239,7 +231,7 @@ impl EsSinker {
         bulk_operations.push(
             BulkOperation::index(BlockWithMetadata {
                 block: block.clone(),
-                metadata: txns_data[0].block_metadata.clone().map(Into::into),
+                metadata: txns_data[0].block_metadata.clone(),
             })
             .id(block.header.block_hash.to_string())
             .index(block_index),

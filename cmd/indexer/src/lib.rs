@@ -22,3 +22,10 @@ pub struct BlockData {
     pub block: BlockView,
     pub txns_data: Vec<TransactionData>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct BlockWithMetadata {
+    #[serde(flatten)]
+    block: BlockView,
+    metadata: Option<BlockMetadataView>,
+}
