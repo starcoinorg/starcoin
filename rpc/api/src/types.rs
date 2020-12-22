@@ -10,7 +10,10 @@ pub use node_api_types::*;
 use scs::SCSCodec;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_helpers::{deserialize_binary, deserialize_u64, serialize_binary, serialize_u64};
+use serde_helpers::{
+    deserialize_binary, deserialize_from_string, deserialize_from_string_opt, serialize_binary,
+    serialize_to_string, serialize_to_string_opt,
+};
 use starcoin_crypto::HashValue;
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
@@ -72,10 +75,16 @@ pub struct BlockHeaderView {
     /// Parent hash.
     pub parent_hash: HashValue,
     /// Block timestamp.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub timestamp: u64,
     /// Block number.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub number: BlockNumber,
     /// Block author.
     pub author: AccountAddress,
@@ -88,7 +97,10 @@ pub struct BlockHeaderView {
     /// The last transaction state_root of this block after execute.
     pub state_root: HashValue,
     /// Gas used for contracts execution.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub gas_used: u64,
     /// Block difficulty
     pub difficulty: U256,
@@ -125,7 +137,10 @@ pub struct RawUserTransactionView {
     /// Sender's address.
     pub sender: AccountAddress,
     // Sequence number of this transaction corresponding to sender's account.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub sequence_number: u64,
 
     // The transaction payload in scs bytes.
@@ -136,10 +151,16 @@ pub struct RawUserTransactionView {
     pub payload: Vec<u8>,
 
     // Maximal total gas specified by wallet to spend for this transaction.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub max_gas_amount: u64,
     // Maximal price can be paid per gas.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub gas_unit_price: u64,
     // The token code for pay transaction gas, Default is STC token code.
     pub gas_token_code: String,
@@ -150,7 +171,10 @@ pub struct RawUserTransactionView {
     // never be included.
     // A transaction that doesn't expire is represented by a very large value like
     // u64::max_value().
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub expiration_timestamp_secs: u64,
     pub chain_id: u8,
 }
@@ -200,16 +224,28 @@ impl TryFrom<SignedUserTransaction> for SignedUserTransactionView {
 pub struct BlockMetadataView {
     /// Parent block hash.
     pub parent_hash: HashValue,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub timestamp: u64,
     pub author: AccountAddress,
     pub author_auth_key: Option<AuthenticationKey>,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub uncles: u64,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub number: BlockNumber,
     pub chain_id: u8,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub parent_gas_used: u64,
 }
 
@@ -265,7 +301,10 @@ impl Into<BlockMetadata> for BlockMetadataView {
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct TransactionView {
     pub block_hash: HashValue,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub block_number: BlockNumber,
     pub transaction_hash: HashValue,
     pub transaction_index: u32,
@@ -390,7 +429,10 @@ impl From<BlockSummary> for BlockSummaryView {
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct TransactionInfoView {
     pub block_hash: HashValue,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub block_number: BlockNumber,
     /// The hash of this transaction.
     pub transaction_hash: HashValue,
@@ -403,7 +445,10 @@ pub struct TransactionInfoView {
     pub event_root_hash: HashValue,
 
     /// The amount of gas used.
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub gas_used: u64,
 
     /// The vm status. If it is not `Executed`, this will provide the general error class. Execution
@@ -442,7 +487,10 @@ pub enum TransactionVMStatus {
     OutOfGas,
     MoveAbort {
         location: AbortLocation,
-        #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+        #[serde(
+            deserialize_with = "deserialize_from_string",
+            serialize_with = "serialize_to_string"
+        )]
         abort_code: u64,
     },
     ExecutionFailure {
@@ -479,6 +527,10 @@ impl From<KeptVMStatus> for TransactionVMStatus {
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct TransactionEventView {
     pub block_hash: Option<HashValue>,
+    #[serde(
+        deserialize_with = "deserialize_from_string_opt",
+        serialize_with = "serialize_to_string_opt"
+    )]
     pub block_number: Option<BlockNumber>,
     pub transaction_hash: Option<HashValue>,
     // txn index in block
@@ -491,7 +543,10 @@ pub struct TransactionEventView {
     pub data: Vec<u8>,
     pub type_tag: TypeTag,
     pub event_key: EventKey,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub event_seq_number: u64,
 }
 
@@ -534,16 +589,31 @@ impl TransactionEventView {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UncleSummaryView {
     /// total uncle
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub uncles: u64,
     /// sum(number of the block which contain uncle block - uncle parent block number).
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub sum: u64,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub avg: u64,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub time_sum: u64,
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub time_avg: u64,
 }
 
@@ -562,7 +632,10 @@ impl From<UncleSummary> for UncleSummaryView {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EpochUncleSummaryView {
     /// epoch number
-    #[serde(deserialize_with = "deserialize_u64", serialize_with = "serialize_u64")]
+    #[serde(
+        deserialize_with = "deserialize_from_string",
+        serialize_with = "serialize_to_string"
+    )]
     pub epoch: u64,
     pub number_summary: UncleSummaryView,
     pub epoch_summary: UncleSummaryView,
