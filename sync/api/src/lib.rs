@@ -68,6 +68,7 @@ pub struct SyncProgressRequest;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncProgressReport {
     pub target_id: HashValue,
+    pub begin_number: Option<BlockNumber>,
     pub target_number: BlockNumber,
     pub target_difficulty: U256,
     pub target_peers: Vec<PeerId>,

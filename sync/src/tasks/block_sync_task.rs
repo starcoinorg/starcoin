@@ -1,9 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::tasks::{
-    BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore, NoOpEventHandle,
-};
+use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use anyhow::{format_err, Result};
 use chain::{verifier::BasicVerifier, BlockChain};
 use futures::future::BoxFuture;
@@ -166,54 +164,38 @@ impl TaskState for BlockSyncTask {
     }
 }
 
-pub struct BlockCollector<N>
+pub struct BlockCollector<N, H>
 where
     N: NetworkService + 'static,
+    H: BlockConnectedEventHandle + 'static,
 {
     //node's current block info
     current_block_info: BlockInfo,
     // the block chain init by ancestor
     chain: BlockChain,
-    event_handle: Box<dyn BlockConnectedEventHandle>,
+    event_handle: H,
     network: N,
     skip_pow_verify: bool,
 }
 
-impl<N> BlockCollector<N>
+impl<N, H> BlockCollector<N, H>
 where
     N: NetworkService + 'static,
+    H: BlockConnectedEventHandle + 'static,
 {
-    pub fn new(
-        current_block_info: BlockInfo,
-        chain: BlockChain,
-        network: N,
-        skip_pow_verify_when_sync: bool,
-    ) -> Self {
-        Self::new_with_handle(
-            current_block_info,
-            chain,
-            NoOpEventHandle,
-            network,
-            skip_pow_verify_when_sync,
-        )
-    }
-
-    pub fn new_with_handle<H>(
+    pub fn new_with_handle(
         current_block_info: BlockInfo,
         chain: BlockChain,
         event_handle: H,
         network: N,
-        skip_pow_verify_when_sync: bool,
-    ) -> Self
-    where
-        H: BlockConnectedEventHandle + 'static,
-    {
+        skip_pow_verify: bool,
+    ) -> Self {
         Self {
             current_block_info,
             chain,
-            event_handle: Box::new(event_handle),
+            event_handle,
             network,
-            skip_pow_verify: skip_pow_verify_when_sync,
+            skip_pow_verify,
         }
     }
 
@@ -256,9 +238,10 @@ where
     }
 }
 
-impl<N> TaskResultCollector<SyncBlockData> for BlockCollector<N>
+impl<N, H> TaskResultCollector<SyncBlockData> for BlockCollector<N, H>
 where
     N: NetworkService + 'static,
+    H: BlockConnectedEventHandle + 'static,
 {
     type Output = BlockChain;
 

@@ -33,6 +33,15 @@ impl BlockIdAndNumber {
     }
 }
 
+impl From<BlockHeader> for BlockIdAndNumber {
+    fn from(header: BlockHeader) -> Self {
+        Self {
+            id: header.id(),
+            number: header.number(),
+        }
+    }
+}
+
 /// block timestamp allowed future times
 pub const ALLOWED_FUTURE_BLOCKTIME: u64 = 30000; // 30 second;
 

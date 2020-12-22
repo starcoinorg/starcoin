@@ -16,6 +16,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+#[derive(Debug, Clone)]
 pub struct TaskHandle {
     inner: AbortHandle,
     is_done: Arc<AtomicBool>,

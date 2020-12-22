@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starcoin-indexer-deployment
+  labels:
+    app: starcoin-indexer
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: starcoin-indexer
+  template:
+    metadata:
+      labels:
+        app: starcoin-indexer
+    spec:
+      containers:
+      - name: starcoin-indexer
+        image: starcoin/starcoin:latest
+        imagePullPolicy: Always
+        command:
+          - bash
+          - -c
+        args:
+          - "/starcoin/starcoin_indexer --es-url http://starcoin-elasticsearch-es-http:9200 --node-url http://starcoin-0:9850 --es-user elastic --es-password $(es_password)"
+        env:
+        - name: es_password
+          valueFrom:
+            secretKeyRef:
+              name: starcoin-elasticsearch-es-elastic-user
+              key: elastic
