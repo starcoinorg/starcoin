@@ -1,16 +1,18 @@
-use crate::{BlockData, TransactionData};
+use crate::BlockData;
 use anyhow::Result;
 use elasticsearch::indices::{
     IndicesCreateParts, IndicesExistsParts, IndicesGetMappingParts, IndicesPutMappingParts,
 };
-use elasticsearch::{BulkOperation, BulkOperations, BulkParts, Elasticsearch, GetParts};
+use elasticsearch::{
+    BulkOperation, BulkOperations, BulkParts, DeleteByQueryParts, DeleteParts, Elasticsearch,
+    GetParts,
+};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 use starcoin_rpc_api::types::BlockView;
 use starcoin_types::block_metadata::BlockMetadata;
-use starcoin_types::transaction::Transaction;
 use tokio::sync::RwLock;
 
 #[derive(Clone, Debug)]
@@ -167,57 +169,56 @@ impl EsSinker {
             .json()
             .await?;
 
-        let BlockWithMetadata {
-            block: block_view,
-            metadata,
-        } = if data["found"].as_bool().unwrap() {
-            serde_json::from_value(data["_source"].clone())?
+        let parent_hash: HashValue = if data["found"].as_bool().unwrap() {
+            serde_json::from_value(data["_source"]["header"]["parent_hash"].clone())?
         } else {
             anyhow::bail!("cannot get block data with id {}", block_id);
         };
-        // start deleting
-        let mut bulk_operations = BulkOperations::new();
-        bulk_operations.push(BulkOperation::<BlockView>::delete(block_id).index(block_index))?;
 
-        // also remove metadata txn
-        let txn_info_index = self.config.txn_info_index.as_str();
-
-        // remove metadata txn if exists.
-        if let Some(metadata) = metadata {
-            bulk_operations.push(
-                BulkOperation::<TransactionData>::delete(
-                    Transaction::BlockMetadata(metadata).id().to_string(),
-                )
-                .index(txn_info_index),
-            )?;
+        // delete block
+        {
+            let resp = self
+                .es
+                .delete(DeleteParts::IndexId(block_index, block_id.as_str()))
+                .send()
+                .await?;
+            let exception = resp.exception().await?;
+            if let Some(ex) = exception {
+                anyhow::bail!("{}", serde_json::to_string(&ex)?);
+            }
         }
+        // delete related txn infos.
+        {
+            let txn_info_index = self.config.txn_info_index.as_str();
+            let search_condition = serde_json::json!({
+                "query": {
+                    "match": {
+                        "block_hash": block_id,
+                    }
+                }
+            });
+            let resp = self
+                .es
+                .delete_by_query(DeleteByQueryParts::Index(&[txn_info_index]))
+                .body(search_condition)
+                .send()
+                .await?;
 
-        for txn_hash in block_view.body.txn_hashes() {
-            bulk_operations.push(
-                BulkOperation::<TransactionData>::delete(txn_hash.to_string())
-                    .index(txn_info_index),
-            )?;
-        }
-        let resp = self
-            .es
-            .bulk(BulkParts::None)
-            .body(vec![bulk_operations])
-            .send()
-            .await?;
-
-        let exception = resp.exception().await?;
-        if let Some(ex) = exception {
-            anyhow::bail!("{}", serde_json::to_string(&ex)?);
+            let exception = resp.exception().await?;
+            if let Some(ex) = exception {
+                anyhow::bail!("{}", serde_json::to_string(&ex)?);
+            }
         }
 
         // rollback tip header
-        let rollback_to = (block_view.header.parent_hash, block_view.header.number - 1);
+        let rollback_to = (parent_hash, tip_header.block_number - 1);
         self.update_local_tip_header(rollback_to.0, rollback_to.1)
             .await?;
         info!(
             "Rollback to block: {}, height: {}",
             rollback_to.0, rollback_to.1
         );
+
         Ok(())
     }
 
