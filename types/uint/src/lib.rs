@@ -73,6 +73,7 @@ macro_rules! impl_uint_serde {
                     }
 
                     fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                        let v = v.strip_prefix("0x").unwrap_or_else(|| v);
                         let s = hex::decode(v).map_err(E::custom)?;
                         Ok($name::from_big_endian(&s))
                     }
@@ -148,14 +149,17 @@ fn to_hex(bytes: &[u8], skip_leading_zero: bool) -> String {
         let non_zero = bytes.iter().take_while(|b| **b == 0).count();
         let bytes = &bytes[non_zero..];
         if bytes.is_empty() {
-            return "00".into();
+            return "0x00".into();
         } else {
             bytes
         }
+    } else if bytes.is_empty() {
+        return "0x".into();
     } else {
         bytes
     };
-    hex::encode(bytes)
+
+    format!("0x{}", hex::encode(bytes))
 }
 
 #[cfg(test)]
@@ -182,13 +186,13 @@ mod tests {
         let human_decode: U256 = serde_json::from_str(&human_encode).unwrap();
         assert_eq!(human_decode, U256::max_value());
         assert_eq!(
-            "\"0400\"",
+            "\"0x0400\"",
             serde_json::to_string_pretty(&U256::from(1024)).unwrap()
         );
         assert_eq!(
-            "\"00\"",
+            "\"0x00\"",
             serde_json::to_string_pretty(&U256::from(0)).unwrap()
         );
-        assert_eq!(U256::from(0), serde_json::from_str("\"00\"").unwrap());
+        assert_eq!(U256::from(0), serde_json::from_str("\"0x00\"").unwrap());
     }
 }
