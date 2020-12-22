@@ -141,7 +141,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
     match notification.params {
         jsonrpc_core::Params::Map(s) => {
             let v = s.get("result").unwrap().get("block_number").unwrap();
-            assert_eq!(v.as_u64(), Some(1));
+            assert_eq!(v.as_str(), Some("1"));
         }
         p => {
             assert!(false, "subscribe return unexpected result, {:?}", &p);
