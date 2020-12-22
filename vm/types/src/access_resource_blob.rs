@@ -27,7 +27,7 @@ impl AccessResourceBlob {
         }
     }
 
-    pub fn into_bytes(&self) -> Result<Vec<u8>> {
-        scs::to_bytes(self)
+    pub fn into_bytes(self) -> Result<Vec<u8>> {
+        scs::to_bytes(&self)
     }
 }
