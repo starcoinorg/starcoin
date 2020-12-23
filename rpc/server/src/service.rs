@@ -147,7 +147,6 @@ impl RpcService {
         Self::new(config, api_registry)
     }
 
-    #[cfg(not(windows))]
     fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
         Ok(if self.config.rpc.ipc.disable {
             None
@@ -171,12 +170,6 @@ impl RpcService {
                     .start(ipc_file.to_str().expect("Path to string should success."))?,
             )
         })
-    }
-
-    //IPC raise a error on windows: The filename, directory name, or volume label syntax is incorrect.
-    #[cfg(windows)]
-    fn start_ipc(&self) -> Result<Option<jsonrpc_ipc_server::Server>> {
-        Ok(None)
     }
 
     fn start_http(&self) -> Result<Option<jsonrpc_http_server::Server>> {
