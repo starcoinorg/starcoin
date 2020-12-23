@@ -34,6 +34,12 @@ impl BlockHeaderExtra {
     }
 }
 
+impl std::fmt::Display for BlockHeaderExtra {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.0)
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
 pub struct BlockIdAndNumber {
     pub id: HashValue,

@@ -17,7 +17,9 @@ use thiserror::Error;
 pub enum ConsensusVerifyError {
     #[error("Verify Difficulty Error, expect: {expect}, got: {real}")]
     VerifyDifficultyError { expect: U256, real: U256 },
-    #[error("Verify Nonce Error, expect target: {target}, got: {real}, nonce: {}, extra:{}")]
+    #[error(
+        "Verify Nonce Error, expect target: {target}, got: {real}, nonce: {nonce}, extra: {extra}"
+    )]
     VerifyNonceError {
         target: U256,
         real: U256,
