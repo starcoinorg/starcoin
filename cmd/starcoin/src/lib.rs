@@ -91,6 +91,12 @@ pub fn add_command(
                         .subcommand(chain::uncle::UnclePathCommand)
                         .subcommand(chain::uncle::ListEpochUnclesByNumberCommand)
                         .subcommand(chain::uncle::EpochUncleSummaryByNumberCommand),
+                )
+                .subcommand(
+                    Command::with_name("stat")
+                        .subcommand(chain::StatTPSCommand)
+                        .subcommand(chain::StatEpochCommand)
+                        .subcommand(chain::StatBlockCommand),
                 ),
         )
         .command(
