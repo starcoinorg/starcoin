@@ -18,6 +18,7 @@ use starcoin_storage::{BlockStore, Storage, Store};
 use starcoin_txpool::TxPoolService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_vm_types::genesis_config::ChainNetwork;
+use starcoin_vm_types::transaction::SignedUserTransaction;
 use std::cmp::min;
 use std::{collections::HashMap, sync::Arc};
 use traits::{ChainReader, ChainWriter};
@@ -46,7 +47,7 @@ impl ServiceRequest for CreateBlockTemplateRequest {
 }
 
 pub struct CreateBlockTemplateService {
-    inner: Inner,
+    inner: Inner<TxPoolService>,
 }
 
 impl CreateBlockTemplateService {}
@@ -139,30 +140,50 @@ impl ServiceHandler<Self, GetHeadRequest> for CreateBlockTemplateService {
     }
 }
 
-pub struct Inner {
+pub trait TemplateTxProvider {
+    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction>;
+    fn remove_invalid_txn(&self, txn_hash: HashValue);
+}
+
+pub struct EmptyProvider;
+
+impl TemplateTxProvider for EmptyProvider {
+    fn get_txns(&self, _max: u64) -> Vec<SignedUserTransaction> {
+        vec![]
+    }
+
+    fn remove_invalid_txn(&self, _txn_hash: HashValue) {}
+}
+
+impl TemplateTxProvider for TxPoolService {
+    fn get_txns(&self, max: u64) -> Vec<SignedUserTransaction> {
+        self.get_pending_txns(Some(max), None)
+    }
+
+    fn remove_invalid_txn(&self, txn_hash: HashValue) {
+        self.remove_txn(txn_hash, true);
+    }
+}
+
+pub struct Inner<P> {
     storage: Arc<dyn Store>,
     chain: BlockChain,
-    txpool: TxPoolService,
+    tx_provider: P,
     parent_uncle: HashMap<HashValue, Vec<HashValue>>,
     uncles: HashMap<HashValue, BlockHeader>,
     local_block_gas_limit: Option<u64>,
     miner_account: AccountInfo,
 }
 
-impl Inner {
-    pub fn insert_uncle(&mut self, uncle: BlockHeader) {
-        self.parent_uncle
-            .entry(uncle.parent_hash())
-            .or_insert_with(Vec::new)
-            .push(uncle.id());
-        self.uncles.insert(uncle.id(), uncle);
-    }
-
+impl<P> Inner<P>
+where
+    P: TemplateTxProvider,
+{
     pub fn new(
         net: &ChainNetwork,
         storage: Arc<dyn Store>,
         block_id: HashValue,
-        txpool: TxPoolService,
+        tx_provider: P,
         local_block_gas_limit: Option<u64>,
         miner_account: AccountInfo,
     ) -> Result<Self> {
@@ -171,12 +192,20 @@ impl Inner {
         Ok(Inner {
             storage,
             chain,
-            txpool,
+            tx_provider,
             parent_uncle: HashMap::new(),
             uncles: HashMap::new(),
             local_block_gas_limit,
             miner_account,
         })
+    }
+
+    pub fn insert_uncle(&mut self, uncle: BlockHeader) {
+        self.parent_uncle
+            .entry(uncle.parent_hash())
+            .or_insert_with(Vec::new)
+            .push(uncle.id());
+        self.uncles.insert(uncle.id(), uncle);
     }
 
     pub fn update_chain(&mut self, block: ExecutedBlock) -> Result<()> {
@@ -234,16 +263,10 @@ impl Inner {
             .unwrap_or(on_chain_block_gas_limit);
 
         //TODO use a GasConstant value to replace 200.
-        info!(
-            "block_gas_limit: {}, {:?}",
-            block_gas_limit,
-            self.txpool.status()
-        );
-        //TODO use a GasConstant value to replace 200.
         // block_gas_limit / min_gas_per_txn
         let max_txns = (block_gas_limit / 200) * 2;
 
-        let txns = self.txpool.get_pending_txns(Some(max_txns), None);
+        let txns = self.tx_provider.get_txns(max_txns);
 
         let chain_state = self.chain.chain_state_reader();
         let author = *self.miner_account.address();
@@ -255,13 +278,22 @@ impl Inner {
 
         let previous_header = self.chain.current_header();
         let uncles = self.find_uncles();
-
+        let mut now_millis = self.chain.time_service().now_millis();
+        if now_millis <= previous_header.timestamp {
+            info!(
+                "Adjust new block timestamp by parent timestamp, parent.timestamp: {}, now: {}, gap: {}",
+                previous_header.timestamp, now_millis, previous_header.timestamp - now_millis,
+            );
+            now_millis = previous_header.timestamp + 1;
+        }
         info!(
-            "CreateBlockTemplate, previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}",
+            "[CreateBlockTemplate] previous_header: {:?}, block_gas_limit: {}, max_txns: {}, txn len: {}, uncles len: {}, timestamp: {}",
             previous_header,
             block_gas_limit,
             max_txns,
-            txns.len()
+            txns.len(),
+            uncles.len(),
+            now_millis,
         );
 
         let epoch = self.chain.epoch();
@@ -274,7 +306,7 @@ impl Inner {
             block_gas_limit,
             author,
             author_auth_key,
-            self.chain.time_service().now_millis(),
+            now_millis,
             uncles,
             difficulty,
             strategy,
@@ -282,7 +314,7 @@ impl Inner {
         let excluded_txns = opened_block.push_txns(txns)?;
         let template = opened_block.finalize()?;
         for invalid_txn in excluded_txns.discarded_txns {
-            let _ = self.txpool.remove_txn(invalid_txn.id(), true);
+            let _ = self.tx_provider.remove_invalid_txn(invalid_txn.id());
         }
         Ok(template)
     }
