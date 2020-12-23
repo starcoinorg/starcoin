@@ -1,0 +1,187 @@
+From 337ea9249b4d8fb5509b3260a4896c77b68e1333 Mon Sep 17 00:00:00 2001
+From: Guangyu Zhu <guangyuz@gmail.com>
+Date: Fri, 6 Nov 2020 14:42:43 +0800
+Subject: [PATCH] [stress test] improve the method to set expiration time
+ (#1598)
+
+* [stress test] improve the method to set expiration time
+
+* refactor method to fetch expiration time
+---
+ cmd/tx-factory/src/main.rs          | 35 ++++++++++++++---------------
+ cmd/tx-factory/src/txn_generator.rs | 13 +++++------
+ kube/manifest/starcoin.yaml         |  2 +-
+ 3 files changed, 24 insertions(+), 26 deletions(-)
+
+diff --git a/cmd/tx-factory/src/main.rs b/cmd/tx-factory/src/main.rs
+index 14de7b13..8d0ed55d 100644
+--- a/cmd/tx-factory/src/main.rs
++++ b/cmd/tx-factory/src/main.rs
+@@ -125,7 +125,10 @@ fn main() {
+     let account_password = opts.account_password.clone();
+ 
+     let is_stress = opts.stress;
+-    let account_num = opts.account_num;
++    let mut account_num = opts.account_num;
++    if !is_stress {
++        account_num = 0;
++    }
+     let long_term = opts.long_term;
+ 
+     let mut connected = RpcClient::connect_ipc(opts.ipc_path.clone(), &mut runtime);
+@@ -144,15 +147,11 @@ fn main() {
+     });
+ 
+     let net = client.node_info().unwrap().net;
+-    let node_info = client
+-        .node_info()
+-        .unwrap_or_else(|_| panic!("Failed to get node info"));
+     let txn_generator = MockTxnGenerator::new(
+         net.chain_id(),
+         account.clone(),
+         receiver_address,
+         public_key,
+-        node_info,
+     );
+     let tx_mocker = TxnMocker::new(
+         client,
+@@ -256,6 +255,13 @@ impl TxnMocker {
+ }
+ 
+ impl TxnMocker {
++    fn fetch_expiration_time(&mut self) -> u64 {
++        let node_info = self
++            .client
++            .node_info()
++            .expect("node_info() should not failed");
++        node_info.now_seconds + DEFAULT_EXPIRATION_TIME
++    }
+     fn recheck_sequence_number(&mut self) -> Result<()> {
+         let seq_number_in_pool = self
+             .client
+@@ -292,13 +298,10 @@ impl TxnMocker {
+     }
+ 
+     fn gen_and_submit_txn(&mut self, blocking: bool) -> Result<()> {
+-        // check txpool, in case some txn is failed, and the sequence number will be gap-ed.
+-        // let seq_number_in_pool = self.client.next_sequence_number_in_txpool(self.account_address)?;
+-        // if let Some(n) = seq_number_in_pool {
+-        // }
++        let expiration_timestamp = self.fetch_expiration_time();
+         let raw_txn = self
+             .generator
+-            .generate_mock_txn(self.next_sequence_number)?;
++            .generate_mock_txn(self.next_sequence_number, expiration_timestamp)?;
+         info!("prepare to sign txn, sender: {}", raw_txn.sender());
+ 
+         self.unlock_account()?;
+@@ -397,8 +400,7 @@ impl TxnMocker {
+ 
+     fn create_accounts(&mut self, account_num: u8) -> Result<Vec<AccountInfo>> {
+         self.unlock_account()?;
+-
+-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
++        let expiration_timestamp = self.fetch_expiration_time();
+         let mut account_list = Vec::new();
+         let mut i = 0;
+         while i < account_num {
+@@ -425,10 +427,7 @@ impl TxnMocker {
+                 info!("error: {:?}", result);
+             }
+         }
+-        info!(
+-            "{:?} accounts are created successfully.",
+-            Vec::len(&account_list)
+-        );
++        info!("{:?} accounts are created.", Vec::len(&account_list));
+         Ok(account_list)
+     }
+ 
+@@ -492,7 +491,7 @@ impl TxnMocker {
+     }
+ 
+     fn stress_test(&mut self, accounts: Vec<AccountInfo>, long_term: bool) -> Result<()> {
+-        let expiration_timestamp = self.client.node_info()?.now_seconds + DEFAULT_EXPIRATION_TIME;
++        let expiration_timestamp = self.fetch_expiration_time();
+         info!("start stress......");
+         if long_term {
+             // running in long term, we must deposit STC to accounts frequently
+@@ -524,7 +523,7 @@ impl TxnMocker {
+                             }
+                             Err(_) => {
+                                 info!(
+-                                    "Submit txn failed. error: {:?}. Try again after 500ms.",
++                                    "Submit txn failed with error: {:?}. Try again after 500ms.",
+                                     result
+                                 );
+                                 std::thread::sleep(Duration::from_millis(500));
+diff --git a/cmd/tx-factory/src/txn_generator.rs b/cmd/tx-factory/src/txn_generator.rs
+index f25730a3..88018ace 100644
+--- a/cmd/tx-factory/src/txn_generator.rs
++++ b/cmd/tx-factory/src/txn_generator.rs
+@@ -4,8 +4,6 @@
+ use anyhow::Result;
+ use starcoin_account_api::AccountInfo;
+ use starcoin_crypto::ed25519::Ed25519PublicKey;
+-use starcoin_executor::DEFAULT_EXPIRATION_TIME;
+-use starcoin_rpc_api::node::NodeInfo;
+ use starcoin_types::account_address::AccountAddress;
+ use starcoin_types::genesis_config::ChainId;
+ use starcoin_types::transaction::authenticator::AuthenticationKey;
+@@ -16,7 +14,6 @@ pub struct MockTxnGenerator {
+     receiver_address: AccountAddress,
+     receiver_public_key: Option<Ed25519PublicKey>,
+     account: AccountInfo,
+-    node_info: NodeInfo,
+ }
+ 
+ impl MockTxnGenerator {
+@@ -25,18 +22,20 @@ impl MockTxnGenerator {
+         account: AccountInfo,
+         receiver_address: AccountAddress,
+         receiver_public_key: Option<Ed25519PublicKey>,
+-        node_info: NodeInfo,
+     ) -> Self {
+         MockTxnGenerator {
+             chain_id,
+             receiver_address,
+             receiver_public_key,
+             account,
+-            node_info,
+         }
+     }
+ 
+-    pub fn generate_mock_txn(&self, sequence_number: u64) -> Result<RawUserTransaction> {
++    pub fn generate_mock_txn(
++        &self,
++        sequence_number: u64,
++        expiration_timestamp: u64,
++    ) -> Result<RawUserTransaction> {
+         let amount_to_transfer = 1000;
+ 
+         let transfer_txn = starcoin_executor::build_transfer_txn(
+@@ -49,7 +48,7 @@ impl MockTxnGenerator {
+             amount_to_transfer,
+             1,
+             10000,
+-            self.node_info.now_seconds + DEFAULT_EXPIRATION_TIME,
++            expiration_timestamp,
+             self.chain_id,
+         );
+         Ok(transfer_txn)
+diff --git a/kube/manifest/starcoin.yaml b/kube/manifest/starcoin.yaml
+index 778c46a5..494e410b 100644
+--- a/kube/manifest/starcoin.yaml
++++ b/kube/manifest/starcoin.yaml
+@@ -88,7 +88,7 @@ spec:
+           - bash
+           - -c
+         args:
+-          - /starcoin/starcoin_txfactory --ipc-path /data/proxima/starcoin.ipc --stress
++          - /starcoin/starcoin_txfactory --ipc-path /data/proxima/starcoin.ipc
+         volumeMounts:
+         - name: volume
+           mountPath: /data
+-- 
+2.17.1
+

@@ -52,7 +52,8 @@ pub trait Consensus {
 
     fn verify(&self, reader: &dyn ChainReader, header: &BlockHeader) -> Result<()> {
         let difficulty = self.calculate_next_difficulty(reader)?;
-        self.verify_header_difficulty(difficulty, header)
+        //self.verify_header_difficulty(difficulty, header)
+        Ok(())
     }
 
     /// Calculate the Pow hash for header

@@ -16,6 +16,8 @@ use starcoin_vm_types::genesis_config::{ChainNetwork, ConsensusStrategy};
 use std::ops::Deref;
 use std::sync::Arc;
 use traits::ChainWriter;
+use starcoin_config::RocksdbConfig;
+
 
 /// Benchmarking support for chain.
 pub struct ChainBencher {
@@ -32,7 +34,7 @@ impl ChainBencher {
         let storage = Arc::new(
             Storage::new(StorageInstance::new_cache_and_db_instance(
                 CacheStorage::new(),
-                DBStorage::new(temp_path.path().join("starcoindb")).unwrap(),
+                DBStorage::new(temp_path.path().join("starcoindb"),RocksdbConfig::default()).unwrap(),
             ))
                 .unwrap(),
         );
@@ -73,7 +75,6 @@ impl ChainBencher {
                 .unwrap();
             let block = ConsensusStrategy::Dummy
                 .create_block(
-                    self.chain.read().deref(),
                     block_template,
                     self.net.time_service().as_ref(),
                 )
