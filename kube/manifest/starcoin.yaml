@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: starcoin
-        image: starcoin/starcoin:v0.9.1
+        image: starcoin/starcoin:v0.9.2
         imagePullPolicy: Always
         command:
           - bash
@@ -49,12 +49,7 @@ spec:
             if [ ! -z $node_key ]; then
               node_key_flag="--node-key ${node_key}";
             fi;
-            if [ $POD_NAME = "starcoin-0" ] && [ $DISABLE_SEED = "true" ]; then
-              /starcoin/starcoin -n proxima -d /sc-data --disable-seed $node_key_flag --rpc-address 0.0.0.0;
-              sleep 5;
-            else
-              /starcoin/starcoin -n proxima -d /sc-data --seed $(SEED) $node_key_flag --rpc-address 0.0.0.0;
-            fi;
+            /starcoin/starcoin -n proxima -d /sc-data --enable-mdns $node_key_flag --rpc-address 0.0.0.0;
         ports:
           - containerPort: 9840
             hostPort: 9840
@@ -81,17 +76,6 @@ spec:
               configMapKeyRef:
                 name: starcoin-config
                 key: start_disable_seed_node
-      - name: txfactory
-        image: starcoin/starcoin:v0.9.1
-        imagePullPolicy: IfNotPresent
-        command:
-          - bash
-          - -c
-        args:
-          - /starcoin/starcoin_txfactory --ipc-path /sc-data/proxima/starcoin.ipc
-        volumeMounts:
-        - name: starcoin-volume
-          mountPath: /sc-data
   volumeClaimTemplates:
   - metadata:
       name: starcoin-volume
