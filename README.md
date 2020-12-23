@@ -9,7 +9,7 @@ A Layered Cryptocurrency and Decentralized Blockchain System.
 ## Build from source
 
 ```shell
-cargo build 
+cargo build --release 
 ```
 
 For prerequisites and detailed build instructions please read [Build from source](http://developer.starcoin.org/en/build/) document.
