@@ -6,6 +6,7 @@ use crate::on_chain_config::GlobalTimeOnChain;
 use log::{info, warn};
 use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 use std::fmt::Debug;
 use std::{
     sync::{
@@ -35,6 +36,8 @@ pub trait TimeService: Send + Sync + Debug {
     /// Sleeps the calling thread for (at least) the specified number of milliseconds. This call may
     /// sleep longer than specified, never less.
     fn sleep(&self, millis: u64);
+
+    fn as_any(&self) -> &dyn Any;
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Deserialize, Serialize)]
@@ -91,6 +94,10 @@ impl TimeService for RealTimeService {
     fn sleep(&self, millis: u64) {
         sleep(Duration::from_millis(millis));
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 /// A mock-time TimeService
@@ -132,7 +139,7 @@ impl MockTimeService {
 
 impl TimeService for MockTimeService {
     fn adjust(&self, value: GlobalTimeOnChain) {
-        if value.milliseconds > self.now_millis() {
+        if value.milliseconds >= self.now_millis() {
             // add 1 to ensure local time is greater than on chain time.
             let time = value.milliseconds + 1;
             info!("Adjust MockTimeService by on chain time: {}", time);
@@ -150,6 +157,10 @@ impl TimeService for MockTimeService {
 
     fn sleep(&self, millis: u64) {
         self.increment_by(millis);
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

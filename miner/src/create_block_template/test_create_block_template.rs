@@ -1,8 +1,10 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::create_block_template::{CreateBlockTemplateRequest, CreateBlockTemplateService, Inner};
-
+use crate::create_block_template::{
+    CreateBlockTemplateRequest, CreateBlockTemplateService, EmptyProvider, Inner,
+};
+use anyhow::Result;
 use chain::BlockChain;
 use consensus::Consensus;
 use logger::prelude::*;
@@ -14,6 +16,7 @@ use starcoin_service_registry::{RegistryAsyncService, RegistryService};
 use starcoin_storage::BlockStore;
 use starcoin_txpool::TxPoolService;
 use starcoin_vm_types::genesis_config::ChainNetworkID;
+use starcoin_vm_types::time::MockTimeService;
 use std::sync::Arc;
 use traits::{ChainReader, ChainWriter};
 
@@ -37,19 +40,12 @@ fn test_create_block_template_by_net(net: ChainNetworkID) {
         StarcoinGenesis::init_storage_for_test(node_config.net())
             .expect("init storage by genesis fail.");
     let genesis_id = genesis.block().id();
-    //TODO mock txpool after refactor txpool by service reigstry.
-    let chain_header = storage
-        .get_block_header_by_hash(startup_info.main)
-        .unwrap()
-        .unwrap();
-    //TODO mock txpool after refactor txpool by service reigstry.
-    let txpool = TxPoolService::new(node_config.clone(), storage.clone(), chain_header);
     let miner_account = AccountInfo::random();
     let inner = Inner::new(
         node_config.net(),
         storage,
         genesis_id,
-        txpool,
+        EmptyProvider,
         None,
         miner_account,
     )
@@ -413,4 +409,44 @@ async fn test_create_block_template_actor() {
         .unwrap()
         .unwrap();
     assert_eq!(response.number, 1);
+}
+
+#[stest::test]
+fn test_create_block_template_by_adjust_time() -> Result<()> {
+    let node_config = Arc::new(NodeConfig::random_for_test());
+
+    let (storage, _, genesis) = StarcoinGenesis::init_storage_for_test(node_config.net())?;
+    let mut inner = Inner::new(
+        node_config.net(),
+        storage,
+        genesis.block().id(),
+        EmptyProvider,
+        None,
+        AccountInfo::random(),
+    )?;
+    let template = inner.create_block_template()?;
+    let previous_block_time = template.timestamp;
+    let block = node_config
+        .net()
+        .genesis_config()
+        .consensus()
+        .create_block(template, node_config.net().time_service().as_ref())?;
+    inner.chain.apply(block)?;
+    // adjust time to previous than parent.
+    let time_service = node_config.net().time_service();
+    let mock_time_service = time_service
+        .as_any()
+        .downcast_ref::<MockTimeService>()
+        .unwrap();
+    mock_time_service.set(previous_block_time - 1);
+    // then create block template, create_block_template() should adjust new block's timestamp.
+    let template = inner.create_block_template()?;
+    let block = node_config
+        .net()
+        .genesis_config()
+        .consensus()
+        .create_block(template, node_config.net().time_service().as_ref())?;
+    assert!(block.header().timestamp > previous_block_time);
+    inner.chain.apply(block)?;
+    Ok(())
 }
