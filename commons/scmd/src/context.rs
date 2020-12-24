@@ -200,7 +200,7 @@ where
         let mut app = self.app;
         let matches = app
             .get_matches_from_safe_borrow(iter)
-            .map_err(|clap_err| CmdError::ClapError(clap_err))?;
+            .map_err(CmdError::ClapError)?;
         let output_format = matches
             .value_of(OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
