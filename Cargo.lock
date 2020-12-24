@@ -7876,7 +7876,7 @@ dependencies = [
  "jsonrpc-server-utils",
  "log 0.4.11",
  "network-p2p-types",
- "parity-tokio-ipc 0.2.0",
+ "parity-tokio-ipc 0.4.0",
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
