@@ -2,14 +2,22 @@
 // SPDX-License-Identifier: Apache-2
 
 use anyhow::Result;
+use futures03::{StreamExt, TryStreamExt};
 use starcoin_config::NodeConfig;
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_client::RpcClient;
 use std::sync::Arc;
 use std::time::Duration;
 
+//TODO fixme
+#[ignore]
 #[stest::test]
-fn test_multi_client() -> Result<()> {
+async fn test_in_async() -> Result<()> {
+    do_client_test()
+}
+
+fn do_client_test() -> Result<()> {
     let mut node_config = NodeConfig::random_for_test();
     node_config.miner.enable_miner_client = false;
     let config = Arc::new(node_config);
@@ -21,7 +29,6 @@ fn test_multi_client() -> Result<()> {
     let node_handle = test_helper::run_node_by_config(config)?;
 
     let rpc_service_ref = node_handle.rpc_service()?;
-    let mut rt = tokio_compat::runtime::Runtime::new()?;
 
     std::thread::sleep(Duration::from_millis(300));
 
@@ -29,12 +36,11 @@ fn test_multi_client() -> Result<()> {
     let status0 = local_client.node_info()?;
     info!("local_client status: {:?}", status0);
 
-    let ipc_client = RpcClient::connect_ipc(ipc_file, &mut rt).expect("connect ipc fail.");
+    let ipc_client = RpcClient::connect_ipc(ipc_file).expect("connect ipc fail.");
     let status1 = ipc_client.node_info()?;
     info!("ipc_client status: {:?}", status1);
 
-    let ws_client =
-        RpcClient::connect_websocket(url.as_str(), &mut rt).expect("connect websocket fail.");
+    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
     let status = ws_client.node_info()?;
     info!("ws_client node_status: {:?}", status);
     local_client.close();
@@ -43,5 +49,92 @@ fn test_multi_client() -> Result<()> {
     if let Err(e) = node_handle.stop() {
         error!("node stop error: {:?}", e)
     }
+    Ok(())
+}
+
+#[stest::test]
+fn test_multi_client() -> Result<()> {
+    do_client_test()
+}
+
+#[stest::test(timeout = 120)]
+fn test_client_reconnect() -> Result<()> {
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.miner.enable_miner_client = false;
+    let config = Arc::new(node_config);
+    let url = config.rpc.get_ws_address().unwrap();
+    debug!("url:{}", url);
+    debug!("data_dir:{:?}", config.data_dir());
+
+    let node_handle = test_helper::run_node_by_config(config.clone())?;
+    std::thread::sleep(Duration::from_millis(300));
+
+    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
+    let status = ws_client.node_info()?;
+    info!("ws_client node_status: {:?}", status);
+
+    let _e = node_handle.stop();
+
+    let node_handle = test_helper::run_node_by_config(config)?;
+    std::thread::sleep(Duration::from_millis(300));
+    //first call after lost connection will return error
+    let result = ws_client.node_info();
+    assert!(result.is_err());
+    //second call will return ok
+    let result = ws_client.node_info();
+    assert!(result.is_ok());
+
+    info!("ws_client node_status: {:?}", result.unwrap());
+
+    let _e = node_handle.stop();
+    Ok(())
+}
+
+#[stest::test(timeout = 120)]
+fn test_client_reconnect_subscribe() -> Result<()> {
+    let mut node_config = NodeConfig::random_for_test();
+    node_config.miner.enable_miner_client = true;
+    let config = Arc::new(node_config);
+    let url = config.rpc.get_ws_address().unwrap();
+    debug!("url:{}", url);
+    debug!("data_dir:{:?}", config.data_dir());
+
+    let node_handle = test_helper::run_node_by_config(config.clone())?;
+    std::thread::sleep(Duration::from_millis(300));
+
+    let ws_client = RpcClient::connect_websocket(url.as_str()).expect("connect websocket fail.");
+    let stream1 = ws_client.subscribe_new_mint_blocks()?;
+    let handle1 = async_std::task::spawn(async move {
+        stream1
+            .into_stream()
+            .collect::<Vec<Result<MintBlock>>>()
+            .await
+    });
+    node_handle.generate_block()?;
+    std::thread::sleep(Duration::from_millis(300));
+    let _e = node_handle.stop();
+
+    let node_handle = test_helper::run_node_by_config(config)?;
+    std::thread::sleep(Duration::from_millis(300));
+    //first call after lost connection will return error
+    let result = ws_client.node_info();
+    assert!(result.is_err());
+
+    let stream2 = ws_client.subscribe_new_mint_blocks()?;
+    let handle2 = async_std::task::spawn(async move {
+        stream2
+            .into_stream()
+            .collect::<Vec<Result<MintBlock>>>()
+            .await
+    });
+
+    node_handle.generate_block()?;
+    std::thread::sleep(Duration::from_millis(300));
+    let _e = node_handle.stop();
+
+    let events1 = futures03::executor::block_on(async move { handle1.await });
+    let events2 = futures03::executor::block_on(async move { handle2.await });
+    assert_eq!(1, events1.len());
+    assert_eq!(1, events2.len());
     Ok(())
 }

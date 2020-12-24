@@ -63,8 +63,6 @@ mod platform {
 
 #[cfg(not(unix))]
 mod platform {
-    use std::error::Error;
-
     pub async fn wait_signal() {
         println!("Waiting Ctrl-C ...");
         tokio::signal::ctrl_c().await.unwrap();

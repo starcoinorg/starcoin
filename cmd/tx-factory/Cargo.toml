@@ -1,6 +1,6 @@
 [package]
 name = "starcoin-tx-factory"
-version = "0.9.1"
+version = "0.9.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -25,5 +25,4 @@ starcoin-rpc-client = { path = "../../rpc/client"}
 starcoin-rpc-api = { path = "../../rpc/api"}
 starcoin-account-api = {path = "../../account/api"}
 starcoin-executor = {path = "../../executor"}
-tokio-compat = "0.1.5"
 

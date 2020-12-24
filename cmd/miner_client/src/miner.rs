@@ -40,7 +40,7 @@ impl<C: JobClient> MinerClient<C> {
     }
     fn submit_seal(&self, minting_blob: Vec<u8>, nonce: u32) {
         if let Err(err) = self.job_client.submit_seal(minting_blob, nonce) {
-            error!("Submit seal to failed: {:?}", err);
+            error!("Submit seal to failed: {}", err);
             return;
         }
         {

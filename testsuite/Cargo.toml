@@ -1,6 +1,6 @@
 [package]
 name = "testsuite"
-version = "0.9.1"
+version = "0.9.3"
 authors = ["Starcoin Core Dev <dev@starcoin.org>"]
 license = "Apache-2.0"
 publish = false
@@ -50,7 +50,6 @@ jsonpath = "0.1.1"
 
 
 [dev-dependencies]
-tokio-compat = "0.1.5"
 
 
 [[test]]

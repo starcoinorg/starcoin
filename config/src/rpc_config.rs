@@ -68,6 +68,7 @@ impl Default for HttpConfiguration {
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct TcpConfiguration {
     #[structopt(name = "disable-tcp-rpc", long, help = "disable tcp jsonrpc endpoint")]
@@ -129,6 +130,7 @@ impl Default for WsConfiguration {
         }
     }
 }
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, StructOpt)]
 pub struct IpcConfiguration {
     #[structopt(name = "disable-ipc-rpc", long, help = "disable ipc jsonrpc endpoint")]
@@ -167,11 +169,11 @@ pub struct ApiQuotaConfiguration {
     // number_of_values = 1 forces the user to repeat the -D option for each key-value pair:
     // my_program -D a=1 -D b=2
     #[structopt(
-        name = "custom-global-jsonrpc-quota",
-        long,
-        help = "customize api quota, eg: node.info=100/s",
-        number_of_values = 1,
-        parse(try_from_str = parse_key_val)
+    name = "custom-global-jsonrpc-quota",
+    long,
+    help = "customize api quota, eg: node.info=100/s",
+    number_of_values = 1,
+    parse(try_from_str = parse_key_val)
     )]
     pub custom_global_api_quota: Vec<(String, ApiQuotaConfig)>,
 
@@ -184,11 +186,11 @@ pub struct ApiQuotaConfiguration {
     pub default_user_api_quota: ApiQuotaConfig,
 
     #[structopt(
-        name = "custom-user-jsonrpc-quota",
-        long,
-        help = "customize api quota of user, eg: node.info=100/s",
-        number_of_values = 1,
-        parse(try_from_str = parse_key_val)
+    name = "custom-user-jsonrpc-quota",
+    long,
+    help = "customize api quota of user, eg: node.info=100/s",
+    number_of_values = 1,
+    parse(try_from_str = parse_key_val)
     )]
     pub custom_user_api_quota: Vec<(String, ApiQuotaConfig)>,
 }
@@ -233,7 +235,6 @@ impl RpcConfig {
             .as_ref()
             .expect("config should init first.")
     }
-
     pub fn get_http_address(&self) -> Option<String> {
         if self.http.disable {
             return None;
@@ -253,8 +254,14 @@ impl RpcConfig {
         }
         Some(format!("ws://{}:{}", self.rpc_address, self.ws.port))
     }
+    #[cfg(not(windows))]
     pub fn get_ipc_file_by_base(base: &BaseConfig) -> PathBuf {
         base.data_dir().join(DEFAULT_IPC_FILE)
+    }
+
+    #[cfg(windows)]
+    pub fn get_ipc_file_by_base(_base: &BaseConfig) -> PathBuf {
+        PathBuf::from(r"\\.\pipe").join(DEFAULT_IPC_FILE)
     }
 }
 

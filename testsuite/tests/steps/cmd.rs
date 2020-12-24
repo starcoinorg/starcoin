@@ -36,7 +36,6 @@ pub fn steps() -> Steps<MyWorld> {
                 client.clone(),
                 Some(Duration::from_secs(5)),
                 None,
-                None,
             );
             let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
             // get last cmd result as current parameter
