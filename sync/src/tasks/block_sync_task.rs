@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::sync_metrics::SYNC_METRICS;
 use crate::tasks::{BlockConnectedEvent, BlockConnectedEventHandle, BlockFetcher, BlockLocalStore};
 use anyhow::{format_err, Result};
 use chain::{verifier::BasicVerifier, BlockChain};
@@ -205,6 +206,10 @@ where
     }
 
     fn apply_block(&mut self, block: Block, peer_id: Option<PeerId>) -> Result<()> {
+        let _timer = SYNC_METRICS
+            .sync_apply_block_time
+            .with_label_values(&["time"])
+            .start_timer();
         if let Err(err) = if self.skip_pow_verify {
             self.chain
                 .apply_with_verifier::<BasicVerifier>(block.clone())

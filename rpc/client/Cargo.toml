@@ -51,15 +51,3 @@ starcoin-config = { path = "../../config"}
 starcoin-traits = { path = "../../core/traits"}
 stest = { path = "../../commons/stest"}
 test-helper = { path = "../../test-helper"}
-
-[[bin]]
-name = "tps"
-path = "src/stat/tps.rs"
-
-[[bin]]
-name = "gas"
-path = "src/stat/gas.rs"
-
-[[bin]]
-name = "epoch"
-path = "src/stat/epoch.rs"

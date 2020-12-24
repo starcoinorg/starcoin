@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::sync_metrics::SYNC_METRICS;
 use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
 use network_api::PeerSelector;
@@ -377,6 +378,10 @@ impl VerifiedRpcClient {
         reverse: bool,
         max_size: u64,
     ) -> Result<Vec<HashValue>> {
+        let _timer = SYNC_METRICS
+            .sync_get_block_ids_time
+            .with_label_values(&["time"])
+            .start_timer();
         let peer_id = match peer_id {
             None => self.random_peer()?,
             Some(p) => p,
@@ -393,6 +398,10 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
+        let _timer = SYNC_METRICS
+            .sync_get_block_time
+            .with_label_values(&["time"])
+            .start_timer();
         let peer_id = self.random_peer()?;
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
