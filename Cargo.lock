@@ -7127,7 +7127,6 @@ dependencies = [
  "structopt 0.3.21",
  "test-helper",
  "tokio 0.2.23",
- "tokio-compat",
 ]
 
 [[package]]
@@ -7331,7 +7330,6 @@ dependencies = [
  "structopt 0.3.21",
  "tiny_http",
  "tokio 0.2.23",
- "tokio-compat",
  "tokio-executor 0.2.0-alpha.6",
 ]
 
@@ -7524,6 +7522,7 @@ dependencies = [
  "actix",
  "actix-rt",
  "anyhow",
+ "async-std",
  "byteorder",
  "dyn-clone",
  "futures 0.3.8",
@@ -7553,7 +7552,6 @@ dependencies = [
  "structopt 0.3.21",
  "thiserror",
  "tokio 0.2.23",
- "tokio-compat",
 ]
 
 [[package]]
@@ -7876,7 +7874,9 @@ dependencies = [
  "jsonrpc-derive",
  "jsonrpc-pubsub",
  "jsonrpc-server-utils",
+ "log 0.4.11",
  "network-p2p-types",
+ "parity-tokio-ipc 0.2.0",
  "parking_lot 0.11.1",
  "serde",
  "serde_json",
@@ -8245,7 +8245,6 @@ dependencies = [
  "starcoin-types",
  "structopt 0.3.21",
  "tokio 0.2.23",
- "tokio-compat",
 ]
 
 [[package]]
@@ -8852,7 +8851,6 @@ dependencies = [
  "starcoin-vm-types",
  "static_assertions",
  "structopt 0.3.21",
- "tokio-compat",
 ]
 
 [[package]]

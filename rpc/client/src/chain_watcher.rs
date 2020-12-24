@@ -14,6 +14,8 @@ use starcoin_rpc_api::types::{BlockHeaderView, BlockView};
 use starcoin_types::block::BlockNumber;
 use starcoin_types::system_events::{ActorStop, SystemStop};
 use std::collections::HashMap;
+use std::time::Duration;
+
 /// Block with only txn hashes.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -33,26 +35,21 @@ impl From<BlockView> for ThinHeadBlock {
 
 #[derive(Debug)]
 pub struct ChainWatcher {
-    inner: PubSubClient,
     watched_blocks: HashMap<BlockNumber, Vec<Responder>>,
     watched_txns: HashMap<HashValue, Responder>,
 }
 impl ChainWatcher {
-    pub fn launch(pubsub_client: PubSubClient) -> Addr<Self> {
+    pub fn launch() -> Addr<Self> {
         let actor = Self {
-            inner: pubsub_client,
             watched_txns: Default::default(),
             watched_blocks: Default::default(),
         };
         actor.start()
     }
-}
 
-impl Actor for ChainWatcher {
-    type Context = Context<Self>;
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let client = self.inner.clone();
-        async move { client.subscribe_new_block().await }
+    fn start_subscribe(&mut self, client: PubSubClient, ctx: &mut Context<Self>) {
+        let inner_client = client.clone();
+        async move { inner_client.subscribe_new_block().await }
             .into_actor(self)
             .then(|res, act, ctx| {
                 match res {
@@ -61,18 +58,40 @@ impl Actor for ChainWatcher {
                     }
                     Err(e) => {
                         // TODO: figure out why this error cannot printed.
-                        error!(target: "chain_watcher", "fail to subscribe new block event, err: {}", &e);
-                        ctx.terminate();
+                        error!("fail to subscribe new block event, err: {}", &e);
+                        ctx.notify_later(StartSubscribe { client }, Duration::from_secs(1));
                     }
                 }
                 async {}.into_actor(act)
             })
-            .wait(ctx);
+            .spawn(ctx);
+    }
+}
+
+impl Actor for ChainWatcher {
+    type Context = Context<Self>;
+    fn started(&mut self, _ctx: &mut Self::Context) {
         info!("ChainWater actor started");
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         info!("ChainWater actor stopped");
+    }
+}
+
+pub(crate) struct StartSubscribe {
+    pub(crate) client: PubSubClient,
+}
+
+impl Message for StartSubscribe {
+    type Result = ();
+}
+
+impl Handler<StartSubscribe> for ChainWatcher {
+    type Result = ();
+
+    fn handle(&mut self, msg: StartSubscribe, ctx: &mut Self::Context) {
+        self.start_subscribe(msg.client, ctx)
     }
 }
 
@@ -138,7 +157,6 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
                 }
             }
             Err(e) => {
-                // if any error happen in subscription, return error to client
                 for (_, responders) in self.watched_blocks.drain() {
                     for r in responders {
                         let e = anyhow::format_err!("{}", &e);
@@ -152,13 +170,13 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
             }
         }
     }
-    // fn finished(&mut self, ctx: &mut Self::Context) {}
 }
 
 impl Handler<ActorStop> for ChainWatcher {
     type Result = ();
 
     fn handle(&mut self, _msg: ActorStop, ctx: &mut Context<Self>) -> Self::Result {
+        info!("Receive event to stop ChainWatcher.");
         ctx.stop()
     }
 }
@@ -167,6 +185,7 @@ impl Handler<SystemStop> for ChainWatcher {
     type Result = ();
 
     fn handle(&mut self, _msg: SystemStop, _ctx: &mut Context<Self>) -> Self::Result {
+        info!("Receive event to stop ChainWatcher.");
         System::current().stop();
     }
 }

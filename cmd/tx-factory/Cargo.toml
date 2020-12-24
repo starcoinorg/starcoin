@@ -25,5 +25,4 @@ starcoin-rpc-client = { path = "../../rpc/client"}
 starcoin-rpc-api = { path = "../../rpc/api"}
 starcoin-account-api = {path = "../../account/api"}
 starcoin-executor = {path = "../../executor"}
-tokio-compat = "0.1.5"
 

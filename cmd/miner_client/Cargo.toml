@@ -8,6 +8,7 @@ edition = "2018"
 anyhow = "1.0.36"
 actix = "0.10.0"
 actix-rt = "1.1"
+async-std = "1.8"
 futures = { version = "0.3" }
 starcoin-config = { path = "../../config" }
 starcoin-types = { path = "../../types" }
@@ -32,7 +33,6 @@ structopt = "0.3.21"
 indicatif = "0.15"
 starcoin-rpc-client = { path = "../../rpc/client" }
 starcoin-rpc-api = { path = "../../rpc/api" }
-tokio-compat = "0.1.5"
 starcoin-service-registry = { path = "../../commons/service-registry" }
 libloading = "0.6.5"
 dyn-clone = "1.0.3"
