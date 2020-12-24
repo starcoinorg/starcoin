@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::Result;
+use scmd::error::CmdError;
 use scmd::CmdContext;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
@@ -136,10 +137,21 @@ fn main() {
                         std::process::exit(1);
                     }
                 },
-                Err(e) => {
-                    error!("Node exits abnormally: {:?}", e);
-                    std::process::exit(1);
-                }
+                Err(e) => match e.downcast::<CmdError>() {
+                    Ok(e) => match e {
+                        CmdError::ClapError(e) => {
+                            println!("{}", e);
+                        }
+                        CmdError::Other(e) => {
+                            error!("Starcoin cmd return error: {:?}", e);
+                            std::process::exit(1);
+                        }
+                    },
+                    Err(e) => {
+                        error!("Starcoin cmd exits abnormally: {:?}", e);
+                        std::process::exit(1);
+                    }
+                },
             }
         }
     }

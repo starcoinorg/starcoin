@@ -198,7 +198,9 @@ where
         T: Into<OsString> + Clone,
     {
         let mut app = self.app;
-        let matches = app.get_matches_from_safe_borrow(iter)?;
+        let matches = app
+            .get_matches_from_safe_borrow(iter)
+            .map_err(|clap_err| CmdError::ClapError(clap_err))?;
         let output_format = matches
             .value_of(OUTPUT_FORMAT_ARG)
             .expect("output-format arg must exist")
@@ -226,11 +228,7 @@ where
                     );
                     Ok(Value::Null)
                 } else {
-                    return Err(CmdError::InvalidCommand {
-                        cmd: "console".to_string(),
-                        help: Self::app_help_message(&mut app),
-                    }
-                    .into());
+                    unreachable!("this should not happen, console cmd is check by clap.")
                 }
             }
             "" => {
@@ -244,10 +242,7 @@ where
                         cmd.exec(Arc::new(state), Arc::new(global_opt), arg_matches)
                         //print_action_result(value, output_format)?;
                     }
-                    _ => Err(CmdError::NeedHelp {
-                        help: Self::app_help_message(&mut app),
-                    }
-                    .into()),
+                    _ => Err(CmdError::need_help(Self::app_help_message(&mut app)).into()),
                 }
             }
         };
