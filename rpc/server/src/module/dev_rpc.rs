@@ -65,8 +65,8 @@ where
                 module_address,
                 module_name,
                 func,
-                type_args,
-                args,
+                type_args.into_iter().map(Into::into).collect(),
+                args.into_iter().map(Into::into).collect(),
             )?;
             Ok(output)
         }
