@@ -17,6 +17,7 @@ pub enum Api {
     State,
     SyncManager,
     TxPool,
+    Contract,
 }
 impl Serialize for Api {
     fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
@@ -51,6 +52,7 @@ impl std::fmt::Display for Api {
             Self::State => "state",
             Self::SyncManager => "sync_manager",
             Self::TxPool => "txpool",
+            Self::Contract => "contract",
         };
         write!(f, "{}", display)
     }
@@ -75,6 +77,7 @@ impl FromStr for Api {
             "state" => Ok(State),
             "sync_manager" => Ok(SyncManager),
             "txpool" => Ok(TxPool),
+            "contract" => Ok(Contract),
             api => Err(format!("Unknown api: {}", api)),
         }
     }
@@ -188,6 +191,7 @@ impl ApiSet {
             Api::Node,
             Api::State,
             Api::TxPool,
+            Api::Contract,
         ]
         .iter()
         .cloned()

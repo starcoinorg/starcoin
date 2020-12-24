@@ -7,6 +7,7 @@ use scmd::{CmdContext, Command};
 pub mod account;
 pub mod chain;
 pub mod cli_state;
+pub mod contract;
 pub mod debug;
 pub mod dev;
 pub mod helper;
@@ -15,6 +16,7 @@ pub mod node;
 pub mod state;
 mod txpool;
 pub mod view;
+
 pub use cli_state::CliState;
 pub use starcoin_config::StarcoinOpt;
 pub use starcoin_node::crash_handler;
@@ -120,6 +122,7 @@ pub fn add_command(
                         .subcommand(dev::SubscribeNewTxnCommand),
                 ),
         )
+        .command(Command::with_name("contract").subcommand(contract::GetContractDataCommand))
         .command(
             Command::with_name("debug")
                 .subcommand(

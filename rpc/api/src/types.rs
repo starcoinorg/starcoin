@@ -5,7 +5,7 @@ mod node_api_types;
 pub mod pubsub;
 
 pub use node_api_types::*;
-pub use starcoin_resource_viewer::AnnotatedMoveValue;
+pub use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
 
 use jsonrpc_core_client::RpcChannel;
 use scs::SCSCodec;
@@ -33,7 +33,8 @@ use starcoin_types::transaction::{RawUserTransaction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
 use starcoin_vm_types::block_metadata::BlockMetadata;
-use starcoin_vm_types::language_storage::StructTag;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -693,17 +694,69 @@ impl From<PeerInfo> for PeerInfoView {
     }
 }
 
-#[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-pub struct TypeTagView(TypeTag);
-impl From<TypeTag> for TypeTagView {
-    fn from(t: TypeTag) -> Self {
+#[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
+pub struct StrView<T>(pub T);
+
+impl<T> From<T> for StrView<T> {
+    fn from(t: T) -> Self {
         Self(t)
     }
 }
 
-impl Into<TypeTag> for TypeTagView {
-    fn into(self) -> TypeTag {
-        self.0
+impl<T> Serialize for StrView<T>
+where
+    Self: ToString,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de, T> Deserialize<'de> for StrView<T>
+where
+    Self: FromStr,
+    <Self as FromStr>::Err: std::fmt::Display,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+
+        StrView::<T>::from_str(&s).map_err(D::Error::custom)
+    }
+}
+
+pub type ModuleIdView = StrView<ModuleId>;
+pub type TypeTagView = StrView<TypeTag>;
+pub type StructTagView = StrView<StructTag>;
+pub type TransactionArgumentView = StrView<TransactionArgument>;
+
+impl std::fmt::Display for StrView<ModuleId> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for StrView<ModuleId> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<_> = s.split("::").collect();
+        if parts.len() != 2 {
+            anyhow::bail!("invalid module id");
+        }
+        let module_addr = parts[0].parse::<AccountAddress>()?;
+        let module_name = Identifier::new(parts[1])?;
+        Ok(Self(ModuleId::new(module_addr, module_name)))
+    }
+}
+impl std::fmt::Display for StrView<TypeTag> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
     }
 }
 
@@ -715,48 +768,9 @@ impl FromStr for TypeTagView {
         Ok(Self(type_tag))
     }
 }
-
-impl std::fmt::Display for TypeTagView {
+impl std::fmt::Display for StrView<StructTag> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
-    }
-}
-impl Serialize for TypeTagView {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&self.to_string())
-        } else {
-            self.0.serialize(serializer)
-        }
-    }
-}
-impl<'de> Deserialize<'de> for TypeTagView {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            TypeTagView::from_str(&s).map_err(D::Error::custom)
-        } else {
-            Ok(Self(TypeTag::deserialize(deserializer)?))
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-pub struct StructTagView(StructTag);
-impl From<StructTag> for StructTagView {
-    fn from(t: StructTag) -> Self {
-        Self(t)
-    }
-}
-impl Into<StructTag> for StructTagView {
-    fn into(self) -> StructTag {
-        self.0
     }
 }
 
@@ -771,49 +785,9 @@ impl FromStr for StructTagView {
         }
     }
 }
-
-impl std::fmt::Display for StructTagView {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl std::fmt::Display for StrView<TransactionArgument> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.0)
-    }
-}
-
-impl Serialize for StructTagView {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&self.to_string())
-        } else {
-            self.0.serialize(serializer)
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for StructTagView {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            StructTagView::from_str(&s).map_err(D::Error::custom)
-        } else {
-            Ok(Self(StructTag::deserialize(deserializer)?))
-        }
-    }
-}
-#[derive(Clone, Hash, Eq, PartialEq, Debug)]
-pub struct TransactionArgumentView(TransactionArgument);
-impl From<TransactionArgument> for TransactionArgumentView {
-    fn from(t: TransactionArgument) -> Self {
-        Self(t)
-    }
-}
-impl Into<TransactionArgument> for TransactionArgumentView {
-    fn into(self) -> TransactionArgument {
-        self.0
     }
 }
 
@@ -826,38 +800,21 @@ impl FromStr for TransactionArgumentView {
     }
 }
 
-impl std::fmt::Display for TransactionArgumentView {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", &self.0)
+impl std::fmt::Display for StrView<Vec<u8>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.0))
     }
 }
 
-impl Serialize for TransactionArgumentView {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&self.0.to_string())
-        } else {
-            self.0.serialize(serializer)
-        }
+impl FromStr for StrView<Vec<u8>> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(hex::decode(
+            s.strip_prefix("0x").unwrap_or_else(|| s),
+        )?))
     }
 }
 
-impl<'de> Deserialize<'de> for TransactionArgumentView {
-    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        if deserializer.is_human_readable() {
-            let s = <String>::deserialize(deserializer)?;
-            TransactionArgumentView::from_str(&s).map_err(D::Error::custom)
-        } else {
-            Ok(Self(TransactionArgument::deserialize(deserializer)?))
-        }
-    }
-}
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ContractCall {
     pub module_address: AccountAddress,
