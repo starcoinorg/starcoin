@@ -8,7 +8,7 @@ use scmd::{CommandAction, ExecContext};
 use serde::Serialize;
 use structopt::StructOpt;
 
-/// Get tps for an epoch.
+/// Get stat of gas for blocks.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "block")]
 pub struct BlockOpt {

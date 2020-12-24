@@ -31,8 +31,8 @@ impl Default for RocksdbConfig {
     #[cfg(windows)]
     fn default() -> Self {
         Self {
-            // Set max_open_files to 10k instead of -1 to avoid keep-growing memory in accordance
-            // with the number of files.
+            // For the windows system et max_open_files to 256 instead of -1 to avoid keep-growing
+            // memory in accordance with the number of files.
             max_open_files: 256,
             // For now we set the max total WAL size to be 1G. This config can be useful when column
             // families are updated at non-uniform frequencies.

@@ -11,7 +11,7 @@ use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_config::ConsensusConfig;
 use structopt::StructOpt;
 
-/// Get tps for an epoch.
+/// Get stat of tps for an epoch.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tps")]
 pub struct TPSOpt {}

@@ -11,7 +11,7 @@ use starcoin_vm_types::on_chain_config::ConsensusConfig;
 use starcoin_vm_types::on_chain_resource::EpochInfo;
 use structopt::StructOpt;
 
-/// Get epoch_info from chain.
+/// Get stat of epoch_info from chain.
 #[derive(Debug, StructOpt)]
 #[structopt(name = "epoch")]
 pub struct StatEpochOpt {}
