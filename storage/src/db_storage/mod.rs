@@ -161,6 +161,8 @@ impl DBStorage {
 
     fn gen_rocksdb_options(config: &RocksdbConfig) -> Options {
         let mut db_opts = Options::default();
+        db_opts.set_db_write_buffer_size(128 * 1024 * 1024);
+        db_opts.set_max_write_buffer_number(5);
         db_opts.set_max_open_files(config.max_open_files);
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts
