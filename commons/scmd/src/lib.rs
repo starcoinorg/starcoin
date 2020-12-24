@@ -4,7 +4,7 @@
 mod action;
 mod command;
 mod context;
-mod error;
+pub mod error;
 mod result;
 
 pub use action::*;
