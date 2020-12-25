@@ -3,13 +3,13 @@
 
 use anyhow::Result;
 use starcoin_crypto::HashValue;
-use starcoin_resource_viewer::{AnnotatedMoveValue, MoveValueAnnotator};
+use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue, MoveValueAnnotator};
 use starcoin_state_api::StateNodeStore;
 use starcoin_statedb::ChainStateDB;
 use starcoin_vm_runtime::starcoin_vm::{convert_txn_args, StarcoinVM};
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
-use starcoin_vm_types::language_storage::{ModuleId, TypeTag};
+use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::state_view::StateView;
 use starcoin_vm_types::transaction::{Transaction, TransactionOutput};
 use starcoin_vm_types::transaction_argument::TransactionArgument;
@@ -51,6 +51,25 @@ impl PlaygroudService {
         let rets = call_contract(&state_view, module_id, func.as_str(), type_args, args)?;
         Ok(rets)
     }
+    pub fn view_resource(
+        &self,
+        state_root: HashValue,
+        struct_tag: &StructTag,
+        data: &[u8],
+    ) -> Result<AnnotatedMoveStruct> {
+        let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
+        view_resource(&state_view, struct_tag.clone(), data)
+    }
+}
+
+pub fn view_resource(
+    state_view: &dyn StateView,
+    struct_tag: StructTag,
+    data: &[u8],
+) -> Result<AnnotatedMoveStruct> {
+    let annotator = MoveValueAnnotator::new(state_view);
+    let value = annotator.view_struct(struct_tag, data)?;
+    Ok(value)
 }
 
 pub fn dry_run(

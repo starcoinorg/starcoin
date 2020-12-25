@@ -1,15 +1,17 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-mod contract_call;
 mod node_api_types;
 pub mod pubsub;
-pub use contract_call::*;
-use jsonrpc_core_client::RpcChannel;
+
 pub use node_api_types::*;
+pub use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
+
+use jsonrpc_core_client::RpcChannel;
 use scs::SCSCodec;
-use serde::Deserialize;
-use serde::Serialize;
+use serde::de::Error;
+use serde::{Deserialize, Serializer};
+use serde::{Deserializer, Serialize};
 use serde_helpers::{
     deserialize_binary, deserialize_from_string, deserialize_from_string_opt, serialize_binary,
     serialize_to_string, serialize_to_string_opt,
@@ -27,13 +29,17 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionAuthenticator};
-use starcoin_types::transaction::RawUserTransaction;
+use starcoin_types::transaction::{RawUserTransaction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
 use starcoin_vm_types::block_metadata::BlockMetadata;
+use starcoin_vm_types::identifier::Identifier;
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
+use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct TransactionRequest {
@@ -688,9 +694,179 @@ impl From<PeerInfo> for PeerInfoView {
     }
 }
 
+#[derive(Debug, PartialEq, Hash, Eq, Clone, Copy, PartialOrd, Ord)]
+pub struct StrView<T>(pub T);
+
+impl<T> From<T> for StrView<T> {
+    fn from(t: T) -> Self {
+        Self(t)
+    }
+}
+
+impl<T> Serialize for StrView<T>
+where
+    Self: ToString,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de, T> Deserialize<'de> for StrView<T>
+where
+    Self: FromStr,
+    <Self as FromStr>::Err: std::fmt::Display,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <String>::deserialize(deserializer)?;
+
+        StrView::<T>::from_str(&s).map_err(D::Error::custom)
+    }
+}
+
+pub type ModuleIdView = StrView<ModuleId>;
+pub type TypeTagView = StrView<TypeTag>;
+pub type StructTagView = StrView<StructTag>;
+pub type TransactionArgumentView = StrView<TransactionArgument>;
+
+impl std::fmt::Display for StrView<ModuleId> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for StrView<ModuleId> {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<_> = s.split("::").collect();
+        if parts.len() != 2 {
+            anyhow::bail!("invalid module id");
+        }
+        let module_addr = parts[0].parse::<AccountAddress>()?;
+        let module_name = Identifier::new(parts[1])?;
+        Ok(Self(ModuleId::new(module_addr, module_name)))
+    }
+}
+impl std::fmt::Display for StrView<TypeTag> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for TypeTagView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let type_tag = parse_type_tag(s)?;
+        Ok(Self(type_tag))
+    }
+}
+impl std::fmt::Display for StrView<StructTag> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for StructTagView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let type_tag = parse_type_tag(s)?;
+        match type_tag {
+            TypeTag::Struct(s) => Ok(Self(s)),
+            t => anyhow::bail!("expect struct tag, actual: {}", t),
+        }
+    }
+}
+impl std::fmt::Display for StrView<TransactionArgument> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl FromStr for TransactionArgumentView {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let arg = parse_transaction_argument(s)?;
+        Ok(Self(arg))
+    }
+}
+
+impl std::fmt::Display for StrView<Vec<u8>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.0))
+    }
+}
+
+impl FromStr for StrView<Vec<u8>> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(hex::decode(
+            s.strip_prefix("0x").unwrap_or_else(|| s),
+        )?))
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct ContractCall {
+    pub module_address: AccountAddress,
+    pub module_name: String,
+    pub func: String,
+    pub type_args: Vec<TypeTagView>,
+    pub args: Vec<TransactionArgumentView>,
+}
+
 #[derive(Debug, Clone)]
 pub struct ConnectLocal;
 
 impl ServiceRequest for ConnectLocal {
     type Response = RpcChannel;
+}
+
+#[cfg(test)]
+mod test {
+    use crate::types::{ContractCall, TransactionArgumentView, TypeTagView};
+    use starcoin_vm_types::token::stc::stc_type_tag;
+    use starcoin_vm_types::transaction_argument::TransactionArgument;
+
+    #[test]
+    fn test_view_of_type_tag() {
+        let ty_tag = stc_type_tag();
+        let s = serde_json::to_string(&TypeTagView::from(ty_tag.clone())).unwrap();
+        println!("{}", &s);
+        let ty_tag_view: TypeTagView = serde_json::from_str(s.as_str()).unwrap();
+        assert_eq!(ty_tag_view.0, ty_tag);
+    }
+
+    #[test]
+    fn test_view_of_transaction_arg() {
+        let arg = TransactionArgument::U8(1);
+        let s = serde_json::to_string(&TransactionArgumentView::from(arg.clone())).unwrap();
+        println!("{}", &s);
+        let view: TransactionArgumentView = serde_json::from_str(s.as_str()).unwrap();
+        assert_eq!(view.0, arg);
+    }
+
+    #[test]
+    fn test_deserialize() {
+        let s = r#"
+{
+  "module_address": "0x0CC02653F9D7A62D07754D859B066BDE",
+  "module_name": "T",
+  "func": "A",
+  "type_args": [ "0x42C4DDA17CC39AF459C20D09F6A82EDF::T::T"],
+  "args": ["0xD6F8FAF8FA976104B8BA8C6F85DCF9E4"]
+}        
+        "#;
+        let v = serde_json::from_str::<ContractCall>(s).unwrap();
+        println!("{:?}", v);
+    }
 }

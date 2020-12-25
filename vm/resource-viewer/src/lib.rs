@@ -35,18 +35,18 @@ mod resolver;
 #[derive(Debug)]
 pub struct AnnotatedAccountStateBlob(BTreeMap<StructTag, AnnotatedMoveStruct>);
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AnnotatedMoveStruct {
-    is_resource: bool,
-    type_: StructTag,
-    value: Vec<(Identifier, AnnotatedMoveValue)>,
+    pub is_resource: bool,
+    pub type_: StructTag,
+    pub value: Vec<(Identifier, AnnotatedMoveValue)>,
 }
 
 /// AnnotatedMoveValue is a fully expanded version of on chain move data. This should only be used
 /// for debugging/client purpose right now and just for a better visualization of on chain data. In
 /// the long run, we would like to transform this struct to a Json value so that we can have a cross
 /// platform interpretation of the on chain data.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum AnnotatedMoveValue {
     U8(u8),
     U64(u64),
