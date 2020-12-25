@@ -12,12 +12,12 @@ use starcoin_crypto::{
 use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
+use serde::de::Error;
 use serde::export::Formatter;
-use serde::{Deserialize, Serialize, Deserializer, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
-use serde::de::Error;
 
 /// Type for block number.
 pub type BlockNumber = u64;
@@ -43,8 +43,8 @@ impl std::fmt::Display for BlockHeaderExtra {
 
 impl<'de> Deserialize<'de> for BlockHeaderExtra {
     fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
@@ -82,18 +82,17 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
 
 impl Serialize for BlockHeaderExtra {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         if serializer.is_human_readable() {
-            self.to_string().serialize(serializer)
+            format!("0x{}", hex::encode(self.0)).serialize(serializer)
         } else {
             // See comment in deserialize.
             serializer.serialize_newtype_struct("BlockHeaderExtra", &self.0)
         }
     }
 }
-
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
 pub struct BlockIdAndNumber {
@@ -383,7 +382,7 @@ pub struct RawBlockHeader {
 }
 
 #[derive(
-Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct BlockBody {
     /// The transactions in this block.
@@ -442,8 +441,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-        where
-            B: Into<BlockBody>,
+    where
+        B: Into<BlockBody>,
     {
         Block {
             header,
