@@ -843,13 +843,14 @@ impl RpcClient {
     }
     pub async fn miner_submit_async(
         &self,
-        minting_blob: Vec<u8>,
+        minting_blob: String,
         nonce: u32,
+        extra: String,
     ) -> anyhow::Result<()> {
         self.call_rpc_async(|inner| async move {
             inner
                 .miner_client
-                .submit(minting_blob, nonce)
+                .submit(minting_blob, nonce, extra)
                 .compat()
                 .await
         })

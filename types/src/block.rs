@@ -13,16 +13,17 @@ use crate::genesis_config::{ChainId, ConsensusStrategy};
 use crate::language_storage::CORE_CODE_ADDRESS;
 use crate::U256;
 use serde::export::Formatter;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Deserializer, Serializer};
 use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
+use serde::de::Error;
 
 /// Type for block number.
 pub type BlockNumber = u64;
 
 /// Type for block header extra
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct BlockHeaderExtra([u8; 4]);
 
 impl BlockHeaderExtra {
@@ -39,6 +40,60 @@ impl std::fmt::Display for BlockHeaderExtra {
         write!(f, "{:?}", self.0)
     }
 }
+
+impl<'de> Deserialize<'de> for BlockHeaderExtra {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            let literal = s.strip_prefix("0x").unwrap_or_else(|| &s);
+            let hex_len = literal.len();
+            let mut result = if hex_len % 2 != 0 {
+                let mut hex_str = String::with_capacity(hex_len + 1);
+                hex_str.push('0');
+                hex_str.push_str(literal);
+                hex::decode(&hex_str).map_err(D::Error::custom)?
+            } else {
+                hex::decode(literal).map_err(D::Error::custom)?
+            };
+            let len = result.len();
+            let padded_result = if len < 4 {
+                let mut padded = Vec::with_capacity(4);
+                padded.resize(4 - len, 0u8);
+                padded.append(&mut result);
+                padded
+            } else {
+                result
+            };
+            let mut extra = [0u8; 4];
+            extra.copy_from_slice(&padded_result);
+            Ok(BlockHeaderExtra::new(extra))
+        } else {
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "BlockHeaderExtra")]
+            struct Value([u8; 4]);
+            let value = Value::deserialize(deserializer)?;
+            Ok(BlockHeaderExtra::new(value.0))
+        }
+    }
+}
+
+impl Serialize for BlockHeaderExtra {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            self.to_string().serialize(serializer)
+        } else {
+            // See comment in deserialize.
+            serializer.serialize_newtype_struct("BlockHeaderExtra", &self.0)
+        }
+    }
+}
+
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Deserialize, Serialize)]
 pub struct BlockIdAndNumber {
@@ -328,7 +383,7 @@ pub struct RawBlockHeader {
 }
 
 #[derive(
-    Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
+Default, Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash,
 )]
 pub struct BlockBody {
     /// The transactions in this block.
@@ -387,8 +442,8 @@ pub struct Block {
 
 impl Block {
     pub fn new<B>(header: BlockHeader, body: B) -> Self
-    where
-        B: Into<BlockBody>,
+        where
+            B: Into<BlockBody>,
     {
         Block {
             header,
