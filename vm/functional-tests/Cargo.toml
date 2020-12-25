@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.37"
 tempfile = "3.1.0"
-datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="5fb42e263241f5d3db5a3a53ca4eadd6f1bcdb78" }
+datatest-stable = {git = "https://github.com/starcoinorg/diem", rev="78c1845c42cc1f2567cbeac8db4b5c2d6fce9fe8" }
 stdlib = { package="stdlib", path = "../stdlib"}
 once_cell = "1.5.2"
 regex = { version = "1.4.2", default-features = false, features = ["std", "perf"] }
@@ -30,7 +30,7 @@ executor = { package="starcoin-executor", path = "../../executor"}
 starcoin-genesis = { path = "../../core/genesis" }
 starcoin-consensus = { path = "../../consensus" }
 starcoin-account-api = { path = "../../account/api" }
-move-lang = { git = "https://github.com/starcoinorg/diem", rev="5fb42e263241f5d3db5a3a53ca4eadd6f1bcdb78" }
+move-lang = { git = "https://github.com/starcoinorg/diem", rev="78c1845c42cc1f2567cbeac8db4b5c2d6fce9fe8" }
 
 [dev-dependencies]
 starcoin-vm-types = { path = "../types"}

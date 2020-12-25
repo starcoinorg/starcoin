@@ -377,7 +377,7 @@ impl StarcoinVM {
                     .execute_script(s, ty_args, args, vec![sender], cost_strategy)
                     .map_err(|e| e.into_vm_status())?
             }
-            charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
+            charge_global_write_gas_usage(cost_strategy, &session)?;
 
             cost_strategy.disable_metering();
             self.success_transaction_cleanup(
@@ -424,7 +424,7 @@ impl StarcoinVM {
                 )
                 .map_err(|e| e.into_vm_status())?;
 
-            charge_global_write_gas_usage(cost_strategy, &session, &txn_data.sender())?;
+            charge_global_write_gas_usage(cost_strategy, &session)?;
 
             cost_strategy.disable_metering();
             self.success_transaction_cleanup(
@@ -924,9 +924,8 @@ pub fn chunk_block_transactions(txns: Vec<Transaction>) -> Vec<TransactionBlock>
 pub(crate) fn charge_global_write_gas_usage<R: RemoteCache>(
     cost_strategy: &mut CostStrategy,
     session: &SessionAdapter<R>,
-    sender: &AccountAddress,
 ) -> Result<(), VMStatus> {
-    let total_cost = session.num_mutated_accounts(sender)
+    let total_cost = session.num_mutated_accounts()
         * cost_strategy
             .cost_table()
             .gas_constants
