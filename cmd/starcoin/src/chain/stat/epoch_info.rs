@@ -46,10 +46,7 @@ impl CommandAction for StatEpochCommand {
             if block_number >= end_number {
                 block_number = end_number;
             }
-            let epoch = client
-                .clone()
-                .get_epoch_info_by_number(block_number)
-                .unwrap();
+            let epoch = client.get_epoch_info_by_number(block_number).unwrap();
             println!(
                 "epoch: {:?}, {:?}, {:?}",
                 epoch.number(),

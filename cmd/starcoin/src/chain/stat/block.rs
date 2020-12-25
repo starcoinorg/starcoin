@@ -53,10 +53,7 @@ impl CommandAction for StatBlockCommand {
         let mut block_number = opt.begin_number;
         let mut vec_stat_block = vec![];
         while block_number < end_number {
-            let block = client
-                .clone()
-                .chain_get_block_by_number(block_number)
-                .unwrap();
+            let block = client.chain_get_block_by_number(block_number).unwrap();
             let stat_view = BlockStatView::new(block.header.number, block.header.gas_used);
             println!("{:?}", stat_view);
             vec_stat_block.push(stat_view);

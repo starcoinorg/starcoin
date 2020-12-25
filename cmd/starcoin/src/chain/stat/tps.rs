@@ -44,7 +44,7 @@ impl CommandAction for StatTPSCommand {
             if block_number >= end_number {
                 block_number = end_number;
             }
-            let tps = client.clone().tps(Some(block_number)).unwrap();
+            let tps = client.tps(Some(block_number)).unwrap();
             println!("tps: {:?}", tps);
             vec_tps.push(tps);
             epoch += 1;
