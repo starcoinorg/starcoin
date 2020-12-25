@@ -12,6 +12,7 @@ mod get_txn_cmd;
 mod get_txn_info_cmd;
 mod info_cmd;
 mod list_block_cmd;
+mod stat;
 mod tps;
 pub mod uncle;
 
@@ -26,4 +27,5 @@ pub use get_txn_cmd::*;
 pub use get_txn_info_cmd::*;
 pub use info_cmd::*;
 pub use list_block_cmd::*;
+pub use stat::{StatBlockCommand, StatEpochCommand, StatTPSCommand};
 pub use tps::*;
