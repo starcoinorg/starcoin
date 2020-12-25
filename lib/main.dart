@@ -57,7 +57,7 @@ class App extends StatelessWidget {
                 ],
                 theme: store.state.theme.themeData,
                 routes: _buildRoutes(),
-                home: new MainPage(userName),
+                home: Scaffold(body: new MainPage(userName)),
               ),
             ],
           );

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:hex/hex.dart';
 import 'package:starcoin_wallet/starcoin/starcoin.dart';
 import 'package:starcoin_wallet/wallet/node.dart';
 import 'dart:io';
@@ -203,6 +204,33 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                                 style: TextStyle(color: blue, fontSize: 15)),
                           ]),
                           Expanded(
+                              flex: 2,
+                              child: Container(
+                                  margin: EdgeInsets.only(left: 20),
+                                  alignment: Alignment.centerRight,
+                                  child: Tooltip(
+                                      message: StarcoinLocalizations.of(context)
+                                          .privateKey,
+                                      child: IconButton(
+                                        icon: Image.asset(
+                                            'assets/images/starcoin-save.png'),
+                                        iconSize: 60,
+                                        onPressed: () async {
+                                          if (!startRequest) {
+                                            final snackBar = SnackBar(
+                                              content: Text(
+                                                  StarcoinLocalizations.of(
+                                                          context)
+                                                      .nodeNotRun),
+                                            );
+                                            Scaffold.of(context)
+                                                .showSnackBar(snackBar);
+                                          } else {
+                                            await savePrivateKey();
+                                          }
+                                        },
+                                      )))),
+                          Expanded(
                               flex: 1,
                               child: Container(
                                   margin: EdgeInsets.only(right: 20),
@@ -377,14 +405,19 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             nodeInfo['peer_info']['chain_info']['total_difficulty'];
 
         final syncProgress = await node.syncProgress();
-        final taskNames = syncProgress['current']['task_name'].split("::");
+        var taskNames = "";
+        var percent = "0.00";
+        if (syncProgress != null) {
+          taskNames = syncProgress['current']['task_name'].split("::");
+          percent = syncProgress['current']['percent'].toStringAsFixed(2);
+        }
 
         setState(() {
           this.address = address.toString();
           this.balance = balance.toBigInt() / BigInt.from(1000000000);
           this.difficulty = totalDifficulty;
           this.taskName = taskNames[taskNames.length - 1];
-          this.percent = syncProgress['current']['percent'].toStringAsFixed(2);
+          this.percent = percent;
         });
       }
     });
@@ -431,5 +464,27 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     // //final file = File(path);
     // //await file.writeAsBytes(wmImage);
     File(path)..writeAsBytesSync(img.encodePng(background));
+  }
+
+  savePrivateKey() async {
+    final node = Node(LOCALURL);
+    final account = await node.defaultAccount();
+    final List exportedAccount =
+        await node.exportAccount(account['address'], "");
+    final String hexPrivatekey =
+        "0x" + HEX.encode(exportedAccount.map((e) => e as int).toList());
+
+    var dir;
+    if (Platform.isMacOS) {
+      final current = await DirectoryService.getCurrentDirectory();
+      dir = Directory.fromUri(Uri.parse(current)).parent.path;
+    }
+    if (Platform.isWindows) {
+      Directory current = Directory.current;
+      dir = current.path;
+    }
+
+    var path = join(dir, 'private_key.txt');
+    File(path)..writeAsStringSync(hexPrivatekey);
   }
 }

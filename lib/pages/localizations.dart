@@ -60,6 +60,16 @@ class StarcoinLocalizations {
   String get offcialWebSite {
     return isZh ? "官网" : "Offcial Website";
   }
+
+  String get privateKey {
+    return isZh ? "保存私钥" : "Save Private Key";
+  }
+
+  String get nodeNotRun {
+    return isZh
+        ? "节点没有运行，请先启动节点"
+        : "Node is not running,please start node first.";
+  }
 }
 
 class StarcoinLocalizationsDelegate
@@ -73,7 +83,6 @@ class StarcoinLocalizationsDelegate
   // Flutter会调用此类加载相应的Locale资源类
   @override
   Future<StarcoinLocalizations> load(Locale locale) {
-    print("$locale");
     return SynchronousFuture<StarcoinLocalizations>(
         StarcoinLocalizations(locale.languageCode == "zh"));
   }
