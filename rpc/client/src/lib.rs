@@ -18,13 +18,13 @@ use starcoin_rpc_api::service::RpcAsyncService;
 use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
-    AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId, ChainInfoView,
-    ContractCall, EpochUncleSummaryView, FactoryAction, PeerInfoView, SignedUserTransactionView,
-    TransactionInfoView, TransactionRequest, TransactionView,
+    AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId,
+    ChainInfoView, ContractCall, EpochUncleSummaryView, FactoryAction, PeerInfoView,
+    SignedUserTransactionView, StrView, TransactionInfoView, TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
-    account::AccountClient, chain::ChainClient, debug::DebugClient, dev::DevClient,
-    miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
+    account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
+    dev::DevClient, miner::MinerClient, network_manager::NetworkManagerClient, node::NodeClient,
     node_manager::NodeManagerClient, state::StateClient, sync_manager::SyncManagerClient,
     txpool::TxPoolClient, types::TransactionEventView,
 };
@@ -57,6 +57,7 @@ pub mod chain_watcher;
 mod pubsub_client;
 mod remote_state_reader;
 pub use crate::remote_state_reader::RemoteStateReader;
+use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 
 #[derive(Clone)]
 enum ConnSource {
@@ -469,6 +470,34 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn get_code(&self, module_id: ModuleId) -> anyhow::Result<Option<String>> {
+        let result: Option<StrView<Vec<u8>>> = self
+            .call_rpc_blocking(|inner| async move {
+                inner
+                    .contract_client
+                    .get_code(StrView(module_id))
+                    .compat()
+                    .await
+            })
+            .map_err(map_err)?;
+        Ok(result.map(|s| s.to_string()))
+    }
+
+    pub fn get_resource(
+        &self,
+        addr: AccountAddress,
+        resource_type: StructTag,
+    ) -> anyhow::Result<Option<AnnotatedMoveStruct>> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .contract_client
+                .get_resource(addr, StrView(resource_type))
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn state_get(&self, access_path: AccessPath) -> anyhow::Result<Option<Vec<u8>>> {
         self.call_rpc_blocking(
             |inner| async move { inner.state_client.get(access_path).compat().await },
@@ -520,9 +549,9 @@ impl RpcClient {
     }
 
     pub fn contract_call(&self, call: ContractCall) -> anyhow::Result<Vec<AnnotatedMoveValue>> {
-        self.call_rpc_blocking(|inner| async move {
-            inner.dev_client.call_contract(call).compat().await
-        })
+        self.call_rpc_blocking(
+            |inner| async move { inner.contract_client.call(call).compat().await },
+        )
         .map_err(map_err)
     }
 
@@ -990,6 +1019,7 @@ pub(crate) struct RpcClientInner {
     chain_client: ChainClient,
     pubsub_client: PubSubClient,
     dev_client: DevClient,
+    contract_client: ContractClient,
     miner_client: MinerClient,
     sync_client: SyncManagerClient,
     network_client: NetworkManagerClient,
@@ -1006,6 +1036,7 @@ impl RpcClientInner {
             debug_client: channel.clone().into(),
             chain_client: channel.clone().into(),
             dev_client: channel.clone().into(),
+            contract_client: channel.clone().into(),
             pubsub_client: channel.clone().into(),
             miner_client: channel.clone().into(),
             sync_client: channel.clone().into(),

@@ -19,6 +19,7 @@ use jsonrpc_server_utils::cors::AccessControlAllowOrigin;
 use jsonrpc_server_utils::hosts::DomainsValidation;
 use starcoin_config::{Api, ApiSet, NodeConfig};
 use starcoin_logger::prelude::*;
+use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::metadata::Metadata;
 use starcoin_rpc_api::network_manager::NetworkManagerApi;
 use starcoin_rpc_api::node_manager::NodeManagerApi;
@@ -70,7 +71,8 @@ impl RpcService {
         }
     }
 
-    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, DEV>(
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_api<C, N, NM, SM, NWM, T, A, S, D, P, M, DEV, Contract>(
         config: Arc<NodeConfig>,
         node_api: N,
         node_manager_api: Option<NM>,
@@ -84,6 +86,7 @@ impl RpcService {
         debug_api: Option<D>,
         miner_api: Option<M>,
         dev_api: Option<DEV>,
+        contract_api: Option<Contract>,
     ) -> Self
     where
         N: NodeApi,
@@ -98,6 +101,7 @@ impl RpcService {
         D: DebugApi,
         M: MinerApi,
         DEV: DevApi,
+        Contract: ContractApi,
     {
         let mut api_registry = ApiRegistry::new(config.rpc.api_quota.clone());
 
@@ -143,6 +147,9 @@ impl RpcService {
         }
         if let Some(dev_api) = dev_api {
             api_registry.register(Api::Dev, DevApi::to_delegate(dev_api));
+        }
+        if let Some(contract_api) = contract_api {
+            api_registry.register(Api::Contract, ContractApi::to_delegate(contract_api));
         }
         Self::new(config, api_registry)
     }

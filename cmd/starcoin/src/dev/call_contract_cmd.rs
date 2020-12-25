@@ -6,10 +6,8 @@ use crate::StarcoinOpt;
 use anyhow::Result;
 use scmd::{CommandAction, ExecContext};
 use starcoin_resource_viewer::AnnotatedMoveValue;
-use starcoin_rpc_api::types::ContractCall;
-use starcoin_types::transaction::{parse_transaction_argument, TransactionArgument};
+use starcoin_rpc_api::types::{ContractCall, TransactionArgumentView, TypeTagView};
 use starcoin_vm_types::account_address::AccountAddress;
-use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use structopt::StructOpt;
 
 /// Call Contract command
@@ -34,16 +32,19 @@ pub struct CallContractOpt {
     #[structopt(long)]
     func_name: String,
     #[structopt(
-    short = "t",
-    long = "type_tag",
-    name = "type-tag",
-    help = "can specify multi type_tag",
-    parse(try_from_str = parse_type_tag)
+        short = "t",
+        long = "type_tag",
+        name = "type-tag",
+        help = "can specify multi type_tag"
     )]
-    type_tags: Option<Vec<TypeTag>>,
+    type_tags: Option<Vec<TypeTagView>>,
 
-    #[structopt(long = "arg", name = "transaction-args", help = "can specify multi arg", parse(try_from_str = parse_transaction_argument))]
-    args: Option<Vec<TransactionArgument>>,
+    #[structopt(
+        long = "arg",
+        name = "transaction-args",
+        help = "can specify multi arg"
+    )]
+    args: Option<Vec<TransactionArgumentView>>,
 }
 
 pub struct CallContractCommand;

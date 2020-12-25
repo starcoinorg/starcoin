@@ -3,6 +3,7 @@
 
 mod account_rpc;
 mod chain_rpc;
+mod contract_rpc;
 mod debug_rpc;
 mod dev_rpc;
 mod miner_rpc;
@@ -17,6 +18,7 @@ mod txpool_rpc;
 
 pub use self::account_rpc::AccountRpcImpl;
 pub use self::chain_rpc::ChainRpcImpl;
+pub use self::contract_rpc::ContractRpcImpl;
 pub use self::debug_rpc::DebugRpcImpl;
 pub use self::dev_rpc::DevRpcImpl;
 pub use self::miner_rpc::MinerRpcImpl;
