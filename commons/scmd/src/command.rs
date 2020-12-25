@@ -1,7 +1,6 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::error::CmdError;
 use crate::{CommandAction, EmptyOpt, FnCommandAction, NoneAction};
 use anyhow::Result;
 use clap::{App, ArgMatches};
@@ -237,13 +236,9 @@ where
                         (Some(subcmd), Some(subcmd_matches)) => {
                             subcmd.exec(ctx.state, ctx.global_opt, subcmd_matches)?
                         }
-                        _ => {
-                            return Err(CmdError::InvalidCommand {
-                                cmd: subcmd_name.to_string(),
-                                help: self.help_message(),
-                            }
-                            .into());
-                        }
+                        _ => unreachable!(
+                            "this should not happen, because sub cmd has check by clip."
+                        ),
                     }
                 }
             }

@@ -10,6 +10,7 @@ use scmd::CmdContext;
 use serde_json::Value;
 use starcoin_cmd::add_command;
 use starcoin_cmd::{CliState, StarcoinOpt};
+use starcoin_config::{APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use static_assertions::_core::time::Duration;
 use std::collections::{HashMap, HashSet};
@@ -37,7 +38,11 @@ pub fn steps() -> Steps<MyWorld> {
                 Some(Duration::from_secs(5)),
                 None,
             );
-            let context = CmdContext::<CliState, StarcoinOpt>::with_state(state);
+            let context = CmdContext::<CliState, StarcoinOpt>::with_state(
+                CRATE_VERSION,
+                Some(APP_VERSION.as_str()),
+                state,
+            );
             // get last cmd result as current parameter
             let mut vec = vec!["starcoin"];
             let parameters = get_command_args(world, (*args[1]).parse().unwrap());

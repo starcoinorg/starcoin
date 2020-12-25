@@ -193,6 +193,8 @@ struct TestOpts {
 
 pub(crate) fn init_context() -> CmdContext<Counter, GlobalOpts> {
     let context = CmdContext::<Counter, GlobalOpts>::with_default_action(
+        "0.1",
+        None,
         |global_opt| -> Result<Counter> { Ok(Counter::new(global_opt.counter)) },
         |_app, _opt, _state| {
             let running = Arc::new(AtomicBool::new(true));

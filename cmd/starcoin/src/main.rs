@@ -1,10 +1,11 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 use anyhow::Result;
+use scmd::error::CmdError;
 use scmd::CmdContext;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
-use starcoin_config::Connect;
+use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node::crash_handler;
 use starcoin_node_api::errors::NodeStartError;
@@ -19,6 +20,8 @@ static EXIT_CODE_NEED_HELP: i32 = 120;
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
+        CRATE_VERSION,
+        Some(APP_VERSION.as_str()),
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));
@@ -136,10 +139,21 @@ fn main() {
                         std::process::exit(1);
                     }
                 },
-                Err(e) => {
-                    error!("Node exits abnormally: {:?}", e);
-                    std::process::exit(1);
-                }
+                Err(e) => match e.downcast::<CmdError>() {
+                    Ok(e) => match e {
+                        CmdError::ClapError(e) => {
+                            println!("{}", e);
+                        }
+                        CmdError::Other(e) => {
+                            error!("Starcoin cmd return error: {:?}", e);
+                            std::process::exit(1);
+                        }
+                    },
+                    Err(e) => {
+                        error!("Starcoin cmd exits abnormally: {:?}", e);
+                        std::process::exit(1);
+                    }
+                },
             }
         }
     }

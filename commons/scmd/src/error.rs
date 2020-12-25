@@ -5,10 +5,24 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum CmdError {
-    #[error("Can not find command {cmd:?} \n {help:?})")]
-    InvalidCommand { cmd: String, help: String },
-    #[error("{help:?})")]
-    NeedHelp { help: String },
+    #[error(transparent)]
+    ClapError(clap::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+impl CmdError {
+    pub fn need_help(help: String) -> Self {
+        CmdError::ClapError(clap::Error {
+            message: help,
+            kind: clap::ErrorKind::HelpDisplayed,
+            info: None,
+        })
+    }
+}
+
+impl From<clap::Error> for CmdError {
+    fn from(clap_error: clap::Error) -> Self {
+        CmdError::ClapError(clap_error)
+    }
 }

@@ -6315,7 +6315,6 @@ dependencies = [
  "clap 2.33.3",
  "cli-table",
  "ctrlc",
- "git-version",
  "once_cell",
  "rand 0.7.3",
  "rust-flatten-json",
