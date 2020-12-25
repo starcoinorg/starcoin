@@ -36,19 +36,24 @@ use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
+use starcoin_vm_types::transaction::{Module, SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
+pub type ByteCode = Vec<u8>;
 #[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct TransactionRequest {
     /// Sender's address.
     pub sender: Option<AccountAddress>,
     // Sequence number of this transaction corresponding to sender's account.
     pub sequence_number: Option<u64>,
-    // The transaction script to execute.
-    pub script: ScriptData,
+    /// The transaction script to execute.
+    #[serde(default)]
+    pub script: Option<ScriptData>,
+    /// module codes.
+    #[serde(default)]
+    pub modules: Vec<StrView<ByteCode>>,
     // Maximal total gas specified by wallet to spend for this transaction.
     pub max_gas_amount: Option<u64>,
     // Maximal price can be paid per gas.
@@ -63,16 +68,22 @@ pub struct TransactionRequest {
     // A transaction that doesn't expire is represented by a very large value like
     // u64::max_value().
     pub expiration_timestamp_secs: Option<u64>,
-    pub chain_id: Option<genesis_config::ChainId>,
+    pub chain_id: Option<u8>,
 }
 
-#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ScriptData {
-    pub code: String,
+    pub code: StrView<ByteCodeOrScriptName>,
     #[serde(default)]
-    pub type_args: Vec<String>,
+    pub type_args: Vec<TypeTagView>,
     #[serde(default)]
-    pub args: Vec<String>,
+    pub args: Vec<TransactionArgumentView>,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
+pub enum ByteCodeOrScriptName {
+    ByteCode(ByteCode),
+    ScriptName(String),
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -812,6 +823,25 @@ impl FromStr for StrView<Vec<u8>> {
         Ok(Self(hex::decode(
             s.strip_prefix("0x").unwrap_or_else(|| s),
         )?))
+    }
+}
+
+impl std::fmt::Display for StrView<ByteCodeOrScriptName> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            ByteCodeOrScriptName::ByteCode(c) => write!(f, "0x{}", hex::encode(c)),
+            ByteCodeOrScriptName::ScriptName(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl FromStr for StrView<ByteCodeOrScriptName> {
+    type Err = anyhow::Error;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(match s.strip_prefix("0x") {
+            Some(s) => ByteCodeOrScriptName::ByteCode(hex::decode(s)?),
+            None => ByteCodeOrScriptName::ScriptName(s.to_string()),
+        }))
     }
 }
 
