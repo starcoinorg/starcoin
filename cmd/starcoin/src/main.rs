@@ -5,7 +5,7 @@ use scmd::error::CmdError;
 use scmd::CmdContext;
 use starcoin_cmd::*;
 use starcoin_cmd::{CliState, StarcoinOpt};
-use starcoin_config::Connect;
+use starcoin_config::{Connect, APP_VERSION, CRATE_VERSION};
 use starcoin_logger::prelude::*;
 use starcoin_node::crash_handler;
 use starcoin_node_api::errors::NodeStartError;
@@ -20,6 +20,8 @@ static EXIT_CODE_NEED_HELP: i32 = 120;
 fn run() -> Result<()> {
     let logger_handle = starcoin_logger::init();
     let context = CmdContext::<CliState, StarcoinOpt>::with_default_action(
+        CRATE_VERSION,
+        Some(APP_VERSION.as_str()),
         |opt| -> Result<CliState> {
             info!("Starcoin opts: {:?}", opt);
             let connect = opt.connect.as_ref().unwrap_or(&Connect::IPC(None));

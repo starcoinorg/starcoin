@@ -4,8 +4,7 @@
 use crate::error::CmdError;
 use crate::{print_action_result, Command, CommandAction, CommandExec, OutputFormat};
 use anyhow::Result;
-use clap::{crate_authors, crate_version, App, Arg, SubCommand};
-use git_version::git_version;
+use clap::{crate_authors, App, Arg, SubCommand};
 use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -33,16 +32,6 @@ pub static DEFAULT_CONSOLE_CONFIG: Lazy<ConsoleConfig> = Lazy::new(|| {
 });
 
 static OUTPUT_FORMAT_ARG: &str = "output-format";
-static VERSION: &str = crate_version!();
-static GIT_VERSION: &str = git_version!(fallback = "unknown");
-
-static LONG_VERSION: Lazy<String> = Lazy::new(|| {
-    if GIT_VERSION != "unknown" {
-        format!("{} (build:{})", VERSION, GIT_VERSION)
-    } else {
-        VERSION.to_string()
-    }
-});
 
 pub struct CmdContext<State, GlobalOpt>
 where
@@ -65,35 +54,50 @@ where
     GlobalOpt: StructOpt + 'static,
 {
     /// Init new CmdContext with State
-    pub fn with_state(state: State) -> Self {
-        Self::with_initializer(|_opts| Ok(state))
+    pub fn with_state(
+        version: &'static str,
+        long_version: Option<&'static str>,
+        state: State,
+    ) -> Self {
+        Self::with_initializer(version, long_version, |_opts| Ok(state))
     }
 
     /// Init new CmdContext with state_initializer
     /// default action is print help.
-    pub fn with_initializer<I>(state_initializer: I) -> Self
+    pub fn with_initializer<I>(
+        version: &'static str,
+        long_version: Option<&'static str>,
+        state_initializer: I,
+    ) -> Self
     where
         I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
     {
-        Self::with_default_action(state_initializer, |mut app, _opt, _state| {
-            app.print_long_help().expect("print help should success.");
-        })
+        Self::with_default_action(
+            version,
+            long_version,
+            state_initializer,
+            |mut app, _opt, _state| {
+                app.print_long_help().expect("print help should success.");
+            },
+        )
     }
 
-    /// Init new CmdContext with state_initializer, and default_action, console_start_action, console_quit_action
+    /// Init new CmdContext with state_initializer, and default_action
     /// default_action executed when no subcommand is provided.
-    /// console_start_action executed when start a console.
-    /// console_quit_action executed when input quit subcommand at console.
-    pub fn with_default_action<I, D>(state_initializer: I, default_action: D) -> Self
+    pub fn with_default_action<I, D>(
+        version: &'static str,
+        long_version: Option<&'static str>,
+        state_initializer: I,
+        default_action: D,
+    ) -> Self
     where
         I: FnOnce(&GlobalOpt) -> Result<State> + 'static,
         D: FnOnce(App, GlobalOpt, State) + 'static,
     {
         let mut app = GlobalOpt::clap();
-        //TODO pass version as argument
         app = app
-            .version(VERSION)
-            .long_version(LONG_VERSION.as_str())
+            .version(version)
+            .long_version(long_version.unwrap_or(version))
             .arg(
                 Arg::with_name(OUTPUT_FORMAT_ARG)
                     .short("o")
@@ -361,7 +365,8 @@ where
                             app.print_long_help().expect("print help should success.");
                         }
                         "version" => {
-                            println!("{}", LONG_VERSION.as_str());
+                            let mut out = std::io::stdout();
+                            let _ = app.write_long_version(&mut out);
                         }
                         "output" => {
                             if params.len() == 1 {

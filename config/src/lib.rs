@@ -63,8 +63,11 @@ pub use storage_config::{RocksdbConfig, StorageConfig};
 pub use sync_config::SyncMode;
 pub use txpool_config::TxPoolConfig;
 
-static CRATE_VERSION: &str = crate_version!();
-static GIT_VERSION: &str = git_version!(fallback = "unknown");
+pub static CRATE_VERSION: &str = crate_version!();
+pub static GIT_VERSION: &str = git_version!(
+    args = ["--tags", "--dirty", "--always"],
+    fallback = "unknown"
+);
 
 pub static APP_NAME: &str = "starcoin";
 pub static APP_VERSION: Lazy<String> = Lazy::new(|| {
