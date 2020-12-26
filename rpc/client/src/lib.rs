@@ -424,7 +424,7 @@ impl RpcClient {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .account_client
-                .unlock(address, password, duration)
+                .unlock(address, password, Some(duration.as_secs() as u32))
                 .compat()
                 .await
         })

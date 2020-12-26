@@ -36,7 +36,7 @@ use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
-use starcoin_vm_types::transaction::{Module, SignedUserTransaction, Transaction, TransactionInfo};
+use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;

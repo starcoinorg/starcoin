@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::module::map_err;
+use failure::_core::time::Duration;
 use futures::future::TryFutureExt;
 use futures::FutureExt;
 use starcoin_account_api::{AccountAsyncService, AccountInfo};
@@ -16,7 +17,6 @@ use starcoin_types::account_config::token_code::TokenCode;
 use starcoin_types::transaction::{Module, RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::account_config::AccountResource;
 use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::transaction::{Package, Script, TransactionPayload};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -131,11 +131,11 @@ where
                 None => anyhow::bail!("cannot find account {} onchain", sender),
             },
         };
-        let max_gas_amount = txn_request.max_gas_amount.unwrap_or(100000); // default 10_00000
+        let max_gas_amount = txn_request.max_gas_amount.unwrap_or(100000); // default 10_0000
         let max_gas_price = txn_request.gas_unit_price.unwrap_or(1);
         let expire = txn_request
             .expiration_timestamp_secs
-            .unwrap_or_else(|| self.node_config.net().time_service().now_secs() + 60 * 60 * 24); // default to 1d
+            .unwrap_or_else(|| self.node_config.net().time_service().now_secs() + 60 * 60 * 12); // default to 0.5d
 
         let chain_id = self.chain.main_status().await?.head().chain_id;
         if let Some(cid) = txn_request.chain_id {
@@ -248,11 +248,19 @@ where
         &self,
         address: AccountAddress,
         password: String,
-        duration: std::time::Duration,
+        duration: Option<u32>,
     ) -> FutureResult<()> {
         let service = self.service.clone();
-        let fut = async move { service.unlock_account(address, password, duration).await }
-            .map_err(map_err);
+        let fut = async move {
+            service
+                .unlock_account(
+                    address,
+                    password,
+                    Duration::from_secs(duration.unwrap_or_else(|| u32::max_value()) as u64),
+                )
+                .await
+        }
+        .map_err(map_err);
         Box::new(fut.boxed().compat())
     }
 

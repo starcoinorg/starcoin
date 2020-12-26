@@ -37,12 +37,14 @@ pub trait AccountApi {
         raw_txn: RawUserTransaction,
         signer: AccountAddress,
     ) -> FutureResult<SignedUserTransaction>;
+
+    /// unlock account for duration in seconds, default to u32::max.
     #[rpc(name = "account.unlock")]
     fn unlock(
         &self,
         address: AccountAddress,
         password: String,
-        duration: std::time::Duration,
+        duration: Option<u32>,
     ) -> FutureResult<()>;
     #[rpc(name = "account.lock")]
     fn lock(&self, address: AccountAddress) -> FutureResult<()>;
