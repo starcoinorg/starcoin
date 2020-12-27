@@ -206,14 +206,14 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
                           Expanded(
                               flex: 2,
                               child: Container(
-                                  margin: EdgeInsets.only(left: 20),
+                                  //margin: EdgeInsets.only(left: 20),
                                   alignment: Alignment.centerRight,
                                   child: Tooltip(
                                       message: StarcoinLocalizations.of(context)
                                           .privateKey,
                                       child: IconButton(
                                         icon: Image.asset(
-                                            'assets/images/starcoin-save.png'),
+                                            'assets/images/starcoin-save-pk.png'),
                                         iconSize: 60,
                                         onPressed: () async {
                                           if (!startRequest) {

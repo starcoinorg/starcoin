@@ -75,6 +75,7 @@ flutter:
     - assets/images/starcoin-stop-mint.png
     - assets/images/starcoin-share-template.png
     - assets/images/starcoin-qr.png
+    - assets/images/starcoin-save-pk.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
