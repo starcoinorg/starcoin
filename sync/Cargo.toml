@@ -51,7 +51,7 @@ starcoin-chain-service = { path = "../chain/service" }
 starcoin-chain-api = { path = "../chain/api" }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "1.0", features = ["full"] }
 actix-rt = "1.1"
 miner = {path = "../miner", package="starcoin-miner" }
 hex = "0.4.2"
