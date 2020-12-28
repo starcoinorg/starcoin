@@ -405,7 +405,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
             nodeInfo['peer_info']['chain_info']['total_difficulty'];
 
         final syncProgress = await node.syncProgress();
-        var taskNames = "";
+        var taskNames;
         var percent = "0.00";
         if (syncProgress != null) {
           taskNames = syncProgress['current']['task_name'].split("::");
