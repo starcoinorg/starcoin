@@ -20,19 +20,14 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
       - name: run cargo bench
-        uses: actions-rs/cargo@v1
+        run: bash ./scripts/benchmark.sh /mnt/volume_01/starcoin_benchmarks
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
-        with:
-          command: bench
-          args: --bench bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm
       - name: tar result files
-        run: tar -cvf benchmark.tar benchmarks/target/criterion
+        run: tar -cvf benchmark.tar /mnt/volume_01/starcoin_benchmarks/criterion
       - name: upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: bench-artifact
           path: benchmark.tar
-      - name: publish result
-        run: bash ./scripts/benchmark.sh
