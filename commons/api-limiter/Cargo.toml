@@ -11,5 +11,5 @@ edition = "2018"
 
 anyhow = "~1"
 governor = {version="~0.3", features=["dashmap"]}
-dashmap = "~3.11"
+dashmap = "~4.0"
 
