@@ -1,4 +1,6 @@
 on:
+  pull_request:
+    types: [ opened ]
   issue_comment:
     types: [ created ]
 
@@ -9,7 +11,6 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: khan/pull-request-comment-trigger@master
-        if: ${{ github.event.issue.pull_request }}
         id: check_comment
         with:
           trigger: '@benchmark'
