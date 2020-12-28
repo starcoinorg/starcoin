@@ -78,7 +78,6 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
     var onclick;
     if (!startRequest) {
       onclick = () async {
-        // 用Directory.current 也不对
         var command = "";
         if (Platform.isMacOS) {
           final current = await DirectoryService.getCurrentDirectory();
@@ -97,6 +96,7 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
               "proxima",
               "--http-apis",
               "all",
+              "--disable-ipc-rpc",
               //"--disable-mint-empty-block",
               //"false"
             ],
@@ -469,8 +469,14 @@ class _NodePageState extends State<NodePage> with TickerProviderStateMixin {
   savePrivateKey() async {
     final node = Node(LOCALURL);
     final account = await node.defaultAccount();
+    if (account == null) {
+      return;
+    }
     final List exportedAccount =
         await node.exportAccount(account['address'], "");
+    if (exportedAccount == null) {
+      return;
+    }
     final String hexPrivatekey =
         "0x" + HEX.encode(exportedAccount.map((e) => e as int).toList());
 
