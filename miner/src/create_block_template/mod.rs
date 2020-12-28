@@ -273,7 +273,7 @@ where
         let author_auth_key = if chain_state.exist_account(self.miner_account.address())? {
             None
         } else {
-            Some(self.miner_account.public_key.auth_key())
+            Some(self.miner_account.public_key.authentication_key())
         };
 
         let previous_header = self.chain.current_header();

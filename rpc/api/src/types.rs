@@ -16,7 +16,7 @@ use serde_helpers::{
     deserialize_binary, deserialize_from_string, deserialize_from_string_opt, serialize_binary,
     serialize_to_string, serialize_to_string_opt,
 };
-use starcoin_crypto::HashValue;
+use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringExt};
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
@@ -36,7 +36,10 @@ use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
-use starcoin_vm_types::transaction::{SignedUserTransaction, Transaction, TransactionInfo};
+use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
+use starcoin_vm_types::transaction::{
+    Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionPayload,
+};
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -71,6 +74,41 @@ pub struct TransactionRequest {
     pub chain_id: Option<u8>,
 }
 
+impl From<RawUserTransaction> for TransactionRequest {
+    fn from(raw: RawUserTransaction) -> Self {
+        let mut request = TransactionRequest {
+            sender: Some(raw.sender()),
+            sequence_number: Some(raw.sequence_number()),
+            script: None,
+            modules: vec![],
+            max_gas_amount: Some(raw.max_gas_amount()),
+            gas_unit_price: Some(raw.gas_unit_price()),
+            gas_token_code: Some(raw.gas_token_code()),
+            expiration_timestamp_secs: Some(raw.expiration_timestamp_secs()),
+            chain_id: Some(raw.chain_id().id()),
+        };
+        match raw.into_payload() {
+            TransactionPayload::Script(s) => {
+                request.script = Some(s.into());
+            }
+            TransactionPayload::Package(p) => {
+                let (_, m, s) = p.into_inner();
+                request.script = s.map(Into::into);
+                request.modules = m.into_iter().map(|m| StrView(m.into())).collect();
+            }
+        }
+        request
+    }
+}
+
+#[derive(Default, Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+pub struct DryRunTransactionRequest {
+    #[serde(flatten)]
+    pub transaction: TransactionRequest,
+    /// Sender's public key
+    pub sender_public_key: Option<StrView<AccountPublicKey>>,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
 pub struct ScriptData {
     pub code: StrView<ByteCodeOrScriptName>,
@@ -78,6 +116,20 @@ pub struct ScriptData {
     pub type_args: Vec<TypeTagView>,
     #[serde(default)]
     pub args: Vec<TransactionArgumentView>,
+}
+
+impl From<Script> for ScriptData {
+    fn from(s: Script) -> Self {
+        let (code, ty_args, args) = s.into_inner();
+        ScriptData {
+            code: StrView(ByteCodeOrScriptName::ByteCode(code)),
+            type_args: ty_args.into_iter().map(TypeTagView::from).collect(),
+            args: args
+                .into_iter()
+                .map(TransactionArgumentView::from)
+                .collect(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialOrd, PartialEq)]
@@ -842,6 +894,23 @@ impl FromStr for StrView<ByteCodeOrScriptName> {
             Some(s) => ByteCodeOrScriptName::ByteCode(hex::decode(s)?),
             None => ByteCodeOrScriptName::ScriptName(s.to_string()),
         }))
+    }
+}
+
+impl std::fmt::Display for StrView<AccountPublicKey> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0.to_encoded_string().map_err(|_| std::fmt::Error)?
+        )
+    }
+}
+
+impl FromStr for StrView<AccountPublicKey> {
+    type Err = CryptoMaterialError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        AccountPublicKey::from_encoded_string(s).map(StrView)
     }
 }
 

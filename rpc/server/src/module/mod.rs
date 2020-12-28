@@ -6,6 +6,7 @@ mod chain_rpc;
 mod contract_rpc;
 mod debug_rpc;
 mod dev_rpc;
+mod helpers;
 mod miner_rpc;
 mod network_manager_rpc;
 mod node_manager_rpc;

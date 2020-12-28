@@ -70,7 +70,7 @@ impl CommandAction for ShowCommand {
                 balances.insert(token_name, b);
             }
         }
-        let auth_key = account.public_key.auth_key();
+        let auth_key = account.public_key.authentication_key();
 
         Ok(AccountWithStateView {
             auth_key: auth_key.to_encoded_string()?,

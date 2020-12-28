@@ -76,7 +76,7 @@ pub fn new_block(
     let (block_template, _) = block_chain
         .create_block_template(
             miner_address,
-            Some(miner.public_key.auth_key()),
+            Some(miner.public_key.authentication_key()),
             None,
             Vec::new(),
             vec![],
@@ -132,7 +132,7 @@ fn gen_fork_block_chain(
             let (block_template, _) = block_chain
                 .create_block_template(
                     *miner_account.address(),
-                    Some(miner_account.public_key.auth_key()),
+                    Some(miner_account.public_key.authentication_key()),
                     None,
                     Vec::new(),
                     vec![],

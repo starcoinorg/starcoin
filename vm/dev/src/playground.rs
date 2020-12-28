@@ -11,7 +11,7 @@ use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::identifier::{IdentStr, Identifier};
 use starcoin_vm_types::language_storage::{ModuleId, StructTag, TypeTag};
 use starcoin_vm_types::state_view::StateView;
-use starcoin_vm_types::transaction::{Transaction, TransactionOutput};
+use starcoin_vm_types::transaction::{DryRunTransaction, TransactionOutput};
 use starcoin_vm_types::transaction_argument::TransactionArgument;
 use starcoin_vm_types::vm_status::VMStatus;
 use std::sync::Arc;
@@ -31,7 +31,7 @@ impl PlaygroudService {
     pub fn dry_run(
         &self,
         state_root: HashValue,
-        txn: Transaction,
+        txn: DryRunTransaction,
     ) -> Result<(VMStatus, TransactionOutput)> {
         let state_view = ChainStateDB::new(self.state.clone(), Some(state_root));
         dry_run(&state_view, txn)
@@ -74,11 +74,10 @@ pub fn view_resource(
 
 pub fn dry_run(
     state_view: &dyn StateView,
-    txn: Transaction,
+    txn: DryRunTransaction,
 ) -> Result<(VMStatus, TransactionOutput)> {
     let mut vm = StarcoinVM::new();
-    vm.execute_transactions(state_view, vec![txn])
-        .map(|mut r| r.pop().unwrap())
+    vm.dry_run_transaction(state_view, txn)
 }
 
 pub fn call_contract(

@@ -19,8 +19,9 @@ use starcoin_rpc_api::types::pubsub::EventFilter;
 use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId,
-    ChainInfoView, ContractCall, EpochUncleSummaryView, FactoryAction, PeerInfoView,
-    SignedUserTransactionView, StrView, TransactionInfoView, TransactionRequest, TransactionView,
+    ChainInfoView, ContractCall, DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction,
+    PeerInfoView, SignedUserTransactionView, StrView, TransactionInfoView, TransactionRequest,
+    TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -806,10 +807,12 @@ impl RpcClient {
 
     pub fn dry_run(
         &self,
-        txn: SignedUserTransaction,
+        txn: DryRunTransactionRequest,
     ) -> anyhow::Result<(VMStatus, TransactionOutput)> {
-        self.call_rpc_blocking(|inner| async move { inner.dev_client.dry_run(txn).compat().await })
-            .map_err(map_err)
+        self.call_rpc_blocking(
+            |inner| async move { inner.contract_client.dry_run(txn).compat().await },
+        )
+        .map_err(map_err)
     }
     pub fn miner_submit(&self, minting_blob: Vec<u8>, nonce: u32) -> anyhow::Result<()> {
         self.call_rpc_blocking(|inner| async move {

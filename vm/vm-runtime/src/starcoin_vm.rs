@@ -35,7 +35,9 @@ use starcoin_vm_types::gas_schedule::{zero_cost_schedule, CostStrategy};
 use starcoin_vm_types::identifier::IdentStr;
 use starcoin_vm_types::language_storage::ModuleId;
 use starcoin_vm_types::on_chain_config::INITIAL_GAS_SCHEDULE;
-use starcoin_vm_types::transaction::{Module, Package, Script, TransactionPayloadType};
+use starcoin_vm_types::transaction::{
+    DryRunTransaction, Module, Package, Script, TransactionPayloadType,
+};
 use starcoin_vm_types::transaction_metadata::TransactionPayloadMetadata;
 use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::write_set::{WriteOp, WriteSetMut};
@@ -658,6 +660,66 @@ impl StarcoinVM {
             }
             Err(e) => discard_error_vm_status(e),
         }
+    }
+
+    pub fn dry_run_transaction(
+        &mut self,
+
+        state_view: &dyn StateView,
+        txn: DryRunTransaction,
+    ) -> Result<(VMStatus, TransactionOutput)> {
+        let remote_cache = StateViewCache::new(state_view);
+        //TODO load config by config change event.
+        self.load_configs(&remote_cache)?;
+
+        let gas_schedule = match self.get_gas_schedule() {
+            Ok(gas_schedule) => gas_schedule,
+            Err(e) => {
+                if remote_cache.is_genesis() {
+                    &INITIAL_GAS_SCHEDULE
+                } else {
+                    return Ok(discard_error_vm_status(e));
+                }
+            }
+        };
+        let txn_data = TransactionMetadata::from_raw_txn_and_preimage(
+            &txn.raw_txn,
+            txn.public_key.authentication_key_preimage(),
+        );
+        let mut cost_strategy = CostStrategy::system(gas_schedule, txn_data.max_gas_amount());
+        let result = match txn.raw_txn.payload() {
+            TransactionPayload::Script(s) => self.execute_script(
+                &remote_cache,
+                gas_schedule,
+                &mut cost_strategy,
+                &txn_data,
+                s,
+            ),
+            TransactionPayload::Package(p) => self.execute_package(
+                &remote_cache,
+                gas_schedule,
+                &mut cost_strategy,
+                &txn_data,
+                p,
+            ),
+        };
+        Ok(match result {
+            Ok(status_and_output) => status_and_output,
+            Err(err) => {
+                let txn_status = TransactionStatus::from(err.clone());
+                if txn_status.is_discarded() {
+                    discard_error_vm_status(err)
+                } else {
+                    self.failed_transaction_cleanup(
+                        err,
+                        gas_schedule,
+                        cost_strategy.remaining_gas(),
+                        &txn_data,
+                        &remote_cache,
+                    )
+                }
+            }
+        })
     }
 
     /// Execute a block transactions with gas_limit,
