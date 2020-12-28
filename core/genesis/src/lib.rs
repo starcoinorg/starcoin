@@ -91,7 +91,14 @@ pub struct Genesis {
 impl Display for Genesis {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Genesis {{")?;
-        write!(f, "block: {:?}", self.block.header.id())?;
+        write!(f, "block: {:?}; ", self.block.header.id())?;
+        write!(f, "parent_hash: {:?}; ", self.block.header.parent_hash())?;
+        write!(f, "timestamp: {:?}; ", self.block.header.timestamp())?;
+        write!(f, "accumulator_root: {:?}; ", self.block.header.accumulator_root())?;
+        write!(f, "state_root: {:?}; ", self.block.header.state_root())?;
+        write!(f, "difficulty: {:?}; ", self.block.header.difficulty())?;
+        write!(f, "body_hash: {:?}; ", self.block.header.body_hash())?;
+        write!(f, "chain_id: {:?}; ", self.block.header.chain_id())?;
         write!(f, "}}")?;
         Ok(())
     }
