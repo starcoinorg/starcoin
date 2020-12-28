@@ -311,7 +311,7 @@ name = "api-limiter"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "dashmap",
+ "dashmap 4.0.1",
  "governor",
 ]
 
@@ -1705,6 +1705,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b937cd1fbd1f194ac842196bd2529f21618088ee6d8bff6a46ece611451c96b"
+dependencies = [
+ "cfg-if 1.0.0",
+ "num_cpus",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2596,7 +2606,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36f302dc68f4035178051bff107a8181379b8baa3354654672c2f1e7134af983"
 dependencies = [
- "dashmap",
+ "dashmap 3.11.10",
  "futures 0.3.8",
  "futures-timer",
  "no-std-compat",
@@ -6829,7 +6839,7 @@ version = "0.9.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap",
+ "dashmap 4.0.1",
  "futures 0.3.8",
  "hex",
  "rand 0.7.3",
@@ -6848,7 +6858,7 @@ version = "0.9.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap",
+ "dashmap 4.0.1",
  "futures 0.3.8",
  "hex",
  "parking_lot 0.11.1",
@@ -6995,7 +7005,7 @@ version = "0.9.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap",
+ "dashmap 4.0.1",
  "futures 0.3.8",
  "network-api",
  "rand 0.7.3",
@@ -7071,7 +7081,7 @@ version = "0.9.3"
 dependencies = [
  "anyhow",
  "async-trait",
- "dashmap",
+ "dashmap 4.0.1",
  "futures 0.3.8",
  "rand 0.7.3",
  "rand_core 0.6.0",
@@ -7935,7 +7945,7 @@ dependencies = [
  "actix-rt",
  "anyhow",
  "api-limiter",
- "dashmap",
+ "dashmap 4.0.1",
  "failure",
  "futures 0.3.8",
  "futures-channel",
