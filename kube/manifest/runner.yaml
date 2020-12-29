@@ -7,6 +7,7 @@ spec:
     spec:
       nodeSelector:
         beta.kubernetes.io/instance-type: c-16
+      image: starcoin/starcoin-runner:v0.1
       repository: starcoinorg/starcoin
 
 ---

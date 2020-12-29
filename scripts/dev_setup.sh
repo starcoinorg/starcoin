@@ -19,14 +19,19 @@ if [ ! -f Cargo.toml ]; then
   exit 1
 fi
 
+bash scripts/dev_setup_rust.sh
+
 PACKAGE_MANAGER=
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
   if which yum &>/dev/null; then
     PACKAGE_MANAGER="yum"
+    bash scripts/dev_setup_yum.sh
   elif which apt-get &>/dev/null; then
     PACKAGE_MANAGER="apt-get"
+    bash scripts/dev_setup_apt.sh
   elif which pacman &>/dev/null; then
     PACKAGE_MANAGER="pacman"
+    bash scripts/dev_setup_pacman.sh
   else
     echo "Unable to find supported package manager (yum, apt-get, or pacman). Abort"
     exit 1
@@ -34,6 +39,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 elif [[ "$OSTYPE" == "darwin"* ]]; then
   if which brew &>/dev/null; then
     PACKAGE_MANAGER="brew"
+    bash scripts/dev_setup_brew.sh
   else
     echo "Missing package manager Homebrew (https://brew.sh/). Abort"
     exit 1
@@ -42,74 +48,6 @@ else
   echo "Unknown OS. Abort."
   exit 1
 fi
-
-# Install Rust
-echo "Installing Rust......"
-if rustup --version &>/dev/null; then
-  echo "Rust is already installed"
-else
-  curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable
-  CARGO_ENV="$HOME/.cargo/env"
-  source "$CARGO_ENV"
-fi
-
-## Run update in order to download and install the checked in toolchain
-#rustup update
-#
-## Add all the components that we need
-#rustup component add rustfmt
-#rustup component add clippy
-
-#if [[ $"$PACKAGE_MANAGER" == "apt-get" ]]; then
-#	echo "Updating apt-get......"
-#	sudo apt-get update
-#fi
-
-echo "Installing CMake......"
-if which cmake &>/dev/null; then
-  echo "CMake is already installed"
-else
-  if [[ "$PACKAGE_MANAGER" == "yum" ]]; then
-    sudo yum install cmake -y
-  elif [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
-    sudo apt-get update
-    sudo apt-get install cmake -y
-  elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
-    sudo pacman -Syu cmake --noconfirm
-  elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-    brew install cmake
-  fi
-fi
-
-echo "Installing Clang......"
-if which clang &>/dev/null; then
-  echo "Clang is already installed"
-else
-  if [[ "$PACKAGE_MANAGER" == "yum" ]]; then
-    sudo yum install clang -y
-  elif [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
-    sudo apt-get install clang -y
-  elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
-    sudo pacman -Syu clang --noconfirm
-  elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-    brew install llvm
-  fi
-fi
-
-echo "Install openssl dev ...."
-
-if [[ "$PACKAGE_MANAGER" == "yum" ]]; then
-  sudo yum install openssl-devel -y
-elif [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
-  sudo apt-get install libssl-dev -y
-elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
-  sudo pacman -Syu libssl-dev --noconfirm
-elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
-  echo "Please manual install openssl dev."
-fi
-
-echo "Install tools for move prover......"
-bash scripts/move_prover.sh
 
 cat <<EOF
 Finished installing all dependencies.

@@ -1,0 +1,11 @@
+FROM summerwind/actions-runner:v2.169.1
+
+ADD scripts /starcoin/scripts
+ADD vm/move-prover/scripts /starcoin/vm/move-prover/scripts
+
+WORKDIR /starcoin
+
+RUN set -eux;  sudo apt-get update -y \
+  && bash ./scripts/dev_setup_rust.sh \
+  &&  bash ./scripts/dev_setup_apt.sh \
+  && sudo rm -rf /var/lib/apt/lists/*
