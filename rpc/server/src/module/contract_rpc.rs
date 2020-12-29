@@ -11,6 +11,7 @@ use starcoin_dev::playground::PlaygroudService;
 use starcoin_rpc_api::contract_api::ContractApi;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStruct, AnnotatedMoveValue, ContractCall, DryRunTransactionRequest, StrView,
+    TransactionOutputView,
 };
 use starcoin_rpc_api::FutureResult;
 use starcoin_state_api::ChainStateAsyncService;
@@ -18,8 +19,7 @@ use starcoin_traits::ChainAsyncService;
 use starcoin_txpool_api::TxPoolSyncService;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
-use starcoin_types::transaction::{DryRunTransaction, TransactionOutput};
-use starcoin_types::vm_error::VMStatus;
+use starcoin_types::transaction::DryRunTransaction;
 use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::language_storage::ResourceKey;
 use std::sync::Arc;
@@ -137,10 +137,7 @@ where
         .map_err(map_err);
         Box::new(f.boxed().compat())
     }
-    fn dry_run(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> FutureResult<(VMStatus, TransactionOutput)> {
+    fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<TransactionOutputView> {
         let service = self.chain_state.clone();
         let txn_builder = self.txn_request_filler();
         let playground = self.playground.clone();
@@ -174,7 +171,7 @@ where
                     public_key: sender_public_key,
                 },
             )?;
-            Ok(output)
+            Ok(output.1.into())
         }
         .map_err(map_err);
         Box::new(f.boxed().compat())

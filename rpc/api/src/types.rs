@@ -32,15 +32,18 @@ use starcoin_types::transaction::authenticator::{AuthenticationKey, TransactionA
 use starcoin_types::transaction::{RawUserTransaction, TransactionArgument};
 use starcoin_types::vm_error::AbortLocation;
 use starcoin_types::U256;
+use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::block_metadata::BlockMetadata;
 use starcoin_vm_types::identifier::Identifier;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
 use starcoin_vm_types::parser::{parse_transaction_argument, parse_type_tag};
 use starcoin_vm_types::transaction::authenticator::AccountPublicKey;
 use starcoin_vm_types::transaction::{
-    Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionPayload,
+    Script, SignedUserTransaction, Transaction, TransactionInfo, TransactionOutput,
+    TransactionPayload, TransactionStatus,
 };
-use starcoin_vm_types::vm_status::KeptVMStatus;
+use starcoin_vm_types::vm_status::{DiscardedVMStatus, KeptVMStatus};
+use starcoin_vm_types::write_set::WriteOp;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -568,6 +571,17 @@ pub enum TransactionVMStatus {
         code_offset: u16,
     },
     MiscellaneousError,
+    Discard {
+        status_code: u64,
+    },
+}
+impl From<TransactionStatus> for TransactionVMStatus {
+    fn from(s: TransactionStatus) -> Self {
+        match s {
+            TransactionStatus::Discard(d) => d.into(),
+            TransactionStatus::Keep(k) => k.into(),
+        }
+    }
 }
 
 impl From<KeptVMStatus> for TransactionVMStatus {
@@ -589,6 +603,13 @@ impl From<KeptVMStatus> for TransactionVMStatus {
                 code_offset,
             },
             KeptVMStatus::MiscellaneousError => TransactionVMStatus::MiscellaneousError,
+        }
+    }
+}
+impl From<DiscardedVMStatus> for TransactionVMStatus {
+    fn from(s: DiscardedVMStatus) -> Self {
+        Self::Discard {
+            status_code: s.into(),
         }
     }
 }
@@ -633,6 +654,20 @@ impl From<ContractEventInfo> for TransactionEventView {
         }
     }
 }
+impl From<ContractEvent> for TransactionEventView {
+    fn from(event: ContractEvent) -> Self {
+        TransactionEventView {
+            block_hash: None,
+            block_number: None,
+            transaction_hash: None,
+            transaction_index: None,
+            data: event.event_data().to_vec(),
+            type_tag: event.type_tag().clone(),
+            event_key: *event.key(),
+            event_seq_number: event.sequence_number(),
+        }
+    }
+}
 
 impl TransactionEventView {
     pub fn new(
@@ -651,6 +686,69 @@ impl TransactionEventView {
             type_tag: contract_event.type_tag().clone(),
             event_key: *contract_event.key(),
             event_seq_number: contract_event.sequence_number(),
+        }
+    }
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TransactionOutputView {
+    pub events: Vec<TransactionEventView>,
+    pub gas_used: u64,
+    pub delta_size: i64,
+    pub status: TransactionVMStatus,
+    pub write_set: Vec<TransactionOutputAction>,
+}
+
+impl From<TransactionOutput> for TransactionOutputView {
+    fn from(txn_output: TransactionOutput) -> Self {
+        let (write_set, events, gas_used, delta_size, status) = txn_output.into_inner();
+        Self {
+            events: events.into_iter().map(Into::into).collect(),
+            gas_used,
+            delta_size,
+            status: status.into(),
+            write_set: write_set
+                .into_iter()
+                .map(|(p, w)| TransactionOutputAction {
+                    access_path: p.into(),
+                    action: w.into(),
+                })
+                .collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TransactionOutputAction {
+    #[serde(flatten)]
+    pub access_path: AccessPathView,
+    pub action: WriteOpView,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum WriteOpView {
+    Deletion,
+    Value(StrView<Vec<u8>>),
+}
+impl From<WriteOp> for WriteOpView {
+    fn from(op: WriteOp) -> Self {
+        match op {
+            WriteOp::Deletion => WriteOpView::Deletion,
+            WriteOp::Value(v) => WriteOpView::Value(StrView(v)),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AccessPathView {
+    pub address: AccountAddress,
+    pub path: StrView<Vec<u8>>,
+}
+
+impl From<AccessPath> for AccessPathView {
+    fn from(ap: AccessPath) -> Self {
+        Self {
+            address: ap.address,
+            path: StrView(ap.path),
         }
     }
 }

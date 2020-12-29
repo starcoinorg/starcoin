@@ -20,8 +20,8 @@ use starcoin_rpc_api::types::pubsub::MintBlock;
 use starcoin_rpc_api::types::{
     AnnotatedMoveStruct, AnnotatedMoveValue, BlockHeaderView, BlockSummaryView, BlockView, ChainId,
     ChainInfoView, ContractCall, DryRunTransactionRequest, EpochUncleSummaryView, FactoryAction,
-    PeerInfoView, SignedUserTransactionView, StrView, TransactionInfoView, TransactionRequest,
-    TransactionView,
+    PeerInfoView, SignedUserTransactionView, StrView, TransactionInfoView, TransactionOutputView,
+    TransactionRequest, TransactionView,
 };
 use starcoin_rpc_api::{
     account::AccountClient, chain::ChainClient, contract_api::ContractClient, debug::DebugClient,
@@ -41,10 +41,9 @@ use starcoin_types::peer_info::{Multiaddr, PeerId};
 use starcoin_types::stress_test::TPS;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::SystemStop;
-use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction, TransactionOutput};
+use starcoin_types::transaction::{RawUserTransaction, SignedUserTransaction};
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
 use starcoin_vm_types::token::token_code::TokenCode;
-use starcoin_vm_types::vm_status::VMStatus;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -805,10 +804,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn dry_run(
-        &self,
-        txn: DryRunTransactionRequest,
-    ) -> anyhow::Result<(VMStatus, TransactionOutput)> {
+    pub fn dry_run(&self, txn: DryRunTransactionRequest) -> anyhow::Result<TransactionOutputView> {
         self.call_rpc_blocking(
             |inner| async move { inner.contract_client.dry_run(txn).compat().await },
         )
