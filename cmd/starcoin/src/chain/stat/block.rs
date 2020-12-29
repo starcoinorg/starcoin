@@ -43,7 +43,7 @@ impl CommandAction for StatBlockCommand {
         let client = ctx.state().client();
         let opt = ctx.opt();
         let chain_info = client.chain_info().unwrap();
-        let current_head_number = chain_info.head.number;
+        let current_head_number = chain_info.head.number.0;
         let end_number = if opt.end_number >= 1 && opt.end_number < current_head_number {
             opt.end_number
         } else {
@@ -54,7 +54,7 @@ impl CommandAction for StatBlockCommand {
         let mut vec_stat_block = vec![];
         while block_number < end_number {
             let block = client.chain_get_block_by_number(block_number).unwrap();
-            let stat_view = BlockStatView::new(block.header.number, block.header.gas_used);
+            let stat_view = BlockStatView::new(block.header.number.0, block.header.gas_used.0);
             println!("{:?}", stat_view);
             vec_stat_block.push(stat_view);
             block_number += 1;

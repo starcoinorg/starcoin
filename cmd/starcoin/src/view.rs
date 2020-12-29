@@ -234,7 +234,7 @@ impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
         EventView {
             key: event_view.event_key,
-            sequence_number: event_view.event_seq_number,
+            sequence_number: event_view.event_seq_number.0,
             data: EventDataView::new(&event_view.type_tag, &event_view.data).unwrap_or_else(|_| {
                 EventDataView::Unknown {
                     data: event_view.data,
@@ -314,8 +314,8 @@ impl From<TransactionOutputView> for TranscationOutputView {
         Self {
             write_set: output.write_set,
             events: output.events.into_iter().map(|e| e.into()).collect(),
-            gas_used: output.gas_used,
-            delta_size: output.delta_size,
+            gas_used: output.gas_used.0,
+            delta_size: output.delta_size.0,
             status: output.status,
         }
     }
