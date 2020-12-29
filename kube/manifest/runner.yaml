@@ -3,12 +3,11 @@ kind: RunnerDeployment
 metadata:
   name: starcoin-runner-deployment
 spec:
-  replicas: 1
   template:
     spec:
-      organization: starcoinorg
-      env: []
-
+      nodeSelector:
+        beta.kubernetes.io/instance-type: c-16
+      repository: starcoinorg/starcoin
 
 ---
 apiVersion: actions.summerwind.dev/v1alpha1
@@ -18,7 +17,7 @@ metadata:
 spec:
   scaleTargetRef:
     name: starcoin-runner-deployment
-  minReplicas: 0
+  minReplicas: 1
   maxReplicas: 5
   scaleDownDelaySecondsAfterScaleOut: 300
   metrics:

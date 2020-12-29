@@ -96,6 +96,18 @@ else
   fi
 fi
 
+echo "Install openssl dev ...."
+
+if [[ "$PACKAGE_MANAGER" == "yum" ]]; then
+  sudo yum install openssl-devel -y
+elif [[ "$PACKAGE_MANAGER" == "apt-get" ]]; then
+  sudo apt-get install libssl-dev -y
+elif [[ "$PACKAGE_MANAGER" == "pacman" ]]; then
+  sudo pacman -Syu libssl-dev --noconfirm
+elif [[ "$PACKAGE_MANAGER" == "brew" ]]; then
+  echo "Please manual install openssl dev."
+fi
+
 echo "Install tools for move prover......"
 bash scripts/move_prover.sh
 
