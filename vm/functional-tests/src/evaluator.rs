@@ -8,6 +8,7 @@ use crate::{
     executor::FakeExecutor,
 };
 use mirai_annotations::checked_verify;
+use once_cell::sync::Lazy;
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_types::{
     access_path::AccessPath,
@@ -20,6 +21,7 @@ use starcoin_types::{
     },
 };
 use starcoin_vm_types::genesis_config::ChainId;
+use starcoin_vm_types::genesis_config::StdlibVersion;
 use starcoin_vm_types::vm_status::{KeptVMStatus, VMStatus};
 use starcoin_vm_types::{
     bytecode_verifier::{self, DependencyChecker},
@@ -30,10 +32,24 @@ use starcoin_vm_types::{
     state_view::StateView,
     views::ModuleView,
 };
+use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
+use stdlib::{transaction_scripts::compiled_transaction_script, transaction_scripts::StdlibScript};
 
 pub type TransactionId = usize;
+
+static PRECOMPILED_TXN_SCRIPTS: Lazy<HashMap<String, CompiledScript>> = Lazy::new(|| {
+    StdlibScript::all()
+        .into_iter()
+        .map(|script| {
+            let name = script.name();
+            let bytes = compiled_transaction_script(StdlibVersion::Latest, script).into_vec();
+            let compiled_script = CompiledScript::deserialize(&bytes).unwrap();
+            (name, compiled_script)
+        })
+        .collect::<HashMap<String, CompiledScript>>()
+});
 
 /// A transaction to be evaluated by the testing infra.
 /// Contains code and a transaction config.
@@ -407,6 +423,13 @@ fn serialize_and_deserialize_module(module: &CompiledModule) -> Result<()> {
     Ok(())
 }
 
+fn is_precompiled_script(input_str: &str) -> Option<CompiledScript> {
+    if let Some(script_name) = input_str.strip_prefix("stdlib_script::") {
+        return PRECOMPILED_TXN_SCRIPTS.get(script_name).cloned();
+    }
+    None
+}
+
 fn eval_transaction<TComp: Compiler>(
     compiler: &mut TComp,
     exec: &mut FakeExecutor,
@@ -440,7 +463,11 @@ fn eval_transaction<TComp: Compiler>(
     let compiler_log = |s| log.append(EvaluationOutput::Output(OutputType::CompilerLog(s)));
 
     let parsed_script_or_module =
-        unwrap_or_abort!(compiler.compile(compiler_log, sender_addr, &transaction.input));
+        if let Some(compiled_script) = is_precompiled_script(&transaction.input) {
+            ScriptOrModule::Script(compiled_script)
+        } else {
+            unwrap_or_abort!(compiler.compile(compiler_log, sender_addr, &transaction.input))
+        };
 
     match parsed_script_or_module {
         ScriptOrModule::Script(compiled_script) => {
