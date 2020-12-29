@@ -1,8 +1,4 @@
-on:
-  pull_request:
-    types: [ opened ]
-  issue_comment:
-    types: [ created ]
+on: [pull_request]
 
 name: benchmark pull requests
 jobs:
@@ -10,17 +6,15 @@ jobs:
     name: run benchmark
     runs-on: self-hosted
     steps:
-      - uses: khan/pull-request-comment-trigger@master
-        id: check_comment
+      - name: checkout
+        uses: actions/checkout@v1
         with:
-          trigger: '@benchmark'
-          reaction: rocket
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-      - uses: actions/checkout@master
-        if: steps.check_comment.outputs.triggered == 'true'
+          submodules: recursive
+      - name: setup rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
       - uses: jasonwilliams/criterion-compare-action@move_to_actions
-        if: steps.check_comment.outputs.triggered == 'true'
         with:
-          benchName: "bench_storage bench_chain bench_state_tree bench_vm" # Optional. Compare only this benchmark target
+          benchName: "bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm" # Optional. Compare only this benchmark target
           token: ${{ secrets.GITHUB_TOKEN }}
