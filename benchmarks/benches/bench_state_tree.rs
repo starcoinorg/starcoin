@@ -87,6 +87,7 @@ fn bench_put_and_commit(c: &mut Criterion) {
                             tree.put(k, v.into());
                         }
                         tree.commit().unwrap();
+                        tree.flush().unwrap();
                     },
                 )
             });
