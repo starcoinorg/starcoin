@@ -115,6 +115,9 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 txn: raw_txn,
                 signer,
             } => AccountResponse::SignedTxn(Box::new(self.manager.sign_txn(signer, *raw_txn)?)),
+            AccountRequest::SignMessage { message, signer } => AccountResponse::MessageSignature(
+                Box::new(self.manager.sign_message(signer, message)?),
+            ),
             AccountRequest::UnlockAccount(address, password, duration) => {
                 self.manager
                     .unlock_account(address, password.as_str(), duration)?;
