@@ -241,7 +241,10 @@ async fn test_txpool_actor_service() {
 
     delay_for(Duration::from_millis(200)).await;
     tx_pool_actor
-        .notify(TxnStatusFullEvent::new(vec![(txn.id(), TxStatus::Added)]))
+        .notify(Into::<TxnStatusFullEvent>::into(vec![(
+            txn.id(),
+            TxStatus::Added,
+        )]))
         .unwrap();
 
     delay_for(Duration::from_millis(300)).await;

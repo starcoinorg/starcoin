@@ -305,7 +305,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
 			<<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
 			Self::OutEvent
 		>
->{
+    >{
         loop {
             match self.ping.poll(cx, params) {
                 Poll::Pending => break,

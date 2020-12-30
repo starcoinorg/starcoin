@@ -109,13 +109,13 @@ impl StarcoinVM {
         self.vm_config
             .as_ref()
             .map(|config| &config.gas_schedule)
-            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 
     pub fn get_version(&self) -> Result<Version, VMStatus> {
         self.version
             .clone()
-            .ok_or_else(|| VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
+            .ok_or(VMStatus::Error(StatusCode::VM_STARTUP_FAILURE))
     }
 
     fn check_gas(&self, txn_data: &TransactionMetadata) -> Result<(), VMStatus> {
@@ -995,7 +995,7 @@ pub fn txn_effects_to_writeset_and_events_cached<C: AccessPathCache>(
                 Some((ty_layout, val)) => {
                     let blob = val
                         .simple_serialize(&ty_layout)
-                        .ok_or_else(|| VMStatus::Error(StatusCode::VALUE_SERIALIZATION_ERROR))?;
+                        .ok_or(VMStatus::Error(StatusCode::VALUE_SERIALIZATION_ERROR))?;
 
                     WriteOp::Value(blob)
                 }
@@ -1018,7 +1018,7 @@ pub fn txn_effects_to_writeset_and_events_cached<C: AccessPathCache>(
         .map(|(guid, seq_num, ty_tag, ty_layout, val)| {
             let msg = val
                 .simple_serialize(&ty_layout)
-                .ok_or_else(|| VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
+                .ok_or(VMStatus::Error(StatusCode::DATA_FORMAT_ERROR))?;
             let key = EventKey::try_from(guid.as_slice())
                 .map_err(|_| VMStatus::Error(StatusCode::EVENT_KEY_MISMATCH))?;
             Ok(ContractEvent::new(key, seq_num, ty_tag, msg))

@@ -204,7 +204,7 @@ impl NetworkBehaviour for CustomProtoWithAddr {
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
             Self::OutEvent
         >
->{
+    >{
         self.inner.poll(cx, params)
     }
 

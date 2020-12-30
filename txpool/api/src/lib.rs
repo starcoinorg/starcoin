@@ -10,7 +10,7 @@ use starcoin_types::{
 };
 use std::sync::Arc;
 
-pub type TxnStatusFullEvent = Arc<Vec<(HashValue, transaction::TxStatus)>>;
+pub type TxnStatusFullEvent = Arc<[(HashValue, transaction::TxStatus)]>;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxPoolStatus {
@@ -50,7 +50,7 @@ pub trait TxPoolSyncService: Clone + Send + Sync + Unpin {
     /// subscribe
     fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<TxnStatusFullEvent>;
 
-    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<Vec<HashValue>>>;
+    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>>;
 
     /// notify txpool about chain new blocks
     /// `enacted` is the blocks which enter the main chain.

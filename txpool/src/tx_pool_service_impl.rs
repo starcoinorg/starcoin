@@ -123,16 +123,14 @@ impl TxPoolSyncService for TxPoolService {
     }
 
     /// subscribe
-    fn subscribe_txns(
-        &self,
-    ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, transaction::TxStatus)>>> {
+    fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, transaction::TxStatus)]>> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["subscribe_txns"])
             .start_timer();
         self.inner.subscribe_txns()
     }
 
-    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<Vec<HashValue>>> {
+    fn subscribe_pending_txn(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
         let _timer = TXPOOL_SERVICE_HISTOGRAM
             .with_label_values(&["subscribe_pending_txns"])
             .start_timer();
@@ -258,14 +256,12 @@ impl Inner {
             .next_sequence_number(self.get_pool_client(), &address)
     }
 
-    pub(crate) fn subscribe_txns(
-        &self,
-    ) -> mpsc::UnboundedReceiver<Arc<Vec<(HashValue, TxStatus)>>> {
+    pub(crate) fn subscribe_txns(&self) -> mpsc::UnboundedReceiver<Arc<[(HashValue, TxStatus)]>> {
         let (tx, rx) = mpsc::unbounded();
         self.queue.add_full_listener(tx);
         rx
     }
-    pub(crate) fn subscribe_pending_txns(&self) -> mpsc::UnboundedReceiver<Arc<Vec<HashValue>>> {
+    pub(crate) fn subscribe_pending_txns(&self) -> mpsc::UnboundedReceiver<Arc<[HashValue]>> {
         let (tx, rx) = mpsc::unbounded();
         self.queue.add_pending_listener(tx);
         rx

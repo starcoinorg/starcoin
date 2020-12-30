@@ -103,12 +103,12 @@ where
             .custom_global_api_quotas
             .get(&api)
             .cloned()
-            .unwrap_or_else(|| self.default_global_api_quota);
+            .unwrap_or(self.default_global_api_quota);
         let user_quota = self
             .custom_user_api_quotas
             .get(&api)
             .cloned()
-            .unwrap_or_else(|| self.default_user_api_quota);
+            .unwrap_or(self.default_user_api_quota);
         ApiLimiter::new(global_quota, user_quota)
     }
 }

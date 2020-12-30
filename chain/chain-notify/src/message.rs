@@ -13,7 +13,7 @@ impl<T> actix::Message for Notification<T> {
     type Result = ();
 }
 
-pub type ContractEventNotification = Notification<Arc<Vec<Event>>>;
+pub type ContractEventNotification = Notification<Arc<[Event]>>;
 pub type NewHeadEventNotification = Notification<ThinBlock>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

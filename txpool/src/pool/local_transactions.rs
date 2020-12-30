@@ -44,10 +44,7 @@ pub enum Status {
 
 impl Status {
     fn is_pending(&self) -> bool {
-        match *self {
-            Status::Pending(_) => true,
-            _ => false,
-        }
+        matches!(self, Status::Pending(_))
     }
 }
 

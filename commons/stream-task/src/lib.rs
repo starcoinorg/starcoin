@@ -33,31 +33,19 @@ pub enum TaskError {
 
 impl TaskError {
     pub fn is_canceled(&self) -> bool {
-        match self {
-            Self::Canceled => true,
-            _ => false,
-        }
+        matches!(self, Self::Canceled)
     }
 
     pub fn is_break_error(&self) -> bool {
-        match self {
-            Self::BreakError(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::BreakError(_))
     }
 
     pub fn is_retry_limit_reached(&self) -> bool {
-        match self {
-            Self::RetryLimitReached(_, _) => true,
-            _ => false,
-        }
+        matches!(self, Self::RetryLimitReached(_, _))
     }
 
     pub fn is_collector_error(&self) -> bool {
-        match self {
-            Self::CollectorError(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::CollectorError(_))
     }
 }
 

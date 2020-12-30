@@ -82,10 +82,7 @@ pub enum Priority {
 
 impl Priority {
     fn is_local(self) -> bool {
-        match self {
-            Priority::Local => true,
-            _ => false,
-        }
+        matches!(self, Priority::Local)
     }
 }
 /// Transaction to verify.
@@ -151,17 +148,11 @@ impl PoolTransaction {
     }
 
     fn is_local(&self) -> bool {
-        match self {
-            PoolTransaction::Local(..) => true,
-            _ => false,
-        }
+        matches!(self, PoolTransaction::Local(..))
     }
 
     fn is_retracted(&self) -> bool {
-        match self {
-            PoolTransaction::Retracted(..) => true,
-            _ => false,
-        }
+        matches!(self, PoolTransaction::Retracted(..))
     }
 }
 

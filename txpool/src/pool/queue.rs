@@ -553,14 +553,14 @@ impl TransactionQueue {
     }
 
     /// Add a listener to be notified about all transactions the pool
-    pub fn add_pending_listener(&self, f: mpsc::UnboundedSender<Arc<Vec<HashValue>>>) {
+    pub fn add_pending_listener(&self, f: mpsc::UnboundedSender<Arc<[HashValue]>>) {
         (self.pool.write().listener_mut().1)
             .0
             .add_pending_listener(f);
     }
 
     /// Add a listener to be notified about all transactions the pool
-    pub fn add_full_listener(&self, f: mpsc::UnboundedSender<Arc<Vec<(HashValue, TxStatus)>>>) {
+    pub fn add_full_listener(&self, f: mpsc::UnboundedSender<Arc<[(HashValue, TxStatus)]>>) {
         (self.pool.write().listener_mut().1).0.add_full_listener(f);
     }
 

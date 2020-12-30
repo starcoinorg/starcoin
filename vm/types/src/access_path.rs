@@ -164,16 +164,10 @@ impl DataType {
     pub const LENGTH: usize = 2;
 
     pub fn is_code(self) -> bool {
-        match self {
-            DataType::CODE => true,
-            _ => false,
-        }
+        matches!(self, DataType::CODE)
     }
     pub fn is_resource(self) -> bool {
-        match self {
-            DataType::RESOURCE => true,
-            _ => false,
-        }
+        matches!(self, DataType::RESOURCE)
     }
 
     #[inline]

@@ -34,7 +34,7 @@ impl SyncConfig {
 
 impl ConfigModule for SyncConfig {
     fn default_with_opt(opt: &StarcoinOpt, _base: &BaseConfig) -> Result<Self> {
-        let sync_mode = opt.sync_mode.unwrap_or_else(|| SyncMode::FULL);
+        let sync_mode = opt.sync_mode.unwrap_or(SyncMode::FULL);
         Ok(SyncConfig { sync_mode })
     }
 

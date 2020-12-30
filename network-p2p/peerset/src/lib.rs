@@ -735,7 +735,7 @@ mod tests {
 
     fn next_message(mut peerset: Peerset) -> Result<(Message, Peerset), ()> {
         let next = futures::executor::block_on_stream(&mut peerset).next();
-        let message = next.ok_or_else(|| ())?;
+        let message = next.ok_or(())?;
         Ok((message, peerset))
     }
 
