@@ -12,8 +12,8 @@ spec:
 
       resources:
         requests:
-          cpu: "1"
-          memory: "1Gi"
+          cpu: "24.0"
+          memory: "48Gi"
         # If set to false, there are no privileged container and you cannot use docker.
         dockerEnabled: true
         # If set to true, runner pod container only 1 container that's expected to be able to run docker, too.
@@ -34,7 +34,7 @@ spec:
   scaleTargetRef:
     name: starcoin-runner-deployment
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 6
   scaleDownDelaySecondsAfterScaleOut: 300
   metrics:
     - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
