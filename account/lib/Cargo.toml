@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 dashmap = "4.0"
-anyhow = "1.0.36"
+anyhow = "1.0.37"
 futures = "0.3"
 async-trait = "0.1"
 rand = "0.7.3"
