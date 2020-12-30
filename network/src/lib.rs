@@ -6,6 +6,7 @@ extern crate log;
 #[macro_use]
 extern crate prometheus;
 
+mod broadcast_score_metrics;
 pub mod helper;
 mod network_metrics;
 mod service;
@@ -14,7 +15,7 @@ pub mod worker;
 
 pub use network_api::messages::*;
 
-pub use helper::get_unix_ts;
+pub use helper::{get_unix_ts, get_unix_ts_as_millis};
 pub use service::NetworkActorService;
 pub use service_ref::NetworkServiceRef;
 pub use worker::build_network_worker;
