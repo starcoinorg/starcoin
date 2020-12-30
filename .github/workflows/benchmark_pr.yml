@@ -15,6 +15,9 @@ jobs:
         with:
           toolchain: stable
       - uses: jasonwilliams/criterion-compare-action@master
+        env:
+          RUST_LOG: error
+          RUST_BACKTRACE: full
         with:
           cwd: "benchmarks"
 #          benchName: "bench_state_tree" # Optional. Compare only this benchmark target

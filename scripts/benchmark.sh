@@ -2,7 +2,7 @@
 
 STARCOIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && cd .. && pwd)"
 
-cmd="cargo bench --bench bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm"
+cmd="RUST_LOG=error cargo bench --bench bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm"
 # shellcheck disable=SC2236
 if [ -n "$1" ]
   then
