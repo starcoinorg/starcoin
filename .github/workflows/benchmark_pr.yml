@@ -16,5 +16,6 @@ jobs:
           toolchain: stable
       - uses: jasonwilliams/criterion-compare-action@move_to_actions
         with:
-          benchName: "bench_storage --bench bench_chain --bench bench_state_tree --bench bench_vm" # Optional. Compare only this benchmark target
+          cwd: "benchmarks"
+#          benchName: "bench_state_tree" # Optional. Compare only this benchmark target
           token: ${{ secrets.GITHUB_TOKEN }}
