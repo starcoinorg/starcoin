@@ -14,7 +14,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: jasonwilliams/criterion-compare-action@move_to_actions
+      - uses: jasonwilliams/criterion-compare-action@master
         with:
           cwd: "benchmarks"
 #          benchName: "bench_state_tree" # Optional. Compare only this benchmark target
