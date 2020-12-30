@@ -637,13 +637,13 @@ impl StarcoinVM {
                             txn_id,
                             &txn_data,
                             &status_and_output.0,
-                            &status_and_output.1.status(),
+                            Some(&status_and_output.1),
                         );
                         status_and_output
                     }
                     Err(err) => {
                         let txn_status = TransactionStatus::from(err.clone());
-                        log_vm_status(txn_id, &txn_data, &err, &txn_status);
+                        log_vm_status(txn_id, &txn_data, &err, None);
                         if txn_status.is_discarded() {
                             discard_error_vm_status(err)
                         } else {
@@ -1066,7 +1066,7 @@ pub fn log_vm_status(
     txn_id: HashValue,
     txn_data: &TransactionMetadata,
     status: &VMStatus,
-    txn_status: &TransactionStatus,
+    txn_output: Option<&TransactionOutput>,
 ) {
     let msg = match status {
         VMStatus::Executed => "Executed".to_string(),
@@ -1080,9 +1080,20 @@ pub fn log_vm_status(
         status => format!("{:?}", status),
     };
 
-    //TODO change log level after main network launch.
-    info!(
-        "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, vm_status: {}",
-        txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
-    );
+    match txn_output {
+        Some(output) => {
+            //TODO change log level after main network launch.
+            info!(
+                "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, gas_used: {}, vm_status: {}",
+                txn_id, txn_data.sender, txn_data.sequence_number, output.status(), output.gas_used(), msg,
+            );
+        }
+        None => {
+            let txn_status = TransactionStatus::from(status.clone());
+            info!(
+                "[starcoin-vm] Executed txn: {:?} (sender: {:?}, sequence_number: {:?}) txn_status: {:?}, vm_status: {}",
+                txn_id, txn_data.sender, txn_data.sequence_number, txn_status, msg,
+            );
+        }
+    }
 }
