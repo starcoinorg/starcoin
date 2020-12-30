@@ -1,4 +1,4 @@
-name: Starcoin benchmark
+name: Starcoin benchmark master
 on:
   workflow_dispatch:
   schedule:
@@ -20,14 +20,12 @@ jobs:
       - name: setup environment
         run: bash ./scripts/dev_setup.sh
       - name: run cargo bench
-        run: bash ./scripts/benchmark.sh /mnt/volume_01/starcoin_benchmarks
+        run: bash ./scripts/benchmark.sh
         env:
           RUST_LOG: error
           RUST_BACKTRACE: full
-      - name: tar result files
-        run: tar -cvf benchmark.tar /mnt/volume_01/starcoin_benchmarks/criterion
       - name: upload Artifact
         uses: actions/upload-artifact@v2
         with:
           name: bench-artifact
-          path: benchmark.tar
+          path: benchmarks/target/criterion/

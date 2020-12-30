@@ -63,7 +63,7 @@ async fn start_loop(block_client: BlockClient, sinker: EsSinker) -> Result<()> {
             Some(local_tip_header) => local_tip_header.block_number + 1,
             None => 0,
         };
-        if next_block_number > remote_tip_header.number {
+        if next_block_number > remote_tip_header.number.0 {
             tokio::time::delay_for(Duration::from_secs(1)).await;
         } else {
             let next_block: BlockData = FutureRetry::new(

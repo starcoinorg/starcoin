@@ -53,43 +53,42 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
         let state_api = ctx
             .service_ref_opt::<ChainStateService>()?
             .map(|service_ref| StateRpcImpl::new(service_ref.clone()));
-
-        let account_api = {
-            let chain_state_ref = ctx.service_ref::<ChainStateService>()?.clone();
-            let chain_ref = ctx.service_ref::<ChainReaderService>()?.clone();
-            ctx.service_ref_opt::<AccountService>()?.map(|service_ref| {
-                AccountRpcImpl::new(
-                    config.clone(),
-                    service_ref.clone(),
-                    txpool_service.clone(),
-                    chain_state_ref,
-                    chain_ref,
-                )
-            })
-        };
-
+        let chain_state_service = ctx.service_ref::<ChainStateService>()?.clone();
+        let chain_service = ctx.service_ref::<ChainReaderService>()?.clone();
+        let account_service = ctx.service_ref_opt::<AccountService>()?.cloned();
+        let account_api = account_service.clone().map(|service_ref| {
+            AccountRpcImpl::new(
+                config.clone(),
+                service_ref,
+                txpool_service.clone(),
+                chain_state_service.clone(),
+                chain_service.clone(),
+            )
+        });
         let pubsub_service = ctx.service_ref::<PubSubService>()?.clone();
-
         let pubsub_api = Some(PubSubImpl::new(pubsub_service));
         let debug_api = Some(DebugRpcImpl::new(config.clone(), log_handler));
         let miner_api = ctx
             .service_ref_opt::<MinerService>()?
             .map(|service_ref| MinerRpcImpl::new(service_ref.clone()));
 
-        let contract_api = ctx
-            .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| {
-                let dev_playground = PlaygroudService::new(storage.clone());
+        let contract_api = {
+            let dev_playground = PlaygroudService::new(storage.clone());
 
-                ContractRpcImpl::new(service_ref.clone(), dev_playground)
-            });
+            ContractRpcImpl::new(
+                config.clone(),
+                account_service,
+                txpool_service,
+                chain_state_service.clone(),
+                chain_service,
+                dev_playground,
+            )
+        };
 
-        let dev_api = ctx
-            .service_ref_opt::<ChainStateService>()?
-            .map(|service_ref| {
-                let dev_playground = PlaygroudService::new(storage);
-                DevRpcImpl::new(service_ref.clone(), dev_playground)
-            });
+        let dev_api = {
+            let dev_playground = PlaygroudService::new(storage);
+            DevRpcImpl::new(chain_state_service, dev_playground)
+        };
 
         Ok(RpcService::new_with_api(
             config,
@@ -104,8 +103,8 @@ impl ServiceFactory<RpcService> for RpcServiceFactory {
             pubsub_api,
             debug_api,
             miner_api,
-            dev_api,
-            contract_api,
+            Some(dev_api),
+            Some(contract_api),
         ))
     }
 }

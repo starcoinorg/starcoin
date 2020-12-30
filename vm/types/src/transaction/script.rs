@@ -42,8 +42,8 @@ impl Script {
         &self.args
     }
 
-    pub fn into_inner(self) -> (Vec<u8>, Vec<TransactionArgument>) {
-        (self.code, self.args)
+    pub fn into_inner(self) -> (Vec<u8>, Vec<TypeTag>, Vec<TransactionArgument>) {
+        (self.code, self.ty_args, self.args)
     }
 }
 

@@ -11,16 +11,16 @@ use starcoin_dev::playground;
 use starcoin_move_compiler::{
     compile_source_string_no_report, errors, load_bytecode_file, CompiledUnit, MOVE_EXTENSION,
 };
+use starcoin_rpc_api::types::{DryRunTransactionRequest, StrView, TransactionVMStatus};
 use starcoin_rpc_client::RemoteStateReader;
 use starcoin_state_api::AccountStateReader;
 use starcoin_transaction_builder::{compiled_transaction_script, StdlibScript};
 use starcoin_types::transaction::{
-    parse_transaction_argument, Module, RawUserTransaction, Script, TransactionArgument,
+    parse_transaction_argument, DryRunTransaction, Module, RawUserTransaction, Script,
+    TransactionArgument,
 };
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::genesis_config::StdlibVersion;
-use starcoin_vm_types::transaction::Transaction;
-use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{language_storage::TypeTag, parser::parse_type_tag};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -209,24 +209,30 @@ impl CommandAction for ExecuteCommand {
 
         let signed_txn = client.account_sign_txn(script_txn)?;
         let txn_hash = signed_txn.crypto_hash();
-        let (vm_status, output) = if opt.local_mode {
+        let output = if opt.local_mode {
             let state_view = RemoteStateReader::new(client)?;
             playground::dry_run(
                 &state_view,
-                Transaction::UserTransaction(signed_txn.clone()),
-            )?
+                DryRunTransaction {
+                    public_key: signed_txn.authenticator().public_key(),
+                    raw_txn: signed_txn.raw_txn().clone(),
+                },
+            )
+            .map(|(_, b)| b.into())?
         } else {
-            client.dry_run(signed_txn.clone())?
+            client.dry_run(DryRunTransactionRequest {
+                sender_public_key: Some(StrView(signed_txn.authenticator().public_key())),
+                transaction: signed_txn.raw_txn().clone().into(),
+            })?
         };
-        let keep_status = output.status().status().map_err(|status_code| {
-            format_err!("TransactionStatus is discard: {:?}", status_code)
-        })?;
-        if keep_status != KeptVMStatus::Executed {
-            bail!(
-                "move file pre-run failed, {:?}, vm_status: {:?}",
-                keep_status,
-                vm_status
-            );
+        match output.status {
+            TransactionVMStatus::Discard { status_code } => {
+                bail!("TransactionStatus is discard: {:?}", status_code)
+            }
+            TransactionVMStatus::Executed => {}
+            s => {
+                bail!("pre-run failed, status: {:?}", s);
+            }
         }
         if !opt.dry_run {
             client.submit_transaction(signed_txn)?;
@@ -237,7 +243,7 @@ impl CommandAction for ExecuteCommand {
 
             if opt.blocking {
                 let block = ctx.state().watch_txn(txn_hash)?;
-                output_view.block_number = Some(block.header.number);
+                output_view.block_number = Some(block.header.number.0);
                 output_view.block_id = Some(block.header.block_hash);
             }
             Ok(ExecuteResultView::Run(output_view))

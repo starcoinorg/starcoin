@@ -3,6 +3,8 @@
 
 use crate::genesis_config::ChainId;
 use crate::token::token_code::TokenCode;
+use crate::transaction::authenticator::AuthenticationKeyPreimage;
+use crate::transaction::RawUserTransaction;
 use crate::{
     account_address::AccountAddress,
     transaction::SignedUserTransaction,
@@ -44,18 +46,25 @@ pub struct TransactionMetadata {
 
 impl TransactionMetadata {
     pub fn new(txn: &SignedUserTransaction) -> Self {
+        Self::from_raw_txn_and_preimage(
+            txn.raw_txn(),
+            txn.authenticator().authentication_key_preimage(),
+        )
+    }
+
+    pub fn from_raw_txn_and_preimage(
+        txn: &RawUserTransaction,
+        auth_preimage: AuthenticationKeyPreimage,
+    ) -> Self {
         Self {
             sender: txn.sender(),
-            authentication_key_preimage: txn
-                .authenticator()
-                .authentication_key_preimage()
-                .into_vec(),
+            authentication_key_preimage: auth_preimage.into_vec(),
             sequence_number: txn.sequence_number(),
             max_gas_amount: GasUnits::new(txn.max_gas_amount()),
             gas_unit_price: GasPrice::new(txn.gas_unit_price()),
-            gas_token_code: TokenCode::from_str(txn.gas_token_code())
+            gas_token_code: TokenCode::from_str(txn.gas_token_code().as_str())
                 .expect("Transaction's gas_token_code must been verified at TransactionBuilder."),
-            transaction_size: AbstractMemorySize::new(txn.raw_txn_bytes_len() as u64),
+            transaction_size: AbstractMemorySize::new(txn.txn_size() as u64),
             expiration_timestamp_secs: txn.expiration_timestamp_secs(),
             chain_id: txn.chain_id(),
             payload: match txn.payload() {
@@ -69,7 +78,6 @@ impl TransactionMetadata {
             },
         }
     }
-
     pub fn max_gas_amount(&self) -> GasUnits<GasCarrier> {
         self.max_gas_amount
     }

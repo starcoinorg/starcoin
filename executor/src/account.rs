@@ -103,7 +103,7 @@ impl Account {
     }
 
     pub fn auth_key(&self) -> AuthenticationKey {
-        self.private_key.public_key().auth_key()
+        self.private_key.public_key().authentication_key()
     }
 
     pub fn public_key(&self) -> AccountPublicKey {

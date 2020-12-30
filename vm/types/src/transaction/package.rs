@@ -15,6 +15,7 @@ use vm::errors::Location;
 #[derive(Clone, Debug, Hash, Eq, PartialEq, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct Package {
     ///Package's all Module must at same address.
+    /// TODO(optimize): remove package_address from serialization, it can be derived from modules.
     package_address: AccountAddress,
     modules: Vec<Module>,
     init_script: Option<Script>,

@@ -30,7 +30,7 @@ impl CommandAction for StatTPSCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let chain_info = client.chain_info().unwrap();
-        let end_number = chain_info.head.number;
+        let end_number = chain_info.head.number.0;
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;

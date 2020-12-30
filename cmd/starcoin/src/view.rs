@@ -8,22 +8,22 @@ use serde::{Deserialize, Serialize, Serializer};
 use starcoin_account_api::AccountInfo;
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use starcoin_resource_viewer::{AnnotatedMoveStruct, AnnotatedMoveValue};
-use starcoin_rpc_api::types::{StrView, StructTagView, TransactionEventView};
+use starcoin_rpc_api::types::{
+    StrView, StructTagView, TransactionEventView, TransactionOutputAction, TransactionOutputView,
+    TransactionVMStatus,
+};
 use starcoin_state_api::StateWithProof;
 use starcoin_types::account_config::{DepositEvent, MintEvent, WithdrawEvent};
 use starcoin_types::contract_event::ContractEvent;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::TypeTag;
-use starcoin_types::transaction::{TransactionInfo, TransactionStatus};
+use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
-use starcoin_vm_types::access_path::AccessPath;
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
 use starcoin_vm_types::account_config::{ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
-use starcoin_vm_types::transaction::TransactionOutput;
 use starcoin_vm_types::vm_status::KeptVMStatus;
-use starcoin_vm_types::write_set::WriteOp;
 use std::collections::HashMap;
 
 //TODO add a derive to auto generate View Object
@@ -234,7 +234,7 @@ impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
         EventView {
             key: event_view.event_key,
-            sequence_number: event_view.event_seq_number,
+            sequence_number: event_view.event_seq_number.0,
             data: EventDataView::new(&event_view.type_tag, &event_view.data).unwrap_or_else(|_| {
                 EventDataView::Unknown {
                     data: event_view.data,
@@ -295,7 +295,7 @@ impl AmountView {
 
 #[derive(Debug, Serialize)]
 pub struct TranscationOutputView {
-    pub write_set: Vec<(AccessPathView, WriteOpView)>,
+    pub write_set: Vec<TransactionOutputAction>,
     /// The list of events emitted during this transaction.
     pub events: Vec<EventView>,
 
@@ -306,21 +306,17 @@ pub struct TranscationOutputView {
     pub delta_size: i64,
 
     /// The execution status.
-    pub status: TransactionStatus,
+    pub status: TransactionVMStatus,
 }
 
-impl From<TransactionOutput> for TranscationOutputView {
-    fn from(output: TransactionOutput) -> Self {
-        let (write_set, events, gas_used, delta_size, status) = output.into_inner();
+impl From<TransactionOutputView> for TranscationOutputView {
+    fn from(output: TransactionOutputView) -> Self {
         Self {
-            write_set: write_set
-                .into_iter()
-                .map(|(ap, w)| (ap.into(), w.into()))
-                .collect::<Vec<_>>(),
-            events: events.into_iter().map(|e| e.into()).collect(),
-            gas_used,
-            delta_size,
-            status,
+            write_set: output.write_set,
+            events: output.events.into_iter().map(|e| e.into()).collect(),
+            gas_used: output.gas_used.0,
+            delta_size: output.delta_size.0,
+            status: output.status,
         }
     }
 }
@@ -345,42 +341,6 @@ impl ExecutionOutputView {
             txn_hash,
             block_number: None,
             block_id: None,
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub struct AccessPathView {
-    address: AccountAddress,
-    ty: u8,
-    #[serde(serialize_with = "serialize_bytes_to_hex")]
-    hash: Vec<u8>,
-    suffix: String,
-}
-
-impl From<AccessPath> for AccessPathView {
-    fn from(ap: AccessPath) -> Self {
-        Self {
-            address: ap.address,
-            ty: ap.path[0],
-            hash: ap.path[1..=HashValue::LENGTH].to_vec(),
-            suffix: String::from_utf8_lossy(&ap.path[1 + HashValue::LENGTH..]).to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-#[serde(tag = "type", content = "data")]
-pub enum WriteOpView {
-    Deletion,
-    Value(#[serde(serialize_with = "serialize_bytes_to_hex")] Vec<u8>),
-}
-
-impl From<WriteOp> for WriteOpView {
-    fn from(op: WriteOp) -> Self {
-        match op {
-            WriteOp::Deletion => WriteOpView::Deletion,
-            WriteOp::Value(v) => WriteOpView::Value(v),
         }
     }
 }

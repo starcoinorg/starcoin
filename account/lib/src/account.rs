@@ -93,7 +93,7 @@ impl Account {
     }
 
     pub fn auth_key(&self) -> AuthenticationKey {
-        self.public_key().auth_key()
+        self.public_key().authentication_key()
     }
 
     ///Generate a random account for test.
