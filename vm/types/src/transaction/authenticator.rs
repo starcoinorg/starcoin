@@ -2,18 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_address::AccountAddress;
+use crate::transaction::{RawUserTransaction, SignedUserTransaction};
 use anyhow::{ensure, Error, Result};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::{rngs::OsRng, Rng};
 use serde::{Deserialize, Serialize};
+use starcoin_crypto::ed25519::{
+    Ed25519PrivateKey, ED25519_PRIVATE_KEY_LENGTH, ED25519_PUBLIC_KEY_LENGTH,
+};
+use starcoin_crypto::multi_ed25519::multi_shard::{
+    MultiEd25519KeyShard, MultiEd25519SignatureShard,
+};
 use starcoin_crypto::{
     derive::{DeserializeKey, SerializeKey},
     ed25519::{Ed25519PublicKey, Ed25519Signature},
     hash::{CryptoHash, CryptoHasher},
     multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature},
     traits::Signature,
-    CryptoMaterialError, HashValue, ValidCryptoMaterial, ValidCryptoMaterialStringExt,
+    CryptoMaterialError, HashValue, PrivateKey, SigningKey, ValidCryptoMaterial,
+    ValidCryptoMaterialStringExt,
 };
 use std::{convert::TryFrom, fmt, str::FromStr};
 
@@ -110,6 +118,13 @@ impl TransactionAuthenticator {
         match self {
             Self::Ed25519 { public_key, .. } => public_key.to_bytes().to_vec(),
             Self::MultiEd25519 { public_key, .. } => public_key.to_bytes().to_vec(),
+        }
+    }
+
+    pub fn public_key(&self) -> AccountPublicKey {
+        match self {
+            Self::Ed25519 { public_key, .. } => AccountPublicKey::Single(public_key.clone()),
+            Self::MultiEd25519 { public_key, .. } => AccountPublicKey::Multi(public_key.clone()),
         }
     }
 
@@ -296,6 +311,175 @@ impl fmt::Display for AuthenticationKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         // Forward to the LowerHex impl with a "0x" prepended (the # flag).
         write!(f, "0x{:#x}", self)
+    }
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq, DeserializeKey, SerializeKey)]
+pub enum AccountPublicKey {
+    Single(Ed25519PublicKey),
+    Multi(MultiEd25519PublicKey),
+}
+
+#[derive(Eq, PartialEq, Debug, DeserializeKey, SerializeKey)]
+pub enum AccountPrivateKey {
+    Single(Ed25519PrivateKey),
+    Multi(MultiEd25519KeyShard),
+}
+
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub enum AccountSignature {
+    Single(Ed25519PublicKey, Ed25519Signature),
+    Multi(MultiEd25519PublicKey, MultiEd25519SignatureShard),
+}
+
+impl ValidCryptoMaterial for AccountPublicKey {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Single(key) => key.to_bytes().to_vec(),
+            Self::Multi(key) => key.to_bytes(),
+        }
+    }
+}
+
+impl AccountPublicKey {
+    pub fn derived_address(&self) -> AccountAddress {
+        self.authentication_key().derived_address()
+    }
+    /// Return an authentication key preimage derived from `self`'s public key and scheme id
+    pub fn authentication_key_preimage(&self) -> AuthenticationKeyPreimage {
+        match self {
+            Self::Single(p) => AuthenticationKeyPreimage::ed25519(p),
+            Self::Multi(p) => AuthenticationKeyPreimage::multi_ed25519(p),
+        }
+    }
+
+    /// Return an authentication key derived from `self`'s public key and scheme id
+    pub fn authentication_key(&self) -> AuthenticationKey {
+        AuthenticationKey::from_preimage(&self.authentication_key_preimage())
+    }
+
+    /// Return the raw bytes of `self.public_key`
+    pub fn public_key_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Single(public_key) => public_key.to_bytes().to_vec(),
+            Self::Multi(public_key) => public_key.to_bytes().to_vec(),
+        }
+    }
+
+    /// Unique identifier for the signature scheme
+    pub fn scheme(&self) -> Scheme {
+        match self {
+            Self::Single { .. } => Scheme::Ed25519,
+            Self::Multi { .. } => Scheme::MultiEd25519,
+        }
+    }
+
+    pub fn as_single(&self) -> Option<Ed25519PublicKey> {
+        match self {
+            Self::Single(key) => Some(key.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_multi(&self) -> Option<MultiEd25519PublicKey> {
+        match self {
+            Self::Multi(key) => Some(key.clone()),
+            _ => None,
+        }
+    }
+}
+
+impl TryFrom<&[u8]> for AccountPublicKey {
+    type Error = CryptoMaterialError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() == ED25519_PUBLIC_KEY_LENGTH {
+            Ed25519PublicKey::try_from(value).map(Self::Single)
+        } else {
+            MultiEd25519PublicKey::try_from(value).map(Self::Multi)
+        }
+    }
+}
+
+impl Into<AccountPublicKey> for Ed25519PublicKey {
+    fn into(self) -> AccountPublicKey {
+        AccountPublicKey::Single(self)
+    }
+}
+
+impl Into<AccountPublicKey> for MultiEd25519PublicKey {
+    fn into(self) -> AccountPublicKey {
+        AccountPublicKey::Multi(self)
+    }
+}
+
+impl ValidCryptoMaterial for AccountPrivateKey {
+    fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            Self::Single(key) => key.to_bytes().to_vec(),
+            Self::Multi(key) => key.to_bytes(),
+        }
+    }
+}
+
+impl AccountPrivateKey {
+    pub fn public_key(&self) -> AccountPublicKey {
+        match self {
+            Self::Single(key) => AccountPublicKey::Single(key.public_key()),
+            Self::Multi(key) => AccountPublicKey::Multi(key.public_key()),
+        }
+    }
+
+    pub fn sign<T: CryptoHash + Serialize>(&self, message: &T) -> AccountSignature {
+        match self {
+            Self::Single(key) => AccountSignature::Single(key.public_key(), key.sign(message)),
+            Self::Multi(key) => AccountSignature::Multi(key.public_key(), key.sign(message)),
+        }
+    }
+}
+
+impl Into<AccountPrivateKey> for Ed25519PrivateKey {
+    fn into(self) -> AccountPrivateKey {
+        AccountPrivateKey::Single(self)
+    }
+}
+
+impl Into<AccountPrivateKey> for MultiEd25519KeyShard {
+    fn into(self) -> AccountPrivateKey {
+        AccountPrivateKey::Multi(self)
+    }
+}
+
+impl TryFrom<&[u8]> for AccountPrivateKey {
+    type Error = CryptoMaterialError;
+
+    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
+        if value.len() == ED25519_PRIVATE_KEY_LENGTH {
+            Ed25519PrivateKey::try_from(value).map(Self::Single)
+        } else {
+            MultiEd25519KeyShard::try_from(value).map(Self::Multi)
+        }
+    }
+}
+
+impl AccountSignature {
+    pub fn build_transaction(self, raw_txn: RawUserTransaction) -> Result<SignedUserTransaction> {
+        Ok(match self {
+            Self::Single(public_key, signature) => {
+                SignedUserTransaction::ed25519(raw_txn, public_key, signature)
+            }
+            Self::Multi(public_key, signature) => {
+                if signature.is_enough() {
+                    SignedUserTransaction::multi_ed25519(raw_txn, public_key, signature.into())
+                } else {
+                    anyhow::bail!(
+                        "MultiEd25519SignatureShard do not have enough signatures, current: {}, threshold: {}",
+                        signature.signatures().len(),
+                        signature.threshold()
+                    )
+                }
+            }
+        })
     }
 }
 

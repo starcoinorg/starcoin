@@ -13,7 +13,11 @@ pub struct Module {
     )]
     code: Vec<u8>,
 }
-
+impl From<Module> for Vec<u8> {
+    fn from(m: Module) -> Self {
+        m.code
+    }
+}
 impl Module {
     pub fn new(code: Vec<u8>) -> Module {
         Module { code }

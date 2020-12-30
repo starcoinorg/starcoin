@@ -1,7 +1,10 @@
 use jsonrpc_derive::rpc;
 
 pub use self::gen_client::Client as ContractClient;
-use crate::types::{AnnotatedMoveStruct, AnnotatedMoveValue, ContractCall, StrView};
+use crate::types::{
+    AnnotatedMoveStruct, AnnotatedMoveValue, ContractCall, DryRunTransactionRequest, StrView,
+    TransactionOutputView,
+};
 use crate::FutureResult;
 use starcoin_vm_types::account_address::AccountAddress;
 use starcoin_vm_types::language_storage::{ModuleId, StructTag};
@@ -23,4 +26,7 @@ pub trait ContractApi {
     /// Call a move contract, return returned move values.
     #[rpc(name = "contract.call")]
     fn call(&self, call: ContractCall) -> FutureResult<Vec<AnnotatedMoveValue>>;
+
+    #[rpc(name = "contract.dry_run")]
+    fn dry_run(&self, txn: DryRunTransactionRequest) -> FutureResult<TransactionOutputView>;
 }

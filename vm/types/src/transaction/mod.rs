@@ -6,10 +6,9 @@
 
 use crate::account_config::STC_TOKEN_CODE_STR;
 use crate::genesis_config::ChainId;
-use crate::transaction::authenticator::TransactionAuthenticator;
+use crate::transaction::authenticator::{AccountPublicKey, TransactionAuthenticator};
 use crate::{
     account_address::AccountAddress,
-    block_metadata::BlockMetadata,
     contract_event::ContractEvent,
     vm_status::{DiscardedVMStatus, KeptVMStatus},
     vm_status::{StatusCode, VMStatus},
@@ -29,6 +28,7 @@ use starcoin_crypto::{
 use std::ops::Deref;
 use std::{convert::TryFrom, fmt};
 
+use crate::block_metadata::BlockMetadata;
 pub use error::CallError;
 pub use error::Error as TransactionError;
 pub use module::Module;
@@ -198,6 +198,15 @@ impl RawUserTransaction {
     pub fn chain_id(&self) -> ChainId {
         self.chain_id
     }
+    pub fn payload(&self) -> &TransactionPayload {
+        &self.payload
+    }
+
+    pub fn txn_size(&self) -> usize {
+        scs::to_bytes(self)
+            .expect("Unable to serialize RawUserTransaction")
+            .len()
+    }
 
     pub fn mock() -> Self {
         Self::mock_by_sender(AccountAddress::random())
@@ -285,6 +294,13 @@ pub struct SignedUserTransaction {
 
     /// Public key and signature to authenticate
     authenticator: TransactionAuthenticator,
+}
+
+#[derive(Clone, Eq, PartialEq)]
+pub struct DryRunTransaction {
+    /// The raw transaction
+    pub raw_txn: RawUserTransaction,
+    pub public_key: AccountPublicKey,
 }
 
 /// A transaction for which the signature has been verified. Created by
@@ -406,9 +422,7 @@ impl SignedUserTransaction {
     }
 
     pub fn raw_txn_bytes_len(&self) -> usize {
-        scs::to_bytes(&self.raw_txn)
-            .expect("Unable to serialize RawUserTransaction")
-            .len()
+        self.raw_txn.txn_size()
     }
 
     /// Checks that the signature of given transaction. Returns `Ok(SignatureCheckedTransaction)` if

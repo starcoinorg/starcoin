@@ -222,7 +222,7 @@ impl EsSinker {
         // TODO: check against old tip info
         let tip_info = LocalTipInfo {
             block_hash: block.header.block_hash,
-            block_number: block.header.number,
+            block_number: block.header.number.0,
         };
 
         let block_index = self.config.block_index.as_str();

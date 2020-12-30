@@ -145,7 +145,7 @@ impl actix::StreamHandler<BlockEvent> for ChainWatcher {
         match item {
             Ok(b) => {
                 let b: ThinHeadBlock = b.into();
-                if let Some(responders) = self.watched_blocks.remove(&b.header.number) {
+                if let Some(responders) = self.watched_blocks.remove(&b.header.number.0) {
                     for r in responders {
                         let _ = r.send(Ok(b.clone()));
                     }

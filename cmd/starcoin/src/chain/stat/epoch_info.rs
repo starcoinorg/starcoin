@@ -30,14 +30,14 @@ impl CommandAction for StatEpochCommand {
     ) -> Result<Self::ReturnItem> {
         let client = ctx.state().client();
         let chain_info = client.chain_info().unwrap();
-        let end_number = chain_info.head.number;
+        let end_number = chain_info.head.number.0;
         let chain_state_reader = RemoteStateReader::new(client)?;
         let account_state_reader = AccountStateReader::new(&chain_state_reader);
         let consensus_config = account_state_reader.get_on_chain_config::<ConsensusConfig>()?;
         let epoch_block_count = consensus_config.unwrap().epoch_block_count;
         let epoch_count = end_number / epoch_block_count + 1;
         let chain_info = client.chain_info().unwrap();
-        let end_number = chain_info.head.number;
+        let end_number = chain_info.head.number.0;
         // get epoch_info
         let mut epoch_number = 1;
         let mut vec_epoch = vec![];

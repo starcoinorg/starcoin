@@ -63,7 +63,7 @@ fn transfer_txn(
     let raw_txn = starcoin_executor::build_transfer_txn(
         from,
         to.address,
-        Some(to.public_key.auth_key()),
+        Some(to.public_key.authentication_key()),
         account_resource.sequence_number(),
         amount,
         1,
