@@ -7036,6 +7036,7 @@ name = "starcoin-chain"
 version = "0.9.3"
 dependencies = [
  "anyhow",
+ "clap 2.33.3",
  "once_cell",
  "proptest",
  "proptest-derive",
@@ -7896,6 +7897,20 @@ dependencies = [
  "libra-proptest-helpers",
  "proptest",
  "proptest-derive",
+]
+
+[[package]]
+name = "starcoin-replay"
+version = "0.9.3"
+dependencies = [
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-vm-types",
+ "structopt 0.3.21",
 ]
 
 [[package]]

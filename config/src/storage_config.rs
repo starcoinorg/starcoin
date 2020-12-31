@@ -17,7 +17,7 @@ pub struct RocksdbConfig {
 }
 
 impl Default for RocksdbConfig {
-    #[cfg(not(windows))]
+    #[cfg(any(target_os = "linux"))]
     fn default() -> Self {
         Self {
             // Set max_open_files to 10k instead of -1 to avoid keep-growing memory in accordance
@@ -31,7 +31,18 @@ impl Default for RocksdbConfig {
     #[cfg(windows)]
     fn default() -> Self {
         Self {
-            // Set max_open_files to 10k instead of -1 to avoid keep-growing memory in accordance
+            // Set max_open_files to 256 instead of -1 to avoid keep-growing memory in accordance
+            // with the number of files.
+            max_open_files: 256,
+            // For now we set the max total WAL size to be 1G. This config can be useful when column
+            // families are updated at non-uniform frequencies.
+            max_total_wal_size: 1u64 << 30,
+        }
+    }
+    #[cfg(any(target_os = "macos"))]
+    fn default() -> Self {
+        Self {
+            // Set max_open_files to 256 instead of -1 to avoid keep-growing memory in accordance
             // with the number of files.
             max_open_files: 256,
             // For now we set the max total WAL size to be 1G. This config can be useful when column
