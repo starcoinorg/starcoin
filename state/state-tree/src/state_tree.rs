@@ -10,6 +10,7 @@ use starcoin_types::state_set::StateSet;
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
 
+use std::convert::TryInto;
 use std::sync::{Arc, Mutex, RwLock};
 
 pub struct StateCache {
@@ -193,9 +194,9 @@ impl StateTree {
 
         let mut node_map = BTreeMap::new();
         for (nk, n) in change_sets.node_batch.into_iter() {
-            node_map.insert(nk, StateNode(n));
+            node_map.insert(nk, n.try_into()?);
         }
-        self.storage.write_nodes(node_map).unwrap();
+        self.storage.write_nodes(node_map)?;
         // and then advance the storage root hash
         *self.storage_root_hash.write().unwrap() = root_hash;
         self.cache.lock().unwrap().reset(root_hash);
@@ -309,7 +310,7 @@ impl<'a> TreeReader for CachedTreeReader<'a> {
             return Ok(Some(n));
         }
         match self.store.get(node_key) {
-            Ok(Some(n)) => Ok(Some(n.0)),
+            Ok(Some(n)) => Ok(Some(n.try_into()?)),
             Ok(None) => Ok(None),
             Err(e) => Err(e),
         }
