@@ -70,7 +70,12 @@ fn main() {
     let begin = SystemTime::now();
     let mut block_vec = vec![];
     for i in 1..block_num {
-        block_vec.push(chain.get_block_by_number(i).unwrap().unwrap());
+        if let Ok(Some(block)) = chain.get_block_by_number(i) {
+            block_vec.push(block);
+        } else {
+            println!("read block err, number : {:?}", i);
+            break;
+        }
     }
     let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!("read use time: {:?}", use_time.as_nanos());
