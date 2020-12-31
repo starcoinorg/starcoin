@@ -312,6 +312,7 @@ mod find_ancestor_task;
 mod inner_sync_task;
 #[cfg(test)]
 pub(crate) mod mock;
+pub mod sync_score_metrics;
 #[cfg(test)]
 mod tests;
 

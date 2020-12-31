@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::broadcast_score_metrics::BROADCAST_SCORE_METRICS;
 use crate::build_network_worker;
 use crate::network_metrics::NetworkMetrics;
 use anyhow::{format_err, Result};
@@ -12,6 +13,7 @@ use network_api::messages::{
     GetPeerById, GetPeerSet, GetSelfPeer, NotificationMessage, PeerEvent, PeerMessage,
     ReportReputation, TransactionsMessage,
 };
+use network_api::peer_score::LinearScore;
 use network_api::{NetworkActor, PeerMessageHandler};
 use network_p2p::{Event, NetworkWorker};
 use smallvec::alloc::borrow::Cow;
@@ -263,6 +265,7 @@ pub(crate) struct Inner {
     peer_message_handler: Arc<dyn PeerMessageHandler>,
     sync_status: Option<SyncStatus>,
     metrics: Option<NetworkMetrics>,
+    score_handler: LinearScore,
 }
 
 impl Inner {
@@ -283,6 +286,7 @@ impl Inner {
             peer_message_handler: Arc::new(peer_message_handler),
             sync_status: None,
             metrics,
+            score_handler: LinearScore::new(10),
         })
     }
 
@@ -369,17 +373,19 @@ impl Inner {
 
             if let Some(notification) = notification {
                 if self.is_synced() {
-                    let peer_message = PeerMessage::new(peer_id, notification);
+                    let peer_message = PeerMessage::new(peer_id.clone(), notification);
                     self.peer_message_handler.handle_message(peer_message);
                 } else {
                     debug!("Ignore notification message from peer: {}, protocol: {} , because node is not synchronized.", peer_id, protocol);
                 }
+                BROADCAST_SCORE_METRICS.report_new(peer_id, self.score_handler.linear());
             } else {
                 debug!(
                     "Receive repeat message from peer: {}, protocol:{}, ignore.",
                     peer_id, protocol
                 );
-            }
+                BROADCAST_SCORE_METRICS.report_old(peer_id, self.score_handler.percentage(10));
+            };
         } else {
             error!(
                 "Receive NetworkMessage from unknown peer: {}, protocol: {}",
