@@ -6994,6 +6994,7 @@ name = "starcoin-chain"
 version = "0.9.3"
 dependencies = [
  "anyhow",
+ "clap 2.33.3",
  "once_cell",
  "proptest",
  "proptest-derive",

@@ -1,6 +1,8 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use starcoin_chain::verifier::Verifier;
+use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier};
 use starcoin_chain::BlockChain;
 use starcoin_config::RocksdbConfig;
 use starcoin_genesis::Genesis;
@@ -13,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::SystemTime;
 use structopt::StructOpt;
-use traits::{ChainReader, ChainWriter};
+use traits::ChainReader;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "replay")]
@@ -30,6 +32,9 @@ pub struct ReplayOpt {
     #[structopt(long, short = "c", default_value = "20000")]
     /// Number of block.
     pub block_num: u64,
+    #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
+    /// Verify type:  Basic, Consensus, Full, None, eg.
+    pub verifier: Verifier,
 }
 
 fn main() {
@@ -85,7 +90,22 @@ fn main() {
         .expect("create block chain should success.");
     let begin = SystemTime::now();
     for block in block_vec {
-        chain2.apply(block).unwrap();
+        match opts.verifier {
+            Verifier::Basic => {
+                chain2.apply_with_verifier::<BasicVerifier>(block).unwrap();
+            }
+            Verifier::Consensus => {
+                chain2
+                    .apply_with_verifier::<ConsensusVerifier>(block)
+                    .unwrap();
+            }
+            Verifier::None => {
+                chain2.apply_with_verifier::<NoneVerifier>(block).unwrap();
+            }
+            Verifier::Full => {
+                chain2.apply_with_verifier::<FullVerifier>(block).unwrap();
+            }
+        };
     }
     let use_time = SystemTime::now().duration_since(begin).unwrap();
     println!("apply use time: {:?}", use_time.as_nanos());

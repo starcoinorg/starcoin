@@ -25,4 +25,7 @@ OPTIONS:
     -f, --from <from>              Replay data dir
     -n, --net <net>                Chain Network to replay
     -t, --to <to>                  Target dir
+ARGS:
+    <verifier>    Verify type:  Basic, Consensus, Full, None, eg [possible values: Basic, Consensus, Full, None]
+
 ```
