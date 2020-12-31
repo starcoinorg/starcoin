@@ -7,7 +7,7 @@ A tools for replay data from a network to a new chain.
 
 
 ```bash
-$ .target/release/starcoin_replay  -n proxima -f $source -t $target -c 1000
+$ .target/release/starcoin_replay  -n proxima -f $source -t $target -c 10000
 ```
 
 
@@ -25,3 +25,4 @@ OPTIONS:
     -f, --from <from>              Replay data dir
     -n, --net <net>                Chain Network to replay
     -t, --to <to>                  Target dir
+```

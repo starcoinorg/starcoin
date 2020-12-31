@@ -42,14 +42,12 @@ fn main() {
     };
     let net = ChainNetwork::new_builtin(network);
 
-    let tmpdir = opts.from;
+    let from_dir = opts.from;
     let block_num = opts.block_num;
     let to_dir = opts.to;
 
-    //prepare block:"/Volumes/yuan2020/project/starcoin/data/proxima"
-
     let db_storage =
-        DBStorage::new(tmpdir.join("starcoindb/db"), RocksdbConfig::default()).unwrap();
+        DBStorage::new(from_dir.join("starcoindb/db"), RocksdbConfig::default()).unwrap();
 
     let storage = Arc::new(
         Storage::new(StorageInstance::new_cache_and_db_instance(
@@ -58,8 +56,9 @@ fn main() {
         ))
         .unwrap(),
     );
-    let (startup_info, _) = Genesis::init_and_check_storage(&net, storage.clone(), tmpdir.as_ref())
-        .expect("init storage by genesis fail.");
+    let (startup_info, _) =
+        Genesis::init_and_check_storage(&net, storage.clone(), from_dir.as_ref())
+            .expect("init storage by genesis fail.");
     let chain = BlockChain::new(net.time_service(), startup_info.main, storage)
         .expect("create block chain should success.");
     //read from first chain
