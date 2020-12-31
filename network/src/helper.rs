@@ -3,14 +3,21 @@
 
 //use anyhow::Result;
 use std::net::Ipv4Addr;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub fn get_unix_ts() -> u128 {
+    get_unix_duration().as_nanos()
+}
+
+pub fn get_unix_ts_as_millis() -> u128 {
+    get_unix_duration().as_millis()
+}
+
+fn get_unix_duration() -> Duration {
     let start = SystemTime::now();
-    let since_the_epoch = start
+    start
         .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-    since_the_epoch.as_nanos()
+        .expect("Time went backwards")
 }
 
 pub fn is_global(ip: Ipv4Addr) -> bool {

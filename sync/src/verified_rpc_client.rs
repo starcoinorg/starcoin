@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::sync_metrics::SYNC_METRICS;
+use crate::tasks::sync_score_metrics::SYNC_SCORE_METRICS;
 use anyhow::{ensure, format_err, Result};
 use logger::prelude::*;
+use network::get_unix_ts_as_millis;
+use network_api::peer_score::{InverseScore, Score};
 use network_api::PeerSelector;
 use starcoin_accumulator::node::AccumulatorStoreType;
 use starcoin_accumulator::AccumulatorNode;
@@ -105,6 +108,7 @@ impl From<&GetBlockHeadersByNumber> for RpcEntryVerify<BlockNumber> {
 pub struct VerifiedRpcClient {
     peer_selector: PeerSelector,
     client: NetworkRpcClient,
+    score_handler: InverseScore,
 }
 
 impl VerifiedRpcClient {
@@ -112,17 +116,19 @@ impl VerifiedRpcClient {
     where
         C: RawRpcClient + Send + Sync + 'static,
     {
-        Self {
-            peer_selector,
-            client: NetworkRpcClient::new(raw_rpc_client),
-        }
+        Self::new_with_client(peer_selector, NetworkRpcClient::new(raw_rpc_client))
     }
 
     pub fn new_with_client(peer_selector: PeerSelector, client: NetworkRpcClient) -> Self {
         Self {
             peer_selector,
             client,
+            score_handler: InverseScore::new(100, 60),
         }
+    }
+
+    pub fn execute_score(&self, time: u32) -> i64 {
+        self.score_handler.execute(time)
     }
 
     pub fn best_peer(&self) -> Option<PeerInfo> {
@@ -383,13 +389,18 @@ impl VerifiedRpcClient {
         &self,
         ids: Vec<HashValue>,
     ) -> Result<Vec<Option<(Block, Option<PeerId>)>>> {
-        let _timer = SYNC_METRICS
-            .sync_get_block_time
-            .with_label_values(&["time"])
-            .start_timer();
         let peer_id = self.random_peer()?;
+        let timer = SYNC_SCORE_METRICS
+            .peer_sync_per_time
+            .with_label_values(&[&format!("peer-{:?}", peer_id)])
+            .start_timer();
+        let start_time = get_unix_ts_as_millis();
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
+        let _ = timer.stop_and_record();
+        let time = (get_unix_ts_as_millis() - start_time) as u32;
+        let score = self.execute_score(time);
+        SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);
         Ok(ids
             .into_iter()
             .zip(blocks)
