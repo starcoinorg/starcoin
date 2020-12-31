@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use starcoin_metrics::{
-    register_int_counter_vec, HistogramOpts, HistogramVec, IntCounterVec, IntGaugeVec, Opts,
-    PrometheusError, UIntCounterVec,
+    default_registry, register_int_counter_vec, HistogramOpts, HistogramVec, IntCounterVec,
+    IntGaugeVec, Opts, PrometheusError, UIntCounterVec,
 };
 use starcoin_types::peer_info::PeerId;
 
@@ -45,6 +45,11 @@ impl SyncScoreMetrics {
             Opts::new("peer_sync_per_score", "per score").namespace(SC_NS),
             &["per_score"],
         )?;
+
+        default_registry().register(Box::new(peer_sync_total_time.clone()))?;
+        default_registry().register(Box::new(peer_sync_total_count.clone()))?;
+        default_registry().register(Box::new(peer_sync_per_time.clone()))?;
+        default_registry().register(Box::new(peer_sync_per_score.clone()))?;
 
         Ok(Self {
             peer_sync_total_score,

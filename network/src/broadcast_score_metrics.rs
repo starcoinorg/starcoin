@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use prometheus::default_registry;
 use starcoin_metrics::{
     register_int_counter_vec, IntCounterVec, Opts, PrometheusError, UIntCounterVec,
 };
@@ -40,6 +41,9 @@ impl BroadcastScoreMetrics {
             .namespace(SC_NS),
             &["total_old_count"],
         )?;
+
+        default_registry().register(Box::new(peer_broadcast_total_new_count.clone()))?;
+        default_registry().register(Box::new(peer_broadcast_total_old_count.clone()))?;
 
         Ok(Self {
             peer_broadcast_score,

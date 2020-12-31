@@ -412,7 +412,7 @@ impl VerifiedRpcClient {
         let start_time = get_unix_ts_as_millis();
         let blocks: Vec<Option<Block>> =
             self.client.get_blocks(peer_id.clone(), ids.clone()).await?;
-        let _time = timer.stop_and_record() as u32;
+        let _ = timer.stop_and_record();
         let time = (get_unix_ts_as_millis() - start_time) as u32;
         let score = self.execute_score(time);
         SYNC_SCORE_METRICS.update_metrics(peer_id.clone(), time, score);
