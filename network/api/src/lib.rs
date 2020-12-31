@@ -12,6 +12,7 @@ use std::sync::mpsc::TrySendError;
 pub mod messages;
 mod peer_message_handler;
 mod peer_provider;
+pub mod peer_score;
 
 use futures::future::BoxFuture;
 use futures::FutureExt;
