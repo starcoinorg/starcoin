@@ -7856,6 +7856,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "starcoin-replay"
+version = "0.9.3"
+dependencies = [
+ "starcoin-chain",
+ "starcoin-config",
+ "starcoin-genesis",
+ "starcoin-logger",
+ "starcoin-storage",
+ "starcoin-traits",
+ "starcoin-vm-types",
+ "structopt 0.3.21",
+]
+
+[[package]]
 name = "starcoin-resource-viewer"
 version = "0.9.3"
 dependencies = [

@@ -7,9 +7,10 @@ use crate::metrics::{record_metrics, STORAGE_ITER_BYTES};
 use crate::storage::{ColumnFamilyName, InnerStore, WriteOp};
 use crate::{DEFAULT_PREFIX_NAME, VEC_PREFIX_NAME};
 use anyhow::{ensure, format_err, Error, Result};
-use rocksdb::{Options, WriteBatch as DBWriteBatch, WriteOptions, DB};
+use rocksdb::{Options, ReadOptions, WriteBatch as DBWriteBatch, WriteOptions, DB};
 use starcoin_config::RocksdbConfig;
 use std::collections::HashSet;
+use std::marker::PhantomData;
 use std::path::Path;
 
 pub struct DBStorage {
@@ -164,6 +165,99 @@ impl DBStorage {
         db_opts.set_max_open_files(config.max_open_files);
         db_opts.set_max_total_wal_size(config.max_total_wal_size);
         db_opts
+    }
+    fn iter_with_direction(
+        &self,
+        prefix_name: &str,
+        direction: ScanDirection,
+    ) -> Result<SchemaIterator> {
+        let cf_handle = self.get_cf_handle(prefix_name)?;
+        Ok(SchemaIterator::new(
+            self.db
+                .raw_iterator_cf_opt(cf_handle, ReadOptions::default()),
+            direction,
+        ))
+    }
+
+    /// Returns a forward [`SchemaIterator`] on a certain schema.
+    pub fn iter(&self, prefix_name: &str) -> Result<SchemaIterator> {
+        self.iter_with_direction(prefix_name, ScanDirection::Forward)
+    }
+
+    /// Returns a backward [`SchemaIterator`] on a certain schema.
+    pub fn rev_iter(&self, prefix_name: &str) -> Result<SchemaIterator> {
+        self.iter_with_direction(prefix_name, ScanDirection::Backward)
+    }
+}
+
+pub enum ScanDirection {
+    Forward,
+    Backward,
+}
+
+pub struct SchemaIterator<'a> {
+    db_iter: rocksdb::DBRawIterator<'a>,
+    direction: ScanDirection,
+    phantom: PhantomData<Vec<u8>>,
+}
+
+impl<'a> SchemaIterator<'a> {
+    fn new(db_iter: rocksdb::DBRawIterator<'a>, direction: ScanDirection) -> Self {
+        SchemaIterator {
+            db_iter,
+            direction,
+            phantom: PhantomData,
+        }
+    }
+
+    /// Seeks to the first key.
+    pub fn seek_to_first(&mut self) {
+        self.db_iter.seek_to_first();
+    }
+
+    /// Seeks to the last key.
+    pub fn seek_to_last(&mut self) {
+        self.db_iter.seek_to_last();
+    }
+
+    /// Seeks to the first key whose binary representation is equal to or greater than that of the
+    /// `seek_key`.
+    pub fn seek(&mut self, seek_key: Vec<u8>) -> Result<()> {
+        self.db_iter.seek(&seek_key);
+        Ok(())
+    }
+
+    /// Seeks to the last key whose binary representation is less than or equal to that of the
+    /// `seek_key`.
+    pub fn seek_for_prev(&mut self, seek_key: Vec<u8>) -> Result<()> {
+        self.db_iter.seek_for_prev(&seek_key);
+        Ok(())
+    }
+
+    fn next_impl(&mut self) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
+        if !self.db_iter.valid() {
+            self.db_iter.status()?;
+            return Ok(None);
+        }
+
+        let raw_key = self.db_iter.key().expect("Iterator must be valid.");
+        let raw_value = self.db_iter.value().expect("Iterator must be valid.");
+        let key = Vec::from(raw_key);
+        let value = Vec::from(raw_value);
+        match self.direction {
+            ScanDirection::Forward => self.db_iter.next(),
+            ScanDirection::Backward => self.db_iter.prev(),
+        }
+
+        Ok(Some((key, value)))
+    }
+}
+
+impl<'a> Iterator for SchemaIterator<'a> {
+    type Item = Result<(Vec<u8>, Vec<u8>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next_impl().transpose()
     }
 }
 
