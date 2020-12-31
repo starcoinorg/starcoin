@@ -6,7 +6,6 @@ use starcoin_network_rpc_api::{
     gen_client::NetworkRpcClient, GetAccumulatorNodeByNodeHash, GetBlockHeaders,
     GetBlockHeadersByNumber, GetTxnsWithHash, GetTxnsWithSize,
 };
-use starcoin_state_tree::StateNode;
 use starcoin_types::{
     block::{BlockHeader, BlockInfo, BlockNumber},
     peer_info::PeerId,
@@ -176,33 +175,6 @@ pub async fn get_block_infos(
     let data = client.get_block_infos(peer_id, hashes).await?;
     let verified_infos = verify_condition.filter(data, |info| -> HashValue { *info.block_id() });
     Ok(verified_infos)
-}
-
-pub async fn get_state_node_by_node_hash(
-    client: &NetworkRpcClient,
-    peer_id: PeerId,
-    node_key: HashValue,
-) -> Result<StateNode> {
-    if let Some(state_node) = client
-        .get_state_node_by_node_hash(peer_id, node_key)
-        .await?
-    {
-        let state_node_id = state_node.inner().hash();
-        if node_key == state_node_id {
-            Ok(state_node)
-        } else {
-            Err(format_err!(
-                "State node hash {:?} and node key {:?} mismatch.",
-                state_node_id,
-                node_key
-            ))
-        }
-    } else {
-        Err(format_err!(
-            "State node is none by node key {:?}.",
-            node_key
-        ))
-    }
 }
 
 pub async fn get_accumulator_node_by_node_hash(
