@@ -18,7 +18,6 @@
 mod node_type_test;
 use crate::{blob::Blob, nibble::Nibble};
 use anyhow::{ensure, Context, Result};
-use bincode::{deserialize, serialize};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::cast::FromPrimitive;
@@ -28,6 +27,7 @@ use proptest::{collection::hash_map, prelude::*};
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::hash::*;
+use std::cell::Cell;
 use std::{
     collections::hash_map::HashMap,
     io::{prelude::*, Cursor, Read, SeekFrom},
@@ -67,6 +67,8 @@ pub(crate) type Children = HashMap<Nibble, Child>;
 pub struct InternalNode {
     // Up to 16 children.
     children: Children,
+    //Node's hash cache
+    cached_hash: Cell<Option<HashValue>>,
 }
 
 /// Computes the hash of internal node according to [`JellyfishTree`](crate::JellyfishTree)
@@ -158,7 +160,21 @@ impl InternalNode {
                     .is_leaf
             )
         }
-        Self { children }
+        Self {
+            children,
+            cached_hash: Cell::new(None),
+        }
+    }
+
+    pub fn cached_hash(&self) -> HashValue {
+        match self.cached_hash.get() {
+            Some(hash) => hash,
+            None => {
+                let hash = self.crypto_hash();
+                self.cached_hash.set(Some(hash));
+                hash
+            }
+        }
     }
 
     pub fn serialize(&self, binary: &mut Vec<u8>) -> Result<()> {
@@ -220,7 +236,7 @@ impl InternalNode {
             existence_bitmap &= !child_bit;
         }
         assert_eq!(existence_bitmap, 0);
-        Ok(Self { children })
+        Ok(Self::new(children))
     }
 
     /// Gets the `n`-th child.
@@ -402,6 +418,8 @@ pub struct LeafNode {
     blob_hash: HashValue,
     // The account blob associated with `account_key`.
     blob: Blob,
+    #[serde(skip)]
+    cached_hash: Cell<Option<HashValue>>,
 }
 
 impl LeafNode {
@@ -412,7 +430,30 @@ impl LeafNode {
             account_key,
             blob_hash,
             blob,
+            cached_hash: Cell::new(None),
         }
+    }
+
+    pub fn cached_hash(&self) -> HashValue {
+        match self.cached_hash.get() {
+            Some(hash) => hash,
+            None => {
+                let hash = self.crypto_hash();
+                self.cached_hash.set(Some(hash));
+                hash
+            }
+        }
+    }
+
+    pub fn serialize(&self, out: &mut Vec<u8>) -> Result<()> {
+        //FIXME #1893
+        Ok(bincode::serialize_into(out, self)?)
+    }
+
+    pub fn deserialize(data: &[u8]) -> Result<Self> {
+        //FIXME custom serialize and deserialize, do not use bincode $1893
+        let node: LeafNode = bincode::deserialize(data)?;
+        Ok(node)
     }
 
     /// Gets the account key, the hashed account address.
@@ -513,7 +554,7 @@ impl Node {
             }
             Node::Leaf(leaf_node) => {
                 out.push(NodeTag::Leaf as u8);
-                out.extend(serialize(&leaf_node)?);
+                leaf_node.serialize(&mut out)?;
             }
         }
         Ok(out)
@@ -523,8 +564,8 @@ impl Node {
     pub fn hash(&self) -> HashValue {
         match self {
             Node::Null => *SPARSE_MERKLE_PLACEHOLDER_HASH,
-            Node::Internal(internal_node) => internal_node.crypto_hash(),
-            Node::Leaf(leaf_node) => leaf_node.crypto_hash(),
+            Node::Internal(internal_node) => internal_node.cached_hash(),
+            Node::Leaf(leaf_node) => leaf_node.cached_hash(),
         }
     }
 
@@ -538,7 +579,7 @@ impl Node {
         match node_tag {
             Some(NodeTag::Null) => Ok(Node::Null),
             Some(NodeTag::Internal) => Ok(Node::Internal(InternalNode::deserialize(&val[1..])?)),
-            Some(NodeTag::Leaf) => Ok(Node::Leaf(deserialize(&val[1..])?)),
+            Some(NodeTag::Leaf) => Ok(Node::Leaf(LeafNode::deserialize(&val[1..])?)),
             None => Err(NodeDecodeError::UnknownTag { unknown_tag: tag }.into()),
         }
     }

@@ -3,18 +3,24 @@ use forkable_jellyfish_merkle::node_type::Node;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
 use std::collections::BTreeMap;
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct StateNode(pub Node);
+use std::convert::{TryFrom, TryInto};
 
-impl StateNode {
-    pub fn inner(&self) -> &Node {
-        &self.0
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct StateNode(pub Vec<u8>);
+
+impl TryFrom<Node> for StateNode {
+    type Error = anyhow::Error;
+
+    fn try_from(n: Node) -> Result<Self> {
+        Ok(StateNode(n.encode()?))
     }
 }
 
-impl From<Node> for StateNode {
-    fn from(n: Node) -> Self {
-        StateNode(n)
+impl TryInto<Node> for StateNode {
+    type Error = anyhow::Error;
+
+    fn try_into(self) -> Result<Node, Self::Error> {
+        Node::decode(self.0.as_slice())
     }
 }
 
@@ -24,8 +30,7 @@ impl<'de> Deserialize<'de> for StateNode {
         D: Deserializer<'de>,
     {
         let bytes = <&[u8]>::deserialize(deserializer)?;
-        let node = Node::decode(bytes).unwrap();
-        Ok(StateNode::from(node))
+        Ok(Self(bytes.to_vec()))
     }
 }
 
@@ -34,8 +39,7 @@ impl Serialize for StateNode {
     where
         S: Serializer,
     {
-        let bytes = Node::encode(self.inner()).unwrap();
-        bytes.serialize(serializer)
+        self.0.serialize(serializer)
     }
 }
 
