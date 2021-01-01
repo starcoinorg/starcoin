@@ -6,7 +6,8 @@
 
 
 -  [Resource `RewardQueue`](#0x1_BlockReward_RewardQueue)
--  [Struct `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Resource `RewardInfo`](#0x1_BlockReward_RewardInfo)
+-  [Struct `BlockRewardEvent`](#0x1_BlockReward_BlockRewardEvent)
 -  [Constants](#@Constants_0)
 -  [Function `initialize`](#0x1_BlockReward_initialize)
 -  [Function `process_block_reward`](#0x1_BlockReward_process_block_reward)
@@ -18,6 +19,7 @@
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
+<b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
 <b>use</b> <a href="RewardConfig.md#0x1_RewardConfig">0x1::RewardConfig</a>;
 <b>use</b> <a href="STC.md#0x1_STC">0x1::STC</a>;
 <b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
@@ -55,6 +57,12 @@
 <dd>
 
 </dd>
+<dt>
+<code>reward_events: <a href="Event.md#0x1_Event_EventHandle">Event::EventHandle</a>&lt;<a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockReward::BlockRewardEvent</a>&gt;</code>
+</dt>
+<dd>
+ event handle used to emit block reward event.
+</dd>
 </dl>
 
 
@@ -62,11 +70,11 @@
 
 <a name="0x1_BlockReward_RewardInfo"></a>
 
-## Struct `RewardInfo`
+## Resource `RewardInfo`
 
 
 
-<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
+<pre><code><b>resource</b> <b>struct</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a>
 </code></pre>
 
 
@@ -93,6 +101,58 @@
 </dt>
 <dd>
 
+</dd>
+<dt>
+<code>gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;</code>
+</dt>
+<dd>
+
+</dd>
+</dl>
+
+
+</details>
+
+<a name="0x1_BlockReward_BlockRewardEvent"></a>
+
+## Struct `BlockRewardEvent`
+
+block reward event
+
+
+<pre><code><b>struct</b> <a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockRewardEvent</a>
+</code></pre>
+
+
+
+<details>
+<summary>Fields</summary>
+
+
+<dl>
+<dt>
+<code>block_number: u64</code>
+</dt>
+<dd>
+ block number
+</dd>
+<dt>
+<code>block_reward: u128</code>
+</dt>
+<dd>
+ STC reward.
+</dd>
+<dt>
+<code>gas_fees: u128</code>
+</dt>
+<dd>
+ gas fees in STC.
+</dd>
+<dt>
+<code>miner: address</code>
+</dt>
+<dd>
+ block miner
 </dd>
 </dl>
 
@@ -172,6 +232,7 @@
     move_to&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(account, <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> {
         reward_number: 0,
         infos: <a href="Vector.md#0x1_Vector_empty">Vector::empty</a>(),
+        reward_events: <a href="Event.md#0x1_Event_new_event_handle">Event::new_event_handle</a>&lt;<a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">Self::BlockRewardEvent</a>&gt;(account),
     });
 }
 </code></pre>
@@ -186,7 +247,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;, previous_block_gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;)
 </code></pre>
 
 
@@ -196,43 +257,77 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128,
-                                current_author: address, auth_key_vec: vector&lt;u8&gt;) <b>acquires</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> {
+                                current_author: address, auth_key_vec: vector&lt;u8&gt;,
+                                previous_block_gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;) <b>acquires</b> <a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a> {
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
-
-    <b>if</b> (current_number &gt; 0) {
-        <b>let</b> rewards = borrow_global_mut&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-        <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&rewards.infos);
-        <b>assert</b>((current_number == (rewards.reward_number + len + 1)), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>));
-
-        <b>let</b> reward_delay = <a href="RewardConfig.md#0x1_RewardConfig_reward_delay">RewardConfig::reward_delay</a>();
-        <b>if</b> (len &gt;= reward_delay) {//pay and remove
-            <b>let</b> i = len;
-            <b>while</b> (i &gt; 0 && i &gt;= reward_delay) {
-                <b>let</b> reward_number = rewards.reward_number + 1;
-                <b>let</b> first_info = *<a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(&rewards.infos, 0);
-                rewards.reward_number = reward_number;
-                <b>if</b> (first_info.reward &gt; 0) {
-                    <b>let</b> reward = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, first_info.reward);
-                    <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(first_info.miner, reward);
-                };
-                <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>(&<b>mut</b> rewards.infos, 0);
-                i = i - 1;
-            }
-        };
-
-        <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
-            //create account from <b>public</b> key
-            <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>));
-            <b>let</b> expected_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(auth_key_vec);
-            <b>assert</b>(current_author == expected_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>));
-        };
-        <b>let</b> current_info = <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> {
-            number: current_number,
-            reward: current_reward,
-            miner: current_author,
-        };
-        <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> rewards.infos, current_info);
+    <b>if</b> (current_number == 0) {
+        <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>(previous_block_gas_fees);
+        <b>return</b>
     };
+
+    <b>let</b> rewards = borrow_global_mut&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    <b>let</b> len = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(&rewards.infos);
+    <b>assert</b>((current_number == (rewards.reward_number + len + 1)), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>));
+
+    // distribute gas fee <b>to</b> last block reward info.
+    // <b>if</b> not last block reward info, the passed in gas fee must be zero.
+    <b>if</b> (len == 0) {
+        <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>(previous_block_gas_fees);
+    } <b>else</b> {
+        <b>let</b> reward_info = <a href="Vector.md#0x1_Vector_borrow_mut">Vector::borrow_mut</a>(&<b>mut</b> rewards.infos, len - 1);
+        <b>assert</b>(current_number == reward_info.number + 1, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_ECURRENT_NUMBER_IS_WRONG">ECURRENT_NUMBER_IS_WRONG</a>));
+        <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> reward_info.gas_fees, previous_block_gas_fees);
+    };
+
+    <b>let</b> reward_delay = <a href="RewardConfig.md#0x1_RewardConfig_reward_delay">RewardConfig::reward_delay</a>();
+    <b>if</b> (len &gt;= reward_delay) {//pay and remove
+        <b>let</b> i = len;
+        <b>while</b> (i &gt; 0 && i &gt;= reward_delay) {
+            <b>let</b> <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> { number: reward_block_number, reward: block_reward, gas_fees, miner } = <a href="Vector.md#0x1_Vector_remove">Vector::remove</a>(&<b>mut</b> rewards.infos, 0);
+
+            <b>let</b> gas_fee_value = <a href="Token.md#0x1_Token_value">Token::value</a>(&gas_fees);
+            <b>let</b> total_reward = gas_fees;
+            // add block reward <b>to</b> total.
+            <b>if</b> (block_reward &gt; 0) {
+                <b>let</b> reward = <a href="Token.md#0x1_Token_mint">Token::mint</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account, block_reward);
+                <a href="Token.md#0x1_Token_deposit">Token::deposit</a>(&<b>mut</b> total_reward, reward);
+            };
+            // distribute total.
+            <b>if</b> (<a href="Token.md#0x1_Token_value">Token::value</a>(&total_reward) &gt; 0) {
+                <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(miner, total_reward);
+            } <b>else</b> {
+                <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>(total_reward);
+            };
+            // emit reward event.
+            <a href="Event.md#0x1_Event_emit_event">Event::emit_event</a>&lt;<a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockRewardEvent</a>&gt;(
+                &<b>mut</b> rewards.reward_events,
+                <a href="BlockReward.md#0x1_BlockReward_BlockRewardEvent">BlockRewardEvent</a> {
+                    block_number: reward_block_number,
+                    block_reward: block_reward,
+                    gas_fees: gas_fee_value,
+                    miner,
+                }
+            );
+
+            rewards.reward_number = rewards.reward_number + 1;
+            i = i - 1;
+        }
+    };
+
+    <b>if</b> (!<a href="Account.md#0x1_Account_exists_at">Account::exists_at</a>(current_author)) {
+        //create account from <b>public</b> key
+        <b>assert</b>(!<a href="Vector.md#0x1_Vector_is_empty">Vector::is_empty</a>(&auth_key_vec), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_AUTH_KEY_IS_EMPTY">EAUTHOR_AUTH_KEY_IS_EMPTY</a>));
+        <b>let</b> expected_address = <a href="Account.md#0x1_Account_create_account">Account::create_account</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(auth_key_vec);
+        <b>assert</b>(current_author == expected_address, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="BlockReward.md#0x1_BlockReward_EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH">EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH</a>));
+    };
+    <b>let</b> current_info = <a href="BlockReward.md#0x1_BlockReward_RewardInfo">RewardInfo</a> {
+        number: current_number,
+        reward: current_reward,
+        miner: current_author,
+        gas_fees: <a href="Token.md#0x1_Token_zero">Token::zero</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(),
+    };
+    <a href="Vector.md#0x1_Vector_push_back">Vector::push_back</a>(&<b>mut</b> rewards.infos, current_info);
+
 }
 </code></pre>
 
@@ -278,16 +373,21 @@
 ### Function `process_block_reward`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;)
+<pre><code><b>public</b> <b>fun</b> <a href="BlockReward.md#0x1_BlockReward_process_block_reward">process_block_reward</a>(account: &signer, current_number: u64, current_reward: u128, current_author: address, auth_key_vec: vector&lt;u8&gt;, previous_block_gas_fees: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;<a href="STC.md#0x1_STC_STC">STC::STC</a>&gt;)
 </code></pre>
 
 
 
 
 <pre><code><b>aborts_if</b> <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account) != <a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>();
+<b>aborts_if</b> current_number == 0 && <a href="Token.md#0x1_Token_value">Token::value</a>(previous_block_gas_fees) != 0;
 <b>aborts_if</b> current_number &gt; 0 && !<b>exists</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
 <b>aborts_if</b> current_number &gt; 0 && (<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).reward_number + <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos) + 1) != current_number;
 <b>aborts_if</b> current_number &gt; 0 && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+<a name="0x1_BlockReward_reward_info_length$2"></a>
+<b>let</b> reward_info_length = <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos);
+<b>aborts_if</b> current_number &gt; 0 && reward_info_length == 0 && <a href="Token.md#0x1_Token_value">Token::value</a>(previous_block_gas_fees) != 0;
+<b>aborts_if</b> current_number &gt; 0 && reward_info_length != 0 && <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos, reward_info_length - 1).number != current_number - 1;
 <b>aborts_if</b> current_number &gt; 0 && <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos) &gt;= <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).payload.reward_delay
 && (<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).reward_number + 1) != <a href="Vector.md#0x1_Vector_borrow">Vector::borrow</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos, 0).number;
 <b>aborts_if</b> current_number &gt; 0 && <a href="Vector.md#0x1_Vector_length">Vector::length</a>(<b>global</b>&lt;<a href="BlockReward.md#0x1_BlockReward_RewardQueue">RewardQueue</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).infos) &gt;= <b>global</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="RewardConfig.md#0x1_RewardConfig_RewardConfig">RewardConfig::RewardConfig</a>&gt;&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).payload.reward_delay

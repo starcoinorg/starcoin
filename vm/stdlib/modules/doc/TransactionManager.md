@@ -9,12 +9,10 @@
 -  [Function `prologue`](#0x1_TransactionManager_prologue)
 -  [Function `epilogue`](#0x1_TransactionManager_epilogue)
 -  [Function `block_prologue`](#0x1_TransactionManager_block_prologue)
--  [Function `distribute`](#0x1_TransactionManager_distribute)
 -  [Specification](#@Specification_1)
     -  [Function `prologue`](#@Specification_1_prologue)
     -  [Function `epilogue`](#@Specification_1_epilogue)
     -  [Function `block_prologue`](#@Specification_1_block_prologue)
-    -  [Function `distribute`](#@Specification_1_distribute)
 
 
 <pre><code><b>use</b> <a href="Account.md#0x1_Account">0x1::Account</a>;
@@ -258,14 +256,15 @@
 ) {
     // Can only be invoked by genesis account
     <a href="CoreAddresses.md#0x1_CoreAddresses_assert_genesis_address">CoreAddresses::assert_genesis_address</a>(account);
-    <a href="Timestamp.md#0x1_Timestamp_update_global_time">Timestamp::update_global_time</a>(account, timestamp);
     // Check that the chain ID stored on-chain matches the chain ID
     // specified by the transaction
     <b>assert</b>(<a href="ChainId.md#0x1_ChainId_get">ChainId::get</a>() == chain_id, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="TransactionManager.md#0x1_TransactionManager_EPROLOGUE_BAD_CHAIN_ID">EPROLOGUE_BAD_CHAIN_ID</a>));
-    //get previous author for distribute txn_fee
-    <b>let</b> previous_author = <a href="Block.md#0x1_Block_get_current_author">Block::get_current_author</a>();
+
+    // deal <b>with</b> previous block first.
     <b>let</b> txn_fee = <a href="TransactionFee.md#0x1_TransactionFee_distribute_transaction_fees">TransactionFee::distribute_transaction_fees</a>&lt;<a href="STC.md#0x1_STC">STC</a>&gt;(account);
-    <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>(txn_fee, previous_author);
+
+    // then deal <b>with</b> current block.
+    <a href="Timestamp.md#0x1_Timestamp_update_global_time">Timestamp::update_global_time</a>(account, timestamp);
     <a href="Block.md#0x1_Block_process_block_metadata">Block::process_block_metadata</a>(
         account,
         parent_hash,
@@ -275,36 +274,8 @@
         number,
     );
     <b>let</b> reward = <a href="Epoch.md#0x1_Epoch_adjust_epoch">Epoch::adjust_epoch</a>(account, number, timestamp, uncles, parent_gas_used);
-    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, auth_key_vec);
-}
-</code></pre>
-
-
-
-</details>
-
-<a name="0x1_TransactionManager_distribute"></a>
-
-## Function `distribute`
-
-
-
-<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, author: address)
-</code></pre>
-
-
-
-<details>
-<summary>Implementation</summary>
-
-
-<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token">Token</a>&lt;TokenType&gt;, author: address) {
-    <b>let</b> value = <a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(&txn_fee);
-    <b>if</b> (value &gt; 0) {
-        <a href="Account.md#0x1_Account_deposit">Account::deposit</a>&lt;TokenType&gt;(author, txn_fee);
-    } <b>else</b> {
-        <a href="Token.md#0x1_Token_destroy_zero">Token::destroy_zero</a>&lt;TokenType&gt;(txn_fee);
-    }
+    // pass in previous block gas fees.
+    <a href="BlockReward.md#0x1_BlockReward_process_block_reward">BlockReward::process_block_reward</a>(account, number, reward, author, auth_key_vec, txn_fee);
 }
 </code></pre>
 
@@ -399,24 +370,4 @@
 
 
 <pre><code><b>pragma</b> verify = <b>false</b>;
-</code></pre>
-
-
-
-<a name="@Specification_1_distribute"></a>
-
-### Function `distribute`
-
-
-<pre><code><b>fun</b> <a href="TransactionManager.md#0x1_TransactionManager_distribute">distribute</a>&lt;TokenType&gt;(txn_fee: <a href="Token.md#0x1_Token_Token">Token::Token</a>&lt;TokenType&gt;, author: address)
-</code></pre>
-
-
-
-
-<pre><code><b>include</b> <a href="Account.md#0x1_Account_AbortsIfDepositWithMetadata">Account::AbortsIfDepositWithMetadata</a>&lt;TokenType&gt;{
-    value_is_not_zero: (<a href="Token.md#0x1_Token_value">Token::value</a>&lt;TokenType&gt;(txn_fee) &gt; 0),
-    receiver: author,
-    to_deposit: txn_fee,
-};
 </code></pre>
