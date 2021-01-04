@@ -11,8 +11,8 @@ else
 fi
 
 ## Run update in order to download and install the checked in toolchain
-#rustup update
+rustup update
 #
 ## Add all the components that we need
-#rustup component add rustfmt
-#rustup component add clippy
+rustup component add rustfmt
+rustup component add clippy

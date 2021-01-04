@@ -20,11 +20,12 @@ jobs:
         uses: actions/checkout@v1
         with:
           submodules: recursive
-      - name: setup rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt,clippy
+# rust toolchain has installed in runner image.
+#      - name: setup rust toolchain
+#        uses: actions-rs/toolchain@v1
+#        with:
+#          toolchain: stable
+#          components: rustfmt,clippy
       - name: run fmt check
         if: github.ref != 'refs/heads/master'
         uses: actions-rs/cargo@v1
