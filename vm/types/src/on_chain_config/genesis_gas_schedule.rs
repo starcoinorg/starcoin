@@ -133,10 +133,11 @@ pub static INITIAL_GAS_SCHEDULE: Lazy<CostTable> = Lazy::new(|| {
     let native_table = (0..NUMBER_OF_NATIVE_FUNCTIONS)
         .map(|_| GasCost::new(0, 0))
         .collect::<Vec<GasCost>>();
-    let mut gas_constants = GasConstants::default();
-
-    //TODO use different max txn size for package and script.
-    gas_constants.max_transaction_size_in_bytes = 40960;
+    //TODO should use different max txn size for package and script?
+    let gas_constants = GasConstants {
+        max_transaction_size_in_bytes: 40960,
+        ..Default::default()
+    };
     CostTable {
         instruction_table,
         native_table,

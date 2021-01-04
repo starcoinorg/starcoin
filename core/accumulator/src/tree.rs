@@ -344,7 +344,7 @@ impl AccumulatorTree {
 
     fn rightmost_leaf_index(&self) -> u64 {
         if self.num_leaves == 0 {
-            0 as u64
+            0_u64
         } else {
             (self.num_leaves - 1) as u64
         }
