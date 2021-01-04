@@ -19,4 +19,5 @@ starcoin-storage = { path = "../../storage"}
 starcoin-vm-types = { path = "../../vm/types"}
 traits = { path = "../../core/traits", package = "starcoin-traits"}
 starcoin-logger = { path = "../../commons/logger" }
+sp-utils = {path = "../../commons/utils"}
 

@@ -6755,6 +6755,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29f060a7d147e33490ec10da418795238fd7545bba241504d6b31a409f2e6210"
 
 [[package]]
+name = "simple-stopwatch"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea0b3bc19fbfbbc5823eb4f9f52a94f98a97f7b265e96defe319dfdac9692b51"
+dependencies = [
+ "time",
+]
+
+[[package]]
 name = "simplelog"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6865,7 +6874,10 @@ dependencies = [
  "futures 0.3.8",
  "futures-core",
  "lazy_static",
+ "once_cell",
+ "parking_lot 0.11.1",
  "prometheus",
+ "simple-stopwatch",
 ]
 
 [[package]]
@@ -7040,6 +7052,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "proptest-derive",
+ "sp-utils",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-canonical-serialization",
@@ -7903,6 +7916,7 @@ dependencies = [
 name = "starcoin-replay"
 version = "0.9.3"
 dependencies = [
+ "sp-utils",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-genesis",

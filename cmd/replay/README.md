@@ -19,6 +19,7 @@ USAGE:
 FLAGS:
     -h, --help       Prints help information
     -V, --version    Prints version information
+    -w, --watch      Watch metrics logs
 
 OPTIONS:
     -c, --block-num <block-num>    Number of block [default: 20000]

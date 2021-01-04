@@ -1,6 +1,7 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use sp_utils::stop_watch::start_watch;
 use starcoin_chain::verifier::Verifier;
 use starcoin_chain::verifier::{BasicVerifier, ConsensusVerifier, FullVerifier, NoneVerifier};
 use starcoin_chain::BlockChain;
@@ -35,6 +36,9 @@ pub struct ReplayOpt {
     #[structopt(possible_values = &Verifier::variants(), case_insensitive = true)]
     /// Verify type:  Basic, Consensus, Full, None, eg.
     pub verifier: Verifier,
+    #[structopt(long, short = "w")]
+    /// Watch metrics logs.
+    pub watch: bool,
 }
 
 fn main() {
@@ -50,6 +54,10 @@ fn main() {
     let from_dir = opts.from;
     let block_num = opts.block_num;
     let to_dir = opts.to;
+    // start watching
+    if opts.watch {
+        start_watch();
+    }
 
     let db_storage =
         DBStorage::new(from_dir.join("starcoindb/db"), RocksdbConfig::default()).unwrap();
