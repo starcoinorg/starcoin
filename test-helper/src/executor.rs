@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::{ChainNetwork, GenesisConfig};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_state_api::{AccountStateReader, ChainState};
+use starcoin_state_api::{AccountStateReader, ChainState, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
@@ -67,6 +67,18 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
     }
 
     output
+}
+pub fn current_block_number(state_view: &dyn StateView) -> u64 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Block").unwrap()),
+        &Identifier::new("get_current_block_number").unwrap(),
+        vec![],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
 }
 
 pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {

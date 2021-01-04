@@ -1,7 +1,9 @@
 // Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::executor::{account_execute, association_execute, blockmeta_execute, get_balance};
+use crate::executor::{
+    account_execute, association_execute, blockmeta_execute, current_block_number, get_balance,
+};
 use crate::Account;
 use anyhow::Result;
 use starcoin_crypto::HashValue;
@@ -411,7 +413,7 @@ pub fn dao_vote_test(
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let one_day: u64 = 60 * 60 * 24 * 1000;
     // Block 1
-    let block_number = 1;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     execute_create_account(
         &chain_state,
@@ -424,7 +426,7 @@ pub fn dao_vote_test(
     )?;
 
     // block 2
-    let block_number = 2;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = net.time_service().now_millis() + one_day * block_number;
     {
         blockmeta_execute(
@@ -456,7 +458,7 @@ pub fn dao_vote_test(
     }
 
     // block 3
-    let block_number = 3;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = block_timestamp + voting_delay(&chain_state, stc_type_tag()) + 10000;
     execute_cast_vote(
         &net,
@@ -468,7 +470,7 @@ pub fn dao_vote_test(
     )?;
 
     // block 4
-    let block_number = 4;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = block_timestamp + voting_period(&chain_state, stc_type_tag()) - 10 * 1000;
     {
         blockmeta_execute(
@@ -495,7 +497,7 @@ pub fn dao_vote_test(
     }
 
     // block 5
-    let block_number = 5;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = block_timestamp + 20 * 1000;
     {
         blockmeta_execute(
@@ -543,7 +545,7 @@ pub fn dao_vote_test(
     }
 
     // block 6
-    let block_number = 6;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = block_timestamp + min_action_delay(&chain_state, stc_type_tag());
     {
         blockmeta_execute(
@@ -575,7 +577,7 @@ pub fn dao_vote_test(
     }
 
     // block 7
-    let block_number = 7;
+    let block_number = current_block_number(&chain_state) + 1;
     let block_timestamp = block_timestamp + 1000;
     {
         blockmeta_execute(
