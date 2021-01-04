@@ -17,12 +17,12 @@ use crate::{
     nibble::Nibble,
     nibble_path::NibblePath,
     node_type::{InternalNode, Node, NodeKey},
-    TreeReader,
+    RawKey, TreeReader,
 };
 use anyhow::{format_err, Result};
 use starcoin_crypto::HashValue;
+use std::marker::PhantomData;
 
-type Version = HashValue;
 /// `NodeVisitInfo` keeps track of the status of an internal node during the iteration process. It
 /// indicates which ones of its children have been visited.
 #[derive(Debug)]
@@ -94,12 +94,12 @@ impl NodeVisitInfo {
 }
 
 /// The `JellyfishMerkleIterator` implementation.
-pub struct JellyfishMerkleIterator<'a, R: 'a + TreeReader> {
+pub struct JellyfishMerkleIterator<'a, K: RawKey, R: 'a + TreeReader<K>> {
     /// The storage engine from which we can read nodes using node keys.
     reader: &'a R,
 
-    /// The version of the tree this iterator is running on.
-    state_root_hash: Version,
+    /// The root hash of the tree this iterator is running on.
+    state_root_hash: HashValue,
 
     /// The stack used for depth first traversal.
     parent_stack: Vec<NodeVisitInfo>,
@@ -108,16 +108,19 @@ pub struct JellyfishMerkleIterator<'a, R: 'a + TreeReader> {
     /// `self.parent_stack` is empty. But in case of a tree with a single leaf, we need this
     /// additional bit.
     done: bool,
+
+    raw_key: PhantomData<K>,
 }
 
-impl<'a, R> JellyfishMerkleIterator<'a, R>
+impl<'a, K, R> JellyfishMerkleIterator<'a, K, R>
 where
-    R: 'a + TreeReader,
+    R: 'a + TreeReader<K>,
+    K: RawKey,
 {
     /// Constructs a new iterator. This puts the internal state in the correct position, so the
     /// following `next` call will yield the smallest key that is greater or equal to
     /// `starting_key`.
-    pub fn new(reader: &'a R, state_root_hash: Version, starting_key: HashValue) -> Result<Self> {
+    pub fn new(reader: &'a R, state_root_hash: HashValue, starting_key: HashValue) -> Result<Self> {
         let mut parent_stack = vec![];
         let mut done = false;
 
@@ -158,6 +161,7 @@ where
                         state_root_hash,
                         parent_stack,
                         done,
+                        raw_key: PhantomData,
                     });
                 }
             }
@@ -166,7 +170,7 @@ where
         match reader.get_node(&current_node_key)? {
             Node::Internal(_) => unreachable!("Should have reached the bottom of the tree."),
             Node::Leaf(leaf_node) => {
-                if leaf_node.account_key() < starting_key {
+                if leaf_node.raw_key().key_hash() < starting_key {
                     Self::cleanup_stack(&mut parent_stack);
                     if parent_stack.is_empty() {
                         done = true;
@@ -181,6 +185,7 @@ where
             state_root_hash,
             parent_stack,
             done,
+            raw_key: PhantomData,
         })
     }
 
@@ -208,11 +213,12 @@ where
     }
 }
 
-impl<'a, R> Iterator for JellyfishMerkleIterator<'a, R>
+impl<'a, K, R> Iterator for JellyfishMerkleIterator<'a, K, R>
 where
-    R: 'a + TreeReader,
+    R: 'a + TreeReader<K>,
+    K: RawKey,
 {
-    type Item = Result<(HashValue, Blob)>;
+    type Item = Result<(K, Blob)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.done {
@@ -228,7 +234,7 @@ where
                     // true in `new`). Return the node and mark `self.done` so next time we return
                     // None.
                     self.done = true;
-                    return Some(Ok((leaf_node.account_key(), leaf_node.blob().clone())));
+                    return Some(Ok((leaf_node.raw_key().clone(), leaf_node.blob().clone())));
                 }
                 Ok(Node::Internal(_)) => {
                     // This means `starting_key` is bigger than every key in this tree, or we have
@@ -259,7 +265,7 @@ where
                     self.parent_stack.push(visit_info);
                 }
                 Ok(Node::Leaf(leaf_node)) => {
-                    let ret = (leaf_node.account_key(), leaf_node.blob().clone());
+                    let ret = (leaf_node.raw_key().clone(), leaf_node.blob().clone());
                     Self::cleanup_stack(&mut self.parent_stack);
                     return Some(Ok(ret));
                 }

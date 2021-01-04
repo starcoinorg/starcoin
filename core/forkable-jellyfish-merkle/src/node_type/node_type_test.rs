@@ -62,13 +62,13 @@ fn test_encode_decode() {
         assert_eq!(*n, Node::decode(&v).unwrap());
     }
     // Error cases
-    if let Err(e) = Node::decode(&[]) {
+    if let Err(e) = Node::<HashValue>::decode(&[]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::EmptyInput
         );
     }
-    if let Err(e) = Node::decode(&[100]) {
+    if let Err(e) = Node::<HashValue>::decode(&[100]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::UnknownTag { unknown_tag: 100 }

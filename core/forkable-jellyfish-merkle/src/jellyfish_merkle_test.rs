@@ -269,7 +269,7 @@ fn test_batch_insertion() {
     let mut to_verify = one_batch.clone();
     // key2 was updated so we remove it.
     to_verify.remove(1);
-    let verify_fn = |tree: &JellyfishMerkleTree<MockTreeStore>, root: HashValue| {
+    let verify_fn = |tree: &JellyfishMerkleTree<HashValue, MockTreeStore>, root: HashValue| {
         to_verify
             .iter()
             .for_each(|(k, v)| assert_eq!(tree.get(root, *k).unwrap().unwrap(), *v))
@@ -686,7 +686,7 @@ proptest! {
 }
 
 fn test_existent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, MockTreeStore>,
+    tree: &JellyfishMerkleTree<'a, HashValue, MockTreeStore>,
     root_hash: HashValue,
     existent_kvs: &HashMap<HashValue, Blob>,
 ) {
@@ -698,7 +698,7 @@ fn test_existent_keys_impl<'a>(
 }
 
 fn test_nonexistent_keys_impl<'a>(
-    tree: &JellyfishMerkleTree<'a, MockTreeStore>,
+    tree: &JellyfishMerkleTree<'a, HashValue, MockTreeStore>,
     root_hash: HashValue,
     nonexistent_keys: &[HashValue],
 ) {
@@ -750,7 +750,7 @@ fn verify_range_proof(
     let mut btree1 = BTreeMap::new();
     for (key, blob) in &btree {
         let leaf = LeafNode::new(*key, blob.clone());
-        btree1.insert(*key, leaf.hash());
+        btree1.insert(*key, leaf.crypto_hash());
     }
     // Using the above example, `last_proven_key` is `e`. We look at the path from root to `e`.
     // For each 0-bit, there should be a sibling in the proof. And we use the path from root to

@@ -8,10 +8,11 @@ use super::*;
 use crate::{blob::Blob, mock_tree_store::MockTreeStore, node_type::Node, NodeKey};
 use starcoin_crypto::HashValue;
 
-fn random_leaf_with_key() -> (Node, NodeKey) {
-    let address = HashValue::random();
-    let node = Node::new_leaf(address, Blob::from(HashValue::random().to_vec()));
-    (node, address)
+fn random_leaf_with_key() -> (Node<HashValue>, NodeKey) {
+    let hash_value = HashValue::random();
+    let node = Node::new_leaf(hash_value, Blob::from(HashValue::random().to_vec()));
+    let node_key = node.hash();
+    (node, node_key)
 }
 
 #[test]
