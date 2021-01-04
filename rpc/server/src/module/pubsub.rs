@@ -209,8 +209,8 @@ impl PubSubService {
     }
 }
 type NewHeadNotification = Notification<ThinBlock>;
-type NewEventNotification = Notification<Arc<Vec<Event>>>;
-// type NewTxns = Arc<Vec<HashValue>>;
+type NewEventNotification = Notification<Arc<[Event]>>;
+// type NewTxns = Arc<[HashValue]>;
 
 impl ActorService for PubSubService {
     fn started(&mut self, ctx: &mut ServiceContext<Self>) -> Result<()> {
@@ -419,8 +419,8 @@ trait EventHandler<M> {
 #[derive(Copy, Clone, Debug)]
 pub struct TxnEventHandler;
 
-impl EventHandler<Arc<Vec<HashValue>>> for TxnEventHandler {
-    fn handle(&self, msg: Arc<Vec<HashValue>>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+impl EventHandler<Arc<[HashValue]>> for TxnEventHandler {
+    fn handle(&self, msg: Arc<[HashValue]>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         vec![Ok(pubsub::Result::TransactionHash(msg.to_vec()))]
     }
 }
@@ -457,11 +457,8 @@ pub struct ContractEventHandler {
     filter: Filter,
 }
 
-impl EventHandler<Notification<Arc<Vec<Event>>>> for ContractEventHandler {
-    fn handle(
-        &self,
-        msg: Notification<Arc<Vec<Event>>>,
-    ) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
+impl EventHandler<Notification<Arc<[Event]>>> for ContractEventHandler {
+    fn handle(&self, msg: Notification<Arc<[Event]>>) -> Vec<jsonrpc_core::Result<pubsub::Result>> {
         let Notification(events) = msg;
         let filtered = events
             .as_ref()

@@ -208,7 +208,7 @@ impl NetworkBehaviour for Protocol {
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
             Self::OutEvent
         >
->{
+    >{
         while let Poll::Ready(Some(())) = self.tick_timeout.poll_next_unpin(cx) {
             self.tick();
         }

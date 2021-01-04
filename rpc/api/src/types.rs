@@ -875,9 +875,7 @@ impl std::fmt::Display for StrView<Vec<u8>> {
 impl FromStr for StrView<Vec<u8>> {
     type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(hex::decode(
-            s.strip_prefix("0x").unwrap_or_else(|| s),
-        )?))
+        Ok(Self(hex::decode(s.strip_prefix("0x").unwrap_or(s))?))
     }
 }
 

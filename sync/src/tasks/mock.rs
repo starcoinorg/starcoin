@@ -152,13 +152,12 @@ impl SyncNodeMocker {
         receiver: UnboundedReceiver<BlockConnectedEvent>,
     ) -> JoinHandle<Self> {
         let fut = async move {
-            let this = receiver
+            receiver
                 .fold(self, |mut this, event| async move {
                     this.select_head(event.block).unwrap();
                     this
                 })
-                .await;
-            this
+                .await
         };
         async_std::task::spawn(fut)
     }

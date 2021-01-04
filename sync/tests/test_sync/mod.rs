@@ -33,7 +33,7 @@ pub fn test_sync(sync_mode: SyncMode) {
 
     //TODO add more check.
     let mut number_2 = 0;
-    for i in 0..10 as usize {
+    for i in 0..10_usize {
         std::thread::sleep(Duration::from_secs(2));
         let block_2 = block_on(async { second_chain.main_head_block().await.unwrap() });
         number_2 = block_2.header().number();

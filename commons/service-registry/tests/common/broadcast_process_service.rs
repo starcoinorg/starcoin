@@ -15,7 +15,7 @@ pub trait BroadcastProcessAsyncService {
 #[async_trait::async_trait]
 impl BroadcastProcessAsyncService for ServiceRef<BroadcastProcessService> {
     async fn get_msg_count(&self) -> Result<MsgCountResult> {
-        self.send(GetMsgCount).await.map(|resp| resp)
+        self.send(GetMsgCount).await
     }
 }
 

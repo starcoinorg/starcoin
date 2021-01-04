@@ -141,7 +141,7 @@ impl FromStr for EventKey {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.strip_prefix("0x").unwrap_or_else(|| s);
+        let s = s.strip_prefix("0x").unwrap_or(s);
         let data = hex::decode(s)?;
         Self::try_from(data.as_slice())
     }

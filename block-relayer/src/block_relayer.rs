@@ -27,7 +27,6 @@ use starcoin_types::{
 };
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
-use std::iter::FromIterator;
 
 pub struct BlockRelayer {
     txpool: TxPoolService,
@@ -101,10 +100,10 @@ impl BlockRelayer {
             )
             .await?;
             let mut fetched_missing_txn_map: HashMap<ShortId, Result<SignedUserTransaction>> = {
-                let iter = fetched_missing_txn
+                fetched_missing_txn
                     .into_iter()
-                    .map(|data| (ShortId(data.id()), data.try_into()));
-                HashMap::from_iter(iter)
+                    .map(|data| (ShortId(data.id()), data.try_into()))
+                    .collect()
             };
             for (index, short_id) in compact_block.short_ids.iter().enumerate() {
                 if txns[index].is_none() {

@@ -95,11 +95,8 @@ where
     }
 
     fn block_exist(&self, block_id: HashValue) -> bool {
-        if let Ok(Some(_)) = self.storage.get_block_info(block_id) {
-            true
-        } else {
-            false
-        }
+        //FIXME storage error should return
+        matches!(self.storage.get_block_info(block_id), Ok(Some(_)))
     }
 
     pub fn get_main(&self) -> &BlockChain {
@@ -251,7 +248,7 @@ where
     }
 
     fn broadcast_new_branch(&self, maybe_uncles: Vec<BlockHeader>) {
-        if let Err(e) = self.bus.broadcast(NewBranch(Arc::new(maybe_uncles))) {
+        if let Err(e) = self.bus.broadcast(NewBranch(maybe_uncles.into())) {
             error!("Broadcast NewBranch error: {:?}", e);
         }
     }

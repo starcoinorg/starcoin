@@ -90,7 +90,7 @@ impl Debug for QueryParam {
 
 fn parse_query(query: &str) -> Result<QueryParam> {
     let mut pairs: Vec<&str> = query.split('&').collect();
-    pairs.sort();
+    pairs.sort_unstable();
     let mut address = "";
     let mut amount = "";
     let mut public_key = "";

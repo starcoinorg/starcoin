@@ -54,7 +54,7 @@ fn test_sync_by_notification() {
     let number_1 = block_1.header().number();
 
     let mut number_2 = 0;
-    for i in 0..10 as usize {
+    for i in 0..10_usize {
         std::thread::sleep(Duration::from_secs(2));
         let block_2 = block_on(async { second_chain.main_head_block().await.unwrap() });
         number_2 = block_2.header().number();
@@ -95,7 +95,7 @@ fn test_broadcast_with_difficulty() {
 
     let not_broadcast_block = second_node.generate_block().unwrap();
     let mut number_2 = 0;
-    for i in 0..10 as usize {
+    for i in 0..10_usize {
         std::thread::sleep(Duration::from_secs(2));
         let block_2 = block_on(async { second_chain.clone().main_head_block().await.unwrap() });
         number_2 = block_2.header().number();

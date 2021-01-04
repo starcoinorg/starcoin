@@ -21,17 +21,11 @@ pub enum ServiceStatus {
 
 impl ServiceStatus {
     pub(crate) fn is_stopped(self) -> bool {
-        match self {
-            Self::Stopped => true,
-            _ => false,
-        }
+        matches!(self, Self::Stopped)
     }
 
     pub(crate) fn is_started(self) -> bool {
-        match self {
-            Self::Started => true,
-            _ => false,
-        }
+        matches!(self, Self::Started)
     }
 }
 

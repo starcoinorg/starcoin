@@ -52,10 +52,7 @@ impl ChainBencher {
         ChainBencher {
             net,
             chain: Arc::new(RwLock::new(chain)),
-            block_num: match num {
-                Some(n) => n,
-                None => 100,
-            },
+            block_num: num.unwrap_or(100),
             account: miner_account,
             temp_path,
         }

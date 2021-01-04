@@ -262,10 +262,7 @@ where
 
             let handshake = BytesMut::from(&self.handshake_message.read()[..]);
             framed.send(handshake).await?;
-            let received_handshake = framed
-                .next()
-                .await
-                .ok_or_else(|| io::ErrorKind::UnexpectedEof)??;
+            let received_handshake = framed.next().await.ok_or(io::ErrorKind::UnexpectedEof)??;
 
             Ok((
                 RegisteredProtocolSubstream {

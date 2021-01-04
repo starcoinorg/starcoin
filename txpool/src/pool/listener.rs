@@ -64,19 +64,19 @@ impl tx_pool::Listener<Transaction> for Logger {
 /// Transactions pool notifier
 #[derive(Default)]
 pub struct TransactionsPoolNotifier {
-    full_listeners: Vec<mpsc::UnboundedSender<Arc<Vec<(H256, TxStatus)>>>>,
-    pending_listeners: Vec<mpsc::UnboundedSender<Arc<Vec<H256>>>>,
+    full_listeners: Vec<mpsc::UnboundedSender<Arc<[(H256, TxStatus)]>>>,
+    pending_listeners: Vec<mpsc::UnboundedSender<Arc<[H256]>>>,
     tx_statuses: Vec<(H256, TxStatus)>,
 }
 
 impl TransactionsPoolNotifier {
     /// Add new full listener to receive notifications.
-    pub fn add_full_listener(&mut self, f: mpsc::UnboundedSender<Arc<Vec<(H256, TxStatus)>>>) {
+    pub fn add_full_listener(&mut self, f: mpsc::UnboundedSender<Arc<[(H256, TxStatus)]>>) {
         self.full_listeners.push(f);
     }
 
     /// Add new pending listener to receive notifications.
-    pub fn add_pending_listener(&mut self, f: mpsc::UnboundedSender<Arc<Vec<H256>>>) {
+    pub fn add_pending_listener(&mut self, f: mpsc::UnboundedSender<Arc<[H256]>>) {
         self.pending_listeners.push(f);
     }
 
@@ -86,17 +86,18 @@ impl TransactionsPoolNotifier {
             return;
         }
 
-        let to_pending_send: Arc<Vec<H256>> = Arc::new(
-            self.tx_statuses
-                .clone()
-                .into_iter()
-                .map(|(hash, _)| hash)
-                .collect(),
-        );
+        let to_pending_send: Arc<[H256]> = self
+            .tx_statuses
+            .clone()
+            .into_iter()
+            .map(|(hash, _)| hash)
+            .collect::<Vec<_>>()
+            .into();
         self.pending_listeners
             .retain(|listener| listener.unbounded_send(to_pending_send.clone()).is_ok());
 
-        let to_full_send = Arc::new(std::mem::replace(&mut self.tx_statuses, Vec::new()));
+        let to_full_send: Arc<[(H256, TxStatus)]> =
+            std::mem::replace(&mut self.tx_statuses, Vec::new()).into();
         self.full_listeners
             .retain(|listener| listener.unbounded_send(to_full_send.clone()).is_ok());
     }
@@ -174,11 +175,8 @@ mod tests {
         tx_listener.notify();
         let full_res = full_receiver.try_next().unwrap();
         let pending_res = pending_receiver.try_next().unwrap();
-        assert_eq!(
-            full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Added)]))
-        );
-        assert_eq!(pending_res, Some(Arc::new(vec![*tx.hash()])));
+        assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Added)].into()));
+        assert_eq!(pending_res, Some(vec![*tx.hash()].into()));
     }
 
     #[test]
@@ -195,17 +193,14 @@ mod tests {
         let full_res = full_receiver.try_next().unwrap();
         assert_eq!(
             full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Rejected)]))
+            Some(vec![(*tx.hash(), TxStatus::Rejected)].into())
         );
 
         // dropped
         tx_listener.dropped(&tx, None);
         tx_listener.notify();
         let full_res = full_receiver.try_next().unwrap();
-        assert_eq!(
-            full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Dropped)]))
-        );
+        assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Dropped)].into()));
 
         // canceled
         tx_listener.canceled(&tx);
@@ -213,26 +208,20 @@ mod tests {
         let full_res = full_receiver.try_next().unwrap();
         assert_eq!(
             full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Canceled)]))
+            Some(vec![(*tx.hash(), TxStatus::Canceled)].into())
         );
 
         // culled
         tx_listener.culled(&tx);
         tx_listener.notify();
         let full_res = full_receiver.try_next().unwrap();
-        assert_eq!(
-            full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Culled)]))
-        );
+        assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Culled)].into()));
 
         // invalid
         tx_listener.invalid(&tx);
         tx_listener.notify();
         let full_res = full_receiver.try_next().unwrap();
-        assert_eq!(
-            full_res,
-            Some(Arc::new(vec![(*tx.hash(), TxStatus::Invalid)]))
-        );
+        assert_eq!(full_res, Some(vec![(*tx.hash(), TxStatus::Invalid)].into()));
     }
 
     fn new_tx() -> Arc<Transaction> {

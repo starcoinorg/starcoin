@@ -264,10 +264,7 @@ impl DataDirPath {
         self.as_ref()
     }
     pub fn is_temp(&self) -> bool {
-        match self {
-            DataDirPath::TempPath(_) => true,
-            _ => false,
-        }
+        matches!(self, DataDirPath::TempPath(_))
     }
 }
 
@@ -414,8 +411,10 @@ pub struct NodeConfig {
 
 impl NodeConfig {
     pub fn random_for_test() -> Self {
-        let mut opt = StarcoinOpt::default();
-        opt.net = Some(BuiltinNetworkID::Test.into());
+        let opt = StarcoinOpt {
+            net: Some(BuiltinNetworkID::Test.into()),
+            ..StarcoinOpt::default()
+        };
         Self::load_with_opt(&opt).expect("Auto generate test config should success.")
     }
 
