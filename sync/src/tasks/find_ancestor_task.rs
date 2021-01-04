@@ -47,7 +47,7 @@ impl TaskState for FindAncestorTask {
                 .ok_or_else(|| format_err!("Best peer is none when new sub task."))?;
             let block_ids = self
                 .fetcher
-                .get_block_ids_from_peer(
+                .fetch_block_ids_from_peer(
                     Some(best_peer.peer_id()),
                     current_number,
                     true,
