@@ -630,7 +630,7 @@ dependencies = [
  "parking_lot 0.11.1",
  "proptest",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "starcoin-account-api",
  "starcoin-accumulator",
  "starcoin-chain",
@@ -2192,7 +2192,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -5830,7 +5830,7 @@ checksum = "a76330fb486679b4ace3670f117bbc9e16204005c4bde9c4bd372f45bed34f12"
 dependencies = [
  "libc",
  "rand_chacha 0.3.0",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
 ]
 
 [[package]]
@@ -5860,7 +5860,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e12735cf05c9e10bf21534da50a147b924d555dc7a547c42e6bb2d5b6017ae0d"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
 ]
 
 [[package]]
@@ -5889,9 +5889,9 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8b34ba8cfb21243bd8df91854c830ff0d785fff2e82ebd4434c2644cb9ada18"
+checksum = "c026d7df8b298d90ccbbc5190bd04d85e159eaf5576caeacf8741da93ccbd2e5"
 dependencies = [
  "getrandom 0.2.0",
 ]
@@ -6926,7 +6926,7 @@ dependencies = [
  "futures 0.3.8",
  "hex",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "serde_bytes",
  "starcoin-crypto",
@@ -6946,7 +6946,7 @@ dependencies = [
  "hex",
  "parking_lot 0.11.1",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "starcoin-account-api",
  "starcoin-canonical-serialization",
@@ -6997,7 +6997,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "starcoin-canonical-serialization",
  "starcoin-crypto",
@@ -7094,7 +7094,7 @@ dependencies = [
  "futures 0.3.8",
  "network-api",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "starcoin-crypto",
  "starcoin-service-registry",
@@ -7169,7 +7169,7 @@ dependencies = [
  "dashmap 4.0.1",
  "futures 0.3.8",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "starcoin-chain",
  "starcoin-chain-api",
@@ -7246,7 +7246,7 @@ dependencies = [
  "num_enum",
  "once_cell",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "serde_json",
  "starcoin-crypto",
@@ -7272,7 +7272,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "rust-argon2",
  "sha3",
  "starcoin-crypto",
@@ -7296,7 +7296,7 @@ dependencies = [
  "libra-crypto-derive",
  "once_cell",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "serde-name",
  "serde_bytes",
@@ -7337,7 +7337,7 @@ dependencies = [
  "hmac 0.7.1",
  "pbkdf2",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "sha2 0.8.2",
 ]
 
@@ -7637,7 +7637,7 @@ dependencies = [
  "jsonrpc-tcp-server",
  "libloading 0.6.5",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "rust-argon2",
  "serde",
  "serde_json",
@@ -8386,7 +8386,7 @@ dependencies = [
  "proptest",
  "proptest-derive",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "serde",
  "serde_derive",
  "starcoin-config",
@@ -8456,7 +8456,7 @@ dependencies = [
  "proptest-derive",
  "prost 0.7.0",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "ref-cast",
  "serde",
  "starcoin-accumulator",
@@ -8491,7 +8491,7 @@ dependencies = [
  "once_cell",
  "prometheus",
  "rand 0.7.3",
- "rand_core 0.6.0",
+ "rand_core 0.6.1",
  "starcoin-canonical-serialization",
  "starcoin-config",
  "starcoin-crypto",
