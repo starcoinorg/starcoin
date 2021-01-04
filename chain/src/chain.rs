@@ -77,6 +77,7 @@ impl BlockChain {
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
         let epoch = get_epoch_from_statedb(&chain_state)?;
+        watch(CHAIN_WATCH_NAME, "n1253");
         let mut chain = Self {
             time_service,
             txn_accumulator: info_2_accumulator(
@@ -339,7 +340,9 @@ impl BlockChain {
         V: BlockVerifier,
     {
         let verified_block = self.verify_with_verifier::<V>(block)?;
+        watch(CHAIN_WATCH_NAME, "n1");
         let executed_block = self.execute(verified_block)?;
+        watch(CHAIN_WATCH_NAME, "n2");
         self.connect(executed_block)
     }
 
@@ -385,9 +388,10 @@ impl BlockChain {
             t
         };
 
+        watch(CHAIN_WATCH_NAME, "n21");
         let executed_data =
             starcoin_executor::block_execute(&statedb, txns.clone(), epoch.block_gas_limit())?;
-
+        watch(CHAIN_WATCH_NAME, "n22");
         let state_root = executed_data.state_root;
         let vec_transaction_info = &executed_data.txn_infos;
         verify_block!(
@@ -430,6 +434,7 @@ impl BlockChain {
             .map_err(BlockExecutorError::BlockChainStateErr)?;
         // If chain state is matched, and accumulator is matched,
         // then, we save flush states, and save block data.
+        watch(CHAIN_WATCH_NAME, "n24");
         txn_accumulator
             .flush()
             .map_err(|_err| BlockExecutorError::BlockAccumulatorFlushErr)?;
@@ -461,6 +466,7 @@ impl BlockChain {
             txns,
             (executed_data.txn_infos, executed_data.txn_events),
         )?;
+        watch(CHAIN_WATCH_NAME, "n26");
         Ok(ExecutedBlock { block, block_info })
     }
 

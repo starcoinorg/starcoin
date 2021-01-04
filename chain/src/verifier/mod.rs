@@ -4,6 +4,7 @@
 use anyhow::Result;
 use clap::arg_enum;
 use consensus::{Consensus, ConsensusVerifyError};
+use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_chain_api::{
     verify_block, ChainReader, ConnectBlockError, VerifiedBlock, VerifyBlockField,
 };
@@ -29,10 +30,11 @@ pub trait BlockVerifier {
     where
         R: ChainReader,
     {
+        watch(CHAIN_WATCH_NAME, "n11");
         //verify header
         let new_block_header = new_block.header();
         Self::verify_header(current_chain, new_block_header)?;
-
+        watch(CHAIN_WATCH_NAME, "n12");
         //verify body
         let body_hash = new_block.body.hash();
         verify_block!(

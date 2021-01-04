@@ -31,6 +31,7 @@ starcoin-open-block = {path = "./open-block"}
 starcoin-vm-types = { path = "../vm/types"}
 proptest = { version = "0.10.1", default-features = false, optional = true }
 proptest-derive = { version = "0.2.0", default-features = false, optional = true }
+sp-utils = {path = "../commons/utils"}
 
 [dev-dependencies]
 stdlib = { path = "../vm/stdlib" }
