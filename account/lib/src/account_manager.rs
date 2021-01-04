@@ -82,7 +82,7 @@ impl AccountManager {
         duration: Duration,
     ) -> AccountResult<()> {
         let _ = Account::load(address, password, self.store.clone())?
-            .ok_or_else(|| AccountError::AccountNotExist(address))?;
+            .ok_or(AccountError::AccountNotExist(address))?;
         let ttl = std::time::Instant::now().add(duration);
         self.key_cache
             .write()
@@ -131,7 +131,7 @@ impl AccountManager {
         password: &str,
     ) -> AccountResult<Vec<u8>> {
         let account = Account::load(address, password, self.store.clone())?
-            .ok_or_else(|| AccountError::AccountNotExist(address))?;
+            .ok_or(AccountError::AccountNotExist(address))?;
         Ok(account.private_key().to_bytes().to_vec())
     }
 
@@ -194,7 +194,7 @@ impl AccountManager {
             None => Err(AccountError::AccountLocked(signer_address)),
             Some(p) => {
                 let account = Account::load(signer_address, p.as_str(), self.store.clone())?
-                    .ok_or_else(|| AccountError::AccountNotExist(signer_address))?;
+                    .ok_or(AccountError::AccountNotExist(signer_address))?;
                 account
                     .sign_txn(raw_txn)
                     .map_err(AccountError::TransactionSignError)

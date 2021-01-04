@@ -3,7 +3,7 @@
 
 pub mod message;
 
-use crate::message::{Event, Notification, ThinBlock};
+use crate::message::{ContractEventNotification, Event, Notification, ThinBlock};
 use anyhow::{format_err, Result};
 use starcoin_crypto::hash::PlainCryptoHash;
 use starcoin_logger::prelude::*;
@@ -15,7 +15,7 @@ use starcoin_types::system_events::{NewHeadBlock, SyncStatusChangeEvent};
 use std::sync::Arc;
 
 /// ChainNotify watch `NewHeadBlock` message from bus,
-/// and then reproduce `Notification<ThinBlock>` and `Notification<Arc<Vec<Event>>>` message to bus.
+/// and then reproduce `Notification<ThinBlock>` and `Notification<Arc<[Event]>>` message to bus.
 /// User can subscribe the two notification to watch onchain events.
 pub struct ChainNotifyHandlerService {
     store: Arc<dyn Store>,
@@ -125,8 +125,8 @@ impl ChainNotifyHandlerService {
                     .map(|evt| Event::new(block_id, block_number, txn_hash, Some(i as u32), evt)),
             );
         }
-        let events = Arc::new(all_events);
-        ctx.broadcast(Notification(events));
+        let events_notification: ContractEventNotification = Notification(all_events.into());
+        ctx.broadcast(events_notification);
         Ok(())
     }
 }

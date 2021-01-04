@@ -650,7 +650,7 @@ impl NetworkBehaviour for DiscoveryBehaviour {
             <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
             Self::OutEvent,
         >,
->{
+    >{
         // Immediately process the content of `discovered`.
         if let Some(ev) = self.pending_events.pop_front() {
             return Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev));
@@ -884,6 +884,8 @@ mod tests {
     use libp2p::{Multiaddr, PeerId};
     use std::{collections::HashSet, task::Poll};
 
+    //this collect is not needless
+    #[allow(clippy::needless_collect)]
     #[test]
     fn discovery_working() {
         let mut first_swarm_peer_id_and_addr = None;

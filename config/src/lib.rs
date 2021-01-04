@@ -264,10 +264,7 @@ impl DataDirPath {
         self.as_ref()
     }
     pub fn is_temp(&self) -> bool {
-        match self {
-            DataDirPath::TempPath(_) => true,
-            _ => false,
-        }
+        matches!(self, DataDirPath::TempPath(_))
     }
 }
 

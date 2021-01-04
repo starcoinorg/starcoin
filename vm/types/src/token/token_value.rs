@@ -31,8 +31,8 @@ pub trait TokenUnit: Clone + Copy {
     fn parse(&self, input: &str) -> Result<TokenValue<Self>> {
         ensure!(!input.is_empty(), "Empty input not allowed for token unit");
         let symbol = self.symbol();
-        let input = if input.ends_with(symbol) {
-            &input[..input.len() - symbol.len()]
+        let input = if let Some(stripped) = input.strip_suffix(symbol) {
+            stripped
         } else {
             input
         };

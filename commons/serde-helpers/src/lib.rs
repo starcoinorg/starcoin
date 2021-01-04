@@ -19,7 +19,7 @@ where
 {
     if d.is_human_readable() {
         let s = <String>::deserialize(d)?;
-        let s = s.strip_prefix("0x").unwrap_or_else(|| &s);
+        let s = s.strip_prefix("0x").unwrap_or(&s);
         hex::decode(s).map_err(D::Error::custom)
     } else {
         serde_bytes::ByteBuf::deserialize(d).map(|b| b.into_vec())

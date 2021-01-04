@@ -27,7 +27,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
     for (id, s) in [("mem_store", mem_store), ("db_store", db_store)].iter() {
         let tree = StateTree::new(s.clone(), None);
         let (kvs, _root) = prepare_tree(&tree, &[1, 2, 3, 4], 100_000);
-        let ks = kvs.keys().copied().map(|x| x).collect::<Vec<_>>();
+        let ks = kvs.keys().copied().collect::<Vec<_>>();
         group
             .bench_with_input(*id, &(tree, kvs, ks), |b, input| {
                 let (tree, kvs, ks) = input;

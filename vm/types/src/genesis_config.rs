@@ -209,38 +209,23 @@ impl BuiltinNetworkID {
     }
 
     pub fn is_test_or_dev(self) -> bool {
-        match self {
-            BuiltinNetworkID::Test | BuiltinNetworkID::Dev => true,
-            _ => false,
-        }
+        matches!(self, BuiltinNetworkID::Test | BuiltinNetworkID::Dev)
     }
 
     pub fn is_test(self) -> bool {
-        match self {
-            BuiltinNetworkID::Test => true,
-            _ => false,
-        }
+        matches!(self, BuiltinNetworkID::Test)
     }
 
     pub fn is_dev(self) -> bool {
-        match self {
-            BuiltinNetworkID::Dev => true,
-            _ => false,
-        }
+        matches!(self, BuiltinNetworkID::Dev)
     }
 
     pub fn is_main(self) -> bool {
-        match self {
-            BuiltinNetworkID::Main => true,
-            _ => false,
-        }
+        matches!(self, BuiltinNetworkID::Main)
     }
 
     pub fn is_halley(self) -> bool {
-        match self {
-            BuiltinNetworkID::Halley => true,
-            _ => false,
-        }
+        matches!(self, BuiltinNetworkID::Halley)
     }
 
     pub fn networks() -> Vec<BuiltinNetworkID> {
@@ -425,38 +410,23 @@ impl ChainNetworkID {
     }
 
     pub fn is_test(&self) -> bool {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Test) => true,
-            _ => false,
-        }
+        matches!(self, Self::Builtin(BuiltinNetworkID::Test))
     }
 
     pub fn is_dev(&self) -> bool {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Dev) => true,
-            _ => false,
-        }
+        matches!(self, Self::Builtin(BuiltinNetworkID::Dev))
     }
 
     pub fn is_main(&self) -> bool {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Main) => true,
-            _ => false,
-        }
+        matches!(self, Self::Builtin(BuiltinNetworkID::Main))
     }
 
     pub fn is_halley(&self) -> bool {
-        match self {
-            Self::Builtin(BuiltinNetworkID::Halley) => true,
-            _ => false,
-        }
+        matches!(self, Self::Builtin(BuiltinNetworkID::Halley))
     }
 
     pub fn is_custom(&self) -> bool {
-        match self {
-            Self::Custom(_) => true,
-            _ => false,
-        }
+        matches!(self, Self::Custom(_))
     }
 
     /// Default data dir name of this network

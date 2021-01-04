@@ -35,10 +35,7 @@ pub enum VMPublishingOption {
 
 impl VMPublishingOption {
     pub fn is_open(&self) -> bool {
-        match self {
-            VMPublishingOption::Open => true,
-            _ => false,
-        }
+        matches!(self, VMPublishingOption::Open)
     }
 
     pub fn is_allowed_script(&self, program: &[u8]) -> bool {
