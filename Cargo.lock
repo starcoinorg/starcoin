@@ -6865,7 +6865,10 @@ dependencies = [
  "futures 0.3.8",
  "futures-core",
  "lazy_static",
+ "once_cell",
+ "parking_lot 0.11.1",
  "prometheus",
+ "simple-stopwatch",
 ]
 
 [[package]]
@@ -7903,6 +7906,7 @@ dependencies = [
 name = "starcoin-replay"
 version = "0.9.3"
 dependencies = [
+ "sp-utils",
  "starcoin-chain",
  "starcoin-config",
  "starcoin-genesis",

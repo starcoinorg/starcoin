@@ -19,3 +19,4 @@
 
 pub mod metrics;
 pub mod mpsc;
+pub mod stop_watch;

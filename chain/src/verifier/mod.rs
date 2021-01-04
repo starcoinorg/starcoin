@@ -42,12 +42,14 @@ pub trait BlockVerifier {
             new_block_header.body_hash(),
             body_hash,
         );
+        watch(CHAIN_WATCH_NAME, "n13");
         //verify uncles
         Self::verify_uncles(
             current_chain,
             new_block.uncles().unwrap_or_default(),
             new_block_header,
         )?;
+        watch(CHAIN_WATCH_NAME, "n14");
         Ok(VerifiedBlock(new_block))
     }
 

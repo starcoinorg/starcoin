@@ -6,6 +6,7 @@ use anyhow::{ensure, format_err, Result};
 use consensus::Consensus;
 use crypto::HashValue;
 use logger::prelude::*;
+use sp_utils::stop_watch::{watch, CHAIN_WATCH_NAME};
 use starcoin_accumulator::{
     accumulator_info::AccumulatorInfo, node::AccumulatorStoreType, Accumulator, MerkleAccumulator,
 };
@@ -98,7 +99,9 @@ impl BlockChain {
             uncles: HashSet::new(),
             epoch,
         };
+        watch(CHAIN_WATCH_NAME, "n1251");
         chain.update_uncle_cache()?;
+        watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
 
@@ -421,6 +424,7 @@ impl BlockChain {
             "verify block: txn accumulator root mismatch"
         );
 
+        watch(CHAIN_WATCH_NAME, "n23");
         statedb
             .flush()
             .map_err(BlockExecutorError::BlockChainStateErr)?;
@@ -448,6 +452,7 @@ impl BlockChain {
             total_difficulty,
         );
 
+        watch(CHAIN_WATCH_NAME, "n25");
         // save block's transaction relationship and save transaction
         Self::save(
             storage,
