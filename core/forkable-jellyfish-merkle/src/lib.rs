@@ -282,8 +282,7 @@ where
             );
             blob_set
                 .into_iter()
-                .map(|(key, blob)| Self::put(key, blob, &mut tree_cache))
-                .collect::<Result<_>>()?;
+                .try_for_each(|(key, blob)| Self::put(key, blob, &mut tree_cache))?;
             // Freezes the current cache to make all contents in the current cache immutable.
             // TODO: maybe we should not freeze, check here again.
             tree_cache.freeze();

@@ -357,6 +357,7 @@ impl<'a> Ready<'a> {
     /// Consumes this slots reservation and actually queues the notification.
     ///
     /// Returns an error if the substream has been closed.
+    #[allow(clippy::result_unit_err)]
     pub fn send(mut self, notification: impl Into<Vec<u8>>) -> Result<(), ()> {
         self.lock
             .start_send(NotificationsSinkMessage::Notification {

@@ -266,6 +266,7 @@ pub fn build_transaction_script_abi() {
     }
 }
 
+#[allow(clippy::field_reassign_with_default)]
 fn build_abi(output_path: &str, sources: &[String], dep_path: &str, compiled_script_path: &str) {
     let mut options = move_prover::cli::Options::default();
     options.move_sources = sources.to_vec();
@@ -299,6 +300,7 @@ pub fn build_transaction_script_doc() {
     }
 }
 
+#[allow(clippy::field_reassign_with_default)]
 fn build_doc(output_path: &str, doc_path: &str, sources: &[String], dep_path: &str) {
     let mut options = move_prover::cli::Options::default();
     options.move_sources = sources.to_vec();
@@ -327,6 +329,7 @@ pub fn build_stdlib_error_code_map() {
     build_error_code_map(path.to_str().unwrap(), stdlib_files().as_slice(), "")
 }
 
+#[allow(clippy::field_reassign_with_default)]
 fn build_error_code_map(output_path: &str, sources: &[String], dep_path: &str) {
     let mut options = move_prover::cli::Options::default();
     options.move_sources = sources.to_vec();

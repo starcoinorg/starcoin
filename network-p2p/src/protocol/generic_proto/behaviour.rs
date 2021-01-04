@@ -412,7 +412,7 @@ impl GenericProto {
     }
 
     /// Returns the list of all the peers we have an open channel to.
-    pub fn open_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
+    pub fn open_peers(&self) -> impl Iterator<Item = &PeerId> {
         self.peers
             .iter()
             .filter(|(_, state)| state.is_open())
@@ -525,7 +525,7 @@ impl GenericProto {
     }
 
     /// Returns the list of all the peers that the peerset currently requests us to be connected to.
-    pub fn requested_peers<'a>(&'a self) -> impl Iterator<Item = &'a PeerId> + 'a {
+    pub fn requested_peers(&self) -> impl Iterator<Item = &PeerId> {
         self.peers
             .iter()
             .filter(|(_, state)| state.is_requested())

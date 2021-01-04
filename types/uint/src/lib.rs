@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::ptr_offset_with_cast)]
 #![allow(clippy::assign_op_pattern)]
+#![allow(clippy::manual_range_contains)]
 
 use serde::{de, ser, Deserialize, Serialize, Serializer};
 use starcoin_crypto::HashValue;

@@ -26,8 +26,10 @@ impl Consensus for ArgonConsensus {
 
     fn calculate_pow_hash(&self, mining_hash: &[u8], nonce: u32) -> Result<HashValue> {
         let mix_hash = set_header_nonce(mining_hash, nonce);
-        let mut config = Config::default();
-        config.mem_cost = 1024;
+        let config = Config {
+            mem_cost: 1024,
+            ..Default::default()
+        };
         let output = argon2::hash_raw(&mix_hash, &mix_hash, &config)?;
         HashValue::from_slice(output.as_slice())
     }
