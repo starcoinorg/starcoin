@@ -7,6 +7,7 @@ use starcoin_crypto::HashValue;
 use starcoin_resource_viewer::MoveValueAnnotator;
 use starcoin_state_api::AccountStateReader;
 use starcoin_types::account_config::stc_type_tag;
+use starcoin_types::block_metadata::BlockMetadata;
 use starcoin_types::identifier::Identifier;
 use starcoin_types::language_storage::ModuleId;
 use starcoin_types::transaction::TransactionPayload;
@@ -24,7 +25,8 @@ use test_helper::dao::{
     vote_txn_timeout_script, vote_vm_config_script,
 };
 use test_helper::executor::{
-    account_execute, account_execute_with_output, association_execute, prepare_genesis,
+    account_execute, account_execute_with_output, association_execute, blockmeta_execute,
+    current_block_number, prepare_genesis,
 };
 use test_helper::Account;
 
@@ -160,6 +162,28 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
     let pre_mint_amount = net.genesis_config().pre_mine_amount;
     let action_type_tag = vm_config_type_tag();
 
+    let one_day: u64 = 60 * 60 * 24 * 1000;
+
+    // blockmeta txn is needed to create reward info.
+    // block 1
+    {
+        let block_number = current_block_number(&chain_state) + 1;
+        let block_timestamp = net.time_service().now_millis() + one_day * block_number - 1;
+        let miner = Account::new();
+        blockmeta_execute(
+            &chain_state,
+            BlockMetadata::new(
+                HashValue::zero(),
+                block_timestamp,
+                *miner.address(),
+                Some(miner.auth_key()),
+                0,
+                block_number,
+                net.chain_id(),
+                0,
+            ),
+        )?;
+    }
     //create user for txn verifier
     let script = encode_create_account_script(
         net.stdlib_version(),
@@ -173,10 +197,10 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         &chain_state,
         TransactionPayload::Script(script),
     )?;
+
     //get gas_used
     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
     let old_gas_used = output.gas_used();
-
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
         .get_on_chain_config::<VMConfig>()?
@@ -200,7 +224,6 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
-
     // get gas used of modified gas schedule
     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
     assert!(output.gas_used() > old_gas_used);
