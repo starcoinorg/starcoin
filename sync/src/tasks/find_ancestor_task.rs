@@ -41,9 +41,18 @@ impl TaskState for FindAncestorTask {
     fn new_sub_task(self) -> BoxFuture<'static, Result<Vec<Self::Item>>> {
         async move {
             let current_number = self.start_number;
+            let best_peer = self
+                .fetcher
+                .find_best_peer()
+                .ok_or_else(|| format_err!("Best peer is none when new sub task."))?;
             let block_ids = self
                 .fetcher
-                .fetch_block_ids(current_number, true, self.batch_size)
+                .fetch_block_ids_from_peer(
+                    Some(best_peer.peer_id()),
+                    current_number,
+                    true,
+                    self.batch_size,
+                )
                 .await?;
             let id_and_numbers = block_ids
                 .into_iter()
