@@ -55,17 +55,20 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
+use bitflags::_core::time::Duration;
 use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
+use libp2p::core::network::ConnectionLimits;
 use libp2p::core::{
     connection::{ConnectionError, PendingConnectionError},
     ConnectedPoint,
 };
 use libp2p::swarm::{
-    protocols_handler::NodeHandlerWrapperError, NetworkBehaviour, SwarmBuilder, SwarmEvent,
+    protocols_handler::NodeHandlerWrapperError, AddressScore, NetworkBehaviour, SwarmBuilder,
+    SwarmEvent,
 };
 use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
@@ -266,7 +269,7 @@ impl NetworkWorker {
             ) {
                 Ok(behaviour) => behaviour,
                 Err(crate::request_responses::RegisterError::DuplicateProtocol(proto)) => {
-                    return Err(Error::DuplicateRequestResponseProtocol { protocol: proto })
+                    return Err(Error::DuplicateRequestResponseProtocol { protocol: proto });
                 }
             };
 
@@ -281,7 +284,13 @@ impl NetworkWorker {
                 transport::build_transport(local_identity, config_mem, config_wasm)
             };
             let builder = SwarmBuilder::new(transport, behaviour, local_peer_id.clone())
-                .peer_connection_limit(crate::MAX_CONNECTIONS_PER_PEER)
+                .connection_limits(
+                    ConnectionLimits::default()
+                        .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
+                        .with_max_established_incoming(Some(
+                            crate::MAX_CONNECTIONS_ESTABLISHED_INCOMING,
+                        )),
+                )
                 .notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
                 .connection_event_buffer_size(1024);
 
@@ -297,7 +306,7 @@ impl NetworkWorker {
 
         // Add external addresses.
         for addr in &params.network_config.public_addresses {
-            Swarm::add_external_address(&mut swarm, addr.clone());
+            Swarm::add_external_address(&mut swarm, addr.clone(), AddressScore::Infinite);
         }
 
         let external_addresses = Arc::new(Mutex::new(Vec::new()));
@@ -387,7 +396,7 @@ impl NetworkWorker {
                 } else {
                     error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
 						and debug information about {:?}", peer_id);
-                    return None
+                    return None;
                 };
 
                 Some((peer_id.to_base58(), NetworkStatePeer {
@@ -431,7 +440,10 @@ impl NetworkWorker {
         NetworkState {
             peer_id: Swarm::local_peer_id(&swarm).to_base58(),
             listened_addresses: Swarm::listeners(&swarm).cloned().collect(),
-            external_addresses: Swarm::external_addresses(&swarm).cloned().collect(),
+            external_addresses: Swarm::external_addresses(&swarm)
+                .map(|r| &r.addr)
+                .cloned()
+                .collect(),
             connected_peers,
             not_connected_peers,
             peerset: swarm.user_protocol_mut().peerset_debug_info(),
@@ -1080,17 +1092,21 @@ impl Future for NetworkWorker {
                                 metrics
                                     .requests_in_success_total
                                     .with_label_values(&[&protocol])
-                                    .observe(serve_time.as_secs_f64());
+                                    .observe(
+                                        serve_time.unwrap_or(Duration::from_secs(0)).as_secs_f64(),
+                                    );
                             }
                             Err(err) => {
                                 let reason = match err {
-                                    ResponseFailure::Busy => "busy",
                                     ResponseFailure::Network(InboundFailure::Timeout) => "timeout",
                                     ResponseFailure::Network(
                                         InboundFailure::UnsupportedProtocols,
                                     ) => "unsupported",
                                     ResponseFailure::Network(InboundFailure::ConnectionClosed) => {
                                         "connection-closed"
+                                    }
+                                    ResponseFailure::Network(InboundFailure::ResponseOmission) => {
+                                        "busy-omitted"
                                     }
                                 };
 
@@ -1435,9 +1451,11 @@ impl Future for NetworkWorker {
                     .requested_peers()
                     .count() as u64,
             );
-            metrics
-                .pending_connections
-                .set(Swarm::network_info(&this.network_service).num_connections_pending as u64);
+            metrics.pending_connections.set(
+                Swarm::network_info(&this.network_service)
+                    .connection_counters()
+                    .num_pending() as u64,
+            );
         }
 
         Poll::Pending

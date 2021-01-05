@@ -482,7 +482,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: peer_id.clone(),
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
                 let banned_until = ban.map(|dur| Instant::now() + dur);
@@ -508,7 +508,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: peer_id.clone(),
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
                 let banned_until = ban.map(|dur| Instant::now() + dur);
@@ -695,7 +695,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: occ_entry.key().clone(),
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Enable,
                     });
                 *occ_entry.into_mut() = PeerState::Enabled { open };
@@ -718,7 +718,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: occ_entry.key().clone(),
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Enable,
                     });
                 *occ_entry.into_mut() = PeerState::Enabled {
@@ -787,7 +787,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: entry.key().clone(),
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
                 *entry.into_mut() = PeerState::Disabled {
@@ -847,7 +847,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: incoming.peer_id,
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Enable,
                     });
                 *state = PeerState::Enabled {
@@ -884,7 +884,7 @@ impl GenericProto {
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
                         peer_id: incoming.peer_id,
-                        handler: NotifyHandler::All,
+                        handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
                 *state = PeerState::Disabled {
@@ -1256,7 +1256,7 @@ impl NetworkBehaviour for GenericProto {
                             self.events
                                 .push_back(NetworkBehaviourAction::NotifyHandler {
                                     peer_id: source.clone(),
-                                    handler: NotifyHandler::All,
+                                    handler: NotifyHandler::Any,
                                     event: NotifsHandlerIn::Disable,
                                 });
 
@@ -1518,7 +1518,7 @@ impl NetworkBehaviour for GenericProto {
                     self.events
                         .push_back(NetworkBehaviourAction::NotifyHandler {
                             peer_id,
-                            handler: NotifyHandler::All,
+                            handler: NotifyHandler::Any,
                             event: NotifsHandlerIn::Enable,
                         });
                     *peer_state = PeerState::Enabled {

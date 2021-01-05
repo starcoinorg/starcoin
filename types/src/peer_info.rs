@@ -14,6 +14,7 @@ use std::fmt;
 use std::str::FromStr;
 
 pub use network_p2p_types::multiaddr::Multiaddr;
+use network_p2p_types::multihash::Error;
 pub use network_p2p_types::multihash::Multihash;
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
@@ -38,8 +39,8 @@ impl PeerId {
 
     /// Checks whether `data` is a valid `PeerId`. If so, returns the `PeerId`. If not, returns
     /// back the data as an error.
-    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Vec<u8>> {
-        Ok(Self::new(network_p2p_types::PeerId::from_bytes(data)?))
+    pub fn from_bytes(data: Vec<u8>) -> Result<PeerId, Error> {
+        Ok(Self::new(network_p2p_types::PeerId::from_bytes(&data)?))
     }
 
     /// Turns a `Multihash` into a `PeerId`. If the multihash doesn't use the correct algorithm,
@@ -49,11 +50,7 @@ impl PeerId {
     }
 
     pub fn into_bytes(self) -> Vec<u8> {
-        self.0.into_bytes()
-    }
-
-    pub fn as_bytes(&self) -> &[u8] {
-        self.0.as_bytes()
+        self.0.to_bytes()
     }
 
     /// Returns a base-58 encoded string of this `PeerId`.
@@ -87,12 +84,6 @@ impl Into<network_p2p_types::PeerId> for PeerId {
 impl From<network_p2p_types::PeerId> for PeerId {
     fn from(peer_id: network_p2p_types::PeerId) -> Self {
         Self(peer_id)
-    }
-}
-
-impl std::convert::AsRef<[u8]> for PeerId {
-    fn as_ref(&self) -> &[u8] {
-        self.0.as_bytes()
     }
 }
 
@@ -131,7 +122,7 @@ impl<'de> Deserialize<'de> for PeerId {
             Ok(PeerId(peer_id))
         } else {
             let b = <Vec<u8>>::deserialize(deserializer)?;
-            let peer_id = network_p2p_types::PeerId::from_bytes(b)
+            let peer_id = network_p2p_types::PeerId::from_bytes(&b)
                 .map_err(|e| D::Error::custom(format_args!("parse PeerId fail:{:?}", e)))?;
             Ok(PeerId(peer_id))
         }
@@ -146,7 +137,7 @@ impl Serialize for PeerId {
         if serializer.is_human_readable() {
             self.0.to_base58().serialize(serializer)
         } else {
-            self.0.as_bytes().serialize(serializer)
+            self.0.to_bytes().serialize(serializer)
         }
     }
 }

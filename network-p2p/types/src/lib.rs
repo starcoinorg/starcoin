@@ -180,8 +180,6 @@ pub enum RequestFailure {
 /// Error when processing a request sent by a remote.
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum ResponseFailure {
-    /// Internal response builder is too busy to process this request.
-    Busy,
     /// Problem on the network.
     #[display(fmt = "Problem on the network")]
     Network(#[error(ignore)] InboundFailure),

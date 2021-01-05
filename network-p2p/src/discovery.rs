@@ -1,18 +1,20 @@
-// Copyright 2019-2020 Parity Technologies (UK) Ltd.
 // This file is part of Substrate.
 
-// Substrate is free software: you can redistribute it and/or modify
+// Copyright (C) 2019-2021 Parity Technologies (UK) Ltd.
+// SPDX-License-Identifier: GPL-3.0-or-later WITH Classpath-exception-2.0
+
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Substrate is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Substrate.  If not, see <http://www.gnu.org/licenses/>.
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Discovery mechanisms of Substrate.
 //!
@@ -68,8 +70,6 @@ use libp2p::kad::{
 use libp2p::mdns::{Mdns, MdnsEvent};
 use libp2p::multiaddr::Protocol;
 use libp2p::swarm::protocols_handler::multi::IntoMultiHandler;
-#[cfg(not(target_os = "unknown"))]
-use libp2p::swarm::toggle::Toggle;
 use libp2p::swarm::{
     IntoProtocolsHandler, NetworkBehaviour, NetworkBehaviourAction, PollParameters,
     ProtocolsHandler,
@@ -223,15 +223,9 @@ impl DiscoveryConfig {
             discovery_only_if_under_num,
             #[cfg(not(target_os = "unknown"))]
             mdns: if enable_mdns {
-                match Mdns::new() {
-                    Ok(mdns) => Some(mdns).into(),
-                    Err(err) => {
-                        warn!(target: "sub-libp2p", "Failed to initialize mDNS: {:?}", err);
-                        None.into()
-                    }
-                }
+                MdnsWrapper::Instantiating(Mdns::new().boxed())
             } else {
-                None.into()
+                MdnsWrapper::Disabled
             },
             allow_non_globals_in_dht,
             known_external_addresses: LruHashSet::new(
@@ -251,7 +245,7 @@ pub struct DiscoveryBehaviour {
     kademlias: HashMap<ProtocolId, Kademlia<MemoryStore>>,
     /// Discovers nodes on the local network.
     #[cfg(not(target_os = "unknown"))]
-    mdns: Toggle<Mdns>,
+    mdns: MdnsWrapper,
     /// Stream that fires when we need to perform the next random Kademlia query.
     next_kad_random_query: Delay,
     /// After `next_kad_random_query` triggers, the next one triggers after this duration.
@@ -588,8 +582,8 @@ impl NetworkBehaviour for DiscoveryBehaviour {
             return kad.inject_event(peer_id, connection, event);
         }
         log::error!(target: "sub-libp2p",
-                    "inject_node_event: no kademlia instance registered for protocol {:?}",
-                    pid)
+			"inject_node_event: no kademlia instance registered for protocol {:?}",
+			pid)
     }
 
     fn inject_new_external_addr(&mut self, addr: &Multiaddr) {
@@ -716,12 +710,13 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             Err(GetClosestPeersError::Timeout { key, peers }) => {
                                 debug!(target: "sub-libp2p",
                                            "Libp2p => Query for {:?} timed out with {} results",
-                                           hex::encode(&key), peers.len());
+                                           hex::encode(key),
+                                           peers.len());
                             }
                             Ok(ok) => {
                                 trace!(target: "sub-libp2p",
-                                           "Libp2p => Query for {:?} yielded {:?} results",
-                                           hex::encode(&ok.key), ok.peers.len());
+                                           "Libp2p => Query yielded {:?} results",
+                                           ok.peers.len());
                                 if ok.peers.is_empty() && self.num_connections != 0 {
                                     debug!(target: "sub-libp2p", "Libp2p => Random Kademlia query has yielded empty \
 											results");
@@ -819,8 +814,11 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                             event: (pid.clone(), event),
                         })
                     }
-                    NetworkBehaviourAction::ReportObservedAddr { address } => {
-                        return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
+                    NetworkBehaviourAction::ReportObservedAddr { address, score } => {
+                        return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
+                            address,
+                            score,
+                        })
                     }
                 }
             }
@@ -851,8 +849,11 @@ impl NetworkBehaviour for DiscoveryBehaviour {
                     return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition })
                 }
                 NetworkBehaviourAction::NotifyHandler { event, .. } => match event {}, // `event` is an enum with no variant
-                NetworkBehaviourAction::ReportObservedAddr { address } => {
-                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
+                NetworkBehaviourAction::ReportObservedAddr { address, score } => {
+                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
+                        address,
+                        score,
+                    })
                 }
             }
         }
@@ -870,6 +871,48 @@ fn protocol_name_from_protocol_id(id: &ProtocolId) -> Vec<u8> {
     v
 }
 
+/// [`Mdns::new`] returns a future. Instead of forcing [`DiscoveryConfig::finish`] and all its
+/// callers to be async, lazily instantiate [`Mdns`].
+#[cfg(not(target_os = "unknown"))]
+enum MdnsWrapper {
+    Instantiating(futures::future::BoxFuture<'static, std::io::Result<Mdns>>),
+    Ready(Mdns),
+    Disabled,
+}
+
+#[cfg(not(target_os = "unknown"))]
+impl MdnsWrapper {
+    fn addresses_of_peer(&mut self, peer_id: &PeerId) -> Vec<Multiaddr> {
+        match self {
+            MdnsWrapper::Instantiating(_) => Vec::new(),
+            MdnsWrapper::Ready(mdns) => mdns.addresses_of_peer(peer_id),
+            MdnsWrapper::Disabled => Vec::new(),
+        }
+    }
+
+    fn poll(
+        &mut self,
+        cx: &mut Context<'_>,
+        params: &mut impl PollParameters,
+    ) -> Poll<NetworkBehaviourAction<void::Void, MdnsEvent>> {
+        loop {
+            match self {
+                MdnsWrapper::Instantiating(fut) => {
+                    *self = match futures::ready!(fut.as_mut().poll(cx)) {
+                        Ok(mdns) => MdnsWrapper::Ready(mdns),
+                        Err(err) => {
+                            warn!(target: "sub-libp2p", "Failed to initialize mDNS: {:?}", err);
+                            MdnsWrapper::Disabled
+                        }
+                    }
+                }
+                MdnsWrapper::Ready(mdns) => return mdns.poll(cx, params),
+                MdnsWrapper::Disabled => return Poll::Pending,
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{protocol_name_from_protocol_id, DiscoveryConfig, DiscoveryOut};
@@ -884,8 +927,6 @@ mod tests {
     use libp2p::{Multiaddr, PeerId};
     use std::{collections::HashSet, task::Poll};
 
-    //this collect is not needless
-    #[allow(clippy::needless_collect)]
     #[test]
     fn discovery_working() {
         let mut first_swarm_peer_id_and_addr = None;
@@ -949,33 +990,38 @@ mod tests {
         let fut = futures::future::poll_fn(move |cx| {
             'polling: loop {
                 for swarm_n in 0..swarms.len() {
-                    if let Poll::Ready(Some(e)) = swarms[swarm_n].0.poll_next_unpin(cx) {
-                        match e {
-                            DiscoveryOut::UnroutablePeer(other)
-                            | DiscoveryOut::Discovered(other) => {
-                                // Call `add_self_reported_address` to simulate identify happening.
-                                let addr = swarms
-                                    .iter()
-                                    .find_map(|(s, a)| {
-                                        if s.local_peer_id == other {
-                                            Some(a.clone())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .unwrap();
-                                swarms[swarm_n].0.add_self_reported_address(
-                                    &other,
-                                    [protocol_name_from_protocol_id(&protocol_id)].iter(),
-                                    addr,
-                                );
+                    match swarms[swarm_n].0.poll_next_unpin(cx) {
+                        Poll::Ready(Some(e)) => {
+                            match e {
+                                DiscoveryOut::UnroutablePeer(other)
+                                | DiscoveryOut::Discovered(other) => {
+                                    // Call `add_self_reported_address` to simulate identify happening.
+                                    let addr = swarms
+                                        .iter()
+                                        .find_map(|(s, a)| {
+                                            if s.local_peer_id == other {
+                                                Some(a.clone())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .unwrap();
+                                    swarms[swarm_n].0.add_self_reported_address(
+                                        &other,
+                                        [protocol_name_from_protocol_id(&protocol_id)].iter(),
+                                        addr,
+                                    );
 
-                                to_discover[swarm_n].remove(&other);
+                                    to_discover[swarm_n].remove(&other);
+                                }
+                                DiscoveryOut::RandomKademliaStarted(_) => {}
+                                e => {
+                                    panic!("Unexpected event: {:?}", e)
+                                }
                             }
-                            DiscoveryOut::RandomKademliaStarted(_) => {}
-                            e => panic!("Unexpected event: {:?}", e),
+                            continue 'polling;
                         }
-                        continue 'polling;
+                        _ => {}
                     }
                 }
                 break;
@@ -1033,7 +1079,7 @@ mod tests {
         discovery.add_self_reported_address(
             &remote_peer_id,
             [protocol_name_from_protocol_id(&supported_protocol_id)].iter(),
-            remote_addr,
+            remote_addr.clone(),
         );
 
         for kademlia in discovery.kademlias.values_mut() {
@@ -1074,7 +1120,7 @@ mod tests {
         discovery.add_self_reported_address(
             &remote_peer_id,
             [protocol_name_from_protocol_id(&protocol_a)].iter(),
-            remote_addr,
+            remote_addr.clone(),
         );
 
         assert_eq!(
@@ -1094,7 +1140,7 @@ mod tests {
                 .kademlias
                 .get_mut(&protocol_b)
                 .expect("Kademlia instance to exist.")
-                .kbucket(remote_peer_id)
+                .kbucket(remote_peer_id.clone())
                 .expect("Remote peer id not to be equal to local peer id.")
                 .is_empty(),
             "Expected remote peer not to be added to `protocol_b` Kademlia instance.",

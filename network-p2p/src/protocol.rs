@@ -40,6 +40,7 @@ pub use generic_proto::LegacyConnectionKillError;
 
 pub mod rep {
     use sc_peerset::ReputationChange as Rep;
+
     /// Reputation change when a peer is "clogged", meaning that it's not fast enough to process our
     /// messages.
     pub const CLOGGED_PEER: Rep = Rep::new(-(1 << 12), "Clogged message queue");
@@ -217,10 +218,10 @@ impl NetworkBehaviour for Protocol {
             Poll::Pending => return Poll::Pending,
             Poll::Ready(NetworkBehaviourAction::GenerateEvent(ev)) => ev,
             Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                return Poll::Ready(NetworkBehaviourAction::DialAddress { address })
+                return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
             }
             Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition })
+                return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
             }
             Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                 peer_id,
@@ -231,10 +232,10 @@ impl NetworkBehaviour for Protocol {
                     peer_id,
                     handler,
                     event,
-                })
+                });
             }
-            Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address }) => {
-                return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
+            Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score }) => {
+                return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score });
             }
         };
 
