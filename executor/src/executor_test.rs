@@ -26,7 +26,8 @@ use starcoin_vm_types::vm_status::KeptVMStatus;
 use starcoin_vm_types::{transaction::Package, values::Value, vm_status::StatusCode};
 use stdlib::transaction_scripts::compiled_transaction_script;
 use test_helper::executor::{
-    account_execute, association_execute, build_raw_txn, TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
+    account_execute, association_execute, blockmeta_execute, build_raw_txn, current_block_number,
+    TEST_MODULE, TEST_MODULE_1, TEST_MODULE_2,
 };
 use test_helper::executor::{
     compile_module_with_address, execute_and_apply, get_balance, get_sequence_number,
@@ -127,7 +128,8 @@ fn test_gen_accounts() -> Result<()> {
         net.genesis_config(),
         &chain_state,
         TransactionPayload::Script(script),
-    )
+    )?;
+    Ok(())
 }
 
 #[stest::test]
@@ -262,15 +264,31 @@ fn test_block_execute_gas_limit() -> Result<()> {
     let (chain_state, net) = prepare_genesis();
     let sequence_number1 = get_sequence_number(account_config::association_address(), &chain_state);
     let account1 = Account::new();
-    let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
-        &account1,
-        sequence_number1,
-        50_000_000,
-        net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
-        &net,
-    ));
-    let output = execute_and_apply(&chain_state, txn1);
-    info!("output: {:?}", output.gas_used());
+    {
+        let miner = Account::new();
+        let block_meta = BlockMetadata::new(
+            starcoin_crypto::HashValue::random(),
+            net.time_service().now_millis(),
+            *miner.address(),
+            Some(miner.auth_key()),
+            0,
+            current_block_number(&chain_state) + 1,
+            net.chain_id(),
+            0,
+        );
+        blockmeta_execute(&chain_state, block_meta)?;
+
+        let txn1 = Transaction::UserTransaction(create_account_txn_sent_as_association(
+            &account1,
+            sequence_number1,
+            50_000_000,
+            net.time_service().now_secs() + DEFAULT_EXPIRATION_TIME,
+            &net,
+        ));
+        let output = execute_and_apply(&chain_state, txn1);
+        info!("output: {:?}", output.gas_used());
+    }
+
     net.time_service().sleep(1000);
 
     // pre-run a txn to get gas_used
@@ -301,7 +319,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         *account1.address(),
         Some(account1.auth_key()),
         0,
-        1,
+        current_block_number(&chain_state) + 1,
         net.chain_id(),
         0,
     );
@@ -346,7 +364,7 @@ fn test_block_execute_gas_limit() -> Result<()> {
         *account1.address(),
         Some(account1.auth_key()),
         0,
-        2,
+        current_block_number(&chain_state) + 1,
         net.chain_id(),
         0,
     );

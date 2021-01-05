@@ -7,7 +7,7 @@ use anyhow::{bail, Result};
 use starcoin_account_api::AccountPrivateKey;
 use starcoin_config::{ChainNetwork, GenesisConfig};
 use starcoin_executor::{execute_readonly_function, execute_transactions, DEFAULT_MAX_GAS_AMOUNT};
-use starcoin_state_api::{AccountStateReader, ChainState};
+use starcoin_state_api::{AccountStateReader, ChainState, StateView};
 use starcoin_statedb::{ChainStateDB, ChainStateWriter};
 use starcoin_types::account_config::{association_address, genesis_address};
 use starcoin_types::block_metadata::BlockMetadata;
@@ -68,6 +68,18 @@ pub fn execute_and_apply(chain_state: &ChainStateDB, txn: Transaction) -> Transa
 
     output
 }
+pub fn current_block_number(state_view: &dyn StateView) -> u64 {
+    let mut ret = execute_readonly_function(
+        state_view,
+        &ModuleId::new(genesis_address(), Identifier::new("Block").unwrap()),
+        &Identifier::new("get_current_block_number").unwrap(),
+        vec![],
+        vec![],
+    )
+    .unwrap();
+    assert_eq!(ret.len(), 1);
+    ret.pop().unwrap().1.cast().unwrap()
+}
 
 pub fn get_sequence_number(addr: AccountAddress, chain_state: &dyn ChainState) -> u64 {
     let account_reader = AccountStateReader::new(chain_state.as_super());
@@ -113,7 +125,7 @@ pub fn association_execute(
     config: &GenesisConfig,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, ChainId::test());
     let txn = config.sign_with_association(txn)?;
     execute_signed_txn(state, txn)
@@ -122,7 +134,7 @@ pub fn account_execute(
     account: &Account,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     user_execute(*account.address(), account.private_key(), state, payload)
 }
 
@@ -135,14 +147,14 @@ pub fn account_execute_with_output(
     execute_and_apply(state, Transaction::UserTransaction(txn))
 }
 
-pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()> {
+pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<TransactionOutput> {
     let txn = Transaction::BlockMetadata(meta);
     let output = execute_and_apply(state, txn);
     if let TransactionStatus::Discard(s) = output.status() {
         bail!("txn discard, status: {:?}", s);
     }
 
-    Ok(())
+    Ok(output)
 }
 
 pub fn build_raw_txn(
@@ -183,7 +195,7 @@ fn user_execute(
     prikey: &AccountPrivateKey,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     let txn = build_signed_txn(user_address, prikey, state, payload);
     execute_signed_txn(state, txn)
 }
@@ -199,7 +211,10 @@ fn build_signed_txn(
     signature.build_transaction(txn).unwrap()
 }
 
-fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Result<()> {
+fn execute_signed_txn(
+    state: &ChainStateDB,
+    txn: SignedUserTransaction,
+) -> Result<TransactionOutput> {
     let txn = Transaction::UserTransaction(txn);
     let output = execute_and_apply(state, txn);
 
@@ -213,5 +228,5 @@ fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Resul
             }
         }
     }
-    Ok(())
+    Ok(output)
 }

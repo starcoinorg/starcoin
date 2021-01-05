@@ -20,7 +20,7 @@ use starcoin_types::language_storage::TypeTag;
 use starcoin_types::transaction::TransactionInfo;
 use starcoin_types::{account_address::AccountAddress, transaction::SignedUserTransaction};
 use starcoin_vm_types::account_config::events::accept_token_payment::AcceptTokenEvent;
-use starcoin_vm_types::account_config::{ProposalCreatedEvent, VoteChangedEvent};
+use starcoin_vm_types::account_config::{BlockRewardEvent, ProposalCreatedEvent, VoteChangedEvent};
 use starcoin_vm_types::event::EventKey;
 use starcoin_vm_types::move_resource::MoveResource;
 use starcoin_vm_types::vm_status::KeptVMStatus;
@@ -152,6 +152,13 @@ pub enum EventDataView {
     },
     #[serde(rename = "accept_token")]
     AcceptToken { token_code: String },
+    #[serde(rename = "block_reward_event")]
+    BlockReward {
+        block_number: u64,
+        block_reward: u128,
+        gas_fees: u128,
+        miner: AccountAddress,
+    },
     #[serde(rename = "unknown")]
     Unknown { type_tag: TypeTag, data: Vec<u8> },
 }
@@ -221,6 +228,10 @@ impl EventDataView {
             } else {
                 Err(format_err!("Unable to parse VoteChangedEvent"))
             }
+        } else if event_type_tag == &TypeTag::Struct(BlockRewardEvent::struct_tag()) {
+            Ok(BlockRewardEvent::try_from_bytes(event_data)
+                .map_err(|_| format_err!("Unable to parse {}", BlockRewardEvent::struct_tag()))?
+                .into())
         } else {
             Ok(EventDataView::Unknown {
                 type_tag: event_type_tag.clone(),
@@ -229,7 +240,17 @@ impl EventDataView {
         }
     }
 }
+impl From<BlockRewardEvent> for EventDataView {
+    fn from(event: BlockRewardEvent) -> Self {
+        EventDataView::BlockReward {
+            block_number: event.block_number,
 
+            block_reward: event.block_reward,
+            gas_fees: event.gas_fees,
+            miner: event.miner,
+        }
+    }
+}
 impl From<TransactionEventView> for EventView {
     fn from(event_view: TransactionEventView) -> Self {
         EventView {

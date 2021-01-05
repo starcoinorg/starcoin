@@ -12,6 +12,7 @@ module BlockReward {
     use 0x1::RewardConfig;
     use 0x1::Config;
     use 0x1::Authenticator;
+    use 0x1::Event;
 
     spec module {
         pragma verify = true;
@@ -21,11 +22,26 @@ module BlockReward {
     resource struct RewardQueue {
         reward_number: u64,
         infos: vector<RewardInfo>,
+        /// event handle used to emit block reward event.
+        reward_events: Event::EventHandle<Self::BlockRewardEvent>,
     }
 
-    struct RewardInfo {
+    resource struct RewardInfo {
         number: u64,
         reward: u128,
+        miner: address,
+        gas_fees: Token::Token<STC>,
+    }
+
+    /// block reward event
+    struct BlockRewardEvent {
+        /// block number
+        block_number: u64,
+        /// STC reward.
+        block_reward: u128,
+        /// gas fees in STC.
+        gas_fees: u128,
+        /// block miner
         miner: address,
     }
 
@@ -43,6 +59,7 @@ module BlockReward {
         move_to<RewardQueue>(account, RewardQueue {
             reward_number: 0,
             infos: Vector::empty(),
+            reward_events: Event::new_event_handle<Self::BlockRewardEvent>(account),
         });
     }
 
@@ -56,50 +73,95 @@ module BlockReward {
     }
 
     public fun process_block_reward(account: &signer, current_number: u64, current_reward: u128,
-                                    current_author: address, auth_key_vec: vector<u8>) acquires RewardQueue {
+                                    current_author: address, auth_key_vec: vector<u8>,
+                                    previous_block_gas_fees: Token::Token<STC>) acquires RewardQueue {
         CoreAddresses::assert_genesis_address(account);
-
-        if (current_number > 0) {
-            let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
-            let len = Vector::length(&rewards.infos);
-            assert((current_number == (rewards.reward_number + len + 1)), Errors::invalid_argument(ECURRENT_NUMBER_IS_WRONG));
-
-            let reward_delay = RewardConfig::reward_delay();
-            if (len >= reward_delay) {//pay and remove
-                let i = len;
-                while (i > 0 && i >= reward_delay) {
-                    let reward_number = rewards.reward_number + 1;
-                    let first_info = *Vector::borrow(&rewards.infos, 0);
-                    rewards.reward_number = reward_number;
-                    if (first_info.reward > 0) {
-                        let reward = Token::mint<STC>(account, first_info.reward);
-                        Account::deposit<STC>(first_info.miner, reward);
-                    };
-                    Vector::remove(&mut rewards.infos, 0);
-                    i = i - 1;
-                }
-            };
-
-            if (!Account::exists_at(current_author)) {
-                //create account from public key
-                assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_AUTH_KEY_IS_EMPTY));
-                let expected_address = Account::create_account<STC>(auth_key_vec);
-                assert(current_author == expected_address, Errors::invalid_argument(EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH));
-            };
-            let current_info = RewardInfo {
-                number: current_number,
-                reward: current_reward,
-                miner: current_author,
-            };
-            Vector::push_back(&mut rewards.infos, current_info);
+        if (current_number == 0) {
+            Token::destroy_zero(previous_block_gas_fees);
+            return
         };
+
+        let rewards = borrow_global_mut<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
+        let len = Vector::length(&rewards.infos);
+        assert((current_number == (rewards.reward_number + len + 1)), Errors::invalid_argument(ECURRENT_NUMBER_IS_WRONG));
+
+        // distribute gas fee to last block reward info.
+        // if not last block reward info, the passed in gas fee must be zero.
+        if (len == 0) {
+            Token::destroy_zero(previous_block_gas_fees);
+        } else {
+            let reward_info = Vector::borrow_mut(&mut rewards.infos, len - 1);
+            assert(current_number == reward_info.number + 1, Errors::invalid_argument(ECURRENT_NUMBER_IS_WRONG));
+            Token::deposit(&mut reward_info.gas_fees, previous_block_gas_fees);
+        };
+
+        let reward_delay = RewardConfig::reward_delay();
+        if (len >= reward_delay) {//pay and remove
+            let i = len;
+            while (i > 0 && i >= reward_delay) {
+                let RewardInfo { number: reward_block_number, reward: block_reward, gas_fees, miner } = Vector::remove(&mut rewards.infos, 0);
+
+                let gas_fee_value = Token::value(&gas_fees);
+                let total_reward = gas_fees;
+                // add block reward to total.
+                if (block_reward > 0) {
+                    let reward = Token::mint<STC>(account, block_reward);
+                    Token::deposit(&mut total_reward, reward);
+                };
+                // distribute total.
+                if (Token::value(&total_reward) > 0) {
+                    Account::deposit<STC>(miner, total_reward);
+                } else {
+                    Token::destroy_zero(total_reward);
+                };
+                // emit reward event.
+                Event::emit_event<BlockRewardEvent>(
+                    &mut rewards.reward_events,
+                    BlockRewardEvent {
+                        block_number: reward_block_number,
+                        block_reward: block_reward,
+                        gas_fees: gas_fee_value,
+                        miner,
+                    }
+                );
+
+                rewards.reward_number = rewards.reward_number + 1;
+                i = i - 1;
+            }
+        };
+
+        if (!Account::exists_at(current_author)) {
+            //create account from public key
+            assert(!Vector::is_empty(&auth_key_vec), Errors::invalid_argument(EAUTHOR_AUTH_KEY_IS_EMPTY));
+            let expected_address = Account::create_account<STC>(auth_key_vec);
+            assert(current_author == expected_address, Errors::invalid_argument(EAUTHOR_ADDRESS_AND_AUTH_KEY_MISMATCH));
+        };
+        let current_info = RewardInfo {
+            number: current_number,
+            reward: current_reward,
+            miner: current_author,
+            gas_fees: Token::zero<STC>(),
+        };
+        Vector::push_back(&mut rewards.infos, current_info);
+
     }
 
     spec fun process_block_reward {
         aborts_if Signer::address_of(account) != CoreAddresses::GENESIS_ADDRESS();
+        // abort if current block is genesis, and previous block gas fees != 0
+        aborts_if current_number == 0 && Token::value(previous_block_gas_fees) != 0;
+
         aborts_if current_number > 0 && !exists<RewardQueue>(CoreAddresses::GENESIS_ADDRESS());
         aborts_if current_number > 0 && (global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).reward_number + Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos) + 1) != current_number;
         aborts_if current_number > 0 && !exists<Config::Config<RewardConfig::RewardConfig>>(CoreAddresses::GENESIS_ADDRESS());
+
+
+        let reward_info_length = Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos);
+
+        // abort if no previous block but has gas fees != 0.
+        aborts_if current_number > 0 && reward_info_length == 0 && Token::value(previous_block_gas_fees) != 0;
+        // abort if previous block number != current_block_number - 1.
+        aborts_if current_number > 0 && reward_info_length != 0 && Vector::borrow(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos, reward_info_length - 1).number != current_number - 1;
 
         aborts_if current_number > 0 && Vector::length(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos) >= global<Config::Config<RewardConfig::RewardConfig>>(CoreAddresses::GENESIS_ADDRESS()).payload.reward_delay
         && (global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).reward_number + 1) != Vector::borrow(global<RewardQueue>(CoreAddresses::GENESIS_ADDRESS()).infos, 0).number;

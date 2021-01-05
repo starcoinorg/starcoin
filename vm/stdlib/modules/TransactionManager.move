@@ -2,7 +2,6 @@ address 0x1 {
 module TransactionManager {
     use 0x1::TransactionTimeout;
     use 0x1::Signer;
-    use 0x1::Token::{Self, Token};
     use 0x1::CoreAddresses;
     use 0x1::Account;
     use 0x1::PackageTxnManager;
@@ -179,14 +178,15 @@ module TransactionManager {
     ) {
         // Can only be invoked by genesis account
         CoreAddresses::assert_genesis_address(account);
-        Timestamp::update_global_time(account, timestamp);
         // Check that the chain ID stored on-chain matches the chain ID
         // specified by the transaction
         assert(ChainId::get() == chain_id, Errors::invalid_argument(EPROLOGUE_BAD_CHAIN_ID));
-        //get previous author for distribute txn_fee
-        let previous_author = Block::get_current_author();
+
+        // deal with previous block first.
         let txn_fee = TransactionFee::distribute_transaction_fees<STC>(account);
-        distribute(txn_fee, previous_author);
+
+        // then deal with current block.
+        Timestamp::update_global_time(account, timestamp);
         Block::process_block_metadata(
             account,
             parent_hash,
@@ -196,28 +196,12 @@ module TransactionManager {
             number,
         );
         let reward = Epoch::adjust_epoch(account, number, timestamp, uncles, parent_gas_used);
-        BlockReward::process_block_reward(account, number, reward, author, auth_key_vec);
+        // pass in previous block gas fees.
+        BlockReward::process_block_reward(account, number, reward, author, auth_key_vec, txn_fee);
     }
 
     spec fun block_prologue {
         pragma verify = false;//fixme : timeout
-    }
-
-    fun distribute<TokenType>(txn_fee: Token<TokenType>, author: address) {
-        let value = Token::value<TokenType>(&txn_fee);
-        if (value > 0) {
-            Account::deposit<TokenType>(author, txn_fee);
-        } else {
-            Token::destroy_zero<TokenType>(txn_fee);
-        }
-    }
-
-    spec fun distribute {
-        include Account::AbortsIfDepositWithMetadata<TokenType>{
-            value_is_not_zero: (Token::value<TokenType>(txn_fee) > 0),
-            receiver: author,
-            to_deposit: txn_fee,
-        };
     }
 }
 }
