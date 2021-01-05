@@ -198,11 +198,9 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         TransactionPayload::Script(script),
     )?;
 
-    println!("aaaaaaaaaaaaaaaa");
     //get gas_used
     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
     let old_gas_used = output.gas_used();
-    println!("bbbbbbbbbbbb");
     let account_state_reader = AccountStateReader::new(&chain_state);
     let mut vm_config = account_state_reader
         .get_on_chain_config::<VMConfig>()?
@@ -226,7 +224,6 @@ fn test_modify_on_chain_vm_config_option() -> Result<()> {
         on_chain_config_type_tag(action_type_tag.clone()),
         execute_script_on_chain_config(&net, action_type_tag, 0u64),
     )?;
-    println!("cccccccccc");
     // get gas used of modified gas schedule
     let output = account_execute_with_output(&bob, &chain_state, empty_txn_payload(&net));
     assert!(output.gas_used() > old_gas_used);

@@ -128,7 +128,8 @@ fn test_gen_accounts() -> Result<()> {
         net.genesis_config(),
         &chain_state,
         TransactionPayload::Script(script),
-    )
+    )?;
+    Ok(())
 }
 
 #[stest::test]

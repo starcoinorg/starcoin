@@ -125,7 +125,7 @@ pub fn association_execute(
     config: &GenesisConfig,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     let txn = build_raw_txn(association_address(), state, payload, ChainId::test());
     let txn = config.sign_with_association(txn)?;
     execute_signed_txn(state, txn)
@@ -134,7 +134,7 @@ pub fn account_execute(
     account: &Account,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     user_execute(*account.address(), account.private_key(), state, payload)
 }
 
@@ -147,14 +147,14 @@ pub fn account_execute_with_output(
     execute_and_apply(state, Transaction::UserTransaction(txn))
 }
 
-pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<()> {
+pub fn blockmeta_execute(state: &ChainStateDB, meta: BlockMetadata) -> Result<TransactionOutput> {
     let txn = Transaction::BlockMetadata(meta);
     let output = execute_and_apply(state, txn);
     if let TransactionStatus::Discard(s) = output.status() {
         bail!("txn discard, status: {:?}", s);
     }
 
-    Ok(())
+    Ok(output)
 }
 
 pub fn build_raw_txn(
@@ -195,7 +195,7 @@ fn user_execute(
     prikey: &AccountPrivateKey,
     state: &ChainStateDB,
     payload: TransactionPayload,
-) -> Result<()> {
+) -> Result<TransactionOutput> {
     let txn = build_signed_txn(user_address, prikey, state, payload);
     execute_signed_txn(state, txn)
 }
@@ -211,7 +211,10 @@ fn build_signed_txn(
     signature.build_transaction(txn).unwrap()
 }
 
-fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Result<()> {
+fn execute_signed_txn(
+    state: &ChainStateDB,
+    txn: SignedUserTransaction,
+) -> Result<TransactionOutput> {
     let txn = Transaction::UserTransaction(txn);
     let output = execute_and_apply(state, txn);
 
@@ -225,5 +228,5 @@ fn execute_signed_txn(state: &ChainStateDB, txn: SignedUserTransaction) -> Resul
             }
         }
     }
-    Ok(())
+    Ok(output)
 }
