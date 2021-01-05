@@ -17,11 +17,11 @@
     -  [Function `submit_module_upgrade_plan`](#@Specification_1_submit_module_upgrade_plan)
 
 
-<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
-<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<pre><code><b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Token.md#0x1_Token">0x1::Token</a>;
 </code></pre>
 
@@ -223,7 +223,7 @@ propose a module upgrade, called by proposer.
         &cap.cap,
         package_hash,
         version,
-        <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(),
+        <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>(),
     );
 }
 </code></pre>
@@ -320,5 +320,6 @@ propose a module upgrade, called by proposer.
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(proposal.action);
 <a name="0x1_UpgradeModuleDaoProposal_action$8"></a>
 <b>let</b> action = proposal.action.vec[0];
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
 <b>include</b> <a href="UpgradeModuleDaoProposal.md#0x1_UpgradeModuleDaoProposal_AbortIfUnableUpgrade">AbortIfUnableUpgrade</a>&lt;TokenT&gt;{module_address: action.module_address};
 </code></pre>

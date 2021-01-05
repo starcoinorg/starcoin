@@ -34,7 +34,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1, 2);
+    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1, PackageTxnManager::get_min_time_limit());
 }
 }
 
@@ -51,7 +51,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: &signer) {
     let hash = x"2222222222222222";
-    PackageTxnManager::submit_upgrade_plan(account, copy hash, 2, 3);
+    PackageTxnManager::submit_upgrade_plan(account, copy hash, 2, PackageTxnManager::get_min_time_limit());
 }
 }
 

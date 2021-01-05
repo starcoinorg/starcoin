@@ -3,11 +3,11 @@ address 0x1 {
         use 0x1::Option::{Self,Option};
         use 0x1::Signer;
         use 0x1::CoreAddresses;
-        use 0x1::Block;
         use 0x1::Errors;
         use 0x1::Version;
         use 0x1::Event;
         use 0x1::Config;
+        use 0x1::Timestamp;
 
         spec module {
             pragma verify = true;
@@ -16,7 +16,7 @@ address 0x1 {
 
         struct UpgradePlan {
             package_hash: vector<u8>,
-            active_after_number: u64,
+            active_after_time: u64,
             version: u64,
         }
 
@@ -29,6 +29,7 @@ address 0x1 {
         const STRATEGY_TWO_PHASE: u8 = 1;
         const STRATEGY_NEW_MODULE: u8 = 2;
         const STRATEGY_FREEZE: u8 = 3;
+        const MIN_TIME_LIMIT: u64 = 100000;
 
         public fun get_strategy_arbitrary(): u8 { STRATEGY_ARBITRARY }
 
@@ -37,6 +38,8 @@ address 0x1 {
         public fun get_strategy_new_module(): u8 { STRATEGY_NEW_MODULE }
 
         public fun get_strategy_freeze(): u8 { STRATEGY_FREEZE }
+
+        public fun get_min_time_limit(): u64 { MIN_TIME_LIMIT }
 
         const EUPGRADE_PLAN_IS_NONE: u64 = 102;
         const EPACKAGE_HASH_INCORRECT: u64 = 103;
@@ -138,36 +141,42 @@ address 0x1 {
         }
 
         // upgrade plan can override
-        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64, active_after_number: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64, min_milliseconds: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
+            assert(min_milliseconds >= MIN_TIME_LIMIT, Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
-            submit_upgrade_plan_with_cap(cap, package_hash, version, active_after_number);
+            let active_after_time = Timestamp::now_milliseconds() + min_milliseconds;
+            submit_upgrade_plan_with_cap(cap, package_hash, version, active_after_time);
         }
 
         spec fun submit_upgrade_plan {
+            aborts_if min_milliseconds < MIN_TIME_LIMIT;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
-            include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
+            aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if Timestamp::now_milliseconds() + min_milliseconds > max_u64();
+            let active_after_time = Timestamp::now_milliseconds() + min_milliseconds;
+            include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address, active_after_time};
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
         }
 
-        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64, active_after_number: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
-            assert(active_after_number >= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
+        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64, active_after_time: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
+            assert(active_after_time >= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
-            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_number, version});
+            tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_time, version});
         }
 
         spec fun submit_upgrade_plan_with_cap {
-            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address, active_after_number};
+            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address, active_after_time};
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
 
         spec schema SubmitUpgradePlanWithCapAbortsIf {
             account: address;
-            active_after_number: u64;
-            aborts_if !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if active_after_number < global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
+            active_after_time: u64;
+            aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if active_after_time < Timestamp::now_milliseconds();
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
@@ -255,7 +264,7 @@ address 0x1 {
                 assert(Option::is_some(&plan_opt), Errors::invalid_argument(EUPGRADE_PLAN_IS_NONE));
                 let plan = Option::borrow(&plan_opt);
                 assert(*&plan.package_hash == package_hash, Errors::invalid_argument(EPACKAGE_HASH_INCORRECT));
-                assert(plan.active_after_number <= Block::get_current_block_number(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
+                assert(plan.active_after_time <= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
             }else if(strategy == STRATEGY_NEW_MODULE){
                 //do check at VM runtime.
             }else if(strategy == STRATEGY_FREEZE){
@@ -273,8 +282,8 @@ address 0x1 {
             aborts_if spec_get_module_upgrade_strategy(package_address) == 3;
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(spec_get_upgrade_plan(package_address));
             aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
-            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_number > global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
         }
 
         spec schema CheckPackageTxnAbortsIfWithType {
@@ -285,8 +294,8 @@ address 0x1 {
             aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 3;
             aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_is_none(spec_get_upgrade_plan(package_address));
             aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).package_hash != package_hash;
-            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_number > global<Block::BlockMetadata>(CoreAddresses::GENESIS_ADDRESS()).number;
+            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if is_package && spec_get_module_upgrade_strategy(package_address) == 1 && Option::spec_get(spec_get_upgrade_plan(package_address)).active_after_time > Timestamp::now_milliseconds();
         }
 
         fun finish_upgrade_plan(package_address: address) acquires TwoPhaseUpgrade {

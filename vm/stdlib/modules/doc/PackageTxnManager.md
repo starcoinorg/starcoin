@@ -15,6 +15,7 @@
 -  [Function `get_strategy_two_phase`](#0x1_PackageTxnManager_get_strategy_two_phase)
 -  [Function `get_strategy_new_module`](#0x1_PackageTxnManager_get_strategy_new_module)
 -  [Function `get_strategy_freeze`](#0x1_PackageTxnManager_get_strategy_freeze)
+-  [Function `get_min_time_limit`](#0x1_PackageTxnManager_get_min_time_limit)
 -  [Function `update_module_upgrade_strategy`](#0x1_PackageTxnManager_update_module_upgrade_strategy)
 -  [Function `account_address`](#0x1_PackageTxnManager_account_address)
 -  [Function `destroy_upgrade_plan_cap`](#0x1_PackageTxnManager_destroy_upgrade_plan_cap)
@@ -45,13 +46,13 @@
     -  [Function `package_txn_epilogue`](#@Specification_1_package_txn_epilogue)
 
 
-<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
-<b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
+<pre><code><b>use</b> <a href="Config.md#0x1_Config">0x1::Config</a>;
 <b>use</b> <a href="CoreAddresses.md#0x1_CoreAddresses">0x1::CoreAddresses</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="Event.md#0x1_Event">0x1::Event</a>;
 <b>use</b> <a href="Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
+<b>use</b> <a href="Timestamp.md#0x1_Timestamp">0x1::Timestamp</a>;
 <b>use</b> <a href="Version.md#0x1_Version">0x1::Version</a>;
 </code></pre>
 
@@ -80,7 +81,7 @@
 
 </dd>
 <dt>
-<code>active_after_number: u64</code>
+<code>active_after_time: u64</code>
 </dt>
 <dd>
 
@@ -296,6 +297,15 @@
 
 
 
+<a name="0x1_PackageTxnManager_MIN_TIME_LIMIT"></a>
+
+
+
+<pre><code><b>const</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_MIN_TIME_LIMIT">MIN_TIME_LIMIT</a>: u64 = 100000;
+</code></pre>
+
+
+
 <a name="0x1_PackageTxnManager_STRATEGY_ARBITRARY"></a>
 
 
@@ -414,6 +424,28 @@
 
 
 <pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_strategy_freeze">get_strategy_freeze</a>(): u8 { <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a> }
+</code></pre>
+
+
+
+</details>
+
+<a name="0x1_PackageTxnManager_get_min_time_limit"></a>
+
+## Function `get_min_time_limit`
+
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_min_time_limit">get_min_time_limit</a>(): u64
+</code></pre>
+
+
+
+<details>
+<summary>Implementation</summary>
+
+
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_get_min_time_limit">get_min_time_limit</a>(): u64 { <a href="PackageTxnManager.md#0x1_PackageTxnManager_MIN_TIME_LIMIT">MIN_TIME_LIMIT</a> }
 </code></pre>
 
 
@@ -551,7 +583,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version: u64, active_after_number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version: u64, min_milliseconds: u64)
 </code></pre>
 
 
@@ -560,10 +592,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version:u64, active_after_number: u64) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version:u64, min_milliseconds: u64) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
+    <b>assert</b>(min_milliseconds &gt;= <a href="PackageTxnManager.md#0x1_PackageTxnManager_MIN_TIME_LIMIT">MIN_TIME_LIMIT</a>, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
     <b>let</b> account_address = <a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account);
     <b>let</b> cap = borrow_global&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(account_address);
-    <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap, package_hash, version, active_after_number);
+    <b>let</b> active_after_time = <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>() + min_milliseconds;
+    <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap, package_hash, version, active_after_time);
 }
 </code></pre>
 
@@ -577,7 +611,7 @@
 
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_time: u64)
 </code></pre>
 
 
@@ -586,12 +620,12 @@
 <summary>Implementation</summary>
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_number: u64) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
-    <b>assert</b>(active_after_number &gt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_time: u64) <b>acquires</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>,<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>{
+    <b>assert</b>(active_after_time &gt;= <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
     <b>let</b> account_address = cap.account_address;
     <b>assert</b>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_get_module_upgrade_strategy">get_module_upgrade_strategy</a>(account_address) == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_TWO_PHASE">STRATEGY_TWO_PHASE</a>, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_ESTRATEGY_NOT_TWO_PHASE">ESTRATEGY_NOT_TWO_PHASE</a>));
     <b>let</b> tpu = borrow_global_mut&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account_address);
-    tpu.plan = <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>{ package_hash, active_after_number, version});
+    tpu.plan = <a href="Option.md#0x1_Option_some">Option::some</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlan">UpgradePlan</a>{ package_hash, active_after_time, version});
 }
 </code></pre>
 
@@ -733,7 +767,7 @@
         <b>assert</b>(<a href="Option.md#0x1_Option_is_some">Option::is_some</a>(&plan_opt), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EUPGRADE_PLAN_IS_NONE">EUPGRADE_PLAN_IS_NONE</a>));
         <b>let</b> plan = <a href="Option.md#0x1_Option_borrow">Option::borrow</a>(&plan_opt);
         <b>assert</b>(*&plan.package_hash == package_hash, <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EPACKAGE_HASH_INCORRECT">EPACKAGE_HASH_INCORRECT</a>));
-        <b>assert</b>(plan.active_after_number &lt;= <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
+        <b>assert</b>(plan.active_after_time &lt;= <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>(), <a href="Errors.md#0x1_Errors_invalid_argument">Errors::invalid_argument</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_EACTIVE_TIME_INCORRECT">EACTIVE_TIME_INCORRECT</a>));
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_NEW_MODULE">STRATEGY_NEW_MODULE</a>){
         //do check at VM runtime.
     }<b>else</b> <b>if</b>(strategy == <a href="PackageTxnManager.md#0x1_PackageTxnManager_STRATEGY_FREEZE">STRATEGY_FREEZE</a>){
@@ -865,7 +899,7 @@ Package txn finished, and clean UpgradePlan
 <b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)) && strategy == 0;
 <b>aborts_if</b> strategy == 1 && <b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> strategy == 1 && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<a name="0x1_PackageTxnManager_holder$20"></a>
+<a name="0x1_PackageTxnManager_holder$21"></a>
 <b>let</b> holder = <b>global</b>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapabilityHolder">Config::ModifyConfigCapabilityHolder</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
 <b>aborts_if</b> strategy == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>&lt;<a href="Config.md#0x1_Config_ModifyConfigCapability">Config::ModifyConfigCapability</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;&gt;(holder.cap);
 <b>aborts_if</b> strategy == 1 && <b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
@@ -914,14 +948,17 @@ Package txn finished, and clean UpgradePlan
 ### Function `submit_upgrade_plan`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version: u64, active_after_number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan">submit_upgrade_plan</a>(account: &signer, package_hash: vector&lt;u8&gt;, version: u64, min_milliseconds: u64)
 </code></pre>
 
 
 
 
-<pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
-<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).account_address};
+<pre><code><b>aborts_if</b> min_milliseconds &lt; <a href="PackageTxnManager.md#0x1_PackageTxnManager_MIN_TIME_LIMIT">MIN_TIME_LIMIT</a>;
+<b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account));
+<a name="0x1_PackageTxnManager_active_after_time$22"></a>
+<b>let</b> active_after_time = <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>() + min_milliseconds;
+<b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).account_address, active_after_time};
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">UpgradePlanCapability</a>&gt;(<a href="Signer.md#0x1_Signer_address_of">Signer::address_of</a>(account)).account_address).plan);
 </code></pre>
 
@@ -932,13 +969,13 @@ Package txn finished, and clean UpgradePlan
 ### Function `submit_upgrade_plan_with_cap`
 
 
-<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_number: u64)
+<pre><code><b>public</b> <b>fun</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_submit_upgrade_plan_with_cap">submit_upgrade_plan_with_cap</a>(cap: &<a href="PackageTxnManager.md#0x1_PackageTxnManager_UpgradePlanCapability">PackageTxnManager::UpgradePlanCapability</a>, package_hash: vector&lt;u8&gt;, version: u64, active_after_time: u64)
 </code></pre>
 
 
 
 
-<pre><code><b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: cap.account_address, active_after_number};
+<pre><code><b>include</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a>{account: cap.account_address, active_after_time};
 <b>ensures</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(<b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(cap.account_address).plan);
 </code></pre>
 
@@ -950,9 +987,9 @@ Package txn finished, and clean UpgradePlan
 
 <pre><code><b>schema</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_SubmitUpgradePlanWithCapAbortsIf">SubmitUpgradePlanWithCapAbortsIf</a> {
     account: address;
-    active_after_number: u64;
-    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>aborts_if</b> active_after_number &lt; <b>global</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).number;
+    active_after_time: u64;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    <b>aborts_if</b> active_after_time &lt; <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>();
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(account);
     <b>aborts_if</b> <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_ModuleUpgradeStrategy">ModuleUpgradeStrategy</a>&gt;(account).strategy != 1;
     <b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(account);
@@ -1099,8 +1136,8 @@ Package txn finished, and clean UpgradePlan
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 3;
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address));
     <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).package_hash != package_hash;
-    <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).active_after_number &gt; <b>global</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).number;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    <b>aborts_if</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).active_after_time &gt; <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>();
 }
 </code></pre>
 
@@ -1118,8 +1155,8 @@ Package txn finished, and clean UpgradePlan
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 3;
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_is_none">Option::spec_is_none</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address));
     <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).package_hash != package_hash;
-    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && !<b>exists</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
-    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).active_after_number &gt; <b>global</b>&lt;<a href="Block.md#0x1_Block_BlockMetadata">Block::BlockMetadata</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>()).number;
+    <b>aborts_if</b> !<b>exists</b>&lt;<a href="Timestamp.md#0x1_Timestamp_CurrentTimeMilliseconds">Timestamp::CurrentTimeMilliseconds</a>&gt;(<a href="CoreAddresses.md#0x1_CoreAddresses_GENESIS_ADDRESS">CoreAddresses::GENESIS_ADDRESS</a>());
+    <b>aborts_if</b> is_package && <a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_module_upgrade_strategy">spec_get_module_upgrade_strategy</a>(package_address) == 1 && <a href="Option.md#0x1_Option_spec_get">Option::spec_get</a>(<a href="PackageTxnManager.md#0x1_PackageTxnManager_spec_get_upgrade_plan">spec_get_upgrade_plan</a>(package_address)).active_after_time &gt; <a href="Timestamp.md#0x1_Timestamp_now_milliseconds">Timestamp::now_milliseconds</a>();
 }
 </code></pre>
 
@@ -1137,7 +1174,7 @@ Package txn finished, and clean UpgradePlan
 
 
 <pre><code><b>aborts_if</b> !<b>exists</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
-<a name="0x1_PackageTxnManager_tpu$21"></a>
+<a name="0x1_PackageTxnManager_tpu$23"></a>
 <b>let</b> tpu = <b>global</b>&lt;<a href="PackageTxnManager.md#0x1_PackageTxnManager_TwoPhaseUpgrade">TwoPhaseUpgrade</a>&gt;(package_address);
 <b>aborts_if</b> <a href="Option.md#0x1_Option_spec_is_some">Option::spec_is_some</a>(tpu.plan) && !<b>exists</b>&lt;<a href="Config.md#0x1_Config_Config">Config::Config</a>&lt;<a href="Version.md#0x1_Version_Version">Version::Version</a>&gt;&gt;(tpu.version_cap.account_address);
 </code></pre>

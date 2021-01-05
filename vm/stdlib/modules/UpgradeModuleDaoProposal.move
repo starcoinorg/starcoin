@@ -5,8 +5,8 @@ module UpgradeModuleDaoProposal {
     use 0x1::Signer;
     use 0x1::Option;
     use 0x1::Dao;
-    use 0x1::Block;
     use 0x1::Errors;
+    use 0x1::Timestamp;
 
     spec module {
         pragma verify;
@@ -93,15 +93,17 @@ module UpgradeModuleDaoProposal {
             &cap.cap,
             package_hash,
             version,
-            Block::get_current_block_number(),
+            Timestamp::now_milliseconds(),
         );
     }
     spec fun submit_module_upgrade_plan {
+        use 0x1::CoreAddresses;
         let expected_states = singleton_vector(6);
         include Dao::CheckProposalStates<TokenT, UpgradeModule>{expected_states};
         let proposal = global<Dao::Proposal<TokenT, UpgradeModule>>(proposer_address);
         aborts_if Option::spec_is_none(proposal.action);
         let action = proposal.action.vec[0];
+        aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
         include AbortIfUnableUpgrade<TokenT>{module_address: action.module_address};
     }
 }
