@@ -111,7 +111,7 @@ impl IntoProtocolsHandler for LegacyProtoHandlerProto {
     fn into_handler(self, remote_peer_id: &PeerId, _: &ConnectedPoint) -> Self::Handler {
         LegacyProtoHandler {
             protocol: self.protocol,
-            remote_peer_id: remote_peer_id.clone(),
+            remote_peer_id: *remote_peer_id,
             state: ProtocolState::Init {
                 substreams: SmallVec::new(),
                 init_deadline: Delay::new(Duration::from_secs(20)),

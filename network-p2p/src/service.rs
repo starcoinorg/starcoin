@@ -55,17 +55,20 @@ use crate::{
     config::{parse_addr, parse_str_addr, NonReservedPeerMode},
     transport,
 };
+use bitflags::_core::time::Duration;
 use futures::channel::oneshot::Canceled;
 use futures::{
     channel::{mpsc, oneshot},
     prelude::*,
 };
+use libp2p::core::network::ConnectionLimits;
 use libp2p::core::{
     connection::{ConnectionError, PendingConnectionError},
     ConnectedPoint,
 };
 use libp2p::swarm::{
-    protocols_handler::NodeHandlerWrapperError, NetworkBehaviour, SwarmBuilder, SwarmEvent,
+    protocols_handler::NodeHandlerWrapperError, AddressScore, NetworkBehaviour, SwarmBuilder,
+    SwarmEvent,
 };
 use libp2p::{kad::record, PeerId};
 use log::{error, info, trace, warn};
@@ -164,9 +167,9 @@ impl NetworkWorker {
 
         // Process the bootnodes.
         for bootnode in params.network_config.boot_nodes.iter() {
-            bootnodes.push(bootnode.peer_id.clone());
-            boot_node_ids.insert(bootnode.peer_id.clone());
-            known_addresses.push((bootnode.peer_id.clone(), bootnode.multiaddr.clone()));
+            bootnodes.push(bootnode.peer_id);
+            boot_node_ids.insert(bootnode.peer_id);
+            known_addresses.push((bootnode.peer_id, bootnode.multiaddr.clone()));
         }
 
         let boot_node_ids = Arc::new(boot_node_ids);
@@ -179,8 +182,8 @@ impl NetworkWorker {
             {
                 Err(Error::DuplicateBootnode {
                     address: addr.clone(),
-                    first_id: peer_id.clone(),
-                    second_id: other.0.clone(),
+                    first_id: *peer_id,
+                    second_id: other.0,
                 })
             } else {
                 Ok(())
@@ -190,8 +193,8 @@ impl NetworkWorker {
         let priority_groups = {
             let mut reserved_nodes = HashSet::new();
             for reserved in params.network_config.reserved_nodes.iter() {
-                reserved_nodes.insert(reserved.peer_id.clone());
-                known_addresses.push((reserved.peer_id.clone(), reserved.multiaddr.clone()));
+                reserved_nodes.insert(reserved.peer_id);
+                known_addresses.push((reserved.peer_id, reserved.multiaddr.clone()));
             }
 
             vec![("reserved".to_owned(), reserved_nodes)]
@@ -218,7 +221,7 @@ impl NetworkWorker {
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
-            local_peer_id.clone(),
+            local_peer_id,
             params.protocol_id.clone(),
             params.chain_info,
             boot_node_ids.clone(),
@@ -266,7 +269,7 @@ impl NetworkWorker {
             ) {
                 Ok(behaviour) => behaviour,
                 Err(crate::request_responses::RegisterError::DuplicateProtocol(proto)) => {
-                    return Err(Error::DuplicateRequestResponseProtocol { protocol: proto })
+                    return Err(Error::DuplicateRequestResponseProtocol { protocol: proto });
                 }
             };
 
@@ -280,8 +283,14 @@ impl NetworkWorker {
                 };
                 transport::build_transport(local_identity, config_mem, config_wasm)
             };
-            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id.clone())
-                .peer_connection_limit(crate::MAX_CONNECTIONS_PER_PEER)
+            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id)
+                .connection_limits(
+                    ConnectionLimits::default()
+                        .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
+                        .with_max_established_incoming(Some(
+                            crate::MAX_CONNECTIONS_ESTABLISHED_INCOMING,
+                        )),
+                )
                 .notify_handler_buffer_size(NonZeroUsize::new(32).expect("32 != 0; qed"))
                 .connection_event_buffer_size(1024);
 
@@ -297,7 +306,7 @@ impl NetworkWorker {
 
         // Add external addresses.
         for addr in &params.network_config.public_addresses {
-            Swarm::add_external_address(&mut swarm, addr.clone());
+            Swarm::add_external_address(&mut swarm, addr.clone(), AddressScore::Infinite);
         }
 
         let external_addresses = Arc::new(Mutex::new(Vec::new()));
@@ -387,7 +396,7 @@ impl NetworkWorker {
                 } else {
                     error!(target: "sub-libp2p", "Found state inconsistency between custom protocol \
 						and debug information about {:?}", peer_id);
-                    return None
+                    return None;
                 };
 
                 Some((peer_id.to_base58(), NetworkStatePeer {
@@ -431,7 +440,10 @@ impl NetworkWorker {
         NetworkState {
             peer_id: Swarm::local_peer_id(&swarm).to_base58(),
             listened_addresses: Swarm::listeners(&swarm).cloned().collect(),
-            external_addresses: Swarm::external_addresses(&swarm).cloned().collect(),
+            external_addresses: Swarm::external_addresses(&swarm)
+                .map(|r| &r.addr)
+                .cloned()
+                .collect(),
             connected_peers,
             not_connected_peers,
             peerset: swarm.user_protocol_mut().peerset_debug_info(),
@@ -778,7 +790,7 @@ impl NetworkService {
     /// and peer ID of the remote node.
     pub fn add_reserved_peer(&self, peer: String) -> Result<(), String> {
         let (peer_id, addr) = parse_str_addr(&peer).map_err(|e| format!("{:?}", e))?;
-        self.peerset.add_reserved_peer(peer_id.clone());
+        self.peerset.add_reserved_peer(peer_id);
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::AddKnownAddress(peer_id, addr));
@@ -796,10 +808,7 @@ impl NetworkService {
             .map(|p| parse_addr(p).map_err(|e| format!("{:?}", e)))
             .collect::<Result<Vec<(PeerId, Multiaddr)>, String>>()?;
 
-        let peer_ids = peers
-            .iter()
-            .map(|(peer_id, _addr)| peer_id.clone())
-            .collect();
+        let peer_ids = peers.iter().map(|(peer_id, _addr)| *peer_id).collect();
         self.peerset.set_priority_group(group_id, peer_ids);
 
         for (peer_id, addr) in peers.into_iter() {
@@ -838,7 +847,7 @@ impl NetworkStateInfo for NetworkService {
 
     /// Returns the local Peer ID.
     fn local_peer_id(&self) -> PeerId {
-        self.local_peer_id.clone()
+        self.local_peer_id
     }
 }
 
@@ -1037,7 +1046,7 @@ impl Future for NetworkWorker {
                     let peers = this.known_peers();
                     let mut result = HashSet::new();
                     for peer in peers {
-                        result.insert(peer.clone());
+                        result.insert(peer);
                     }
                     let _ = tx.send(result);
                 }
@@ -1080,17 +1089,23 @@ impl Future for NetworkWorker {
                                 metrics
                                     .requests_in_success_total
                                     .with_label_values(&[&protocol])
-                                    .observe(serve_time.as_secs_f64());
+                                    .observe(
+                                        serve_time
+                                            .unwrap_or_else(|| Duration::from_secs(0))
+                                            .as_secs_f64(),
+                                    );
                             }
                             Err(err) => {
                                 let reason = match err {
-                                    ResponseFailure::Busy => "busy",
                                     ResponseFailure::Network(InboundFailure::Timeout) => "timeout",
                                     ResponseFailure::Network(
                                         InboundFailure::UnsupportedProtocols,
                                     ) => "unsupported",
                                     ResponseFailure::Network(InboundFailure::ConnectionClosed) => {
                                         "connection-closed"
+                                    }
+                                    ResponseFailure::Network(InboundFailure::ResponseOmission) => {
+                                        "busy-omitted"
                                     }
                                 };
 
@@ -1157,7 +1172,7 @@ impl Future for NetworkWorker {
                     }
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks.insert(remote.clone(), notifications_sink);
+                        peers_notifications_sinks.insert(remote, notifications_sink);
                     }
                     this.event_streams
                         .send(Event::NotificationStreamOpened { remote, info });
@@ -1203,9 +1218,8 @@ impl Future for NetworkWorker {
                     if let Some(metrics) = this.metrics.as_ref() {
                         metrics.notifications_streams_closed_total.inc();
                     }
-                    this.event_streams.send(Event::NotificationStreamClosed {
-                        remote: remote.clone(),
-                    });
+                    this.event_streams
+                        .send(Event::NotificationStreamClosed { remote });
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
                         peers_notifications_sinks.remove(&remote);
@@ -1435,9 +1449,11 @@ impl Future for NetworkWorker {
                     .requested_peers()
                     .count() as u64,
             );
-            metrics
-                .pending_connections
-                .set(Swarm::network_info(&this.network_service).num_connections_pending as u64);
+            metrics.pending_connections.set(
+                Swarm::network_info(&this.network_service)
+                    .connection_counters()
+                    .num_pending() as u64,
+            );
         }
 
         Poll::Pending

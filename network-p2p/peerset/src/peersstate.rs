@@ -193,7 +193,7 @@ impl PeersState {
                 }
                 Some(to_try)
             })
-            .map(|(peer_id, _)| peer_id.clone());
+            .map(|(peer_id, _)| *peer_id);
 
         if let Some(peer_id) = outcome {
             Some(NotConnectedPeer {
@@ -210,7 +210,7 @@ impl PeersState {
     /// Has no effect if the peer was already in the group.
     pub fn add_no_slot_node(&mut self, peer_id: PeerId) {
         // Reminder: `HashSet::insert` returns false if the node was already in the set
-        if !self.no_slot_nodes.insert(peer_id.clone()) {
+        if !self.no_slot_nodes.insert(peer_id) {
             return;
         }
 
@@ -589,7 +589,7 @@ mod tests {
         let id1 = PeerId::random();
         let id2 = PeerId::random();
 
-        peers_state.add_no_slot_node(id1.clone());
+        peers_state.add_no_slot_node(id1);
         if let Peer::Unknown(p) = peers_state.peer(&id1) {
             assert!(p.discover().try_accept_incoming().is_ok());
         } else {
@@ -659,7 +659,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id1.clone())
+            Some(id1)
         );
         peers_state
             .peer(&id2)
@@ -670,7 +670,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id2.clone())
+            Some(id2)
         );
         peers_state
             .peer(&id2)
@@ -682,7 +682,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id1.clone())
+            Some(id1)
         );
         peers_state
             .peer(&id1)
@@ -698,7 +698,7 @@ mod tests {
             peers_state
                 .highest_not_connected_peer()
                 .map(|p| p.into_peer_id()),
-            Some(id1.clone())
+            Some(id1)
         );
         peers_state
             .peer(&id1)
@@ -717,7 +717,7 @@ mod tests {
     fn disconnect_no_slot_doesnt_panic() {
         let mut peers_state = PeersState::new(1, 1);
         let id = PeerId::random();
-        peers_state.add_no_slot_node(id.clone());
+        peers_state.add_no_slot_node(id);
         let peer = peers_state
             .peer(&id)
             .into_unknown()

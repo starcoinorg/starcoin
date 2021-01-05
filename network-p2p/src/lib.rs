@@ -38,6 +38,8 @@ mod transport;
 mod utils;
 
 const MAX_CONNECTIONS_PER_PEER: usize = 2;
+/// The maximum number of concurrent established connections that were incoming.
+const MAX_CONNECTIONS_ESTABLISHED_INCOMING: u32 = 10_000;
 
 trait DiscoveryNetBehaviour {
     /// Notify the protocol that we have learned about the existence of nodes.

@@ -43,7 +43,7 @@ fn build_test_network_services(num: usize) -> Vec<NetworkComponent> {
         if let Some(first_addr) = first_addr.as_ref() {
             boot_nodes.push(MultiaddrWithPeerId::new(
                 first_addr.clone(),
-                result[0].0.peer_id().clone(),
+                *result[0].0.peer_id(),
             ));
         }
         let mut node_config = NodeConfig::random_for_test();
@@ -78,8 +78,8 @@ fn test_send_receive() {
     ::logger::init_for_test();
     //let mut rt = Builder::new().core_threads(1).build().unwrap();
     let ((service1, _), (service2, _)) = build_test_network_pair();
-    let msg_peer_id_1 = service1.peer_id().clone();
-    let msg_peer_id_2 = service2.peer_id().clone();
+    let msg_peer_id_1 = *service1.peer_id();
+    let msg_peer_id_2 = *service2.peer_id();
     let receiver_1 = service1.event_stream("test");
     let receiver_2 = service2.event_stream("test");
     let total_message = 1000;
@@ -92,13 +92,13 @@ fn test_send_receive() {
 
             if i % 2 == 0 {
                 service2.write_notification(
-                    msg_peer_id_1.clone(),
+                    msg_peer_id_1,
                     std::borrow::Cow::Borrowed(TEST_NOTIF_PROTOCOL_NAME),
                     random_bytes,
                 );
             } else {
                 service1.write_notification(
-                    msg_peer_id_2.clone(),
+                    msg_peer_id_2,
                     std::borrow::Cow::Borrowed(TEST_NOTIF_PROTOCOL_NAME),
                     random_bytes,
                 );
@@ -126,10 +126,7 @@ fn test_connected_nodes() {
     let (service1, service2) = build_test_network_pair();
     thread::sleep(Duration::from_secs(2));
     let fut = async move {
-        assert_eq!(
-            service1.0.is_connected(service2.0.peer_id().clone()).await,
-            true
-        );
+        assert_eq!(service1.0.is_connected(*service2.0.peer_id()).await, true);
     };
     task::block_on(fut);
 }

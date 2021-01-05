@@ -104,7 +104,7 @@ pub enum BehaviourOut {
         protocol: Cow<'static, str>,
         /// If `Ok`, contains the time elapsed between when we received the request and when we
         /// sent back the response. If `Err`, the error that happened.
-        result: Result<Duration, ResponseFailure>,
+        result: Result<Option<Duration>, ResponseFailure>,
     },
 
     /// A request initiated using [`Behaviour::send_request`] has succeeded or failed.
@@ -239,7 +239,7 @@ impl Behaviour {
             //let role = reported_roles_to_observed_role(&self.role, remote, roles);
             self.events
                 .push_back(BehaviourOut::NotificationStreamOpened {
-                    remote: remote.clone(),
+                    remote: *remote,
                     notifications_sink: notifications_sink.clone(),
                     info: Box::new(info.clone()),
                 });

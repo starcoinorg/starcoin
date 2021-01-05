@@ -110,7 +110,7 @@ impl PeerInfoBehaviour {
             entry.latest_ping = Some(ping_time);
         } else {
             error!(target: "sub-libp2p",
-				"Received ping from node we're not connected to {:?}", peer_id);
+                   "Received ping from node we're not connected to {:?}", peer_id);
         }
     }
 
@@ -122,7 +122,7 @@ impl PeerInfoBehaviour {
             entry.client_version = Some(info.agent_version.clone());
         } else {
             error!(target: "sub-libp2p",
-				"Received pong from node we're not connected to {:?}", peer_id);
+                   "Received pong from node we're not connected to {:?}", peer_id);
         }
     }
 }
@@ -193,7 +193,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
             .inject_connection_established(peer_id, conn, endpoint);
         self.identify
             .inject_connection_established(peer_id, conn, endpoint);
-        match self.nodes_info.entry(peer_id.clone()) {
+        match self.nodes_info.entry(*peer_id) {
             Entry::Vacant(e) => {
                 e.insert(NodeInfo::new(endpoint.clone()));
             }
@@ -227,7 +227,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
             entry.endpoints.retain(|ep| ep != endpoint)
         } else {
             error!(target: "sub-libp2p",
-				"Unknown connection to {:?} closed: {:?}", peer_id, endpoint);
+                   "Unknown connection to {:?} closed: {:?}", peer_id, endpoint);
         }
     }
 
@@ -239,7 +239,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
             entry.info_expire = Some(Instant::now() + CACHE_EXPIRE);
         } else {
             error!(target: "sub-libp2p",
-				"Disconnected from node we were not connected to {:?}", peer_id);
+                   "Disconnected from node we were not connected to {:?}", peer_id);
         }
     }
 
@@ -296,15 +296,15 @@ impl NetworkBehaviour for PeerInfoBehaviour {
         self.identify.inject_listener_closed(id, reason);
     }
 
-	fn poll(
-		&mut self,
-		cx: &mut Context,
-		params: &mut impl PollParameters
-	) -> Poll<
-		NetworkBehaviourAction<
-			<<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
-			Self::OutEvent
-		>
+    fn poll(
+        &mut self,
+        cx: &mut Context,
+        params: &mut impl PollParameters,
+    ) -> Poll<
+        NetworkBehaviourAction<
+            <<Self::ProtocolsHandler as IntoProtocolsHandler>::Handler as ProtocolsHandler>::InEvent,
+            Self::OutEvent
+        >
     >{
         loop {
             match self.ping.poll(cx, params) {
@@ -319,10 +319,10 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                     }
                 }
                 Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address })
+                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
                 }
                 Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition })
+                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
                 }
                 Poll::Ready(NetworkBehaviourAction::NotifyHandler {
                     peer_id,
@@ -333,10 +333,13 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         peer_id,
                         handler,
                         event: EitherOutput::First(event),
-                    })
+                    });
                 }
-                Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
+                Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score }) => {
+                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
+                        address,
+                        score,
+                    });
                 }
             }
         }
@@ -356,10 +359,10 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                     IdentifyEvent::Sent { .. } => {}
                 },
                 Poll::Ready(NetworkBehaviourAction::DialAddress { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address })
+                    return Poll::Ready(NetworkBehaviourAction::DialAddress { address });
                 }
                 Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition }) => {
-                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition })
+                    return Poll::Ready(NetworkBehaviourAction::DialPeer { peer_id, condition });
                 }
                 #[allow(clippy::unit_arg)]
                 Poll::Ready(NetworkBehaviourAction::NotifyHandler {
@@ -371,10 +374,13 @@ impl NetworkBehaviour for PeerInfoBehaviour {
                         peer_id,
                         handler,
                         event: EitherOutput::Second(event),
-                    })
+                    });
                 }
-                Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address }) => {
-                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address })
+                Poll::Ready(NetworkBehaviourAction::ReportObservedAddr { address, score }) => {
+                    return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
+                        address,
+                        score,
+                    });
                 }
             }
         }
