@@ -54,7 +54,7 @@ impl StateProof {
         access_path: AccessPath,
         access_resource_blob: Option<&[u8]>,
     ) -> Result<()> {
-        let (account_address, data_type, ap_hash) = access_path::into_inner(access_path)?;
+        let (account_address, data_path) = access_path.into_inner();
         match self.account_state.as_ref() {
             None => {
                 ensure!(
@@ -64,7 +64,7 @@ impl StateProof {
             }
             Some(s) => {
                 let account_state = AccountState::try_from(s.as_ref())?;
-                match account_state.storage_roots()[data_type.storage_index()] {
+                match account_state.storage_roots()[data_path.data_type().storage_index()] {
                     None => {
                         ensure!(
                             access_resource_blob.is_none(),
@@ -74,7 +74,7 @@ impl StateProof {
                     Some(expected_hash) => {
                         let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
                         self.account_state_proof
-                            .verify(expected_hash, ap_hash, blob.as_ref())?;
+                            .verify(expected_hash, data_path.key_hash(), blob.as_ref())?;
                     }
                 }
             }
@@ -235,7 +235,7 @@ impl<'a> AccountStateReader<'a> {
     where
         R: MoveResource + DeserializeOwned,
     {
-        let access_path = AccessPath::new(address, R::resource_path());
+        let access_path = AccessPath::new(address, R::);
         let r = self
             .reader
             .get(&access_path)

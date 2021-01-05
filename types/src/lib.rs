@@ -6,9 +6,7 @@
 mod event_info;
 
 pub mod access_path {
-    pub use starcoin_vm_types::access_path::{
-        into_inner, random_code, random_resource, AccessPath, DataType,
-    };
+    pub use starcoin_vm_types::access_path::{AccessPath, DataPath, DataType};
 }
 
 pub mod account_address;

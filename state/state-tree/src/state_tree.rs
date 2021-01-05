@@ -188,7 +188,7 @@ where
         let inner: Vec<(Vec<u8>, Vec<u8>)> = state_set.into();
         let updates = inner
             .into_iter()
-            .map(|(k, v)| Ok((K::decode(k.as_slice())?, Some(v.into()))))
+            .map(|(k, v)| Ok((K::decode_key(k.as_slice())?, Some(v.into()))))
             .collect::<Result<Vec<_>>>();
         self.updates(updates?)?;
         Ok(())

@@ -1,6 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::access_path::DataPath;
 use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
@@ -41,15 +42,14 @@ impl TokenInfoResource {
     }
 
     pub fn resource_path_for(token_code: TokenCode) -> AccessPath {
-        let resource_key = ResourceKey::new(
+        AccessPath::resource_access_path(
             token_code.address,
             TokenInfoResource::struct_tag_for(token_code),
-        );
-        AccessPath::resource_access_path(&resource_key)
+        )
     }
 
-    pub fn access_path_for(token_code: TokenCode) -> Vec<u8> {
-        AccessPath::resource_access_vec(&TokenInfoResource::struct_tag_for(token_code))
+    pub fn data_path_for(token_code: TokenCode) -> DataPath {
+        AccessPath::resource_data_path(TokenInfoResource::struct_tag_for(token_code))
     }
 
     pub fn try_from_bytes(bytes: &[u8]) -> Result<Self> {

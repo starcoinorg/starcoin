@@ -12,20 +12,21 @@ use starcoin_crypto::{
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash)]
+pub struct StorageRoot {
+    pub data_type: DataType,
+    pub root: HashValue,
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct AccountState {
     storage_roots: Vec<Option<HashValue>>,
 }
 
 impl AccountState {
-    pub fn new(mut storage_roots: Vec<Option<HashValue>>) -> AccountState {
-        if storage_roots.len() < DataType::LENGTH {
-            storage_roots.extend(vec![None; DataType::LENGTH - storage_roots.len()]);
-        }
-        assert_eq!(
-            storage_roots.len(),
-            DataType::LENGTH,
-            "Storage root length must equals DataType length"
-        );
+    pub fn new(code_root: Option<HashValue>, resource_root: HashValue) -> AccountState {
+        let mut storage_roots = vec![None; DataType::LENGTH];
+        storage_roots[DataType::CODE.storage_index()] = code_root;
+        storage_roots[DataType::RESOURCE.storage_index()] = Some(resource_root);
         Self { storage_roots }
     }
 

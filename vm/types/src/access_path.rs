@@ -39,62 +39,91 @@
 //! `path` will be set to "/a" and use the `get_prefix()` method from statedb
 
 use crate::account_address::AccountAddress;
+use crate::identifier::Identifier;
 use anyhow::Result;
 use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, CODE_TAG, RESOURCE_TAG};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
+use proptest::prelude::{Arbitrary, BoxedStrategy};
+#[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
+use rand::distributions::Alphanumeric;
+use rand::prelude::{Distribution, SliceRandom};
+use rand::rngs::OsRng;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_helpers::{deserialize_binary, serialize_binary};
-use starcoin_crypto::hash::{CryptoHash, CryptoHasher, HashValue};
+use starcoin_crypto::hash::{CryptoHash, HashValue, PlainCryptoHash};
 use std::convert::TryFrom;
 use std::fmt;
-#[derive(
-    Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, CryptoHasher, CryptoHash,
-)]
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct AccessPath {
     pub address: AccountAddress,
-    #[serde(
-        deserialize_with = "deserialize_binary",
-        serialize_with = "serialize_binary"
-    )]
-    pub path: Vec<u8>,
+    pub path: DataPath,
 }
 
 impl AccessPath {
     pub const CODE_TAG: u8 = 0;
     pub const RESOURCE_TAG: u8 = 1;
 
-    pub fn new(address: AccountAddress, path: Vec<u8>) -> Self {
+    pub fn new(address: AccountAddress, path: DataPath) -> Self {
         AccessPath { address, path }
     }
 
-    pub fn resource_access_vec(tag: &StructTag) -> Vec<u8> {
-        tag.access_vector()
+    pub fn resource_access_path(address: AccountAddress, struct_tag: StructTag) -> Self {
+        Self::new(address, Self::resource_data_path(struct_tag))
     }
 
-    /// Convert Accesses into a byte offset which would be used by the storage layer to resolve
-    /// where fields are stored.
-    pub fn resource_access_path(key: &ResourceKey) -> AccessPath {
-        let path = AccessPath::resource_access_vec(&key.type_());
-        AccessPath {
-            address: key.address().to_owned(),
-            path,
-        }
+    pub fn code_access_path(address: AccountAddress, module_name: Identifier) -> AccessPath {
+        AccessPath::new(address, Self::code_data_path(module_name))
     }
 
-    fn code_access_path_vec(key: &ModuleId) -> Vec<u8> {
-        key.access_vector()
+    pub fn resource_data_path(tag: StructTag) -> DataPath {
+        DataPath::Resource(tag)
     }
 
-    pub fn code_access_path(key: &ModuleId) -> AccessPath {
-        let path = AccessPath::code_access_path_vec(key);
-        AccessPath {
-            address: *key.address(),
-            path,
-        }
+    pub fn code_data_path(module_name: ModuleName) -> DataPath {
+        DataPath::Code(module_name)
     }
+
+    pub fn into_inner(self) -> (AccountAddress, DataPath) {
+        let address = self.address;
+        let path = self.path;
+        (address, path)
+    }
+
+    pub fn random_code() -> AccessPath {
+        AccessPath::new(AccountAddress::random(), DataPath::Code(random_identity()))
+    }
+
+    pub fn random_resource() -> AccessPath {
+        let struct_tag = StructTag {
+            address: AccountAddress::random(),
+            module: random_identity(),
+            name: random_identity(),
+            type_params: vec![],
+        };
+        AccessPath::new(AccountAddress::random(), DataPath::Resource(struct_tag))
+    }
+}
+
+//TODO move to a suitable mod
+struct IdentifierSymbols;
+
+impl Distribution<char> for IdentifierSymbols {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
+        //TODO add more valid identity char
+        *b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            .choose(rng)
+            .unwrap() as char
+    }
+}
+
+fn random_identity() -> Identifier {
+    let mut rng = OsRng;
+    let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
+    Identifier::new(id).unwrap()
 }
 
 impl fmt::Debug for AccessPath {
@@ -102,43 +131,26 @@ impl fmt::Debug for AccessPath {
         write!(
             f,
             "AccessPath {{ address: {:x}, path: {} }}",
-            self.address,
-            hex::encode(&self.path)
+            self.address, self.path
         )
     }
 }
 
 impl fmt::Display for AccessPath {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.path.len() < 1 + HashValue::LENGTH {
-            write!(f, "{:?}", self)
-        } else {
-            write!(f, "AccessPath {{ address: {:x}, ", self.address)?;
-            match self.path[0] {
-                RESOURCE_TAG => write!(f, "type: Resource, ")?,
-                CODE_TAG => write!(f, "type: Module, ")?,
-                tag => write!(f, "type: {:?}, ", tag)?,
-            };
-            write!(
-                f,
-                "hash: {:?}, ",
-                hex::encode(&self.path[1..=HashValue::LENGTH])
-            )?;
-            write!(
-                f,
-                "suffix: {:?} }} ",
-                String::from_utf8_lossy(&self.path[1 + HashValue::LENGTH..])
-            )
-        }
+        write!(f, "{}/{}", self.address, self.path)
     }
 }
 
 impl From<&ModuleId> for AccessPath {
     fn from(id: &ModuleId) -> AccessPath {
-        AccessPath {
-            address: *id.address(),
-            path: id.access_vector(),
-        }
+        AccessPath::code_access_path(*id.address(), id.name().to_owned())
+    }
+}
+
+impl From<&ResourceKey> for AccessPath {
+    fn from(key: &ResourceKey) -> AccessPath {
+        AccessPath::resource_access_path(key.address(), key.type_().clone())
     }
 }
 
@@ -184,57 +196,77 @@ impl DataType {
     }
 }
 
-pub fn into_inner(access_path: AccessPath) -> Result<(AccountAddress, DataType, HashValue)> {
-    let address = access_path.address;
-    let path = &access_path.path;
-    let data_type = DataType::try_from(path[0])?;
-    let hash = access_path.hash();
-    Ok((address, data_type, hash))
+pub type ModuleName = Identifier;
+
+#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug)]
+pub enum DataPath {
+    Code(ModuleName),
+    Resource(StructTag),
 }
 
-pub fn new(address: AccountAddress, data_type: DataType, hash: HashValue) -> AccessPath {
-    let mut path = vec![data_type.into()];
-    path.extend(hash.to_vec());
-    AccessPath::new(address, path)
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for DataPath {
+    type Parameters = ();
+    fn arbitrary_with((): ()) -> Self::Strategy {
+        //TODO
+        unimplemented!()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
 }
 
-pub fn random_code() -> AccessPath {
-    new(
-        AccountAddress::random(),
-        DataType::CODE,
-        HashValue::random(),
-    )
+impl DataPath {
+    pub fn is_code(&self) -> bool {
+        matches!(self, DataPath::Code(_))
+    }
+    pub fn is_resource(&self) -> bool {
+        matches!(self, DataPath::Resource(_))
+    }
+    pub fn as_struct_tag(&self) -> Option<&StructTag> {
+        match self {
+            DataPath::Resource(struct_tag) => Some(struct_tag),
+            _ => None,
+        }
+    }
+    pub fn data_type(&self) -> DataType {
+        match self {
+            DataPath::Code(_) => DataType::CODE,
+            DataPath::Resource(_) => DataType::RESOURCE,
+        }
+    }
+    //TODO implement RawKey for DataPath?
+    pub fn key_hash(&self) -> HashValue {
+        match self {
+            DataPath::Resource(struct_tag) => struct_tag.crypto_hash(),
+            DataPath::Code(module_name) => module_name.to_owned().crypto_hash(),
+        }
+    }
 }
 
-pub fn random_resource() -> AccessPath {
-    new(
-        AccountAddress::random(),
-        DataType::RESOURCE,
-        HashValue::random(),
-    )
+impl fmt::Display for DataPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let storage_index = self.data_type().storage_index();
+        match self {
+            DataPath::Resource(struct_tag) => {
+                write!(f, "{}/{}", storage_index, struct_tag)
+            }
+            DataPath::Code(module_name) => {
+                write!(f, "{}/{}", storage_index, module_name)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::account_config::AccountResource;
-    use crate::language_storage::ModuleId;
-    use crate::move_resource::MoveResource;
-    use move_core_types::identifier::Identifier;
 
     #[test]
     fn test_data_type() {
-        let (_address, data_type, _hash) = into_inner(AccessPath::new(
-            AccountAddress::random(),
-            AccountResource::resource_path(),
-        ))
-        .unwrap();
-        assert_eq!(data_type, DataType::RESOURCE);
+        let (_address, data_path) = AccessPath::random_resource().into_inner();
+        assert_eq!(data_path.data_type(), DataType::RESOURCE);
 
-        let (_address, data_type, _hash) = into_inner(AccessPath::code_access_path(
-            &ModuleId::new(AccountAddress::random(), Identifier::new("Test").unwrap()),
-        ))
-        .unwrap();
-        assert_eq!(data_type, DataType::CODE);
+        let (_address, data_path) = AccessPath::random_code().into_inner();
+        assert_eq!(data_path.data_type(), DataType::CODE);
     }
 }
