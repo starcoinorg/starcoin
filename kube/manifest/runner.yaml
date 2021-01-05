@@ -35,7 +35,7 @@ spec:
     name: starcoin-runner-deployment
   minReplicas: 1
   maxReplicas: 6
-  scaleDownDelaySecondsAfterScaleOut: 120
+#  scaleDownDelaySecondsAfterScaleOut: 120
   metrics:
     - type: TotalNumberOfQueuedAndInProgressWorkflowRuns
       repositoryNames:

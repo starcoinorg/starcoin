@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::access_path::DataType;
-
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::HashValue;
 
 /// StateSet is represent a single state-tree or sub state-tree dump result.
 #[derive(Debug, Default, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
-pub struct StateSet(Vec<(HashValue, Vec<u8>)>);
+pub struct StateSet(Vec<(Vec<u8>, Vec<u8>)>);
 
 impl StateSet {
-    pub fn new(states: Vec<(HashValue, Vec<u8>)>) -> Self {
+    pub fn new(states: Vec<(Vec<u8>, Vec<u8>)>) -> Self {
         Self(states)
     }
 
@@ -23,18 +22,17 @@ impl StateSet {
         self.0.is_empty()
     }
 
-    pub fn iter(&self) -> ::std::slice::Iter<(HashValue, Vec<u8>)> {
+    pub fn iter(&self) -> ::std::slice::Iter<(Vec<u8>, Vec<u8>)> {
         self.into_iter()
     }
 
-    fn push(&mut self, hash: HashValue, blob: Vec<u8>) {
-        //TODO check repeat value ?
-        self.0.push((hash, blob))
+    fn push(&mut self, key: Vec<u8>, blob: Vec<u8>) {
+        self.0.push((key, blob))
     }
 }
 
-impl ::std::iter::FromIterator<(HashValue, Vec<u8>)> for StateSet {
-    fn from_iter<I: IntoIterator<Item = (HashValue, Vec<u8>)>>(iter: I) -> Self {
+impl ::std::iter::FromIterator<(Vec<u8>, Vec<u8>)> for StateSet {
+    fn from_iter<I: IntoIterator<Item = (Vec<u8>, Vec<u8>)>>(iter: I) -> Self {
         let mut s = StateSet::default();
         for write in iter {
             s.push(write.0, write.1);
@@ -44,16 +42,16 @@ impl ::std::iter::FromIterator<(HashValue, Vec<u8>)> for StateSet {
 }
 
 impl<'a> IntoIterator for &'a StateSet {
-    type Item = &'a (HashValue, Vec<u8>);
-    type IntoIter = ::std::slice::Iter<'a, (HashValue, Vec<u8>)>;
+    type Item = &'a (Vec<u8>, Vec<u8>);
+    type IntoIter = ::std::slice::Iter<'a, (Vec<u8>, Vec<u8>)>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
     }
 }
 
-impl Into<Vec<(HashValue, Vec<u8>)>> for StateSet {
-    fn into(self) -> Vec<(HashValue, Vec<u8>)> {
+impl Into<Vec<(Vec<u8>, Vec<u8>)>> for StateSet {
+    fn into(self) -> Vec<(Vec<u8>, Vec<u8>)> {
         self.0
     }
 }

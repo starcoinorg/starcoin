@@ -153,7 +153,7 @@ pub struct StaleNodeIndex {
 /// [`StaleNodeIndexBatch`](type.StaleNodeIndexBatch.html) and some stats of nodes that represents
 /// the incremental updates of a tree and pruning indices after applying a write set,
 /// which is a vector of `hashed_account_address` and `new_account_state_blob` pairs.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TreeUpdateBatch<K: RawKey> {
     pub node_batch: NodeBatch<K>,
     pub stale_node_index_batch: StaleNodeIndexBatch,
@@ -161,7 +161,21 @@ pub struct TreeUpdateBatch<K: RawKey> {
     pub num_stale_leaves: usize,
 }
 
-pub trait RawKey: Clone + Serialize + DeserializeOwned {
+impl<K> Default for TreeUpdateBatch<K>
+where
+    K: RawKey,
+{
+    fn default() -> Self {
+        Self {
+            node_batch: NodeBatch::default(),
+            stale_node_index_batch: StaleNodeIndexBatch::default(),
+            num_new_leaves: 0,
+            num_stale_leaves: 0,
+        }
+    }
+}
+
+pub trait RawKey: Clone + Ord + Serialize + DeserializeOwned {
     /// Raw key's hash, will used as tree's nibble path
     fn key_hash(&self) -> HashValue;
     /// Encode the raw key, the raw key's bytes will store to leaf node.

@@ -1,5 +1,6 @@
 use anyhow::Result;
 use forkable_jellyfish_merkle::node_type::Node;
+use forkable_jellyfish_merkle::RawKey;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::HashValue;
 use std::collections::BTreeMap;
@@ -8,18 +9,24 @@ use std::convert::{TryFrom, TryInto};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StateNode(pub Vec<u8>);
 
-impl TryFrom<Node> for StateNode {
+impl<K> TryFrom<Node<K>> for StateNode
+where
+    K: RawKey,
+{
     type Error = anyhow::Error;
 
-    fn try_from(n: Node) -> Result<Self> {
+    fn try_from(n: Node<K>) -> Result<Self> {
         Ok(StateNode(n.encode()?))
     }
 }
 
-impl TryInto<Node> for StateNode {
+impl<K> TryInto<Node<K>> for StateNode
+where
+    K: RawKey,
+{
     type Error = anyhow::Error;
 
-    fn try_into(self) -> Result<Node, Self::Error> {
+    fn try_into(self) -> Result<Node<K>, Self::Error> {
         Node::decode(self.0.as_slice())
     }
 }
