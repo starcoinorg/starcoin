@@ -60,11 +60,11 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     fn fetch_block_ids_from_peer(
         &self,
         _peer: Option<PeerId>,
-        _start_number: BlockNumber,
-        _reverse: bool,
-        _max_size: u64,
+        start_number: BlockNumber,
+        reverse: bool,
+        max_size: u64,
     ) -> BoxFuture<Result<Vec<HashValue>>> {
-        unimplemented!()
+        self.fetch_block_ids(start_number, reverse, max_size)
     }
 
     fn fetch_block_infos_from_peer(
@@ -76,7 +76,7 @@ impl BlockIdFetcher for MockBlockIdFetcher {
     }
 
     fn find_best_peer(&self) -> Option<PeerInfo> {
-        unimplemented!()
+        Some(PeerInfo::random())
     }
 }
 

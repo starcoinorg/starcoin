@@ -283,7 +283,7 @@ impl VerifiedRpcClient {
         Ok(SyncTarget {
             block_header: header.clone(),
             block_info,
-            peers: selector.cloned(),
+            peers: self.peer_selector.selector().cloned(),
         })
     }
 
