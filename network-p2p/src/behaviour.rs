@@ -239,7 +239,7 @@ impl Behaviour {
             //let role = reported_roles_to_observed_role(&self.role, remote, roles);
             self.events
                 .push_back(BehaviourOut::NotificationStreamOpened {
-                    remote: remote.clone(),
+                    remote: *remote,
                     notifications_sink: notifications_sink.clone(),
                     info: Box::new(info.clone()),
                 });

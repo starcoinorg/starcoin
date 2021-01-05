@@ -445,7 +445,7 @@ impl GenericProto {
     /// Inner implementation of `disconnect_peer`. If `ban` is `Some`, we ban the peer
     /// for the specific duration.
     fn disconnect_peer_inner(&mut self, peer_id: &PeerId, ban: Option<Duration>) {
-        let mut entry = if let Entry::Occupied(entry) = self.peers.entry(peer_id.clone()) {
+        let mut entry = if let Entry::Occupied(entry) = self.peers.entry(*peer_id) {
             entry
         } else {
             return;
@@ -465,7 +465,7 @@ impl GenericProto {
                 timer: _,
             } => {
                 debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", peer_id);
-                self.peerset.dropped(peer_id.clone());
+                self.peerset.dropped(*peer_id);
                 let banned_until = Some(if let Some(ban) = ban {
                     cmp::max(timer_deadline, Instant::now() + ban)
                 } else {
@@ -477,11 +477,11 @@ impl GenericProto {
             // Enabled => Disabled.
             PeerState::Enabled { open } => {
                 debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", peer_id);
-                self.peerset.dropped(peer_id.clone());
+                self.peerset.dropped(*peer_id);
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", peer_id);
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
@@ -507,7 +507,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", peer_id);
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
@@ -616,7 +616,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Starting to connect", entry.key());
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {:?}", entry.key());
                 self.events.push_back(NetworkBehaviourAction::DialPeer {
-                    peer_id: entry.key().clone(),
+                    peer_id: *entry.key(),
                     condition: DialPeerCondition::Disconnected,
                 });
                 entry.insert(PeerState::Requested);
@@ -628,7 +628,7 @@ impl GenericProto {
 
         match mem::replace(occ_entry.get_mut(), PeerState::Poisoned) {
             PeerState::Banned { ref until } if *until > now => {
-                let peer_id = occ_entry.key().clone();
+                let peer_id = *occ_entry.key();
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Will start to connect at \
     		until {:?}", peer_id, until);
 
@@ -653,7 +653,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): Starting to connect", occ_entry.key());
                 debug!(target: "sub-libp2p", "Libp2p <= Dial {:?}", occ_entry.key());
                 self.events.push_back(NetworkBehaviourAction::DialPeer {
-                    peer_id: occ_entry.key().clone(),
+                    peer_id: *occ_entry.key(),
                     condition: DialPeerCondition::Disconnected,
                 });
                 *occ_entry.into_mut() = PeerState::Requested;
@@ -663,7 +663,7 @@ impl GenericProto {
                 open,
                 banned_until: Some(ref banned),
             } if *banned > now => {
-                let peer_id = occ_entry.key().clone();
+                let peer_id = *occ_entry.key();
                 debug!(target: "sub-libp2p", "PSM => Connect({:?}): But peer is banned until {:?}",
                        peer_id, banned);
 
@@ -694,7 +694,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Enable", occ_entry.key());
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: occ_entry.key().clone(),
+                        peer_id: *occ_entry.key(),
                         handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Enable,
                     });
@@ -717,7 +717,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Enable", occ_entry.key());
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: occ_entry.key().clone(),
+                        peer_id: *occ_entry.key(),
                         handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Enable,
                     });
@@ -786,7 +786,7 @@ impl GenericProto {
                 debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", entry.key());
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: entry.key().clone(),
+                        peer_id: *entry.key(),
                         handler: NotifyHandler::Any,
                         event: NotifsHandlerIn::Disable,
                     });
@@ -922,9 +922,7 @@ impl NetworkBehaviour for GenericProto {
         debug!(target: "sub-libp2p", "Libp2p => Connection ({:?},{:?}) to {} established.",
                conn, endpoint, peer_id);
         match (
-            self.peers
-                .entry(peer_id.clone())
-                .or_insert(PeerState::Poisoned),
+            self.peers.entry(*peer_id).or_insert(PeerState::Poisoned),
             endpoint,
         ) {
             (st @ &mut PeerState::Requested, endpoint)
@@ -938,7 +936,7 @@ impl NetworkBehaviour for GenericProto {
                 };
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::One(*conn),
                         event: NotifsHandlerIn::Enable,
                     });
@@ -961,9 +959,9 @@ impl NetworkBehaviour for GenericProto {
                        peer_id, endpoint);
                 debug!(target: "sub-libp2p", "PSM <= Incoming({}, {:?}).",
                        peer_id, incoming_id);
-                self.peerset.incoming(peer_id.clone(), incoming_id);
+                self.peerset.incoming(*peer_id, incoming_id);
                 self.incoming.push(IncomingPeer {
-                    peer_id: peer_id.clone(),
+                    peer_id: *peer_id,
                     alive: true,
                     incoming_id,
                 });
@@ -986,7 +984,7 @@ impl NetworkBehaviour for GenericProto {
                 };
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::One(*conn),
                         event: NotifsHandlerIn::Disable,
                     });
@@ -1003,7 +1001,7 @@ impl NetworkBehaviour for GenericProto {
                        peer_id, conn);
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::One(*conn),
                         event: NotifsHandlerIn::Enable,
                     });
@@ -1014,7 +1012,7 @@ impl NetworkBehaviour for GenericProto {
                        peer_id, conn);
                 self.events
                     .push_back(NetworkBehaviourAction::NotifyHandler {
-                        peer_id: peer_id.clone(),
+                        peer_id: *peer_id,
                         handler: NotifyHandler::One(*conn),
                         event: NotifsHandlerIn::Disable,
                     });
@@ -1044,7 +1042,7 @@ impl NetworkBehaviour for GenericProto {
                     if let Some((_, sink)) = open.get(0) {
                         if sink_closed {
                             let event = GenericProtoOut::CustomProtocolReplaced {
-                                peer_id: peer_id.clone(),
+                                peer_id: *peer_id,
                                 notifications_sink: sink.clone(),
                             };
                             self.events
@@ -1053,7 +1051,7 @@ impl NetworkBehaviour for GenericProto {
                     } else {
                         debug!(target: "sub-libp2p", "External API <= Closed({})", peer_id);
                         let event = GenericProtoOut::CustomProtocolClosed {
-                            peer_id: peer_id.clone(),
+                            peer_id: *peer_id,
                             reason: "Disconnected by libp2p".into(),
                         };
 
@@ -1092,8 +1090,7 @@ impl NetworkBehaviour for GenericProto {
                 }
                 debug!(target: "sub-libp2p", "Libp2p => Disconnected({}): Was disabled.", peer_id);
                 if let Some(until) = banned_until {
-                    self.peers
-                        .insert(peer_id.clone(), PeerState::Banned { until });
+                    self.peers.insert(*peer_id, PeerState::Banned { until });
                 }
             }
 
@@ -1114,9 +1111,9 @@ impl NetworkBehaviour for GenericProto {
                        "Libp2p => Disconnected({}): Was disabled but pending enable.",
                        peer_id);
                 debug!(target: "sub-libp2p", "PSM <= Dropped({})", peer_id);
-                self.peerset.dropped(peer_id.clone());
+                self.peerset.dropped(*peer_id);
                 self.peers.insert(
-                    peer_id.clone(),
+                    *peer_id,
                     PeerState::Banned {
                         until: timer_deadline,
                     },
@@ -1134,10 +1131,10 @@ impl NetworkBehaviour for GenericProto {
                 }
                 debug!(target: "sub-libp2p", "Libp2p => Disconnected({}): Was enabled.", peer_id);
                 debug!(target: "sub-libp2p", "PSM <= Dropped({})", peer_id);
-                self.peerset.dropped(peer_id.clone());
+                self.peerset.dropped(*peer_id);
                 let ban_dur = Uniform::new(5, 10).sample(&mut rand::thread_rng());
                 self.peers.insert(
-                    peer_id.clone(),
+                    *peer_id,
                     PeerState::Banned {
                         until: Instant::now() + Duration::from_secs(ban_dur),
                     },
@@ -1178,7 +1175,7 @@ impl NetworkBehaviour for GenericProto {
     }
 
     fn inject_dial_failure(&mut self, peer_id: &PeerId) {
-        if let Entry::Occupied(mut entry) = self.peers.entry(peer_id.clone()) {
+        if let Entry::Occupied(mut entry) = self.peers.entry(*peer_id) {
             match mem::replace(entry.get_mut(), PeerState::Poisoned) {
                 // The peer is not in our list.
                 st @ PeerState::Banned { .. } => {
@@ -1193,7 +1190,7 @@ impl NetworkBehaviour for GenericProto {
                         until: Instant::now() + Duration::from_secs(5),
                     };
                     debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", peer_id);
-                    self.peerset.dropped(peer_id.clone())
+                    self.peerset.dropped(*peer_id)
                 }
 
                 // We can still get dial failures even if we are already connected to the peer,
@@ -1223,7 +1220,7 @@ impl NetworkBehaviour for GenericProto {
                        "Handler({:?}) => Endpoint {:?} closed for custom protocols: {}",
                        source, endpoint, reason);
 
-                let mut entry = if let Entry::Occupied(entry) = self.peers.entry(source.clone()) {
+                let mut entry = if let Entry::Occupied(entry) = self.peers.entry(source) {
                     entry
                 } else {
                     error!(target: "sub-libp2p", "Closed: State mismatch in the custom protos handler");
@@ -1252,10 +1249,10 @@ impl NetworkBehaviour for GenericProto {
                             // should be changed to stay in the `Enabled` state.
                             debug!(target: "sub-libp2p", "Handler({:?}) <= Disable", source);
                             debug!(target: "sub-libp2p", "PSM <= Dropped({:?})", source);
-                            self.peerset.dropped(source.clone());
+                            self.peerset.dropped(source);
                             self.events
                                 .push_back(NetworkBehaviourAction::NotifyHandler {
-                                    peer_id: source.clone(),
+                                    peer_id: source,
                                     handler: NotifyHandler::Any,
                                     event: NotifsHandlerIn::Disable,
                                 });

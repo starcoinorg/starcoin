@@ -193,7 +193,7 @@ impl NetworkBehaviour for PeerInfoBehaviour {
             .inject_connection_established(peer_id, conn, endpoint);
         self.identify
             .inject_connection_established(peer_id, conn, endpoint);
-        match self.nodes_info.entry(peer_id.clone()) {
+        match self.nodes_info.entry(*peer_id) {
             Entry::Vacant(e) => {
                 e.insert(NodeInfo::new(endpoint.clone()));
             }

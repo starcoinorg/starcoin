@@ -199,7 +199,7 @@ impl RequestResponsesBehaviour {
             match protocols.entry(protocol.name) {
                 Entry::Vacant(e) => e.insert((rq_rp, protocol.inbound_queue)),
                 Entry::Occupied(e) => {
-                    return Err(RegisterError::DuplicateProtocol(e.key().clone()))
+                    return Err(RegisterError::DuplicateProtocol(e.key().clone()));
                 }
             };
         }
@@ -350,6 +350,7 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
         }
     }
 
+    #[allow(clippy::never_loop)]
     fn poll(
         &mut self,
         cx: &mut Context,
@@ -376,7 +377,7 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                 };
 
                 if let Some((protocol, _)) = self.protocols.get_mut(&*protocol_name) {
-                    if let Err(_) = protocol.send_response(inner_channel, Ok(response)) {
+                    if protocol.send_response(inner_channel, Ok(response)).is_err() {
                         // Note: In case this happened due to a timeout, the corresponding
                         // `RequestResponse` behaviour will emit an `InboundFailure::Timeout` event.
                         self.pending_responses_arrival_time.pop(&request_id);
@@ -424,13 +425,13 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 peer_id,
                                 handler,
                                 event: ((*protocol).to_string(), event),
-                            })
+                            });
                         }
                         NetworkBehaviourAction::ReportObservedAddr { address, score } => {
                             return Poll::Ready(NetworkBehaviourAction::ReportObservedAddr {
                                 address,
                                 score,
-                            })
+                            });
                         }
                     };
 
@@ -447,7 +448,7 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 },
                         } => {
                             self.pending_responses_arrival_time
-                                .put(request_id.clone(), Instant::now());
+                                .put(request_id, Instant::now());
 
                             let (tx, rx) = oneshot::channel();
 
@@ -458,7 +459,7 @@ impl NetworkBehaviour for RequestResponsesBehaviour {
                                 // will be reported by the corresponding `RequestResponse` through
                                 // an `InboundFailure::Omission` event.
                                 let _ = resp_builder.try_send(IncomingRequest {
-                                    peer: peer.clone(),
+                                    peer,
                                     payload: request,
                                     pending_response: tx,
                                 });
@@ -795,13 +796,11 @@ mod tests {
                 let (mut swarm, _) = swarms.remove(0);
                 async move {
                     loop {
-                        match swarm.next_event().await {
-                            SwarmEvent::Behaviour(super::Event::InboundRequest {
-                                result, ..
-                            }) => {
-                                result.unwrap();
-                            }
-                            _ => {}
+                        if let SwarmEvent::Behaviour(super::Event::InboundRequest {
+                            result, ..
+                        }) = swarm.next_event().await
+                        {
+                            result.unwrap();
                         }
                     }
                 }
@@ -911,14 +910,12 @@ mod tests {
                 let (mut swarm, _) = swarms.remove(0);
                 async move {
                     loop {
-                        match swarm.next_event().await {
-                            SwarmEvent::Behaviour(super::Event::InboundRequest {
-                                result, ..
-                            }) => {
-                                assert!(result.is_ok());
-                                break;
-                            }
-                            _ => {}
+                        if let SwarmEvent::Behaviour(super::Event::InboundRequest {
+                            result, ..
+                        }) = swarm.next_event().await
+                        {
+                            assert!(result.is_ok());
+                            break;
                         }
                     }
                 }

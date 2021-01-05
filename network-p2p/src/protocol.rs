@@ -248,8 +248,7 @@ impl NetworkBehaviour for Protocol {
                 Ok(status) => self.on_peer_connected(who, status, notifications_sink),
                 Err(err) => {
                     info!(target: "network-p2p", "Couldn't decode handshake packet sent by {}: {:?}: {}", who, hex::encode(received_handshake), err);
-                    self.peerset_handle
-                        .report_peer(who.clone(), rep::BAD_MESSAGE);
+                    self.peerset_handle.report_peer(who, rep::BAD_MESSAGE);
                     self.behaviour.disconnect_peer(&who);
                     CustomMessageOutcome::None
                 }
@@ -306,7 +305,7 @@ impl Protocol {
                 .iter()
                 .flat_map(|(_, l)| l.iter())
             {
-                imp_p.insert(reserved.clone());
+                imp_p.insert(*reserved);
             }
             imp_p.shrink_to_fit();
             imp_p
@@ -457,8 +456,7 @@ impl Protocol {
                     status.info.genesis_hash(),
                 );
             }
-            self.peerset_handle
-                .report_peer(who.clone(), rep::GENESIS_MISMATCH);
+            self.peerset_handle.report_peer(who, rep::GENESIS_MISMATCH);
             self.behaviour.disconnect_peer(&who);
 
             return CustomMessageOutcome::None;
@@ -469,8 +467,7 @@ impl Protocol {
                 if self.important_peers.contains(&who) { Level::Warn } else { Level::Trace },
                 "Peer {:?} using unsupported protocol version {}", who, status.version
             );
-            self.peerset_handle
-                .report_peer(who.clone(), rep::BAD_PROTOCOL);
+            self.peerset_handle.report_peer(who, rep::BAD_PROTOCOL);
             self.behaviour.disconnect_peer(&who);
             return CustomMessageOutcome::None;
         }
@@ -480,7 +477,7 @@ impl Protocol {
         let peer = Peer {
             info: status.info.clone(),
         };
-        self.context_data.peers.insert(who.clone(), peer);
+        self.context_data.peers.insert(who, peer);
 
         debug!(target: "sync", "Connected {}", who);
 

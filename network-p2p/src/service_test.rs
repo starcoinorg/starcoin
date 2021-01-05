@@ -99,14 +99,12 @@ fn lots_of_incoming_peers_works() {
     let mut background_tasks_to_wait = Vec::new();
 
     for _ in 0..32 {
-        let main_node_peer_id = main_node_peer_id.clone();
-
         let (_dialing_node, event_stream) = build_test_full_node(config::NetworkConfiguration {
             notifications_protocols: vec![From::from(PROTOCOL_NAME)],
             listen_addresses: vec![],
             reserved_nodes: vec![config::MultiaddrWithPeerId {
                 multiaddr: listen_addr.clone(),
-                peer_id: main_node_peer_id.clone(),
+                peer_id: main_node_peer_id,
             }],
             transport: config::TransportConfig::MemoryOnly,
             ..config::NetworkConfiguration::new_local()
@@ -197,7 +195,7 @@ fn notifications_back_pressure() {
         debug!("Start sending..");
         for num in 0..TOTAL_NOTIFS {
             let notif = node1
-                .notification_sender(node2_id.clone(), From::from(PROTOCOL_NAME))
+                .notification_sender(node2_id, From::from(PROTOCOL_NAME))
                 .unwrap();
             notif
                 .ready()

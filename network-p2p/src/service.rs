@@ -167,9 +167,9 @@ impl NetworkWorker {
 
         // Process the bootnodes.
         for bootnode in params.network_config.boot_nodes.iter() {
-            bootnodes.push(bootnode.peer_id.clone());
-            boot_node_ids.insert(bootnode.peer_id.clone());
-            known_addresses.push((bootnode.peer_id.clone(), bootnode.multiaddr.clone()));
+            bootnodes.push(bootnode.peer_id);
+            boot_node_ids.insert(bootnode.peer_id);
+            known_addresses.push((bootnode.peer_id, bootnode.multiaddr.clone()));
         }
 
         let boot_node_ids = Arc::new(boot_node_ids);
@@ -182,8 +182,8 @@ impl NetworkWorker {
             {
                 Err(Error::DuplicateBootnode {
                     address: addr.clone(),
-                    first_id: peer_id.clone(),
-                    second_id: other.0.clone(),
+                    first_id: *peer_id,
+                    second_id: other.0,
                 })
             } else {
                 Ok(())
@@ -193,8 +193,8 @@ impl NetworkWorker {
         let priority_groups = {
             let mut reserved_nodes = HashSet::new();
             for reserved in params.network_config.reserved_nodes.iter() {
-                reserved_nodes.insert(reserved.peer_id.clone());
-                known_addresses.push((reserved.peer_id.clone(), reserved.multiaddr.clone()));
+                reserved_nodes.insert(reserved.peer_id);
+                known_addresses.push((reserved.peer_id, reserved.multiaddr.clone()));
             }
 
             vec![("reserved".to_owned(), reserved_nodes)]
@@ -221,7 +221,7 @@ impl NetworkWorker {
 
         let (protocol, peerset_handle) = Protocol::new(
             peerset_config,
-            local_peer_id.clone(),
+            local_peer_id,
             params.protocol_id.clone(),
             params.chain_info,
             boot_node_ids.clone(),
@@ -283,7 +283,7 @@ impl NetworkWorker {
                 };
                 transport::build_transport(local_identity, config_mem, config_wasm)
             };
-            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id.clone())
+            let builder = SwarmBuilder::new(transport, behaviour, local_peer_id)
                 .connection_limits(
                     ConnectionLimits::default()
                         .with_max_established_per_peer(Some(crate::MAX_CONNECTIONS_PER_PEER as u32))
@@ -790,7 +790,7 @@ impl NetworkService {
     /// and peer ID of the remote node.
     pub fn add_reserved_peer(&self, peer: String) -> Result<(), String> {
         let (peer_id, addr) = parse_str_addr(&peer).map_err(|e| format!("{:?}", e))?;
-        self.peerset.add_reserved_peer(peer_id.clone());
+        self.peerset.add_reserved_peer(peer_id);
         let _ = self
             .to_worker
             .unbounded_send(ServiceToWorkerMsg::AddKnownAddress(peer_id, addr));
@@ -808,10 +808,7 @@ impl NetworkService {
             .map(|p| parse_addr(p).map_err(|e| format!("{:?}", e)))
             .collect::<Result<Vec<(PeerId, Multiaddr)>, String>>()?;
 
-        let peer_ids = peers
-            .iter()
-            .map(|(peer_id, _addr)| peer_id.clone())
-            .collect();
+        let peer_ids = peers.iter().map(|(peer_id, _addr)| *peer_id).collect();
         self.peerset.set_priority_group(group_id, peer_ids);
 
         for (peer_id, addr) in peers.into_iter() {
@@ -850,7 +847,7 @@ impl NetworkStateInfo for NetworkService {
 
     /// Returns the local Peer ID.
     fn local_peer_id(&self) -> PeerId {
-        self.local_peer_id.clone()
+        self.local_peer_id
     }
 }
 
@@ -1049,7 +1046,7 @@ impl Future for NetworkWorker {
                     let peers = this.known_peers();
                     let mut result = HashSet::new();
                     for peer in peers {
-                        result.insert(peer.clone());
+                        result.insert(peer);
                     }
                     let _ = tx.send(result);
                 }
@@ -1093,7 +1090,9 @@ impl Future for NetworkWorker {
                                     .requests_in_success_total
                                     .with_label_values(&[&protocol])
                                     .observe(
-                                        serve_time.unwrap_or(Duration::from_secs(0)).as_secs_f64(),
+                                        serve_time
+                                            .unwrap_or_else(|| Duration::from_secs(0))
+                                            .as_secs_f64(),
                                     );
                             }
                             Err(err) => {
@@ -1173,7 +1172,7 @@ impl Future for NetworkWorker {
                     }
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
-                        peers_notifications_sinks.insert(remote.clone(), notifications_sink);
+                        peers_notifications_sinks.insert(remote, notifications_sink);
                     }
                     this.event_streams
                         .send(Event::NotificationStreamOpened { remote, info });
@@ -1219,9 +1218,8 @@ impl Future for NetworkWorker {
                     if let Some(metrics) = this.metrics.as_ref() {
                         metrics.notifications_streams_closed_total.inc();
                     }
-                    this.event_streams.send(Event::NotificationStreamClosed {
-                        remote: remote.clone(),
-                    });
+                    this.event_streams
+                        .send(Event::NotificationStreamClosed { remote });
                     {
                         let mut peers_notifications_sinks = this.peers_notifications_sinks.lock();
                         peers_notifications_sinks.remove(&remote);
