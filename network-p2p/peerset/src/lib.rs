@@ -323,8 +323,8 @@ impl Peerset {
             self.priority_groups
                 .entry(group_id.to_owned())
                 .or_default()
-                .insert(peer_id.clone());
-            self.data.add_no_slot_node(peer_id.clone());
+                .insert(*peer_id);
+            self.data.add_no_slot_node(*peer_id);
         }
 
         // Enumerate elements in `current_group` not in `peers`.
@@ -341,7 +341,7 @@ impl Peerset {
         self.priority_groups
             .entry(group_id.to_owned())
             .or_default()
-            .insert(peer_id.clone());
+            .insert(peer_id);
         self.data.add_no_slot_node(peer_id);
         self.alloc_slots();
     }
@@ -753,8 +753,8 @@ mod tests {
         };
 
         let (peerset, handle) = Peerset::from_config(config);
-        handle.add_reserved_peer(reserved_peer.clone());
-        handle.add_reserved_peer(reserved_peer2.clone());
+        handle.add_reserved_peer(reserved_peer);
+        handle.add_reserved_peer(reserved_peer2);
 
         assert_messages(
             peerset,
@@ -778,13 +778,13 @@ mod tests {
         let config = PeersetConfig {
             in_peers: 2,
             out_peers: 1,
-            bootnodes: vec![bootnode.clone()],
+            bootnodes: vec![bootnode],
             reserved_only: false,
             priority_groups: Vec::new(),
         };
 
         let (mut peerset, _handle) = Peerset::from_config(config);
-        peerset.incoming(incoming.clone(), ii);
+        peerset.incoming(incoming, ii);
         peerset.incoming(incoming, ii4);
         peerset.incoming(incoming2, ii2);
         peerset.incoming(incoming3, ii3);
@@ -826,14 +826,14 @@ mod tests {
         let config = PeersetConfig {
             in_peers: 0,
             out_peers: 2,
-            bootnodes: vec![bootnode.clone()],
+            bootnodes: vec![bootnode],
             reserved_only: false,
             priority_groups: vec![],
         };
 
         let (mut peerset, _handle) = Peerset::from_config(config);
-        peerset.discovered(Some(discovered.clone()));
-        peerset.discovered(Some(discovered.clone()));
+        peerset.discovered(Some(discovered));
+        peerset.discovered(Some(discovered));
         peerset.discovered(Some(discovered2));
 
         assert_messages(
@@ -854,17 +854,14 @@ mod tests {
 
         // We ban a node by setting its reputation under the threshold.
         let peer_id = PeerId::random();
-        handle.report_peer(
-            peer_id.clone(),
-            ReputationChange::new(BANNED_THRESHOLD - 1, ""),
-        );
+        handle.report_peer(peer_id, ReputationChange::new(BANNED_THRESHOLD - 1, ""));
 
         let fut = futures::future::poll_fn(move |cx| {
             // We need one polling for the message to be processed.
             assert_eq!(Stream::poll_next(Pin::new(&mut peerset), cx), Poll::Pending);
 
             // Check that an incoming connection from that node gets refused.
-            peerset.incoming(peer_id.clone(), IncomingIndex(1));
+            peerset.incoming(peer_id, IncomingIndex(1));
             if let Poll::Ready(msg) = Stream::poll_next(Pin::new(&mut peerset), cx) {
                 assert_eq!(msg.unwrap(), Message::Reject(IncomingIndex(1)));
             } else {
@@ -875,7 +872,7 @@ mod tests {
             thread::sleep(Duration::from_millis(1500));
 
             // Try again. This time the node should be accepted.
-            peerset.incoming(peer_id.clone(), IncomingIndex(2));
+            peerset.incoming(peer_id, IncomingIndex(2));
             while let Poll::Ready(msg) = Stream::poll_next(Pin::new(&mut peerset), cx) {
                 assert_eq!(msg.unwrap(), Message::Accept(IncomingIndex(2)));
             }

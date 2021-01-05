@@ -43,7 +43,7 @@ fn test_once() {
         bootnodes: (0..Uniform::new_inclusive(0, 4).sample(&mut rng))
             .map(|_| {
                 let id = PeerId::random();
-                known_nodes.insert(id.clone());
+                known_nodes.insert(id);
                 id
             })
             .collect(),
@@ -51,8 +51,8 @@ fn test_once() {
             let nodes = (0..Uniform::new_inclusive(0, 2).sample(&mut rng))
                 .map(|_| {
                     let id = PeerId::random();
-                    known_nodes.insert(id.clone());
-                    reserved_nodes.insert(id.clone());
+                    known_nodes.insert(id);
+                    reserved_nodes.insert(id);
                     id
                 })
                 .collect();
@@ -110,7 +110,7 @@ fn test_once() {
                 // If we generate 1, discover a new node.
                 1 => {
                     let new_id = PeerId::random();
-                    known_nodes.insert(new_id.clone());
+                    known_nodes.insert(new_id);
                     peerset.discovered(iter::once(new_id));
                 }
 
@@ -119,7 +119,7 @@ fn test_once() {
                     if let Some(id) = known_nodes.iter().choose(&mut rng) {
                         let val = Uniform::new_inclusive(i32::min_value(), i32::max_value())
                             .sample(&mut rng);
-                        peerset_handle.report_peer(id.clone(), ReputationChange::new(val, ""));
+                        peerset_handle.report_peer(*id, ReputationChange::new(val, ""));
                     }
                 }
 
@@ -141,8 +141,8 @@ fn test_once() {
                         })
                         .choose(&mut rng)
                     {
-                        peerset.incoming(id.clone(), next_incoming_id);
-                        incoming_nodes.insert(next_incoming_id, id.clone());
+                        peerset.incoming(*id, next_incoming_id);
+                        incoming_nodes.insert(next_incoming_id, *id);
                         next_incoming_id.0 += 1;
                     }
                 }
@@ -158,8 +158,8 @@ fn test_once() {
                         .filter(|n| !reserved_nodes.contains(*n))
                         .choose(&mut rng)
                     {
-                        peerset_handle.add_reserved_peer(id.clone());
-                        reserved_nodes.insert(id.clone());
+                        peerset_handle.add_reserved_peer(*id);
+                        reserved_nodes.insert(*id);
                     }
                 }
                 8 => {
