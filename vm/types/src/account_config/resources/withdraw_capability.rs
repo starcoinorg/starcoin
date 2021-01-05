@@ -1,8 +1,8 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::move_resource::MoveResource;
 use crate::{account_address::AccountAddress, account_config::constants::ACCOUNT_MODULE_NAME};
-use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]

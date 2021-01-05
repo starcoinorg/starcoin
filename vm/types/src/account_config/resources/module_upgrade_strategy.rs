@@ -3,8 +3,8 @@
 
 use crate::access_path::AccessPath;
 use crate::account_address::AccountAddress;
+use crate::move_resource::MoveResource;
 use move_core_types::language_storage::ResourceKey;
-use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 pub const _STRATEGY_ARBITRARY: u8 = 0;

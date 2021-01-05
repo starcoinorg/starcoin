@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{ensure, format_err, Result};
-use merkle_tree::{blob::Blob, proof::SparseMerkleProof};
+use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
@@ -73,16 +73,18 @@ impl StateProof {
                     }
                     Some(expected_hash) => {
                         let blob = access_resource_blob.map(|data| Blob::from(data.to_vec()));
-                        self.account_state_proof
-                            .verify(expected_hash, data_path.key_hash(), blob.as_ref())?;
+                        self.account_state_proof.verify(
+                            expected_hash,
+                            data_path.key_hash(),
+                            blob.as_ref(),
+                        )?;
                     }
                 }
             }
         }
-        let address_hash = account_address.crypto_hash();
         self.account_proof.verify(
             expected_root_hash,
-            address_hash,
+            account_address.key_hash(),
             self.account_state.as_ref(),
         )
     }
@@ -235,7 +237,7 @@ impl<'a> AccountStateReader<'a> {
     where
         R: MoveResource + DeserializeOwned,
     {
-        let access_path = AccessPath::new(address, R::);
+        let access_path = AccessPath::new(address, R::resource_path());
         let r = self
             .reader
             .get(&access_path)

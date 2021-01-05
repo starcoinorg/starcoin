@@ -41,6 +41,7 @@
 use crate::account_address::AccountAddress;
 use crate::identifier::Identifier;
 use anyhow::Result;
+use forkable_jellyfish_merkle::RawKey;
 use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, CODE_TAG, RESOURCE_TAG};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
@@ -194,6 +195,10 @@ impl DataType {
     pub fn storage_index(self) -> usize {
         self.type_index() as usize
     }
+
+    pub fn from_index(idx: u8) -> Result<Self> {
+        Ok(Self::try_from_primitive(idx)?)
+    }
 }
 
 pub type ModuleName = Identifier;
@@ -234,11 +239,11 @@ impl DataPath {
             DataPath::Resource(_) => DataType::RESOURCE,
         }
     }
-    //TODO implement RawKey for DataPath?
+
     pub fn key_hash(&self) -> HashValue {
         match self {
-            DataPath::Resource(struct_tag) => struct_tag.crypto_hash(),
-            DataPath::Code(module_name) => module_name.to_owned().crypto_hash(),
+            DataPath::Resource(struct_tag) => struct_tag.key_hash(),
+            DataPath::Code(module_name) => module_name.key_hash(),
         }
     }
 }

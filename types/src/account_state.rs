@@ -12,12 +12,6 @@ use starcoin_crypto::{
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash)]
-pub struct StorageRoot {
-    pub data_type: DataType,
-    pub root: HashValue,
-}
-
-#[derive(Debug, Eq, PartialEq, Hash, Clone, Serialize, Deserialize, CryptoHasher, CryptoHash)]
 pub struct AccountState {
     storage_roots: Vec<Option<HashValue>>,
 }
@@ -41,14 +35,6 @@ impl AccountState {
 
     pub fn storage_roots(&self) -> &[Option<HashValue>] {
         self.storage_roots.as_slice()
-    }
-}
-
-impl Default for AccountState {
-    fn default() -> Self {
-        Self {
-            storage_roots: vec![None; DataType::LENGTH],
-        }
     }
 }
 

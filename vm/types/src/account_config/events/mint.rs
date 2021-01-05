@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::account_config::TOKEN_MODULE_NAME;
+use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::Result;
-use move_core_types::move_resource::MoveResource;
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a MintEvent.

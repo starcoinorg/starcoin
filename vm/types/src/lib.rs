@@ -43,9 +43,7 @@ pub mod language_storage {
     };
 }
 
-pub mod move_resource {
-    pub use move_core_types::move_resource::MoveResource;
-}
+pub mod move_resource;
 
 pub mod transaction_argument {
     pub use move_core_types::transaction_argument::*;

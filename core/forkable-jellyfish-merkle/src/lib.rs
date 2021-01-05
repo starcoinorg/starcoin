@@ -178,7 +178,14 @@ where
 
 pub trait RawKey: Clone + Ord {
     /// Raw key's hash, will used as tree's nibble path
-    fn key_hash(&self) -> HashValue;
+    /// Directly use origin byte's sha3_256 hash, do not use CryptoHash to add salt.
+    fn key_hash(&self) -> HashValue {
+        HashValue::sha3_256_of(
+            self.encode_key()
+                .expect("Serialize key failed when hash.")
+                .as_slice(),
+        )
+    }
 
     /// Encode the raw key, the raw key's bytes will store to leaf node.
     fn encode_key(&self) -> Result<Vec<u8>>;
@@ -188,13 +195,8 @@ pub trait RawKey: Clone + Ord {
 
 impl<T> RawKey for T
 where
-    T: PlainCryptoHash + Clone + Ord + Serialize + DeserializeOwned,
+    T: Clone + Ord + Serialize + DeserializeOwned,
 {
-    fn key_hash(&self) -> HashValue {
-        self.crypto_hash()
-    }
-
-    /// Encode the raw key, the raw key's bytes will store to leaf node.
     fn encode_key(&self) -> Result<Vec<u8>> {
         scs::to_bytes(self)
     }

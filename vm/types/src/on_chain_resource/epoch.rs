@@ -3,8 +3,8 @@
 use crate::access_path::{AccessPath, DataPath};
 use crate::event::EventHandle;
 use crate::genesis_config::ConsensusStrategy;
+use crate::move_resource::MoveResource;
 use move_core_types::language_storage::{StructTag, CORE_CODE_ADDRESS};
-use move_core_types::move_resource::MoveResource;
 use serde::export::TryFrom;
 use serde::{Deserialize, Serialize};
 
