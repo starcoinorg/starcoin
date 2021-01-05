@@ -30,7 +30,7 @@ enum Language {
     about = "Generate code for Move script builders"
 )]
 struct Options {
-    /// Path to the directory containing ABI files in LCS encoding.
+    /// Path to the directory containing ABI files in BCS encoding.
     abi_directory: PathBuf,
 
     /// Language for code generation.
@@ -41,7 +41,7 @@ struct Options {
     #[structopt(long)]
     target_source_dir: Option<PathBuf>,
 
-    /// Also install the diem types described by the given YAML file, along with the LCS runtime.
+    /// Also install the diem types described by the given YAML file, along with the BCS runtime.
     #[structopt(long)]
     with_diem_types: Option<PathBuf>,
 

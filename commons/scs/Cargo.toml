@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.37"
 serde = { version = "1.0" }
-lcs = { version = "0.1.0", package = "libra-canonical-serialization" }
+bcs = "0.1.2"

@@ -6,27 +6,27 @@
 //! SCS defines a deterministic means for translating a message or data structure into bytes
 //! irrespective of platform, architecture, or programming language.
 
-// Just a wrap to Diem Canonical Serialization (LCS) currently.
+// Just a wrap to BCS currently.
 use anyhow::Result;
-pub use lcs::MAX_SEQUENCE_LENGTH;
+pub use bcs::MAX_SEQUENCE_LENGTH;
 use serde::{Deserialize, Serialize};
 
 pub mod test_helpers {
-    pub use lcs::test_helpers::*;
+    pub use bcs::test_helpers::*;
 }
 
 pub fn to_bytes<T>(value: &T) -> Result<Vec<u8>>
 where
     T: ?Sized + Serialize,
 {
-    lcs::to_bytes(value).map_err(|e| e.into())
+    bcs::to_bytes(value).map_err(|e| e.into())
 }
 
 pub fn from_bytes<'a, T>(bytes: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    lcs::from_bytes(bytes).map_err(|e| e.into())
+    bcs::from_bytes(bytes).map_err(|e| e.into())
 }
 
 pub trait SCSCodec<'a>: Sized {
@@ -47,7 +47,7 @@ where
     }
 }
 
-pub use lcs::{is_human_readable, serialize_into, serialized_size, Error};
+pub use bcs::{is_human_readable, serialize_into, serialized_size, Error};
 
 #[cfg(test)]
 mod tests {

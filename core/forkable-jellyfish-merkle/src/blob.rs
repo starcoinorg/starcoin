@@ -15,7 +15,7 @@ pub struct Blob {
 
 impl fmt::Debug for Blob {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // let decoded = lcs::from_bytes(&self.blob)
+        // let decoded = bcs::from_bytes(&self.blob)
         //     .map(|account_state: AccountState| format!("{:#?}", account_state))
         //     .unwrap_or_else(|_| String::from("[fail]"));
 
