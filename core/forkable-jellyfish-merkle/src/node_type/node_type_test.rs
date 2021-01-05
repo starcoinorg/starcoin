@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::nibble_path::NibblePath;
+use crate::HashValueKey;
 use proptest::prelude::*;
 use starcoin_crypto::{
     hash::{CryptoHash, SPARSE_MERKLE_PLACEHOLDER_HASH},
@@ -44,15 +45,15 @@ fn test_encode_decode() {
     // let nibble_path = NibblePath::new(vec![]);
 
     let leaf1_keys = gen_leaf_keys(&nibble_path, Nibble::from(1));
-    let leaf1_node = Node::new_leaf(leaf1_keys, Blob::from(vec![0x00]));
+    let leaf1_node: Node<HashValueKey> = Node::new_leaf(leaf1_keys.into(), Blob::from(vec![0x00]));
     let leaf2_keys = gen_leaf_keys(&nibble_path, Nibble::from(2));
-    let leaf2_node = Node::new_leaf(leaf2_keys, Blob::from(vec![0x01]));
+    let leaf2_node: Node<HashValueKey> = Node::new_leaf(leaf2_keys.into(), Blob::from(vec![0x01]));
 
     let mut children = Children::default();
     children.insert(Nibble::from(1), Child::new(leaf1_node.hash(), true));
     children.insert(Nibble::from(2), Child::new(leaf2_node.hash(), true));
 
-    let account_key = HashValue::random();
+    let account_key = HashValueKey(HashValue::random());
     let nodes = vec![
         Node::new_internal(children),
         Node::new_leaf(account_key, Blob::from(vec![0x02])),
@@ -62,13 +63,13 @@ fn test_encode_decode() {
         assert_eq!(*n, Node::decode(&v).unwrap());
     }
     // Error cases
-    if let Err(e) = Node::<HashValue>::decode(&[]) {
+    if let Err(e) = Node::<HashValueKey>::decode(&[]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::EmptyInput
         );
     }
-    if let Err(e) = Node::<HashValue>::decode(&[100]) {
+    if let Err(e) = Node::<HashValueKey>::decode(&[100]) {
         assert_eq!(
             e.downcast::<NodeDecodeError>().unwrap(),
             NodeDecodeError::UnknownTag { unknown_tag: 100 }
@@ -118,7 +119,7 @@ fn test_leaf_hash() {
         let blob = Blob::from(vec![0x02]);
         let value_hash = blob.hash();
         let hash = hash_leaf(address, value_hash);
-        let leaf_node = Node::new_leaf(address, blob);
+        let leaf_node = Node::new_leaf(HashValueKey(address), blob);
         assert_eq!(leaf_node.hash(), hash);
     }
 }

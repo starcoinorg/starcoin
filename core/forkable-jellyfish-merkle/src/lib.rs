@@ -84,13 +84,14 @@ pub mod restore;
 pub mod test_helper;
 pub mod tree_cache;
 
-#[cfg(test)]
 use crate::iterator::JellyfishMerkleIterator;
 use anyhow::{bail, ensure, format_err, Result};
 use blob::Blob;
 use nibble_path::{skip_common_prefix, NibbleIterator, NibblePath};
 use node_type::{Child, Children, InternalNode, LeafNode, Node, NodeKey};
 use proof::{SparseMerkleProof, SparseMerkleRangeProof};
+#[cfg(any(test, feature = "fuzzing"))]
+use proptest_derive::Arbitrary;
 use serde::{de::DeserializeOwned, Serialize};
 use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
 use std::collections::{BTreeMap, BTreeSet};
@@ -175,18 +176,55 @@ where
     }
 }
 
-pub trait RawKey: Clone + Ord + Serialize + DeserializeOwned {
+pub trait RawKey: Clone + Ord {
     /// Raw key's hash, will used as tree's nibble path
     fn key_hash(&self) -> HashValue;
+
+    /// Encode the raw key, the raw key's bytes will store to leaf node.
+    fn encode_key(&self) -> Result<Vec<u8>>;
+
+    fn decode_key(bytes: &[u8]) -> Result<Self>;
+}
+
+impl<T> RawKey for T
+where
+    T: PlainCryptoHash + Clone + Ord + Serialize + DeserializeOwned,
+{
+    fn key_hash(&self) -> HashValue {
+        self.crypto_hash()
+    }
+
     /// Encode the raw key, the raw key's bytes will store to leaf node.
     fn encode_key(&self) -> Result<Vec<u8>> {
         scs::to_bytes(self)
     }
+
+    fn decode_key(bytes: &[u8]) -> Result<Self> {
+        scs::from_bytes(bytes)
+    }
 }
 
-impl RawKey for HashValue {
+#[derive(Clone, Debug, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
+pub struct HashValueKey(pub HashValue);
+
+impl RawKey for HashValueKey {
     fn key_hash(&self) -> HashValue {
-        *self
+        self.0
+    }
+
+    fn encode_key(&self) -> Result<Vec<u8>> {
+        Ok(self.0.to_vec())
+    }
+
+    fn decode_key(bytes: &[u8]) -> Result<Self> {
+        Ok(HashValueKey(HashValue::from_slice(bytes)?))
+    }
+}
+
+impl From<HashValue> for HashValueKey {
+    fn from(hash: HashValue) -> Self {
+        HashValueKey(hash)
     }
 }
 

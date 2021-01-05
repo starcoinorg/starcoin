@@ -25,8 +25,7 @@ use num_traits::cast::FromPrimitive;
 use proptest::{collection::hash_map, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use starcoin_crypto::hash::*;
 use std::cell::Cell;
 use std::{
@@ -410,11 +409,33 @@ pub(crate) fn get_child_and_sibling_half_start(n: Nibble, height: u8) -> (u8, u8
     (child_half_start, sibling_half_start)
 }
 
+//TODO use serde helper's serialize_binary
+pub fn serialize_raw_key<K, S>(key: &K, s: S) -> std::result::Result<S::Ok, S::Error>
+where
+    K: RawKey,
+    S: Serializer,
+{
+    use serde::ser::Error;
+    s.serialize_bytes(key.encode_key().map_err(S::Error::custom)?.as_slice())
+}
+
+pub fn deserialize_raw_key<'de, K, D>(d: D) -> std::result::Result<K, D::Error>
+where
+    K: RawKey,
+    D: Deserializer<'de>,
+{
+    use serde::de::Error;
+    let bytes = serde_bytes::ByteBuf::deserialize(d)?;
+    K::decode_key(bytes.as_ref()).map_err(D::Error::custom)
+}
 /// Represents an account.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct LeafNode<K: RawKey> {
     /// The origin key associated with this leaf node's Blob.
-    #[serde(bound(serialize = "K: Serialize", deserialize = "K: DeserializeOwned"))]
+    #[serde(
+        deserialize_with = "deserialize_raw_key",
+        serialize_with = "serialize_raw_key"
+    )]
     raw_key: K,
     /// The hash of the blob.
     blob_hash: HashValue,

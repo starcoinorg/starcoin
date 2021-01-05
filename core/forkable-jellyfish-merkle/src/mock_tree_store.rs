@@ -6,7 +6,7 @@
 
 use crate::{
     node_type::{LeafNode, Node, NodeKey},
-    NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
+    HashValueKey, NodeBatch, StaleNodeIndex, TreeReader, TreeUpdateBatch, TreeWriter,
 };
 use anyhow::{bail, ensure, Result};
 use starcoin_crypto::HashValue;
@@ -16,16 +16,21 @@ use std::{
 };
 
 #[derive(Default)]
-pub struct MockTreeStore(RwLock<(HashMap<NodeKey, Node<HashValue>>, BTreeSet<StaleNodeIndex>)>);
+pub struct MockTreeStore(
+    RwLock<(
+        HashMap<NodeKey, Node<HashValueKey>>,
+        BTreeSet<StaleNodeIndex>,
+    )>,
+);
 
-impl TreeReader<HashValue> for MockTreeStore {
-    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<HashValue>>> {
+impl TreeReader<HashValueKey> for MockTreeStore {
+    fn get_node_option(&self, node_key: &NodeKey) -> Result<Option<Node<HashValueKey>>> {
         Ok(self.0.read().unwrap().0.get(node_key).cloned())
     }
 
-    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode<HashValue>)>> {
+    fn get_rightmost_leaf(&self) -> Result<Option<(NodeKey, LeafNode<HashValueKey>)>> {
         let locked = self.0.read().unwrap();
-        let mut node_key_and_node: Option<(NodeKey, LeafNode<HashValue>)> = None;
+        let mut node_key_and_node: Option<(NodeKey, LeafNode<HashValueKey>)> = None;
 
         for (key, value) in locked.0.iter() {
             if let Node::Leaf(leaf_node) = value {
@@ -41,8 +46,8 @@ impl TreeReader<HashValue> for MockTreeStore {
     }
 }
 
-impl TreeWriter<HashValue> for MockTreeStore {
-    fn write_node_batch(&self, node_batch: &NodeBatch<HashValue>) -> Result<()> {
+impl TreeWriter<HashValueKey> for MockTreeStore {
+    fn write_node_batch(&self, node_batch: &NodeBatch<HashValueKey>) -> Result<()> {
         let mut locked = self.0.write().unwrap();
         for (node_key, node) in node_batch.clone() {
             assert_eq!(locked.0.insert(node_key, node), None);
@@ -52,7 +57,7 @@ impl TreeWriter<HashValue> for MockTreeStore {
 }
 
 impl MockTreeStore {
-    pub fn put_node(&self, node_key: NodeKey, node: Node<HashValue>) -> Result<()> {
+    pub fn put_node(&self, node_key: NodeKey, node: Node<HashValueKey>) -> Result<()> {
         match self.0.write().unwrap().0.entry(node_key) {
             Entry::Occupied(o) => bail!("Key {:?} exists.", o.key()),
             Entry::Vacant(v) => {
@@ -68,7 +73,7 @@ impl MockTreeStore {
         Ok(())
     }
 
-    pub fn write_tree_update_batch(&self, batch: TreeUpdateBatch<HashValue>) -> Result<()> {
+    pub fn write_tree_update_batch(&self, batch: TreeUpdateBatch<HashValueKey>) -> Result<()> {
         batch
             .node_batch
             .into_iter()
