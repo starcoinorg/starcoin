@@ -17,7 +17,7 @@ module MyToken {
     }
 }
 // check: gas_used
-// check: 15
+// check: 8
 
 //! block-prologue
 //! author: genesis
@@ -41,7 +41,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 1522
+// check: 1515
 
 //! new-transaction
 //! sender: alice
@@ -57,7 +57,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 815
+// check: 807
 
 //! new-transaction
 //! sender: alice
@@ -74,7 +74,7 @@ script {
 
 // check: EXECUTED
 // check: gas_used
-// check: 96
+// check: 89
 
 //! new-transaction
 //! sender: alice
@@ -98,7 +98,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 460
+// check: 453
 
 //! block-prologue
 //! author: genesis
@@ -127,7 +127,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 387
+// check: 380
 
 //! block-prologue
 //! author: genesis
@@ -151,7 +151,7 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 95
+// check: 88
 
 //! block-prologue
 //! author: genesis
@@ -172,4 +172,4 @@ script {
 }
 // check: EXECUTED
 // check: gas_used
-// check: 208
+// check: 200

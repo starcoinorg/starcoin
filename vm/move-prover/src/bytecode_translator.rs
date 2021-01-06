@@ -1316,7 +1316,7 @@ impl<'env> ModuleTranslator<'env> {
                                 })
                                 .join(", "),
                         );
-                        if dest_str == "" {
+                        if dest_str.is_empty() {
                             emitln!(
                                 self.writer,
                                 "call {}{}({});",

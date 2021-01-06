@@ -9,8 +9,8 @@
 use chrono::Local;
 use env_logger::{self, fmt::Color};
 use log::Level;
-use std::{boxed::Box, io::Write};
 use std::path::Path;
+use std::{boxed::Box, io::Write};
 use structopt::StructOpt;
 
 pub mod bench {

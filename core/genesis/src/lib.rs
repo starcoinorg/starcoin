@@ -94,7 +94,11 @@ impl Display for Genesis {
         write!(f, "block: {:?}; ", self.block.header.id())?;
         write!(f, "parent_hash: {:?}; ", self.block.header.parent_hash())?;
         write!(f, "timestamp: {:?}; ", self.block.header.timestamp())?;
-        write!(f, "accumulator_root: {:?}; ", self.block.header.accumulator_root())?;
+        write!(
+            f,
+            "accumulator_root: {:?}; ",
+            self.block.header.accumulator_root()
+        )?;
         write!(f, "state_root: {:?}; ", self.block.header.state_root())?;
         write!(f, "difficulty: {:?}; ", self.block.header.difficulty())?;
         write!(f, "body_hash: {:?}; ", self.block.header.body_hash())?;
