@@ -40,24 +40,25 @@
 
 use crate::account_address::AccountAddress;
 use crate::identifier::Identifier;
-use anyhow::Result;
+use crate::parser::parse_struct_tag;
+use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::RawKey;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, CODE_TAG, RESOURCE_TAG};
+use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest::prelude::{Arbitrary, BoxedStrategy};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
-use rand::distributions::Alphanumeric;
 use rand::prelude::{Distribution, SliceRandom};
 use rand::rngs::OsRng;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-use serde_helpers::{deserialize_binary, serialize_binary};
-use starcoin_crypto::hash::{CryptoHash, HashValue, PlainCryptoHash};
-use std::convert::TryFrom;
+use serde::de::Error;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use starcoin_crypto::hash::HashValue;
 use std::fmt;
-#[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd)]
+use std::str::FromStr;
+
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct AccessPath {
     pub address: AccountAddress,
@@ -65,9 +66,6 @@ pub struct AccessPath {
 }
 
 impl AccessPath {
-    pub const CODE_TAG: u8 = 0;
-    pub const RESOURCE_TAG: u8 = 1;
-
     pub fn new(address: AccountAddress, path: DataPath) -> Self {
         AccessPath { address, path }
     }
@@ -109,6 +107,40 @@ impl AccessPath {
     }
 }
 
+impl Serialize for AccessPath {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        if serializer.is_human_readable() {
+            serializer.serialize_str(self.to_string().as_str())
+        } else {
+            serializer.serialize_newtype_struct("AccessPath", &(self.address, self.path.clone()))
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for AccessPath {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        if deserializer.is_human_readable() {
+            let s = <String>::deserialize(deserializer)?;
+            AccessPath::from_str(&s).map_err(D::Error::custom)
+        } else {
+            // In order to preserve the Serde data model and help analysis tools,
+            // make sure to wrap our value in a container with the same name
+            // as the original type.
+            #[derive(::serde::Deserialize)]
+            #[serde(rename = "AccessPath")]
+            struct Value(AccountAddress, DataPath);
+            let value = Value::deserialize(deserializer)?;
+            Ok(AccessPath::new(value.0, value.1))
+        }
+    }
+}
+
 //TODO move to a suitable mod
 struct IdentifierSymbols;
 
@@ -122,7 +154,7 @@ impl Distribution<char> for IdentifierSymbols {
 }
 
 fn random_identity() -> Identifier {
-    let mut rng = OsRng;
+    let rng = OsRng;
     let id: String = rng.sample_iter(&IdentifierSymbols).take(7).collect();
     Identifier::new(id).unwrap()
 }
@@ -262,6 +294,24 @@ impl fmt::Display for DataPath {
     }
 }
 
+impl FromStr for AccessPath {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts = s.split('/').collect::<Vec<_>>();
+        if parts.len() != 3 {
+            bail!("Invalid access_path string: {}", s);
+        }
+        let address = AccountAddress::from_str(parts[0])?;
+        let data_type = DataType::from_index(parts[1].parse()?)?;
+        let data_path = match data_type {
+            DataType::CODE => AccessPath::code_data_path(Identifier::new(parts[2])?),
+            DataType::RESOURCE => AccessPath::resource_data_path(parse_struct_tag(parts[2])?),
+        };
+        Ok(AccessPath::new(address, data_path))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -273,5 +323,47 @@ mod tests {
 
         let (_address, data_path) = AccessPath::random_code().into_inner();
         assert_eq!(data_path.data_type(), DataType::CODE);
+    }
+
+    #[test]
+    fn test_access_path_str_valid() {
+        let r1 = format!(
+            "{}/1/0x00000000000000000000000000000001::Account::Account",
+            AccountAddress::random()
+        );
+        let test_cases = vec!["0x00000000000000000000000000000001/0/Account", "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account", r1.as_str()];
+        for case in test_cases {
+            let access_path = AccessPath::from_str(case).unwrap();
+            assert_eq!(case.to_owned(), access_path.to_string())
+        }
+    }
+
+    #[test]
+    fn test_access_path_str_invalid() {
+        //invalid address
+        let r1 = format!(
+            "{}00/1/0x00000000000000000000000000000001::Account::Account",
+            AccountAddress::random()
+        );
+        let test_cases = vec![
+            // invalid struct tag
+            "0x00000000000000000000000000000001/1/Account", 
+            // invalid module name
+                              "0x00000000000000000000000000000001/0/0x00000000000000000000000000000001::Account::Account", 
+            //invalid data type
+                              "0x00000000000000000000000000000001/3/Account", 
+            //too many `/`
+                              "0x00000000000000000000000000000001/1/Account/xxx", 
+            //too less '`'
+            "0x00000000000000000000000000000001/1",
+            r1.as_str()];
+        for case in test_cases {
+            let access_path = AccessPath::from_str(case);
+            assert!(
+                access_path.is_err(),
+                "expect err in access_path case: {}, but got ok",
+                case
+            );
+        }
     }
 }

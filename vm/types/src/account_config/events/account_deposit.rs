@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
+use crate::account_config::constants::ACCOUNT_MODULE_NAME;
 use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::Result;

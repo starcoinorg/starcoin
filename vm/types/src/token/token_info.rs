@@ -6,11 +6,8 @@ use crate::token::token_code::TokenCode;
 use crate::{
     access_path::AccessPath, account_config::constants::CORE_CODE_ADDRESS, event::EventHandle,
 };
+use crate::{language_storage::StructTag, move_resource::MoveResource};
 use anyhow::Result;
-use move_core_types::{
-    language_storage::{ResourceKey, StructTag},
-    move_resource::MoveResource,
-};
 use serde::{Deserialize, Serialize};
 
 /// Struct that represents a TokenInfo resource

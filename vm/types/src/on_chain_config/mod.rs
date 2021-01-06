@@ -29,7 +29,6 @@ pub use self::{
     vm_config::{vm_config_type_tag, VMConfig, VMPublishingOption, SCRIPT_HASH_LENGTH},
 };
 pub use crate::on_chain_resource::GlobalTimeOnChain;
-use move_core_types::language_storage::ResourceKey;
 
 /// To register an on-chain config in Rust:
 /// 1. Implement the `OnChainConfig` trait for the Rust representation of the config

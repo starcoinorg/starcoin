@@ -1,13 +1,12 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::account_config::{constants::ACCOUNT_MODULE_NAME, resources::AccountResource};
+use crate::account_config::constants::ACCOUNT_MODULE_NAME;
 use crate::contract_event::ContractEvent;
 use crate::language_storage::TypeTag;
 use crate::move_resource::MoveResource;
 use crate::token::token_code::TokenCode;
 use anyhow::{Error, Result};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
