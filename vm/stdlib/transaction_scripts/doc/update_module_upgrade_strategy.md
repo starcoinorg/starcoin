@@ -8,6 +8,7 @@
 
 
 <pre><code><b>use</b> <a href="../../modules/doc/Config.md#0x1_Config">0x1::Config</a>;
+<b>use</b> <a href="../../modules/doc/Option.md#0x1_Option">0x1::Option</a>;
 <b>use</b> <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="../../modules/doc/Signer.md#0x1_Signer">0x1::Signer</a>;
 <b>use</b> <a href="../../modules/doc/Version.md#0x1_Version">0x1::Version</a>;
@@ -40,6 +41,7 @@
     <a href="../../modules/doc/PackageTxnManager.md#0x1_PackageTxnManager_update_module_upgrade_strategy">PackageTxnManager::update_module_upgrade_strategy</a>(
         signer,
         strategy,
+        <a href="../../modules/doc/Option.md#0x1_Option_none">Option::none</a>&lt;u64&gt;(),
     );
 }
 </code></pre>

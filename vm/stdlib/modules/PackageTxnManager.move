@@ -29,7 +29,7 @@ address 0x1 {
         const STRATEGY_TWO_PHASE: u8 = 1;
         const STRATEGY_NEW_MODULE: u8 = 2;
         const STRATEGY_FREEZE: u8 = 3;
-        const MIN_TIME_LIMIT: u64 = 100000;
+        const DEFAULT_MIN_TIME_LIMIT: u64 = 86400000;// one day
 
         public fun get_strategy_arbitrary(): u8 { STRATEGY_ARBITRARY }
 
@@ -39,7 +39,7 @@ address 0x1 {
 
         public fun get_strategy_freeze(): u8 { STRATEGY_FREEZE }
 
-        public fun get_min_time_limit(): u64 { MIN_TIME_LIMIT }
+        public fun get_default_min_time_limit(): u64 { DEFAULT_MIN_TIME_LIMIT }
 
         const EUPGRADE_PLAN_IS_NONE: u64 = 102;
         const EPACKAGE_HASH_INCORRECT: u64 = 103;
@@ -58,9 +58,14 @@ address 0x1 {
         }
 
         resource struct TwoPhaseUpgrade {
+            config: TwoPhaseUpgradeConfig,
             plan: Option<UpgradePlan>,
             version_cap: Config::ModifyConfigCapability<Version::Version>,
             upgrade_event: Event::EventHandle<Self::UpgradeEvent>,
+        }
+
+        struct TwoPhaseUpgradeConfig {
+            min_time_limit: u64,
         }
 
         struct UpgradeEvent {
@@ -70,7 +75,7 @@ address 0x1 {
         }
 
         // Update account's ModuleUpgradeStrategy
-        public fun update_module_upgrade_strategy(account: &signer, strategy: u8) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
+        public fun update_module_upgrade_strategy(account: &signer, strategy: u8, min_time: Option<u64>) acquires ModuleUpgradeStrategy, TwoPhaseUpgrade, UpgradePlanCapability{
             assert(strategy == STRATEGY_ARBITRARY || strategy == STRATEGY_TWO_PHASE || strategy == STRATEGY_NEW_MODULE || strategy == STRATEGY_FREEZE, Errors::invalid_argument(EUNKNOWN_STRATEGY));
             let account_address = Signer::address_of(account);
             let previous_strategy = get_module_upgrade_strategy(account_address);
@@ -82,15 +87,19 @@ address 0x1 {
             };
             if (strategy == STRATEGY_TWO_PHASE){
                 let version_cap = Config::extract_modify_config_capability<Version::Version>(account);
+                let min_time_limit = Option::get_with_default(&min_time, DEFAULT_MIN_TIME_LIMIT);
                 move_to(account, UpgradePlanCapability{ account_address: account_address});
-                move_to(account, TwoPhaseUpgrade{plan: Option::none<UpgradePlan>(),
+                move_to(account, TwoPhaseUpgrade{
+                    config: TwoPhaseUpgradeConfig{min_time_limit: min_time_limit},
+                    plan: Option::none<UpgradePlan>(),
                     version_cap: version_cap,
-                    upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)});
+                    upgrade_event: Event::new_event_handle<Self::UpgradeEvent>(account)}
+                );
             };
             //clean two phase upgrade resource
             if (previous_strategy == STRATEGY_TWO_PHASE){
                 let tpu = move_from<TwoPhaseUpgrade>(account_address);
-                let TwoPhaseUpgrade{plan:_, version_cap, upgrade_event} = tpu;
+                let TwoPhaseUpgrade{plan:_, version_cap, upgrade_event, config: _} = tpu;
                 Event::destroy_handle<Self::UpgradeEvent>(upgrade_event);
                 Config::destroy_modify_config_capability<Version::Version>(version_cap);
                 // UpgradePlanCapability may be extracted
@@ -141,45 +150,38 @@ address 0x1 {
         }
 
         // upgrade plan can override
-        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64, min_milliseconds: u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
-            assert(min_milliseconds >= MIN_TIME_LIMIT, Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
+        public fun submit_upgrade_plan(account: &signer, package_hash: vector<u8>, version:u64) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{
             let account_address = Signer::address_of(account);
             let cap = borrow_global<UpgradePlanCapability>(account_address);
-            let active_after_time = Timestamp::now_milliseconds() + min_milliseconds;
-            submit_upgrade_plan_with_cap(cap, package_hash, version, active_after_time);
+            submit_upgrade_plan_with_cap(cap, package_hash, version);
         }
 
         spec fun submit_upgrade_plan {
-            aborts_if min_milliseconds < MIN_TIME_LIMIT;
             aborts_if !exists<UpgradePlanCapability>(Signer::address_of(account));
-            aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if Timestamp::now_milliseconds() + min_milliseconds > max_u64();
-            let active_after_time = Timestamp::now_milliseconds() + min_milliseconds;
-            include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address, active_after_time};
+            include SubmitUpgradePlanWithCapAbortsIf{account: global<UpgradePlanCapability>(Signer::address_of(account)).account_address};
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(global<UpgradePlanCapability>(Signer::address_of(account)).account_address).plan);
         }
 
-        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64, active_after_time: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
-            assert(active_after_time >= Timestamp::now_milliseconds(), Errors::invalid_argument(EACTIVE_TIME_INCORRECT));
+        public fun submit_upgrade_plan_with_cap(cap: &UpgradePlanCapability, package_hash: vector<u8>, version: u64) acquires TwoPhaseUpgrade,ModuleUpgradeStrategy{
             let account_address = cap.account_address;
             assert(get_module_upgrade_strategy(account_address) == STRATEGY_TWO_PHASE, Errors::invalid_argument(ESTRATEGY_NOT_TWO_PHASE));
             let tpu = borrow_global_mut<TwoPhaseUpgrade>(account_address);
+            let active_after_time = Timestamp::now_milliseconds() + tpu.config.min_time_limit;
             tpu.plan = Option::some(UpgradePlan{ package_hash, active_after_time, version});
         }
 
         spec fun submit_upgrade_plan_with_cap {
-            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address, active_after_time};
+            include SubmitUpgradePlanWithCapAbortsIf{account: cap.account_address};
             ensures Option::spec_is_some(global<TwoPhaseUpgrade>(cap.account_address).plan);
         }
 
         spec schema SubmitUpgradePlanWithCapAbortsIf {
             account: address;
-            active_after_time: u64;
-            aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
-            aborts_if active_after_time < Timestamp::now_milliseconds();
             aborts_if !exists<ModuleUpgradeStrategy>(account);
             aborts_if global<ModuleUpgradeStrategy>(account).strategy != 1;
             aborts_if !exists<TwoPhaseUpgrade>(account);
+            aborts_if !exists<Timestamp::CurrentTimeMilliseconds>(CoreAddresses::GENESIS_ADDRESS());
+            aborts_if Timestamp::now_milliseconds() + global<TwoPhaseUpgrade>(account).config.min_time_limit > max_u64();
         }
 
         public fun cancel_upgrade_plan(account: &signer) acquires TwoPhaseUpgrade,UpgradePlanCapability,ModuleUpgradeStrategy{

@@ -80,9 +80,10 @@ script {
     use 0x1::Config;
     use 0x1::Version;
     use 0x1::PackageTxnManager;
+    use 0x1::Option;
     fun main(account: &signer) {
         Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase());
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::none<u64>());
     }
 }
 // check: EXECUTED

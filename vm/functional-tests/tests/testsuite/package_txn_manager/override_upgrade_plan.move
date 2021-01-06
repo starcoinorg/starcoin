@@ -20,9 +20,10 @@ script {
 use 0x1::Config;
 use 0x1::Version;
 use 0x1::PackageTxnManager;
+use 0x1::Option;
 fun main(account: &signer) {
     Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase());
+    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::none<u64>());
 }
 }
 
@@ -34,7 +35,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: &signer) {
     let hash = x"1111111111111111";
-    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1, PackageTxnManager::get_min_time_limit());
+    PackageTxnManager::submit_upgrade_plan(account, copy hash, 1);
 }
 }
 
@@ -51,7 +52,7 @@ script {
 use 0x1::PackageTxnManager;
 fun main(account: &signer) {
     let hash = x"2222222222222222";
-    PackageTxnManager::submit_upgrade_plan(account, copy hash, 2, PackageTxnManager::get_min_time_limit());
+    PackageTxnManager::submit_upgrade_plan(account, copy hash, 2);
 }
 }
 
