@@ -95,6 +95,19 @@ pub fn test_wallet_unlock() -> Result<()> {
         ChainId::new(1),
     );
     let _signed = manager.sign_txn(*wallet.address(), fake_txn)?;
+
+    // test on wallet change password
+    {
+        manager.change_password(*wallet.address(), "hell0")?;
+        let unlock_result =
+            manager.unlock_account(*wallet.address(), "hello", Duration::from_secs(10));
+        assert!(unlock_result.is_err());
+        let unlock_result =
+            manager.unlock_account(*wallet.address(), "hell0", Duration::from_secs(10));
+        assert!(unlock_result.is_ok());
+        // export private key should be ok
+        let _ = manager.export_account(*wallet.address(), "hell0")?;
+    }
     Ok(())
 }
 
@@ -114,7 +127,8 @@ pub fn test_libra_wallet() -> Result<()> {
     let public_key = Ed25519PublicKey::from(&private_key);
 
     let message = [1, 2, 3, 4];
-    let result = private_key.sign_arbitrary_message(&message);
+    // need add fuzzing features on libra-crypto for this.
+    let result = <Ed25519PrivateKey as SigningKey>::sign_arbitrary_message(&private_key, &message);
 
     let address = starcoin_types::account_address::from_public_key(&public_key);
     let hash_value = HashValue::sha3_256_of(&public_key.to_bytes());

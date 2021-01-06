@@ -34,6 +34,10 @@ pub enum AccountRequest {
         address: AccountAddress,
         password: String,
     },
+    ChangePassword {
+        address: AccountAddress,
+        new_password: String,
+    },
 }
 
 impl ServiceRequest for AccountRequest {

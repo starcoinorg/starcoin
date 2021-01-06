@@ -207,6 +207,20 @@ where
         Box::new(fut.boxed().compat())
     }
 
+    fn change_account_password(
+        &self,
+        address: AccountAddress,
+        new_password: String,
+    ) -> FutureResult<()> {
+        let account_service = self.account.clone();
+        let fut = async move {
+            Ok(account_service
+                .change_account_password(address, new_password)
+                .await?)
+        };
+        Box::new(fut.map_err(map_err).boxed().compat())
+    }
+
     fn accepted_tokens(&self, address: AccountAddress) -> FutureResult<Vec<TokenCode>> {
         let service = self.account.clone();
         let fut = async move {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod accept_token_cmd;
+mod change_password_cmd;
 mod create_cmd;
 mod default_cmd;
 mod execute_builtin_script_cmd;
@@ -15,6 +16,7 @@ mod transfer_cmd;
 mod unlock_cmd;
 
 pub use accept_token_cmd::*;
+pub use change_password_cmd::*;
 pub use create_cmd::*;
 pub use default_cmd::*;
 pub use execute_builtin_script_cmd::*;

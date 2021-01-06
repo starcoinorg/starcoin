@@ -409,6 +409,21 @@ impl RpcClient {
         .map_err(map_err)
     }
 
+    pub fn account_change_password(
+        &self,
+        address: AccountAddress,
+        new_password: String,
+    ) -> anyhow::Result<()> {
+        self.call_rpc_blocking(|inner| async move {
+            inner
+                .account_client
+                .change_account_password(address, new_password)
+                .compat()
+                .await
+        })
+        .map_err(map_err)
+    }
+
     pub fn account_lock(&self, address: AccountAddress) -> anyhow::Result<()> {
         self.call_rpc_blocking(
             |inner| async move { inner.account_client.lock(address).compat().await },

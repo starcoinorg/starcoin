@@ -38,6 +38,7 @@ pub fn add_command(
                 .subcommand(account::ImportCommand)
                 .subcommand(account::ExecuteBuildInCommand)
                 .subcommand(account::LockCommand)
+                .subcommand(account::ChangePasswordCmd)
                 .subcommand(account::DefaultCommand),
         )
         .command(

@@ -208,6 +208,36 @@ impl AccountManager {
             .map_err(AccountError::StoreError)
     }
 
+    pub fn change_password(
+        &self,
+        address: AccountAddress,
+        new_pass: impl AsRef<str>,
+    ) -> AccountResult<()> {
+        let pass = self.key_cache.write().get_pass(&address);
+
+        match pass {
+            None => Err(AccountError::AccountLocked(address)),
+            Some(old_pass) => {
+                // use old pass to export the private key
+                let private_key = self.export_account(address, old_pass.as_str())?;
+                // and use new pass to update the encrypted private key.
+                self.store
+                    .update_key(
+                        address,
+                        &AccountPrivateKey::try_from(private_key.as_slice())
+                            .expect("AccountPrivateKey from bytes should be ok"),
+                        new_pass,
+                    )
+                    .map_err(AccountError::StoreError)?;
+
+                // After changing password success, we should remove the old pass cache.
+                // And user need to login in again, like we always did in websites.
+                self.key_cache.write().remove_pass(&address);
+                Ok(())
+            }
+        }
+    }
+
     /// remove wallet need user password.
     #[allow(unused)]
     pub fn delete_account(&self, address: AccountAddress, password: &str) -> AccountResult<()> {
