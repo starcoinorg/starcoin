@@ -44,6 +44,13 @@ pub trait AccountAsyncService:
     async fn export_account(&self, address: AccountAddress, password: String) -> Result<Vec<u8>>;
 
     async fn accepted_tokens(&self, address: AccountAddress) -> Result<Vec<TokenCode>>;
+
+    // change account password, user need to unlock account first.
+    async fn change_account_password(
+        &self,
+        address: AccountAddress,
+        new_password: String,
+    ) -> Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -180,6 +187,24 @@ where
             Ok(data)
         } else {
             panic!("Unexpect response type.")
+        }
+    }
+
+    async fn change_account_password(
+        &self,
+        address: AccountAddress,
+        new_password: String,
+    ) -> Result<()> {
+        let response = self
+            .send(AccountRequest::ChangePassword {
+                address,
+                new_password,
+            })
+            .await??;
+        if let AccountResponse::None = response {
+            Ok(())
+        } else {
+            panic!("Unexpected response type.")
         }
     }
 }

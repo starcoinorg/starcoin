@@ -146,6 +146,13 @@ impl ServiceHandler<AccountService, AccountRequest> for AccountService {
                 }
                 AccountResponse::AcceptedTokens(tokens)
             }
+            AccountRequest::ChangePassword {
+                address,
+                new_password,
+            } => {
+                self.manager.change_password(address, new_password)?;
+                AccountResponse::None
+            }
         };
         Ok(response)
     }
