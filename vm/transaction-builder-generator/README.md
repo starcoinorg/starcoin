@@ -1,12 +1,12 @@
 ---
 id: transaction-builder-generator
 title: Transaction Builder Generator
-custom_edit_url: https://github.com/libra/libra/edit/master/language/transaction-builder-generator/README.md
+custom_edit_url: https://github.com/diem/diem/edit/master/language/transaction-builder-generator/README.md
 ---
 
 # Transaction Builder Generator
 
-A *transaction builder* is a helper function that converts its arguments into the payload of a Libra transaction calling a particular Move script.
+A *transaction builder* is a helper function that converts its arguments into the payload of a Diem transaction calling a particular Move script.
 
 In Rust, the signature of such a function typically looks like this:
 ```rust
@@ -21,10 +21,10 @@ pub fn encode_peer_to_peer_with_metadata_script(
 
 This crate provide a binary tool `generate-transaction-builders` to generate and install transaction builders in several programming languages.
 
-The tool will also generate and install type definitions for Libra types such as `TypeTag`, `AccountAddress`, and `Script`.
+The tool will also generate and install type definitions for Diem types such as `TypeTag`, `AccountAddress`, and `Script`.
 
-In practice, hashing and signing Libra transactions additionally requires a runtime library for Libra Canonical Serialization ("LCS").
-Such a library will be installed together with the Libra types.
+In practice, hashing and signing Diem transactions additionally requires a runtime library for Diem Canonical Serialization ("LCS").
+Such a library will be installed together with the Diem types.
 
 
 ## Supported Languages
@@ -37,12 +37,12 @@ The following languages are currently supported:
 
 * Java 8
 
-* Rust (NOTE: Code generation of dependency-free Rust is experimental. Consider using the libraries of the Libra repository instead.)
+* Rust (NOTE: Code generation of dependency-free Rust is experimental. Consider using the libraries of the Diem repository instead.)
 
 
 ## Quick Start
 
-From the root of the Libra repository, run `cargo build -p transaction-builder-generator`.
+From the root of the Diem repository, run `cargo build -p transaction-builder-generator`.
 
 You may browse command line options with `target/debug/generate-transaction-builders --help`.
 
@@ -53,7 +53,7 @@ To install Python3 modules `serde`, `lcs`, `libra_types`, and `libra_stdlib` int
 target/debug/generate-transaction-builders \
     --language python3 \
     --module-name starcoin_stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/python" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -70,7 +70,7 @@ To install C++ files `serde.hpp`, `lcs.hpp`, `libra_types.hpp`, `libra_stdlib.hp
 target/debug/generate-transaction-builders \
     --language cpp \
     --module-name libra_stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/cpp" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -83,12 +83,12 @@ clang++ --std=c++17 -I "$DEST" "$DEST/libra_stdlib.cpp" "$DEST/stdlib_demo.cpp" 
 
 ### Java
 
-To install Java source packages `com.facebook.serde`, `com.facebook.lcs`, `org.libra.types`, and a class `org.libra.stdlib.Stdlib` into a target directory `$DEST`, run:
+To install Java source packages `com.facebook.serde`, `com.facebook.lcs`, `org.diem.types`, and a class `org.diem.stdlib.Stdlib` into a target directory `$DEST`, run:
 ```bash
 target/debug/generate-transaction-builders \
     --language java \
     --module-name org.starcoin.stdlib.Stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/java" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -101,12 +101,12 @@ java -cp "$DEST" StdlibDemo
 
 ### Rust (experimental)
 
-To install dependency-free Rust crates `libra-types` and `libra-stdlib` into a target directory `$DEST`, run:
+To install dependency-free Rust crates `diem-types` and `diem-stdlib` into a target directory `$DEST`, run:
 ```bash
 target/debug/generate-transaction-builders \
     --language rust \
-    --module-name libra-stdlib \
-    --with-libra-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
+    --module-name diem-stdlib \
+    --with-diem-types "testsuite/generate-format/tests/staged/starcoin.yaml" \
     --target-source-dir "target/rust" \
     "vm/stdlib/compiled/latest/transaction_scripts/abi"
 ```
@@ -117,7 +117,7 @@ Next, you may copy and execute the [Rust demo file](examples/rust/stdlib_demo.rs
 
 Supporting transaction builders in an additional programming language boils down to providing the following items:
 
-1. Code generation for Libra types (Rust library and tool),
+1. Code generation for Diem types (Rust library and tool),
 
 2. LCS runtime (library in target language),
 
@@ -126,9 +126,9 @@ Supporting transaction builders in an additional programming language boils down
 
 Items (1) and (2) are provided by the Rust library `serde-generate` which is developed in a separate [github repository](https://github.com/facebookincubator/serde-reflection).
 
-Item (3) --- this tool --- is currently developed in the Libra repository.
+Item (3) --- this tool --- is currently developed in the Diem repository.
 
-Items (2) and (3) are mostly independent. Both crucially depend on (1) to be sufficiently stable, therefore our suggestion for adding a new language is first to open a new github issue in `serde-generate` and contact the Libra maintainers.
+Items (2) and (3) are mostly independent. Both crucially depend on (1) to be sufficiently stable, therefore our suggestion for adding a new language is first to open a new github issue in `serde-generate` and contact the Diem maintainers.
 
 
 The new issue created on `serde-generate` should include:

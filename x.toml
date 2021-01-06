@@ -48,7 +48,7 @@ proc-macros-on-target = false
 # Don't set target or host platforms, or omitted packages, for the full set.
 
 [workspace.enforced-attributes]
-authors = ["Libra Association <opensource@libra.org>"]
+authors = ["Diem Association <opensource@diem.org>"]
 license = "Apache-2.0"
 
 [workspace.banned-deps.direct]
@@ -62,11 +62,11 @@ proptest = "proptest is only for testing and fuzzing"
 features = ["fuzzing"]
 
 # This is a list of test-only members. These are workspace members that do not form part of the main
-# Libra production codebase, and are only used to verify correctness and/or performance.
+# Diem production codebase, and are only used to verify correctness and/or performance.
 #
 # *** IMPORTANT ***
 #
-# Published developer tools (e.g. Move compiler) ARE part of the production Libra codebase.
+# Published developer tools (e.g. Move compiler) ARE part of the production Diem codebase.
 # They should be listed in the root Cargo.toml's default-members, not here!
 #
 # Before adding a new crate to this list, ensure that it is *actually* test-only. If not, add it
@@ -85,16 +85,16 @@ members = [
 # checking dependency summaries.
 
 [workspace.subsets.lsr]
-# The Libra safety rules TCB.
+# The Diem safety rules TCB.
 members = [
 ]
 
 [workspace.subsets.lec]
-# The Libra execution correctness TCB.
+# The Diem execution correctness TCB.
 members = [
 ]
 
 [workspace.subsets.release]
-# The Libra release binaries
+# The Diem release binaries
 members = [
 ]

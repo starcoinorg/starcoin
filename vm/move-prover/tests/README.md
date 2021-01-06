@@ -50,8 +50,8 @@ MVP_TEST_FLAGS="-T=20" cargo test -p move-prover
 
 ## Code coverage
 
-Analyzing the test coverage of the libra repo is regularly done in CI, and the result updates the online report at
-* https://codecov.io/gh/libra/libra
+Analyzing the test coverage of the diem repo is regularly done in CI, and the result updates the online report at
+* https://codecov.io/gh/diem/diem
 
 Note that this report is based on the the coverage test when the environment variable `BOOGIE_EXE` is not set.
 So, the coverage result may not be as accurate as expected because all verifications with Boogie/Z3 are skipped

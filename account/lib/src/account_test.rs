@@ -112,7 +112,7 @@ pub fn test_wallet_unlock() -> Result<()> {
 }
 
 #[test]
-pub fn test_libra_wallet() -> Result<()> {
+pub fn test_diem_wallet() -> Result<()> {
     use core::convert::{From, TryFrom};
     use scs::SCSCodec;
     use starcoin_crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature};

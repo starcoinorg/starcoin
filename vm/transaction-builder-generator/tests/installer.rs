@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use std::process::Command;
@@ -26,7 +26,7 @@ fn test_that_installed_rust_code_compiles() {
         .arg("rust")
         .arg("--module-name")
         .arg("starcoin-stdlib:0.1.1")
-        .arg("--with-libra-types")
+        .arg("--with-diem-types")
         .arg("testsuite/generate-format/tests/staged/starcoin.yaml")
         .arg("--target-source-dir")
         .arg(dir.path())

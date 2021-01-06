@@ -9,7 +9,7 @@ use crate::hash::{CryptoHash, CryptoHasher};
 use crate::{CryptoMaterialError, Length, PrivateKey, Signature, ValidCryptoMaterial};
 use crate::{SigningKey, Uniform};
 use anyhow::{anyhow, bail, ensure, Result};
-use libra_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
+use diem_crypto::multi_ed25519::{MultiEd25519PublicKey, MultiEd25519Signature};
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::fmt;
@@ -394,7 +394,7 @@ fn bitmap_last_set_bit(input: [u8; BITMAP_NUM_OF_BYTES]) -> Option<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{TestLibraCrypto, TEST_SEED};
+    use crate::test_utils::{TestDiemCrypto, TEST_SEED};
     use crate::ValidCryptoMaterialStringExt;
     use once_cell::sync::Lazy;
     use rand::prelude::*;
@@ -404,9 +404,8 @@ mod tests {
         MultiEd25519KeyShard::generate(&mut rng, n, threshold).unwrap()
     }
 
-    static MESSAGE: Lazy<TestLibraCrypto> =
-        Lazy::new(|| TestLibraCrypto("Test Message".to_string()));
-    fn message() -> &'static TestLibraCrypto {
+    static MESSAGE: Lazy<TestDiemCrypto> = Lazy::new(|| TestDiemCrypto("Test Message".to_string()));
+    fn message() -> &'static TestDiemCrypto {
         &MESSAGE
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 //! Wrapper around the boogie program. Allows to call boogie and analyze the output.
@@ -19,9 +19,9 @@ use num::BigInt;
 use pretty::RcDoc;
 use regex::{Captures, Regex};
 
-use spec_lang::{
+use move_model::{
     code_writer::CodeWriter,
-    env::{FunId, GlobalEnv, Loc, ModuleId, StructId},
+    model::{FunId, GlobalEnv, Loc, ModuleId, StructId},
     ty::{PrimitiveType, Type},
 };
 
@@ -32,8 +32,8 @@ use crate::{
 // DEBUG
 // use backtrace::Backtrace;
 use bytecode::{function_target::FunctionTarget, function_target_pipeline::FunctionTargetsHolder};
+use move_model::model::{ConditionTag, NodeId};
 use once_cell::sync::Lazy;
-use spec_lang::env::{ConditionTag, NodeId};
 use std::num::ParseIntError;
 
 /// A type alias for the way how we use crate `pretty`'s document type. `pretty` is a
@@ -559,8 +559,8 @@ impl<'env> BoogieWrapper<'env> {
     /// output.bpl(2964,1): Related location: This is the postcondition that might not hold.
     /// Execution trace:
     ///    output.bpl(3068,5): anon0
-    ///    output.bpl(2960,23): inline$LibraAccount_pay_from_sender_with_metadata$0$Entry
-    ///    output.bpl(2989,5): inline$LibraAccount_pay_from_sender_with_metadata$0$anon0
+    ///    output.bpl(2960,23): inline$DiemAccount_pay_from_sender_with_metadata$0$Entry
+    ///    output.bpl(2989,5): inline$DiemAccount_pay_from_sender_with_metadata$0$anon0
     ///    ...
     /// ```
     fn extract_verification_errors(&self, out: &str) -> Vec<BoogieError> {

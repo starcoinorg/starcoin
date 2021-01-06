@@ -6,6 +6,6 @@
 //! args: {{bob}}, x"", 100u128, x""
 stdlib_script::peer_to_peer_with_metadata
 // check: gas_used
-// check: 173
+// check: 166
 // check: "Keep(EXECUTED)"
 

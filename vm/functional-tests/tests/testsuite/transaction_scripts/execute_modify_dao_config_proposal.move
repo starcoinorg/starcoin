@@ -41,7 +41,7 @@ stdlib_script::cast_vote
 //! args: {{alice}}, 0
 stdlib_script::queue_proposal_action
 // check: gas_used
-// check: 102
+// check: 95
 // check: "Keep(EXECUTED)"
 
 //! new-transaction
@@ -50,7 +50,7 @@ stdlib_script::queue_proposal_action
 //! args: {{alice}}, 0
 stdlib_script::unstake_vote
 // check: gas_used
-// check: 260
+// check: 246
 // check: "Keep(EXECUTED)"
 
 //! block-prologue

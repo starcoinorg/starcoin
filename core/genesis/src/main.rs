@@ -42,6 +42,8 @@ fn main() {
                         generated_genesis.block().id(),
                         new_genesis.block().id()
                     );
+                    debug!("old genesis: {}", generated_genesis);
+                    debug!("new genesis: {}", new_genesis);
                 }
                 regenerate
             }

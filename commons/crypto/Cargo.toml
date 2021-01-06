@@ -11,8 +11,8 @@ serde = { version = "1.0" }
 serde_bytes = "0.11.5"
 hex = "0.4.2"
 anyhow = "1.0"
-libra-crypto = { package="libra-crypto",  git = "https://github.com/starcoinorg/libra", rev="bf037026b5842354a2892e0b58f527e80658ace5", features = ["fuzzing"] }
-libra-crypto-derive = { package="libra-crypto-derive",  git = "https://github.com/starcoinorg/libra", rev="bf037026b5842354a2892e0b58f527e80658ace5" }
+diem-crypto = { package="diem-crypto",  git = "https://github.com/starcoinorg/diem", rev="a69729b2d54af44d2f779bcf167e3f6d681a9821", features = ["fuzzing"] }
+diem-crypto-derive = { package="diem-crypto-derive",  git = "https://github.com/starcoinorg/diem", rev="a69729b2d54af44d2f779bcf167e3f6d681a9821" }
 scs = { package="starcoin-canonical-serialization", path = "../scs"}
 crypto-macro = { package="starcoin-crypto-macro", path = "./crypto-macro"}
 rand = "0.7.3"
@@ -22,4 +22,4 @@ serde-name = "0.1"
 
 [features]
 default = []
-fuzzing = ["libra-crypto/fuzzing"]
+fuzzing = ["diem-crypto/fuzzing"]

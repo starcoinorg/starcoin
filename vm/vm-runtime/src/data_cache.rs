@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 //! Scratchpad for on chain values during the execution.
 
@@ -17,7 +17,7 @@ use starcoin_vm_types::{
 };
 use std::collections::btree_map::BTreeMap;
 
-/// A local cache for a given a `StateView`. The cache is private to the Libra layer
+/// A local cache for a given a `StateView`. The cache is private to the Diem layer
 /// but can be used as a one shot cache for systems that need a simple `RemoteCache`
 /// implementation (e.g. tests or benchmarks).
 ///

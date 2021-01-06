@@ -1,4 +1,7 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+// Copyright (c) The Starcoin Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -6,55 +9,64 @@
 use chrono::Local;
 use env_logger::{self, fmt::Color};
 use log::Level;
-use std::io::Write;
 use std::path::Path;
+use std::{boxed::Box, io::Write};
 use structopt::StructOpt;
 
 pub mod bench {
-    pub use libra_x::bench::*;
+    pub use diem_x::bench::*;
 }
-
+pub mod build {
+    pub use diem_x::build::*;
+}
 pub mod check {
-    pub use libra_x::check::*;
+    pub use diem_x::check::*;
+}
+pub mod changed_since {
+    pub use diem_x::changed_since::*;
 }
 pub mod clippy {
-    pub use libra_x::clippy::*;
+    pub use diem_x::clippy::*;
 }
 pub mod config {
-    pub use libra_x::config::*;
+    pub use diem_x::config::*;
 }
 pub mod context {
-    pub use libra_x::context::*;
+    pub use diem_x::context::*;
 }
 pub mod diff_summary {
-    pub use libra_x::diff_summary::*;
+    pub use diem_x::diff_summary::*;
 }
 pub mod fix {
-    pub use libra_x::fix::*;
+    pub use diem_x::fix::*;
 }
 pub mod fmt {
-    pub use libra_x::fmt::*;
+    pub use diem_x::fmt::*;
 }
 pub mod generate_summaries {
-    pub use libra_x::generate_summaries::*;
+    pub use diem_x::generate_summaries::*;
 }
 pub mod installer {
-    pub use libra_x::installer::*;
+    pub use diem_x::installer::*;
 }
 
 pub mod lint {
-    pub use libra_x::lint::*;
+    pub use diem_x::lint::*;
+}
+pub mod playground {
+    pub use diem_x::playground::*;
 }
 pub mod test;
 
-pub mod cargo;
-
+pub mod cargo {
+    pub use diem_x::cargo::*;
+}
 pub mod tools {
-    pub use libra_x::tools::*;
+    pub use diem_x::tools::*;
 }
 
 pub mod utils {
-    pub use libra_x::utils::*;
+    pub use diem_x::utils::*;
 }
 
 pub fn project_root() -> &'static Path {
@@ -77,9 +89,20 @@ enum Command {
     #[structopt(name = "bench")]
     /// Run `cargo bench`
     Bench(bench::Args),
+    #[structopt(name = "build")]
+    /// Run `cargo build`
+    // the argument must be Boxed due to it's size and clippy (it's quite large by comparison to others.)
+    Build(Box<build::Args>),
     #[structopt(name = "check")]
     /// Run `cargo check`
     Check(check::Args),
+    /// List packages changed since merge base with the given commit
+    ///
+    /// Note that this compares against the merge base (common ancestor) of the specified commit.
+    /// For example, if origin/master is specified, the current working directory will be compared
+    /// against the point at which it branched off of origin/master.
+    #[structopt(name = "changed-since")]
+    ChangedSince(changed_since::Args),
     #[structopt(name = "clippy")]
     /// Run `cargo clippy`
     Clippy(clippy::Args),
@@ -98,6 +121,8 @@ enum Command {
     #[structopt(name = "lint")]
     /// Run lints
     Lint(lint::Args),
+    /// Run playground code
+    Playground(playground::Args),
     #[structopt(name = "generate-summaries")]
     /// Generate build summaries for important subsets
     GenerateSummaries(generate_summaries::Args),
@@ -133,12 +158,15 @@ fn main() -> Result<()> {
     match args.cmd {
         Command::Tools(args) => tools::run(args, xctx),
         Command::Test(args) => test::run(args, xctx),
+        Command::Build(args) => build::run(args, xctx),
+        Command::ChangedSince(args) => changed_since::run(args, xctx),
         Command::Check(args) => check::run(args, xctx),
         Command::Clippy(args) => clippy::run(args, xctx),
         Command::Fix(args) => fix::run(args, xctx),
         Command::Fmt(args) => fmt::run(args, xctx),
         Command::Bench(args) => bench::run(args, xctx),
         Command::Lint(args) => lint::run(args, xctx),
+        Command::Playground(args) => playground::run(args, xctx),
         Command::GenerateSummaries(args) => generate_summaries::run(args, xctx),
         Command::DiffSummary(args) => diff_summary::run(args, xctx),
     }

@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 #![forbid(unsafe_code)]
@@ -19,6 +19,7 @@ use bytecode::{
     function_target_pipeline::{FunctionTargetPipeline, FunctionTargetsHolder},
     livevar_analysis::LiveVarAnalysisProcessor,
     memory_instrumentation::MemoryInstrumentationProcessor,
+    packed_types_analysis::PackedTypesProcessor,
     reaching_def_analysis::ReachingDefProcessor,
     stackless_bytecode::{Bytecode, Operation},
     test_instrumenter::TestInstrumenter,
@@ -32,14 +33,19 @@ use itertools::Itertools;
 #[allow(unused_imports)]
 use log::{debug, info, warn};
 use move_lang::find_move_filenames;
+use move_model::{
+    code_writer::CodeWriter,
+    emit, emitln,
+    model::{GlobalEnv, ModuleId},
+    run_model_builder,
+};
 use once_cell::sync::Lazy;
 use regex::Regex;
-use spec_lang::{code_writer::CodeWriter, emit, emitln, env::GlobalEnv, run_spec_lang_compiler};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     fs::File,
-    io::{Read, Write},
+    io::Read,
     path::{Path, PathBuf},
     time::Instant,
 };
@@ -63,11 +69,14 @@ pub fn run_move_prover<W: WriteColor>(
     options: Options,
 ) -> anyhow::Result<()> {
     let now = Instant::now();
-    let sources = find_move_filenames(&options.move_sources, true)?;
-    let deps = calculate_deps(&sources, &find_move_filenames(&options.move_deps, true)?)?;
+    let target_sources = find_move_filenames(&options.move_sources, true)?;
+    let other_sources = remove_sources(
+        &target_sources,
+        find_move_filenames(&options.move_deps, true)?,
+    );
     let address = Some(options.account_address.as_ref());
     debug!("parsing and checking sources");
-    let mut env: GlobalEnv = run_spec_lang_compiler(sources, deps, address)?;
+    let mut env: GlobalEnv = run_model_builder(target_sources, other_sources, address)?;
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with checking errors"));
@@ -95,14 +104,13 @@ pub fn run_move_prover<W: WriteColor>(
         return Err(anyhow!("exiting with transformation errors"));
     }
 
-    if options.run_packed_types_gen {
-        return run_packed_types_gen(&options, &env, &targets, now);
-    }
     check_modifies(&env, &targets);
     if env.has_errors() {
         env.report_errors(error_writer);
         return Err(anyhow!("exiting with modifies checking errors"));
     }
+    // Analyze and find out the set of modules/functions to be translated and/or verified.
+    verification_analysis(&mut env, &targets);
 
     let writer = CodeWriter::new(env.internal_loc());
     add_prelude(&options, &writer)?;
@@ -222,38 +230,6 @@ fn run_errmapgen(env: &GlobalEnv, options: &Options, now: Instant) -> anyhow::Re
     Ok(())
 }
 
-fn run_packed_types_gen(
-    options: &Options,
-    env: &GlobalEnv,
-    targets: &FunctionTargetsHolder,
-    now: Instant,
-) -> anyhow::Result<()> {
-    let checking_elapsed = now.elapsed();
-    info!("generating packed_types");
-    let packed_types = usage_analysis::get_packed_types(&env, &targets);
-    info!("found {:?} packed types", packed_types.len());
-    let mut access_path_type_map = BTreeMap::new();
-    for ty in packed_types {
-        access_path_type_map.insert(ty.access_vector(), ty);
-    }
-    let flattened_map = access_path_type_map
-        .into_iter()
-        .map(|(k, v)| (hex::encode(&k), v))
-        .collect::<Vec<_>>();
-    let types_json = serde_json::to_string_pretty(&flattened_map)?;
-    let mut types_file = File::create(options.output_path.clone())?;
-    types_file.write_all(&types_json.as_bytes())?;
-    types_file.write_all(b"\n")?;
-
-    let generating_elapsed = now.elapsed();
-    info!(
-        "{:.3}s checking, {:.3}s generating",
-        checking_elapsed.as_secs_f64(),
-        (generating_elapsed - checking_elapsed).as_secs_f64()
-    );
-    Ok(())
-}
-
 /// Adds the prelude to the generated output.
 fn add_prelude(options: &Options, writer: &CodeWriter) -> anyhow::Result<()> {
     emit!(writer, "\n// ** prelude from {}\n\n", &options.prelude_path);
@@ -309,6 +285,38 @@ fn check_modifies(env: &GlobalEnv, targets: &FunctionTargetsHolder) {
     }
 }
 
+/// TODO(emmazzz): Right now this functions simply marks target modules and
+/// their dependency modules as should_translate, which is the same behavior
+/// as before.
+/// In a following PR, modify this function so it does the following three
+/// steps:
+/// (1) Go through all invariants in the target modules and gather all resources
+///     mentioned in the invariants.
+/// (2) Go through all functions in all modules. If a function modifies one of
+///     the resources in (1)(directly or indirectly?), then
+///     (a) Mark the function as should_verify and
+///     (b) Mark the module owning the function as should_translate.
+/// (3) Propagate should_translate to dependency modules.
+fn verification_analysis(env: &mut GlobalEnv, _targets: &FunctionTargetsHolder) {
+    for module_env in env.get_modules() {
+        if !module_env.is_dependency() {
+            env.add_module_to_should_translate(module_env.get_id());
+            propagate_should_translate(env, module_env.get_id());
+        }
+    }
+}
+
+/// Propage should_translate property to dependencies of the module.
+fn propagate_should_translate(env: &GlobalEnv, module_id: ModuleId) {
+    let module_env = env.get_module(module_id);
+    for dep in module_env.get_used_modules(true) {
+        if !env.get_module(dep).should_translate() {
+            env.add_module_to_should_translate(dep);
+            propagate_should_translate(env, dep);
+        }
+    }
+}
+
 /// Create bytecode and process it.
 fn create_and_process_bytecode(options: &Options, env: &GlobalEnv) -> FunctionTargetsHolder {
     let mut targets = FunctionTargetsHolder::default();
@@ -353,29 +361,35 @@ fn create_bytecode_processing_pipeline(options: &Options) -> FunctionTargetPipel
     res.add_processor(CleanAndOptimizeProcessor::new());
     res.add_processor(TestInstrumenter::new(options.prover.verify_scope));
     res.add_processor(UsageProcessor::new());
+    res.add_processor(PackedTypesProcessor::new());
 
     res
 }
 
-/// Calculates transitive dependencies of the given Move sources.
-fn calculate_deps(sources: &[String], input_deps: &[String]) -> anyhow::Result<Vec<String>> {
-    let file_map = calculate_file_map(input_deps)?;
-    let mut deps = vec![];
-    let mut visited = BTreeSet::new();
-    for src in sources.iter() {
-        calculate_deps_recursively(Path::new(src), &file_map, &mut visited, &mut deps)?;
-    }
-    // Remove input sources from deps. They can end here because our dep analysis is an
-    // over-approximation and for example cannot distinguish between references inside
-    // and outside comments.
+/// Remove the target Move files from the list of files.
+fn remove_sources(sources: &[String], all_files: Vec<String>) -> Vec<String> {
     let canonical_sources = sources
         .iter()
         .map(|s| canonicalize(s))
         .collect::<BTreeSet<_>>();
-    let mut deps = deps
+    all_files
         .into_iter()
         .filter(|d| !canonical_sources.contains(&canonicalize(d)))
-        .collect_vec();
+        .collect_vec()
+}
+
+/// Calculates transitive dependencies of the given Move sources.
+fn _calculate_deps(sources: &[String], input_deps: &[String]) -> anyhow::Result<Vec<String>> {
+    let file_map = _calculate_file_map(input_deps)?;
+    let mut deps = vec![];
+    let mut visited = BTreeSet::new();
+    for src in sources.iter() {
+        _calculate_deps_recursively(Path::new(src), &file_map, &mut visited, &mut deps)?;
+    }
+    // Remove input sources from deps. They can end here because our dep analysis is an
+    // over-approximation and for example cannot distinguish between references inside
+    // and outside comments.
+    let mut deps = remove_sources(sources, deps);
     // Sort deps by simple file name. Sorting is important because different orders
     // caused by platform dependent ways how `calculate_deps_recursively` may return values, can
     // cause different behavior of the SMT solver (butterfly effect). By using the simple file
@@ -398,7 +412,7 @@ fn canonicalize(s: &str) -> String {
 }
 
 /// Recursively calculate dependencies.
-fn calculate_deps_recursively(
+fn _calculate_deps_recursively(
     path: &Path,
     file_map: &BTreeMap<String, PathBuf>,
     visited: &mut BTreeSet<String>,
@@ -410,12 +424,12 @@ fn calculate_deps_recursively(
         return Ok(());
     }
     debug!("including `{}`", path.display());
-    for dep in extract_matches(path, &*REX)? {
+    for dep in _extract_matches(path, &*REX)? {
         if let Some(dep_path) = file_map.get(&dep) {
             let dep_str = dep_path.to_string_lossy().to_string();
             if !deps.contains(&dep_str) {
                 deps.push(dep_str);
-                calculate_deps_recursively(dep_path.as_path(), file_map, visited, deps)?;
+                _calculate_deps_recursively(dep_path.as_path(), file_map, visited, deps)?;
             }
         }
     }
@@ -423,12 +437,12 @@ fn calculate_deps_recursively(
 }
 
 /// Calculate a map of module names to files which define those modules.
-fn calculate_file_map(deps: &[String]) -> anyhow::Result<BTreeMap<String, PathBuf>> {
+fn _calculate_file_map(deps: &[String]) -> anyhow::Result<BTreeMap<String, PathBuf>> {
     static REX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?m)module\s+(\w+)\s*\{").unwrap());
     let mut module_to_file = BTreeMap::new();
     for dep in deps {
         let dep_path = PathBuf::from(dep);
-        for module in extract_matches(dep_path.as_path(), &*REX)? {
+        for module in _extract_matches(dep_path.as_path(), &*REX)? {
             module_to_file.insert(module, dep_path.clone());
         }
     }
@@ -437,7 +451,7 @@ fn calculate_file_map(deps: &[String]) -> anyhow::Result<BTreeMap<String, PathBu
 
 /// Extracts matches out of some text file. `rex` must be a regular expression with one anonymous
 /// group.
-fn extract_matches(path: &Path, rex: &Regex) -> anyhow::Result<Vec<String>> {
+fn _extract_matches(path: &Path, rex: &Regex) -> anyhow::Result<Vec<String>> {
     let mut content = String::new();
     let mut file = File::open(path)?;
     file.read_to_string(&mut content)?;

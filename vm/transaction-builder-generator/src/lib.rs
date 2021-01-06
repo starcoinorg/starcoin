@@ -1,4 +1,4 @@
-// Copyright (c) The Libra Core Contributors
+// Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
 use starcoin_vm_types::transaction::ScriptABI;
@@ -30,7 +30,7 @@ pub fn read_abis<P: AsRef<std::path::Path>>(dir_path: P) -> anyhow::Result<Vec<S
         let mut buffer = Vec::new();
         let mut f = std::fs::File::open(path)?;
         f.read_to_end(&mut buffer)?;
-        abis.push(lcs::from_bytes(&buffer)?);
+        abis.push(bcs::from_bytes(&buffer)?);
     }
     // Sorting scripts by alphabetical order.
     abis.sort_by_key(|a| a.name().to_string());

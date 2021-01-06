@@ -33,7 +33,7 @@ async fn serve_metrics(req: Request<Body>) -> Result<Response<Body>, hyper::Erro
         }
         // expose non-numeric metrics to host:port/json_metrics
         (&Method::GET, "/json_metrics") => {
-            // Json encoded libra_metrics;
+            // Json encoded diem_metrics;
             let encoder = JsonEncoder;
             let buffer = encode_metrics(encoder);
             *resp.body_mut() = Body::from(buffer);
