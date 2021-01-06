@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{Error, Result};
-use starcoin_state_store_api::{StateNode, StateNodeStore};
-
 use starcoin_crypto::HashValue;
+use starcoin_state_store_api::{StateNode, StateNodeStore};
 use std::collections::{BTreeMap, HashMap};
 use std::sync::RwLock;
+
 #[derive(Default)]
 pub struct MockStateNodeStore {
     nodes: RwLock<HashMap<HashValue, StateNode>>,
@@ -39,9 +39,6 @@ impl StateNodeStore for MockStateNodeStore {
     fn write_nodes(&self, nodes: BTreeMap<HashValue, StateNode>) -> Result<(), Error> {
         let mut store_nodes = self.nodes.write().unwrap();
         store_nodes.extend(nodes.into_iter());
-        // for (node_key, node) in nodes.iter() {
-        //     self.put(*node_key, node.clone()).unwrap();
-        // }
         Ok(())
     }
 }

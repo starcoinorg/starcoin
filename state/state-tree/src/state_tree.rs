@@ -6,7 +6,6 @@ use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::{
     JellyfishMerkleTree, RawKey, StaleNodeIndex, TreeReader, TreeUpdateBatch,
 };
-use scs::SCSCodec;
 use starcoin_crypto::hash::*;
 use starcoin_state_store_api::*;
 use starcoin_types::state_set::StateSet;

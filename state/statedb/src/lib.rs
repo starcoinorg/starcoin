@@ -6,9 +6,9 @@ use anyhow::{bail, ensure, Result};
 use forkable_jellyfish_merkle::proof::SparseMerkleProof;
 use forkable_jellyfish_merkle::RawKey;
 use lru::LruCache;
-use parking_lot::{Mutex, MutexGuard, RwLock};
+use parking_lot::{Mutex, RwLock};
 use scs::SCSCodec;
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use starcoin_logger::prelude::*;
 pub use starcoin_state_api::{
     ChainState, ChainStateReader, ChainStateWriter, StateProof, StateWithProof,
@@ -17,7 +17,7 @@ use starcoin_state_tree::mock::MockStateNodeStore;
 use starcoin_state_tree::{StateNodeStore, StateTree};
 use starcoin_types::write_set::{WriteOp, WriteSet, WriteSetMut};
 use starcoin_types::{
-    access_path::{self, AccessPath, DataType},
+    access_path::{AccessPath, DataType},
     account_address::AccountAddress,
     account_state::AccountState,
     state_set::{AccountStateSet, ChainStateSet},
@@ -25,9 +25,8 @@ use starcoin_types::{
 use starcoin_vm_types::access_path::{DataPath, ModuleName};
 use starcoin_vm_types::language_storage::StructTag;
 use starcoin_vm_types::state_view::StateView;
-use std::cell::RefCell;
 use std::collections::HashSet;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryInto;
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -57,22 +56,16 @@ impl CacheItem {
 
 /// represent AccountState in runtime memory.
 struct AccountStateObject {
-    address: AccountAddress,
-    code_tree: RefCell<Option<StateTree<ModuleName>>>,
-    resource_tree: RefCell<StateTree<StructTag>>,
     //TODO if use RefCell at here, compile error for ActorRef async interface
     // the trait `std::marker::Sync` is not implemented for AccountStateObject
     // refactor AccountStateObject to a readonly object.
-    //trees: Mutex<Vec<Option<StateTree>>>,
+    code_tree: Mutex<Option<StateTree<ModuleName>>>,
+    resource_tree: Mutex<StateTree<StructTag>>,
     store: Arc<dyn StateNodeStore>,
 }
 
 impl AccountStateObject {
-    pub fn new(
-        address: AccountAddress,
-        account_state: AccountState,
-        store: Arc<dyn StateNodeStore>,
-    ) -> Self {
+    pub fn new(account_state: AccountState, store: Arc<dyn StateNodeStore>) -> Self {
         let code_tree = account_state
             .code_root()
             .map(|root| StateTree::<ModuleName>::new(store.clone(), Some(root)));
@@ -80,19 +73,17 @@ impl AccountStateObject {
             StateTree::<StructTag>::new(store.clone(), Some(account_state.resource_root()));
 
         Self {
-            address,
-            code_tree: RefCell::new(code_tree),
-            resource_tree: RefCell::new(resource_tree),
+            code_tree: Mutex::new(code_tree),
+            resource_tree: Mutex::new(resource_tree),
             store,
         }
     }
 
-    pub fn new_account(address: AccountAddress, store: Arc<dyn StateNodeStore>) -> Self {
+    pub fn empty_account(store: Arc<dyn StateNodeStore>) -> Self {
         let resource_tree = StateTree::<StructTag>::new(store.clone(), None);
         Self {
-            address,
-            code_tree: RefCell::new(None),
-            resource_tree: RefCell::new(resource_tree),
+            code_tree: Mutex::new(None),
+            resource_tree: Mutex::new(resource_tree),
             store,
         }
     }
@@ -101,12 +92,12 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .borrow()
+                .lock()
                 .as_ref()
                 .map(|tree| tree.get(module_name))
                 .transpose()?
                 .flatten()),
-            DataPath::Resource(struct_tag) => self.resource_tree.borrow().get(struct_tag),
+            DataPath::Resource(struct_tag) => self.resource_tree.lock().get(struct_tag),
         }
     }
 
@@ -119,32 +110,30 @@ impl AccountStateObject {
         match data_path {
             DataPath::Code(module_name) => Ok(self
                 .code_tree
-                .borrow()
+                .lock()
                 .as_ref()
                 .map(|tree| tree.get_with_proof(module_name))
                 .transpose()?
                 .unwrap_or((None, SparseMerkleProof::new(None, vec![])))),
-            DataPath::Resource(struct_tag) => {
-                self.resource_tree.borrow().get_with_proof(struct_tag)
-            }
+            DataPath::Resource(struct_tag) => self.resource_tree.lock().get_with_proof(struct_tag),
         }
     }
 
     pub fn set(&self, data_path: DataPath, value: Vec<u8>) {
         match data_path {
             DataPath::Code(module_name) => {
-                if self.code_tree.borrow().is_none() {
-                    self.code_tree
-                        .replace(Some(StateTree::<ModuleName>::new(self.store.clone(), None)));
+                if self.code_tree.lock().is_none() {
+                    *self.code_tree.lock() =
+                        Some(StateTree::<ModuleName>::new(self.store.clone(), None));
                 }
                 self.code_tree
-                    .borrow()
+                    .lock()
                     .as_ref()
                     .expect("state tree must exist after set.")
                     .put(module_name, value);
             }
             DataPath::Resource(struct_tag) => {
-                self.resource_tree.borrow().put(struct_tag, value);
+                self.resource_tree.lock().put(struct_tag, value);
             }
         }
     }
@@ -156,15 +145,15 @@ impl AccountStateObject {
         let struct_tag = data_path
             .as_struct_tag()
             .expect("DataPath must been struct tag at here.");
-        self.resource_tree.borrow().remove(struct_tag);
+        self.resource_tree.lock().remove(struct_tag);
         Ok(())
     }
 
     pub fn is_dirty(&self) -> bool {
-        if self.resource_tree.borrow().is_dirty() {
+        if self.resource_tree.lock().is_dirty() {
             return true;
         }
-        if let Some(code_tree) = self.code_tree.borrow().as_ref() {
+        if let Some(code_tree) = self.code_tree.lock().as_ref() {
             if code_tree.is_dirty() {
                 return true;
             }
@@ -173,23 +162,26 @@ impl AccountStateObject {
     }
 
     pub fn commit(&self) -> Result<AccountState> {
-        let code_tree = self.code_tree.borrow();
-        if let Some(code_tree) = code_tree.as_ref() {
-            if code_tree.is_dirty() {
-                code_tree.commit();
+        {
+            let code_tree = self.code_tree.lock();
+            if let Some(code_tree) = code_tree.as_ref() {
+                if code_tree.is_dirty() {
+                    code_tree.commit()?;
+                }
             }
         }
-        let resource_tree = self.resource_tree.borrow();
-        if resource_tree.is_dirty() {
-            resource_tree.commit();
+        {
+            let resource_tree = self.resource_tree.lock();
+            if resource_tree.is_dirty() {
+                resource_tree.commit()?;
+            }
         }
-
         Ok(self.to_state())
     }
 
     pub fn flush(&self) -> Result<()> {
-        self.resource_tree.borrow().flush()?;
-        if let Some(code_tree) = self.code_tree.borrow().as_ref() {
+        self.resource_tree.lock().flush()?;
+        if let Some(code_tree) = self.code_tree.lock().as_ref() {
             code_tree.flush()?;
         }
 
@@ -197,12 +189,8 @@ impl AccountStateObject {
     }
 
     fn to_state(&self) -> AccountState {
-        let code_root = self
-            .code_tree
-            .borrow()
-            .as_ref()
-            .map(|tree| tree.root_hash());
-        let resource_root = self.resource_tree.borrow().root_hash();
+        let code_root = self.code_tree.lock().as_ref().map(|tree| tree.root_hash());
+        let resource_root = self.resource_tree.lock().root_hash();
         AccountState::new(code_root, resource_root)
     }
 }
@@ -260,10 +248,8 @@ impl ChainStateDB {
             Some(account_state_object) => Ok(account_state_object),
             None => {
                 if create {
-                    let account_state_object = Arc::new(AccountStateObject::new_account(
-                        *account_address,
-                        self.store.clone(),
-                    ));
+                    let account_state_object =
+                        Arc::new(AccountStateObject::empty_account(self.store.clone()));
                     let mut cache = self.cache.lock();
                     cache.put(
                         *account_address,
@@ -289,11 +275,7 @@ impl ChainStateDB {
                 let object = self
                     .get_account_state(account_address)?
                     .map(|account_state| {
-                        Arc::new(AccountStateObject::new(
-                            *account_address,
-                            account_state,
-                            self.store.clone(),
-                        ))
+                        Arc::new(AccountStateObject::new(account_state, self.store.clone()))
                     });
                 let cache_item = match &object {
                     Some(object) => CacheItem::new(object.clone()),

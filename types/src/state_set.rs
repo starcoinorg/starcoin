@@ -3,7 +3,6 @@
 
 use crate::access_path::DataType;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::HashValue;
 use starcoin_vm_types::account_address::AccountAddress;
 
 /// StateSet is represent a single state-tree or sub state-tree dump result.

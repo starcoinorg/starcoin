@@ -5,10 +5,10 @@ use anyhow::{ensure, format_err, Result};
 use merkle_tree::{blob::Blob, proof::SparseMerkleProof, RawKey};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use starcoin_crypto::{hash::PlainCryptoHash, HashValue};
+use starcoin_crypto::HashValue;
 use starcoin_types::write_set::WriteSet;
 use starcoin_types::{
-    access_path::{self, AccessPath},
+    access_path::AccessPath,
     account_address::AccountAddress,
     account_config::{AccountResource, BalanceResource},
     account_state::AccountState,

@@ -26,7 +26,7 @@ use starcoin_vm_types::value::{MoveStructLayout, MoveTypeLayout};
 use starcoin_vm_types::{
     account_config::stc_type_tag,
     account_config::{self, AccountResource, BalanceResource},
-    language_storage::{ResourceKey, StructTag, TypeTag},
+    language_storage::{StructTag, TypeTag},
     move_resource::MoveResource,
     values::{Struct, Value},
 };
@@ -144,8 +144,7 @@ impl Account {
 
     fn make_access_path(&self, tag: StructTag) -> AccessPath {
         // TODO: we need a way to get the type (FatStructType) of the Account in place
-        let resource_tag = ResourceKey::new(self.addr, tag);
-        AccessPath::resource_access_path(&resource_tag)
+        AccessPath::resource_access_path(self.addr, tag)
     }
 
     /// Changes the keys for this account to the provided ones.

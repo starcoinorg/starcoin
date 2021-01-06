@@ -1,5 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use forkable_jellyfish_merkle::{blob::Blob, mock_tree_store::MockTreeStore, JellyfishMerkleTree};
+use forkable_jellyfish_merkle::{
+    blob::Blob, mock_tree_store::MockTreeStore, HashValueKey, JellyfishMerkleTree, RawKey,
+};
 use rand::{rngs::StdRng, SeedableRng};
 use starcoin_crypto::hash::*;
 use std::collections::HashMap;
@@ -18,7 +20,7 @@ fn bench_get_with_proof(c: &mut Criterion) {
                 k
             },
             |k| {
-                let (value, _proof) = tree.get_with_proof(root, *k).unwrap();
+                let (value, _proof) = tree.get_with_proof(root, k.key_hash()).unwrap();
                 assert_eq!(&value.unwrap(), kvs.get(k).unwrap())
             },
         );
@@ -35,14 +37,14 @@ fn bench_get_with_proof(c: &mut Criterion) {
 criterion_group!(benches, bench_get_with_proof);
 criterion_main!(benches);
 
-fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
+fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValueKey, Blob> {
     assert!(seed.len() < 32);
     let mut actual_seed = [0u8; 32];
     actual_seed[..seed.len()].copy_from_slice(&seed);
     let mut rng: StdRng = StdRng::from_seed(actual_seed);
     let mut kvs = HashMap::new();
     for _i in 0..num_keys {
-        let key = HashValue::random_with_rng(&mut rng);
+        let key = HashValueKey(HashValue::random_with_rng(&mut rng));
         let value = Blob::from(HashValue::random_with_rng(&mut rng).to_vec());
         kvs.insert(key, value);
     }
@@ -53,7 +55,7 @@ fn gen_kv_from_seed(seed: &[u8], num_keys: usize) -> HashMap<HashValue, Blob> {
 fn prepare_tree(
     seed: &[u8],
     num_keys: usize,
-) -> (HashMap<HashValue, Blob>, MockTreeStore, HashValue) {
+) -> (HashMap<HashValueKey, Blob>, MockTreeStore, HashValue) {
     let kvs = gen_kv_from_seed(seed, num_keys);
 
     let db = MockTreeStore::default();

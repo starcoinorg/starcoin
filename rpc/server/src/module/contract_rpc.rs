@@ -21,7 +21,6 @@ use starcoin_types::account_address::AccountAddress;
 use starcoin_types::language_storage::{ModuleId, StructTag};
 use starcoin_types::transaction::DryRunTransaction;
 use starcoin_vm_types::access_path::AccessPath;
-use starcoin_vm_types::language_storage::ResourceKey;
 use std::sync::Arc;
 
 pub struct ContractRpcImpl<Account, Pool, State, Chain> {
@@ -78,9 +77,7 @@ where
     fn get_code(&self, module_id: StrView<ModuleId>) -> FutureResult<Option<StrView<Vec<u8>>>> {
         let service = self.chain_state.clone();
         let f = async move {
-            let code = service
-                .get(AccessPath::code_access_path(&module_id.0))
-                .await?;
+            let code = service.get(AccessPath::from(&module_id.0)).await?;
             Ok(code.map(StrView))
         };
         Box::new(f.map_err(map_err).boxed().compat())
@@ -96,10 +93,10 @@ where
         let f = async move {
             let state_root = service.clone().state_root().await?;
             let data = service
-                .get(AccessPath::resource_access_path(&ResourceKey::new(
+                .get(AccessPath::resource_access_path(
                     addr,
                     resource_type.0.clone(),
-                )))
+                ))
                 .await?;
             match data {
                 None => Ok(None),

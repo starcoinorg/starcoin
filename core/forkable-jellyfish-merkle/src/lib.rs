@@ -6,6 +6,8 @@
 
 #![forbid(unsafe_code)]
 #![allow(dead_code)]
+//TODO fix
+#![allow(clippy::unit_arg)]
 //! This module implements [`JellyfishMerkleTree`] backed by storage module. The tree itself doesn't
 //! persist anything, but realizes the logic of R/W only. The write path will produce all the
 //! intermediate results in a batch for storage layer to commit and the read path will return
@@ -84,6 +86,7 @@ pub mod restore;
 pub mod test_helper;
 pub mod tree_cache;
 
+#[cfg(test)]
 use crate::iterator::JellyfishMerkleIterator;
 use anyhow::{bail, ensure, format_err, Result};
 use blob::Blob;
@@ -206,6 +209,8 @@ where
     }
 }
 
+//FIXME
+#[allow(clippy::unit_arg)]
 #[derive(Clone, Debug, Copy, Ord, PartialOrd, Eq, PartialEq, Hash)]
 #[cfg_attr(any(test, feature = "fuzzing"), derive(Arbitrary))]
 pub struct HashValueKey(pub HashValue);

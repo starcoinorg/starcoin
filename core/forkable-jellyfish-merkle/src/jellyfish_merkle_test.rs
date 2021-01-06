@@ -91,37 +91,46 @@ fn test_insert_at_leaf_with_internal_created() {
     let db = MockTreeStore::default();
     let tree = JellyfishMerkleTree::new(&db);
 
-    let key1 = HashValue::new([0x00u8; HashValue::LENGTH]);
+    let key1 = HashValueKey(HashValue::new([0x00u8; HashValue::LENGTH]));
     let value1 = Blob::from(vec![1u8, 2u8]);
 
     let (_root0_hash, batch) = tree
-        .put_blob_set(None, vec![(key1.into(), value1.clone())])
+        .put_blob_set(None, vec![(key1, value1.clone())])
         .unwrap();
 
     assert!(batch.stale_node_index_batch.is_empty());
     db.write_tree_update_batch(batch).unwrap();
-    assert_eq!(tree.get(_root0_hash, key1.into()).unwrap().unwrap(), value1);
+    assert_eq!(
+        tree.get(_root0_hash, key1.key_hash()).unwrap().unwrap(),
+        value1
+    );
     assert_eq!(db.num_nodes(), 1);
     // Insert at the previous leaf node. Should generate an internal node at the root.
     // Change the 1st nibble to 15.
-    let key2 = update_nibble(&key1, 0, 15);
+    let key2 = HashValueKey(update_nibble(&key1.key_hash(), 0, 15));
     let value2 = Blob::from(vec![3u8, 4u8]);
 
     let (_root1_hash, batch) = tree
-        .put_blob_set(Some(_root0_hash), vec![(key2.into(), value2.clone())])
+        .put_blob_set(Some(_root0_hash), vec![(key2, value2.clone())])
         .unwrap();
     assert_eq!(batch.stale_node_index_batch.len(), 0);
     db.write_tree_update_batch(batch).unwrap();
 
-    assert_eq!(tree.get(_root1_hash, key1).unwrap().unwrap(), value1);
-    assert!(tree.get(_root0_hash, key2).unwrap().is_none());
-    assert_eq!(tree.get(_root1_hash, key2).unwrap().unwrap(), value2);
+    assert_eq!(
+        tree.get(_root1_hash, key1.key_hash()).unwrap().unwrap(),
+        value1
+    );
+    assert!(tree.get(_root0_hash, key2.key_hash()).unwrap().is_none());
+    assert_eq!(
+        tree.get(_root1_hash, key2.key_hash()).unwrap().unwrap(),
+        value2
+    );
 
     // get # of nodes
     assert_eq!(db.num_nodes(), 3);
 
-    let leaf1 = Node::new_leaf(key1.into(), value1);
-    let leaf2 = Node::new_leaf(key2.into(), value2);
+    let leaf1 = Node::new_leaf(key1, value1);
+    let leaf2 = Node::new_leaf(key2, value2);
     let mut children = HashMap::new();
     children.insert(
         Nibble::from(0),
