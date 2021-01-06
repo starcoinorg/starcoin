@@ -4,22 +4,39 @@
 use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MinerConfig {
-    pub enable_mint_empty_block: bool,
+    #[structopt(long = "disable-mint-empty-block")]
+    pub disable_mint_empty_block: Option<bool>,
+    #[structopt(long = "block-gas-limit")]
     pub block_gas_limit: Option<u64>,
-    pub enable_miner_client: bool,
+    #[structopt(long = "disable-miner-client")]
+    pub disable_miner_client: bool,
+    #[structopt(flatten)]
     pub client_config: MinerClientConfig,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+impl MinerConfig {
+    pub fn is_disable_mint_empty_block(&self) -> bool {
+        if let Some(disable) = self.disable_mint_empty_block {
+            disable
+        } else {
+            false
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MinerClientConfig {
     pub server: Option<String>,
     pub plugin_path: Option<String>,
+    #[structopt(long = "thread-num")]
     pub thread_num: u16,
+    #[structopt(long = "enable-stderr")]
     #[serde(skip)]
     pub enable_stderr: bool,
 }
@@ -33,9 +50,9 @@ impl ConfigModule for MinerConfig {
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
         Ok(Self {
-            enable_mint_empty_block: !disable_mint_empty_block,
+            disable_mint_empty_block: Some(disable_mint_empty_block),
             block_gas_limit: None,
-            enable_miner_client: !opt.disable_miner_client,
+            disable_miner_client: opt.disable_miner_client,
             client_config: MinerClientConfig {
                 server: None,
                 plugin_path: None,
@@ -52,12 +69,12 @@ impl ConfigModule for MinerConfig {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
-        self.enable_mint_empty_block = !disable_mint_empty_block;
+        self.disable_mint_empty_block = Some(disable_mint_empty_block);
         if let Some(thread) = opt.miner_thread {
             self.client_config.thread_num = thread;
         }
         if opt.disable_miner_client {
-            self.enable_miner_client = false;
+            self.disable_miner_client = true;
         }
         Ok(())
     }

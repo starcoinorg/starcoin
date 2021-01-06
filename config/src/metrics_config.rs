@@ -6,12 +6,16 @@ use crate::{
 };
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct MetricsConfig {
-    pub enable_metrics: bool,
+    #[structopt(name = "disable-metrics", long, help = "disable metrics")]
+    pub disable_metrics: bool,
+    #[structopt(name = "address", long, help = "address", default_value = "0.0.0.0")]
     pub address: String,
+    #[structopt(name = "metrics-port", long, default_value = "9101")]
     pub port: u16,
 }
 
@@ -27,16 +31,14 @@ impl ConfigModule for MetricsConfig {
             DEFAULT_METRIC_SERVER_PORT
         };
         Ok(Self {
-            enable_metrics: !opt.disable_metrics,
+            disable_metrics: opt.disable_metrics,
             address: "0.0.0.0".to_string(),
             port,
         })
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
-        if opt.disable_metrics {
-            self.enable_metrics = false;
-        }
+        self.disable_metrics = opt.disable_metrics;
         Ok(())
     }
 }

@@ -129,14 +129,14 @@ impl NodeService {
                 config.logger.max_backup,
             );
         }
-        if config.logger.enable_stderr {
+        if config.logger.disable_stderr {
             logger_handle.enable_stderr();
         } else {
             logger_handle.disable_stderr();
         }
 
         // start metric server
-        if config.metrics.enable_metrics {
+        if !config.metrics.disable_metrics {
             starcoin_metrics::metric_server::start_server(
                 config.metrics.address.clone(),
                 config.metrics.port,
@@ -246,7 +246,7 @@ impl NodeService {
         registry.register::<CreateBlockTemplateService>().await?;
         registry.register::<MinerService>().await?;
 
-        if config.miner.enable_miner_client {
+        if !config.miner.disable_miner_client {
             let miner_client_config = config.miner.client_config.clone();
             registry.put_shared(miner_client_config).await?;
             let job_client = JobBusClient::new(bus.clone(), config.net().time_service());

@@ -289,7 +289,6 @@ impl ConfigModule for RpcConfig {
             config.ws.port = ports[2];
         } else if base.net.is_dev() {
             config.http.port = get_available_port_from(DEFAULT_HTTP_PORT);
-
             config.tcp.port = get_available_port_from(DEFAULT_TCP_PORT);
             config.ws.port = get_available_port_from(DEFAULT_WEB_SOCKET_PORT);
         }
@@ -302,12 +301,38 @@ impl ConfigModule for RpcConfig {
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
-        if self.http.ip_headers.is_none() {
-            self.http.ip_headers = opt.http.ip_headers.clone();
+        if !opt.http.disable {
+            self.http.disable = false;
+            self.http.apis = opt.http.apis.clone();
+            self.http.port = opt.http.port;
+            self.http.max_request_body_size = opt.http.max_request_body_size;
+            if opt.http.threads.is_some() {
+                self.http.threads = opt.http.threads;
+            }
+            if opt.http.ip_headers.is_some() {
+                self.http.ip_headers = opt.http.ip_headers.clone();
+            }
+        }
+        info!("Http rpc address: {:?}", self.get_http_address());
+        if !opt.tcp.disable {
+            self.tcp.disable = false;
+            self.tcp.apis = opt.tcp.apis.clone();
+            self.tcp.port = opt.tcp.port;
+        }
+        info!("TCP rpc address: {:?}", self.get_tcp_address());
+        if !opt.ipc.disable {
+            self.ipc.apis = opt.ipc.apis.clone();
+            if opt.ipc.ipc_file_path.is_some() {
+                self.ipc.ipc_file_path = opt.ipc.ipc_file_path.clone();
+            }
         }
         info!("Ipc file path: {:?}", self.ipc.ipc_file_path);
-        info!("Http rpc address: {:?}", self.get_http_address());
-        info!("TCP rpc address: {:?}", self.get_tcp_address());
+        if !opt.ws.disable {
+            self.ws.disable = false;
+            self.ws.apis = opt.ws.apis.clone();
+            self.ws.port = opt.ws.port;
+            self.ws.max_request_body_size = opt.ws.max_request_body_size;
+        }
         info!("Websocket rpc address: {:?}", self.get_ws_address());
         Ok(())
     }

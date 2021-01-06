@@ -85,7 +85,7 @@ impl Default for NetworkRpcQuotaConfiguration {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NetworkConfig {
-    // The address that this node is listening on for new connections.
+    /// The address that this node is listening on for new connections.
     pub listen: Multiaddr,
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,

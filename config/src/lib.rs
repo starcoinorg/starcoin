@@ -190,7 +190,7 @@ pub struct StarcoinOpt {
     /// Node network private key file, only work for first init.
     pub node_key_file: Option<PathBuf>,
 
-    #[structopt(long = "sync-mode", short = "s")]
+    #[structopt(long = "sync-mode", short = "s", possible_values = &SyncMode::variants(), case_insensitive = false)]
     /// Sync mode. Included value(full, fast, light).
     pub sync_mode: Option<SyncMode>,
 
@@ -444,9 +444,7 @@ impl NodeConfig {
                 }
             }
         };
-
         config.after_load(opt, &base)?;
-        save_config(&config, &config_file_path)?;
         Ok(config)
     }
 

@@ -25,7 +25,7 @@ pub fn test_sync(sync_mode: SyncMode) {
     let mut second_config = NodeConfig::random_for_test();
     info!("second peer : {:?}", second_config.network.self_peer_id());
     second_config.network.seeds = vec![first_config.network.self_address()];
-    second_config.miner.enable_miner_client = false;
+    second_config.miner.disable_miner_client = false;
     second_config.sync.set_mode(sync_mode);
 
     let second_node = run_node_by_config(Arc::new(second_config)).unwrap();

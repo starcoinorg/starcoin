@@ -5,10 +5,13 @@ use crate::{BaseConfig, ConfigModule, StarcoinOpt};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use structopt::StructOpt;
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize, StructOpt)]
 #[serde(deny_unknown_fields)]
 pub struct AccountVaultConfig {
+    #[structopt(long = "vault-dir", parse(from_os_str), conflicts_with("vault-dir"))]
+    /// Account vault dir config.
     dir: PathBuf,
     #[serde(skip)]
     absolute_dir: Option<PathBuf>,

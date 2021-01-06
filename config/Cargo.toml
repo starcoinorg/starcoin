@@ -7,6 +7,7 @@ publish = false
 edition = "2018"
 
 [dependencies]
+clap = "2.33.3"
 dirs = "3"
 anyhow = "1.0.37"
 thiserror = "1.0"
@@ -27,3 +28,4 @@ starcoin-vm-types = { path = "../vm/types" }
 network-p2p-types = { path = "../network-p2p/types"}
 starcoin-logger = {path = "../commons/logger", package="starcoin-logger"}
 diem-temppath = { git = "https://github.com/starcoinorg/diem", rev="a69729b2d54af44d2f779bcf167e3f6d681a9821" }
+starcoin-system = {path = "../commons/system", package="starcoin-system"}

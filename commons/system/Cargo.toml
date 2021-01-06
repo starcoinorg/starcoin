@@ -1,0 +1,11 @@
+[package]
+name = "starcoin-system"
+version = "0.9.4"
+authors = ["Starcoin Core Dev <dev@starcoin.org>"]
+license = "Apache-2.0"
+publish = false
+edition = "2018"
+
+[dependencies]
+systemstat ="0.1.6"
+anyhow = "1.0.37"
