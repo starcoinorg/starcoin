@@ -17,7 +17,7 @@ pub struct ChangePasswordOpt {
     )]
     account_address: Option<AccountAddress>,
 
-    #[structopt(name = "password")]
+    #[structopt(short, name = "password")]
     password: String,
 }
 
