@@ -75,7 +75,7 @@ pub trait ChainAsyncService:
     Clone + std::marker::Unpin + std::marker::Sync + std::marker::Send
 {
     async fn get_header_by_hash(&self, hash: &HashValue) -> Result<Option<BlockHeader>>;
-    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block>;
+    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>>;
     async fn get_blocks(&self, hashes: Vec<HashValue>) -> Result<Vec<Option<Block>>>;
     async fn get_headers(&self, hashes: Vec<HashValue>) -> Result<Vec<BlockHeader>>;
     async fn uncle_path(
@@ -85,7 +85,7 @@ pub trait ChainAsyncService:
     ) -> Result<Vec<BlockHeader>>;
     async fn get_block_state_by_hash(&self, hash: &HashValue) -> Result<Option<BlockState>>;
     async fn get_block_info_by_hash(&self, hash: &HashValue) -> Result<Option<BlockInfo>>;
-    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction>;
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>>;
     async fn get_transaction_info(&self, txn_hash: HashValue) -> Result<Option<TransactionInfo>>;
     async fn get_transaction_block(&self, txn_hash: HashValue) -> Result<Option<Block>>;
     async fn get_block_txn_infos(&self, block_hash: HashValue) -> Result<Vec<TransactionInfo>>;
@@ -98,7 +98,7 @@ pub trait ChainAsyncService:
     /// for main
     async fn main_head_header(&self) -> Result<BlockHeader>;
     async fn main_head_block(&self) -> Result<Block>;
-    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Block>;
+    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>>;
     async fn main_block_by_uncle(&self, uncle_hash: HashValue) -> Result<Option<Block>>;
     async fn main_blocks_by_number(
         &self,
@@ -145,13 +145,13 @@ where
         Ok(None)
     }
 
-    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Block> {
+    async fn get_block_by_hash(&self, hash: HashValue) -> Result<Option<Block>> {
         if let ChainResponse::BlockOption(block) =
             self.send(ChainRequest::GetBlockByHash(hash)).await??
         {
             match block {
-                Some(b) => Ok(*b),
-                None => bail!("get block by hash is none: {:?}", hash),
+                Some(b) => Ok(Some(*b)),
+                None => Ok(None),
             }
         } else {
             bail!("get block by hash error.")
@@ -198,10 +198,10 @@ where
         Ok(None)
     }
 
-    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Transaction> {
+    async fn get_transaction(&self, txn_hash: HashValue) -> Result<Option<Transaction>> {
         let response = self.send(ChainRequest::GetTransaction(txn_hash)).await??;
-        if let ChainResponse::Transaction(txn) = response {
-            Ok(*txn)
+        if let ChainResponse::TransactionOption(txn) = response {
+            Ok(txn.map(|b| *b))
         } else {
             bail!("get transaction error.")
         }
@@ -286,11 +286,11 @@ where
         }
     }
 
-    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Block> {
-        if let ChainResponse::Block(block) =
+    async fn main_block_by_number(&self, number: BlockNumber) -> Result<Option<Block>> {
+        if let ChainResponse::BlockOption(block) =
             self.send(ChainRequest::GetBlockByNumber(number)).await??
         {
-            Ok(*block)
+            Ok(block.map(|b| *b))
         } else {
             bail!("Get chain block by number response error.")
         }

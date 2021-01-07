@@ -710,7 +710,7 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<BlockView> {
+    pub fn chain_get_block_by_hash(&self, hash: HashValue) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_block_by_hash(hash).compat().await
         })
@@ -731,7 +731,10 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_block_by_number(&self, number: BlockNumber) -> anyhow::Result<BlockView> {
+    pub fn chain_get_block_by_number(
+        &self,
+        number: BlockNumber,
+    ) -> anyhow::Result<Option<BlockView>> {
         self.call_rpc_blocking(|inner| async move {
             inner
                 .chain_client
@@ -756,7 +759,10 @@ impl RpcClient {
         .map_err(map_err)
     }
 
-    pub fn chain_get_transaction(&self, txn_id: HashValue) -> anyhow::Result<TransactionView> {
+    pub fn chain_get_transaction(
+        &self,
+        txn_id: HashValue,
+    ) -> anyhow::Result<Option<TransactionView>> {
         self.call_rpc_blocking(|inner| async move {
             inner.chain_client.get_transaction(txn_id).compat().await
         })

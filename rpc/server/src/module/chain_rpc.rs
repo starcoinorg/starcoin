@@ -14,6 +14,7 @@ use starcoin_rpc_api::types::{
 use starcoin_rpc_api::FutureResult;
 use starcoin_traits::ChainAsyncService;
 use starcoin_types::block::BlockNumber;
+use starcoin_types::filter::Filter;
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::stress_test::TPS;
 use starcoin_vm_types::on_chain_resource::{EpochInfo, GlobalTimeOnChain};
@@ -62,24 +63,24 @@ where
         Box::new(fut.boxed().map_err(map_err).compat())
     }
 
-    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<BlockView> {
+    fn get_block_by_hash(&self, hash: HashValue) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
 
         let fut = async move {
             let result = service.get_block_by_hash(hash).await?;
-            Ok(result.try_into()?)
+            Ok(result.map(|b| b.try_into()).transpose()?)
         }
         .map_err(map_err);
 
         Box::new(fut.boxed().compat())
     }
 
-    fn get_block_by_number(&self, number: u64) -> FutureResult<BlockView> {
+    fn get_block_by_number(&self, number: u64) -> FutureResult<Option<BlockView>> {
         let service = self.service.clone();
 
         let fut = async move {
             let result = service.main_block_by_number(number).await?;
-            Ok(result.try_into()?)
+            Ok(result.map(|b| b.try_into()).transpose()?)
         }
         .map_err(map_err);
 
@@ -105,20 +106,28 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn get_transaction(&self, transaction_hash: HashValue) -> FutureResult<TransactionView> {
+    fn get_transaction(
+        &self,
+        transaction_hash: HashValue,
+    ) -> FutureResult<Option<TransactionView>> {
         let service = self.service.clone();
         let fut = async move {
             let transaction = service.get_transaction(transaction_hash).await?;
-            let block = service
-                .get_transaction_block(transaction_hash)
-                .await?
-                .ok_or_else(|| {
-                    anyhow::anyhow!(
-                        "cannot find block which includes the txn {}",
-                        transaction_hash
-                    )
-                })?;
-            TransactionView::new(transaction, &block)
+            match transaction {
+                None => Ok(None),
+                Some(t) => {
+                    let block = service
+                        .get_transaction_block(transaction_hash)
+                        .await?
+                        .ok_or_else(|| {
+                            anyhow::anyhow!(
+                                "cannot find block which includes the txn {}",
+                                transaction_hash
+                            )
+                        })?;
+                    TransactionView::new(t, &block).map(Some)
+                }
+            }
         }
         .map_err(map_err);
 
@@ -161,11 +170,13 @@ where
         let fut = async move {
             let txn_infos = service.get_block_txn_infos(block_hash).await?;
             let block = service.get_block_by_hash(block_hash).await?;
-
-            txn_infos
-                .into_iter()
-                .map(|info| TransactionInfoView::new(info, &block))
-                .collect::<Result<Vec<_>, _>>()
+            match block {
+                None => Ok(vec![]),
+                Some(block) => txn_infos
+                    .into_iter()
+                    .map(|info| TransactionInfoView::new(info, &block))
+                    .collect::<Result<Vec<_>, _>>(),
+            }
         }
         .map_err(map_err);
 
@@ -179,13 +190,18 @@ where
     ) -> FutureResult<Option<TransactionInfoView>> {
         let service = self.service.clone();
         let fut = async move {
-            let txn_info = service
-                .get_txn_info_by_block_and_index(block_hash, idx)
-                .await?;
             let block = service.get_block_by_hash(block_hash).await?;
-            txn_info
-                .map(|info| TransactionInfoView::new(info, &block))
-                .transpose()
+            match block {
+                None => Ok(None),
+                Some(block) => {
+                    let txn_info = service
+                        .get_txn_info_by_block_and_index(block_hash, idx)
+                        .await?;
+                    txn_info
+                        .map(|info| TransactionInfoView::new(info, &block))
+                        .transpose()
+                }
+            }
         }
         .map_err(map_err);
 
@@ -215,7 +231,7 @@ where
                 filter.to_block = Some(header_block_number);
             }
 
-            let filter = filter.try_into()?;
+            let filter: Filter = filter.try_into()?;
 
             let max_block_range = config.rpc.block_query_max_range;
             // if the from~to range is bigger than what we configured, return invalid param error.

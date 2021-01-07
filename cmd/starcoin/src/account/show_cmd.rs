@@ -50,7 +50,9 @@ impl CommandAction for ShowCommand {
             .ok_or_else(|| format_err!("Account with address {} not exist.", account_address))?;
 
         let chain_state_reader = if let Some(block_id) = opt.block_id {
-            let block = client.chain_get_block_by_hash(block_id)?;
+            let block = client
+                .chain_get_block_by_hash(block_id)?
+                .ok_or_else(|| format_err!("block {} not found", block_id))?;
             RemoteStateReader::new_with_root(client, block.header.state_root)
         } else {
             RemoteStateReader::new(client)?

@@ -74,6 +74,7 @@ pub enum ChainResponse {
     StartupInfo(Box<StartupInfo>),
     ChainStatus(Box<ChainStatus>),
     Transaction(Box<Transaction>),
+    TransactionOption(Option<Box<Transaction>>),
     BlockVec(Vec<Block>),
     BlockOptionVec(Vec<Option<Block>>),
     BlockHeaderVec(Vec<BlockHeader>),

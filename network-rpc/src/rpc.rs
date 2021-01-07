@@ -218,7 +218,7 @@ impl gen_server::NetworkRpc for NetworkRpcImpl {
                     break;
                 }
                 let (transactions, uncles) = match chain_reader.get_block_by_hash(hash).await {
-                    Ok(block) => (
+                    Ok(Some(block)) => (
                         block.transactions().to_vec(),
                         if block.uncles().is_some() {
                             Some(block.uncles().expect("block.uncles() is none.").to_vec())
