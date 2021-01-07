@@ -43,10 +43,10 @@ use crate::identifier::Identifier;
 use crate::parser::parse_struct_tag;
 use anyhow::{bail, Result};
 use forkable_jellyfish_merkle::RawKey;
-use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag};
+use move_core_types::language_storage::{ModuleId, ResourceKey, StructTag, TypeTag};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[cfg(any(test, feature = "fuzzing"))]
-use proptest::prelude::{Arbitrary, BoxedStrategy};
+use proptest::{collection::vec, prelude::*};
 #[cfg(any(test, feature = "fuzzing"))]
 use proptest_derive::Arbitrary;
 use rand::prelude::{Distribution, SliceRandom};
@@ -233,6 +233,16 @@ impl DataType {
     }
 }
 
+#[cfg(any(test, feature = "fuzzing"))]
+impl Arbitrary for DataType {
+    type Parameters = ();
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        prop_oneof![Just(DataType::CODE), Just(DataType::RESOURCE),].boxed()
+    }
+
+    type Strategy = BoxedStrategy<Self>;
+}
+
 pub type ModuleName = Identifier;
 
 #[derive(Clone, Eq, PartialEq, Hash, Serialize, Deserialize, Ord, PartialOrd, Debug)]
@@ -244,9 +254,25 @@ pub enum DataPath {
 #[cfg(any(test, feature = "fuzzing"))]
 impl Arbitrary for DataPath {
     type Parameters = ();
-    fn arbitrary_with((): ()) -> Self::Strategy {
-        //TODO
-        unimplemented!()
+    fn arbitrary_with(_args: ()) -> Self::Strategy {
+        prop_oneof![
+            (any::<Identifier>()).prop_map(DataPath::Code),
+            (
+                any::<AccountAddress>(),
+                any::<Identifier>(),
+                any::<Identifier>(),
+                vec(any::<TypeTag>(), 0..4),
+            )
+                .prop_map(|(address, module, name, type_params)| DataPath::Resource(
+                    StructTag {
+                        address,
+                        module,
+                        name,
+                        type_params,
+                    }
+                )),
+        ]
+        .boxed()
     }
 
     type Strategy = BoxedStrategy<Self>;
@@ -331,7 +357,11 @@ mod tests {
             "{}/1/0x00000000000000000000000000000001::Account::Account",
             AccountAddress::random()
         );
-        let test_cases = vec!["0x00000000000000000000000000000001/0/Account", "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account", r1.as_str()];
+        let test_cases = vec!["0x00000000000000000000000000000000/0/Account", 
+                              "0x00000000000000000000000000000001/0/Account", 
+                              "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Account",
+                              "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::Account::Balance<0x00000000000000000000000000000001::STC::STC>",
+                              r1.as_str()];
         for case in test_cases {
             let access_path = AccessPath::from_str(case).unwrap();
             assert_eq!(case.to_owned(), access_path.to_string())
@@ -349,11 +379,12 @@ mod tests {
             // invalid struct tag
             "0x00000000000000000000000000000001/1/Account", 
             // invalid module name
-                              "0x00000000000000000000000000000001/0/0x00000000000000000000000000000001::Account::Account", 
+            "0x00000000000000000000000000000001/0/0x00000000000000000000000000000001::Account::Account", 
             //invalid data type
-                              "0x00000000000000000000000000000001/3/Account", 
+            "0x00000000000000000000000000000001/3/Account", 
             //too many `/`
-                              "0x00000000000000000000000000000001/1/Account/xxx", 
+            "0x00000000000000000000000000000001/0/Account/xxx",
+            "0x00000000000000000000000000000001/0//Account",
             //too less '`'
             "0x00000000000000000000000000000001/1",
             r1.as_str()];
@@ -364,6 +395,33 @@ mod tests {
                 "expect err in access_path case: {}, but got ok",
                 case
             );
+        }
+    }
+
+    #[test]
+    fn test_bad_case_from_protest() {
+        //The struct name contains '_' will will encounter parse error
+        //This may be the parser error, or the identity's arbitrary error
+        let access_path_str =
+            "0x00000000000000000000000000000001/1/0x00000000000000000000000000000001::a::A_";
+        let access_path = AccessPath::from_str(access_path_str);
+        assert!(access_path.is_err());
+    }
+
+    proptest! {
+        //TODO enable this test, when test_bad_case_from_protest is fixed.
+        #[ignore]
+        #[test]
+        fn test_access_path(access_path in any::<AccessPath>()){
+           let bytes = scs::to_bytes(&access_path).expect("access_path serialize should ok.");
+           let access_path2 = scs::from_bytes::<AccessPath>(bytes.as_slice()).expect("access_path deserialize should ok.");
+           prop_assert_eq!(&access_path, &access_path2);
+           let access_path_str = access_path.to_string();
+           let access_path3 = AccessPath::from_str(access_path_str.as_str()).expect("access_path from str should ok");
+           prop_assert_eq!(&access_path, &access_path3);
+           let json_str = serde_json::to_string(&access_path).expect("access_path to json str should ok");
+           let access_path4 = serde_json::from_str::<AccessPath>(json_str.as_str()).expect("access_path from json str should ok");
+            prop_assert_eq!(&access_path, &access_path4);
         }
     }
 }
