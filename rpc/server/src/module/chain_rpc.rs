@@ -205,10 +205,33 @@ where
         Box::new(fut.boxed().compat())
     }
 
-    fn get_events(&self, filter: EventFilter) -> FutureResult<Vec<TransactionEventView>> {
+    fn get_events(&self, mut filter: EventFilter) -> FutureResult<Vec<TransactionEventView>> {
         let service = self.service.clone();
+        let config = self.config.clone();
         let fut = async move {
+            if filter.to_block.is_none() {
+                // if user hasn't specify the `to_block`, we use latest block as the to_block.
+                let header_block_number = service.main_head_header().await?.number;
+                filter.to_block = Some(header_block_number);
+            }
+
             let filter = filter.try_into()?;
+
+            let max_block_range = config.rpc.block_query_max_range;
+            // if the from~to range is bigger than what we configured, return invalid param error.
+            if filter
+                .to_block
+                .checked_sub(filter.from_block)
+                .filter(|r| *r > max_block_range)
+                .is_some()
+            {
+                return Err(jsonrpc_core::Error::invalid_params(format!(
+                    "from_block is too far, max block range is {} ",
+                    max_block_range
+                ))
+                .into());
+            }
+
             service.main_events(filter).await
         }
         .map_ok(|d| d.into_iter().map(|e| e.into()).collect())

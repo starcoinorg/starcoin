@@ -40,6 +40,10 @@ use starcoin_account_api::error::AccountError;
 use starcoin_vm_types::transaction::{CallError, TransactionError};
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
+    // if err is a jsonrpc error, return directly.
+    if err.is::<jsonrpc_core::Error>() {
+        return err.downcast::<jsonrpc_core::Error>().unwrap();
+    }
     // TODO: add more error downcasting here
     let rpc_error: RpcError = if err.is::<TransactionError>() {
         err.downcast::<TransactionError>().unwrap().into()
