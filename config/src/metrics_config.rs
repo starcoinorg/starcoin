@@ -30,15 +30,18 @@ impl ConfigModule for MetricsConfig {
         } else {
             DEFAULT_METRIC_SERVER_PORT
         };
+        let disable_metrics = opt.disable_metrics.unwrap_or(false);
         Ok(Self {
-            disable_metrics: opt.disable_metrics,
+            disable_metrics,
             address: "0.0.0.0".to_string(),
             port,
         })
     }
 
     fn after_load(&mut self, opt: &StarcoinOpt, _base: &BaseConfig) -> Result<()> {
-        self.disable_metrics = opt.disable_metrics;
+        if let Some(disable) = opt.disable_metrics {
+            self.disable_metrics = disable;
+        }
         Ok(())
     }
 }

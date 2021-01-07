@@ -204,27 +204,27 @@ pub struct StarcoinOpt {
 
     #[structopt(long = "disable-std-log")]
     /// Disable std error log output.
-    pub disable_std_log: bool,
+    pub disable_std_log: Option<bool>,
 
     #[structopt(long = "disable-file-log")]
     /// Disable std error log output.
-    pub disable_file_log: bool,
+    pub disable_file_log: Option<bool>,
 
     #[structopt(long = "disable-metrics")]
     /// Disable metrics.
-    pub disable_metrics: bool,
+    pub disable_metrics: Option<bool>,
 
     #[structopt(long = "disable-miner-client")]
     /// Don't start a miner client in node.
-    pub disable_miner_client: bool,
+    pub disable_miner_client: Option<bool>,
 
     #[structopt(long = "disable-seed")]
     /// Do not connect to seed node, include builtin and config seed.
-    pub disable_seed: bool,
+    pub disable_seed: Option<bool>,
 
-    #[structopt(long = "enable-mdns")]
-    /// Enable p2p mdns discovery, for automatically discover the peer from the local network.
-    pub enable_mdns: bool,
+    #[structopt(long = "disable-mdns")]
+    /// Disable p2p mdns discovery, for automatically discover the peer from the local network.
+    pub disable_mdns: Option<bool>,
 
     #[structopt(long = "disable-mint-empty-block")]
     /// Do not mint empty block, default is true in Dev network.

@@ -49,10 +49,11 @@ impl ConfigModule for MinerConfig {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| base.net.is_dev());
+        let disable_miner_client = opt.disable_miner_client.unwrap_or(false);
         Ok(Self {
             disable_mint_empty_block: Some(disable_mint_empty_block),
             block_gas_limit: None,
-            disable_miner_client: opt.disable_miner_client,
+            disable_miner_client,
             client_config: MinerClientConfig {
                 server: None,
                 plugin_path: None,
@@ -73,8 +74,8 @@ impl ConfigModule for MinerConfig {
         if let Some(thread) = opt.miner_thread {
             self.client_config.thread_num = thread;
         }
-        if opt.disable_miner_client {
-            self.disable_miner_client = true;
+        if let Some(disable) = opt.disable_miner_client {
+            self.disable_miner_client = disable;
         }
         Ok(())
     }

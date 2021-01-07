@@ -34,7 +34,7 @@ pub fn build_network_worker(
         TransportConfig::MemoryOnly
     } else {
         TransportConfig::Normal {
-            enable_mdns: node_config.network.enable_mdns,
+            enable_mdns: !node_config.network.disable_mdns,
             allow_private_ipv4: true,
             wasm_external_transport: None,
         }

@@ -39,9 +39,8 @@ impl LoggerConfig {
 
 impl ConfigModule for LoggerConfig {
     fn default_with_opt(opt: &StarcoinOpt, base: &BaseConfig) -> Result<Self> {
-        let disable_stderr = opt.disable_std_log;
-        let disable_file = opt.disable_file_log;
-
+        let disable_stderr = opt.disable_std_log.unwrap_or(false);
+        let disable_file = opt.disable_file_log.unwrap_or(false);
         Ok(if base.net.is_test() {
             Self {
                 disable_stderr,
@@ -71,8 +70,12 @@ impl ConfigModule for LoggerConfig {
 
     fn after_load(&mut self, opt: &StarcoinOpt, base: &BaseConfig) -> Result<()> {
         self.log_path = Some(base.data_dir.join(LOGGER_FILE_NAME));
-        self.disable_stderr = opt.disable_std_log;
-        self.disable_file = opt.disable_file_log;
+        if let Some(disable) = opt.disable_std_log {
+            self.disable_stderr = disable;
+        }
+        if let Some(disable) = opt.disable_file_log {
+            self.disable_file = disable;
+        }
         Ok(())
     }
 }

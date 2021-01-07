@@ -90,7 +90,7 @@ pub struct NetworkConfig {
     #[serde(default)]
     pub seeds: Vec<MultiaddrWithPeerId>,
     #[serde(default)]
-    pub enable_mdns: bool,
+    pub disable_mdns: bool,
     //TODO skip this field, do not persistence this flag to config. this change will break network config.
     pub disable_seed: bool,
     #[serde(skip)]
@@ -174,11 +174,13 @@ impl ConfigModule for NetworkConfig {
                 .parse()
                 .expect("Parse multi address fail.")
         };
+        let disable_mdns = opt.disable_mdns.unwrap_or(false);
+        let disable_seed = opt.disable_seed.unwrap_or(false);
         Ok(Self {
             listen,
             seeds,
-            enable_mdns: opt.enable_mdns,
-            disable_seed: opt.disable_seed,
+            disable_mdns,
+            disable_seed,
             network_keypair: Some(Arc::new(Self::load_or_generate_keypair(opt, base)?)),
             self_peer_id: None,
             self_address: None,
@@ -201,7 +203,9 @@ impl ConfigModule for NetworkConfig {
         }
 
         self.network_keypair = Some(Arc::new(Self::load_or_generate_keypair(opt, base)?));
-        self.disable_seed = opt.disable_seed;
+        if let Some(disable) = opt.disable_seed {
+            self.disable_seed = disable;
+        }
         self.prepare_peer_id();
 
         Ok(())
