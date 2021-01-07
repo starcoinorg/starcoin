@@ -282,8 +282,7 @@ impl ConfigModule for RpcConfig {
             ipc: opt.ipc.clone(),
             api_quota: opt.api_quotas.clone(),
             rpc_address,
-            // TODO: make it configuration.
-            block_query_max_range: 128,
+            block_query_max_range: opt.block_query_max_range.unwrap_or(128),
         };
 
         if base.net.is_test() {
