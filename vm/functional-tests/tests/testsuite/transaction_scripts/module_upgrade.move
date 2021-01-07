@@ -53,7 +53,7 @@ script {
 
     fun update_module_upgrade_strategy(account: &signer) {
         Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::none<u64>());
+        PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(0));
     }
 }
 // check: EXECUTED
