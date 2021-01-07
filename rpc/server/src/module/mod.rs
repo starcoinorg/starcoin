@@ -37,7 +37,9 @@ use anyhow::Error;
 use hex::FromHexError;
 use jsonrpc_core::ErrorCode;
 use starcoin_account_api::error::AccountError;
-use starcoin_vm_types::transaction::{CallError, TransactionError};
+use starcoin_rpc_api::types::TransactionVMStatus;
+use starcoin_vm_types::transaction::{CallError, TransactionError, TransactionStatus};
+use starcoin_vm_types::vm_status::VMStatus;
 
 pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
     // if err is a jsonrpc error, return directly.
@@ -53,6 +55,8 @@ pub fn map_err(err: anyhow::Error) -> jsonrpc_core::Error {
         err.downcast::<AccountError>().unwrap().into()
     } else if err.is::<MailboxError>() {
         err.downcast::<MailboxError>().unwrap().into()
+    } else if err.is::<VMStatus>() {
+        err.downcast::<VMStatus>().unwrap().into()
     } else {
         err.into()
     };
@@ -132,7 +136,13 @@ impl From<TransactionError> for RpcError {
                 }
                 CallError::ExecutionError(vm_status) => (
                     ErrorCode::ServerError(TXN_ERROR_BASE + 2),
-                    Some(serde_json::to_value(vm_status).expect("vm status to json should be ok")),
+                    Some(
+                        // translate to jsonrpc types
+                        serde_json::to_value(TransactionVMStatus::from(TransactionStatus::from(
+                            vm_status,
+                        )))
+                        .expect("vm status to json should be ok"),
+                    ),
                 ),
             },
         };
@@ -169,6 +179,22 @@ impl From<MailboxError> for RpcError {
             code: ErrorCode::InternalError,
             message: err.to_string(),
             data: None,
+        })
+    }
+}
+
+impl From<VMStatus> for RpcError {
+    fn from(vm_status: VMStatus) -> Self {
+        RpcError(jsonrpc_core::Error {
+            code: ErrorCode::InvalidParams,
+            message: vm_status.to_string(),
+            data: Some(
+                // use jsonrpc types do serialization.
+                serde_json::to_value(TransactionVMStatus::from(TransactionStatus::from(
+                    vm_status,
+                )))
+                .expect("vm status to json should be ok"),
+            ),
         })
     }
 }
