@@ -3,6 +3,7 @@ script {
     use 0x1::Config;
     use 0x1::Signer;
     use 0x1::Version;
+    use 0x1::Option;
 
     fun update_module_upgrade_strategy(
         signer: &signer,
@@ -19,6 +20,7 @@ script {
         PackageTxnManager::update_module_upgrade_strategy(
             signer,
             strategy,
+            Option::none<u64>(),
         );
     }
 }

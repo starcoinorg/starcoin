@@ -17,8 +17,7 @@
     -  [Function `submit_module_upgrade_plan`](#@Specification_1_submit_module_upgrade_plan)
 
 
-<pre><code><b>use</b> <a href="Block.md#0x1_Block">0x1::Block</a>;
-<b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
+<pre><code><b>use</b> <a href="Dao.md#0x1_Dao">0x1::Dao</a>;
 <b>use</b> <a href="Errors.md#0x1_Errors">0x1::Errors</a>;
 <b>use</b> <a href="PackageTxnManager.md#0x1_PackageTxnManager">0x1::PackageTxnManager</a>;
 <b>use</b> <a href="Signer.md#0x1_Signer">0x1::Signer</a>;
@@ -223,7 +222,6 @@ propose a module upgrade, called by proposer.
         &cap.cap,
         package_hash,
         version,
-        <a href="Block.md#0x1_Block_get_current_block_number">Block::get_current_block_number</a>(),
     );
 }
 </code></pre>

@@ -21,6 +21,7 @@ script {
     use 0x1::Epoch;
     use 0x1::Version;
     use 0x1::Config;
+    use 0x1::Option;
 
     fun genesis_init(
         stdlib_version: u64,
@@ -134,6 +135,7 @@ script {
         PackageTxnManager::update_module_upgrade_strategy(
             &genesis_account,
             PackageTxnManager::get_strategy_two_phase(),
+            Option::some(0),
         );
         // stc should be initialized after genesis_account's module upgrade strategy set.
         {
