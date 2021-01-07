@@ -24,7 +24,7 @@ use 0x1::PackageTxnManager;
 use 0x1::Option;
 fun main(account: &signer) {
     Config::publish_new_config<Version::Version>(account, Version::new_version(1));
-    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(0));
+    PackageTxnManager::update_module_upgrade_strategy(account, PackageTxnManager::get_strategy_two_phase(), Option::some<u64>(2));
 }
 }
 
@@ -55,7 +55,6 @@ fun main(account: &signer) {
 }
 
 // check: EXECUTED
-
 
 // package txn must wait after plan's active_after_number
 //! new-transaction
