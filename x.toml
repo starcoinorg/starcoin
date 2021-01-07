@@ -1,7 +1,6 @@
-tools = [
-   ["sccache", "0.2.13"],
-   ["grcov", "0.5.15"],
-]
+[grcov.installer]
+version = "0.5.15"
+
 
 [system-tests]
 transaction-builder-generator = { path = "vm/transaction-builder-generator" }
@@ -11,6 +10,26 @@ benchmarks = { path = "benchmarks" }
 [cargo]
 toolchain = "nightly"
 flags = "-Zfeatures=all"
+
+[cargo.sccache]
+bucket = "ci-artifacts.starcoin.org"
+prefix = "sccache/starcoin/"
+public = true
+region = "us-west-2"
+endpoint = "https://s3-us-west-2.amazonaws.com"
+required-cargo-home = "/opt/cargo"
+required-git-home = "/opt/git/starcoin"
+envs = [
+    #To debug sccache uncomment the two lines below.
+    #["SCCACHE_ERROR_LOG","/tmp/sccache_log"],
+    #["SCCACHE_LOG", "sccache::compiler::compiler=trace,rusoto_core::request=trace"],
+]
+
+[cargo.sccache.installer]
+version = "0.2.14-alpha.0"
+git = "https://github.com/rexhoffman/sccache.git"
+git-rev = "549babdd3866aa60dae01668c42ee00bf1e8c763"
+features = [ "s3" ]
 
 [fix]
 
@@ -47,8 +66,19 @@ include-dev = true
 proc-macros-on-target = false
 # Don't set target or host platforms, or omitted packages, for the full set.
 
+[workspace]
+
+# Regex for allowed characters in paths. Regex must have ^ and $ anchors.
+allowed-paths = "^([a-zA-Z0-9._\\-/@:]|-)+$"
+
+whitespace-exceptions = [
+    ".github/actions/*/dist/*",
+    "**/*.exp",
+    "**/*.errmap",
+]
+
 [workspace.enforced-attributes]
-authors = ["Diem Association <opensource@diem.org>"]
+authors = ["Starcoin Association"]
 license = "Apache-2.0"
 
 [workspace.banned-deps.direct]
@@ -61,18 +91,6 @@ proptest = "proptest is only for testing and fuzzing"
 [workspace.overlay]
 features = ["fuzzing"]
 
-# This is a list of test-only members. These are workspace members that do not form part of the main
-# Diem production codebase, and are only used to verify correctness and/or performance.
-#
-# *** IMPORTANT ***
-#
-# Published developer tools (e.g. Move compiler) ARE part of the production Diem codebase.
-# They should be listed in the root Cargo.toml's default-members, not here!
-#
-# Before adding a new crate to this list, ensure that it is *actually* test-only. If not, add it
-# (or a crate that depends on it) to the root Cargo.toml's default-members list!
-#
-# For more, see the "Conditional compilation for tests" section in documentation/coding_guidelines.md.
 [workspace.test-only]
 members = [
     "common/proptest-helpers",
@@ -84,17 +102,45 @@ members = [
 # Interesting subsets of the workspace, These are used for generating and
 # checking dependency summaries.
 
-[workspace.subsets.lsr]
-# The Diem safety rules TCB.
-members = [
+[subsets.lsr]
+# The Starcoin safety rules TCB.
+root-members = [
 ]
 
-[workspace.subsets.lec]
-# The Diem execution correctness TCB.
-members = [
+[subsets.lec]
+# The Starcoin execution correctness TCB.
+root-members = [
 ]
 
-[workspace.subsets.release]
-# The Diem release binaries
-members = [
+[subsets.release]
+# The Starcoin release binaries
+root-members = [
 ]
+
+# ---
+# Determinator rules
+# ---
+
+[[determinator.path-rule]]
+globs = [".github/**/*", ".circleci/**/*", "codecov.yml"]
+mark-changed = "all"
+
+# Core devtools files.
+[[determinator.path-rule]]
+globs = ["cargo-toolchain", "cargo-flags", "scripts/dev_setup.sh", "x.toml"]
+mark-changed = "all"
+
+[[determinator.path-rule]]
+# Ignore website and other ancillary files, and scripts not listed above.
+globs = []
+mark-changed = []
+
+[[determinator.path-rule]]
+# A bunch of images that should be ignored, I guess.
+globs = []
+mark-changed = []
+
+[[determinator.package-rule]]
+# x controls the build process, so if it changes, build everything.
+on-affected = ["x"]
+mark-changed = "all"

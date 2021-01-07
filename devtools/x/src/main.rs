@@ -9,7 +9,6 @@
 use chrono::Local;
 use env_logger::{self, fmt::Color};
 use log::Level;
-use std::path::Path;
 use std::{boxed::Box, io::Write};
 use structopt::StructOpt;
 
@@ -65,16 +64,7 @@ pub mod tools {
     pub use diem_x::tools::*;
 }
 
-pub mod utils {
-    pub use diem_x::utils::*;
-}
-
-pub fn project_root() -> &'static Path {
-    Path::new(&env!("CARGO_MANIFEST_DIR"))
-        .ancestors()
-        .nth(2)
-        .unwrap()
-}
+pub mod utils;
 
 type Result<T> = anyhow::Result<T>;
 
@@ -154,7 +144,7 @@ fn main() -> Result<()> {
         .init();
 
     let args = Args::from_args();
-    let xctx = context::XContext::new()?;
+    let xctx = context::XContext::with_project_root(utils::project_root())?;
     match args.cmd {
         Command::Tools(args) => tools::run(args, xctx),
         Command::Test(args) => test::run(args, xctx),

@@ -8,7 +8,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "heck",
  "log 0.4.11",
  "move-core-types",
@@ -831,7 +831,7 @@ name = "borrow-graph"
 version = "0.0.1"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
 ]
 
@@ -885,7 +885,7 @@ dependencies = [
  "borrow-graph",
  "bytecode-verifier",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "ir-to-bytecode",
  "itertools 0.10.0",
  "log 0.4.11",
@@ -905,7 +905,7 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "move-core-types",
  "move-ir-types",
  "serde",
@@ -920,7 +920,7 @@ dependencies = [
  "anyhow",
  "borrow-graph",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
  "move-core-types",
  "petgraph",
@@ -1726,7 +1726,7 @@ name = "datatest-stable"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "regex",
  "structopt 0.3.21",
  "termcolor",
@@ -1808,7 +1808,7 @@ dependencies = [
  "curve25519-dalek 3.0.0 (git+https://github.com/novifinancial/curve25519-dalek.git?branch=fiat3)",
  "diem-crypto-derive",
  "diem-nibble",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "digest 0.9.0",
  "ed25519-dalek 1.0.1 (git+https://github.com/novifinancial/ed25519-dalek.git?branch=fiat5)",
  "hex",
@@ -1835,7 +1835,7 @@ name = "diem-crypto-derive"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "proc-macro2 1.0.24",
  "quote 1.0.8",
  "syn 1.0.57",
@@ -1846,7 +1846,7 @@ name = "diem-infallible"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
 ]
 
 [[package]]
@@ -1854,7 +1854,7 @@ name = "diem-log-derive"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "proc-macro2 1.0.24",
  "quote 1.0.8",
  "syn 1.0.57",
@@ -1869,7 +1869,7 @@ dependencies = [
  "chrono",
  "diem-infallible",
  "diem-log-derive",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "erased-serde",
  "hostname",
  "once_cell",
@@ -1886,7 +1886,7 @@ dependencies = [
  "aes-gcm 0.8.0",
  "bcs",
  "diem-crypto",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "move-core-types",
  "serde",
  "serde_bytes",
@@ -1899,7 +1899,7 @@ name = "diem-nibble"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "serde",
 ]
 
@@ -1909,7 +1909,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
  "crossbeam 0.8.0",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "proptest",
  "proptest-derive",
 ]
@@ -1919,7 +1919,7 @@ name = "diem-temppath"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "hex",
  "rand 0.7.3",
 ]
@@ -1937,7 +1937,7 @@ dependencies = [
  "diem-crypto-derive",
  "diem-infallible",
  "diem-network-address",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "hex",
  "itertools 0.10.0",
  "mirai-annotations",
@@ -1949,6 +1949,29 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tiny-keccak 2.0.2",
+]
+
+[[package]]
+name = "diem-workspace-hack"
+version = "0.1.0"
+source = "git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a#89223522186cb4cd39e21e44fb2da745f7a45c7a"
+dependencies = [
+ "byteorder",
+ "bytes 0.5.6",
+ "cc",
+ "chrono",
+ "itertools 0.10.0",
+ "itoa",
+ "log 0.4.11",
+ "memchr",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "petgraph",
+ "serde",
+ "sha-1 0.9.2",
+ "subtle 2.4.0",
+ "syn 1.0.57",
 ]
 
 [[package]]
@@ -2078,7 +2101,7 @@ dependencies = [
  "bytecode",
  "codespan",
  "codespan-reporting",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "itertools 0.10.0",
  "log 0.4.11",
  "move-model",
@@ -2233,7 +2256,7 @@ dependencies = [
  "anyhow",
  "bcs",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "log 0.4.11",
  "move-core-types",
  "move-model",
@@ -3354,7 +3377,7 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "ir-to-bytecode-syntax",
  "log 0.4.11",
  "move-core-types",
@@ -3371,7 +3394,7 @@ dependencies = [
  "anyhow",
  "codespan",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "hex",
  "move-core-types",
  "move-ir-types",
@@ -4316,7 +4339,7 @@ dependencies = [
  "bcs",
  "diem-crypto",
  "diem-crypto-derive",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "hex",
  "mirai-annotations",
  "once_cell",
@@ -4357,7 +4380,7 @@ dependencies = [
  "anyhow",
  "codespan",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "hex",
  "move-core-types",
  "once_cell",
@@ -4378,7 +4401,7 @@ dependencies = [
  "codespan-reporting",
  "diem-temppath",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "difference",
  "hex",
  "ir-to-bytecode",
@@ -4398,7 +4421,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
  "datatest-stable",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
 ]
 
 [[package]]
@@ -4412,7 +4435,7 @@ dependencies = [
  "codespan",
  "codespan-reporting",
  "diem-types",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "itertools 0.10.0",
  "log 0.4.11",
  "move-core-types",
@@ -4439,7 +4462,7 @@ dependencies = [
  "codespan-reporting",
  "datatest-stable",
  "diem-temppath",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "docgen",
  "errmapgen",
  "futures 0.3.8",
@@ -4471,7 +4494,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
  "anyhow",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "prettydiff",
  "regex",
 ]
@@ -4482,7 +4505,7 @@ version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
  "diem-crypto",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
  "move-core-types",
  "move-vm-types",
@@ -4500,7 +4523,7 @@ dependencies = [
  "diem-crypto",
  "diem-infallible",
  "diem-logger",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "fail",
  "mirai-annotations",
  "move-core-types",
@@ -4517,7 +4540,7 @@ source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf16
 dependencies = [
  "bcs",
  "diem-crypto",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
  "move-core-types",
  "once_cell",
@@ -4915,7 +4938,7 @@ name = "num-variants"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "proc-macro2 1.0.24",
  "quote 1.0.8",
  "syn 1.0.57",
@@ -6811,7 +6834,7 @@ name = "short-hex-str"
 version = "0.1.0"
 source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
  "serde",
  "thiserror",
@@ -7741,7 +7764,7 @@ dependencies = [
 name = "starcoin-move-explain"
 version = "0.9.4"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "errmapgen",
  "move-core-types",
  "starcoin-canonical-serialization",
@@ -8608,7 +8631,7 @@ dependencies = [
  "chrono",
  "colored-diff",
  "determinator",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a)",
  "env_logger 0.8.2",
  "globset",
  "guppy",
@@ -9574,7 +9597,7 @@ version = "0.9.4"
 dependencies = [
  "anyhow",
  "bcs",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "move-core-types",
  "serde-generate",
  "serde-reflection",
@@ -9908,7 +9931,7 @@ dependencies = [
  "anyhow",
  "diem-crypto",
  "diem-proptest-helpers",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821)",
  "mirai-annotations",
  "move-core-types",
  "num-variants",
@@ -10234,13 +10257,13 @@ dependencies = [
 [[package]]
 name = "x"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
+source = "git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a#89223522186cb4cd39e21e44fb2da745f7a45c7a"
 dependencies = [
  "anyhow",
  "chrono",
  "colored-diff",
  "determinator",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a)",
  "env_logger 0.8.2",
  "globset",
  "guppy",
@@ -10260,10 +10283,10 @@ dependencies = [
 [[package]]
 name = "x-core"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
+source = "git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a#89223522186cb4cd39e21e44fb2da745f7a45c7a"
 dependencies = [
  "determinator",
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a)",
  "guppy",
  "hex",
  "indoc",
@@ -10277,9 +10300,9 @@ dependencies = [
 [[package]]
 name = "x-lint"
 version = "0.1.0"
-source = "git+https://github.com/starcoinorg/diem?rev=a69729b2d54af44d2f779bcf167e3f6d681a9821#a69729b2d54af44d2f779bcf167e3f6d681a9821"
+source = "git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a#89223522186cb4cd39e21e44fb2da745f7a45c7a"
 dependencies = [
- "diem-workspace-hack",
+ "diem-workspace-hack 0.1.0 (git+https://github.com/starcoinorg/diem?rev=89223522186cb4cd39e21e44fb2da745f7a45c7a)",
  "guppy",
  "once_cell",
  "serde",

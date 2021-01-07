@@ -102,7 +102,7 @@ pub fn run(mut args: Args, xctx: XContext) -> Result<()> {
         env: &env_vars,
     };
 
-    let cmd_result = cmd.run_on_packages(&packages);
+    let cmd_result = cmd.run_on_packages(&packages, &xctx);
 
     if !args.no_fail_fast && cmd_result.is_err() {
         return cmd_result;
