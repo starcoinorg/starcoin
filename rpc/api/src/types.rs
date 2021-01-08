@@ -17,8 +17,8 @@ use starcoin_crypto::{CryptoMaterialError, HashValue, ValidCryptoMaterialStringE
 use starcoin_service_registry::ServiceRequest;
 use starcoin_types::account_address::AccountAddress;
 use starcoin_types::block::{
-    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockNumber, BlockSummary, EpochUncleSummary,
-    UncleSummary,
+    Block, BlockBody, BlockHeader, BlockHeaderExtra, BlockInfo, BlockNumber, BlockSummary,
+    EpochUncleSummary, UncleSummary,
 };
 use starcoin_types::contract_event::{ContractEvent, ContractEventInfo};
 use starcoin_types::event::EventKey;
@@ -732,18 +732,19 @@ pub struct ChainInfoView {
     pub chain_id: u8,
     pub genesis_hash: HashValue,
     pub head: BlockHeaderView,
-    pub total_difficulty: U256,
+    //TODO should define block info view?
+    pub block_info: BlockInfo,
 }
 
 impl From<ChainInfo> for ChainInfoView {
     fn from(info: ChainInfo) -> Self {
         let (chain_id, genesis_hash, status) = info.into_inner();
-        let (head, total_difficulty) = status.into_inner();
+        let (head, block_info) = status.into_inner();
         Self {
             chain_id: chain_id.into(),
             genesis_hash,
             head: head.into(),
-            total_difficulty,
+            block_info,
         }
     }
 }

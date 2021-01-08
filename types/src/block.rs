@@ -15,7 +15,7 @@ use crate::U256;
 use serde::de::Error;
 use serde::export::Formatter;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use starcoin_accumulator::accumulator_info::AccumulatorInfo;
+pub use starcoin_accumulator::accumulator_info::AccumulatorInfo;
 use starcoin_crypto::hash::ACCUMULATOR_PLACEHOLDER_HASH;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 
@@ -558,20 +558,6 @@ impl BlockInfo {
         txn_accumulator_info: AccumulatorInfo,
         total_difficulty: U256,
         block_accumulator_info: AccumulatorInfo,
-    ) -> Self {
-        Self {
-            block_id,
-            txn_accumulator_info,
-            total_difficulty,
-            block_accumulator_info,
-        }
-    }
-
-    pub fn new_with_accumulator_info(
-        block_id: HashValue,
-        txn_accumulator_info: AccumulatorInfo,
-        block_accumulator_info: AccumulatorInfo,
-        total_difficulty: U256,
     ) -> Self {
         Self {
             block_id,

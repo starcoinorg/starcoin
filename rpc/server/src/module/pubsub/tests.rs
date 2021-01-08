@@ -23,7 +23,6 @@ use starcoin_state_api::AccountStateReader;
 use starcoin_storage::BlockStore;
 use starcoin_traits::{ChainReader, ChainWriter};
 use starcoin_txpool_api::TxPoolSyncService;
-use starcoin_types::block::BlockHeader;
 use starcoin_types::startup_info::ChainStatus;
 use starcoin_types::sync_status::SyncStatus;
 use starcoin_types::system_events::NewHeadBlock;
@@ -86,7 +85,7 @@ pub async fn test_subscribe_to_events() -> Result<()> {
         .await
         .unwrap();
 
-    let mut sync_status = SyncStatus::new(ChainStatus::new(BlockHeader::random(), U256::from(1)));
+    let mut sync_status = SyncStatus::new(ChainStatus::random());
     sync_status.sync_done();
     notify_service.notify(SyncStatusChangeEvent(sync_status))?;
     let service = registry

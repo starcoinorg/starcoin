@@ -6,10 +6,11 @@ use anyhow::*;
 use scs::SCSCodec;
 use serde::{Deserialize, Serialize};
 use starcoin_service_registry::ServiceRequest;
+use starcoin_types::block::BlockInfo;
+use starcoin_types::cmpact_block::CompactBlock;
 use starcoin_types::peer_info::{PeerId, PeerInfo};
 use starcoin_types::startup_info::ChainInfo;
 use starcoin_types::transaction::SignedUserTransaction;
-use starcoin_types::{cmpact_block::CompactBlock, U256};
 use std::borrow::Cow;
 
 pub const TXN_PROTOCOL_NAME: &str = "/starcoin/txn/1";
@@ -34,14 +35,14 @@ impl TransactionsMessage {
 #[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CompactBlockMessage {
     pub compact_block: CompactBlock,
-    pub total_difficulty: U256,
+    pub block_info: BlockInfo,
 }
 
 impl CompactBlockMessage {
-    pub fn new(compact_block: CompactBlock, total_difficulty: U256) -> Self {
+    pub fn new(compact_block: CompactBlock, block_info: BlockInfo) -> Self {
         Self {
             compact_block,
-            total_difficulty,
+            block_info,
         }
     }
 }

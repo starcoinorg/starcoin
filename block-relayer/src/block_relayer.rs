@@ -198,11 +198,7 @@ impl EventHandler<Self, NewHeadBlock> for BlockRelayer {
             }
         };
         let compact_block = event.0.block().clone().into();
-        let total_difficulty = event.0.total_difficulty();
-        let compact_block_msg = CompactBlockMessage {
-            compact_block,
-            total_difficulty,
-        };
+        let compact_block_msg = CompactBlockMessage::new(compact_block, event.0.block_info.clone());
         network.broadcast(NotificationMessage::CompactBlock(Box::new(
             compact_block_msg,
         )));
@@ -224,7 +220,7 @@ impl EventHandler<Self, PeerCompactBlockMessage> for BlockRelayer {
             .as_ref()
             .expect("Sync status should bean some at here");
         let current_total_difficulty = sync_status.chain_status().total_difficulty();
-        let block_total_difficulty = compact_block_msg.message.total_difficulty;
+        let block_total_difficulty = compact_block_msg.message.block_info.total_difficulty;
         let block_id = compact_block_msg.message.compact_block.header.id();
         if current_total_difficulty > block_total_difficulty {
             debug!("[block-relay] Ignore PeerCompactBlockMessage because node current total_difficulty({}) > block({})'s total_difficulty({}).", current_total_difficulty, block_id, block_total_difficulty);
