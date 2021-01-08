@@ -37,7 +37,7 @@ use starcoin_vm_types::time::TimeService;
 use starcoin_vm_types::transaction::authenticator::AuthenticationKey;
 use std::cmp::min;
 use std::iter::Extend;
-use std::option::Option::Some;
+use std::option::Option::{None, Some};
 use std::{collections::HashSet, sync::Arc};
 use storage::Store;
 
@@ -68,11 +68,20 @@ impl BlockChain {
         let head = storage
             .get_block_by_hash(head_block_hash)?
             .ok_or_else(|| format_err!("Can not find block by hash {:?}", head_block_hash))?;
+        Self::new_with_uncles(time_service, head, None, storage)
+    }
+
+    pub fn new_with_uncles(
+        time_service: Arc<dyn TimeService>,
+        head_block: Block,
+        uncles: Option<HashSet<HashValue>>,
+        storage: Arc<dyn Store>,
+    ) -> Result<Self> {
         let block_info = storage
-            .get_block_info(head_block_hash)?
-            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block_hash))?;
+            .get_block_info(head_block.id())?
+            .ok_or_else(|| format_err!("Can not find block info by hash {:?}", head_block.id()))?;
         debug!("Init chain with block_info: {:?}", block_info);
-        let state_root = head.header().state_root();
+        let state_root = head_block.header().state_root();
         let txn_accumulator_info = block_info.get_txn_accumulator_info();
         let block_accumulator_info = block_info.get_block_accumulator_info();
         let chain_state = ChainStateDB::new(storage.clone().into_super_arc(), Some(state_root));
@@ -91,9 +100,9 @@ impl BlockChain {
                 storage.as_ref(),
             ),
             status: ChainStatusWithInfo {
-                status: ChainStatus::new(head.header.clone(), block_info.total_difficulty),
+                status: ChainStatus::new(head_block.header.clone(), block_info.total_difficulty),
                 info: block_info,
-                head,
+                head: head_block,
             },
             statedb: chain_state,
             storage,
@@ -101,7 +110,10 @@ impl BlockChain {
             epoch,
         };
         watch(CHAIN_WATCH_NAME, "n1251");
-        chain.update_uncle_cache()?;
+        match uncles {
+            Some(data) => chain.uncles = data,
+            None => chain.update_uncle_cache()?,
+        }
         watch(CHAIN_WATCH_NAME, "n1252");
         Ok(chain)
     }
@@ -754,7 +766,24 @@ impl ChainReader for BlockChain {
             "Block with id{} do not exists in current chain.",
             block_id
         );
-        BlockChain::new(self.time_service.clone(), block_id, self.storage.clone())
+        let head = self
+            .storage
+            .get_block_by_hash(block_id)?
+            .ok_or_else(|| format_err!("Can not find block by hash {:?}", block_id))?;
+        let mut uncles: HashSet<HashValue> = HashSet::new();
+        self.uncles.iter().for_each(|uncle_id| {
+            if let Ok(Some(uncle)) = self.storage.get_block_header_by_hash(*uncle_id) {
+                if uncle.number() < head.header().number() {
+                    uncles.insert(*uncle_id);
+                }
+            }
+        });
+        BlockChain::new_with_uncles(
+            self.time_service.clone(),
+            head,
+            Some(uncles),
+            self.storage.clone(),
+        )
     }
 
     fn epoch_uncles(&self) -> &HashSet<HashValue> {
