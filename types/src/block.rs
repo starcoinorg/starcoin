@@ -48,7 +48,7 @@ impl<'de> Deserialize<'de> for BlockHeaderExtra {
     {
         if deserializer.is_human_readable() {
             let s = <String>::deserialize(deserializer)?;
-            let literal = s.strip_prefix("0x").unwrap_or_else(|| &s);
+            let literal = s.strip_prefix("0x").unwrap_or(&s);
             let hex_len = literal.len();
             let mut result = if hex_len % 2 != 0 {
                 let mut hex_str = String::with_capacity(hex_len + 1);
